@@ -6,7 +6,7 @@ import {
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
   List, Bold, Italic, Underline, Type, X, ChevronDown,
-  LayoutGrid, BookOpen, Scissors, Check,
+  LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move
 } from 'lucide-react';
@@ -36,6 +36,7 @@ export default function App() {
   const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
+  const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [promptWidth, setPromptWidth] = useState(620);
   
   // Interactive inputs
@@ -578,9 +579,9 @@ export default function App() {
 
       if (dragTarget === 'prompt') {
         const deltaY = event.clientY - dragStateRef.current.startY;
-        const nextX = Math.min(280, Math.max(-280, dragStateRef.current.promptX + deltaX));
         const nextY = Math.min(40, Math.max(-180, dragStateRef.current.promptY - deltaY));
-        setPromptOffset({ x: nextX, y: nextY });
+        // Keep prompt horizontally aligned to the document content area.
+        setPromptOffset({ x: 0, y: nextY });
       }
     };
 
@@ -880,7 +881,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC]">
+        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-x-auto overflow-y-visible no-scrollbar bg-[#FAFAFC] relative z-20">
           {orderedDocuments.map((doc) => {
             const label = doc.title?.trim() ? doc.title : 'Tap your text here';
             const isActive = activeDocId === doc.id;
@@ -1052,12 +1053,12 @@ export default function App() {
             )}
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <button onClick={() => { setIsBoldActive((prev) => !prev); applyFormatCommand('bold'); }} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
             <button onClick={() => { setIsItalicActive((prev) => !prev); applyFormatCommand('italic'); }} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
             <button onClick={() => { setIsUnderlineActive((prev) => !prev); applyFormatCommand('underline'); }} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
             <button onClick={() => { setIsStrikeActive((prev) => !prev); applyFormatCommand('strikeThrough'); }} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
-            <div className="flex items-center gap-0.5 hover:text-gray-900 cursor-pointer">
+            <div className="flex items-center gap-1.5 hover:text-gray-900 cursor-pointer pl-0.5">
               <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
             </div>
           </div>
@@ -1284,13 +1285,14 @@ export default function App() {
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-14 z-20 flex ${alignMode === 'left' ? 'justify-start px-12 md:px-16' : alignMode === 'right' ? 'justify-end px-12 md:px-16' : 'justify-center'}`}
-          style={{ transform: `translate(${promptOffset.x}px, ${promptOffset.y}px)` }}
+          className="pointer-events-none absolute inset-x-0 bottom-14 z-20"
+          style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
+          <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
           <form
             onSubmit={handleFloatingSend}
-            className="pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-2xl"
-            style={{ width: `${Math.max(320, Math.min(promptWidth, 760))}px`, maxWidth: 'calc(100% - 16px)' }}
+            className={`pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'}`}
+            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 760))}px`, maxWidth: '100%' }}
           >
             <button
               type="button"
@@ -1306,12 +1308,20 @@ export default function App() {
                 value={floatingPrompt}
                 onChange={(e) => setFloatingPrompt(e.target.value)}
                 placeholder="Type an instruction (e.g. 'add timeline' or 'extract risks')..."
-                rows={1}
+                rows={isPromptExpanded ? 4 : 1}
                 style={{ textAlign: alignMode }}
                 className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2 resize-none"
               />
             </div>
             <div className="flex items-center gap-2 pr-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsPromptExpanded((prev) => !prev)}
+                className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title="Expand prompt input"
+              >
+                <Expand size={16} />
+              </button>
               <button
                 type="button"
                 onClick={() => setIsVoiceActive(!isVoiceActive)}
@@ -1327,6 +1337,7 @@ export default function App() {
               </button>
             </div>
           </form>
+          </div>
         </div>
 
         {/* Bottom Status Bar */}
