@@ -28,10 +28,15 @@ export default function App() {
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar'
   const [dragTarget, setDragTarget] = useState(null);
+  const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
+  const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
   const [floatingPrompt, setFloatingPrompt] = useState('');
+  const [newTaskInput, setNewTaskInput] = useState('');
+  const [scheduleInput, setScheduleInput] = useState('');
+  const [scheduleOutput, setScheduleOutput] = useState([]);
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
@@ -42,8 +47,11 @@ export default function App() {
   const chatEndRef = useRef(null);
   const dragStateRef = useRef({
     startX: 0,
+    startY: 0,
     leftWidth: 256,
     rightWidth: 340,
+    promptX: 0,
+    promptY: -14,
   });
 
   // Stateful document content
@@ -51,9 +59,57 @@ export default function App() {
   const [docSubtitle, setDocSubtitle] = useState(defaultSubtitle);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
   const [isBlankDocument, setIsBlankDocument] = useState(false);
+  const [documents, setDocuments] = useState([
+    {
+      id: Date.now(),
+      title: defaultTitle,
+      subtitle: defaultSubtitle,
+      initiatives: defaultInitiatives,
+      appendedSections: [],
+      isBlank: false,
+    },
+  ]);
+  const [activeDocId, setActiveDocId] = useState(null);
+
+  const [editorHeading, setEditorHeading] = useState('Heading 1');
+  const [editorFont, setEditorFont] = useState('Inter');
+  const [editorSize, setEditorSize] = useState(32);
+  const [isBoldActive, setIsBoldActive] = useState(false);
+  const [isItalicActive, setIsItalicActive] = useState(false);
+  const [isUnderlineActive, setIsUnderlineActive] = useState(false);
+  const [isStrikeActive, setIsStrikeActive] = useState(false);
+  const [alignMode, setAlignMode] = useState('left');
+  const [isListActive, setIsListActive] = useState(false);
 
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
+
+  useEffect(() => {
+    if (!activeDocId && documents.length) {
+      setActiveDocId(documents[0].id);
+    }
+  }, [documents, activeDocId]);
+
+  useEffect(() => {
+    if (!activeDocId) {
+      return;
+    }
+
+    setDocuments((prev) =>
+      prev.map((doc) =>
+        doc.id === activeDocId
+          ? {
+              ...doc,
+              title: docTitle,
+              subtitle: docSubtitle,
+              initiatives,
+              appendedSections,
+              isBlank: isBlankDocument,
+            }
+          : doc,
+      ),
+    );
+  }, [activeDocId, appendedSections, docSubtitle, docTitle, initiatives, isBlankDocument]);
 
   // Integrated Tasks checklist state
   const [tasks, setTasks] = useState([
@@ -218,11 +274,80 @@ export default function App() {
     }
   };
 
+  const switchDocument = (docId) => {
+    const targetDoc = documents.find((doc) => doc.id === docId);
+    if (!targetDoc) {
+      return;
+    }
+
+    setActiveDocId(docId);
+    setDocTitle(targetDoc.title);
+    setDocSubtitle(targetDoc.subtitle);
+    setInitiatives(targetDoc.initiatives);
+    setAppendedSections(targetDoc.appendedSections);
+    setIsBlankDocument(targetDoc.isBlank);
+  };
+
+  const createNewComposition = () => {
+    const newDoc = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      title: '',
+      subtitle: '',
+      initiatives: [],
+      appendedSections: [],
+      isBlank: true,
+    };
+
+    setDocuments((prev) => [...prev, newDoc]);
+    setActiveDocId(newDoc.id);
+    setDocTitle('');
+    setDocSubtitle('');
+    setIsBlankDocument(true);
+    setAppendedSections([]);
+    setInitiatives([]);
+    showToast('Blank composition created');
+  };
+
+  const addTaskFromInput = () => {
+    const trimmed = newTaskInput.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    setTasks((prev) => [...prev, { id: Date.now(), text: trimmed, completed: false }]);
+    setNewTaskInput('');
+    showToast('Task added');
+  };
+
+  const convertMessyScheduleToPlan = () => {
+    const rawItems = scheduleInput
+      .split(/\n|,|;/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (!rawItems.length) {
+      return;
+    }
+
+    const cleanItems = rawItems.map((item, index) => ({
+      id: Date.now() + index,
+      slot: `${String(9 + index).padStart(2, '0')}:00`,
+      title: item.charAt(0).toUpperCase() + item.slice(1),
+      summary: `Action-ready block created from raw input item #${index + 1}.`,
+    }));
+
+    setScheduleOutput(cleanItems);
+    showToast('Messy schedule converted to clean timeline');
+  };
+
   const beginPanelResize = (target, event) => {
     dragStateRef.current = {
       startX: event.clientX,
+      startY: event.clientY,
       leftWidth: leftSidebarWidth,
       rightWidth: rightSidebarWidth,
+      promptX: promptOffset.x,
+      promptY: promptOffset.y,
     };
     setDragTarget(target);
   };
@@ -243,6 +368,13 @@ export default function App() {
       if (dragTarget === 'right') {
         const nextRightWidth = Math.min(520, Math.max(280, dragStateRef.current.rightWidth - deltaX));
         setRightSidebarWidth(nextRightWidth);
+      }
+
+      if (dragTarget === 'prompt') {
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextX = Math.min(280, Math.max(-280, dragStateRef.current.promptX + deltaX));
+        const nextY = Math.min(40, Math.max(-180, dragStateRef.current.promptY - deltaY));
+        setPromptOffset({ x: nextX, y: nextY });
       }
     };
 
@@ -299,14 +431,7 @@ export default function App() {
 
         <div className="px-4 py-3">
           <button 
-            onClick={() => {
-              setDocTitle('Untitled');
-              setDocSubtitle('');
-              setIsBlankDocument(true);
-              setAppendedSections([]);
-              setInitiatives([]);
-              showToast('Blank composition created');
-            }}
+            onClick={createNewComposition}
             className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 font-medium text-sm transition-colors active:scale-95"
           >
             <Plus size={16} />
@@ -373,13 +498,24 @@ export default function App() {
               </button>
               
               <div className="ml-7 mt-1 space-y-0.5 border-l border-gray-200 pl-1">
-                <button className="w-full flex items-center justify-between pl-3 pr-2 py-1 text-sm bg-violet-50 text-violet-700 rounded-r-md">
-                  <div className="flex items-center gap-2">
-                    <FileText size={14} className="text-violet-500" />
-                    Product Launch Plan
-                  </div>
-                  <MoreHorizontal size={14} className="text-violet-400" />
-                </button>
+                {documents.map((doc) => {
+                  const label = doc.title?.trim() ? doc.title : 'Tap your text here';
+                  const isActive = activeDocId === doc.id;
+
+                  return (
+                    <button
+                      key={doc.id}
+                      onClick={() => switchDocument(doc.id)}
+                      className={`w-full flex items-center justify-between pl-3 pr-2 py-1 text-sm rounded-r-md transition-colors ${isActive ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <FileText size={14} className={isActive ? 'text-violet-500' : 'text-gray-400'} />
+                        <span className="truncate">{label}</span>
+                      </div>
+                      <MoreHorizontal size={14} className={isActive ? 'text-violet-400' : 'text-gray-300'} />
+                    </button>
+                  );
+                })}
                 <button className="w-full text-left pl-3 pr-2 py-1 text-sm text-gray-600 hover:text-gray-900 transition-colors">
                   PRD - Compose v1.0
                 </button>
@@ -434,7 +570,7 @@ export default function App() {
             </button>
             <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
               <FileText size={16} className="text-gray-400" />
-              {docTitle}
+              {docTitle?.trim() ? docTitle : 'Tap your text here'}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-4">
               <Cloud size={14} /> Saved Just now
@@ -466,35 +602,52 @@ export default function App() {
           </div>
         </div>
 
+        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC]">
+          {documents.map((doc) => {
+            const label = doc.title?.trim() ? doc.title : 'Tap your text here';
+            const isActive = activeDocId === doc.id;
+
+            return (
+              <button
+                key={doc.id}
+                onClick={() => switchDocument(doc.id)}
+                className={`shrink-0 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${isActive ? 'bg-white border-violet-200 text-violet-700' : 'bg-transparent border-transparent text-gray-500 hover:bg-white hover:border-gray-200'}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Formatting Ribbon */}
         <div className="h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-x-auto no-scrollbar select-none">
-          <div className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
-            Heading 1 <ChevronDown size={14} className="text-gray-400" />
+          <div onClick={() => setEditorHeading((prev) => (prev === 'Heading 1' ? 'Heading 2' : 'Heading 1'))} className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+            {editorHeading} <ChevronDown size={14} className="text-gray-400" />
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
-            Inter <ChevronDown size={14} className="text-gray-400" />
+          <div onClick={() => setEditorFont((prev) => (prev === 'Inter' ? 'Georgia' : 'Inter'))} className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+            {editorFont} <ChevronDown size={14} className="text-gray-400" />
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
-            32 <ChevronDown size={14} className="text-gray-400" />
+          <div onClick={() => setEditorSize((prev) => (prev === 32 ? 36 : 32))} className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
+            {editorSize} <ChevronDown size={14} className="text-gray-400" />
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
-            <button className="font-bold hover:text-gray-900">B</button>
-            <button className="italic font-serif hover:text-gray-900">I</button>
-            <button className="underline hover:text-gray-900">U</button>
-            <button className="line-through hover:text-gray-900">S</button>
+            <button onClick={() => setIsBoldActive((prev) => !prev)} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
+            <button onClick={() => setIsItalicActive((prev) => !prev)} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
+            <button onClick={() => setIsUnderlineActive((prev) => !prev)} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
+            <button onClick={() => setIsStrikeActive((prev) => !prev)} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
             <div className="flex items-center gap-0.5 hover:text-gray-900 cursor-pointer">
               <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
             </div>
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
-            <AlignLeft size={16} className="text-violet-600" />
-            <AlignCenter size={16} className="hover:text-gray-900 cursor-pointer" />
-            <AlignRight size={16} className="hover:text-gray-900 cursor-pointer" />
-            <List size={16} className="hover:text-gray-900 cursor-pointer" />
+            <AlignLeft onClick={() => setAlignMode('left')} size={16} className={`${alignMode === 'left' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
+            <AlignCenter onClick={() => setAlignMode('center')} size={16} className={`${alignMode === 'center' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
+            <AlignRight onClick={() => setAlignMode('right')} size={16} className={`${alignMode === 'right' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
+            <List onClick={() => setIsListActive((prev) => !prev)} size={16} className={`${isListActive ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
@@ -515,7 +668,9 @@ export default function App() {
                   setIsBlankDocument(false);
                 }
               }}
-              className="w-full text-[40px] font-bold text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent"
+              placeholder="Tap your text here"
+              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode }}
+              className={`w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent ${isBoldActive ? 'font-bold' : 'font-semibold'} ${isItalicActive ? 'italic' : ''} ${isUnderlineActive ? 'underline' : ''} ${isStrikeActive ? 'line-through' : ''}`}
             />
             
             <textarea 
@@ -526,6 +681,8 @@ export default function App() {
                   setIsBlankDocument(false);
                 }
               }}
+              placeholder="Tap your text here"
+              style={{ fontFamily: editorFont, textAlign: alignMode }}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent h-14"
             />
 
@@ -533,7 +690,7 @@ export default function App() {
 
             {isBlankDocument && (
               <div className="mb-10 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-sm text-gray-500">
-                This is a blank document. Start typing a title, subtitle, or use AI to generate content.
+                This is a blank document. Tap your text here to start, or use AI to generate content.
               </div>
             )}
 
@@ -709,22 +866,41 @@ export default function App() {
         </div>
 
         {/* Persistent Floating AI Prompt Bar */}
-        <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 w-[92%] max-w-[640px] -translate-x-1/2">
+        <div
+          className="pointer-events-none absolute bottom-14 left-1/2 z-20 w-[92%] -translate-x-1/2"
+          style={{ transform: `translateX(calc(-50% + ${promptOffset.x}px)) translateY(${promptOffset.y}px)` }}
+        >
           <form
             onSubmit={handleFloatingSend}
-            className="pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-full flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all"
+            className={`pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl max-w-[900px]' : 'rounded-full max-w-[640px]'}`}
           >
-            <div className="flex items-center gap-3 px-3 flex-1">
+            <button
+              type="button"
+              onMouseDown={(event) => beginPanelResize('prompt', event)}
+              className="p-2 text-gray-300 hover:text-gray-500"
+              title="Move prompt bar"
+            >
+              <Hash size={14} />
+            </button>
+            <div className="flex items-center gap-3 px-2 flex-1">
               <Sparkles size={18} className="text-violet-500 shrink-0" />
-              <input
-                type="text"
+              <textarea
                 value={floatingPrompt}
                 onChange={(e) => setFloatingPrompt(e.target.value)}
                 placeholder="Type an instruction (e.g. 'add timeline' or 'extract risks')..."
-                className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
+                rows={isPromptExpanded ? 4 : 1}
+                className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2 resize-none"
               />
             </div>
             <div className="flex items-center gap-2 pr-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsPromptExpanded((prev) => !prev)}
+                className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title="Expand prompt input"
+              >
+                <Expand size={16} />
+              </button>
               <button
                 type="button"
                 onClick={() => setIsVoiceActive(!isVoiceActive)}
@@ -975,17 +1151,35 @@ export default function App() {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold text-gray-900">Workspace Checklist</h3>
                 <button 
-                  onClick={() => {
-                    const newText = prompt("Enter new action item:");
-                    if (newText) {
-                      setTasks(prev => [...prev, { id: Date.now(), text: newText, completed: false }]);
-                      showToast("Task added");
-                    }
-                  }}
+                  onClick={addTaskFromInput}
                   className="text-xs font-medium text-violet-600 hover:text-violet-700 flex items-center gap-1"
                 >
                   <Plus size={14} /> Add Task
                 </button>
+              </div>
+
+              <div className="mb-3 rounded-xl border border-gray-100 bg-[#FAFAFC] p-2.5">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newTaskInput}
+                    onChange={(e) => setNewTaskInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addTaskFromInput();
+                      }
+                    }}
+                    placeholder="Add a new action item..."
+                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
+                  />
+                  <button
+                    onClick={addTaskFromInput}
+                    className="px-3 py-2 rounded-lg text-xs font-medium bg-violet-600 text-white hover:bg-violet-700"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -1019,6 +1213,39 @@ export default function App() {
             <div className="flex-1 overflow-y-auto p-5 space-y-4">
               <h3 className="text-sm font-bold text-gray-900">Launch Timeline</h3>
               <p className="text-xs text-gray-500">Consolidated product rollouts aligned with team calendar events.</p>
+
+              <div className="rounded-xl border border-violet-100 bg-violet-50/20 p-3">
+                <div className="text-xs font-semibold text-violet-700 mb-2">Schedule AI Cleaner</div>
+                <p className="text-[11px] text-gray-500 mb-2">Paste messy tasks, shorthand notes, or random lines. Compose will convert them into a clean sequence.</p>
+                <textarea
+                  value={scheduleInput}
+                  onChange={(e) => setScheduleInput(e.target.value)}
+                  placeholder="eg: call dev team, fix landing page copy tomorrow, record demo 2pm, prepare launch tweet"
+                  rows={3}
+                  className="w-full rounded-lg border border-gray-200 bg-white p-2.5 text-xs text-gray-700 outline-none focus:border-violet-400 resize-none"
+                />
+                <button
+                  onClick={convertMessyScheduleToPlan}
+                  className="mt-2 w-full rounded-lg bg-violet-600 text-white text-xs font-semibold py-2 hover:bg-violet-700"
+                >
+                  Clean Into Schedule
+                </button>
+              </div>
+
+              {scheduleOutput.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider block">Clean Output</span>
+                  {scheduleOutput.map((item) => (
+                    <div key={item.id} className="p-3 rounded-lg border border-violet-100 bg-white">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-xs font-semibold text-gray-800">{item.title}</div>
+                        <div className="text-[10px] font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">{item.slot}</div>
+                      </div>
+                      <div className="text-[11px] text-gray-500">{item.summary}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Minimalist interactive calendar widget */}
               <div className="border border-gray-100 rounded-xl p-4 bg-[#FAFAFC]">
