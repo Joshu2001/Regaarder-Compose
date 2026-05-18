@@ -7,8 +7,8 @@ import {
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
   List, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check,
-  AlertTriangle, MonitorPlay, MessageCircle, FileQuestion, Hash,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2
+  AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move
 } from 'lucide-react';
 
 export default function App() {
@@ -48,6 +48,7 @@ export default function App() {
   const chatEndRef = useRef(null);
   const documentCardRef = useRef(null);
   const blankBodyRef = useRef(null);
+  const formattingMenuRef = useRef(null);
   const dragStateRef = useRef({
     startX: 0,
     startY: 0,
@@ -76,6 +77,10 @@ export default function App() {
   const [activeDocId, setActiveDocId] = useState(null);
   const [docBodyHtml, setDocBodyHtml] = useState('');
   const [closeConfirmDocId, setCloseConfirmDocId] = useState(null);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [headingSearch, setHeadingSearch] = useState('');
+  const [fontSearch, setFontSearch] = useState('');
+  const [sizeSearch, setSizeSearch] = useState('');
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -86,6 +91,10 @@ export default function App() {
   const [isStrikeActive, setIsStrikeActive] = useState(false);
   const [alignMode, setAlignMode] = useState('left');
   const [isListActive, setIsListActive] = useState(false);
+
+  const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
+  const fontOptions = ['Inter', 'Georgia', 'Verdana', 'Courier New', 'Times New Roman', 'Trebuchet MS'];
+  const sizeOptions = [12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64];
 
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
@@ -132,6 +141,20 @@ export default function App() {
 
     observer.observe(documentCardRef.current);
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!formattingMenuRef.current) {
+        return;
+      }
+      if (!formattingMenuRef.current.contains(event.target)) {
+        setOpenDropdown(null);
+      }
+    };
+
+    window.addEventListener('pointerdown', handleClickOutside);
+    return () => window.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
   // Integrated Tasks checklist state
@@ -357,13 +380,10 @@ export default function App() {
   };
 
   const applyFormatCommand = (command, value) => {
-    if (!blankBodyRef.current || !isBlankDocument) {
-      return;
-    }
-
-    blankBodyRef.current.focus();
     document.execCommand(command, false, value);
-    setDocBodyHtml(blankBodyRef.current.innerHTML);
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
   };
 
   const addTaskFromInput = () => {
@@ -399,9 +419,10 @@ export default function App() {
   };
 
   const beginPanelResize = (target, event) => {
+    const point = event.touches?.[0] || event;
     dragStateRef.current = {
-      startX: event.clientX,
-      startY: event.clientY,
+      startX: point.clientX,
+      startY: point.clientY,
       leftWidth: leftSidebarWidth,
       rightWidth: rightSidebarWidth,
       promptX: promptOffset.x,
@@ -415,7 +436,7 @@ export default function App() {
       return;
     }
 
-    const handleMouseMove = (event) => {
+    const handlePointerMove = (event) => {
       const deltaX = event.clientX - dragStateRef.current.startX;
 
       if (dragTarget === 'left') {
@@ -436,20 +457,20 @@ export default function App() {
       }
     };
 
-    const handleMouseUp = () => {
+    const handlePointerUp = () => {
       setDragTarget(null);
     };
 
     document.body.style.cursor = dragTarget === 'prompt' ? 'grabbing' : 'col-resize';
     document.body.style.userSelect = 'none';
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
 
     return () => {
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
     };
   }, [dragTarget]);
 
@@ -672,7 +693,7 @@ export default function App() {
 
             <button className="text-gray-400 hover:text-gray-600 relative">
               <Bell size={18} />
-              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+              <span className="absolute -top-1 right-1 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
             </button>
             <button 
               onClick={() => handleMiniSidebarClick('assistant')}
@@ -711,43 +732,81 @@ export default function App() {
         </div>
 
         {/* Formatting Ribbon */}
-        <div className="h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-x-auto no-scrollbar select-none">
-          <label className="flex items-center gap-1">
-            <select
-              value={editorHeading}
-              onChange={(e) => {
-                const next = e.target.value;
-                setEditorHeading(next);
-                const tag = next === 'Heading 1' ? 'H1' : next === 'Heading 2' ? 'H2' : next === 'Heading 3' ? 'H3' : 'P';
-                applyFormatCommand('formatBlock', tag);
-              }}
-              className="bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
+        <div ref={formattingMenuRef} className="h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-x-auto no-scrollbar select-none">
+          <div className="relative">
+            <button
+              onClick={() => setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'))}
+              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded"
             >
-              <option>Heading 1</option>
-              <option>Heading 2</option>
-              <option>Heading 3</option>
-              <option>Paragraph</option>
-            </select>
-          </label>
+              {editorHeading} <ChevronDown size={14} className="text-gray-400" />
+            </button>
+            {openDropdown === 'heading' && (
+              <div className="absolute top-9 left-0 z-30 w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                <input
+                  value={headingSearch}
+                  onChange={(e) => setHeadingSearch(e.target.value)}
+                  placeholder="Search heading"
+                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-violet-400"
+                />
+                <div className="max-h-40 overflow-y-auto">
+                  {headingOptions
+                    .filter((option) => option.toLowerCase().includes(headingSearch.toLowerCase()))
+                    .map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          setEditorHeading(option);
+                          const tag = option === 'Heading 1' ? 'H1' : option === 'Heading 2' ? 'H2' : option === 'Heading 3' ? 'H3' : 'P';
+                          applyFormatCommand('formatBlock', tag);
+                          setOpenDropdown(null);
+                        }}
+                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
+                      >
+                        {option}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <label className="flex items-center gap-1">
-            <select
-              value={editorFont}
-              onChange={(e) => {
-                const next = e.target.value;
-                setEditorFont(next);
-                applyFormatCommand('fontName', next);
-              }}
-              className="bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
+          <div className="relative">
+            <button
+              onClick={() => setOpenDropdown((prev) => (prev === 'font' ? null : 'font'))}
+              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded"
             >
-              <option>Inter</option>
-              <option>Georgia</option>
-              <option>Verdana</option>
-              <option>Courier New</option>
-            </select>
-          </label>
+              {editorFont} <ChevronDown size={14} className="text-gray-400" />
+            </button>
+            {openDropdown === 'font' && (
+              <div className="absolute top-9 left-0 z-30 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                <input
+                  value={fontSearch}
+                  onChange={(e) => setFontSearch(e.target.value)}
+                  placeholder="Search font"
+                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-violet-400"
+                />
+                <div className="max-h-40 overflow-y-auto">
+                  {fontOptions
+                    .filter((option) => option.toLowerCase().includes(fontSearch.toLowerCase()))
+                    .map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          setEditorFont(option);
+                          applyFormatCommand('fontName', option);
+                          setOpenDropdown(null);
+                        }}
+                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
+                      >
+                        {option}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div className="flex items-center gap-1">
+          <div className="relative flex items-center gap-1">
             <input
               type="number"
               min={10}
@@ -756,7 +815,35 @@ export default function App() {
               onChange={(e) => setEditorSize(Number(e.target.value) || 32)}
               className="w-14 bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
             />
-            <ChevronDown size={14} className="text-gray-400" />
+            <button onClick={() => setOpenDropdown((prev) => (prev === 'size' ? null : 'size'))}>
+              <ChevronDown size={14} className="text-gray-400" />
+            </button>
+            {openDropdown === 'size' && (
+              <div className="absolute top-9 left-0 z-30 w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                <input
+                  value={sizeSearch}
+                  onChange={(e) => setSizeSearch(e.target.value)}
+                  placeholder="Search"
+                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-violet-400"
+                />
+                <div className="max-h-40 overflow-y-auto">
+                  {sizeOptions
+                    .filter((option) => String(option).includes(sizeSearch.trim()))
+                    .map((option) => (
+                      <button
+                        key={option}
+                        onClick={() => {
+                          setEditorSize(option);
+                          setOpenDropdown(null);
+                        }}
+                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
+                      >
+                        {option}
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
@@ -802,13 +889,9 @@ export default function App() {
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent h-14"
             />
 
-            <div className="w-full h-px bg-gray-100 mb-10"></div>
-
             {isBlankDocument && (
-              <div className="mb-10 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-4 min-h-[260px] relative">
-                {docBodyHtml.trim() === '' && (
-                  <div className="absolute left-4 top-4 text-sm text-gray-400 pointer-events-none">Tap your text here</div>
-                )}
+              <div className="mb-10 min-h-[220px] relative">
+                {docBodyHtml.trim() === '' && <div className="text-sm text-gray-400 pointer-events-none">Tap your text here</div>}
                 <div
                   ref={blankBodyRef}
                   contentEditable
@@ -825,17 +908,17 @@ export default function App() {
               <>
                 {/* 1. Objective */}
                 <div className="mb-10 group relative">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4">
+                  <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
                     <span className="text-2xl">🎯</span> 1. Objective
                   </h2>
-                  <p className="text-gray-600 text-base leading-relaxed">
+                  <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Launch Regaarder Compose to establish it as the most intuitive AI-native productivity workspace for modern teams and individuals.
                   </p>
                 </div>
 
                 {/* 2. Key Initiatives Table */}
                 <div className="mb-10 group relative">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4">
+                  <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
                     <span className="text-2xl">🚀</span> 2. Key Initiatives
                     <span className="text-[10px] font-normal text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">Click Status to Cycle</span>
                   </h2>
@@ -853,9 +936,9 @@ export default function App() {
                       <tbody className="divide-y divide-gray-50 text-gray-700">
                         {initiatives.map((row) => (
                           <tr key={row.id} className="hover:bg-white/60 transition-colors">
-                            <td className="py-3 px-4 font-medium">{row.name}</td>
-                            <td className="py-3 px-4 text-gray-500">{row.owner}</td>
-                            <td className="py-3 px-4 text-gray-500 text-xs">{row.timeline}</td>
+                            <td contentEditable suppressContentEditableWarning className="py-3 px-4 font-medium outline-none">{row.name}</td>
+                            <td contentEditable suppressContentEditableWarning className="py-3 px-4 text-gray-500 outline-none">{row.owner}</td>
+                            <td contentEditable suppressContentEditableWarning className="py-3 px-4 text-gray-500 text-xs outline-none">{row.timeline}</td>
                             <td className="py-3 px-4">
                               <button 
                                 onClick={() => toggleStatus(row.id)}
@@ -877,10 +960,10 @@ export default function App() {
 
                 {/* 3. Target Audience */}
                 <div className="mb-10">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4">
+                  <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
                     <span className="text-2xl">👥</span> 3. Target Audience
                   </h2>
-                  <p className="text-gray-600 text-base leading-relaxed">
+                  <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Knowledge workers, founders, creators, marketers, and teams who want a smarter, calmer, and more connected workspace.
                   </p>
                 </div>
@@ -994,8 +1077,8 @@ export default function App() {
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className="pointer-events-none absolute bottom-14 left-1/2 z-20 w-[92%] -translate-x-1/2"
-          style={{ transform: `translateX(calc(-50% + ${promptOffset.x}px)) translateY(${promptOffset.y}px)` }}
+          className="pointer-events-none absolute inset-x-0 bottom-14 z-20 flex justify-center"
+          style={{ transform: `translate(${promptOffset.x}px, ${promptOffset.y}px)` }}
         >
           <form
             onSubmit={handleFloatingSend}
@@ -1004,11 +1087,11 @@ export default function App() {
           >
             <button
               type="button"
-              onMouseDown={(event) => beginPanelResize('prompt', event)}
-              className="p-2 text-gray-300 hover:text-gray-500"
+              onPointerDown={(event) => beginPanelResize('prompt', event)}
+              className="p-2 text-gray-300 hover:text-gray-500 cursor-move touch-none"
               title="Move prompt bar"
             >
-              <Hash size={14} />
+              <Move size={14} />
             </button>
             <div className="flex items-center gap-3 px-2 flex-1">
               <Sparkles size={18} className="text-violet-500 shrink-0" />
