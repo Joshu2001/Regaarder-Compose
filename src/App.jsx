@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
   ChevronLeft, Cloud, Users, Home, Inbox, Star, 
@@ -22,8 +22,12 @@ export default function App() {
   ];
 
   // Sidebar states
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar'
+  const [dragTarget, setDragTarget] = useState(null);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -36,6 +40,11 @@ export default function App() {
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
+  const dragStateRef = useRef({
+    startX: 0,
+    leftWidth: 256,
+    rightWidth: 340,
+  });
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState(defaultTitle);
@@ -209,6 +218,51 @@ export default function App() {
     }
   };
 
+  const beginPanelResize = (target, event) => {
+    dragStateRef.current = {
+      startX: event.clientX,
+      leftWidth: leftSidebarWidth,
+      rightWidth: rightSidebarWidth,
+    };
+    setDragTarget(target);
+  };
+
+  useEffect(() => {
+    if (!dragTarget) {
+      return;
+    }
+
+    const handleMouseMove = (event) => {
+      const deltaX = event.clientX - dragStateRef.current.startX;
+
+      if (dragTarget === 'left') {
+        const nextLeftWidth = Math.min(380, Math.max(220, dragStateRef.current.leftWidth + deltaX));
+        setLeftSidebarWidth(nextLeftWidth);
+      }
+
+      if (dragTarget === 'right') {
+        const nextRightWidth = Math.min(520, Math.max(280, dragStateRef.current.rightWidth - deltaX));
+        setRightSidebarWidth(nextRightWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDragTarget(null);
+    };
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragTarget]);
+
   // Helper component for the Workspace icons in the sidebar
   const WorkspaceIcon = ({ letter, colorClass }) => (
     <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white ${colorClass}`}>
@@ -228,7 +282,10 @@ export default function App() {
       )}
 
       {/* 1. Left Navigation Sidebar */}
-      <div className="w-64 border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none">
+      <div
+        className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
+        style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
+      >
         {/* Logo Area */}
         <div className="h-14 flex items-center justify-between px-4">
           <div className="flex items-center gap-2 font-bold text-gray-900 text-lg">
@@ -355,13 +412,24 @@ export default function App() {
         </div>
       </div>
 
+      {leftSidebarOpen && (
+        <div
+          onMouseDown={(event) => beginPanelResize('left', event)}
+          className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors"
+          aria-label="Resize left sidebar"
+        />
+      )}
+
       {/* 2. Main Editor Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-white relative">
         
         {/* Top Header */}
         <div className="h-14 flex items-center justify-between px-6 border-b border-gray-100 shrink-0 select-none">
           <div className="flex items-center gap-3">
-            <button className="text-gray-400 hover:text-gray-600">
+            <button
+              onClick={() => setLeftSidebarOpen((prev) => !prev)}
+              className="text-gray-400 hover:text-gray-600"
+            >
               <ChevronLeft size={18} />
             </button>
             <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
@@ -637,39 +705,41 @@ export default function App() {
               </div>
             )}
 
-            {/* Floating AI Prompt Bar (Moved inside the document card) */}
-            <form 
-              onSubmit={handleFloatingSend}
-              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-[90%] max-w-[600px] bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-full flex items-center px-2 py-1.5 z-10 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all"
-            >
-              <div className="flex items-center gap-3 px-3 flex-1">
-                <Sparkles size={18} className="text-violet-500 shrink-0" />
-                <input 
-                  type="text" 
-                  value={floatingPrompt}
-                  onChange={(e) => setFloatingPrompt(e.target.value)}
-                  placeholder="Type an instruction (e.g. 'add timeline' or 'extract risks')..." 
-                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
-                />
-              </div>
-              <div className="flex items-center gap-2 pr-1 shrink-0">
-                <button 
-                  type="button"
-                  onClick={() => setIsVoiceActive(!isVoiceActive)}
-                  className={`p-2 rounded-full transition-colors ${isVoiceActive ? 'bg-red-50 text-red-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                >
-                  <Mic size={18} />
-                </button>
-                <button 
-                  type="submit"
-                  className="bg-violet-600 hover:bg-violet-700 text-white p-2 rounded-full transition-colors flex items-center justify-center h-8 w-8 active:scale-90"
-                >
-                  <ArrowUp size={16} />
-                </button>
-              </div>
-            </form>
-
           </div>
+        </div>
+
+        {/* Persistent Floating AI Prompt Bar */}
+        <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 w-[92%] max-w-[640px] -translate-x-1/2">
+          <form
+            onSubmit={handleFloatingSend}
+            className="pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-full flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all"
+          >
+            <div className="flex items-center gap-3 px-3 flex-1">
+              <Sparkles size={18} className="text-violet-500 shrink-0" />
+              <input
+                type="text"
+                value={floatingPrompt}
+                onChange={(e) => setFloatingPrompt(e.target.value)}
+                placeholder="Type an instruction (e.g. 'add timeline' or 'extract risks')..."
+                className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
+              />
+            </div>
+            <div className="flex items-center gap-2 pr-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsVoiceActive(!isVoiceActive)}
+                className={`p-2 rounded-full transition-colors ${isVoiceActive ? 'bg-red-50 text-red-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+              >
+                <Mic size={18} />
+              </button>
+              <button
+                type="submit"
+                className="bg-violet-600 hover:bg-violet-700 text-white p-2 rounded-full transition-colors flex items-center justify-center h-8 w-8 active:scale-90"
+              >
+                <ArrowUp size={16} />
+              </button>
+            </div>
+          </form>
         </div>
 
         {/* Bottom Status Bar */}
@@ -694,11 +764,20 @@ export default function App() {
         </div>
       </div>
 
+      {rightSidebarOpen && (
+        <div
+          onMouseDown={(event) => beginPanelResize('right', event)}
+          className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors"
+          aria-label="Resize right sidebar"
+        />
+      )}
+
       {/* 3. Right Sidebar (AI Assistant / Smart Chat / Tools) */}
       <div 
-        className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-all duration-300 ${
-          rightSidebarOpen ? 'w-[340px]' : 'w-0 overflow-hidden border-l-0'
+        className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 ${
+          rightSidebarOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
+        style={{ width: rightSidebarOpen ? `${rightSidebarWidth}px` : '0px' }}
       >
         {/* Sidebar Header Tabs */}
         <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
