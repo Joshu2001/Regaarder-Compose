@@ -582,7 +582,7 @@ export default function App() {
           {/* Workspaces Section */}
           <div className="flex items-center justify-between px-2 py-2 mt-4">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspaces</span>
-            <Plus size={14} className="text-gray-400 cursor-pointer hover:text-gray-600" />
+            <Plus size={14} onClick={() => { showToast('New workspace created'); }} className="text-gray-400 cursor-pointer hover:text-gray-600" />
           </div>
           
           <div className="space-y-1">
@@ -693,7 +693,7 @@ export default function App() {
 
             <button className="text-gray-400 hover:text-gray-600 relative">
               <Bell size={18} />
-              <span className="absolute -top-1 right-1 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+              <span className="absolute -top-2 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
             </button>
             <button 
               onClick={() => handleMiniSidebarClick('assistant')}
@@ -732,7 +732,7 @@ export default function App() {
         </div>
 
         {/* Formatting Ribbon */}
-        <div ref={formattingMenuRef} className="h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-x-auto no-scrollbar select-none">
+        <div ref={formattingMenuRef} className="h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative">
           <div className="relative">
             <button
               onClick={() => setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'))}
@@ -741,7 +741,7 @@ export default function App() {
               {editorHeading} <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'heading' && (
-              <div className="absolute top-9 left-0 z-30 w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-50 w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                 <input
                   value={headingSearch}
                   onChange={(e) => setHeadingSearch(e.target.value)}
@@ -778,7 +778,7 @@ export default function App() {
               {editorFont} <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'font' && (
-              <div className="absolute top-9 left-0 z-30 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-50 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                 <input
                   value={fontSearch}
                   onChange={(e) => setFontSearch(e.target.value)}
@@ -819,7 +819,7 @@ export default function App() {
               <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'size' && (
-              <div className="absolute top-9 left-0 z-30 w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-50 w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                 <input
                   value={sizeSearch}
                   onChange={(e) => setSizeSearch(e.target.value)}
@@ -873,35 +873,36 @@ export default function App() {
           <div ref={documentCardRef} className="max-w-[850px] mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 min-h-[calc(100vh-13rem)] relative">
             
             {/* Title & Subtitle */}
-            <input 
-              value={docTitle} 
-              onChange={(e) => setDocTitle(e.target.value)}
-              placeholder="Tap your text here"
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => setDocTitle(e.currentTarget.textContent)}
               style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode }}
               className={`w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent ${isBoldActive ? 'font-bold' : 'font-semibold'} ${isItalicActive ? 'italic' : ''} ${isUnderlineActive ? 'underline' : ''} ${isStrikeActive ? 'line-through' : ''}`}
-            />
+            >
+              {docTitle || 'Tap your text here'}
+            </div>
             
-            <textarea 
-              value={docSubtitle} 
-              onChange={(e) => setDocSubtitle(e.target.value)}
-              placeholder="Tap your text here"
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onInput={(e) => setDocSubtitle(e.currentTarget.textContent)}
               style={{ fontFamily: editorFont, textAlign: alignMode }}
-              className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent h-14"
-            />
+              className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
+            >
+              {docSubtitle || 'Tap your text here'}
+            </div>
 
             {isBlankDocument && (
-              <div className="mb-10 min-h-[220px] relative">
-                {docBodyHtml.trim() === '' && <div className="text-sm text-gray-400 pointer-events-none">Tap your text here</div>}
-                <div
-                  ref={blankBodyRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                  className="min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed"
-                  style={{ fontFamily: editorFont, textAlign: alignMode }}
-                  dangerouslySetInnerHTML={{ __html: docBodyHtml }}
-                />
-              </div>
+              <div
+                ref={blankBodyRef}
+                contentEditable
+                suppressContentEditableWarning
+                onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                className="mb-10 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed relative"
+                style={{ fontFamily: editorFont, textAlign: alignMode }}
+                dangerouslySetInnerHTML={{ __html: docBodyHtml === '' ? '<div style="color: #999; pointer-events: none;">Tap your text here</div>' : docBodyHtml }}
+              />
             )}
 
             {!isBlankDocument && (
