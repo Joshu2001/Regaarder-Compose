@@ -30,6 +30,7 @@ export default function App() {
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
+  const [promptWidth, setPromptWidth] = useState(620);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -45,6 +46,8 @@ export default function App() {
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
+  const documentCardRef = useRef(null);
+  const blankBodyRef = useRef(null);
   const dragStateRef = useRef({
     startX: 0,
     startY: 0,
@@ -67,9 +70,12 @@ export default function App() {
       initiatives: defaultInitiatives,
       appendedSections: [],
       isBlank: false,
+      bodyHtml: '',
     },
   ]);
   const [activeDocId, setActiveDocId] = useState(null);
+  const [docBodyHtml, setDocBodyHtml] = useState('');
+  const [closeConfirmDocId, setCloseConfirmDocId] = useState(null);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -105,11 +111,28 @@ export default function App() {
               initiatives,
               appendedSections,
               isBlank: isBlankDocument,
+              bodyHtml: docBodyHtml,
             }
           : doc,
       ),
     );
-  }, [activeDocId, appendedSections, docSubtitle, docTitle, initiatives, isBlankDocument]);
+  }, [activeDocId, appendedSections, docSubtitle, docTitle, initiatives, isBlankDocument, docBodyHtml]);
+
+  useEffect(() => {
+    if (!documentCardRef.current || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = Math.max(320, Math.floor(entry.contentRect.width * 0.9));
+        setPromptWidth(width);
+      }
+    });
+
+    observer.observe(documentCardRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Integrated Tasks checklist state
   const [tasks, setTasks] = useState([
@@ -286,6 +309,7 @@ export default function App() {
     setInitiatives(targetDoc.initiatives);
     setAppendedSections(targetDoc.appendedSections);
     setIsBlankDocument(targetDoc.isBlank);
+    setDocBodyHtml(targetDoc.bodyHtml || '');
   };
 
   const createNewComposition = () => {
@@ -296,6 +320,7 @@ export default function App() {
       initiatives: [],
       appendedSections: [],
       isBlank: true,
+      bodyHtml: '',
     };
 
     setDocuments((prev) => [...prev, newDoc]);
@@ -305,7 +330,40 @@ export default function App() {
     setIsBlankDocument(true);
     setAppendedSections([]);
     setInitiatives([]);
+    setDocBodyHtml('');
     showToast('Blank composition created');
+  };
+
+  const requestCloseDocument = (docId) => {
+    setCloseConfirmDocId(docId);
+  };
+
+  const confirmCloseDocument = () => {
+    if (!closeConfirmDocId) {
+      return;
+    }
+
+    const remaining = documents.filter((doc) => doc.id !== closeConfirmDocId);
+    if (!remaining.length) {
+      setCloseConfirmDocId(null);
+      createNewComposition();
+      return;
+    }
+
+    setDocuments(remaining);
+    const nextActive = remaining[0];
+    setCloseConfirmDocId(null);
+    switchDocument(nextActive.id);
+  };
+
+  const applyFormatCommand = (command, value) => {
+    if (!blankBodyRef.current || !isBlankDocument) {
+      return;
+    }
+
+    blankBodyRef.current.focus();
+    document.execCommand(command, false, value);
+    setDocBodyHtml(blankBodyRef.current.innerHTML);
   };
 
   const addTaskFromInput = () => {
@@ -382,7 +440,7 @@ export default function App() {
       setDragTarget(null);
     };
 
-    document.body.style.cursor = 'col-resize';
+    document.body.style.cursor = dragTarget === 'prompt' ? 'grabbing' : 'col-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
@@ -410,6 +468,29 @@ export default function App() {
         <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-4 py-2.5 rounded-lg shadow-xl z-50 flex items-center gap-2 animate-fade-in transition-all">
           <Sparkles size={14} className="text-violet-400" />
           {toastMessage}
+        </div>
+      )}
+
+      {closeConfirmDocId && (
+        <div className="absolute inset-0 z-50 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
+          <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-xl p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">Close this document?</h3>
+            <p className="text-xs text-gray-500 mb-4">You can still create a new one after closing. This action will remove the selected tab.</p>
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setCloseConfirmDocId(null)}
+                className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmCloseDocument}
+                className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700"
+              >
+                Close Document
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -608,46 +689,91 @@ export default function App() {
             const isActive = activeDocId === doc.id;
 
             return (
-              <button
+              <div
                 key={doc.id}
                 onClick={() => switchDocument(doc.id)}
-                className={`shrink-0 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors ${isActive ? 'bg-white border-violet-200 text-violet-700' : 'bg-transparent border-transparent text-gray-500 hover:bg-white hover:border-gray-200'}`}
+                className={`shrink-0 px-2 py-1 rounded-md text-xs font-medium border transition-colors flex items-center gap-1.5 ${isActive ? 'bg-white border-violet-200 text-violet-700' : 'bg-transparent border-transparent text-gray-500 hover:bg-white hover:border-gray-200'}`}
               >
-                {label}
-              </button>
+                <span className="max-w-[160px] truncate">{label}</span>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    requestCloseDocument(doc.id);
+                  }}
+                  className="p-0.5 rounded hover:bg-gray-100"
+                  title="Close document"
+                >
+                  <X size={12} />
+                </button>
+              </div>
             );
           })}
         </div>
 
         {/* Formatting Ribbon */}
         <div className="h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-x-auto no-scrollbar select-none">
-          <div onClick={() => setEditorHeading((prev) => (prev === 'Heading 1' ? 'Heading 2' : 'Heading 1'))} className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
-            {editorHeading} <ChevronDown size={14} className="text-gray-400" />
-          </div>
+          <label className="flex items-center gap-1">
+            <select
+              value={editorHeading}
+              onChange={(e) => {
+                const next = e.target.value;
+                setEditorHeading(next);
+                const tag = next === 'Heading 1' ? 'H1' : next === 'Heading 2' ? 'H2' : next === 'Heading 3' ? 'H3' : 'P';
+                applyFormatCommand('formatBlock', tag);
+              }}
+              className="bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
+            >
+              <option>Heading 1</option>
+              <option>Heading 2</option>
+              <option>Heading 3</option>
+              <option>Paragraph</option>
+            </select>
+          </label>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div onClick={() => setEditorFont((prev) => (prev === 'Inter' ? 'Georgia' : 'Inter'))} className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
-            {editorFont} <ChevronDown size={14} className="text-gray-400" />
-          </div>
+          <label className="flex items-center gap-1">
+            <select
+              value={editorFont}
+              onChange={(e) => {
+                const next = e.target.value;
+                setEditorFont(next);
+                applyFormatCommand('fontName', next);
+              }}
+              className="bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
+            >
+              <option>Inter</option>
+              <option>Georgia</option>
+              <option>Verdana</option>
+              <option>Courier New</option>
+            </select>
+          </label>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div onClick={() => setEditorSize((prev) => (prev === 32 ? 36 : 32))} className="flex items-center gap-1 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded">
-            {editorSize} <ChevronDown size={14} className="text-gray-400" />
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={10}
+              max={72}
+              value={editorSize}
+              onChange={(e) => setEditorSize(Number(e.target.value) || 32)}
+              className="w-14 bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
+            />
+            <ChevronDown size={14} className="text-gray-400" />
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
-            <button onClick={() => setIsBoldActive((prev) => !prev)} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
-            <button onClick={() => setIsItalicActive((prev) => !prev)} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
-            <button onClick={() => setIsUnderlineActive((prev) => !prev)} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
-            <button onClick={() => setIsStrikeActive((prev) => !prev)} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
+            <button onClick={() => { setIsBoldActive((prev) => !prev); applyFormatCommand('bold'); }} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
+            <button onClick={() => { setIsItalicActive((prev) => !prev); applyFormatCommand('italic'); }} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
+            <button onClick={() => { setIsUnderlineActive((prev) => !prev); applyFormatCommand('underline'); }} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
+            <button onClick={() => { setIsStrikeActive((prev) => !prev); applyFormatCommand('strikeThrough'); }} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
             <div className="flex items-center gap-0.5 hover:text-gray-900 cursor-pointer">
               <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
             </div>
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
-            <AlignLeft onClick={() => setAlignMode('left')} size={16} className={`${alignMode === 'left' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
-            <AlignCenter onClick={() => setAlignMode('center')} size={16} className={`${alignMode === 'center' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
-            <AlignRight onClick={() => setAlignMode('right')} size={16} className={`${alignMode === 'right' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
-            <List onClick={() => setIsListActive((prev) => !prev)} size={16} className={`${isListActive ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
+            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`${alignMode === 'left' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
+            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} className={`${alignMode === 'center' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
+            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} className={`${alignMode === 'right' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
+            <List onClick={() => { setIsListActive((prev) => !prev); applyFormatCommand('insertUnorderedList'); }} size={16} className={`${isListActive ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
@@ -657,17 +783,12 @@ export default function App() {
 
         {/* Document Editor Content (Beautifully separated page area) */}
         <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8">
-          <div className="max-w-[850px] mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 min-h-[calc(100vh-13rem)] relative">
+          <div ref={documentCardRef} className="max-w-[850px] mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 min-h-[calc(100vh-13rem)] relative">
             
             {/* Title & Subtitle */}
             <input 
               value={docTitle} 
-              onChange={(e) => {
-                setDocTitle(e.target.value);
-                if (isBlankDocument && e.target.value.trim()) {
-                  setIsBlankDocument(false);
-                }
-              }}
+              onChange={(e) => setDocTitle(e.target.value)}
               placeholder="Tap your text here"
               style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode }}
               className={`w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent ${isBoldActive ? 'font-bold' : 'font-semibold'} ${isItalicActive ? 'italic' : ''} ${isUnderlineActive ? 'underline' : ''} ${isStrikeActive ? 'line-through' : ''}`}
@@ -675,12 +796,7 @@ export default function App() {
             
             <textarea 
               value={docSubtitle} 
-              onChange={(e) => {
-                setDocSubtitle(e.target.value);
-                if (isBlankDocument && e.target.value.trim()) {
-                  setIsBlankDocument(false);
-                }
-              }}
+              onChange={(e) => setDocSubtitle(e.target.value)}
               placeholder="Tap your text here"
               style={{ fontFamily: editorFont, textAlign: alignMode }}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent h-14"
@@ -689,8 +805,19 @@ export default function App() {
             <div className="w-full h-px bg-gray-100 mb-10"></div>
 
             {isBlankDocument && (
-              <div className="mb-10 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-sm text-gray-500">
-                This is a blank document. Tap your text here to start, or use AI to generate content.
+              <div className="mb-10 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-4 min-h-[260px] relative">
+                {docBodyHtml.trim() === '' && (
+                  <div className="absolute left-4 top-4 text-sm text-gray-400 pointer-events-none">Tap your text here</div>
+                )}
+                <div
+                  ref={blankBodyRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                  className="min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed"
+                  style={{ fontFamily: editorFont, textAlign: alignMode }}
+                  dangerouslySetInnerHTML={{ __html: docBodyHtml }}
+                />
               </div>
             )}
 
@@ -761,7 +888,7 @@ export default function App() {
             )}
 
             {/* Dynamic AI Appended Sections */}
-            {appendedSections.map((sec, idx) => (
+            {!isBlankDocument && appendedSections.map((sec, idx) => (
               <div 
                 key={idx} 
                 className="mb-10 border-t border-dashed border-violet-100 pt-8 animate-fade-in group relative"
@@ -872,7 +999,8 @@ export default function App() {
         >
           <form
             onSubmit={handleFloatingSend}
-            className={`pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl max-w-[900px]' : 'rounded-full max-w-[640px]'}`}
+            className={`pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'}`}
+            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 980 : 760))}px`, maxWidth: 'calc(100% - 16px)' }}
           >
             <button
               type="button"
