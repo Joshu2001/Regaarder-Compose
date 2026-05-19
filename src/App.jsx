@@ -38,6 +38,7 @@ export default function App() {
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [promptWidth, setPromptWidth] = useState(620);
+  const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -67,6 +68,7 @@ export default function App() {
   const savedSelectionRef = useRef(null);
   const speechRecognitionRef = useRef(null);
   const promptAudioInputRef = useRef(null);
+  const promptMenuRef = useRef(null);
   const dragStateRef = useRef({
     startX: 0,
     startY: 0,
@@ -174,12 +176,12 @@ export default function App() {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!formattingMenuRef.current) {
-        return;
-      }
-      if (!formattingMenuRef.current.contains(event.target)) {
+      if (formattingMenuRef.current && !formattingMenuRef.current.contains(event.target)) {
         setOpenDropdown(null);
         setTextStyleMenuOpen(false);
+      }
+      if (promptMenuRef.current && !promptMenuRef.current.contains(event.target)) {
+        setIsPromptMenuOpen(false);
       }
     };
 
@@ -1602,20 +1604,59 @@ export default function App() {
               />
               <button
                 type="button"
-                onClick={() => promptAudioInputRef.current?.click()}
-                className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                title="Upload audio recording"
-              >
-                <Upload size={16} />
-              </button>
-              <button
-                type="button"
                 onClick={() => setIsPromptExpanded((prev) => !prev)}
                 className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                 title="Expand prompt input"
               >
                 <Expand size={16} />
               </button>
+              <div className="relative" ref={promptMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsPromptMenuOpen((prev) => !prev)}
+                  className={`p-2 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                  title="Add files, images, or audio"
+                >
+                  <Plus size={16} />
+                </button>
+                {isPromptMenuOpen && (
+                  <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1 w-[160px] z-[9999]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        promptAudioInputRef.current?.click();
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <Upload size={14} />
+                      <span>Audio</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        showToast('File upload coming soon');
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <File size={14} />
+                      <span>Files</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        showToast('Image upload coming soon');
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <FileText size={14} />
+                      <span>Images</span>
+                    </button>
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={toggleVoiceRecording}
