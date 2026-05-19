@@ -187,8 +187,8 @@ export default function App() {
       }
     };
 
-    window.addEventListener('pointerdown', handleClickOutside);
-    return () => window.removeEventListener('pointerdown', handleClickOutside);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
   }, []);
 
   const isRangeInsideEditor = (range) => {
