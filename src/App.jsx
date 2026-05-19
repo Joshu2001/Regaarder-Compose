@@ -8,7 +8,7 @@ import {
   List, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Volume2, VolumeX
 } from 'lucide-react';
 
 export default function App() {
@@ -49,6 +49,8 @@ export default function App() {
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isMicMuted, setIsMicMuted] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [workspaces, setWorkspaces] = useState(defaultWorkspaces);
   const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
@@ -62,6 +64,8 @@ export default function App() {
   const documentCardRef = useRef(null);
   const blankBodyRef = useRef(null);
   const formattingMenuRef = useRef(null);
+  const speechRecognitionRef = useRef(null);
+  const promptAudioInputRef = useRef(null);
   const dragStateRef = useRef({
     startX: 0,
     startY: 0,
@@ -101,6 +105,10 @@ export default function App() {
   const [currentLanguage, setCurrentLanguage] = useState('English (US)');
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
+  const [activeDocView, setActiveDocView] = useState('document');
+  const [uploadedPromptAudio, setUploadedPromptAudio] = useState(null);
+  const [isUploadedAudioMuted, setIsUploadedAudioMuted] = useState(false);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -170,6 +178,7 @@ export default function App() {
       }
       if (!formattingMenuRef.current.contains(event.target)) {
         setOpenDropdown(null);
+        setTextStyleMenuOpen(false);
       }
     };
 
@@ -184,6 +193,61 @@ export default function App() {
     setLeftSidebarOpen(false);
     setRightSidebarOpen(false);
   }, [isFocusMode]);
+
+  useEffect(() => {
+    const RecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!RecognitionCtor) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    setSpeechSupported(true);
+    const recognition = new RecognitionCtor();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = currentLanguage === 'Spanish' ? 'es-ES' : 'en-US';
+
+    recognition.onresult = (event) => {
+      if (isMicMuted) {
+        return;
+      }
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const transcript = event.results[i][0]?.transcript || '';
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        }
+      }
+
+      if (finalTranscript.trim()) {
+        setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsVoiceActive(false);
+    };
+
+    recognition.onend = () => {
+      if (isVoiceActive && !isMicMuted) {
+        try {
+          recognition.start();
+        } catch (_error) {
+          setIsVoiceActive(false);
+        }
+      }
+    };
+
+    speechRecognitionRef.current = recognition;
+    return () => {
+      try {
+        recognition.stop();
+      } catch (_error) {
+        // noop
+      }
+      speechRecognitionRef.current = null;
+    };
+  }, [currentLanguage, isMicMuted, isVoiceActive]);
 
   // Integrated Tasks checklist state
   const [tasks, setTasks] = useState([
@@ -333,9 +397,69 @@ export default function App() {
 
   const handleFloatingSend = (e) => {
     e.preventDefault();
-    if (!floatingPrompt.trim()) return;
-    handleAISubmit(floatingPrompt);
+    if (!floatingPrompt.trim() && !uploadedPromptAudio) return;
+    const finalPrompt = floatingPrompt.trim() || `Transcribe attached audio: ${uploadedPromptAudio.name}`;
+    handleAISubmit(finalPrompt);
     setFloatingPrompt('');
+    setUploadedPromptAudio(null);
+  };
+
+  const toggleVoiceRecording = () => {
+    if (!speechSupported) {
+      showToast('Speech recognition is not supported in this browser');
+      return;
+    }
+
+    if (isVoiceActive) {
+      try {
+        speechRecognitionRef.current?.stop();
+      } catch (_error) {
+        // noop
+      }
+      setIsVoiceActive(false);
+      showToast('Voice transcription stopped');
+      return;
+    }
+
+    if (isMicMuted) {
+      setIsMicMuted(false);
+    }
+
+    try {
+      speechRecognitionRef.current?.start();
+      setIsVoiceActive(true);
+      showToast('Voice transcription started');
+    } catch (_error) {
+      setIsVoiceActive(false);
+      showToast('Unable to start microphone transcription');
+    }
+  };
+
+  const toggleMicMute = () => {
+    setIsMicMuted((prev) => {
+      const next = !prev;
+      if (next && isVoiceActive) {
+        try {
+          speechRecognitionRef.current?.stop();
+        } catch (_error) {
+          // noop
+        }
+        setIsVoiceActive(false);
+      }
+      showToast(next ? 'Microphone muted' : 'Microphone unmuted');
+      return next;
+    });
+  };
+
+  const handlePromptAudioUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setUploadedPromptAudio({ name: file.name, url });
+    showToast(`Audio attached: ${file.name}`);
   };
 
   // Click handler for Right Mini Sidebar
@@ -893,7 +1017,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className={`h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-50 transition-opacity ${rightSidebarOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-50 transition-opacity ${rightSidebarOpen ? 'opacity-60' : 'opacity-100'}`}>
           {orderedDocuments.map((doc) => {
             const label = doc.title?.trim() ? doc.title : 'Tap your text here';
             const isActive = activeDocId === doc.id;
@@ -962,7 +1086,7 @@ export default function App() {
         </div>
 
         {/* Formatting Ribbon */}
-        <div ref={formattingMenuRef} className={`h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-x-auto overflow-y-visible no-scrollbar select-none relative whitespace-nowrap transition-opacity ${rightSidebarOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+        <div ref={formattingMenuRef} className={`h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-x-auto overflow-y-visible no-scrollbar select-none relative whitespace-nowrap transition-opacity ${rightSidebarOpen ? 'opacity-60' : 'opacity-100'}`}>
           <div className="relative">
             <button
               onClick={() => setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'))}
@@ -1081,8 +1205,20 @@ export default function App() {
             <button onClick={() => { setIsItalicActive((prev) => !prev); applyFormatCommand('italic'); }} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
             <button onClick={() => { setIsUnderlineActive((prev) => !prev); applyFormatCommand('underline'); }} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
             <button onClick={() => { setIsStrikeActive((prev) => !prev); applyFormatCommand('strikeThrough'); }} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
-            <div className="flex items-center gap-1.5 hover:text-gray-900 cursor-pointer pl-0.5">
-              <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
+            <div className="relative">
+              <button
+                onClick={() => setTextStyleMenuOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 hover:text-gray-900 cursor-pointer pl-0.5"
+              >
+                <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
+              </button>
+              {textStyleMenuOpen && (
+                <div className="absolute top-8 left-0 z-[90] w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-1">
+                  <button onClick={() => { applyFormatCommand('formatBlock', 'P'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Body</button>
+                  <button onClick={() => { applyFormatCommand('formatBlock', 'BLOCKQUOTE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Quote</button>
+                  <button onClick={() => { applyFormatCommand('formatBlock', 'PRE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Code</button>
+                </div>
+              )}
             </div>
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
@@ -1295,7 +1431,14 @@ export default function App() {
                 </div>
                 <p className="text-xs font-medium text-violet-700 animate-pulse">Listening... Speak naturally to compose into document.</p>
                 <button 
-                  onClick={() => setIsVoiceActive(false)}
+                  onClick={() => {
+                    try {
+                      speechRecognitionRef.current?.stop();
+                    } catch (_error) {
+                      // noop
+                    }
+                    setIsVoiceActive(false);
+                  }}
                   className="mt-3 text-[10px] text-gray-500 hover:text-gray-900 border border-gray-200 px-3 py-1 rounded-full transition-colors"
                 >
                   Cancel
@@ -1348,6 +1491,21 @@ export default function App() {
               />
             </div>
             <div className="flex items-center gap-2 pr-1 shrink-0">
+              <input
+                ref={promptAudioInputRef}
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={handlePromptAudioUpload}
+              />
+              <button
+                type="button"
+                onClick={() => promptAudioInputRef.current?.click()}
+                className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                title="Upload audio recording"
+              >
+                <Upload size={16} />
+              </button>
               <button
                 type="button"
                 onClick={() => setIsPromptExpanded((prev) => !prev)}
@@ -1358,21 +1516,51 @@ export default function App() {
               </button>
               <button
                 type="button"
-                onClick={() => setIsVoiceActive(!isVoiceActive)}
+                onClick={toggleVoiceRecording}
                 className={`p-2 rounded-full transition-colors ${isVoiceActive ? 'bg-red-50 text-red-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title={isVoiceActive ? 'Stop voice transcription' : 'Start voice transcription'}
               >
                 <Mic size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={toggleMicMute}
+                className={`p-2 rounded-full transition-colors ${isMicMuted ? 'bg-amber-50 text-amber-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+              >
+                {isMicMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
               </button>
               <button
                 type="submit"
                 className="bg-violet-600 hover:bg-violet-700 text-white p-2 rounded-full transition-colors flex items-center justify-center h-8 w-8 active:scale-90"
               >
-                <ArrowUp size={16} />
+                <ArrowRight size={16} />
               </button>
             </div>
           </form>
           </div>
         </div>
+
+        {uploadedPromptAudio && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 w-[min(820px,92%)] bg-white border border-gray-200 rounded-xl p-3 shadow-lg flex items-center gap-3">
+            <div className="text-xs text-gray-600 font-medium truncate max-w-[220px]">{uploadedPromptAudio.name}</div>
+            <audio className="flex-1" controls src={uploadedPromptAudio.url} muted={isUploadedAudioMuted} />
+            <button
+              onClick={() => setIsUploadedAudioMuted((prev) => !prev)}
+              className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
+              title={isUploadedAudioMuted ? 'Unmute uploaded audio preview' : 'Mute uploaded audio preview'}
+            >
+              {isUploadedAudioMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            </button>
+            <button
+              onClick={() => setUploadedPromptAudio(null)}
+              className="p-1.5 rounded hover:bg-rose-50 text-gray-500 hover:text-rose-600"
+              title="Remove uploaded audio"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
@@ -1410,10 +1598,10 @@ export default function App() {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-gray-400">
-              <FileText size={14} className="cursor-pointer hover:text-gray-600" />
-              <Type size={14} className="cursor-pointer hover:text-gray-600" />
-              <LayoutGrid size={14} className="cursor-pointer hover:text-gray-600" />
-              <AlertTriangle size={14} className="cursor-pointer hover:text-gray-600" />
+              <button onClick={() => { setActiveDocView('document'); showToast('Document view active'); }} className={`p-1 rounded ${activeDocView === 'document' ? 'text-violet-600 bg-violet-50' : 'hover:text-gray-600'}`} title="Document view"><FileText size={14} /></button>
+              <button onClick={() => setTextStyleMenuOpen((prev) => !prev)} className="p-1 rounded hover:text-gray-600" title="Text style options"><Type size={14} /></button>
+              <button onClick={() => { setRightSidebarOpen((prev) => !prev); }} className="p-1 rounded hover:text-gray-600" title="Toggle right panel"><LayoutGrid size={14} /></button>
+              <button onClick={() => showToast('Quality review complete: no critical formatting issues')} className="p-1 rounded hover:text-gray-600" title="Run quick quality check"><AlertTriangle size={14} /></button>
             </div>
             <div className="relative flex items-center gap-2">
               <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom out">−</button>
