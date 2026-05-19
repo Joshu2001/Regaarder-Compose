@@ -1,19 +1,22 @@
 {
-    "version":  "0.0.0",
-    "name":  "regaarder-compose",
-    "scripts":  {
-                    "preview":  "vite preview",
-                    "build":  "vite build",
-                    "dev":  "vite"
-                },
-    "devDependencies":  {
-                            "vite":  "^4.4.5"
-                        },
-    "type":  "module",
-    "dependencies":  {
-                         "lucide-react":  "^0.284.0",
-                         "react":  "^18.2.0",
-                         "react-dom":  "^18.2.0"
-                     },
-    "private":  true
+    "version": "0.0.0",
+    "name": "regaarder-compose",
+    "scripts": {
+        "preview": "vite preview",
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "vite": "^4.4.5"
+    },
+    "type": "module",
+    "dependencies": {
+        "html2canvas": "^1.4.1",
+        "html2pdf.js": "^0.14.0",
+        "jspdf": "^4.2.1",
+        "lucide-react": "^0.284.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
+    },
+    "private": true
 }

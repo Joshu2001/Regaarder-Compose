@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
   ChevronLeft, Cloud, Users, Home, Inbox, Star, 
@@ -48,6 +50,7 @@ export default function App() {
   const [scheduleOutput, setScheduleOutput] = useState([]);
   const [calendarMonth, setCalendarMonth] = useState(4); // 0=Jan, 4=May
   const [calendarYear, setCalendarYear] = useState(2026);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date(2026, 4, 15));
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
@@ -61,6 +64,13 @@ export default function App() {
   const [workspaceNameInput, setWorkspaceNameInput] = useState('');
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [openWorkspaceMenuId, setOpenWorkspaceMenuId] = useState(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareTargetDocId, setShareTargetDocId] = useState(null);
+  const [shareTargetDocTitle, setShareTargetDocTitle] = useState('');
+  const [shareDestination, setShareDestination] = useState('friends');
+  const [shareFormat, setShareFormat] = useState('Regaarder (.rgc)');
+  const [shareAccess, setShareAccess] = useState('Viewer');
+  const [shareLink, setShareLink] = useState('');
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
@@ -70,6 +80,9 @@ export default function App() {
   const savedSelectionRef = useRef(null);
   const speechRecognitionRef = useRef(null);
   const promptAudioInputRef = useRef(null);
+  const floatingPromptRef = useRef(null);
+  const chatInputRef = useRef(null);
+  const scheduleInputRef = useRef(null);
   const promptMenuRef = useRef(null);
   const calendarMenuRef = useRef(null);
   const dragStateRef = useRef({
@@ -178,6 +191,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!shareTargetDocId) {
+      return;
+    }
+
+    const base = `${window.location.origin}${window.location.pathname}`;
+    setShareLink(`${base}?doc=${shareTargetDocId}&access=${shareAccess.toLowerCase()}`);
+  }, [shareAccess, shareTargetDocId]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       const clickedOutsideFormatting = formattingMenuRef.current && !formattingMenuRef.current.contains(event.target);
       const clickedOutsideCalendar = calendarMenuRef.current && !calendarMenuRef.current.contains(event.target);
@@ -249,6 +271,31 @@ export default function App() {
       event.currentTarget.textContent = '';
     }
   };
+
+  const autoResizeTextarea = (element, maxHeight = 140) => {
+    if (!element) {
+      return;
+    }
+
+    element.style.height = '0px';
+    const nextHeight = Math.min(element.scrollHeight, maxHeight);
+    element.style.height = `${nextHeight}px`;
+    element.style.overflowY = element.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  };
+
+  useEffect(() => {
+    autoResizeTextarea(chatInputRef.current, 120);
+  }, [chatInput]);
+
+  useEffect(() => {
+    autoResizeTextarea(scheduleInputRef.current, 120);
+  }, [scheduleInput]);
+
+  useEffect(() => {
+    if (isPromptExpanded) {
+      autoResizeTextarea(floatingPromptRef.current, 160);
+    }
+  }, [floatingPrompt, isPromptExpanded]);
 
   useEffect(() => {
     const handleSelectionChange = () => {
@@ -680,6 +727,176 @@ export default function App() {
     showToast('Document renamed');
   };
 
+  const getDocumentPayload = (docId = activeDocId) => {
+    const fallback = {
+      title: docTitle,
+      subtitle: docSubtitle,
+      initiatives,
+      bodyHtml: docBodyHtml,
+      appendedSections,
+      isBlank: isBlankDocument,
+    };
+
+    if (!docId) {
+      return fallback;
+    }
+
+    const target = documents.find((doc) => doc.id === docId);
+    return target || fallback;
+  };
+
+  const sanitizeFileName = (value) => {
+    const trimmed = (value || '').trim();
+    const safe = trimmed.replace(/[<>:"/\\|?*]+/g, '-');
+    return safe || 'composition';
+  };
+
+  const triggerBlobDownload = (filename, blob) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCurrentDocumentAsPdf = async (forcedFileName) => {
+    if (!documentCardRef.current) {
+      showToast('Document is not ready for export yet');
+      return false;
+    }
+
+    let printContainer = null;
+
+    try {
+      showToast('Generating PDF...');
+
+      printContainer = document.createElement('div');
+      printContainer.style.position = 'fixed';
+      printContainer.style.left = '-99999px';
+      printContainer.style.top = '0';
+      printContainer.style.width = '850px';
+      printContainer.style.background = '#ffffff';
+      printContainer.style.padding = '24px';
+
+      const clonedCard = documentCardRef.current.cloneNode(true);
+      printContainer.appendChild(clonedCard);
+      document.body.appendChild(printContainer);
+
+      const canvas = await html2canvas(printContainer, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
+
+      const imageData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imageProps = pdf.getImageProperties(imageData);
+      const imageWidth = pageWidth;
+      const imageHeight = (imageProps.height * imageWidth) / imageProps.width;
+
+      let heightLeft = imageHeight;
+      let position = 0;
+
+      pdf.addImage(imageData, 'PNG', 0, position, imageWidth, imageHeight, undefined, 'FAST');
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imageHeight;
+        pdf.addPage();
+        pdf.addImage(imageData, 'PNG', 0, position, imageWidth, imageHeight, undefined, 'FAST');
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = forcedFileName || `${sanitizeFileName(docTitle)}.pdf`;
+      pdf.save(fileName);
+      showToast('PDF exported successfully');
+      return true;
+    } catch (_error) {
+      showToast('Unable to export PDF right now');
+      return false;
+    } finally {
+      if (printContainer && printContainer.parentNode) {
+        printContainer.parentNode.removeChild(printContainer);
+      }
+    }
+  };
+
+  const downloadDocumentInFormat = async (format, docId = activeDocId) => {
+    const payload = getDocumentPayload(docId);
+    const fileBase = sanitizeFileName(payload.title);
+
+    if (format === 'PDF') {
+      return exportCurrentDocumentAsPdf(`${fileBase}.pdf`);
+    }
+
+    if (format === 'Regaarder (.rgc)') {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      triggerBlobDownload(`${fileBase}.rgc`, blob);
+      return true;
+    }
+
+    if (format === 'Markdown') {
+      const markdown = `# ${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}\n\n${(payload.initiatives || []).map((item) => `- ${item.name} (${item.timeline})`).join('\n')}\n`;
+      triggerBlobDownload(`${fileBase}.md`, new Blob([markdown], { type: 'text/markdown' }));
+      return true;
+    }
+
+    if (format === 'Plain Text') {
+      const plain = `${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}`;
+      triggerBlobDownload(`${fileBase}.txt`, new Blob([plain], { type: 'text/plain' }));
+      return true;
+    }
+
+    if (format === 'DOC (Word-compatible)') {
+      const docMarkup = `<html><head><meta charset="utf-8"/></head><body><h1>${payload.title || 'Untitled'}</h1><p>${payload.subtitle || ''}</p></body></html>`;
+      triggerBlobDownload(`${fileBase}.doc`, new Blob([docMarkup], { type: 'application/msword' }));
+      return true;
+    }
+
+    if (format === 'HTML') {
+      const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body>${payload.bodyHtml || ''}</body></html>`;
+      triggerBlobDownload(`${fileBase}.html`, new Blob([html], { type: 'text/html' }));
+      return true;
+    }
+
+    return false;
+  };
+
+  const openShareModal = (docId) => {
+    const target = getDocumentPayload(docId);
+    const base = `${window.location.origin}${window.location.pathname}`;
+    setShareTargetDocId(docId);
+    setShareTargetDocTitle(target.title?.trim() || 'Untitled composition');
+    setShareDestination('friends');
+    setShareFormat('Regaarder (.rgc)');
+    setShareAccess('Viewer');
+    setShareLink(`${base}?doc=${docId}&access=viewer`);
+    setShareModalOpen(true);
+  };
+
+  const handleShareModalConfirm = async () => {
+    if (shareDestination === 'downloads') {
+      const ok = await downloadDocumentInFormat(shareFormat, shareTargetDocId || activeDocId);
+      if (ok) {
+        setShareModalOpen(false);
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      showToast(`Share link copied (${shareAccess})`);
+    } catch (_error) {
+      showToast('Could not copy link automatically');
+    }
+    setShareModalOpen(false);
+  };
+
   const handleDocumentAction = (action, docId) => {
     if (action === 'rename') {
       const target = documents.find((doc) => doc.id === docId);
@@ -696,7 +913,7 @@ export default function App() {
     }
 
     if (action === 'share') {
-      showToast('Share dialog coming soon');
+      openShareModal(docId);
       setOpenDocMenuId(null);
       return;
     }
@@ -720,49 +937,6 @@ export default function App() {
     if (action === 'close') {
       requestCloseDocument(docId);
     }
-  };
-
-  const exportCurrentDocumentAsPdf = () => {
-    if (!documentCardRef.current) {
-      showToast('Document is not ready for export yet');
-      return;
-    }
-
-    const printableHtml = documentCardRef.current.innerHTML;
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1024,height=768');
-
-    if (!printWindow) {
-      showToast('Enable pop-ups to export as PDF');
-      return;
-    }
-
-    printWindow.document.open();
-    printWindow.document.write(`
-      <!doctype html>
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <title>${docTitle?.trim() || 'Composition'}</title>
-          <style>
-            body { margin: 0; padding: 0; background: #fff; font-family: Inter, system-ui, sans-serif; color: #111827; }
-            .page { max-width: 850px; margin: 0 auto; padding: 48px 56px; }
-          </style>
-        </head>
-        <body>
-          <div class="page">${printableHtml}</div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-
-    const triggerPrint = () => {
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
-    };
-
-    setTimeout(triggerPrint, 180);
-    showToast('Document prepared for PDF export');
   };
 
   const applyFormatCommand = (command, value) => {
@@ -927,6 +1101,17 @@ export default function App() {
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+  const setCalendarView = (nextMonth, nextYear) => {
+    const boundedYear = Math.min(2029, Math.max(2026, nextYear));
+    const boundedMonth = Math.min(11, Math.max(0, nextMonth));
+    const preferredDay = selectedCalendarDate?.getDate?.() || 1;
+    const maxDay = new Date(boundedYear, boundedMonth + 1, 0).getDate();
+
+    setCalendarMonth(boundedMonth);
+    setCalendarYear(boundedYear);
+    setSelectedCalendarDate(new Date(boundedYear, boundedMonth, Math.min(preferredDay, maxDay)));
+  };
+
   // Helper component for the Workspace icons in the sidebar
   const WorkspaceIcon = ({ letter, colorClass }) => (
     <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white ${colorClass}`}>
@@ -1011,6 +1196,83 @@ export default function App() {
                 className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700"
               >
                 {workspaceModalMode === 'create' ? 'Create' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {shareModalOpen && (
+        <div className="absolute inset-0 z-[120] bg-black/25 backdrop-blur-[1px] flex items-center justify-center">
+          <div className="w-[520px] max-w-[92vw] rounded-xl bg-white border border-gray-100 shadow-2xl p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Share Composition</h3>
+            <p className="text-xs text-gray-500 mb-4">Share <span className="font-medium text-gray-700">{shareTargetDocTitle}</span> to friends or export to downloads.</p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block mb-1">Destination</label>
+                <select
+                  value={shareDestination}
+                  onChange={(e) => setShareDestination(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400"
+                >
+                  <option value="friends">Share via link</option>
+                  <option value="downloads">Downloads</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block mb-1">Format</label>
+                <select
+                  value={shareFormat}
+                  onChange={(e) => setShareFormat(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400"
+                >
+                  <option>Regaarder (.rgc)</option>
+                  <option>PDF</option>
+                  <option>DOC (Word-compatible)</option>
+                  <option>Markdown</option>
+                  <option>Plain Text</option>
+                  <option>HTML</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block mb-1">Access</label>
+              <div className="flex items-center gap-2">
+                {['Viewer', 'Commenter', 'Editor'].map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setShareAccess(level)}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${shareAccess === level ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {shareDestination === 'friends' && (
+              <div className="mb-4">
+                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block mb-1">Share Link</label>
+                <div className="border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 break-all bg-gray-50">{shareLink}</div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => setShareModalOpen(false)}
+                className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleShareModalConfirm}
+                className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700"
+              >
+                {shareDestination === 'downloads' ? 'Export' : 'Copy Link'}
               </button>
             </div>
           </div>
@@ -1206,7 +1468,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-50">
+        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-[140]">
           {orderedDocuments.map((doc) => {
             const label = doc.title?.trim() ? doc.title : 'Tap your text here';
             const isActive = activeDocId === doc.id;
@@ -1261,7 +1523,7 @@ export default function App() {
                   <X size={12} />
                 </button>
                 {openDocMenuId === doc.id && (
-                  <div className="absolute right-0 top-full mt-1 z-[100] w-36 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-xl p-1" data-doc-menu-root>
+                  <div className="absolute right-0 top-full mt-1 z-[230] w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1" data-doc-menu-root>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Rename</button>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Save</button>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Share</button>
@@ -1283,7 +1545,7 @@ export default function App() {
               event.preventDefault();
             }
           }}
-          className="h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[70]"
+          className="h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130]"
         >
           <div className="relative">
             <button
@@ -1293,7 +1555,7 @@ export default function App() {
               {editorHeading} <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'heading' && (
-              <div className="absolute top-9 left-0 z-[100] w-44 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
                 <input
                   value={headingSearch}
                   onChange={(e) => setHeadingSearch(e.target.value)}
@@ -1330,7 +1592,7 @@ export default function App() {
               {editorFont} <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'font' && (
-              <div className="absolute top-9 left-0 z-[100] w-48 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-[230] w-48 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
                 <input
                   value={fontSearch}
                   onChange={(e) => setFontSearch(e.target.value)}
@@ -1371,7 +1633,7 @@ export default function App() {
               <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'size' && (
-              <div className="absolute top-9 left-0 z-[100] w-32 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-[230] w-32 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
                 <input
                   value={sizeSearch}
                   onChange={(e) => setSizeSearch(e.target.value)}
@@ -1411,7 +1673,7 @@ export default function App() {
                 <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
               </button>
               {textStyleMenuOpen && (
-                <div className="absolute top-8 left-0 z-[90] w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-1">
+                <div className="absolute top-8 left-0 z-[230] w-32 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1">
                   <button onClick={() => { applyFormatCommand('formatBlock', 'P'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Body</button>
                   <button onClick={() => { applyFormatCommand('formatBlock', 'BLOCKQUOTE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Quote</button>
                   <button onClick={() => { applyFormatCommand('formatBlock', 'PRE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Code</button>
@@ -1695,14 +1957,33 @@ export default function App() {
             </button>
             <div className="flex items-center gap-3 px-2 flex-1">
               <Sparkles size={18} className="text-violet-500 shrink-0" />
-              <input
-                type="text"
-                value={floatingPrompt}
-                onChange={(e) => setFloatingPrompt(e.target.value)}
-                placeholder="Ask Compose AI..."
-                style={{ textAlign: alignMode }}
-                className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
-              />
+              {isPromptExpanded ? (
+                <textarea
+                  ref={floatingPromptRef}
+                  value={floatingPrompt}
+                  onChange={(e) => setFloatingPrompt(e.target.value)}
+                  onInput={(e) => autoResizeTextarea(e.currentTarget, 160)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleFloatingSend(e);
+                    }
+                  }}
+                  placeholder="Ask Compose AI..."
+                  rows={1}
+                  style={{ textAlign: alignMode }}
+                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-1 resize-none"
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={floatingPrompt}
+                  onChange={(e) => setFloatingPrompt(e.target.value)}
+                  placeholder="Ask Compose AI..."
+                  style={{ textAlign: alignMode }}
+                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
+                />
+              )}
             </div>
             <div className="flex items-center gap-2 pr-1 shrink-0">
               <input
@@ -1730,7 +2011,7 @@ export default function App() {
                   <Plus size={16} />
                 </button>
                 {isPromptMenuOpen && (
-                  <div className="absolute right-0 bottom-full mb-1 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-lg p-1 w-[170px] z-[9999]">
+                  <div className="absolute right-0 bottom-full mb-1 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1 w-[170px] z-[9999]">
                     <button
                       type="button"
                       onClick={() => {
@@ -1979,13 +2260,21 @@ export default function App() {
 
               {/* Chat Input Bar */}
               <form onSubmit={handleSidebarSend} className="p-3 border-t border-gray-100 bg-[#FAFAFC]">
-                <div className="relative flex items-center bg-white border border-gray-200 rounded-xl focus-within:border-violet-400 transition-colors">
-                  <input 
-                    type="text" 
+                <div className="relative flex items-end bg-white border border-gray-200 rounded-xl focus-within:border-violet-400 transition-colors">
+                  <textarea
+                    ref={chatInputRef}
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="Ask, summarize, or instruct..." 
-                    className="w-full bg-transparent border-none focus:outline-none text-sm py-2.5 pl-3.5 pr-10 text-gray-700 placeholder-gray-400"
+                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSidebarSend(e);
+                      }
+                    }}
+                    placeholder="Ask, summarize, or instruct..."
+                    rows={1}
+                    className="w-full bg-transparent border-none focus:outline-none text-sm py-2.5 pl-3.5 pr-10 text-gray-700 placeholder-gray-400 resize-none"
                   />
                   <button 
                     type="submit" 
@@ -2173,7 +2462,7 @@ export default function App() {
                           {monthNames[calendarMonth]} <ChevronDown size={14} className="text-gray-400" />
                         </button>
                         {openDropdown === 'calendar-month' && (
-                          <div className="absolute top-9 left-0 z-50 w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                          <div className="absolute top-9 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
                             <div className="max-h-44 overflow-y-auto">
                               {monthNames.map((m, i) => (
                                 <button
@@ -2182,7 +2471,7 @@ export default function App() {
                                   onPointerDown={(event) => {
                                     event.preventDefault();
                                     event.stopPropagation();
-                                    setCalendarMonth(i);
+                                    setCalendarView(i, calendarYear);
                                     setOpenDropdown(null);
                                   }}
                                   className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
@@ -2203,7 +2492,7 @@ export default function App() {
                           {calendarYear} <ChevronDown size={14} className="text-gray-400" />
                         </button>
                         {openDropdown === 'calendar-year' && (
-                          <div className="absolute top-9 left-0 z-50 w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                          <div className="absolute top-9 left-0 z-[230] w-32 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
                             <div className="max-h-44 overflow-y-auto">
                               {[2026, 2027, 2028, 2029].map((y) => (
                                 <button
@@ -2212,7 +2501,7 @@ export default function App() {
                                   onPointerDown={(event) => {
                                     event.preventDefault();
                                     event.stopPropagation();
-                                    setCalendarYear(y);
+                                    setCalendarView(calendarMonth, y);
                                     setOpenDropdown(null);
                                   }}
                                   className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
@@ -2229,14 +2518,18 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => {
+                          if (calendarYear === 2026 && calendarMonth === 0) {
+                            return;
+                          }
+
                           if (calendarMonth === 0) {
-                            setCalendarMonth(11);
-                            setCalendarYear(calendarYear - 1);
+                            setCalendarView(11, calendarYear - 1);
                           } else {
-                            setCalendarMonth(calendarMonth - 1);
+                            setCalendarView(calendarMonth - 1, calendarYear);
                           }
                         }}
-                        className="cursor-pointer hover:text-gray-900 transition-colors"
+                        disabled={calendarYear === 2026 && calendarMonth === 0}
+                        className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         ←
                       </button>
@@ -2244,10 +2537,9 @@ export default function App() {
                         type="button"
                         onClick={() => {
                           if (calendarMonth === 11) {
-                            setCalendarMonth(0);
-                            setCalendarYear(calendarYear + 1);
+                            setCalendarView(0, calendarYear + 1);
                           } else {
-                            setCalendarMonth(calendarMonth + 1);
+                            setCalendarView(calendarMonth + 1, calendarYear);
                           }
                         }}
                         disabled={calendarYear === 2029 && calendarMonth === 11}
@@ -2265,11 +2557,22 @@ export default function App() {
                       <button
                         key={idx}
                         type="button"
+                        onClick={() => {
+                          if (!dayObj.isCurrentMonth) {
+                            return;
+                          }
+                          setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
+                        }}
                         className={`py-1 rounded transition-colors ${
                           dayObj.isCurrentMonth
-                            ? dayObj.isToday
+                            ? (selectedCalendarDate
+                                && selectedCalendarDate.getFullYear() === calendarYear
+                                && selectedCalendarDate.getMonth() === calendarMonth
+                                && selectedCalendarDate.getDate() === dayObj.day)
                               ? 'bg-violet-600 text-white font-bold'
-                              : 'hover:bg-gray-200 cursor-pointer'
+                              : dayObj.isToday
+                                ? 'bg-violet-100 text-violet-700 font-semibold hover:bg-violet-200 cursor-pointer'
+                                : 'hover:bg-gray-200 cursor-pointer'
                             : 'text-gray-300'
                         }`}
                         disabled={!dayObj.isCurrentMonth}
@@ -2278,6 +2581,10 @@ export default function App() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="text-[11px] text-violet-700 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2">
+                  Selected date: {selectedCalendarDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                 </div>
 
                 <div className="space-y-2">
@@ -2303,13 +2610,20 @@ export default function App() {
                 <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
                   <PenTool size={14} className="text-gray-400 mx-2 shrink-0" />
                   <div className="relative flex-1">
-                  <input
-                    type="text"
+                  <textarea
+                    ref={scheduleInputRef}
                     value={scheduleInput}
                     onChange={(e) => setScheduleInput(e.target.value)}
+                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        convertMessyScheduleToPlan();
+                      }
+                    }}
                     placeholder="Paste messy tasks, notes, or shorthand..."
-                    maxLength={20}
-                    className="w-full bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 py-1 pr-10"
+                    rows={1}
+                    className="w-full bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 py-1 pr-10 resize-none"
                   />
                   <button
                     type="submit"
