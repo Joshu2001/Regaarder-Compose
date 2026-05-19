@@ -187,8 +187,8 @@ export default function App() {
       }
     };
 
-    window.addEventListener('click', handleClickOutside);
-    return () => window.removeEventListener('click', handleClickOutside);
+    window.addEventListener('pointerdown', handleClickOutside);
+    return () => window.removeEventListener('pointerdown', handleClickOutside);
   }, []);
 
   const isRangeInsideEditor = (range) => {
@@ -1649,10 +1649,10 @@ export default function App() {
                   className={`p-2 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                   title="Add files, images, or audio"
                 >
-                  <Plus size={16} />
+                  <ChevronUp size={16} />
                 </button>
                 {isPromptMenuOpen && (
-                  <div className="absolute right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1 w-[160px] z-[9999]">
+                  <div className="absolute right-0 bottom-full mb-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1 w-[160px] z-[9999]">
                     <button
                       type="button"
                       onClick={() => {
@@ -1661,7 +1661,7 @@ export default function App() {
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
                     >
-                      <Upload size={14} />
+                      <Mic size={14} />
                       <span>Audio</span>
                     </button>
                     <button
@@ -1689,14 +1689,6 @@ export default function App() {
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={toggleVoiceRecording}
-                className={`p-2 rounded-full transition-colors ${isVoiceActive ? 'bg-red-50 text-red-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                title={isVoiceActive ? 'Stop voice transcription' : 'Start voice transcription'}
-              >
-                <Mic size={18} />
-              </button>
               <button
                 type="button"
                 onClick={toggleMicMute}
@@ -2033,23 +2025,39 @@ export default function App() {
               <div className="space-y-2">
                 {tasks.map(task => (
                   <div 
-                    key={task.id} 
-                    onClick={() => {
-                      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
-                      showToast(task.completed ? "Task uncompleted" : "Task marked completed");
-                    }}
-                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    key={task.id}
+                    className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
                       task.completed 
                         ? 'bg-gray-50/50 border-gray-100 text-gray-400 line-through' 
                         : 'bg-white border-gray-100 text-gray-700 hover:border-violet-100 hover:bg-violet-50/20'
                     }`}
                   >
-                    <div className={`mt-0.5 w-4.5 h-4.5 rounded border flex items-center justify-center transition-all ${
-                      task.completed ? 'bg-violet-600 border-violet-600 text-white' : 'border-gray-300 bg-white'
-                    }`}>
+                    <div 
+                      onClick={() => {
+                        setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
+                        showToast(task.completed ? "Task uncompleted" : "Task marked completed");
+                      }}
+                      className={`mt-0.5 w-4.5 h-4.5 rounded border flex items-center justify-center transition-all cursor-pointer ${
+                        task.completed ? 'bg-violet-600 border-violet-600 text-white' : 'border-gray-300 bg-white'
+                      }`}
+                    >
                       {task.completed && <Check size={12} className="stroke-[3]" />}
                     </div>
-                    <span className="text-xs font-medium leading-relaxed">{task.text}</span>
+                    <div className="flex-1">
+                      <span className="text-xs font-medium leading-relaxed">{task.text}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScheduleInput((prev) => (prev ? prev + '\n' : '') + task.text);
+                        setActiveRightTab('calendar');
+                        showToast('Task added to schedule');
+                      }}
+                      className="p-1.5 rounded text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors shrink-0"
+                      title="Convert to schedule"
+                    >
+                      <Calendar size={14} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -2097,7 +2105,7 @@ export default function App() {
                                 <button
                                   key={m}
                                   type="button"
-                                  onClick={() => { setCalendarMonth(i); setOpenDropdown(null); }}
+                                  onClick={(e) => { e.stopPropagation(); setCalendarMonth(i); setOpenDropdown(null); }}
                                   className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
                                 >
                                   {m}
@@ -2122,7 +2130,7 @@ export default function App() {
                                 <button
                                   key={y}
                                   type="button"
-                                  onClick={() => { setCalendarYear(y); setOpenDropdown(null); }}
+                                  onClick={(e) => { e.stopPropagation(); setCalendarYear(y); setOpenDropdown(null); }}
                                   className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
                                 >
                                   {y}
@@ -2209,17 +2217,17 @@ export default function App() {
                 className="border-t border-gray-100 bg-[#FAFAFC] p-4"
               >
                 <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
-                  <span className="text-gray-400 px-2 shrink-0">✏️</span>
+                  <PenTool size={14} className="text-gray-400 px-2 shrink-0" />
                   <textarea
                     value={scheduleInput}
                     onChange={(e) => setScheduleInput(e.target.value)}
                     placeholder="Paste messy tasks, notes, or shorthand..."
                     rows={1}
-                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 resize-none py-1"
+                    className="flex-1 bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 resize-none py-1"
                   />
                   <button
                     type="submit"
-                    className="h-8 px-3 rounded-full bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors whitespace-nowrap shrink-0"
+                    className="h-7 px-3 rounded-full bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors whitespace-nowrap shrink-0"
                     title="Process list"
                   >
                     Process
