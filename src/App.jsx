@@ -186,6 +186,9 @@ export default function App() {
         setOpenDropdown(null);
         setTextStyleMenuOpen(false);
       }
+      if (!event.target.closest('[data-doc-menu-root]')) {
+        setOpenDocMenuId(null);
+      }
       if (promptMenuRef.current && !promptMenuRef.current.contains(event.target)) {
         setIsPromptMenuOpen(false);
       }
@@ -711,6 +714,11 @@ export default function App() {
     }
   };
 
+  const exportCurrentDocumentAsPdf = () => {
+    showToast('Preparing print dialog for PDF export');
+    window.print();
+  };
+
   const applyFormatCommand = (command, value) => {
     let range = getEditorSelectionRange();
 
@@ -1186,6 +1194,7 @@ export default function App() {
                   <span className="max-w-[160px] truncate">{doc.pinned ? '📌 ' : ''}{label}</span>
                 )}
                 <button
+                  data-doc-menu-root
                   onClick={(event) => {
                     event.stopPropagation();
                     setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
@@ -1206,7 +1215,7 @@ export default function App() {
                   <X size={12} />
                 </button>
                 {openDocMenuId === doc.id && (
-                  <div className="absolute right-0 top-full mt-1 z-[80] w-36 bg-white border border-gray-200 rounded-lg shadow-xl p-1">
+                  <div className="absolute right-0 top-full mt-1 z-[100] w-36 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-xl p-1" data-doc-menu-root>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Rename</button>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Save</button>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Share</button>
@@ -1238,7 +1247,7 @@ export default function App() {
               {editorHeading} <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'heading' && (
-              <div className="absolute top-9 left-0 z-50 w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-[100] w-44 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-lg p-2">
                 <input
                   value={headingSearch}
                   onChange={(e) => setHeadingSearch(e.target.value)}
@@ -1275,7 +1284,7 @@ export default function App() {
               {editorFont} <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'font' && (
-              <div className="absolute top-9 left-0 z-50 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-[100] w-48 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-lg p-2">
                 <input
                   value={fontSearch}
                   onChange={(e) => setFontSearch(e.target.value)}
@@ -1316,7 +1325,7 @@ export default function App() {
               <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'size' && (
-              <div className="absolute top-9 left-0 z-50 w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-[100] w-32 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-lg p-2">
                 <input
                   value={sizeSearch}
                   onChange={(e) => setSizeSearch(e.target.value)}
@@ -1364,6 +1373,14 @@ export default function App() {
               )}
             </div>
           </div>
+          <div className="w-px h-4 bg-gray-200"></div>
+          <button
+            onClick={exportCurrentDocumentAsPdf}
+            className="text-xs font-medium px-2 py-1 rounded hover:bg-violet-50 hover:text-violet-700"
+            title="Convert current document to PDF"
+          >
+            PDF
+          </button>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
             <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`${alignMode === 'left' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
@@ -1630,25 +1647,14 @@ export default function App() {
             </button>
             <div className="flex items-center gap-3 px-2 flex-1">
               <Sparkles size={18} className="text-violet-500 shrink-0" />
-              {isPromptExpanded ? (
-                <textarea
-                  value={floatingPrompt}
-                  onChange={(e) => setFloatingPrompt(e.target.value)}
-                  placeholder="Ask Compose AI..."
-                  rows={4}
-                  style={{ textAlign: alignMode }}
-                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2 resize-none overflow-y-auto"
-                />
-              ) : (
-                <input
-                  type="text"
-                  value={floatingPrompt}
-                  onChange={(e) => setFloatingPrompt(e.target.value)}
-                  placeholder="Ask Compose AI..."
-                  style={{ textAlign: alignMode }}
-                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
-                />
-              )}
+              <input
+                type="text"
+                value={floatingPrompt}
+                onChange={(e) => setFloatingPrompt(e.target.value)}
+                placeholder="Ask Compose AI..."
+                style={{ textAlign: alignMode }}
+                className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
+              />
             </div>
             <div className="flex items-center gap-2 pr-1 shrink-0">
               <input
@@ -1676,18 +1682,7 @@ export default function App() {
                   <Plus size={16} />
                 </button>
                 {isPromptMenuOpen && (
-                  <div className="absolute right-0 bottom-full mb-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1 w-[170px] z-[9999]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        toggleVoiceRecording();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <Mic size={14} />
-                      <span>{isVoiceActive ? 'Stop Mic' : 'Start Mic'}</span>
-                    </button>
+                  <div className="absolute right-0 bottom-full mb-1 bg-white/100 backdrop-blur-none border border-gray-200 rounded-lg shadow-lg p-1 w-[170px] z-[9999]">
                     <button
                       type="button"
                       onClick={() => {
@@ -1726,11 +1721,11 @@ export default function App() {
               </div>
               <button
                 type="button"
-                onClick={toggleMicMute}
-                className={`p-2 rounded-full transition-colors ${isMicMuted ? 'bg-amber-50 text-amber-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                title={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+                onClick={() => promptAudioInputRef.current?.click()}
+                className="p-2 rounded-full transition-colors text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                title="Attach audio"
               >
-                {isMicMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                <Upload size={16} />
               </button>
               <button
                 type="submit"
