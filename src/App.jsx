@@ -2082,24 +2082,56 @@ export default function App() {
                 <div className="border border-gray-100 rounded-xl p-4 bg-[#FAFAFC]">
                   <div className="flex items-center justify-between text-xs font-bold text-gray-700 mb-3">
                     <div className="flex items-center gap-2">
-                      <select
-                        value={calendarMonth}
-                        onChange={(e) => setCalendarMonth(parseInt(e.target.value))}
-                        className="border border-gray-200 rounded px-2 py-1 text-xs bg-white cursor-pointer hover:border-violet-300"
-                      >
-                        {monthNames.map((m, i) => (
-                          <option key={i} value={i}>{m}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={calendarYear}
-                        onChange={(e) => setCalendarYear(parseInt(e.target.value))}
-                        className="border border-gray-200 rounded px-2 py-1 text-xs bg-white cursor-pointer hover:border-violet-300"
-                      >
-                        {[2026, 2027, 2028, 2029].map((y) => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'))}
+                          className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap"
+                        >
+                          {monthNames[calendarMonth]} <ChevronDown size={14} className="text-gray-400" />
+                        </button>
+                        {openDropdown === 'calendar-month' && (
+                          <div className="absolute top-9 left-0 z-50 w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                            <div className="max-h-44 overflow-y-auto">
+                              {monthNames.map((m, i) => (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  onClick={() => { setCalendarMonth(i); setOpenDropdown(null); }}
+                                  className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
+                                >
+                                  {m}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setOpenDropdown((prev) => (prev === 'calendar-year' ? null : 'calendar-year'))}
+                          className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap"
+                        >
+                          {calendarYear} <ChevronDown size={14} className="text-gray-400" />
+                        </button>
+                        {openDropdown === 'calendar-year' && (
+                          <div className="absolute top-9 left-0 z-50 w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                            <div className="max-h-44 overflow-y-auto">
+                              {[2026, 2027, 2028, 2029].map((y) => (
+                                <button
+                                  key={y}
+                                  type="button"
+                                  onClick={() => { setCalendarYear(y); setOpenDropdown(null); }}
+                                  className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
+                                >
+                                  {y}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2 text-gray-400">
                       <button
