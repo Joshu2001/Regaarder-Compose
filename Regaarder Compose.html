@@ -100,6 +100,7 @@ export default function App() {
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('English (US)');
   const [zoomLevel, setZoomLevel] = useState(100);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -175,6 +176,14 @@ export default function App() {
     window.addEventListener('pointerdown', handleClickOutside);
     return () => window.removeEventListener('pointerdown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isFocusMode) {
+      return;
+    }
+    setLeftSidebarOpen(false);
+    setRightSidebarOpen(false);
+  }, [isFocusMode]);
 
   // Integrated Tasks checklist state
   const [tasks, setTasks] = useState([
@@ -884,7 +893,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-x-auto overflow-y-visible no-scrollbar bg-[#FAFAFC] relative z-20">
+        <div className={`h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-50 transition-opacity ${rightSidebarOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
           {orderedDocuments.map((doc) => {
             const label = doc.title?.trim() ? doc.title : 'Tap your text here';
             const isActive = activeDocId === doc.id;
@@ -922,13 +931,23 @@ export default function App() {
                     event.stopPropagation();
                     setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                   }}
-                  className="p-0.5 rounded hover:bg-gray-100"
+                  className="p-0.5 rounded hover:bg-gray-100 shrink-0"
                   title="Document actions"
                 >
                   <MoreHorizontal size={12} />
                 </button>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    requestCloseDocument(doc.id);
+                  }}
+                  className="p-0.5 rounded hover:bg-rose-50 text-gray-400 hover:text-rose-600 shrink-0"
+                  title="Close document"
+                >
+                  <X size={12} />
+                </button>
                 {openDocMenuId === doc.id && (
-                  <div className="absolute right-0 top-full mt-1 z-50 w-36 bg-white border border-gray-200 rounded-lg shadow-xl p-1">
+                  <div className="absolute right-0 top-full mt-1 z-[80] w-36 bg-white border border-gray-200 rounded-lg shadow-xl p-1">
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Rename</button>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Save</button>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Share</button>
@@ -943,11 +962,11 @@ export default function App() {
         </div>
 
         {/* Formatting Ribbon */}
-        <div ref={formattingMenuRef} className="h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative">
+        <div ref={formattingMenuRef} className={`h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-x-auto overflow-y-visible no-scrollbar select-none relative whitespace-nowrap transition-opacity ${rightSidebarOpen ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
           <div className="relative">
             <button
               onClick={() => setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'))}
-              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded"
+              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap shrink-0"
             >
               {editorHeading} <ChevronDown size={14} className="text-gray-400" />
             </button>
@@ -1080,7 +1099,17 @@ export default function App() {
         </div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className={`flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 ${rightSidebarOpen ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 ${rightSidebarOpen ? 'opacity-30' : 'opacity-100'}`}>
+          <div
+            className="mx-auto"
+            style={{
+              width: '100%',
+              maxWidth: '850px',
+              transform: `scale(${zoomLevel / 100})`,
+              transformOrigin: 'top center',
+              transition: 'transform 180ms ease-out',
+            }}
+          >
           <div ref={documentCardRef} className="max-w-[850px] mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 min-h-[calc(100vh-13rem)] relative">
             
             {/* Title & Subtitle */}
@@ -1285,6 +1314,7 @@ export default function App() {
             )}
 
           </div>
+          </div>
         </div>
 
         {/* Persistent Floating AI Prompt Bar */}
@@ -1370,7 +1400,13 @@ export default function App() {
                 </div>
               )}
             </div>
-            <span>Focus Mode</span>
+            <button
+              onClick={() => setIsFocusMode((prev) => !prev)}
+              className={`px-2 py-1 rounded transition-colors ${isFocusMode ? 'bg-violet-100 text-violet-700' : 'hover:bg-gray-50 hover:text-gray-700'}`}
+              title="Toggle focus mode"
+            >
+              {isFocusMode ? 'Exit Focus Mode' : 'Focus Mode'}
+            </button>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-gray-400">
@@ -1399,7 +1435,7 @@ export default function App() {
 
       {/* 3. Right Sidebar (AI Assistant / Smart Chat / Tools) */}
       <div 
-        className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 ${
+        className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 relative z-40 ${
           rightSidebarOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
         style={{ width: rightSidebarOpen ? `${rightSidebarWidth}px` : '0px' }}
