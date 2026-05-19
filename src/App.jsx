@@ -97,6 +97,9 @@ export default function App() {
   const [openDocMenuId, setOpenDocMenuId] = useState(null);
   const [renamingDocId, setRenamingDocId] = useState(null);
   const [renameDocValue, setRenameDocValue] = useState('');
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState('English (US)');
+  const [zoomLevel, setZoomLevel] = useState(100);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -925,12 +928,13 @@ export default function App() {
                   <MoreHorizontal size={12} />
                 </button>
                 {openDocMenuId === doc.id && (
-                  <div className="absolute right-1 top-8 z-30 w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-1">
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50">Rename</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50">Save</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50">Share</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('pin', doc.id); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50">{doc.pinned ? 'Unpin' : 'Pin'}</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('close', doc.id); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-rose-50 text-rose-600">Close</button>
+                  <div className="absolute right-0 top-full mt-1 z-50 w-36 bg-white border border-gray-200 rounded-lg shadow-xl p-1">
+                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Rename</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Save</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Share</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('pin', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">{doc.pinned ? 'Unpin' : 'Pin'}</button>
+                    <div className="border-t border-gray-100 my-1"></div>
+                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('close', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-rose-50 text-rose-600">Close</button>
                   </div>
                 )}
               </div>
@@ -1076,7 +1080,7 @@ export default function App() {
         </div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8">
+        <div className={`flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 ${rightSidebarOpen ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
           <div ref={documentCardRef} className="max-w-[850px] mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 min-h-[calc(100vh-13rem)] relative">
             
             {/* Title & Subtitle */}
@@ -1343,9 +1347,28 @@ export default function App() {
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
-            <span>{1234 + appendedSections.length * 120} words</span>
-            <div className="flex items-center gap-1 cursor-pointer hover:text-gray-800">
-              English (US) <ChevronDown size={12} />
+            <span title="Real-time word count">{docBodyHtml.split(/\s+/).filter(w => w.length > 0).length + (docTitle?.split(/\s+/).filter(w => w.length > 0).length || 0) + (docSubtitle?.split(/\s+/).filter(w => w.length > 0).length || 0)} words</span>
+            <div className="relative">
+              <button onClick={() => setLanguageMenuOpen((prev) => !prev)} className="flex items-center gap-1 cursor-pointer hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50">
+                {currentLanguage} <ChevronDown size={12} />
+              </button>
+              {languageMenuOpen && (
+                <div className="absolute left-0 bottom-full mb-1 z-40 w-40 bg-white border border-gray-200 rounded-lg shadow-lg p-1">
+                  {['English (US)', 'English (UK)', 'Spanish', 'French', 'German', 'Chinese'].map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => {
+                        setCurrentLanguage(lang);
+                        setLanguageMenuOpen(false);
+                        showToast(`Language set to ${lang}`);
+                      }}
+                      className={`w-full text-left px-2 py-1.5 text-xs rounded transition-colors ${currentLanguage === lang ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-50'}`}
+                    >
+                      {lang}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <span>Focus Mode</span>
           </div>
@@ -1356,8 +1379,12 @@ export default function App() {
               <LayoutGrid size={14} className="cursor-pointer hover:text-gray-600" />
               <AlertTriangle size={14} className="cursor-pointer hover:text-gray-600" />
             </div>
-            <span>100%</span>
-            <ChevronDown size={12} className="cursor-pointer" />
+            <div className="relative flex items-center gap-2">
+              <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom out">−</button>
+              <span className="w-8 text-center cursor-default">{zoomLevel}%</span>
+              <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom in">+</button>
+              <ChevronDown size={12} className="cursor-pointer text-gray-400" />
+            </div>
           </div>
         </div>
       </div>
