@@ -8,7 +8,7 @@ import {
   List, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Volume2, VolumeX, ImagePlus
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Volume2, VolumeX
 } from 'lucide-react';
 
 export default function App() {
@@ -66,7 +66,6 @@ export default function App() {
   const formattingMenuRef = useRef(null);
   const speechRecognitionRef = useRef(null);
   const promptAudioInputRef = useRef(null);
-  const promptImageInputRef = useRef(null);
   const dragStateRef = useRef({
     startX: 0,
     startY: 0,
@@ -110,7 +109,6 @@ export default function App() {
   const [activeDocView, setActiveDocView] = useState('document');
   const [uploadedPromptAudio, setUploadedPromptAudio] = useState(null);
   const [isUploadedAudioMuted, setIsUploadedAudioMuted] = useState(false);
-  const [uploadedPromptImage, setUploadedPromptImage] = useState(null);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -399,51 +397,11 @@ export default function App() {
 
   const handleFloatingSend = (e) => {
     e.preventDefault();
-    if (!floatingPrompt.trim() && !uploadedPromptAudio && !uploadedPromptImage) return;
-
-    const extractedItems = floatingPrompt
-      .split(/\n|,|;/)
-      .map((item) => item.replace(/^[-*]\s*/, '').trim())
-      .filter(Boolean);
-
-    if (uploadedPromptAudio) {
-      extractedItems.push(`Review audio note: ${uploadedPromptAudio.name}`);
-    }
-
-    if (uploadedPromptImage) {
-      extractedItems.push(`Extract and review tasks from screenshot: ${uploadedPromptImage.name}`);
-    }
-
-    if (activeRightTab === 'tasks') {
-      if (!extractedItems.length) {
-        extractedItems.push('Follow up on captured note');
-      }
-      setTasks((prev) => [
-        ...prev,
-        ...extractedItems.map((item, idx) => ({ id: Date.now() + idx, text: item, completed: false })),
-      ]);
-      showToast(`Added ${extractedItems.length} task${extractedItems.length > 1 ? 's' : ''} from capture`);
-    } else if (activeRightTab === 'calendar') {
-      if (!extractedItems.length) {
-        extractedItems.push('Captured planning item');
-      }
-      const cleanItems = extractedItems.map((item, index) => ({
-        id: Date.now() + index,
-        slot: `${String(9 + index).padStart(2, '0')}:00`,
-        title: item.charAt(0).toUpperCase() + item.slice(1),
-        summary: `Generated from capture input ${uploadedPromptImage ? '(includes screenshot)' : ''}${uploadedPromptAudio ? ' (includes voice note)' : ''}.`,
-      }));
-      setScheduleOutput(cleanItems);
-      setScheduleInput(extractedItems.join(', '));
-      showToast('Capture transformed into schedule blocks');
-    } else {
-      const finalPrompt = extractedItems.join('. ') || 'Analyze this capture and convert into an actionable plan.';
-      handleAISubmit(finalPrompt);
-    }
-
+    if (!floatingPrompt.trim() && !uploadedPromptAudio) return;
+    const finalPrompt = floatingPrompt.trim() || `Transcribe attached audio: ${uploadedPromptAudio.name}`;
+    handleAISubmit(finalPrompt);
     setFloatingPrompt('');
     setUploadedPromptAudio(null);
-    setUploadedPromptImage(null);
   };
 
   const toggleVoiceRecording = () => {
@@ -502,17 +460,6 @@ export default function App() {
     const url = URL.createObjectURL(file);
     setUploadedPromptAudio({ name: file.name, url });
     showToast(`Audio attached: ${file.name}`);
-  };
-
-  const handlePromptImageUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) {
-      return;
-    }
-
-    const url = URL.createObjectURL(file);
-    setUploadedPromptImage({ name: file.name, url });
-    showToast(`Screenshot attached: ${file.name}`);
   };
 
   // Click handler for Right Mini Sidebar
@@ -1139,7 +1086,7 @@ export default function App() {
         </div>
 
         {/* Formatting Ribbon */}
-        <div ref={formattingMenuRef} className={`h-12 border-b border-gray-100 flex items-center px-6 gap-6 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[70] whitespace-nowrap transition-opacity ${rightSidebarOpen ? 'opacity-60' : 'opacity-100'}`}>
+        <div ref={formattingMenuRef} className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[70] transition-opacity ${rightSidebarOpen ? 'opacity-60' : 'opacity-100'}`}>
           <div className="relative">
             <button
               onClick={() => setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'))}
@@ -1148,7 +1095,7 @@ export default function App() {
               {editorHeading} <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'heading' && (
-              <div className="absolute top-full mt-1 left-0 z-[130] w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-50 w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                 <input
                   value={headingSearch}
                   onChange={(e) => setHeadingSearch(e.target.value)}
@@ -1185,7 +1132,7 @@ export default function App() {
               {editorFont} <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'font' && (
-              <div className="absolute top-full mt-1 left-0 z-[130] w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-50 w-48 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                 <input
                   value={fontSearch}
                   onChange={(e) => setFontSearch(e.target.value)}
@@ -1226,7 +1173,7 @@ export default function App() {
               <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'size' && (
-              <div className="absolute top-full mt-1 left-0 z-[130] w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+              <div className="absolute top-9 left-0 z-50 w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                 <input
                   value={sizeSearch}
                   onChange={(e) => setSizeSearch(e.target.value)}
@@ -1513,7 +1460,107 @@ export default function App() {
           </div>
         </div>
 
-        {/* Prompt capture is intentionally anchored inside the right sidebar */}
+        {/* Persistent Floating AI Prompt Bar */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-14 z-20"
+          style={{ transform: `translateY(${promptOffset.y}px)` }}
+        >
+          <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
+          <form
+            onSubmit={handleFloatingSend}
+            className={`pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'}`}
+            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 760))}px`, maxWidth: '100%' }}
+          >
+            <button
+              type="button"
+              onPointerDown={(event) => beginPanelResize('prompt', event)}
+              className="p-2 text-gray-300 hover:text-gray-500 cursor-move touch-none"
+              title="Move prompt bar"
+            >
+              <Move size={14} />
+            </button>
+            <div className="flex items-center gap-3 px-2 flex-1">
+              <Sparkles size={18} className="text-violet-500 shrink-0" />
+              <textarea
+                value={floatingPrompt}
+                onChange={(e) => setFloatingPrompt(e.target.value)}
+                placeholder="Type an instruction (e.g. 'add timeline' or 'extract risks')..."
+                rows={isPromptExpanded ? 4 : 1}
+                style={{ textAlign: alignMode }}
+                className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2 resize-none"
+              />
+            </div>
+            <div className="flex items-center gap-2 pr-1 shrink-0">
+              <input
+                ref={promptAudioInputRef}
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={handlePromptAudioUpload}
+              />
+              <button
+                type="button"
+                onClick={() => promptAudioInputRef.current?.click()}
+                className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                title="Upload audio recording"
+              >
+                <Upload size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPromptExpanded((prev) => !prev)}
+                className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title="Expand prompt input"
+              >
+                <Expand size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={toggleVoiceRecording}
+                className={`p-2 rounded-full transition-colors ${isVoiceActive ? 'bg-red-50 text-red-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title={isVoiceActive ? 'Stop voice transcription' : 'Start voice transcription'}
+              >
+                <Mic size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={toggleMicMute}
+                className={`p-2 rounded-full transition-colors ${isMicMuted ? 'bg-amber-50 text-amber-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title={isMicMuted ? 'Unmute microphone' : 'Mute microphone'}
+              >
+                {isMicMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              </button>
+              <button
+                type="submit"
+                className="bg-violet-600 hover:bg-violet-700 text-white p-2 rounded-full transition-colors flex items-center justify-center h-8 w-8 active:scale-90"
+              >
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </form>
+          </div>
+        </div>
+
+        {uploadedPromptAudio && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 w-[min(820px,92%)] bg-white border border-gray-200 rounded-xl p-3 shadow-lg flex items-center gap-3">
+            <div className="text-xs text-gray-600 font-medium truncate max-w-[220px]">{uploadedPromptAudio.name}</div>
+            <audio className="flex-1" controls src={uploadedPromptAudio.url} muted={isUploadedAudioMuted} />
+            <button
+              onClick={() => setIsUploadedAudioMuted((prev) => !prev)}
+              className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
+              title={isUploadedAudioMuted ? 'Unmute uploaded audio preview' : 'Mute uploaded audio preview'}
+            >
+              {isUploadedAudioMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            </button>
+            <button
+              onClick={() => setUploadedPromptAudio(null)}
+              className="p-1.5 rounded hover:bg-rose-50 text-gray-500 hover:text-rose-600"
+              title="Remove uploaded audio"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
@@ -1685,6 +1732,24 @@ export default function App() {
                 <div ref={chatEndRef} />
               </div>
 
+              {/* Chat Input Bar */}
+              <form onSubmit={handleSidebarSend} className="p-3 border-t border-gray-100 bg-[#FAFAFC]">
+                <div className="relative flex items-center bg-white border border-gray-200 rounded-xl focus-within:border-violet-400 transition-colors">
+                  <input 
+                    type="text" 
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Ask, summarize, or instruct..." 
+                    className="w-full bg-transparent border-none focus:outline-none text-sm py-2.5 pl-3.5 pr-10 text-gray-700 placeholder-gray-400"
+                  />
+                  <button 
+                    type="submit" 
+                    className="absolute right-1.5 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
+                  >
+                    <Send size={14} />
+                  </button>
+                </div>
+              </form>
             </div>
           )}
 
@@ -1818,172 +1883,86 @@ export default function App() {
 
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              <h3 className="text-sm font-bold text-gray-900">Launch Timeline</h3>
-              <p className="text-xs text-gray-500">Consolidated product rollouts aligned with team calendar events.</p>
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                <h3 className="text-sm font-bold text-gray-900">Launch Timeline</h3>
+                <p className="text-xs text-gray-500">Consolidated product rollouts aligned with team calendar events.</p>
 
-              <div className="rounded-xl border border-violet-100 bg-violet-50/20 p-3">
-                <div className="text-xs font-semibold text-violet-700 mb-2">Schedule AI Cleaner</div>
-                <p className="text-[11px] text-gray-500 mb-2">Paste messy tasks, shorthand notes, or random lines. Compose will convert them into a clean sequence.</p>
-                <textarea
-                  value={scheduleInput}
-                  onChange={(e) => setScheduleInput(e.target.value)}
-                  placeholder="eg: call dev team, fix landing page copy tomorrow, record demo 2pm, prepare launch tweet"
-                  rows={3}
-                  className="w-full rounded-lg border border-gray-200 bg-white p-2.5 text-xs text-gray-700 outline-none focus:border-violet-400 resize-none"
-                />
-                <button
-                  onClick={convertMessyScheduleToPlan}
-                  className="mt-2 w-full rounded-lg bg-violet-600 text-white text-xs font-semibold py-2 hover:bg-violet-700"
-                >
-                  Clean Into Schedule
-                </button>
-              </div>
-
-              {scheduleOutput.length > 0 && (
-                <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider block">Clean Output</span>
-                  {scheduleOutput.map((item) => (
-                    <div key={item.id} className="p-3 rounded-lg border border-violet-100 bg-white">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="text-xs font-semibold text-gray-800">{item.title}</div>
-                        <div className="text-[10px] font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">{item.slot}</div>
+                {scheduleOutput.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider block">Processed List</span>
+                    {scheduleOutput.map((item) => (
+                      <div key={item.id} className="p-3 rounded-lg border border-violet-100 bg-white">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-xs font-semibold text-gray-800">{item.title}</div>
+                          <div className="text-[10px] font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">{item.slot}</div>
+                        </div>
+                        <div className="text-[11px] text-gray-500">{item.summary}</div>
                       </div>
-                      <div className="text-[11px] text-gray-500">{item.summary}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Minimalist interactive calendar widget */}
-              <div className="border border-gray-100 rounded-xl p-4 bg-[#FAFAFC]">
-                <div className="flex items-center justify-between text-xs font-bold text-gray-700 mb-3">
-                  <span>MAY 2026</span>
-                  <div className="flex gap-2 text-gray-400">
-                    <span className="cursor-pointer hover:text-gray-900">←</span>
-                    <span className="cursor-pointer hover:text-gray-900">→</span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-gray-400 mb-2">
-                  <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-                </div>
-                <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-700">
-                  <span className="text-gray-300">26</span><span className="text-gray-300">27</span><span className="text-gray-300">28</span><span className="text-gray-300">29</span><span className="text-gray-300">30</span><span>1</span><span>2</span>
-                  <span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
-                  <span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span className="bg-violet-600 text-white font-bold rounded-full w-5 h-5 flex items-center justify-center mx-auto">15</span><span>16</span>
-                  <span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span>
-                  <span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span><span>30</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
-                <div className="p-3 rounded-lg border border-violet-100 bg-violet-50/20 text-xs">
-                  <div className="font-bold text-violet-700">Beta Launch Kickoff</div>
-                  <div className="text-gray-500 mt-0.5">May 15 • 10:00 AM</div>
-                </div>
-                <div className="p-3 rounded-lg border border-gray-100 text-xs">
-                  <div className="font-bold text-gray-700">Product Hunt Checklist Finalization</div>
-                  <div className="text-gray-500 mt-0.5">June 14 • 2:30 PM</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="shrink-0 border-t border-gray-100 bg-white p-3">
-            <div className="rounded-[26px] border border-gray-100 bg-white shadow-[0_8px_24px_-12px_rgba(88,63,221,0.35)] p-4">
-              <h4 className="text-[11px] font-bold tracking-[0.12em] text-gray-700 mb-2">BRAIN DUMP CAPTURE</h4>
-              <form onSubmit={handleFloatingSend} className="space-y-3">
-                <div className="rounded-2xl border border-gray-200 bg-[#F6F6FB] p-2.5">
-                  <textarea
-                    value={floatingPrompt}
-                    onChange={(e) => setFloatingPrompt(e.target.value)}
-                    placeholder="- Brain dump your raw list\n- Upload screenshot or voice note\n- Convert directly into Tasks or Schedule"
-                    rows={4}
-                    className="w-full bg-transparent border-none outline-none resize-none text-sm text-gray-700 placeholder:text-gray-400"
-                  />
-                  <div className="mt-2 flex items-center justify-end gap-2">
-                    <input
-                      ref={promptImageInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handlePromptImageUpload}
-                    />
-                    <input
-                      ref={promptAudioInputRef}
-                      type="file"
-                      accept="audio/*"
-                      className="hidden"
-                      onChange={handlePromptAudioUpload}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => promptImageInputRef.current?.click()}
-                      className="w-10 h-10 rounded-full bg-white border border-gray-200 text-violet-600 hover:bg-violet-50 flex items-center justify-center"
-                      title="Upload screenshot"
-                    >
-                      <ImagePlus size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => promptAudioInputRef.current?.click()}
-                      className="w-10 h-10 rounded-full bg-white border border-gray-200 text-violet-600 hover:bg-violet-50 flex items-center justify-center"
-                      title="Upload voice file"
-                    >
-                      <Upload size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={toggleVoiceRecording}
-                      className={`w-10 h-10 rounded-full border flex items-center justify-center ${isVoiceActive ? 'bg-red-50 border-red-200 text-red-600' : 'bg-white border-gray-200 text-violet-600 hover:bg-violet-50'}`}
-                      title={isVoiceActive ? 'Stop live voice capture' : 'Start live voice capture'}
-                    >
-                      <Mic size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={toggleMicMute}
-                      className={`w-10 h-10 rounded-full border flex items-center justify-center ${isMicMuted ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-white border-gray-200 text-violet-600 hover:bg-violet-50'}`}
-                      title={isMicMuted ? 'Unmute mic' : 'Mute mic'}
-                    >
-                      {isMicMuted ? <VolumeX size={17} /> : <Volume2 size={17} />}
-                    </button>
-                  </div>
-                </div>
-
-                {(uploadedPromptImage || uploadedPromptAudio) && (
-                  <div className="flex flex-wrap gap-2 text-[11px]">
-                    {uploadedPromptImage && (
-                      <button
-                        type="button"
-                        onClick={() => setUploadedPromptImage(null)}
-                        className="px-2 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-100"
-                      >
-                        Screenshot: {uploadedPromptImage.name} ×
-                      </button>
-                    )}
-                    {uploadedPromptAudio && (
-                      <button
-                        type="button"
-                        onClick={() => setUploadedPromptAudio(null)}
-                        className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"
-                      >
-                        Audio: {uploadedPromptAudio.name} ×
-                      </button>
-                    )}
+                    ))}
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  className="w-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white py-3 text-sm font-semibold tracking-[0.12em] hover:brightness-105 transition"
-                >
-                  PROCESS LIST
-                </button>
+                {/* Minimalist interactive calendar widget */}
+                <div className="border border-gray-100 rounded-xl p-4 bg-[#FAFAFC]">
+                  <div className="flex items-center justify-between text-xs font-bold text-gray-700 mb-3">
+                    <span>MAY 2026</span>
+                    <div className="flex gap-2 text-gray-400">
+                      <span className="cursor-pointer hover:text-gray-900">←</span>
+                      <span className="cursor-pointer hover:text-gray-900">→</span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-gray-400 mb-2">
+                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-700">
+                    <span className="text-gray-300">26</span><span className="text-gray-300">27</span><span className="text-gray-300">28</span><span className="text-gray-300">29</span><span className="text-gray-300">30</span><span>1</span><span>2</span>
+                    <span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+                    <span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span className="bg-violet-600 text-white font-bold rounded-full w-5 h-5 flex items-center justify-center mx-auto">15</span><span>16</span>
+                    <span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span>
+                    <span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span><span>30</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
+                  <div className="p-3 rounded-lg border border-violet-100 bg-violet-50/20 text-xs">
+                    <div className="font-bold text-violet-700">Beta Launch Kickoff</div>
+                    <div className="text-gray-500 mt-0.5">May 15 • 10:00 AM</div>
+                  </div>
+                  <div className="p-3 rounded-lg border border-gray-100 text-xs">
+                    <div className="font-bold text-gray-700">Product Hunt Checklist Finalization</div>
+                    <div className="text-gray-500 mt-0.5">June 14 • 2:30 PM</div>
+                  </div>
+                </div>
+              </div>
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  convertMessyScheduleToPlan();
+                }}
+                className="border-t border-gray-100 bg-[#FAFAFC] p-3"
+              >
+                <div className="bg-white border border-gray-200 rounded-xl px-2 py-1.5 flex items-center gap-2 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-colors">
+                  <textarea
+                    value={scheduleInput}
+                    onChange={(e) => setScheduleInput(e.target.value)}
+                    placeholder="Paste messy tasks, notes, or shorthand..."
+                    rows={1}
+                    className="flex-1 bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 resize-none py-1"
+                  />
+                  <button
+                    type="submit"
+                    className="h-7 px-2.5 rounded-full bg-violet-600 text-white text-[11px] font-semibold hover:bg-violet-700 whitespace-nowrap"
+                    title="Process list"
+                  >
+                    Process List
+                  </button>
+                </div>
               </form>
             </div>
-          </div>
+          )}
 
         </div>
       </div>
