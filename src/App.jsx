@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import html2pdf from 'html2pdf.js';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
   ChevronLeft, Cloud, Users, Home, Inbox, Star, 
@@ -578,6 +579,7 @@ export default function App() {
     setAppendedSections([]);
     setInitiatives([]);
     setDocBodyHtml('');
+    setLeftSidebarOpen(false);
     showToast('Blank composition created');
   };
 
@@ -714,9 +716,55 @@ export default function App() {
     }
   };
 
-  const exportCurrentDocumentAsPdf = () => {
-    showToast('Preparing print dialog for PDF export');
-    window.print();
+  const exportCurrentDocumentAsPdf = async () => {
+    if (!documentCardRef.current) {
+      showToast('Document is not ready for export');
+      return;
+    }
+
+    const wrapper = document.createElement('div');
+
+    try {
+      showToast('Generating PDF...');
+
+      const clone = documentCardRef.current.cloneNode(true);
+      clone.querySelectorAll('[contenteditable="true"]').forEach((node) => {
+        node.removeAttribute('contenteditable');
+      });
+
+      clone.style.boxShadow = 'none';
+      clone.style.border = 'none';
+      clone.style.borderRadius = '0';
+      clone.style.margin = '0';
+      clone.style.maxWidth = 'none';
+
+      wrapper.style.background = '#ffffff';
+      wrapper.style.padding = '24px';
+      wrapper.style.width = '794px';
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
+      const safeTitle = (docTitle?.trim() || 'composition')
+        .replace(/[^a-zA-Z0-9 _-]/g, '')
+        .slice(0, 60) || 'composition';
+
+      await html2pdf()
+        .set({
+          margin: 0,
+          filename: `${safeTitle}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+        })
+        .from(wrapper)
+        .save();
+
+      showToast('PDF exported successfully');
+    } catch (_error) {
+      showToast('Unable to export PDF');
+    } finally {
+      wrapper.remove();
+    }
   };
 
   const applyFormatCommand = (command, value) => {
@@ -1160,7 +1208,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-50">
+        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-[120]">
           {orderedDocuments.map((doc) => {
             const label = doc.title?.trim() ? doc.title : 'Tap your text here';
             const isActive = activeDocId === doc.id;
@@ -1395,7 +1443,7 @@ export default function App() {
         </div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className={`flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 ${rightSidebarOpen ? 'opacity-30' : 'opacity-100'}`}>
+        <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
           <div
             className="mx-auto"
             style={{
@@ -1409,28 +1457,48 @@ export default function App() {
           <div ref={documentCardRef} className="max-w-[850px] mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 min-h-[calc(100vh-13rem)] relative">
             
             {/* Title & Subtitle */}
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              onInput={(e) => normalizeEditableDirection(e.currentTarget)}
-              onBlur={(e) => setDocTitle(e.currentTarget.textContent || '')}
-              dir="ltr"
-              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
-            >
-              {docTitle || 'Tap your text here'}
+            <div className="relative mb-2">
+              {!docTitle?.trim() && (
+                <div
+                  className="pointer-events-none absolute inset-0 text-gray-300 leading-tight tracking-tight font-semibold"
+                  style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode }}
+                >
+                  Tap your text here
+                </div>
+              )}
+              <div
+                contentEditable
+                suppressContentEditableWarning
+                onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+                onBlur={(e) => setDocTitle(e.currentTarget.textContent || '')}
+                dir="ltr"
+                style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
+                className="w-full text-gray-900 leading-tight tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold min-h-[1.2em]"
+              >
+                {docTitle}
+              </div>
             </div>
             
-            <div
-              contentEditable
-              suppressContentEditableWarning
-              onInput={(e) => normalizeEditableDirection(e.currentTarget)}
-              onBlur={(e) => setDocSubtitle(e.currentTarget.textContent || '')}
-              dir="ltr"
-              style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
-            >
-              {docSubtitle || 'Tap your text here'}
+            <div className="relative mb-10 max-w-2xl min-h-14">
+              {!docSubtitle?.trim() && (
+                <div
+                  className="pointer-events-none absolute inset-0 text-[17px] text-gray-300 leading-relaxed"
+                  style={{ fontFamily: editorFont, textAlign: alignMode }}
+                >
+                  Tap your text here
+                </div>
+              )}
+              <div
+                contentEditable
+                suppressContentEditableWarning
+                onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+                onBlur={(e) => setDocSubtitle(e.currentTarget.textContent || '')}
+                dir="ltr"
+                style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
+                className="w-full text-[17px] text-gray-500 leading-relaxed border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
+              >
+                {docSubtitle}
+              </div>
             </div>
 
             {isBlankDocument && (
@@ -2125,7 +2193,7 @@ export default function App() {
                           {monthNames[calendarMonth]} <ChevronDown size={14} className="text-gray-400" />
                         </button>
                         {openDropdown === 'calendar-month' && (
-                          <div className="absolute top-9 left-0 z-50 w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                          <div className="absolute top-9 left-0 z-[120] w-44 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                             <div className="max-h-44 overflow-y-auto">
                               {monthNames.map((m, i) => (
                                 <button
@@ -2155,7 +2223,7 @@ export default function App() {
                           {calendarYear} <ChevronDown size={14} className="text-gray-400" />
                         </button>
                         {openDropdown === 'calendar-year' && (
-                          <div className="absolute top-9 left-0 z-50 w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+                          <div className="absolute top-9 left-0 z-[120] w-32 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
                             <div className="max-h-44 overflow-y-auto">
                               {[2026, 2027, 2028, 2029].map((y) => (
                                 <button
@@ -2252,21 +2320,21 @@ export default function App() {
                 }}
                 className="border-t border-gray-100 bg-[#FAFAFC] p-4"
               >
-                <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
-                  <PenTool size={14} className="text-gray-400 mx-2 shrink-0" />
+                <div className="relative flex items-center bg-white border border-gray-200 rounded-xl focus-within:border-violet-400 transition-colors">
                   <input
                     type="text"
                     value={scheduleInput}
-                    onChange={(e) => setScheduleInput(e.target.value)}
+                    onChange={(e) => setScheduleInput(e.target.value.slice(0, 20))}
+                    maxLength={20}
                     placeholder="Paste messy tasks, notes, or shorthand..."
-                    className="flex-1 bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 py-1"
+                    className="w-full bg-transparent border-none focus:outline-none text-sm py-2.5 pl-3.5 pr-10 text-gray-700 placeholder-gray-400"
                   />
                   <button
                     type="submit"
-                    className="h-8 px-3 rounded-full bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors whitespace-nowrap shrink-0"
+                    className="absolute right-1.5 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
                     title="Process list"
                   >
-                    Process
+                    <Send size={14} />
                   </button>
                 </div>
               </form>
