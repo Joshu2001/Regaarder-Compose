@@ -64,6 +64,7 @@ export default function App() {
   const documentCardRef = useRef(null);
   const blankBodyRef = useRef(null);
   const formattingMenuRef = useRef(null);
+  const savedSelectionRef = useRef(null);
   const speechRecognitionRef = useRef(null);
   const promptAudioInputRef = useRef(null);
   const dragStateRef = useRef({
@@ -184,6 +185,65 @@ export default function App() {
 
     window.addEventListener('pointerdown', handleClickOutside);
     return () => window.removeEventListener('pointerdown', handleClickOutside);
+  }, []);
+
+  const isRangeInsideEditor = (range) => {
+    if (!range || !documentCardRef.current) {
+      return false;
+    }
+
+    const ancestor = range.commonAncestorContainer;
+    const targetNode = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+    return !!targetNode && documentCardRef.current.contains(targetNode);
+  };
+
+  const getEditorSelectionRange = () => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) {
+      return null;
+    }
+
+    const range = selection.getRangeAt(0);
+    return isRangeInsideEditor(range) ? range : null;
+  };
+
+  const restoreSavedSelection = () => {
+    if (!savedSelectionRef.current) {
+      return false;
+    }
+
+    const selection = window.getSelection();
+    if (!selection) {
+      return false;
+    }
+
+    selection.removeAllRanges();
+    selection.addRange(savedSelectionRef.current);
+    return true;
+  };
+
+  const normalizeEditableDirection = (element) => {
+    if (!element) {
+      return;
+    }
+
+    element.setAttribute('dir', 'ltr');
+    element.style.direction = 'ltr';
+    element.style.unicodeBidi = 'plaintext';
+  };
+
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const range = getEditorSelectionRange();
+      if (!range) {
+        return;
+      }
+
+      savedSelectionRef.current = range.cloneRange();
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
   }, []);
 
   useEffect(() => {
@@ -644,7 +704,24 @@ export default function App() {
   };
 
   const applyFormatCommand = (command, value) => {
+    let range = getEditorSelectionRange();
+
+    if ((!range || range.collapsed) && restoreSavedSelection()) {
+      range = getEditorSelectionRange();
+    }
+
+    if (!range || range.collapsed) {
+      showToast('Select text first to apply formatting');
+      return;
+    }
+
     document.execCommand(command, false, value);
+
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount) {
+      savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
+    }
+
     if (blankBodyRef.current) {
       setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
@@ -1017,7 +1094,7 @@ export default function App() {
           </div>
         </div>
 
-        <div className={`h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-50 transition-opacity ${rightSidebarOpen ? 'opacity-60' : 'opacity-100'}`}>
+        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-50">
           {orderedDocuments.map((doc) => {
             const label = doc.title?.trim() ? doc.title : 'Tap your text here';
             const isActive = activeDocId === doc.id;
@@ -1086,7 +1163,15 @@ export default function App() {
         </div>
 
         {/* Formatting Ribbon */}
-        <div ref={formattingMenuRef} className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[70] transition-opacity ${rightSidebarOpen ? 'opacity-60' : 'opacity-100'}`}>
+        <div
+          ref={formattingMenuRef}
+          onMouseDown={(event) => {
+            if (event.target.closest('button')) {
+              event.preventDefault();
+            }
+          }}
+          className="h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[70]"
+        >
           <div className="relative">
             <button
               onClick={() => setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'))}
@@ -1252,9 +1337,11 @@ export default function App() {
             <div
               contentEditable
               suppressContentEditableWarning
-              onInput={(e) => setDocTitle(e.currentTarget.textContent)}
-              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode }}
-              className={`w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent ${isBoldActive ? 'font-bold' : 'font-semibold'} ${isItalicActive ? 'italic' : ''} ${isUnderlineActive ? 'underline' : ''} ${isStrikeActive ? 'line-through' : ''}`}
+              onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+              onBlur={(e) => setDocTitle(e.currentTarget.textContent || '')}
+              dir="ltr"
+              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
+              className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
             >
               {docTitle || 'Tap your text here'}
             </div>
@@ -1262,8 +1349,10 @@ export default function App() {
             <div
               contentEditable
               suppressContentEditableWarning
-              onInput={(e) => setDocSubtitle(e.currentTarget.textContent)}
-              style={{ fontFamily: editorFont, textAlign: alignMode }}
+              onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+              onBlur={(e) => setDocSubtitle(e.currentTarget.textContent || '')}
+              dir="ltr"
+              style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
             >
               {docSubtitle || 'Tap your text here'}
@@ -1274,9 +1363,11 @@ export default function App() {
                 ref={blankBodyRef}
                 contentEditable
                 suppressContentEditableWarning
-                onInput={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+                onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                dir="ltr"
                 className="mb-10 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed relative"
-                style={{ fontFamily: editorFont, textAlign: alignMode }}
+                style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                 dangerouslySetInnerHTML={{ __html: docBodyHtml }}
               />
             )}
@@ -1481,14 +1572,25 @@ export default function App() {
             </button>
             <div className="flex items-center gap-3 px-2 flex-1">
               <Sparkles size={18} className="text-violet-500 shrink-0" />
-              <textarea
-                value={floatingPrompt}
-                onChange={(e) => setFloatingPrompt(e.target.value)}
-                placeholder="Type an instruction (e.g. 'add timeline' or 'extract risks')..."
-                rows={isPromptExpanded ? 4 : 1}
-                style={{ textAlign: alignMode }}
-                className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2 resize-none"
-              />
+              {isPromptExpanded ? (
+                <textarea
+                  value={floatingPrompt}
+                  onChange={(e) => setFloatingPrompt(e.target.value)}
+                  placeholder="Ask Compose AI..."
+                  rows={4}
+                  style={{ textAlign: alignMode }}
+                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2 resize-none overflow-y-auto"
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={floatingPrompt}
+                  onChange={(e) => setFloatingPrompt(e.target.value)}
+                  placeholder="Ask Compose AI..."
+                  style={{ textAlign: alignMode }}
+                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
+                />
+              )}
             </div>
             <div className="flex items-center gap-2 pr-1 shrink-0">
               <input
