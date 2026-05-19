@@ -46,6 +46,8 @@ export default function App() {
   const [newTaskInput, setNewTaskInput] = useState('');
   const [scheduleInput, setScheduleInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
+  const [calendarMonth, setCalendarMonth] = useState(4); // 0=Jan, 4=May
+  const [calendarYear, setCalendarYear] = useState(2026);
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
@@ -816,6 +818,36 @@ export default function App() {
       window.removeEventListener('pointerup', handlePointerUp);
     };
   }, [dragTarget]);
+
+  // Helper function to generate calendar days
+  const generateCalendarDays = (month, year) => {
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    
+    const days = [];
+    
+    // Previous month's trailing days
+    for (let i = firstDay - 1; i >= 0; i--) {
+      days.push({ day: daysInPrevMonth - i, isCurrentMonth: false });
+    }
+    
+    // Current month's days
+    for (let i = 1; i <= daysInMonth; i++) {
+      const isToday = new Date(year, month, i).toDateString() === new Date().toDateString();
+      days.push({ day: i, isCurrentMonth: true, isToday });
+    }
+    
+    // Next month's leading days
+    const remainingDays = 42 - days.length;
+    for (let i = 1; i <= remainingDays; i++) {
+      days.push({ day: i, isCurrentMonth: false });
+    }
+    
+    return days;
+  };
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   // Helper component for the Workspace icons in the sidebar
   const WorkspaceIcon = ({ letter, colorClass }) => (
@@ -2049,21 +2081,78 @@ export default function App() {
                 {/* Minimalist interactive calendar widget */}
                 <div className="border border-gray-100 rounded-xl p-4 bg-[#FAFAFC]">
                   <div className="flex items-center justify-between text-xs font-bold text-gray-700 mb-3">
-                    <span>MAY 2026</span>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={calendarMonth}
+                        onChange={(e) => setCalendarMonth(parseInt(e.target.value))}
+                        className="border border-gray-200 rounded px-2 py-1 text-xs bg-white cursor-pointer hover:border-violet-300"
+                      >
+                        {monthNames.map((m, i) => (
+                          <option key={i} value={i}>{m}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={calendarYear}
+                        onChange={(e) => setCalendarYear(parseInt(e.target.value))}
+                        className="border border-gray-200 rounded px-2 py-1 text-xs bg-white cursor-pointer hover:border-violet-300"
+                      >
+                        {[2026, 2027, 2028, 2029].map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
                     <div className="flex gap-2 text-gray-400">
-                      <span className="cursor-pointer hover:text-gray-900">←</span>
-                      <span className="cursor-pointer hover:text-gray-900">→</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (calendarMonth === 0) {
+                            setCalendarMonth(11);
+                            setCalendarYear(calendarYear - 1);
+                          } else {
+                            setCalendarMonth(calendarMonth - 1);
+                          }
+                        }}
+                        className="cursor-pointer hover:text-gray-900 transition-colors"
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (calendarMonth === 11) {
+                            setCalendarMonth(0);
+                            setCalendarYear(calendarYear + 1);
+                          } else {
+                            setCalendarMonth(calendarMonth + 1);
+                          }
+                        }}
+                        disabled={calendarYear === 2029 && calendarMonth === 11}
+                        className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        →
+                      </button>
                     </div>
                   </div>
                   <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-gray-400 mb-2">
                     <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                   </div>
                   <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-700">
-                    <span className="text-gray-300">26</span><span className="text-gray-300">27</span><span className="text-gray-300">28</span><span className="text-gray-300">29</span><span className="text-gray-300">30</span><span>1</span><span>2</span>
-                    <span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
-                    <span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span className="bg-violet-600 text-white font-bold rounded-full w-5 h-5 flex items-center justify-center mx-auto">15</span><span>16</span>
-                    <span>17</span><span>18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span>
-                    <span>24</span><span>25</span><span>26</span><span>27</span><span>28</span><span>29</span><span>30</span>
+                    {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`py-1 rounded transition-colors ${
+                          dayObj.isCurrentMonth
+                            ? dayObj.isToday
+                              ? 'bg-violet-600 text-white font-bold'
+                              : 'hover:bg-gray-200 cursor-pointer'
+                            : 'text-gray-300'
+                        }`}
+                        disabled={!dayObj.isCurrentMonth}
+                      >
+                        {dayObj.day}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -2085,22 +2174,23 @@ export default function App() {
                   e.preventDefault();
                   convertMessyScheduleToPlan();
                 }}
-                className="border-t border-gray-100 bg-[#FAFAFC] p-3"
+                className="border-t border-gray-100 bg-[#FAFAFC] p-4"
               >
-                <div className="bg-white border border-gray-200 rounded-xl px-2 py-1.5 flex items-center gap-2 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-colors">
+                <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
+                  <span className="text-gray-400 px-2 shrink-0">✏️</span>
                   <textarea
                     value={scheduleInput}
                     onChange={(e) => setScheduleInput(e.target.value)}
                     placeholder="Paste messy tasks, notes, or shorthand..."
                     rows={1}
-                    className="flex-1 bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 resize-none py-1"
+                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 resize-none py-1"
                   />
                   <button
                     type="submit"
-                    className="h-7 px-2.5 rounded-full bg-violet-600 text-white text-[11px] font-semibold hover:bg-violet-700 whitespace-nowrap"
+                    className="h-8 px-3 rounded-full bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition-colors whitespace-nowrap shrink-0"
                     title="Process list"
                   >
-                    Process List
+                    Process
                   </button>
                 </div>
               </form>
