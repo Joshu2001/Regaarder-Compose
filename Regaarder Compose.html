@@ -1864,7 +1864,17 @@ Rules:
     recordChatFeedback(message, 'delete_message');
   };
 
-  const toggleVoiceRecording = () => {
+  const ensureMicrophonePermission = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error('media-devices-unsupported');
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((track) => track.stop());
+    return true;
+  };
+
+  const toggleVoiceRecording = async () => {
     if (!speechSupported) {
       showToast('Speech recognition is not supported in this browser');
       return;
@@ -1886,12 +1896,13 @@ Rules:
     }
 
     try {
+      await ensureMicrophonePermission();
       speechRecognitionRef.current?.start();
       setIsVoiceActive(true);
       showToast('Voice transcription started');
     } catch (_error) {
       setIsVoiceActive(false);
-      showToast('Unable to start microphone transcription');
+      showToast('Microphone permission is required. Please allow microphone access and retry.');
     }
   };
 
@@ -2418,6 +2429,17 @@ Rules:
 
   const formatTimeSlot = (hours24, minutes = 0) => `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 
+  const parseTimeSlot = (slot) => {
+    const match = String(slot || '').match(/(\d{1,2}):(\d{2})/);
+    if (!match) {
+      return { hours: 9, minutes: 0 };
+    }
+    return {
+      hours: Math.min(23, Math.max(0, Number(match[1] || 9))),
+      minutes: Math.min(59, Math.max(0, Number(match[2] || 0))),
+    };
+  };
+
   const inferCategory = (text) => {
     const value = String(text || '').toLowerCase();
     if (/meeting|call|sync|interview|standup/.test(value)) return 'Meeting';
@@ -2442,7 +2464,10 @@ Rules:
   const parseScheduleItem = (rawItem, index = 0) => {
     const cleaned = String(rawItem || '').trim();
     const normalized = cleaned.replace(/\bshhedule\b|\bshedule\b/gi, 'schedule').replace(/\bppm\b/gi, 'pm');
-    const timeMatch = normalized.match(/(?:at\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?/i);
+
+    const explicitTimeMatch = normalized.match(/\bat\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?/i);
+    const timeWithMarkerMatch = normalized.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\b/i);
+    const timeMatch = explicitTimeMatch || timeWithMarkerMatch;
     let hours = 9 + (index % 10);
     let minutes = 0;
     if (timeMatch) {
@@ -2451,9 +2476,18 @@ Rules:
       const marker = String(timeMatch[3] || '').toLowerCase().replace(/\./g, '');
       if (marker === 'pm' && hours < 12) hours += 12;
       if (marker === 'am' && hours === 12) hours = 0;
-      if (!marker && hours <= 7) {
+      if (!marker && hours <= 7 && explicitTimeMatch) {
         hours += 12;
       }
+      hours = Math.min(23, Math.max(0, hours));
+    }
+
+    const durationMatch = normalized.match(/(\d{1,3})\s*(m|min|mins|minute|minutes|h|hr|hrs|hour|hours)\b/i);
+    let durationMinutes = 60;
+    if (durationMatch) {
+      const amount = Number(durationMatch[1] || 60);
+      const unit = String(durationMatch[2] || 'm').toLowerCase();
+      durationMinutes = /h|hr|hrs|hour/.test(unit) ? amount * 60 : amount;
     }
 
     const monthRegex = /(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+[a-z]+)?\s+(\d{1,2})(?:[^\d]+(\d{4}))?/i;
@@ -2470,6 +2504,8 @@ Rules:
       if (!Number.isNaN(monthIndex) && !Number.isNaN(day)) {
         dueDate = new Date(year, monthIndex, day, hours, minutes);
       }
+    } else {
+      dueDate = new Date(selectedCalendarDate.getFullYear(), selectedCalendarDate.getMonth(), selectedCalendarDate.getDate(), hours, minutes);
     }
 
     const titleSource = normalized
@@ -2488,18 +2524,124 @@ Rules:
     const category = inferCategory(normalized);
     const urgency = inferUrgency(normalized, dueDate);
 
-    return {
+    const slot = formatTimeSlot(hours, minutes);
+
+    const parsed = {
       id: Date.now() + index + Math.floor(Math.random() * 1000),
-      slot: formatTimeSlot(hours, minutes),
+      slot,
       title,
       summary: '',
       steps: [],
       category,
       urgency,
+      durationMinutes,
       dueDate: dueDate ? dueDate.toISOString() : null,
       approved: false,
       rawInput: cleaned,
     };
+
+    return {
+      ...parsed,
+      original: {
+        slot: parsed.slot,
+        title: parsed.title,
+        summary: parsed.summary,
+        steps: parsed.steps,
+        category: parsed.category,
+        urgency: parsed.urgency,
+        durationMinutes: parsed.durationMinutes,
+        dueDate: parsed.dueDate,
+      },
+    };
+  };
+
+  const findBestAvailableSlot = (targetDate) => {
+    const pool = ['09:00', '11:00', '13:00', '15:00', '17:00', '19:00'];
+    const isSameDay = (iso) => {
+      if (!iso) return false;
+      const d = new Date(iso);
+      return d.getFullYear() === targetDate.getFullYear() && d.getMonth() === targetDate.getMonth() && d.getDate() === targetDate.getDate();
+    };
+    const busy = new Set([
+      ...scheduleOutput.filter((item) => isSameDay(item.dueDate)).map((item) => item.slot),
+      ...upcomingEvents.filter((item) => isSameDay(item.dueDate)).map((item) => item.slot),
+    ]);
+    return pool.find((slot) => !busy.has(slot)) || pool[0];
+  };
+
+  const enrichScheduleItemsWithAI = async (rawItems, fallbackItems) => {
+    if (!getActiveGeminiApiKey()) {
+      return fallbackItems;
+    }
+
+    const schema = {
+      type: 'OBJECT',
+      properties: {
+        items: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              title: { type: 'STRING' },
+              slot: { type: 'STRING' },
+              dueDateISO: { type: 'STRING' },
+              durationMinutes: { type: 'NUMBER' },
+              category: { type: 'STRING' },
+              urgency: { type: 'STRING' },
+              summary: { type: 'STRING' },
+              steps: { type: 'ARRAY', items: { type: 'STRING' } },
+            },
+          },
+        },
+      },
+    };
+
+    try {
+      const response = await callGemini({
+        userPrompt: rawItems.join('\n'),
+        systemPrompt: `Convert the schedule lines into structured JSON.\nRules:\n- Extract title, date/time, duration in minutes.\n- slot must be HH:MM 24-hour.\n- dueDateISO must be valid ISO datetime.\n- infer category as Meeting/Work/Personal/General.\n- urgency must be high/medium/low.\n- Keep summary concise.\n- Add useful step checklist when obvious.`,
+        schema,
+      });
+
+      const aiItems = response?.parsed?.items;
+      if (!Array.isArray(aiItems) || !aiItems.length) {
+        return fallbackItems;
+      }
+
+      return fallbackItems.map((base, index) => {
+        const ai = aiItems[index] || {};
+        const mergedDate = ai.dueDateISO ? new Date(ai.dueDateISO) : (base.dueDate ? new Date(base.dueDate) : null);
+        const nextDate = mergedDate && !Number.isNaN(mergedDate.getTime()) ? mergedDate : null;
+        const nextSlot = /\d{1,2}:\d{2}/.test(String(ai.slot || '')) ? String(ai.slot) : base.slot;
+        const next = {
+          ...base,
+          title: String(ai.title || base.title || '').trim() || base.title,
+          slot: nextSlot,
+          dueDate: nextDate ? nextDate.toISOString() : base.dueDate,
+          durationMinutes: Number(ai.durationMinutes || base.durationMinutes || 60),
+          category: String(ai.category || base.category || 'General'),
+          urgency: ['high', 'medium', 'low'].includes(String(ai.urgency || '').toLowerCase()) ? String(ai.urgency).toLowerCase() : base.urgency,
+          summary: String(ai.summary || base.summary || ''),
+          steps: Array.isArray(ai.steps) ? ai.steps.filter(Boolean).map((step) => String(step)) : base.steps,
+        };
+
+        return {
+          ...next,
+          original: {
+            slot: next.slot,
+            title: next.title,
+            summary: next.summary,
+            steps: next.steps,
+            category: next.category,
+            urgency: next.urgency,
+            durationMinutes: next.durationMinutes,
+            dueDate: next.dueDate,
+          },
+        };
+      });
+    } catch (_error) {
+      return fallbackItems;
+    }
   };
 
   const formatEventSlotLabel = (event) => {
@@ -2524,14 +2666,21 @@ Rules:
     return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} • ${slotLabel}`;
   };
 
-  const convertTaskToSchedule = (taskValue) => {
+  const convertTaskToSchedule = async (taskValue) => {
     const taskText = typeof taskValue === 'string' ? taskValue : String(taskValue?.text || '');
     const trimmed = taskText.trim();
     if (!trimmed) {
       return;
     }
 
-    const scheduleItem = parseScheduleItem(trimmed, scheduleOutput.length);
+    let scheduleItem = parseScheduleItem(trimmed, scheduleOutput.length);
+    const targetDate = scheduleItem.dueDate ? new Date(scheduleItem.dueDate) : selectedCalendarDate;
+    if (!/\d{1,2}:\d{2}/.test(scheduleItem.slot || '')) {
+      scheduleItem.slot = findBestAvailableSlot(targetDate);
+    }
+
+    const aiEnriched = await enrichScheduleItemsWithAI([trimmed], [scheduleItem]);
+    scheduleItem = aiEnriched[0] || scheduleItem;
     if (typeof taskValue === 'object' && taskValue?.owner) {
       scheduleItem.category = taskValue.owner === 'agent' ? 'Agent Task' : scheduleItem.category;
     }
@@ -2545,7 +2694,7 @@ Rules:
     showToast('Task converted to schedule');
   };
 
-  const convertMessyScheduleToPlan = () => {
+  const convertMessyScheduleToPlan = async () => {
     const rawItems = scheduleInput
       .split(/\n|;/)
       .map((item) => item.trim())
@@ -2555,7 +2704,16 @@ Rules:
       return;
     }
 
-    const cleanItems = rawItems.map((item, index) => parseScheduleItem(item, index));
+    let cleanItems = rawItems.map((item, index) => {
+      const parsed = parseScheduleItem(item, index);
+      if (!/\d{1,2}:\d{2}/.test(parsed.slot || '')) {
+        const targetDate = parsed.dueDate ? new Date(parsed.dueDate) : selectedCalendarDate;
+        parsed.slot = findBestAvailableSlot(targetDate);
+      }
+      return parsed;
+    });
+
+    cleanItems = await enrichScheduleItemsWithAI(rawItems, cleanItems);
 
     setScheduleOutput(cleanItems);
     trackMemoryAction('automation', 'Converted raw schedule input', {
@@ -2568,6 +2726,19 @@ Rules:
     setScheduleOutput((prev) => prev.map((item) => (
       item.id === id ? { ...item, [field]: value } : item
     )));
+  };
+
+  const undoScheduleItem = (id) => {
+    setScheduleOutput((prev) => prev.map((item) => {
+      if (item.id !== id || !item.original) {
+        return item;
+      }
+      return {
+        ...item,
+        ...item.original,
+      };
+    }));
+    showToast('Reverted schedule item changes');
   };
 
   const addScheduleStep = (id) => {
@@ -2605,6 +2776,7 @@ Rules:
           dueDate: target.dueDate || selectedCalendarDate.toISOString(),
           category: target.category,
           urgency: target.urgency,
+          durationMinutes: target.durationMinutes || 60,
           slotLabel: formatEventSlotLabel(target),
         },
         ...existing,
@@ -4736,7 +4908,8 @@ Rules:
                   <div className="space-y-2">
                     <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider block">Processed List</span>
                     {scheduleOutput.map((item) => (
-                      <div key={item.id} className={`p-3 rounded-lg border bg-white space-y-2 ${item.urgency === 'high' ? 'border-rose-200' : item.urgency === 'medium' ? 'border-amber-200' : 'border-violet-100'}`}>
+                      <div key={item.id} className={`p-3 rounded-xl border bg-white space-y-2 relative overflow-hidden ${item.urgency === 'high' ? 'border-rose-200' : item.urgency === 'medium' ? 'border-amber-200' : 'border-violet-100'}`}>
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${item.urgency === 'high' ? 'bg-rose-500' : item.urgency === 'medium' ? 'bg-amber-500' : 'bg-violet-500'}`}></div>
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-600">{item.category || 'General'}</span>
@@ -4754,6 +4927,15 @@ Rules:
                             value={item.slot}
                             onChange={(event) => updateScheduleItem(item.id, 'slot', event.target.value)}
                             className="w-24 text-[10px] font-semibold text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2 py-1 focus:outline-none focus:border-violet-400"
+                          />
+                          <input
+                            type="number"
+                            min={15}
+                            max={360}
+                            value={item.durationMinutes || 60}
+                            onChange={(event) => updateScheduleItem(item.id, 'durationMinutes', Math.max(15, Number(event.target.value) || 60))}
+                            className="w-16 text-[10px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-full px-2 py-1 focus:outline-none focus:border-violet-400"
+                            title="Duration in minutes"
                           />
                         </div>
                         <textarea
@@ -4793,7 +4975,14 @@ Rules:
                             </div>
                           ))}
                         </div>
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => undoScheduleItem(item.id)}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1"
+                          >
+                            <Undo2 size={12} /> Undo
+                          </button>
                           <button
                             type="button"
                             onClick={() => approveScheduleItem(item.id)}
@@ -4954,9 +5143,15 @@ Rules:
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
                   {upcomingEvents.map((event, index) => (
-                    <div key={event.id} className={`p-3 rounded-lg border text-xs ${event.urgency === 'high' ? 'border-rose-100 bg-rose-50/20' : index === 0 ? 'border-violet-100 bg-violet-50/20' : 'border-gray-100 bg-white'}`}>
-                      <div className={`font-bold ${event.urgency === 'high' ? 'text-rose-700' : index === 0 ? 'text-violet-700' : 'text-gray-700'}`}>{event.title}</div>
-                      <div className="text-gray-500 mt-0.5">{formatEventSlotLabel(event)}</div>
+                    <div key={event.id} className={`p-3 rounded-xl border text-xs relative overflow-hidden ${event.urgency === 'high' ? 'border-rose-100 bg-rose-50/20' : index === 0 ? 'border-violet-100 bg-violet-50/20' : 'border-gray-100 bg-white'}`}>
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${event.urgency === 'high' ? 'bg-rose-500' : event.urgency === 'medium' ? 'bg-amber-500' : 'bg-violet-500'}`}></div>
+                      <div className={`font-bold text-sm ${event.urgency === 'high' ? 'text-rose-700' : index === 0 ? 'text-violet-700' : 'text-gray-700'}`}>{event.title}</div>
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700">{event.category || 'General'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">{event.durationMinutes || 60}m</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-white text-violet-700">{event.slot || formatEventSlotLabel(event).split('•').slice(-1)[0].trim()}</span>
+                      </div>
+                      <div className="text-gray-500 mt-1">{formatEventSlotLabel(event)}</div>
                     </div>
                   ))}
                 </div>
