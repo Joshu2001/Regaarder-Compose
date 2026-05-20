@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
@@ -10,8 +10,10 @@ import {
   List, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Volume2, VolumeX
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Volume2, VolumeX, Database, KeyRound
 } from 'lucide-react';
+
+const DEMO_GEMINI_API_KEY = import.meta.env.VITE_GEMINI_DEMO_API_KEY || '';
 
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
@@ -35,7 +37,7 @@ export default function App() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
-  const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar'
+  const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(false);
@@ -71,6 +73,14 @@ export default function App() {
   const [shareFormat, setShareFormat] = useState('Regaarder (.rgc)');
   const [shareAccess, setShareAccess] = useState('Viewer');
   const [shareLink, setShareLink] = useState('');
+  const [apiMode, setApiMode] = useState('demo');
+  const [userApiKey, setUserApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [memoryCaptureEnabled, setMemoryCaptureEnabled] = useState(true);
+  const [memoryRetentionDays, setMemoryRetentionDays] = useState(90);
+  const [memoryEntries, setMemoryEntries] = useState([]);
+  const [memoryFilter, setMemoryFilter] = useState('all');
+  const [memorySearch, setMemorySearch] = useState('');
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
@@ -151,6 +161,66 @@ export default function App() {
       setActiveDocId(documents[0].id);
     }
   }, [documents, activeDocId]);
+
+  useEffect(() => {
+    try {
+      const storedApiMode = localStorage.getItem('rc.apiMode');
+      const storedApiKey = localStorage.getItem('rc.userApiKey');
+      const storedCapture = localStorage.getItem('rc.memoryCapture');
+      const storedRetention = localStorage.getItem('rc.memoryRetentionDays');
+      const storedEntries = localStorage.getItem('rc.memoryEntries');
+
+      if (storedApiMode === 'demo' || storedApiMode === 'byok') {
+        setApiMode(storedApiMode);
+      }
+      if (storedApiKey) {
+        setUserApiKey(storedApiKey);
+      }
+      if (storedCapture === 'true' || storedCapture === 'false') {
+        setMemoryCaptureEnabled(storedCapture === 'true');
+      }
+      if (storedRetention) {
+        const parsedRetention = Number(storedRetention);
+        if (!Number.isNaN(parsedRetention) && parsedRetention >= 1 && parsedRetention <= 3650) {
+          setMemoryRetentionDays(parsedRetention);
+        }
+      }
+      if (storedEntries) {
+        const parsedEntries = JSON.parse(storedEntries);
+        if (Array.isArray(parsedEntries)) {
+          setMemoryEntries(parsedEntries.slice(0, 300));
+        }
+      }
+    } catch (_error) {
+      // noop
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('rc.apiMode', apiMode);
+  }, [apiMode]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.userApiKey', userApiKey);
+  }, [userApiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.memoryCapture', String(memoryCaptureEnabled));
+  }, [memoryCaptureEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.memoryRetentionDays', String(memoryRetentionDays));
+  }, [memoryRetentionDays]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.memoryEntries', JSON.stringify(memoryEntries.slice(0, 300)));
+  }, [memoryEntries]);
+
+  useEffect(() => {
+    const now = Date.now();
+    const maxAge = memoryRetentionDays * 24 * 60 * 60 * 1000;
+    setMemoryEntries((prev) => prev.filter((entry) => now - entry.timestamp <= maxAge));
+  }, [memoryRetentionDays]);
 
   useEffect(() => {
     if (!activeDocId) {
@@ -421,11 +491,98 @@ export default function App() {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
+  const trackMemoryAction = (type, summary, details = {}) => {
+    if (!memoryCaptureEnabled) {
+      return;
+    }
+
+    const entry = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      type,
+      summary,
+      details,
+      timestamp: Date.now(),
+    };
+
+    setMemoryEntries((prev) => [entry, ...prev].slice(0, 300));
+  };
+
+  const getActiveGeminiApiKey = () => {
+    if (apiMode === 'byok') {
+      return userApiKey.trim();
+    }
+    return DEMO_GEMINI_API_KEY.trim();
+  };
+
+  const callGemini = async (promptText) => {
+    const apiKey = getActiveGeminiApiKey();
+    if (!apiKey) {
+      return null;
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: promptText }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 800,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+  };
+
+  const memoryStats = useMemo(() => {
+    const uploads = memoryEntries.filter((entry) => entry.type === 'upload').length;
+    const exports = memoryEntries.filter((entry) => entry.type === 'export').length;
+    const aiCalls = memoryEntries.filter((entry) => entry.type === 'ai').length;
+    const automations = memoryEntries.filter((entry) => entry.type === 'automation').length;
+
+    return {
+      total: memoryEntries.length,
+      uploads,
+      exports,
+      aiCalls,
+      automations,
+    };
+  }, [memoryEntries]);
+
+  const filteredMemoryEntries = useMemo(() => {
+    const query = memorySearch.trim().toLowerCase();
+
+    return memoryEntries.filter((entry) => {
+      if (memoryFilter !== 'all' && entry.type !== memoryFilter) {
+        return false;
+      }
+
+      if (!query) {
+        return true;
+      }
+
+      const detailsText = Object.values(entry.details || {}).join(' ').toLowerCase();
+      return entry.summary.toLowerCase().includes(query) || detailsText.includes(query);
+    });
+  }, [memoryEntries, memoryFilter, memorySearch]);
+
   // Function to process AI prompt and generate structured output
-  const handleAISubmit = (promptText) => {
+  const handleAISubmit = async (promptText) => {
     if (!promptText.trim()) return;
 
     setIsComposing(true);
+    trackMemoryAction('ai', 'Prompt sent to AI', {
+      length: promptText.trim().length,
+      mode: apiMode,
+    });
     
     // Add user message to chat feed
     const userMsgId = Date.now();
@@ -438,79 +595,101 @@ export default function App() {
     // Scroll to bottom
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
 
-    // Simulate natural AI computation latency
-    setTimeout(() => {
-      setIsComposing(false);
-      const lowerPrompt = promptText.toLowerCase();
-      let aiResponseText = "";
-      let docAction = null;
+    const lowerPrompt = promptText.toLowerCase();
+    let aiResponseText = '';
+    let docAction = null;
 
+    if (lowerPrompt.includes('timeline') || lowerPrompt.includes('date') || lowerPrompt.includes('schedule')) {
+      docAction = {
+        title: '🗓️ 4. Timeline Breakdown',
+        type: 'timeline',
+        content: [
+          { phase: 'Phase 1: Internal QA & Warmups', dates: 'May 1 - May 14', detail: 'Internal regression tests, QA checklists, design audits' },
+          { phase: 'Phase 2: Closed Beta Sandbox', dates: 'May 15 - May 30', detail: 'Invite-only rollout to 500 hand-picked early adopters' },
+          { phase: 'Phase 3: Public Expansion', dates: 'June 1 - June 14', detail: 'Press kits distributed, major public marketing launch' },
+        ],
+      };
+    } else if (lowerPrompt.includes('task') || lowerPrompt.includes('checklist') || lowerPrompt.includes('extract')) {
+      setTasks((prev) => [
+        ...prev,
+        { id: Date.now() + 1, text: 'Refine Beta Launch user feedback channels', completed: false },
+        { id: Date.now() + 2, text: 'Prepare Product Hunt media graphic kit', completed: false },
+      ]);
+      docAction = {
+        title: '📋 5. Core Operational Checklists',
+        type: 'tasks',
+        content: [
+          'Setup feedback surveys and analytics metrics',
+          'Send confirmation emails to internal stakeholders',
+          'Coordinate with community leads for creator outreach channels',
+        ],
+      };
+    } else if (lowerPrompt.includes('risk') || lowerPrompt.includes('danger') || lowerPrompt.includes('threat')) {
+      docAction = {
+        title: '🛡️ 6. Risk Mitigation Matrix',
+        type: 'risks',
+        content: [
+          { threat: 'Severe Server Latency under peak launch loads', impact: 'High', fix: 'Deploy multi-zone automatic scaling protocols on Cloud clusters prior to Product Hunt day.' },
+          { threat: 'Lower-than-expected Creator response rate', impact: 'Medium', fix: 'Leverage direct personalized outreach and introduce referral incentive program.' },
+        ],
+      };
+    } else {
+      docAction = {
+        title: '✨ AI Composed Appendix',
+        type: 'text',
+        paragraph: `Regarding your request to "${promptText}": We recommend structuring milestones aggressively to meet current team bandwidth constraints. Ensuring standard UI elements stay intuitive is critical to reducing cognitive friction during the initial user onboarding wave.`,
+      };
+    }
+
+    try {
+      const modelResponse = await callGemini(promptText);
+      if (modelResponse) {
+        aiResponseText = modelResponse;
+      }
+    } catch (_error) {
+      aiResponseText = '';
+    }
+
+    if (!aiResponseText) {
       if (lowerPrompt.includes('timeline') || lowerPrompt.includes('date') || lowerPrompt.includes('schedule')) {
-        aiResponseText = "Composed a high-level visual launch timeline and linked it directly to your Key Initiatives.";
-        docAction = {
-          title: "🗓️ 4. Timeline Breakdown",
-          type: 'timeline',
-          content: [
-            { phase: "Phase 1: Internal QA & Warmups", dates: "May 1 - May 14", detail: "Internal regression tests, QA checklists, design audits" },
-            { phase: "Phase 2: Closed Beta Sandbox", dates: "May 15 - May 30", detail: "Invite-only rollout to 500 hand-picked early adopters" },
-            { phase: "Phase 3: Public Expansion", dates: "June 1 - June 14", detail: "Press kits distributed, major public marketing launch" },
-          ]
-        };
+        aiResponseText = 'Composed a high-level visual launch timeline and linked it directly to your Key Initiatives.';
       } else if (lowerPrompt.includes('task') || lowerPrompt.includes('checklist') || lowerPrompt.includes('extract')) {
-        aiResponseText = "Extracted 3 critical new action items from your plan and synchronized them with your Workspace Tasks.";
-        // Update app task state
-        setTasks(prev => [
-          ...prev,
-          { id: Date.now() + 1, text: 'Refine Beta Launch user feedback channels', completed: false },
-          { id: Date.now() + 2, text: 'Prepare Product Hunt media graphic kit', completed: false },
-        ]);
-        docAction = {
-          title: "📋 5. Core Operational Checklists",
-          type: 'tasks',
-          content: [
-            "Setup feedback surveys and analytics metrics",
-            "Send confirmation emails to internal stakeholders",
-            "Coordinate with community leads for creator outreach channels"
-          ]
-        };
+        aiResponseText = 'Extracted 3 critical new action items from your plan and synchronized them with your Workspace Tasks.';
       } else if (lowerPrompt.includes('risk') || lowerPrompt.includes('danger') || lowerPrompt.includes('threat')) {
-        aiResponseText = "Generated a proactive Risk Mitigation Matrix outlining resource and audience bottlenecks.";
-        docAction = {
-          title: "🛡️ 6. Risk Mitigation Matrix",
-          type: 'risks',
-          content: [
-            { threat: "Severe Server Latency under peak launch loads", impact: "High", fix: "Deploy multi-zone automatic scaling protocols on Cloud clusters prior to Product Hunt day." },
-            { threat: "Lower-than-expected Creator response rate", impact: "Medium", fix: "Leverage direct personalized outreach and introduce referral incentive program." }
-          ]
-        };
+        aiResponseText = 'Generated a proactive Risk Mitigation Matrix outlining resource and audience bottlenecks.';
       } else {
-        // Fallback natural language composition
         aiResponseText = `Understood your directive: "${promptText}". I have analyzed and composed this smart contextual paragraph for you.`;
-        docAction = {
-          title: "✨ AI Composed Appendix",
-          type: 'text',
-          paragraph: `Regarding your request to "${promptText}": We recommend structuring milestones aggressively to meet current team bandwidth constraints. Ensuring standard UI elements stay intuitive is critical to reducing cognitive friction during the initial user onboarding wave.`
-        };
       }
+    }
 
-      // Append new messages to chat
-      setChatMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        sender: 'ai',
-        text: aiResponseText,
-        type: docAction ? 'action_completed' : 'standard',
-        actionTitle: docAction?.title
-      }]);
+    if (!getActiveGeminiApiKey()) {
+      aiResponseText = `${aiResponseText}\n\nTip: Add an API key in Memory tab to enable live model responses.`;
+    }
 
-      // Automatically inject structured element directly into active document representation
-      if (docAction) {
-        setIsBlankDocument(false);
-        setAppendedSections(prev => [...prev, docAction]);
-        showToast(`Composed: ${docAction.title} injected into main document!`);
-      }
+    setIsComposing(false);
 
-      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-    }, 1800);
+    setChatMessages((prev) => [...prev, {
+      id: Date.now() + 1,
+      sender: 'ai',
+      text: aiResponseText,
+      type: docAction ? 'action_completed' : 'standard',
+      actionTitle: docAction?.title,
+    }]);
+
+    if (docAction) {
+      setIsBlankDocument(false);
+      setAppendedSections((prev) => [...prev, docAction]);
+      showToast(`Composed: ${docAction.title} injected into main document!`);
+      trackMemoryAction('automation', 'AI injected section', {
+        section: docAction.title,
+      });
+    }
+
+    trackMemoryAction('ai', 'AI response generated', {
+      usedLiveModel: Boolean(getActiveGeminiApiKey()),
+    });
+
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   };
 
   const handleSidebarSend = (e) => {
@@ -584,6 +763,11 @@ export default function App() {
 
     const url = URL.createObjectURL(file);
     setUploadedPromptAudio({ name: file.name, url });
+    trackMemoryAction('upload', 'Uploaded prompt audio', {
+      name: file.name,
+      size: file.size,
+      mimeType: file.type,
+    });
     showToast(`Audio attached: ${file.name}`);
   };
 
@@ -633,6 +817,9 @@ export default function App() {
     setInitiatives([]);
     setDocBodyHtml('');
     setLeftSidebarOpen(false);
+    trackMemoryAction('document', 'Created new blank composition', {
+      documentId: String(newDoc.id),
+    });
     showToast('Blank composition created');
   };
 
@@ -814,6 +1001,10 @@ export default function App() {
 
       const fileName = forcedFileName || `${sanitizeFileName(docTitle)}.pdf`;
       pdf.save(fileName);
+      trackMemoryAction('export', 'Exported document', {
+        format: 'PDF',
+        fileName,
+      });
       showToast('PDF exported successfully');
       return true;
     } catch (_error) {
@@ -837,30 +1028,35 @@ export default function App() {
     if (format === 'Regaarder (.rgc)') {
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       triggerBlobDownload(`${fileBase}.rgc`, blob);
+      trackMemoryAction('export', 'Exported document', { format: 'Regaarder (.rgc)' });
       return true;
     }
 
     if (format === 'Markdown') {
       const markdown = `# ${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}\n\n${(payload.initiatives || []).map((item) => `- ${item.name} (${item.timeline})`).join('\n')}\n`;
       triggerBlobDownload(`${fileBase}.md`, new Blob([markdown], { type: 'text/markdown' }));
+      trackMemoryAction('export', 'Exported document', { format: 'Markdown' });
       return true;
     }
 
     if (format === 'Plain Text') {
       const plain = `${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}`;
       triggerBlobDownload(`${fileBase}.txt`, new Blob([plain], { type: 'text/plain' }));
+      trackMemoryAction('export', 'Exported document', { format: 'Plain Text' });
       return true;
     }
 
     if (format === 'DOC (Word-compatible)') {
       const docMarkup = `<html><head><meta charset="utf-8"/></head><body><h1>${payload.title || 'Untitled'}</h1><p>${payload.subtitle || ''}</p></body></html>`;
       triggerBlobDownload(`${fileBase}.doc`, new Blob([docMarkup], { type: 'application/msword' }));
+      trackMemoryAction('export', 'Exported document', { format: 'DOC (Word-compatible)' });
       return true;
     }
 
     if (format === 'HTML') {
       const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body>${payload.bodyHtml || ''}</body></html>`;
       triggerBlobDownload(`${fileBase}.html`, new Blob([html], { type: 'text/html' }));
+      trackMemoryAction('export', 'Exported document', { format: 'HTML' });
       return true;
     }
 
@@ -877,12 +1073,19 @@ export default function App() {
     setShareAccess('Viewer');
     setShareLink(`${base}?doc=${docId}&access=viewer`);
     setShareModalOpen(true);
+    trackMemoryAction('share', 'Opened share modal', {
+      documentId: String(docId),
+    });
   };
 
   const handleShareModalConfirm = async () => {
     if (shareDestination === 'downloads') {
       const ok = await downloadDocumentInFormat(shareFormat, shareTargetDocId || activeDocId);
       if (ok) {
+        trackMemoryAction('share', 'Shared to downloads', {
+          format: shareFormat,
+          access: shareAccess,
+        });
         setShareModalOpen(false);
       }
       return;
@@ -890,6 +1093,9 @@ export default function App() {
 
     try {
       await navigator.clipboard.writeText(shareLink);
+      trackMemoryAction('share', 'Copied share link', {
+        access: shareAccess,
+      });
       showToast(`Share link copied (${shareAccess})`);
     } catch (_error) {
       showToast('Could not copy link automatically');
@@ -971,6 +1177,9 @@ export default function App() {
 
     setTasks((prev) => [...prev, { id: Date.now(), text: trimmed, completed: false }]);
     setNewTaskInput('');
+    trackMemoryAction('task', 'Added task', {
+      textLength: trimmed.length,
+    });
     showToast('Task added');
   };
 
@@ -991,6 +1200,9 @@ export default function App() {
     setScheduleOutput((prev) => [...prev, scheduleItem]);
     setActiveRightTab('calendar');
     setRightSidebarOpen(true);
+    trackMemoryAction('automation', 'Converted task to schedule', {
+      title: scheduleItem.title,
+    });
     showToast('Task converted to schedule');
   };
 
@@ -1012,6 +1224,9 @@ export default function App() {
     }));
 
     setScheduleOutput(cleanItems);
+    trackMemoryAction('automation', 'Converted raw schedule input', {
+      items: cleanItems.length,
+    });
     showToast('Messy schedule converted to clean timeline');
   };
 
@@ -1338,6 +1553,15 @@ export default function App() {
           </button>
           <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
             <Users size={16} /> Shared
+          </button>
+          <button
+            onClick={() => {
+              setActiveRightTab('memory');
+              setRightSidebarOpen(true);
+            }}
+            className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+          >
+            <Database size={16} /> Memory
           </button>
           <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors mb-4">
             <Trash size={16} /> Trash
@@ -2180,6 +2404,12 @@ export default function App() {
           >
             Schedule
           </button>
+          <button
+            className={`flex-1 text-center py-4 transition-all ${activeRightTab === 'memory' ? 'text-violet-600 border-b-2 border-violet-600 bg-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
+            onClick={() => setActiveRightTab('memory')}
+          >
+            Memory
+          </button>
           <div className="w-10 flex items-center justify-center border-l border-gray-100">
             <X 
               size={14} 
@@ -2638,6 +2868,139 @@ export default function App() {
             </div>
           )}
 
+          {activeRightTab === 'memory' && (
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-1">AI Access + Memory</h3>
+                <p className="text-xs text-gray-500">Hybrid mode: demo API for instant use, plus your own API key option.</p>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-[#FAFAFC] p-3 space-y-3">
+                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">API Mode</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setApiMode('demo')}
+                    className={`px-3 py-1.5 rounded-full text-xs border ${apiMode === 'demo' ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-white border-gray-200 text-gray-600'}`}
+                  >
+                    Demo API
+                  </button>
+                  <button
+                    onClick={() => setApiMode('byok')}
+                    className={`px-3 py-1.5 rounded-full text-xs border ${apiMode === 'byok' ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-white border-gray-200 text-gray-600'}`}
+                  >
+                    Use My API Key
+                  </button>
+                </div>
+                <div className="text-[11px] text-gray-500 flex items-center gap-2">
+                  <KeyRound size={12} />
+                  {apiMode === 'demo'
+                    ? (DEMO_GEMINI_API_KEY ? 'Demo API is configured.' : 'Demo API is missing (set VITE_GEMINI_DEMO_API_KEY).')
+                    : (userApiKey.trim() ? 'Your API key is stored locally in this browser.' : 'Paste your API key to enable live responses.')}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type={showApiKey ? 'text' : 'password'}
+                    value={userApiKey}
+                    onChange={(e) => setUserApiKey(e.target.value)}
+                    placeholder="Paste your Gemini API key"
+                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
+                  />
+                  <button
+                    onClick={() => setShowApiKey((prev) => !prev)}
+                    className="px-2 py-2 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
+                  >
+                    {showApiKey ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-[#FAFAFC] p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Memory Controls</div>
+                  <label className="text-xs text-gray-600 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={memoryCaptureEnabled}
+                      onChange={(e) => setMemoryCaptureEnabled(e.target.checked)}
+                    />
+                    Capture events
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                  <div className="rounded-lg border border-gray-200 bg-white p-2">Total: <span className="font-semibold">{memoryStats.total}</span></div>
+                  <div className="rounded-lg border border-gray-200 bg-white p-2">AI: <span className="font-semibold">{memoryStats.aiCalls}</span></div>
+                  <div className="rounded-lg border border-gray-200 bg-white p-2">Uploads: <span className="font-semibold">{memoryStats.uploads}</span></div>
+                  <div className="rounded-lg border border-gray-200 bg-white p-2">Exports: <span className="font-semibold">{memoryStats.exports}</span></div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-600">Retention days</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={3650}
+                    value={memoryRetentionDays}
+                    onChange={(e) => setMemoryRetentionDays(Math.min(3650, Math.max(1, Number(e.target.value) || 90)))}
+                    className="w-24 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
+                  />
+                  <button
+                    onClick={() => setMemoryEntries([])}
+                    className="ml-auto px-2.5 py-1.5 rounded-lg text-xs border border-rose-200 text-rose-600 hover:bg-rose-50"
+                  >
+                    Clear all
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-100 bg-[#FAFAFC] p-3 space-y-2">
+                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Memory Browser</div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={memorySearch}
+                    onChange={(e) => setMemorySearch(e.target.value)}
+                    placeholder="Search memory entries..."
+                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
+                  />
+                  <select
+                    value={memoryFilter}
+                    onChange={(e) => setMemoryFilter(e.target.value)}
+                    className="bg-white border border-gray-200 rounded-lg px-2 py-2 text-xs text-gray-700"
+                  >
+                    <option value="all">All</option>
+                    <option value="ai">AI</option>
+                    <option value="upload">Uploads</option>
+                    <option value="export">Exports</option>
+                    <option value="automation">Automation</option>
+                    <option value="task">Tasks</option>
+                    <option value="share">Sharing</option>
+                    <option value="document">Documents</option>
+                  </select>
+                </div>
+
+                <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+                  {filteredMemoryEntries.length === 0 && (
+                    <div className="text-xs text-gray-500 py-3 text-center">No memory entries yet.</div>
+                  )}
+                  {filteredMemoryEntries.map((entry) => (
+                    <div key={entry.id} className="rounded-lg border border-gray-200 bg-white p-2.5 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-semibold text-gray-800">{entry.summary}</span>
+                        <span className="text-[10px] uppercase text-violet-600 font-semibold">{entry.type}</span>
+                      </div>
+                      <div className="text-[10px] text-gray-500 mt-1">{new Date(entry.timestamp).toLocaleString()}</div>
+                      {Object.keys(entry.details || {}).length > 0 && (
+                        <div className="mt-1.5 text-[10px] text-gray-600 break-all">{Object.entries(entry.details).map(([key, value]) => `${key}: ${value}`).join(' • ')}</div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -2690,6 +3053,18 @@ export default function App() {
             <Calendar size={20} />
           </div>
           <span className="text-[9px] font-semibold">Schedule</span>
+        </div>
+
+        <div
+          onClick={() => handleMiniSidebarClick('memory')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'memory' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <Database size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">Memory</span>
         </div>
 
         <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
