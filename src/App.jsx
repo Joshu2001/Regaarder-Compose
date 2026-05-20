@@ -866,6 +866,24 @@ export default function App() {
       return;
     }
 
+    const getFallbackDocumentTarget = () => {
+      if (blankBodyRef.current) {
+        return blankBodyRef.current;
+      }
+
+      if (!documentCardRef.current) {
+        return null;
+      }
+
+      const editableNodes = Array.from(documentCardRef.current.querySelectorAll('[contenteditable="true"]'));
+      if (!editableNodes.length) {
+        return null;
+      }
+
+      const nonHeaderNode = editableNodes.find((node) => node !== titleEditableRef.current && node !== subtitleEditableRef.current);
+      return nonHeaderNode || editableNodes[editableNodes.length - 1] || null;
+    };
+
     const active = document.activeElement;
     const activeEditable = active?.isContentEditable && documentCardRef.current?.contains(active)
       ? active
@@ -878,7 +896,7 @@ export default function App() {
       } else if (!docSubtitle.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER) {
         target = subtitleEditableRef.current;
       } else {
-        target = blankBodyRef.current;
+        target = getFallbackDocumentTarget();
       }
     }
 
@@ -911,7 +929,18 @@ export default function App() {
       selection.addRange(endRange);
     }
 
-    document.execCommand('insertText', false, `${normalized} `);
+    const insertedViaCommand = document.execCommand('insertText', false, `${normalized} `);
+    if (!insertedViaCommand) {
+      const fallbackSelection = window.getSelection();
+      if (fallbackSelection && fallbackSelection.rangeCount) {
+        const fallbackRange = fallbackSelection.getRangeAt(0);
+        fallbackRange.deleteContents();
+        fallbackRange.insertNode(document.createTextNode(`${normalized} `));
+        fallbackRange.collapse(false);
+        fallbackSelection.removeAllRanges();
+        fallbackSelection.addRange(fallbackRange);
+      }
+    }
     normalizeEditableDirection(target);
 
     if (target === titleEditableRef.current) {
