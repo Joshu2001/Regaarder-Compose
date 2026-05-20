@@ -51,6 +51,9 @@ export default function App() {
   const [chatInput, setChatInput] = useState('');
   const [floatingPrompt, setFloatingPrompt] = useState('');
   const [newTaskInput, setNewTaskInput] = useState('');
+  const [newTaskOwner, setNewTaskOwner] = useState('user');
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [editingTaskText, setEditingTaskText] = useState('');
   const [scheduleInput, setScheduleInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([
@@ -114,6 +117,8 @@ export default function App() {
   const chatEndRef = useRef(null);
   const documentCardRef = useRef(null);
   const blankBodyRef = useRef(null);
+  const titleEditableRef = useRef(null);
+  const subtitleEditableRef = useRef(null);
   const formattingMenuRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const speechRecognitionRef = useRef(null);
@@ -143,6 +148,7 @@ export default function App() {
     promptX: 0,
     promptY: -14,
   });
+  const wholeDocSelectionRef = useRef(false);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState(defaultTitle);
@@ -475,6 +481,13 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event) => {
+      if (!(event.ctrlKey || event.metaKey) && wholeDocSelectionRef.current && (event.key === 'Backspace' || event.key === 'Delete')) {
+        event.preventDefault();
+        clearEntireCompositionText();
+        wholeDocSelectionRef.current = false;
+        return;
+      }
+
       if (!(event.ctrlKey || event.metaKey)) {
         return;
       }
@@ -511,6 +524,22 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
+
+  useEffect(() => {
+    const handlePaste = (event) => {
+      if (!wholeDocSelectionRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      const pasted = event.clipboardData?.getData('text/plain') || '';
+      replaceEntireCompositionText(pasted);
+      wholeDocSelectionRef.current = false;
+    };
+
+    window.addEventListener('paste', handlePaste, true);
+    return () => window.removeEventListener('paste', handlePaste, true);
+  }, []);
 
   useEffect(() => {
     if (!openDropdown) {
@@ -735,6 +764,41 @@ export default function App() {
     selection.removeAllRanges();
     selection.addRange(range);
     savedSelectionRef.current = range.cloneRange();
+    wholeDocSelectionRef.current = true;
+  };
+
+  const clearEntireCompositionText = () => {
+    setDocTitle('');
+    setDocSubtitle('');
+    setDocBodyHtml('');
+    setIsBlankDocument(true);
+    setAppendedSections([]);
+    setLastComposeRun(null);
+    setTimeout(() => {
+      blankBodyRef.current?.focus();
+    }, 0);
+  };
+
+  const replaceEntireCompositionText = (value) => {
+    const raw = String(value || '').replace(/\r/g, '').trim();
+    setDocTitle('');
+    setDocSubtitle('');
+    setIsBlankDocument(true);
+    setAppendedSections([]);
+    if (!raw) {
+      setDocBodyHtml('');
+      return;
+    }
+    const html = raw
+      .split(/\n{2,}/)
+      .map((block) => block.trim())
+      .filter(Boolean)
+      .map((block) => `<p>${escapeHtml(block).replace(/\n/g, '<br/>')}</p>`)
+      .join('');
+    setDocBodyHtml(html);
+    setTimeout(() => {
+      blankBodyRef.current?.focus();
+    }, 0);
   };
 
   const normalizeEditableDirection = (element) => {
@@ -821,6 +885,7 @@ export default function App() {
         setIsUnderlineActive(false);
         setIsStrikeActive(false);
         setIsListActive(false);
+        wholeDocSelectionRef.current = false;
         return;
       }
 
@@ -829,6 +894,7 @@ export default function App() {
       const next = truncateText(selectedText, 180);
       setSelectedEditorText(next);
       selectedEditorTextRef.current = selectedText;
+      wholeDocSelectionRef.current = false;
 
       try {
         setIsBoldActive(Boolean(document.queryCommandState('bold')));
@@ -919,10 +985,10 @@ export default function App() {
 
   // Integrated Tasks checklist state
   const [tasks, setTasks] = useState([
-    { id: 1, text: 'Confirm final beta signup workflow with design team', completed: false },
-    { id: 2, text: 'Draft launch announcements for Twitter and LinkedIn', completed: true },
-    { id: 3, text: 'Coordinate with marketing for Creator pricing model tier', completed: false },
-    { id: 4, text: 'Check analytics dashboard integration is live', completed: false },
+    { id: 1, text: 'Confirm final beta signup workflow with design team', completed: false, owner: 'user' },
+    { id: 2, text: 'Draft launch announcements for Twitter and LinkedIn', completed: true, owner: 'agent' },
+    { id: 3, text: 'Coordinate with marketing for Creator pricing model tier', completed: false, owner: 'user' },
+    { id: 4, text: 'Check analytics dashboard integration is live', completed: false, owner: 'agent' },
   ]);
 
   // Conversational state with pre-loaded AI response cards
@@ -1569,6 +1635,7 @@ Rules:
               id: Date.now() + index,
               text: task,
               completed: false,
+              owner: 'agent',
             }));
             setTasks((prev) => [...prev, ...syncedTasks]);
           } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
@@ -2318,7 +2385,7 @@ Rules:
       return;
     }
 
-    setTasks((prev) => [...prev, { id: Date.now(), text: trimmed, completed: false }]);
+    setTasks((prev) => [...prev, { id: Date.now(), text: trimmed, completed: false, owner: newTaskOwner }]);
     setNewTaskInput('');
     trackMemoryAction('task', 'Added task', {
       textLength: trimmed.length,
@@ -2331,20 +2398,143 @@ Rules:
     showToast('Task removed');
   };
 
-  const convertTaskToSchedule = (taskText) => {
+  const beginTaskEdit = (task) => {
+    setEditingTaskId(task.id);
+    setEditingTaskText(task.text || '');
+  };
+
+  const commitTaskEdit = (taskId) => {
+    const next = editingTaskText.trim();
+    if (!next) {
+      setEditingTaskId(null);
+      setEditingTaskText('');
+      return;
+    }
+    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, text: next } : task)));
+    setEditingTaskId(null);
+    setEditingTaskText('');
+    showToast('Task updated');
+  };
+
+  const formatTimeSlot = (hours24, minutes = 0) => `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+  const inferCategory = (text) => {
+    const value = String(text || '').toLowerCase();
+    if (/meeting|call|sync|interview|standup/.test(value)) return 'Meeting';
+    if (/review|report|draft|write|document|plan/.test(value)) return 'Work';
+    if (/doctor|gym|pay|bill|buy|pickup|family/.test(value)) return 'Personal';
+    return 'General';
+  };
+
+  const inferUrgency = (text, targetDate) => {
+    const value = String(text || '').toLowerCase();
+    if (/urgent|asap|immediately|today/.test(value)) return 'high';
+    if (/tomorrow|soon|next/.test(value)) return 'medium';
+    if (targetDate) {
+      const now = new Date();
+      const diffDays = Math.ceil((targetDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+      if (diffDays <= 1) return 'high';
+      if (diffDays <= 3) return 'medium';
+    }
+    return 'low';
+  };
+
+  const parseScheduleItem = (rawItem, index = 0) => {
+    const cleaned = String(rawItem || '').trim();
+    const normalized = cleaned.replace(/\bshhedule\b|\bshedule\b/gi, 'schedule').replace(/\bppm\b/gi, 'pm');
+    const timeMatch = normalized.match(/(?:at\s*)?(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?/i);
+    let hours = 9 + (index % 10);
+    let minutes = 0;
+    if (timeMatch) {
+      hours = Number(timeMatch[1] || hours);
+      minutes = Number(timeMatch[2] || 0);
+      const marker = String(timeMatch[3] || '').toLowerCase().replace(/\./g, '');
+      if (marker === 'pm' && hours < 12) hours += 12;
+      if (marker === 'am' && hours === 12) hours = 0;
+      if (!marker && hours <= 7) {
+        hours += 12;
+      }
+    }
+
+    const monthRegex = /(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+[a-z]+)?\s+(\d{1,2})(?:[^\d]+(\d{4}))?/i;
+    const dateMatch = normalized.match(monthRegex);
+    let dueDate = null;
+    if (dateMatch) {
+      const monthNamesLookup = {
+        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+      };
+      const monthIndex = monthNamesLookup[String(dateMatch[1] || '').toLowerCase()];
+      const day = Number(dateMatch[2] || selectedCalendarDate.getDate());
+      const year = Number(dateMatch[3] || selectedCalendarDate.getFullYear());
+      if (!Number.isNaN(monthIndex) && !Number.isNaN(day)) {
+        dueDate = new Date(year, monthIndex, day, hours, minutes);
+      }
+    }
+
+    const titleSource = normalized
+      .replace(/\b(schedule|create|add|set|plan)\b/gi, '')
+      .replace(/\bon\b.+$/i, '')
+      .replace(/\bat\b.+$/i, '')
+      .trim();
+
+    let title = titleSource;
+    if (/meeting|call|sync/i.test(normalized)) {
+      title = 'Meeting';
+    } else if (!title) {
+      title = `Task ${index + 1}`;
+    }
+
+    const category = inferCategory(normalized);
+    const urgency = inferUrgency(normalized, dueDate);
+
+    return {
+      id: Date.now() + index + Math.floor(Math.random() * 1000),
+      slot: formatTimeSlot(hours, minutes),
+      title,
+      summary: '',
+      steps: [],
+      category,
+      urgency,
+      dueDate: dueDate ? dueDate.toISOString() : null,
+      approved: false,
+      rawInput: cleaned,
+    };
+  };
+
+  const formatEventSlotLabel = (event) => {
+    if (!event?.dueDate) {
+      return event?.slot ? `${event.slot}` : (event?.slotLabel || 'No time set');
+    }
+
+    const dateValue = new Date(event.dueDate);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const slotLabel = event.slot || formatTimeSlot(dateValue.getHours(), dateValue.getMinutes());
+
+    if (isSameDay(dateValue, today)) {
+      return `Today • ${slotLabel}`;
+    }
+    if (isSameDay(dateValue, tomorrow)) {
+      return `Tomorrow • ${slotLabel}`;
+    }
+    return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} • ${slotLabel}`;
+  };
+
+  const convertTaskToSchedule = (taskValue) => {
+    const taskText = typeof taskValue === 'string' ? taskValue : String(taskValue?.text || '');
     const trimmed = taskText.trim();
     if (!trimmed) {
       return;
     }
 
-    const nextIndex = scheduleOutput.length;
-    const scheduleItem = {
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      slot: `${String(9 + (nextIndex % 10)).padStart(2, '0')}:00`,
-      title: trimmed,
-      summary: 'Added directly from Tasks as a schedule-ready action.',
-      approved: false,
-    };
+    const scheduleItem = parseScheduleItem(trimmed, scheduleOutput.length);
+    if (typeof taskValue === 'object' && taskValue?.owner) {
+      scheduleItem.category = taskValue.owner === 'agent' ? 'Agent Task' : scheduleItem.category;
+    }
 
     setScheduleOutput((prev) => [...prev, scheduleItem]);
     setActiveRightTab('calendar');
@@ -2357,7 +2547,7 @@ Rules:
 
   const convertMessyScheduleToPlan = () => {
     const rawItems = scheduleInput
-      .split(/\n|,|;/)
+      .split(/\n|;/)
       .map((item) => item.trim())
       .filter(Boolean);
 
@@ -2365,13 +2555,7 @@ Rules:
       return;
     }
 
-    const cleanItems = rawItems.map((item, index) => ({
-      id: Date.now() + index,
-      slot: `${String(9 + index).padStart(2, '0')}:00`,
-      title: item.charAt(0).toUpperCase() + item.slice(1),
-      summary: `Action-ready block created from raw input item #${index + 1}.`,
-      approved: false,
-    }));
+    const cleanItems = rawItems.map((item, index) => parseScheduleItem(item, index));
 
     setScheduleOutput(cleanItems);
     trackMemoryAction('automation', 'Converted raw schedule input', {
@@ -2386,6 +2570,28 @@ Rules:
     )));
   };
 
+  const addScheduleStep = (id) => {
+    setScheduleOutput((prev) => prev.map((item) => (
+      item.id === id ? { ...item, steps: [...(item.steps || []), ''] } : item
+    )));
+  };
+
+  const updateScheduleStep = (id, stepIndex, value) => {
+    setScheduleOutput((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      const nextSteps = [...(item.steps || [])];
+      nextSteps[stepIndex] = value;
+      return { ...item, steps: nextSteps };
+    }));
+  };
+
+  const removeScheduleStep = (id, stepIndex) => {
+    setScheduleOutput((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      return { ...item, steps: (item.steps || []).filter((_, idx) => idx !== stepIndex) };
+    }));
+  };
+
   const approveScheduleItem = (id) => {
     setScheduleOutput((prev) => {
       const target = prev.find((item) => item.id === id);
@@ -2395,7 +2601,11 @@ Rules:
         {
           id: Date.now() + Math.floor(Math.random() * 1000),
           title: target.title,
-          slotLabel: `${selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • ${target.slot}`,
+          slot: target.slot,
+          dueDate: target.dueDate || selectedCalendarDate.toISOString(),
+          category: target.category,
+          urgency: target.urgency,
+          slotLabel: formatEventSlotLabel(target),
         },
         ...existing,
       ]);
@@ -4391,6 +4601,22 @@ Rules:
               </div>
 
               <div className="mb-3 rounded-xl border border-gray-100 bg-[#FAFAFC] p-2.5">
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewTaskOwner('user')}
+                    className={`px-2 py-1 rounded-full text-[10px] border ${newTaskOwner === 'user' ? 'bg-violet-50 border-violet-200 text-violet-700' : 'bg-white border-gray-200 text-gray-500'}`}
+                  >
+                    User Task
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewTaskOwner('agent')}
+                    className={`px-2 py-1 rounded-full text-[10px] border ${newTaskOwner === 'agent' ? 'bg-sky-50 border-sky-200 text-sky-700' : 'bg-white border-gray-200 text-gray-500'}`}
+                  >
+                    Agent Task
+                  </button>
+                </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -4435,7 +4661,41 @@ Rules:
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                      <span className="text-xs font-medium leading-relaxed block">{task.text}</span>
+                        <div className="min-w-0 flex-1">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold border mb-1 ${task.owner === 'agent' ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-violet-50 text-violet-700 border-violet-200'}`}>
+                            {task.owner === 'agent' ? 'Agent' : 'User'}
+                          </span>
+                          {editingTaskId === task.id ? (
+                            <input
+                              autoFocus
+                              value={editingTaskText}
+                              onChange={(event) => setEditingTaskText(event.target.value)}
+                              onClick={(event) => event.stopPropagation()}
+                              onBlur={() => commitTaskEdit(task.id)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                  event.preventDefault();
+                                  commitTaskEdit(task.id);
+                                }
+                                if (event.key === 'Escape') {
+                                  setEditingTaskId(null);
+                                  setEditingTaskText('');
+                                }
+                              }}
+                              className="w-full bg-white border border-violet-200 rounded px-2 py-1 text-xs text-gray-700 focus:outline-none"
+                            />
+                          ) : (
+                            <span
+                              onDoubleClick={(event) => {
+                                event.stopPropagation();
+                                beginTaskEdit(task);
+                              }}
+                              className="text-xs font-medium leading-relaxed block"
+                            >
+                              {task.text}
+                            </span>
+                          )}
+                        </div>
                         <button
                           type="button"
                           onClick={(event) => {
@@ -4452,7 +4712,7 @@ Rules:
                         type="button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          convertTaskToSchedule(task.text);
+                          convertTaskToSchedule(task);
                         }}
                         className="mt-2 text-[11px] text-violet-600 hover:text-violet-700 font-medium"
                       >
@@ -4476,7 +4736,14 @@ Rules:
                   <div className="space-y-2">
                     <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider block">Processed List</span>
                     {scheduleOutput.map((item) => (
-                      <div key={item.id} className="p-3 rounded-lg border border-violet-100 bg-white space-y-2">
+                      <div key={item.id} className={`p-3 rounded-lg border bg-white space-y-2 ${item.urgency === 'high' ? 'border-rose-200' : item.urgency === 'medium' ? 'border-amber-200' : 'border-violet-100'}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-600">{item.category || 'General'}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${item.urgency === 'high' ? 'bg-rose-50 text-rose-700 border-rose-200' : item.urgency === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{item.urgency || 'low'}</span>
+                          </div>
+                          <div className="text-[10px] text-gray-400">{item.dueDate ? formatEventSlotLabel(item) : item.slot}</div>
+                        </div>
                         <div className="flex items-center gap-2">
                           <input
                             value={item.title}
@@ -4493,8 +4760,39 @@ Rules:
                           value={item.summary}
                           onChange={(event) => updateScheduleItem(item.id, 'summary', event.target.value)}
                           rows={2}
+                          placeholder="Add context or notes"
                           className="w-full text-[11px] text-gray-600 border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400 resize-none"
                         />
+                        <div className="rounded-lg border border-gray-200 p-2 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Steps</span>
+                            <button
+                              type="button"
+                              onClick={() => addScheduleStep(item.id)}
+                              className="text-[10px] text-violet-600 hover:text-violet-700"
+                            >
+                              + Add step
+                            </button>
+                          </div>
+                          {(item.steps || []).map((step, stepIndex) => (
+                            <div key={`${item.id}-step-${stepIndex}`} className="flex items-center gap-1.5">
+                              <input
+                                value={step}
+                                onChange={(event) => updateScheduleStep(item.id, stepIndex, event.target.value)}
+                                placeholder={`Step ${stepIndex + 1}`}
+                                className="flex-1 text-[11px] text-gray-700 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-violet-400"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeScheduleStep(item.id, stepIndex)}
+                                className="p-1 rounded text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                                title="Remove step"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                         <div className="flex justify-end">
                           <button
                             type="button"
@@ -4656,9 +4954,9 @@ Rules:
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
                   {upcomingEvents.map((event, index) => (
-                    <div key={event.id} className={`p-3 rounded-lg border text-xs ${index === 0 ? 'border-violet-100 bg-violet-50/20' : 'border-gray-100 bg-white'}`}>
-                      <div className={`font-bold ${index === 0 ? 'text-violet-700' : 'text-gray-700'}`}>{event.title}</div>
-                      <div className="text-gray-500 mt-0.5">{event.slotLabel}</div>
+                    <div key={event.id} className={`p-3 rounded-lg border text-xs ${event.urgency === 'high' ? 'border-rose-100 bg-rose-50/20' : index === 0 ? 'border-violet-100 bg-violet-50/20' : 'border-gray-100 bg-white'}`}>
+                      <div className={`font-bold ${event.urgency === 'high' ? 'text-rose-700' : index === 0 ? 'text-violet-700' : 'text-gray-700'}`}>{event.title}</div>
+                      <div className="text-gray-500 mt-0.5">{formatEventSlotLabel(event)}</div>
                     </div>
                   ))}
                 </div>
