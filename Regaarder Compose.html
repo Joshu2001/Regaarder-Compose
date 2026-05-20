@@ -681,7 +681,7 @@ export default function App() {
       return null;
     }
 
-    const modelCandidates = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+    const modelCandidates = ['gemini-2.5-flash', 'gemini-2.5-pro'];
     let lastErrorMessage = '';
 
     setLastAiError('');
