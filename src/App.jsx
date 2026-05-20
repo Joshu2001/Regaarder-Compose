@@ -10,7 +10,8 @@ import {
   List, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Volume2, VolumeX, Database, KeyRound
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Volume2, VolumeX, Database, KeyRound,
+  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 
 const DEMO_GEMINI_API_KEY = import.meta.env.VITE_GEMINI_DEMO_API_KEY || '';
@@ -81,6 +82,8 @@ export default function App() {
   const [memoryEntries, setMemoryEntries] = useState([]);
   const [memoryFilter, setMemoryFilter] = useState('all');
   const [memorySearch, setMemorySearch] = useState('');
+  const [lastAiError, setLastAiError] = useState('');
+  const [chatFeedbackDrafts, setChatFeedbackDrafts] = useState({});
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
@@ -155,6 +158,10 @@ export default function App() {
 
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
+  const historyMuteRef = useRef(false);
+  const historyPastRef = useRef([]);
+  const historyFutureRef = useRef([]);
+  const lastSnapshotHashRef = useRef('');
 
   useEffect(() => {
     if (!activeDocId && documents.length) {
@@ -215,6 +222,123 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('rc.memoryEntries', JSON.stringify(memoryEntries.slice(0, 300)));
   }, [memoryEntries]);
+
+  const buildSnapshot = () => ({
+    docTitle,
+    docSubtitle,
+    initiatives,
+    appendedSections,
+    docBodyHtml,
+    isBlankDocument,
+  });
+
+  const applySnapshot = (snapshot) => {
+    if (!snapshot) {
+      return;
+    }
+
+    historyMuteRef.current = true;
+    setDocTitle(snapshot.docTitle || '');
+    setDocSubtitle(snapshot.docSubtitle || '');
+    setInitiatives(Array.isArray(snapshot.initiatives) ? snapshot.initiatives : []);
+    setAppendedSections(Array.isArray(snapshot.appendedSections) ? snapshot.appendedSections : []);
+    setDocBodyHtml(snapshot.docBodyHtml || '');
+    setIsBlankDocument(Boolean(snapshot.isBlankDocument));
+
+    setTimeout(() => {
+      historyMuteRef.current = false;
+    }, 0);
+  };
+
+  useEffect(() => {
+    if (historyMuteRef.current) {
+      return;
+    }
+
+    const snapshot = buildSnapshot();
+    const nextHash = JSON.stringify(snapshot);
+    if (nextHash === lastSnapshotHashRef.current) {
+      return;
+    }
+
+    lastSnapshotHashRef.current = nextHash;
+    historyPastRef.current = [...historyPastRef.current.slice(-79), snapshot];
+    historyFutureRef.current = [];
+  }, [docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
+
+  const saveDocumentLocally = () => {
+    if (!activeDocId) {
+      return;
+    }
+
+    const payload = getDocumentPayload(activeDocId);
+    localStorage.setItem(`rc.savedDoc.${activeDocId}`, JSON.stringify({
+      ...payload,
+      savedAt: Date.now(),
+    }));
+    trackMemoryAction('document', 'Saved document locally', {
+      documentId: String(activeDocId),
+    });
+    showToast('Document saved locally');
+  };
+
+  const undoDocumentChange = () => {
+    if (historyPastRef.current.length < 2) {
+      showToast('Nothing to undo');
+      return;
+    }
+
+    const current = historyPastRef.current[historyPastRef.current.length - 1];
+    const previous = historyPastRef.current[historyPastRef.current.length - 2];
+    historyPastRef.current = historyPastRef.current.slice(0, -1);
+    historyFutureRef.current = [current, ...historyFutureRef.current].slice(0, 80);
+    applySnapshot(previous);
+    trackMemoryAction('document', 'Undo document change');
+    showToast('Undid last change');
+  };
+
+  const redoDocumentChange = () => {
+    if (!historyFutureRef.current.length) {
+      showToast('Nothing to redo');
+      return;
+    }
+
+    const next = historyFutureRef.current[0];
+    historyFutureRef.current = historyFutureRef.current.slice(1);
+    historyPastRef.current = [...historyPastRef.current, next].slice(-80);
+    applySnapshot(next);
+    trackMemoryAction('document', 'Redo document change');
+    showToast('Redid change');
+  };
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (!(event.ctrlKey || event.metaKey)) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      if (key === 's') {
+        event.preventDefault();
+        saveDocumentLocally();
+        return;
+      }
+
+      if (key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        undoDocumentChange();
+        return;
+      }
+
+      if (key === 'y' || (key === 'z' && event.shiftKey)) {
+        event.preventDefault();
+        redoDocumentChange();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
 
   useEffect(() => {
     const now = Date.now();
@@ -553,10 +677,14 @@ export default function App() {
   const callGemini = async ({ userPrompt, systemPrompt, schema, overrideApiKey }) => {
     const apiKey = (overrideApiKey || getActiveGeminiApiKey()).trim();
     if (!apiKey) {
+      setLastAiError('Missing API key');
       return null;
     }
 
     const modelCandidates = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
+    let lastErrorMessage = '';
+
+    setLastAiError('');
 
     for (const modelName of modelCandidates) {
       try {
@@ -586,6 +714,13 @@ export default function App() {
         });
 
         if (!response.ok) {
+          try {
+            const errorBody = await response.json();
+            const providerMessage = errorBody?.error?.message || `HTTP ${response.status}`;
+            lastErrorMessage = `${modelName}: ${providerMessage}`;
+          } catch (_error) {
+            lastErrorMessage = `${modelName}: HTTP ${response.status}`;
+          }
           continue;
         }
 
@@ -605,8 +740,13 @@ export default function App() {
           return { text, parsed, modelName };
         }
       } catch (_error) {
+        lastErrorMessage = `${modelName}: network or CORS error`;
         // try next model candidate
       }
+    }
+
+    if (lastErrorMessage) {
+      setLastAiError(lastErrorMessage);
     }
 
     return null;
@@ -799,11 +939,18 @@ Rules:
       if (!getActiveGeminiApiKey()) {
         aiResponseText = 'Live AI is not configured. Add a key in Memory tab or set VITE_GEMINI_DEMO_API_KEY in Vercel.';
       } else {
-        aiResponseText = 'Live AI request failed. Check API key restrictions, billing, and model access.';
+        aiResponseText = `Live AI request failed. ${lastAiError || 'Check API key restrictions, billing, and model access.'}`;
       }
+      trackMemoryAction('ai', 'Live AI request failed', {
+        reason: lastAiError || 'Unknown provider error',
+      });
     }
 
     setIsComposing(false);
+
+    const actionSectionId = docAction
+      ? `sec_${Date.now()}_${Math.floor(Math.random() * 1000)}`
+      : null;
 
     setChatMessages((prev) => [...prev, {
       id: Date.now() + 1,
@@ -811,14 +958,17 @@ Rules:
       text: aiResponseText,
       type: docAction ? 'action_completed' : 'standard',
       actionTitle: docAction?.title,
+      actionSectionId,
     }]);
 
     if (docAction) {
+      const finalizedAction = { ...docAction, sectionId: actionSectionId };
       setIsBlankDocument(false);
-      setAppendedSections((prev) => [...prev, docAction]);
+      setAppendedSections((prev) => [...prev, finalizedAction]);
       showToast(`Composed: ${docAction.title} injected into main document!`);
       trackMemoryAction('automation', 'AI injected section', {
         section: docAction.title,
+        sectionId: actionSectionId,
       });
     }
 
@@ -843,6 +993,49 @@ Rules:
     handleAISubmit(finalPrompt);
     setFloatingPrompt('');
     setUploadedPromptAudio(null);
+  };
+
+  const recordChatFeedback = (message, feedbackType, comment = '') => {
+    trackMemoryAction('feedback', 'Chat feedback submitted', {
+      messageId: String(message.id),
+      feedbackType,
+      comment,
+    });
+  };
+
+  const retryMessageAction = (message) => {
+    if (!message) {
+      return;
+    }
+
+    if (message.sender === 'user') {
+      handleAISubmit(message.text);
+      recordChatFeedback(message, 'retry');
+      return;
+    }
+
+    const index = chatMessages.findIndex((msg) => msg.id === message.id);
+    const previousUser = [...chatMessages.slice(0, index)].reverse().find((msg) => msg.sender === 'user');
+    if (previousUser) {
+      handleAISubmit(previousUser.text);
+      recordChatFeedback(message, 'retry_previous_prompt');
+    }
+  };
+
+  const undoMessageAction = (message) => {
+    if (!message?.actionSectionId) {
+      showToast('No linked action to undo');
+      return;
+    }
+
+    setAppendedSections((prev) => prev.filter((section) => section.sectionId !== message.actionSectionId));
+    recordChatFeedback(message, 'undo_action');
+    showToast('Undid AI section injection');
+  };
+
+  const deleteMessageAction = (message) => {
+    setChatMessages((prev) => prev.filter((msg) => msg.id !== message.id));
+    recordChatFeedback(message, 'delete_message');
   };
 
   const toggleVoiceRecording = () => {
@@ -1245,6 +1438,30 @@ Rules:
       return;
     }
 
+    if (shareDestination === 'apps') {
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: shareTargetDocTitle,
+            text: `Shared from Regaarder Compose (${shareAccess})`,
+            url: shareLink,
+          });
+          trackMemoryAction('share', 'Shared via native app sheet', {
+            access: shareAccess,
+            format: shareFormat,
+          });
+          showToast('Shared to app successfully');
+        } else {
+          await navigator.clipboard.writeText(shareLink);
+          showToast('Native app sharing not supported. Link copied instead.');
+        }
+      } catch (_error) {
+        showToast('Sharing to app was cancelled or unavailable');
+      }
+      setShareModalOpen(false);
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(shareLink);
       trackMemoryAction('share', 'Copied share link', {
@@ -1267,7 +1484,7 @@ Rules:
     }
 
     if (action === 'save') {
-      showToast('Document saved');
+      saveDocumentLocally();
       setOpenDocMenuId(null);
       return;
     }
@@ -1575,7 +1792,7 @@ Rules:
         <div className="absolute inset-0 z-[120] bg-black/25 backdrop-blur-[1px] flex items-center justify-center">
           <div className="w-[520px] max-w-[92vw] rounded-xl bg-white border border-gray-100 shadow-2xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">Share Composition</h3>
-            <p className="text-xs text-gray-500 mb-4">Share <span className="font-medium text-gray-700">{shareTargetDocTitle}</span> to friends or export to downloads.</p>
+            <p className="text-xs text-gray-500 mb-4">Share <span className="font-medium text-gray-700">{shareTargetDocTitle}</span> via link, apps, or downloads.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
               <div>
@@ -1586,6 +1803,7 @@ Rules:
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400"
                 >
                   <option value="friends">Share via link</option>
+                  <option value="apps">Share to apps</option>
                   <option value="downloads">Downloads</option>
                 </select>
               </div>
@@ -1641,7 +1859,7 @@ Rules:
                 onClick={handleShareModalConfirm}
                 className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700"
               >
-                {shareDestination === 'downloads' ? 'Export' : 'Copy Link'}
+                {shareDestination === 'downloads' ? 'Export' : shareDestination === 'apps' ? 'Share to Apps' : 'Copy Link'}
               </button>
             </div>
           </div>
@@ -1824,7 +2042,33 @@ Rules:
           </div>
 
           <div className="flex items-center gap-4">
-            <button className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-1.5 rounded-md flex items-center gap-2 transition-all active:scale-95">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={undoDocumentChange}
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                title="Undo (Ctrl+Z)"
+              >
+                <Undo2 size={15} />
+              </button>
+              <button
+                onClick={redoDocumentChange}
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                title="Redo (Ctrl+Y)"
+              >
+                <Redo2 size={15} />
+              </button>
+              <button
+                onClick={saveDocumentLocally}
+                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                title="Save locally (Ctrl+S)"
+              >
+                <Save size={15} />
+              </button>
+            </div>
+            <button
+              onClick={() => openShareModal(activeDocId || documents[0]?.id)}
+              className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-1.5 rounded-md flex items-center gap-2 transition-all active:scale-95"
+            >
               <Users size={16} /> Share
             </button>
             
@@ -2608,7 +2852,7 @@ Rules:
                 {chatMessages.map((msg) => (
                   <div 
                     key={msg.id} 
-                    className={`flex flex-col max-w-[85%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
+                    className={`group flex flex-col max-w-[85%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                   >
                     {/* Speaker Header */}
                     <span className="text-[10px] text-gray-400 mb-1 px-1">
@@ -2647,6 +2891,105 @@ Rules:
                         </div>
                       )}
                     </div>
+
+                    <div className="mt-1.5 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => retryMessageAction(msg)}
+                        className="p-1 rounded-md text-gray-400 hover:text-violet-600 hover:bg-violet-50"
+                        title="Retry"
+                      >
+                        <RefreshCcw size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => undoMessageAction(msg)}
+                        className="p-1 rounded-md text-gray-400 hover:text-violet-600 hover:bg-violet-50"
+                        title="Undo AI action"
+                      >
+                        <Undo2 size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteMessageAction(msg)}
+                        className="p-1 rounded-md text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                        title="Delete message"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => recordChatFeedback(msg, 'thumbs_up')}
+                        className="p-1 rounded-md text-gray-400 hover:text-emerald-600 hover:bg-emerald-50"
+                        title="Helpful"
+                      >
+                        <ThumbsUp size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => recordChatFeedback(msg, 'thumbs_down')}
+                        className="p-1 rounded-md text-gray-400 hover:text-amber-600 hover:bg-amber-50"
+                        title="Needs improvement"
+                      >
+                        <ThumbsDown size={12} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setChatFeedbackDrafts((prev) => ({
+                            ...prev,
+                            [msg.id]: {
+                              ...(prev[msg.id] || { text: '' }),
+                              open: !(prev[msg.id]?.open),
+                            },
+                          }));
+                        }}
+                        className="p-1 rounded-md text-gray-400 hover:text-sky-600 hover:bg-sky-50"
+                        title="Add feedback comment"
+                      >
+                        <MessageSquarePlus size={12} />
+                      </button>
+                    </div>
+
+                    {chatFeedbackDrafts[msg.id]?.open && (
+                      <div className="mt-1.5 flex items-center gap-2 w-full">
+                        <input
+                          type="text"
+                          value={chatFeedbackDrafts[msg.id]?.text || ''}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setChatFeedbackDrafts((prev) => ({
+                              ...prev,
+                              [msg.id]: {
+                                ...(prev[msg.id] || { open: true }),
+                                open: true,
+                                text: value,
+                              },
+                            }));
+                          }}
+                          placeholder="Tell AI how to improve this response..."
+                          className="flex-1 min-w-0 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-700 focus:outline-none focus:border-violet-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const comment = chatFeedbackDrafts[msg.id]?.text?.trim() || '';
+                            if (!comment) {
+                              return;
+                            }
+                            recordChatFeedback(msg, 'comment', comment);
+                            setChatFeedbackDrafts((prev) => ({
+                              ...prev,
+                              [msg.id]: { open: false, text: '' },
+                            }));
+                            showToast('Feedback saved to memory');
+                          }}
+                          className="px-2 py-1.5 rounded-md text-[11px] bg-violet-600 text-white hover:bg-violet-700"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 
@@ -3166,6 +3509,7 @@ Rules:
                     <option value="automation">Automation</option>
                     <option value="task">Tasks</option>
                     <option value="share">Sharing</option>
+                    <option value="feedback">Feedback</option>
                     <option value="document">Documents</option>
                   </select>
                 </div>
