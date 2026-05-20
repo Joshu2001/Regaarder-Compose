@@ -245,10 +245,6 @@ export default function App() {
   }, [isVoiceActive]);
 
   useEffect(() => {
-    insertTranscriptIntoDocumentRef.current = insertTranscriptIntoDocument;
-  }, [insertTranscriptIntoDocument]);
-
-  useEffect(() => {
     if (!activeDocId && documents.length) {
       setActiveDocId(documents[0].id);
     }
@@ -972,6 +968,10 @@ export default function App() {
       setDocBodyHtml(target.innerHTML);
     }
   };
+
+  useEffect(() => {
+    insertTranscriptIntoDocumentRef.current = insertTranscriptIntoDocument;
+  }, [insertTranscriptIntoDocument]);
 
   const createAttachmentItems = (files, source = 'chat') => Array.from(files || []).map((file, index) => ({
     id: `${source}-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
