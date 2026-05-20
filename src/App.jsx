@@ -138,6 +138,10 @@ export default function App() {
   const promptFileInputRef = useRef(null);
   const chatFileInputRef = useRef(null);
   const scheduleFileInputRef = useRef(null);
+  const voiceTargetRef = useRef('compose');
+  const isMicMutedRef = useRef(false);
+  const isVoiceActiveRef = useRef(false);
+  const insertTranscriptIntoDocumentRef = useRef(null);
   const selectedEditorTextRef = useRef('');
   const pointerDownInPromptRef = useRef(false);
   const calendarMenuRef = useRef(null);
@@ -227,6 +231,22 @@ export default function App() {
   const historyPastRef = useRef([]);
   const historyFutureRef = useRef([]);
   const lastSnapshotHashRef = useRef('');
+
+  useEffect(() => {
+    voiceTargetRef.current = voiceTarget;
+  }, [voiceTarget]);
+
+  useEffect(() => {
+    isMicMutedRef.current = isMicMuted;
+  }, [isMicMuted]);
+
+  useEffect(() => {
+    isVoiceActiveRef.current = isVoiceActive;
+  }, [isVoiceActive]);
+
+  useEffect(() => {
+    insertTranscriptIntoDocumentRef.current = insertTranscriptIntoDocument;
+  }, [insertTranscriptIntoDocument]);
 
   useEffect(() => {
     if (!activeDocId && documents.length) {
@@ -1118,9 +1138,10 @@ export default function App() {
     recognition.lang = currentLanguage === 'Spanish' ? 'es-ES' : 'en-US';
 
     recognition.onresult = (event) => {
-      if (isMicMuted) {
+      if (isMicMutedRef.current) {
         return;
       }
+
       let finalTranscript = '';
       let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
@@ -1133,10 +1154,11 @@ export default function App() {
       }
 
       if (finalTranscript.trim()) {
-        if (voiceTarget === 'schedule') {
+        const activeVoiceTarget = voiceTargetRef.current;
+        if (activeVoiceTarget === 'schedule') {
           setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
-        } else if (voiceTarget === 'document') {
-          insertTranscriptIntoDocument(finalTranscript.trim());
+        } else if (activeVoiceTarget === 'document') {
+          insertTranscriptIntoDocumentRef.current?.(finalTranscript.trim());
         } else {
           setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
         }
@@ -1153,7 +1175,7 @@ export default function App() {
     };
 
     recognition.onend = () => {
-      if (isVoiceActive && !isMicMuted) {
+      if (isVoiceActiveRef.current && !isMicMutedRef.current) {
         try {
           recognition.start();
         } catch (_error) {
@@ -1172,7 +1194,7 @@ export default function App() {
       }
       speechRecognitionRef.current = null;
     };
-  }, [currentLanguage, isMicMuted, isVoiceActive, voiceTarget, docTitle, docSubtitle]);
+  }, [currentLanguage]);
 
   // Integrated Tasks checklist state
   const [tasks, setTasks] = useState([
@@ -2101,6 +2123,9 @@ Rules:
 
     try {
       await ensureMicrophonePermission();
+      if (speechRecognitionRef.current) {
+        speechRecognitionRef.current.lang = currentLanguage === 'Spanish' ? 'es-ES' : 'en-US';
+      }
       speechRecognitionRef.current?.start();
       setIsVoiceActive(true);
       showToast('Voice transcription started');
