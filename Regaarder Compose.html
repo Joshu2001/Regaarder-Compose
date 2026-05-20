@@ -529,7 +529,28 @@ export default function App() {
     return DEMO_GEMINI_API_KEY.trim();
   };
 
-  const callGemini = async (promptText, overrideApiKey) => {
+  const parseJsonSafely = (rawText) => {
+    if (!rawText) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(rawText);
+    } catch (_error) {
+      const first = rawText.indexOf('{');
+      const last = rawText.lastIndexOf('}');
+      if (first >= 0 && last > first) {
+        try {
+          return JSON.parse(rawText.slice(first, last + 1));
+        } catch (_nestedError) {
+          return null;
+        }
+      }
+      return null;
+    }
+  };
+
+  const callGemini = async ({ userPrompt, systemPrompt, schema, overrideApiKey }) => {
     const apiKey = (overrideApiKey || getActiveGeminiApiKey()).trim();
     if (!apiKey) {
       return null;
@@ -539,18 +560,29 @@ export default function App() {
 
     for (const modelName of modelCandidates) {
       try {
+        const body = {
+          contents: [{ parts: [{ text: userPrompt }] }],
+          generationConfig: {
+            temperature: 0.5,
+            maxOutputTokens: 1200,
+          },
+        };
+
+        if (systemPrompt) {
+          body.systemInstruction = { parts: [{ text: systemPrompt }] };
+        }
+
+        if (schema) {
+          body.generationConfig.responseMimeType = 'application/json';
+          body.generationConfig.responseSchema = schema;
+        }
+
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 800,
-            },
-          }),
+          body: JSON.stringify(body),
         });
 
         if (!response.ok) {
@@ -559,8 +591,18 @@ export default function App() {
 
         const data = await response.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-        if (text) {
-          return text;
+
+        if (!text) {
+          continue;
+        }
+
+        if (!schema) {
+          return { text, modelName };
+        }
+
+        const parsed = parseJsonSafely(text);
+        if (parsed) {
+          return { text, parsed, modelName };
         }
       } catch (_error) {
         // try next model candidate
@@ -580,8 +622,11 @@ export default function App() {
     setUserApiKey(trimmed);
     setApiMode('byok');
 
-    const probe = await callGemini('Reply with: API connected', trimmed);
-    if (probe) {
+    const probe = await callGemini({
+      userPrompt: 'Reply with exactly: API connected',
+      overrideApiKey: trimmed,
+    });
+    if (probe?.text) {
       showToast('API key connected successfully');
       trackMemoryAction('ai', 'Updated API key', { mode: 'byok', verified: true });
       return;
@@ -644,77 +689,118 @@ export default function App() {
     // Scroll to bottom
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
 
-    const lowerPrompt = promptText.toLowerCase();
     let aiResponseText = '';
     let docAction = null;
     let usedLiveModel = false;
 
+    const actionSchema = {
+      type: 'OBJECT',
+      properties: {
+        aiResponseText: { type: 'STRING' },
+        hasAction: { type: 'BOOLEAN' },
+        docAction: {
+          type: 'OBJECT',
+          properties: {
+            title: { type: 'STRING' },
+            type: { type: 'STRING' },
+            timelineItems: {
+              type: 'ARRAY',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  phase: { type: 'STRING' },
+                  dates: { type: 'STRING' },
+                  detail: { type: 'STRING' },
+                },
+              },
+            },
+            taskItems: {
+              type: 'ARRAY',
+              items: { type: 'STRING' },
+            },
+            riskItems: {
+              type: 'ARRAY',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  threat: { type: 'STRING' },
+                  impact: { type: 'STRING' },
+                  fix: { type: 'STRING' },
+                },
+              },
+            },
+            textParagraph: { type: 'STRING' },
+          },
+        },
+      },
+    };
+
     try {
-      const modelResponse = await callGemini(promptText);
-      if (modelResponse) {
-        aiResponseText = modelResponse;
+      const modelResponse = await callGemini({
+        userPrompt: promptText,
+        systemPrompt: `You are Compose AI. Return JSON only.
+Context title: ${docTitle || 'Untitled'}.
+Context subtitle: ${docSubtitle || 'No subtitle'}.
+Rules:
+- If the user asks to build/create/write/generate a document, plan, proposal, brief, presentation, timeline, checklist, or risk analysis, set hasAction=true and fill docAction.
+- docAction.type must be one of: timeline, tasks, risks, text.
+- For general Q&A requests, hasAction can be false and provide aiResponseText only.
+- Keep aiResponseText concise, actionable, and specific.
+- Do not simulate placeholders. Produce useful output.` ,
+        schema: actionSchema,
+      });
+
+      if (modelResponse?.parsed) {
         usedLiveModel = true;
+        const result = modelResponse.parsed;
+        aiResponseText = result.aiResponseText?.trim() || 'Completed your request with live AI.';
+
+        if (result.hasAction && result.docAction) {
+          const rawType = String(result.docAction.type || '').toLowerCase();
+          if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
+            docAction = {
+              title: result.docAction.title || '🗓️ AI Timeline',
+              type: 'timeline',
+              content: result.docAction.timelineItems,
+            };
+          } else if (rawType === 'tasks' && Array.isArray(result.docAction.taskItems) && result.docAction.taskItems.length) {
+            const sanitizedTasks = result.docAction.taskItems.filter(Boolean).map((item) => String(item));
+            docAction = {
+              title: result.docAction.title || '📋 AI Checklist',
+              type: 'tasks',
+              content: sanitizedTasks,
+            };
+            const syncedTasks = sanitizedTasks.map((task, index) => ({
+              id: Date.now() + index,
+              text: task,
+              completed: false,
+            }));
+            setTasks((prev) => [...prev, ...syncedTasks]);
+          } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
+            docAction = {
+              title: result.docAction.title || '🛡️ AI Risk Matrix',
+              type: 'risks',
+              content: result.docAction.riskItems,
+            };
+          } else if (rawType === 'text' && result.docAction.textParagraph) {
+            docAction = {
+              title: result.docAction.title || '✨ AI Composed Section',
+              type: 'text',
+              paragraph: result.docAction.textParagraph,
+            };
+          }
+        }
       }
     } catch (_error) {
-      aiResponseText = '';
+      usedLiveModel = false;
     }
 
     if (!usedLiveModel) {
-      if (lowerPrompt.includes('timeline') || lowerPrompt.includes('date') || lowerPrompt.includes('schedule')) {
-        docAction = {
-          title: '🗓️ 4. Timeline Breakdown',
-          type: 'timeline',
-          content: [
-            { phase: 'Phase 1: Internal QA & Warmups', dates: 'May 1 - May 14', detail: 'Internal regression tests, QA checklists, design audits' },
-            { phase: 'Phase 2: Closed Beta Sandbox', dates: 'May 15 - May 30', detail: 'Invite-only rollout to 500 hand-picked early adopters' },
-            { phase: 'Phase 3: Public Expansion', dates: 'June 1 - June 14', detail: 'Press kits distributed, major public marketing launch' },
-          ],
-        };
-      } else if (lowerPrompt.includes('task') || lowerPrompt.includes('checklist') || lowerPrompt.includes('extract')) {
-        setTasks((prev) => [
-          ...prev,
-          { id: Date.now() + 1, text: 'Refine Beta Launch user feedback channels', completed: false },
-          { id: Date.now() + 2, text: 'Prepare Product Hunt media graphic kit', completed: false },
-        ]);
-        docAction = {
-          title: '📋 5. Core Operational Checklists',
-          type: 'tasks',
-          content: [
-            'Setup feedback surveys and analytics metrics',
-            'Send confirmation emails to internal stakeholders',
-            'Coordinate with community leads for creator outreach channels',
-          ],
-        };
-      } else if (lowerPrompt.includes('risk') || lowerPrompt.includes('danger') || lowerPrompt.includes('threat')) {
-        docAction = {
-          title: '🛡️ 6. Risk Mitigation Matrix',
-          type: 'risks',
-          content: [
-            { threat: 'Severe Server Latency under peak launch loads', impact: 'High', fix: 'Deploy multi-zone automatic scaling protocols on Cloud clusters prior to Product Hunt day.' },
-            { threat: 'Lower-than-expected Creator response rate', impact: 'Medium', fix: 'Leverage direct personalized outreach and introduce referral incentive program.' },
-          ],
-        };
+      if (!getActiveGeminiApiKey()) {
+        aiResponseText = 'Live AI is not configured. Add a key in Memory tab or set VITE_GEMINI_DEMO_API_KEY in Vercel.';
       } else {
-        docAction = {
-          title: '✨ AI Composed Appendix',
-          type: 'text',
-          paragraph: `Regarding your request to "${promptText}": We recommend structuring milestones aggressively to meet current team bandwidth constraints. Ensuring standard UI elements stay intuitive is critical to reducing cognitive friction during the initial user onboarding wave.`,
-        };
+        aiResponseText = 'Live AI request failed. Check API key restrictions, billing, and model access.';
       }
-
-      if (lowerPrompt.includes('timeline') || lowerPrompt.includes('date') || lowerPrompt.includes('schedule')) {
-        aiResponseText = 'Composed a high-level visual launch timeline and linked it directly to your Key Initiatives.';
-      } else if (lowerPrompt.includes('task') || lowerPrompt.includes('checklist') || lowerPrompt.includes('extract')) {
-        aiResponseText = 'Extracted 3 critical new action items from your plan and synchronized them with your Workspace Tasks.';
-      } else if (lowerPrompt.includes('risk') || lowerPrompt.includes('danger') || lowerPrompt.includes('threat')) {
-        aiResponseText = 'Generated a proactive Risk Mitigation Matrix outlining resource and audience bottlenecks.';
-      } else {
-        aiResponseText = `Understood your directive: "${promptText}". I have analyzed and composed this smart contextual paragraph for you.`;
-      }
-    }
-
-    if (!getActiveGeminiApiKey()) {
-      aiResponseText = `${aiResponseText}\n\nTip: Add an API key in Memory tab to enable live model responses.`;
     }
 
     setIsComposing(false);
