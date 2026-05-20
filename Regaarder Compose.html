@@ -860,6 +860,70 @@ export default function App() {
     }
   };
 
+  const insertTranscriptIntoDocument = (spokenText) => {
+    const normalized = String(spokenText || '').trim();
+    if (!normalized) {
+      return;
+    }
+
+    const active = document.activeElement;
+    const activeEditable = active?.isContentEditable && documentCardRef.current?.contains(active)
+      ? active
+      : null;
+
+    let target = activeEditable;
+    if (!target) {
+      if (!docTitle.trim() || docTitle === AI_NATIVE_PLACEHOLDER) {
+        target = titleEditableRef.current;
+      } else if (!docSubtitle.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER) {
+        target = subtitleEditableRef.current;
+      } else {
+        target = blankBodyRef.current;
+      }
+    }
+
+    if (!target) {
+      return;
+    }
+
+    target.focus();
+    if ((target.textContent || '').trim() === AI_NATIVE_PLACEHOLDER) {
+      target.textContent = '';
+    }
+
+    const selection = window.getSelection();
+    let shouldResetToEnd = true;
+    if (selection && selection.rangeCount) {
+      const currentRange = selection.getRangeAt(0);
+      const anchorNode = selection.anchorNode;
+      const anchorElement = anchorNode?.nodeType === Node.TEXT_NODE ? anchorNode.parentNode : anchorNode;
+      shouldResetToEnd = !anchorElement || !target.contains(anchorElement);
+      if (!shouldResetToEnd && !isRangeInsideEditor(currentRange)) {
+        shouldResetToEnd = true;
+      }
+    }
+
+    if (selection && shouldResetToEnd) {
+      const endRange = document.createRange();
+      endRange.selectNodeContents(target);
+      endRange.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(endRange);
+    }
+
+    document.execCommand('insertText', false, `${normalized} `);
+    normalizeEditableDirection(target);
+
+    if (target === titleEditableRef.current) {
+      setDocTitle(target.textContent || '');
+    } else if (target === subtitleEditableRef.current) {
+      setDocSubtitle(target.textContent || '');
+    } else if (target === blankBodyRef.current) {
+      setIsBlankDocument(true);
+      setDocBodyHtml(target.innerHTML);
+    }
+  };
+
   const createAttachmentItems = (files, source = 'chat') => Array.from(files || []).map((file, index) => ({
     id: `${source}-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
     name: file.name || 'attachment',
@@ -1042,6 +1106,8 @@ export default function App() {
       if (finalTranscript.trim()) {
         if (voiceTarget === 'schedule') {
           setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
+        } else if (voiceTarget === 'document') {
+          insertTranscriptIntoDocument(finalTranscript.trim());
         } else {
           setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
         }
@@ -1077,7 +1143,7 @@ export default function App() {
       }
       speechRecognitionRef.current = null;
     };
-  }, [currentLanguage, isMicMuted, isVoiceActive, voiceTarget]);
+  }, [currentLanguage, isMicMuted, isVoiceActive, voiceTarget, docTitle, docSubtitle]);
 
   // Integrated Tasks checklist state
   const [tasks, setTasks] = useState([
@@ -1970,21 +2036,34 @@ Rules:
     return true;
   };
 
-  const toggleVoiceRecording = async () => {
+  const toggleVoiceRecording = async (targetMode = voiceTarget) => {
     if (!speechSupported) {
       showToast('Speech recognition is not supported in this browser');
       return;
     }
 
+    const nextTarget = targetMode || 'compose';
+    setVoiceTarget(nextTarget);
+
     if (isVoiceActive) {
-      try {
-        speechRecognitionRef.current?.stop();
-      } catch (_error) {
-        // noop
+      // If a different voice surface is requested, restart with the new target.
+      if (voiceTarget !== nextTarget) {
+        try {
+          speechRecognitionRef.current?.stop();
+        } catch (_error) {
+          // noop
+        }
+        setIsVoiceActive(false);
+      } else {
+        try {
+          speechRecognitionRef.current?.stop();
+        } catch (_error) {
+          // noop
+        }
+        setIsVoiceActive(false);
+        showToast('Voice transcription stopped');
+        return;
       }
-      setIsVoiceActive(false);
-      showToast('Voice transcription stopped');
-      return;
     }
 
     if (isMicMuted) {
@@ -3772,6 +3851,7 @@ Rules:
             
             {/* Title & Subtitle */}
             <div
+              ref={titleEditableRef}
               contentEditable
               suppressContentEditableWarning
               onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
@@ -3786,6 +3866,7 @@ Rules:
             </div>
             
             <div
+              ref={subtitleEditableRef}
               contentEditable
               suppressContentEditableWarning
               onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
@@ -3995,14 +4076,13 @@ Rules:
                 <button
                   type="button"
                   onClick={async () => {
-                    setVoiceTarget('compose');
-                    await toggleVoiceRecording();
+                    await toggleVoiceRecording('document');
                   }}
-                  className={`relative w-24 h-24 rounded-full border transition-all ${isVoiceActive ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
-                  title={isVoiceActive ? 'Stop document voice transcription' : 'Start document voice transcription'}
+                  className={`relative w-24 h-24 rounded-full border transition-all ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
+                  title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
                 >
-                  <Mic size={34} className={`mx-auto ${isVoiceActive ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
-                  {isVoiceActive && (
+                  <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
+                  {isVoiceActive && voiceTarget === 'document' && (
                     <>
                       <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
                       <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
@@ -4010,9 +4090,9 @@ Rules:
                   )}
                 </button>
                 <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
-                  {isVoiceActive ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
+                  {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
                 </div>
-                {isVoiceActive && (
+                {isVoiceActive && voiceTarget === 'document' && (
                   <button
                     type="button"
                     onClick={() => {
@@ -4330,14 +4410,13 @@ Rules:
               <button
                 type="button"
                 onClick={async () => {
-                  setVoiceTarget('compose');
-                  await toggleVoiceRecording();
+                  await toggleVoiceRecording('compose');
                 }}
-                className={`relative p-2 rounded-full transition-all ${isVoiceActive ? 'text-violet-600 bg-violet-50 shadow-[0_0_0_2px_rgba(139,92,246,0.22),0_0_18px_rgba(139,92,246,0.55)]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                title={isVoiceActive ? 'Stop live transcription' : 'Start live transcription'}
+                className={`relative p-2 rounded-full transition-all ${isVoiceActive && voiceTarget === 'compose' ? 'text-violet-600 bg-violet-50 shadow-[0_0_0_2px_rgba(139,92,246,0.22),0_0_18px_rgba(139,92,246,0.55)]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title={isVoiceActive && voiceTarget === 'compose' ? 'Stop live transcription' : 'Start live transcription'}
               >
-                <Mic size={16} className={isVoiceActive ? 'animate-pulse' : ''} />
-                {isVoiceActive && (
+                <Mic size={16} className={isVoiceActive && voiceTarget === 'compose' ? 'animate-pulse' : ''} />
+                {isVoiceActive && voiceTarget === 'compose' && (
                   <>
                     <span className="absolute inset-0 rounded-full border border-violet-400/70 animate-ping"></span>
                     <span className="absolute -inset-1 rounded-full border border-violet-300/60 animate-pulse"></span>
@@ -5320,8 +5399,7 @@ Rules:
                   <button
                     type="button"
                     onClick={async () => {
-                      setVoiceTarget('schedule');
-                      await toggleVoiceRecording();
+                      await toggleVoiceRecording('schedule');
                     }}
                     className={`ml-1 p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-gray-50 hover:bg-gray-100 text-gray-500'}`}
                     title="Dictate schedule input"
