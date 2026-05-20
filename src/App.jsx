@@ -1172,17 +1172,22 @@ export default function App() {
       }
 
       if (finalTranscript.trim()) {
+        const activeVoiceTarget = voiceTargetRef.current;
         routeTranscriptToTarget(finalTranscript.trim());
         pendingInterimTranscriptRef.current = '';
         if (interimCommitTimerRef.current) {
           clearTimeout(interimCommitTimerRef.current);
           interimCommitTimerRef.current = null;
         }
-        setLiveSpeechInterimText('');
+        if (activeVoiceTarget !== 'document') {
+          setLiveSpeechInterimText('');
+        }
       } else {
         const normalizedInterim = interimTranscript.trim();
         const activeVoiceTarget = voiceTargetRef.current;
-        setLiveSpeechInterimText(normalizedInterim);
+        if (activeVoiceTarget !== 'document') {
+          setLiveSpeechInterimText(normalizedInterim);
+        }
 
         if (activeVoiceTarget === 'document' && normalizedInterim) {
           pendingInterimTranscriptRef.current = normalizedInterim;
@@ -1194,7 +1199,6 @@ export default function App() {
             if (buffered) {
               routeTranscriptToTarget(buffered);
               pendingInterimTranscriptRef.current = '';
-              setLiveSpeechInterimText('');
             }
             interimCommitTimerRef.current = null;
           }, 850);
@@ -1219,7 +1223,9 @@ export default function App() {
           setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${buffered}`);
         }
         pendingInterimTranscriptRef.current = '';
-        setLiveSpeechInterimText('');
+        if (voiceTargetRef.current !== 'document') {
+          setLiveSpeechInterimText('');
+        }
       }
 
       if (isVoiceActiveRef.current && !isMicMutedRef.current) {
