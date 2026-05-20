@@ -94,6 +94,7 @@ export default function App() {
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
   const [lastComposeRun, setLastComposeRun] = useState(null);
+  const [liveSpeechInterimText, setLiveSpeechInterimText] = useState('');
   const [apiMode, setApiMode] = useState('demo');
   const [userApiKey, setUserApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -117,12 +118,14 @@ export default function App() {
   const chatInputRef = useRef(null);
   const scheduleInputRef = useRef(null);
   const promptMenuRef = useRef(null);
+  const promptRootRef = useRef(null);
   const promptTuneRef = useRef(null);
   const promptFormatRef = useRef(null);
   const promptLibraryRef = useRef(null);
   const promptHistoryFilterRef = useRef(null);
   const promptFileInputRef = useRef(null);
   const selectedEditorTextRef = useRef('');
+  const pointerDownInPromptRef = useRef(false);
   const calendarMenuRef = useRef(null);
   const modelCandidatesCacheRef = useRef(null);
   const modelCandidatesCacheKeyRef = useRef('');
@@ -611,9 +614,21 @@ export default function App() {
   }, [floatingPrompt, isPromptExpanded]);
 
   useEffect(() => {
+    const trackPointerOrigin = (event) => {
+      pointerDownInPromptRef.current = Boolean(promptRootRef.current && promptRootRef.current.contains(event.target));
+    };
+
+    window.addEventListener('pointerdown', trackPointerOrigin, true);
+    return () => window.removeEventListener('pointerdown', trackPointerOrigin, true);
+  }, []);
+
+  useEffect(() => {
     const handleSelectionChange = () => {
       const range = getEditorSelectionRange();
       if (!range) {
+        if (pointerDownInPromptRef.current) {
+          return;
+        }
         setSelectedEditorText('');
         selectedEditorTextRef.current = '';
         return;
@@ -656,20 +671,28 @@ export default function App() {
         return;
       }
       let finalTranscript = '';
+      let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
         const transcript = event.results[i][0]?.transcript || '';
         if (event.results[i].isFinal) {
           finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
         }
       }
 
       if (finalTranscript.trim()) {
         setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
+        setLiveSpeechInterimText('');
+      } else {
+        setLiveSpeechInterimText(interimTranscript.trim());
       }
     };
 
     recognition.onerror = () => {
       setIsVoiceActive(false);
+      setLiveSpeechInterimText('');
+      showToast('Microphone could not capture speech. Check permissions and input device.');
     };
 
     recognition.onend = () => {
@@ -678,6 +701,7 @@ export default function App() {
           recognition.start();
         } catch (_error) {
           setIsVoiceActive(false);
+          setLiveSpeechInterimText('');
         }
       }
     };
@@ -833,6 +857,11 @@ export default function App() {
     setDocSubtitle('');
     setLastComposeRun(null);
     showToast('Removed generated output');
+  };
+
+  const handleComposeAccept = () => {
+    setLastComposeRun(null);
+    showToast('Changes accepted');
   };
 
   const closeTransientMenus = () => {
@@ -2923,6 +2952,7 @@ Rules:
                 />
                 {lastComposeRun && (
                   <div className="mb-8 flex items-center justify-end gap-2">
+                    <button type="button" onClick={handleComposeAccept} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50">Accept</button>
                     <button type="button" onClick={handleComposeRetry} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Retry</button>
                     <button type="button" onClick={handleComposeUndo} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Undo</button>
                     <button type="button" onClick={handleComposeDelete} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50">Delete</button>
@@ -3082,17 +3112,57 @@ Rules:
               </div>
             )}
 
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
+              <div className="pointer-events-auto flex flex-col items-center gap-3 -mt-10">
+                <button
+                  type="button"
+                  onClick={toggleVoiceRecording}
+                  className={`relative w-24 h-24 rounded-full border transition-all ${isVoiceActive ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
+                  title={isVoiceActive ? 'Stop document voice transcription' : 'Start document voice transcription'}
+                >
+                  <Mic size={34} className={`mx-auto ${isVoiceActive ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
+                  {isVoiceActive && (
+                    <>
+                      <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
+                      <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
+                    </>
+                  )}
+                </button>
+                <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
+                  {isVoiceActive ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
+                </div>
+                {isVoiceActive && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        speechRecognitionRef.current?.stop();
+                      } catch (_error) {
+                        // noop
+                      }
+                      setIsVoiceActive(false);
+                      setLiveSpeechInterimText('');
+                    }}
+                    className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
+                  >
+                    Dismiss
+                  </button>
+                )}
+              </div>
+            </div>
+
           </div>
           </div>
         </div>
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-14 z-20"
+          className="pointer-events-none absolute inset-x-0 bottom-14 z-[320]"
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
           <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
           <form
+            ref={promptRootRef}
             onSubmit={handleFloatingSend}
             className={`pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'}`}
             style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 760))}px`, maxWidth: '100%' }}
