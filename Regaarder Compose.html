@@ -54,6 +54,9 @@ export default function App() {
   const [newTaskOwner, setNewTaskOwner] = useState('user');
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editingTaskText, setEditingTaskText] = useState('');
+  const [chatAttachments, setChatAttachments] = useState([]);
+  const [scheduleAttachments, setScheduleAttachments] = useState([]);
+  const [voiceTarget, setVoiceTarget] = useState('compose');
   const [scheduleInput, setScheduleInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([
@@ -133,6 +136,8 @@ export default function App() {
   const promptLibraryRef = useRef(null);
   const promptHistoryFilterRef = useRef(null);
   const promptFileInputRef = useRef(null);
+  const chatFileInputRef = useRef(null);
+  const scheduleFileInputRef = useRef(null);
   const selectedEditorTextRef = useRef('');
   const pointerDownInPromptRef = useRef(false);
   const calendarMenuRef = useRef(null);
@@ -481,7 +486,10 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (event) => {
-      if (!(event.ctrlKey || event.metaKey) && wholeDocSelectionRef.current && (event.key === 'Backspace' || event.key === 'Delete')) {
+      const activeElement = document.activeElement;
+      const insideEditor = Boolean(activeElement && documentCardRef.current?.contains(activeElement));
+
+      if (!(event.ctrlKey || event.metaKey) && wholeDocSelectionRef.current && insideEditor && (event.key === 'Backspace' || event.key === 'Delete')) {
         event.preventDefault();
         clearEntireCompositionText();
         wholeDocSelectionRef.current = false;
@@ -500,8 +508,6 @@ export default function App() {
       }
 
       if (key === 'a') {
-        const activeElement = document.activeElement;
-        const insideEditor = Boolean(activeElement && documentCardRef.current?.contains(activeElement));
         if (insideEditor) {
           event.preventDefault();
           selectEntireComposition();
@@ -528,6 +534,11 @@ export default function App() {
   useEffect(() => {
     const handlePaste = (event) => {
       if (!wholeDocSelectionRef.current) {
+        return;
+      }
+
+      const target = event.target;
+      if (!documentCardRef.current || !documentCardRef.current.contains(target)) {
         return;
       }
 
@@ -767,6 +778,18 @@ export default function App() {
     wholeDocSelectionRef.current = true;
   };
 
+  const isWholeDocumentSelection = (range) => {
+    if (!range || !documentCardRef.current) {
+      return false;
+    }
+    const selected = range.toString().replace(/\s+/g, ' ').trim();
+    const allText = (documentCardRef.current.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!selected || !allText) {
+      return false;
+    }
+    return selected.length >= Math.max(1, Math.floor(allText.length * 0.85));
+  };
+
   const clearEntireCompositionText = () => {
     setDocTitle('');
     setDocSubtitle('');
@@ -837,6 +860,75 @@ export default function App() {
     }
   };
 
+  const createAttachmentItems = (files, source = 'chat') => Array.from(files || []).map((file, index) => ({
+    id: `${source}-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
+    name: file.name || 'attachment',
+    type: file.type || 'application/octet-stream',
+    size: file.size || 0,
+    file,
+  }));
+
+  const ingestScheduleAttachments = async (files) => {
+    const list = Array.from(files || []);
+    if (!list.length) {
+      return;
+    }
+
+    const nextAttachments = createAttachmentItems(list, 'schedule');
+    setScheduleAttachments((prev) => [...prev, ...nextAttachments].slice(0, 20));
+
+    // Pull plain text from text-like files to help schedule cleanup.
+    const textPayloads = await Promise.all(list.map(async (file) => {
+      const isTextLike = (file.type || '').startsWith('text/') || /\.(txt|md|csv|json)$/i.test(file.name || '');
+      if (!isTextLike) {
+        return '';
+      }
+      try {
+        const content = await file.text();
+        return content.trim();
+      } catch (_error) {
+        return '';
+      }
+    }));
+
+    const mergedText = textPayloads.filter(Boolean).join('\n');
+    if (mergedText) {
+      setScheduleInput((prev) => `${prev}${prev ? '\n' : ''}${mergedText}`.trim());
+    }
+  };
+
+  const ingestChatAttachments = async (files) => {
+    const list = Array.from(files || []);
+    if (!list.length) {
+      return;
+    }
+
+    const nextAttachments = createAttachmentItems(list, 'chat');
+    setChatAttachments((prev) => [...prev, ...nextAttachments].slice(0, 20));
+  };
+
+  const handleSchedulePaste = async (event) => {
+    const clipboardFiles = Array.from(event.clipboardData?.files || []);
+    if (!clipboardFiles.length) {
+      return;
+    }
+
+    event.preventDefault();
+    await ingestScheduleAttachments(clipboardFiles);
+    showToast('Attachment added to schedule input');
+  };
+
+  const handleChatPaste = async (event) => {
+    const clipboardFiles = Array.from(event.clipboardData?.files || []);
+    if (!clipboardFiles.length) {
+      return;
+    }
+
+    event.preventDefault();
+    await ingestChatAttachments(clipboardFiles);
+    showToast('Attachment added to chat input');
+  };
+
   const autoResizeTextarea = (element, maxHeight = 140) => {
     if (!element) {
       return;
@@ -894,7 +986,7 @@ export default function App() {
       const next = truncateText(selectedText, 180);
       setSelectedEditorText(next);
       selectedEditorTextRef.current = selectedText;
-      wholeDocSelectionRef.current = false;
+      wholeDocSelectionRef.current = isWholeDocumentSelection(range);
 
       try {
         setIsBoldActive(Boolean(document.queryCommandState('bold')));
@@ -948,7 +1040,11 @@ export default function App() {
       }
 
       if (finalTranscript.trim()) {
-        setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
+        if (voiceTarget === 'schedule') {
+          setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
+        } else {
+          setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
+        }
         setLiveSpeechInterimText('');
       } else {
         setLiveSpeechInterimText(interimTranscript.trim());
@@ -981,7 +1077,7 @@ export default function App() {
       }
       speechRecognitionRef.current = null;
     };
-  }, [currentLanguage, isMicMuted, isVoiceActive]);
+  }, [currentLanguage, isMicMuted, isVoiceActive, voiceTarget]);
 
   // Integrated Tasks checklist state
   const [tasks, setTasks] = useState([
@@ -2470,6 +2566,7 @@ Rules:
     const timeMatch = explicitTimeMatch || timeWithMarkerMatch;
     let hours = 9 + (index % 10);
     let minutes = 0;
+    const hasExplicitTime = Boolean(timeMatch);
     if (timeMatch) {
       hours = Number(timeMatch[1] || hours);
       minutes = Number(timeMatch[2] || 0);
@@ -2529,6 +2626,7 @@ Rules:
     const parsed = {
       id: Date.now() + index + Math.floor(Math.random() * 1000),
       slot,
+      timeExplicit: hasExplicitTime,
       title,
       summary: '',
       steps: [],
@@ -2618,6 +2716,7 @@ Rules:
           title: String(ai.title || base.title || '').trim() || base.title,
           slot: nextSlot,
           dueDate: nextDate ? nextDate.toISOString() : base.dueDate,
+          timeExplicit: /\d{1,2}:\d{2}/.test(String(ai.slot || '')) || base.timeExplicit,
           durationMinutes: Number(ai.durationMinutes || base.durationMinutes || 60),
           category: String(ai.category || base.category || 'General'),
           urgency: ['high', 'medium', 'low'].includes(String(ai.urgency || '').toLowerCase()) ? String(ai.urgency).toLowerCase() : base.urgency,
@@ -2675,7 +2774,7 @@ Rules:
 
     let scheduleItem = parseScheduleItem(trimmed, scheduleOutput.length);
     const targetDate = scheduleItem.dueDate ? new Date(scheduleItem.dueDate) : selectedCalendarDate;
-    if (!/\d{1,2}:\d{2}/.test(scheduleItem.slot || '')) {
+    if (!scheduleItem.timeExplicit) {
       scheduleItem.slot = findBestAvailableSlot(targetDate);
     }
 
@@ -2706,7 +2805,7 @@ Rules:
 
     let cleanItems = rawItems.map((item, index) => {
       const parsed = parseScheduleItem(item, index);
-      if (!/\d{1,2}:\d{2}/.test(parsed.slot || '')) {
+      if (!parsed.timeExplicit) {
         const targetDate = parsed.dueDate ? new Date(parsed.dueDate) : selectedCalendarDate;
         parsed.slot = findBestAvailableSlot(targetDate);
       }
@@ -2729,16 +2828,8 @@ Rules:
   };
 
   const undoScheduleItem = (id) => {
-    setScheduleOutput((prev) => prev.map((item) => {
-      if (item.id !== id || !item.original) {
-        return item;
-      }
-      return {
-        ...item,
-        ...item.original,
-      };
-    }));
-    showToast('Reverted schedule item changes');
+    setScheduleOutput((prev) => prev.filter((item) => item.id !== id));
+    showToast('Removed from processed list');
   };
 
   const addScheduleStep = (id) => {
@@ -3903,7 +3994,10 @@ Rules:
               <div className={`pointer-events-auto flex flex-col items-center gap-3 ${shouldDockVoiceWidget ? '' : '-mt-10'}`}>
                 <button
                   type="button"
-                  onClick={toggleVoiceRecording}
+                  onClick={async () => {
+                    setVoiceTarget('compose');
+                    await toggleVoiceRecording();
+                  }}
                   className={`relative w-24 h-24 rounded-full border transition-all ${isVoiceActive ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
                   title={isVoiceActive ? 'Stop document voice transcription' : 'Start document voice transcription'}
                 >
@@ -4235,7 +4329,10 @@ Rules:
               </div>
               <button
                 type="button"
-                onClick={toggleVoiceRecording}
+                onClick={async () => {
+                  setVoiceTarget('compose');
+                  await toggleVoiceRecording();
+                }}
                 className={`relative p-2 rounded-full transition-all ${isVoiceActive ? 'text-violet-600 bg-violet-50 shadow-[0_0_0_2px_rgba(139,92,246,0.22),0_0_18px_rgba(139,92,246,0.55)]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                 title={isVoiceActive ? 'Stop live transcription' : 'Start live transcription'}
               >
@@ -4667,12 +4764,32 @@ Rules:
 
               {/* Chat Input Bar */}
               <form onSubmit={handleSidebarSend} className="p-3 border-t border-gray-100 bg-[#FAFAFC]">
+                {chatAttachments.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {chatAttachments.map((attachment) => (
+                      <span key={attachment.id} className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">
+                        {attachment.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="relative flex items-end bg-white border border-gray-200 rounded-xl focus-within:border-violet-400 transition-colors">
+                  <input
+                    ref={chatFileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={async (event) => {
+                      await ingestChatAttachments(event.target.files);
+                      event.target.value = '';
+                    }}
+                  />
                   <textarea
                     ref={chatInputRef}
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                    onPaste={handleChatPaste}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -4681,8 +4798,16 @@ Rules:
                     }}
                     placeholder="Ask, summarize, or instruct..."
                     rows={1}
-                    className="w-full bg-transparent border-none focus:outline-none text-sm py-2.5 pl-3.5 pr-10 text-gray-700 placeholder-gray-400 resize-none"
+                    className="w-full bg-transparent border-none focus:outline-none text-sm py-2.5 pl-10 pr-10 text-gray-700 placeholder-gray-400 resize-none"
                   />
+                  <button
+                    type="button"
+                    onClick={() => chatFileInputRef.current?.click()}
+                    className="absolute left-1.5 p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                    title="Attach files"
+                  >
+                    <Upload size={14} />
+                  </button>
                   <button 
                     type="submit" 
                     className="absolute right-1.5 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
@@ -4908,12 +5033,12 @@ Rules:
                   <div className="space-y-2">
                     <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider block">Processed List</span>
                     {scheduleOutput.map((item) => (
-                      <div key={item.id} className={`p-3 rounded-xl border bg-white space-y-2 relative overflow-hidden ${item.urgency === 'high' ? 'border-rose-200' : item.urgency === 'medium' ? 'border-amber-200' : 'border-violet-100'}`}>
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${item.urgency === 'high' ? 'bg-rose-500' : item.urgency === 'medium' ? 'bg-amber-500' : 'bg-violet-500'}`}></div>
+                      <div key={item.id} className={`p-3 rounded-xl border bg-white space-y-2 relative overflow-hidden ${item.urgency === 'high' ? 'border-red-200' : item.urgency === 'medium' ? 'border-yellow-200' : 'border-blue-200'}`}>
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${item.urgency === 'high' ? 'bg-red-500' : item.urgency === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">
                             <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-600">{item.category || 'General'}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${item.urgency === 'high' ? 'bg-rose-50 text-rose-700 border-rose-200' : item.urgency === 'medium' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>{item.urgency || 'low'}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${item.urgency === 'high' ? 'bg-red-50 text-red-700 border-red-200' : item.urgency === 'medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{item.urgency || 'low'}</span>
                           </div>
                           <div className="text-[10px] text-gray-400">{item.dueDate ? formatEventSlotLabel(item) : item.slot}</div>
                         </div>
@@ -5143,9 +5268,9 @@ Rules:
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
                   {upcomingEvents.map((event, index) => (
-                    <div key={event.id} className={`p-3 rounded-xl border text-xs relative overflow-hidden ${event.urgency === 'high' ? 'border-rose-100 bg-rose-50/20' : index === 0 ? 'border-violet-100 bg-violet-50/20' : 'border-gray-100 bg-white'}`}>
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${event.urgency === 'high' ? 'bg-rose-500' : event.urgency === 'medium' ? 'bg-amber-500' : 'bg-violet-500'}`}></div>
-                      <div className={`font-bold text-sm ${event.urgency === 'high' ? 'text-rose-700' : index === 0 ? 'text-violet-700' : 'text-gray-700'}`}>{event.title}</div>
+                    <div key={event.id} className={`p-3 rounded-xl border text-xs relative overflow-hidden ${event.urgency === 'high' ? 'border-red-100 bg-red-50/20' : event.urgency === 'medium' ? 'border-yellow-100 bg-yellow-50/20' : index === 0 ? 'border-blue-100 bg-blue-50/20' : 'border-gray-100 bg-white'}`}>
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${event.urgency === 'high' ? 'bg-red-500' : event.urgency === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
+                      <div className={`font-bold text-sm ${event.urgency === 'high' ? 'text-red-700' : event.urgency === 'medium' ? 'text-yellow-700' : index === 0 ? 'text-blue-700' : 'text-gray-700'}`}>{event.title}</div>
                       <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700">{event.category || 'General'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">{event.durationMinutes || 60}m</span>
@@ -5164,7 +5289,45 @@ Rules:
                 }}
                 className="border-t border-gray-100 bg-[#FAFAFC] p-4"
               >
+                {scheduleAttachments.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {scheduleAttachments.map((attachment) => (
+                      <span key={attachment.id} className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">
+                        {attachment.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
+                  <input
+                    ref={scheduleFileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={async (event) => {
+                      await ingestScheduleAttachments(event.target.files);
+                      event.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => scheduleFileInputRef.current?.click()}
+                    className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                    title="Attach files or images"
+                  >
+                    <Upload size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setVoiceTarget('schedule');
+                      await toggleVoiceRecording();
+                    }}
+                    className={`ml-1 p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-gray-50 hover:bg-gray-100 text-gray-500'}`}
+                    title="Dictate schedule input"
+                  >
+                    <Mic size={13} />
+                  </button>
                   <PenTool size={14} className="text-gray-400 mx-2 shrink-0" />
                   <div className="relative flex-1">
                   <textarea
@@ -5172,6 +5335,7 @@ Rules:
                     value={scheduleInput}
                     onChange={(e) => setScheduleInput(e.target.value)}
                     onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                    onPaste={handleSchedulePaste}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
