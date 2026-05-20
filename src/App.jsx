@@ -284,6 +284,12 @@ export default function App() {
       if (promptMenuRef.current && !promptMenuRef.current.contains(event.target)) {
         setIsPromptMenuOpen(false);
       }
+      if (!event.target.closest('[data-workspace-menu-root]')) {
+        setOpenWorkspaceMenuId(null);
+      }
+      if (!event.target.closest('[data-language-menu-root]')) {
+        setLanguageMenuOpen(false);
+      }
     };
 
     window.addEventListener('pointerdown', handleClickOutside);
@@ -491,6 +497,15 @@ export default function App() {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
+  const closeTransientMenus = () => {
+    setOpenDropdown(null);
+    setTextStyleMenuOpen(false);
+    setOpenDocMenuId(null);
+    setIsPromptMenuOpen(false);
+    setOpenWorkspaceMenuId(null);
+    setLanguageMenuOpen(false);
+  };
+
   const trackMemoryAction = (type, summary, details = {}) => {
     if (!memoryCaptureEnabled) {
       return;
@@ -514,32 +529,66 @@ export default function App() {
     return DEMO_GEMINI_API_KEY.trim();
   };
 
-  const callGemini = async (promptText) => {
-    const apiKey = getActiveGeminiApiKey();
+  const callGemini = async (promptText, overrideApiKey) => {
+    const apiKey = (overrideApiKey || getActiveGeminiApiKey()).trim();
     if (!apiKey) {
       return null;
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: promptText }] }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800,
-        },
-      }),
-    });
+    const modelCandidates = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-flash-latest'];
 
-    if (!response.ok) {
-      return null;
+    for (const modelName of modelCandidates) {
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 800,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          continue;
+        }
+
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (text) {
+          return text;
+        }
+      } catch (_error) {
+        // try next model candidate
+      }
     }
 
-    const data = await response.json();
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+    return null;
+  };
+
+  const applyUserApiKey = async () => {
+    const trimmed = userApiKey.trim();
+    if (!trimmed) {
+      showToast('Paste an API key first');
+      return;
+    }
+
+    setUserApiKey(trimmed);
+    setApiMode('byok');
+
+    const probe = await callGemini('Reply with: API connected', trimmed);
+    if (probe) {
+      showToast('API key connected successfully');
+      trackMemoryAction('ai', 'Updated API key', { mode: 'byok', verified: true });
+      return;
+    }
+
+    showToast('API key saved. Verification failed, check key restrictions.');
+    trackMemoryAction('ai', 'Updated API key', { mode: 'byok', verified: false });
   };
 
   const memoryStats = useMemo(() => {
@@ -598,59 +647,61 @@ export default function App() {
     const lowerPrompt = promptText.toLowerCase();
     let aiResponseText = '';
     let docAction = null;
-
-    if (lowerPrompt.includes('timeline') || lowerPrompt.includes('date') || lowerPrompt.includes('schedule')) {
-      docAction = {
-        title: '🗓️ 4. Timeline Breakdown',
-        type: 'timeline',
-        content: [
-          { phase: 'Phase 1: Internal QA & Warmups', dates: 'May 1 - May 14', detail: 'Internal regression tests, QA checklists, design audits' },
-          { phase: 'Phase 2: Closed Beta Sandbox', dates: 'May 15 - May 30', detail: 'Invite-only rollout to 500 hand-picked early adopters' },
-          { phase: 'Phase 3: Public Expansion', dates: 'June 1 - June 14', detail: 'Press kits distributed, major public marketing launch' },
-        ],
-      };
-    } else if (lowerPrompt.includes('task') || lowerPrompt.includes('checklist') || lowerPrompt.includes('extract')) {
-      setTasks((prev) => [
-        ...prev,
-        { id: Date.now() + 1, text: 'Refine Beta Launch user feedback channels', completed: false },
-        { id: Date.now() + 2, text: 'Prepare Product Hunt media graphic kit', completed: false },
-      ]);
-      docAction = {
-        title: '📋 5. Core Operational Checklists',
-        type: 'tasks',
-        content: [
-          'Setup feedback surveys and analytics metrics',
-          'Send confirmation emails to internal stakeholders',
-          'Coordinate with community leads for creator outreach channels',
-        ],
-      };
-    } else if (lowerPrompt.includes('risk') || lowerPrompt.includes('danger') || lowerPrompt.includes('threat')) {
-      docAction = {
-        title: '🛡️ 6. Risk Mitigation Matrix',
-        type: 'risks',
-        content: [
-          { threat: 'Severe Server Latency under peak launch loads', impact: 'High', fix: 'Deploy multi-zone automatic scaling protocols on Cloud clusters prior to Product Hunt day.' },
-          { threat: 'Lower-than-expected Creator response rate', impact: 'Medium', fix: 'Leverage direct personalized outreach and introduce referral incentive program.' },
-        ],
-      };
-    } else {
-      docAction = {
-        title: '✨ AI Composed Appendix',
-        type: 'text',
-        paragraph: `Regarding your request to "${promptText}": We recommend structuring milestones aggressively to meet current team bandwidth constraints. Ensuring standard UI elements stay intuitive is critical to reducing cognitive friction during the initial user onboarding wave.`,
-      };
-    }
+    let usedLiveModel = false;
 
     try {
       const modelResponse = await callGemini(promptText);
       if (modelResponse) {
         aiResponseText = modelResponse;
+        usedLiveModel = true;
       }
     } catch (_error) {
       aiResponseText = '';
     }
 
-    if (!aiResponseText) {
+    if (!usedLiveModel) {
+      if (lowerPrompt.includes('timeline') || lowerPrompt.includes('date') || lowerPrompt.includes('schedule')) {
+        docAction = {
+          title: '🗓️ 4. Timeline Breakdown',
+          type: 'timeline',
+          content: [
+            { phase: 'Phase 1: Internal QA & Warmups', dates: 'May 1 - May 14', detail: 'Internal regression tests, QA checklists, design audits' },
+            { phase: 'Phase 2: Closed Beta Sandbox', dates: 'May 15 - May 30', detail: 'Invite-only rollout to 500 hand-picked early adopters' },
+            { phase: 'Phase 3: Public Expansion', dates: 'June 1 - June 14', detail: 'Press kits distributed, major public marketing launch' },
+          ],
+        };
+      } else if (lowerPrompt.includes('task') || lowerPrompt.includes('checklist') || lowerPrompt.includes('extract')) {
+        setTasks((prev) => [
+          ...prev,
+          { id: Date.now() + 1, text: 'Refine Beta Launch user feedback channels', completed: false },
+          { id: Date.now() + 2, text: 'Prepare Product Hunt media graphic kit', completed: false },
+        ]);
+        docAction = {
+          title: '📋 5. Core Operational Checklists',
+          type: 'tasks',
+          content: [
+            'Setup feedback surveys and analytics metrics',
+            'Send confirmation emails to internal stakeholders',
+            'Coordinate with community leads for creator outreach channels',
+          ],
+        };
+      } else if (lowerPrompt.includes('risk') || lowerPrompt.includes('danger') || lowerPrompt.includes('threat')) {
+        docAction = {
+          title: '🛡️ 6. Risk Mitigation Matrix',
+          type: 'risks',
+          content: [
+            { threat: 'Severe Server Latency under peak launch loads', impact: 'High', fix: 'Deploy multi-zone automatic scaling protocols on Cloud clusters prior to Product Hunt day.' },
+            { threat: 'Lower-than-expected Creator response rate', impact: 'Medium', fix: 'Leverage direct personalized outreach and introduce referral incentive program.' },
+          ],
+        };
+      } else {
+        docAction = {
+          title: '✨ AI Composed Appendix',
+          type: 'text',
+          paragraph: `Regarding your request to "${promptText}": We recommend structuring milestones aggressively to meet current team bandwidth constraints. Ensuring standard UI elements stay intuitive is critical to reducing cognitive friction during the initial user onboarding wave.`,
+        };
+      }
+
       if (lowerPrompt.includes('timeline') || lowerPrompt.includes('date') || lowerPrompt.includes('schedule')) {
         aiResponseText = 'Composed a high-level visual launch timeline and linked it directly to your Key Initiatives.';
       } else if (lowerPrompt.includes('task') || lowerPrompt.includes('checklist') || lowerPrompt.includes('extract')) {
@@ -686,7 +737,7 @@ export default function App() {
     }
 
     trackMemoryAction('ai', 'AI response generated', {
-      usedLiveModel: Boolean(getActiveGeminiApiKey()),
+      usedLiveModel,
     });
 
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
@@ -779,6 +830,23 @@ export default function App() {
       setRightSidebarOpen(true);
       setActiveRightTab(tabKey);
     }
+  };
+
+  const handleRightSidebarTabsKeyDown = (event) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+      return;
+    }
+
+    event.preventDefault();
+    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'memory'];
+    const currentIndex = tabOrder.indexOf(activeRightTab);
+    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+    const nextIndex = event.key === 'ArrowRight'
+      ? (safeIndex + 1) % tabOrder.length
+      : (safeIndex - 1 + tabOrder.length) % tabOrder.length;
+
+    setActiveRightTab(tabOrder[nextIndex]);
+    setRightSidebarOpen(true);
   };
 
   const switchDocument = (docId) => {
@@ -1584,16 +1652,18 @@ export default function App() {
                   </div>
                   <MoreHorizontal
                     size={14}
+                    data-workspace-menu-root
                     className="text-gray-400"
                     onClick={(event) => {
                       event.stopPropagation();
+                      closeTransientMenus();
                       setOpenWorkspaceMenuId((prev) => (prev === workspace.id ? null : workspace.id));
                     }}
                   />
                 </button>
 
                 {openWorkspaceMenuId === workspace.id && (
-                  <div className="absolute right-2 top-9 z-30 w-28 bg-white border border-gray-200 rounded-lg shadow-lg p-1">
+                  <div className="absolute right-2 top-9 z-30 w-28 bg-white border border-gray-200 rounded-lg shadow-lg p-1" data-workspace-menu-root>
                     <button
                       onClick={() => openRenameWorkspaceModal(workspace)}
                       className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50"
@@ -1729,6 +1799,7 @@ export default function App() {
                   data-doc-menu-root
                   onClick={(event) => {
                     event.stopPropagation();
+                    closeTransientMenus();
                     setOpenDocMenuId((prev) => (prev === doc.id ? null : doc.id));
                   }}
                   className="p-0.5 rounded hover:bg-gray-100 shrink-0"
@@ -1773,7 +1844,10 @@ export default function App() {
         >
           <div className="relative">
             <button
-              onClick={() => setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'))}
+              onClick={() => {
+                closeTransientMenus();
+                setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'));
+              }}
               className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap shrink-0"
             >
               {editorHeading} <ChevronDown size={14} className="text-gray-400" />
@@ -1810,7 +1884,10 @@ export default function App() {
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="relative">
             <button
-              onClick={() => setOpenDropdown((prev) => (prev === 'font' ? null : 'font'))}
+              onClick={() => {
+                closeTransientMenus();
+                setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
+              }}
               className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded"
             >
               {editorFont} <ChevronDown size={14} className="text-gray-400" />
@@ -1853,7 +1930,12 @@ export default function App() {
               onChange={(e) => setEditorSize(Number(e.target.value) || 32)}
               className="w-14 bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
             />
-            <button onClick={() => setOpenDropdown((prev) => (prev === 'size' ? null : 'size'))}>
+            <button
+              onClick={() => {
+                closeTransientMenus();
+                setOpenDropdown((prev) => (prev === 'size' ? null : 'size'));
+              }}
+            >
               <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'size' && (
@@ -2228,7 +2310,10 @@ export default function App() {
               <div className="relative" ref={promptMenuRef}>
                 <button
                   type="button"
-                  onClick={() => setIsPromptMenuOpen((prev) => !prev)}
+                  onClick={() => {
+                    closeTransientMenus();
+                    setIsPromptMenuOpen((prev) => !prev);
+                  }}
                   className={`p-2 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                   title="Add files, images, or audio"
                 >
@@ -2317,11 +2402,18 @@ export default function App() {
           <div className="flex items-center gap-6">
             <span title="Real-time word count">{docBodyHtml.split(/\s+/).filter(w => w.length > 0).length + (docTitle?.split(/\s+/).filter(w => w.length > 0).length || 0) + (docSubtitle?.split(/\s+/).filter(w => w.length > 0).length || 0)} words</span>
             <div className="relative">
-              <button onClick={() => setLanguageMenuOpen((prev) => !prev)} className="flex items-center gap-1 cursor-pointer hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50">
+              <button
+                data-language-menu-root
+                onClick={() => {
+                  closeTransientMenus();
+                  setLanguageMenuOpen((prev) => !prev);
+                }}
+                className="flex items-center gap-1 cursor-pointer hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50"
+              >
                 {currentLanguage} <ChevronDown size={12} />
               </button>
               {languageMenuOpen && (
-                <div className="absolute left-0 bottom-full mb-1 z-40 w-40 bg-white border border-gray-200 rounded-lg shadow-lg p-1">
+                <div className="absolute left-0 bottom-full mb-1 z-40 w-40 bg-white border border-gray-200 rounded-lg shadow-lg p-1" data-language-menu-root>
                   {['English (US)', 'English (UK)', 'Spanish', 'French', 'German', 'Chinese'].map((lang) => (
                     <button
                       key={lang}
@@ -2373,44 +2465,38 @@ export default function App() {
 
       {/* 3. Right Sidebar (AI Assistant / Smart Chat / Tools) */}
       <div 
-        className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 relative z-40 ${
+        className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 relative z-[260] ${
           rightSidebarOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
         style={{ width: rightSidebarOpen ? `${rightSidebarWidth}px` : '0px' }}
       >
         {/* Sidebar Header Tabs */}
         <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
-          <button 
-            className={`flex-1 text-center py-4 transition-all ${activeRightTab === 'chat' ? 'text-violet-600 border-b-2 border-violet-600 bg-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-            onClick={() => setActiveRightTab('chat')}
+          <div
+            className="flex-1 min-w-0 overflow-x-auto no-scrollbar"
+            tabIndex={0}
+            onKeyDown={handleRightSidebarTabsKeyDown}
+            aria-label="Right panel tabs"
           >
-            AI Chat
-          </button>
-          <button 
-            className={`flex-1 text-center py-4 transition-all ${activeRightTab === 'assistant' ? 'text-violet-600 border-b-2 border-violet-600 bg-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-            onClick={() => setActiveRightTab('assistant')}
-          >
-            AI Assistant
-          </button>
-          <button 
-            className={`flex-1 text-center py-4 transition-all ${activeRightTab === 'tasks' ? 'text-violet-600 border-b-2 border-violet-600 bg-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-            onClick={() => setActiveRightTab('tasks')}
-          >
-            Tasks ({tasks.filter(t => !t.completed).length})
-          </button>
-          <button 
-            className={`flex-1 text-center py-4 transition-all ${activeRightTab === 'calendar' ? 'text-violet-600 border-b-2 border-violet-600 bg-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-            onClick={() => setActiveRightTab('calendar')}
-          >
-            Schedule
-          </button>
-          <button
-            className={`flex-1 text-center py-4 transition-all ${activeRightTab === 'memory' ? 'text-violet-600 border-b-2 border-violet-600 bg-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-            onClick={() => setActiveRightTab('memory')}
-          >
-            Memory
-          </button>
-          <div className="w-10 flex items-center justify-center border-l border-gray-100">
+            <div className="inline-flex min-w-max">
+              {[
+                { key: 'chat', label: 'AI Chat' },
+                { key: 'assistant', label: 'AI Assistant' },
+                { key: 'tasks', label: `Tasks (${tasks.filter((t) => !t.completed).length})` },
+                { key: 'calendar', label: 'Schedule' },
+                { key: 'memory', label: 'Memory' },
+              ].map((tab) => (
+                <button
+                  key={tab.key}
+                  className={`shrink-0 px-3 py-4 transition-all border-b-2 ${activeRightTab === tab.key ? 'text-violet-600 border-violet-600 bg-white' : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'}`}
+                  onClick={() => setActiveRightTab(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="w-10 shrink-0 flex items-center justify-center border-l border-gray-100">
             <X 
               size={14} 
               className="text-gray-400 cursor-pointer hover:text-gray-600" 
@@ -2686,7 +2772,10 @@ export default function App() {
                       <div className="relative">
                         <button
                           type="button"
-                          onClick={() => setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'))}
+                          onClick={() => {
+                            closeTransientMenus();
+                            setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
+                          }}
                           className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap"
                         >
                           {monthNames[calendarMonth]} <ChevronDown size={14} className="text-gray-400" />
@@ -2716,7 +2805,10 @@ export default function App() {
                       <div className="relative">
                         <button
                           type="button"
-                          onClick={() => setOpenDropdown((prev) => (prev === 'calendar-year' ? null : 'calendar-year'))}
+                          onClick={() => {
+                            closeTransientMenus();
+                            setOpenDropdown((prev) => (prev === 'calendar-year' ? null : 'calendar-year'));
+                          }}
                           className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap"
                         >
                           {calendarYear} <ChevronDown size={14} className="text-gray-400" />
@@ -2877,7 +2969,7 @@ export default function App() {
 
               <div className="rounded-xl border border-gray-100 bg-[#FAFAFC] p-3 space-y-3">
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">API Mode</div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setApiMode('demo')}
                     className={`px-3 py-1.5 rounded-full text-xs border ${apiMode === 'demo' ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-white border-gray-200 text-gray-600'}`}
@@ -2898,19 +2990,31 @@ export default function App() {
                     : (userApiKey.trim() ? 'Your API key is stored locally in this browser.' : 'Paste your API key to enable live responses.')}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <input
                     type={showApiKey ? 'text' : 'password'}
                     value={userApiKey}
                     onChange={(e) => setUserApiKey(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        applyUserApiKey();
+                      }
+                    }}
                     placeholder="Paste your Gemini API key"
-                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
+                    className="flex-1 min-w-0 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
                   />
                   <button
                     onClick={() => setShowApiKey((prev) => !prev)}
-                    className="px-2 py-2 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    className="shrink-0 px-2 py-2 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
                   >
                     {showApiKey ? 'Hide' : 'Show'}
+                  </button>
+                  <button
+                    onClick={applyUserApiKey}
+                    className="shrink-0 px-2.5 py-2 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700"
+                  >
+                    Apply
                   </button>
                 </div>
               </div>
@@ -2935,7 +3039,7 @@ export default function App() {
                   <div className="rounded-lg border border-gray-200 bg-white p-2">Exports: <span className="font-semibold">{memoryStats.exports}</span></div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <label className="text-xs text-gray-600">Retention days</label>
                   <input
                     type="number"
@@ -2947,7 +3051,7 @@ export default function App() {
                   />
                   <button
                     onClick={() => setMemoryEntries([])}
-                    className="ml-auto px-2.5 py-1.5 rounded-lg text-xs border border-rose-200 text-rose-600 hover:bg-rose-50"
+                    className="ml-auto shrink-0 px-2.5 py-1.5 rounded-lg text-xs border border-rose-200 text-rose-600 hover:bg-rose-50"
                   >
                     Clear all
                   </button>
@@ -2956,18 +3060,18 @@ export default function App() {
 
               <div className="rounded-xl border border-gray-100 bg-[#FAFAFC] p-3 space-y-2">
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Memory Browser</div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 min-w-0">
                   <input
                     type="text"
                     value={memorySearch}
                     onChange={(e) => setMemorySearch(e.target.value)}
                     placeholder="Search memory entries..."
-                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
+                    className="flex-1 min-w-0 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
                   />
                   <select
                     value={memoryFilter}
                     onChange={(e) => setMemoryFilter(e.target.value)}
-                    className="bg-white border border-gray-200 rounded-lg px-2 py-2 text-xs text-gray-700"
+                    className="shrink-0 bg-white border border-gray-200 rounded-lg px-2 py-2 text-xs text-gray-700"
                   >
                     <option value="all">All</option>
                     <option value="ai">AI</option>
