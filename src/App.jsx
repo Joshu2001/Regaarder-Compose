@@ -142,6 +142,8 @@ export default function App() {
   const isMicMutedRef = useRef(false);
   const isVoiceActiveRef = useRef(false);
   const insertTranscriptIntoDocumentRef = useRef(null);
+  const pendingInterimTranscriptRef = useRef('');
+  const interimCommitTimerRef = useRef(null);
   const selectedEditorTextRef = useRef('');
   const pointerDownInPromptRef = useRef(false);
   const calendarMenuRef = useRef(null);
@@ -1142,6 +1144,22 @@ export default function App() {
         return;
       }
 
+      const routeTranscriptToTarget = (text) => {
+        const normalizedText = String(text || '').trim();
+        if (!normalizedText) {
+          return;
+        }
+
+        const activeVoiceTarget = voiceTargetRef.current;
+        if (activeVoiceTarget === 'schedule') {
+          setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+        } else if (activeVoiceTarget === 'document') {
+          insertTranscriptIntoDocumentRef.current?.(normalizedText);
+        } else {
+          setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+        }
+      };
+
       let finalTranscript = '';
       let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
@@ -1154,17 +1172,33 @@ export default function App() {
       }
 
       if (finalTranscript.trim()) {
-        const activeVoiceTarget = voiceTargetRef.current;
-        if (activeVoiceTarget === 'schedule') {
-          setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
-        } else if (activeVoiceTarget === 'document') {
-          insertTranscriptIntoDocumentRef.current?.(finalTranscript.trim());
-        } else {
-          setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${finalTranscript.trim()}`);
+        routeTranscriptToTarget(finalTranscript.trim());
+        pendingInterimTranscriptRef.current = '';
+        if (interimCommitTimerRef.current) {
+          clearTimeout(interimCommitTimerRef.current);
+          interimCommitTimerRef.current = null;
         }
         setLiveSpeechInterimText('');
       } else {
-        setLiveSpeechInterimText(interimTranscript.trim());
+        const normalizedInterim = interimTranscript.trim();
+        const activeVoiceTarget = voiceTargetRef.current;
+        setLiveSpeechInterimText(normalizedInterim);
+
+        if (activeVoiceTarget === 'document' && normalizedInterim) {
+          pendingInterimTranscriptRef.current = normalizedInterim;
+          if (interimCommitTimerRef.current) {
+            clearTimeout(interimCommitTimerRef.current);
+          }
+          interimCommitTimerRef.current = setTimeout(() => {
+            const buffered = pendingInterimTranscriptRef.current.trim();
+            if (buffered) {
+              routeTranscriptToTarget(buffered);
+              pendingInterimTranscriptRef.current = '';
+              setLiveSpeechInterimText('');
+            }
+            interimCommitTimerRef.current = null;
+          }, 850);
+        }
       }
     };
 
@@ -1175,6 +1209,19 @@ export default function App() {
     };
 
     recognition.onend = () => {
+      const buffered = pendingInterimTranscriptRef.current.trim();
+      if (buffered) {
+        if (voiceTargetRef.current === 'schedule') {
+          setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${buffered}`);
+        } else if (voiceTargetRef.current === 'document') {
+          insertTranscriptIntoDocumentRef.current?.(buffered);
+        } else {
+          setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${buffered}`);
+        }
+        pendingInterimTranscriptRef.current = '';
+        setLiveSpeechInterimText('');
+      }
+
       if (isVoiceActiveRef.current && !isMicMutedRef.current) {
         try {
           recognition.start();
@@ -1187,6 +1234,10 @@ export default function App() {
 
     speechRecognitionRef.current = recognition;
     return () => {
+      if (interimCommitTimerRef.current) {
+        clearTimeout(interimCommitTimerRef.current);
+        interimCommitTimerRef.current = null;
+      }
       try {
         recognition.stop();
       } catch (_error) {
@@ -2095,6 +2146,7 @@ Rules:
 
     const nextTarget = targetMode || 'compose';
     setVoiceTarget(nextTarget);
+    voiceTargetRef.current = nextTarget;
 
     if (isVoiceActive) {
       // If a different voice surface is requested, restart with the new target.
