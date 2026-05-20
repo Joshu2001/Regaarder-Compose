@@ -87,6 +87,12 @@ export default function App() {
   const [promptHistory, setPromptHistory] = useState([]);
   const [promptHistorySearch, setPromptHistorySearch] = useState('');
   const [promptHistoryFilter, setPromptHistoryFilter] = useState('all');
+  const [promptHistoryFilterMenuOpen, setPromptHistoryFilterMenuOpen] = useState(false);
+  const [editingPromptId, setEditingPromptId] = useState(null);
+  const [editingPromptValue, setEditingPromptValue] = useState('');
+  const [selectedEditorText, setSelectedEditorText] = useState('');
+  const [promptAttachments, setPromptAttachments] = useState([]);
+  const [lastComposeRun, setLastComposeRun] = useState(null);
   const [apiMode, setApiMode] = useState('demo');
   const [userApiKey, setUserApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -113,6 +119,9 @@ export default function App() {
   const promptTuneRef = useRef(null);
   const promptFormatRef = useRef(null);
   const promptLibraryRef = useRef(null);
+  const promptHistoryFilterRef = useRef(null);
+  const promptFileInputRef = useRef(null);
+  const selectedEditorTextRef = useRef('');
   const calendarMenuRef = useRef(null);
   const modelCandidatesCacheRef = useRef(null);
   const modelCandidatesCacheKeyRef = useRef('');
@@ -481,6 +490,9 @@ export default function App() {
       if (promptLibraryRef.current && !promptLibraryRef.current.contains(event.target)) {
         setPromptLibraryOpen(false);
       }
+      if (promptHistoryFilterRef.current && !promptHistoryFilterRef.current.contains(event.target)) {
+        setPromptHistoryFilterMenuOpen(false);
+      }
       if (!event.target.closest('[data-workspace-menu-root]')) {
         setOpenWorkspaceMenuId(null);
       }
@@ -525,6 +537,35 @@ export default function App() {
 
     selection.removeAllRanges();
     selection.addRange(savedSelectionRef.current);
+    return true;
+  };
+
+  const injectIntoSavedSelection = (text) => {
+    const nextText = String(text || '').trim();
+    if (!nextText) {
+      return false;
+    }
+
+    const restored = restoreSavedSelection();
+    if (!restored) {
+      return false;
+    }
+
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) {
+      return false;
+    }
+
+    const range = selection.getRangeAt(0);
+    if (!isRangeInsideEditor(range)) {
+      return false;
+    }
+
+    range.deleteContents();
+    range.insertNode(document.createTextNode(nextText));
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
     return true;
   };
 
@@ -574,10 +615,16 @@ export default function App() {
     const handleSelectionChange = () => {
       const range = getEditorSelectionRange();
       if (!range) {
+        setSelectedEditorText('');
+        selectedEditorTextRef.current = '';
         return;
       }
 
       savedSelectionRef.current = range.cloneRange();
+      const selectedText = range.toString().trim();
+      const next = truncateText(selectedText, 180);
+      setSelectedEditorText(next);
+      selectedEditorTextRef.current = selectedText;
     };
 
     document.addEventListener('selectionchange', handleSelectionChange);
@@ -694,6 +741,103 @@ export default function App() {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
+  const truncateText = (value, max = 120) => {
+    const raw = String(value || '').trim();
+    if (raw.length <= max) {
+      return raw;
+    }
+    return `${raw.slice(0, max)}...`;
+  };
+
+  const removePromptAttachment = (attachmentId) => {
+    setPromptAttachments((prev) => {
+      const next = prev.filter((attachment) => attachment.id !== attachmentId);
+      if (uploadedPromptAudio && uploadedPromptAudio.id === attachmentId) {
+        setUploadedPromptAudio(null);
+      }
+      return next;
+    });
+  };
+
+  const attachFilesToPrompt = (files) => {
+    if (!files || !files.length) {
+      return;
+    }
+
+    const attachments = Array.from(files).map((file, index) => ({
+      id: Date.now() + index + Math.floor(Math.random() * 1000),
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      size: file.size || 0,
+      file,
+    }));
+
+    setPromptAttachments((prev) => [...attachments, ...prev].slice(0, 24));
+
+    const firstAudio = attachments.find((attachment) => attachment.type.startsWith('audio/'));
+    if (firstAudio) {
+      setUploadedPromptAudio({
+        id: firstAudio.id,
+        name: firstAudio.name,
+        url: URL.createObjectURL(firstAudio.file),
+      });
+    }
+
+    trackMemoryAction('upload', 'Attached files to prompt', {
+      count: attachments.length,
+      types: attachments.map((attachment) => attachment.type).join(', '),
+    });
+  };
+
+  const beginPromptEdit = (entry) => {
+    setEditingPromptId(entry.id);
+    setEditingPromptValue(entry.text || '');
+  };
+
+  const cancelPromptEdit = () => {
+    setEditingPromptId(null);
+    setEditingPromptValue('');
+  };
+
+  const savePromptEdit = (entryId) => {
+    const nextValue = editingPromptValue.trim();
+    if (!nextValue) {
+      showToast('Prompt cannot be empty');
+      return;
+    }
+    setPromptHistory((prev) => prev.map((entry) => (entry.id === entryId ? { ...entry, text: nextValue } : entry)));
+    cancelPromptEdit();
+    showToast('Prompt updated');
+  };
+
+  const handleComposeUndo = () => {
+    undoDocumentChange();
+    setLastComposeRun(null);
+  };
+
+  const handleComposeRetry = () => {
+    if (!lastComposeRun?.prompt) {
+      showToast('No prompt to retry');
+      return;
+    }
+    handleAISubmit(lastComposeRun.prompt, {
+      ...(lastComposeRun.options || {}),
+      source: 'compose',
+      forceDocBuild: true,
+      suppressChatEcho: true,
+    });
+  };
+
+  const handleComposeDelete = () => {
+    setDocBodyHtml('');
+    setAppendedSections([]);
+    setIsBlankDocument(true);
+    setDocTitle('');
+    setDocSubtitle('');
+    setLastComposeRun(null);
+    showToast('Removed generated output');
+  };
+
   const closeTransientMenus = () => {
     setOpenDropdown(null);
     setTextStyleMenuOpen(false);
@@ -702,6 +846,7 @@ export default function App() {
     setPromptTuneMenuOpen(false);
     setPromptFormatMenuOpen(false);
     setPromptLibraryOpen(false);
+    setPromptHistoryFilterMenuOpen(false);
     setOpenWorkspaceMenuId(null);
     setLanguageMenuOpen(false);
   };
@@ -1045,6 +1190,7 @@ export default function App() {
     const suppressChatEcho = Boolean(options.suppressChatEcho);
     const requestedFormat = options.composeFormat || 'Auto (Compose decides)';
     const shouldBuildDocument = forceDocBuild || source === 'compose';
+    const selectionScoped = Boolean(options.selectionScoped);
     const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
     const requestedTone = String(options.tone || 'normal');
     const requestedLengthMode = String(options.lengthMode || 'words');
@@ -1231,15 +1377,22 @@ Rules:
     if (docAction) {
       const finalizedAction = { ...docAction, sectionId: actionSectionId };
       if (shouldBuildDocument) {
-        const composedHtml = renderDocActionHtml(finalizedAction);
-        setIsBlankDocument(true);
-        setAppendedSections([]);
-        setDocBodyHtml(composedHtml);
-        if (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
-          setDocTitle(finalizedAction.title?.replace(/^✨\s*/, '') || 'Compose Draft');
-        }
-        if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
-          setDocSubtitle(`Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`);
+        const targetedText = finalizedAction.type === 'text'
+          ? finalizedAction.paragraph
+          : aiResponseText;
+        const injectedToSelection = selectionScoped && injectIntoSavedSelection(targetedText);
+
+        if (!injectedToSelection) {
+          const composedHtml = renderDocActionHtml(finalizedAction);
+          setIsBlankDocument(true);
+          setAppendedSections([]);
+          setDocBodyHtml(composedHtml);
+          if (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
+            setDocTitle(finalizedAction.title?.replace(/^✨\s*/, '') || 'Compose Draft');
+          }
+          if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
+            setDocSubtitle(`Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`);
+          }
         }
       } else {
         setIsBlankDocument(false);
@@ -1272,8 +1425,15 @@ Rules:
     const formatLabel = composeOutputFormat === 'Custom...'
       ? (customComposeFormat.trim() || 'Custom Document')
       : composeOutputFormat;
-    const finalPrompt = floatingPrompt.trim() || `Transcribe attached audio: ${uploadedPromptAudio.name}`;
-    handleAISubmit(finalPrompt, {
+    const selectedScope = selectedEditorTextRef.current || selectedEditorText;
+    const attachmentSummary = promptAttachments.length
+      ? `\nAttached files: ${promptAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
+      : '';
+    const scopedInstruction = selectedScope
+      ? `Modify ONLY the selected excerpt below. Do not rewrite unrelated sections.\nSelected excerpt:\n"""${selectedScope}"""\n\nUser request: ${floatingPrompt.trim() || `Transcribe attached audio: ${uploadedPromptAudio.name}`}`
+      : (floatingPrompt.trim() || `Transcribe attached audio: ${uploadedPromptAudio.name}`);
+    const finalPrompt = `${scopedInstruction}${attachmentSummary}`;
+    const composeOptions = {
       source: 'compose',
       forceDocBuild: true,
       suppressChatEcho: true,
@@ -1281,9 +1441,46 @@ Rules:
       tone: promptTone,
       lengthMode: promptLengthMode,
       lengthValue: promptLengthValue,
+      selectionScoped: Boolean(selectedScope),
+    };
+    handleAISubmit(finalPrompt, composeOptions);
+    setLastComposeRun({
+      prompt: finalPrompt,
+      options: composeOptions,
     });
     setFloatingPrompt('');
     setUploadedPromptAudio(null);
+    setPromptAttachments([]);
+    setSelectedEditorText('');
+    selectedEditorTextRef.current = '';
+  };
+
+  const handleFloatingPaste = (event) => {
+    const clipboard = event.clipboardData;
+    if (!clipboard) {
+      return;
+    }
+
+    const items = Array.from(clipboard.items || []);
+    const files = items
+      .filter((item) => item.kind === 'file')
+      .map((item) => item.getAsFile())
+      .filter(Boolean);
+
+    if (files.length) {
+      event.preventDefault();
+      attachFilesToPrompt(files);
+      showToast(`Attached ${files.length} item${files.length > 1 ? 's' : ''} from clipboard`);
+      return;
+    }
+
+    const pastedText = clipboard.getData('text');
+    if (pastedText) {
+      setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${pastedText}`.trimStart());
+      trackMemoryAction('upload', 'Pasted text into compose prompt', {
+        length: pastedText.length,
+      });
+    }
   };
 
   const recordChatFeedback = (message, feedbackType, comment = '') => {
@@ -2916,7 +3113,7 @@ Rules:
                         <ChevronDown size={12} />
                       </button>
                       {promptFormatMenuOpen && (
-                        <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl p-1 z-[9999]">
+                        <div className="absolute left-0 bottom-full mb-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl p-1 z-[9999]">
                           {composeFormatOptions.map((option) => (
                             <button
                               key={option}
@@ -2946,7 +3143,7 @@ Rules:
                         <span>Tune</span>
                       </button>
                       {promptTuneMenuOpen && (
-                        <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-[9999] space-y-3">
+                        <div className="absolute left-0 bottom-full mb-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-[9999] space-y-3">
                           <div>
                             <div className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Style</div>
                             <div className="flex flex-wrap gap-1.5">
@@ -3015,10 +3212,28 @@ Rules:
                       className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
                     />
                   )}
+                  {selectedEditorText && (
+                    <div className="flex items-center gap-2 text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                      <span className="font-semibold text-violet-600">Selected text</span>
+                      <span className="truncate">{selectedEditorText}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedEditorText('');
+                          selectedEditorTextRef.current = '';
+                        }}
+                        className="ml-auto text-gray-400 hover:text-gray-700"
+                        title="Detach selected text"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
                   <textarea
                     ref={floatingPromptRef}
                     value={floatingPrompt}
                     onChange={(e) => setFloatingPrompt(e.target.value)}
+                    onPaste={handleFloatingPaste}
                     onInput={(e) => autoResizeTextarea(e.currentTarget, 160)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -3087,7 +3302,7 @@ Rules:
                     <button
                       type="button"
                       onClick={() => {
-                        showToast('File upload coming soon');
+                        promptFileInputRef.current?.click();
                         setIsPromptMenuOpen(false);
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
@@ -3098,7 +3313,7 @@ Rules:
                     <button
                       type="button"
                       onClick={() => {
-                        showToast('Image upload coming soon');
+                        promptFileInputRef.current?.click();
                         setIsPromptMenuOpen(false);
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
@@ -3109,6 +3324,17 @@ Rules:
                   </div>
                 )}
               </div>
+              <button
+                type="button"
+                onClick={toggleVoiceRecording}
+                className={`relative p-2 rounded-full transition-colors ${isVoiceActive ? 'bg-violet-100 text-violet-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title={isVoiceActive ? 'Stop live transcription' : 'Start live transcription'}
+              >
+                <Mic size={16} />
+                {isVoiceActive && (
+                  <span className="absolute inset-0 rounded-full border-2 border-violet-400 animate-ping"></span>
+                )}
+              </button>
               <div className="relative" ref={promptLibraryRef}>
                 <button
                   type="button"
@@ -3132,55 +3358,108 @@ Rules:
                         placeholder="Search prompts"
                         className="flex-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
                       />
-                      <select
-                        value={promptHistoryFilter}
-                        onChange={(e) => setPromptHistoryFilter(e.target.value)}
-                        className="bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
-                      >
-                        <option value="all">All</option>
-                        <option value="compose">Compose</option>
-                        <option value="chat">Chat</option>
-                      </select>
+                      <div className="relative" ref={promptHistoryFilterRef}>
+                        <button
+                          type="button"
+                          onClick={() => setPromptHistoryFilterMenuOpen((prev) => !prev)}
+                          className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700"
+                        >
+                          <span>{promptHistoryFilter === 'all' ? 'All' : promptHistoryFilter === 'compose' ? 'Compose' : 'Chat'}</span>
+                          <ChevronDown size={12} />
+                        </button>
+                        {promptHistoryFilterMenuOpen && (
+                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1 z-[9999] min-w-[110px]">
+                            {[
+                              { key: 'all', label: 'All' },
+                              { key: 'compose', label: 'Compose' },
+                              { key: 'chat', label: 'Chat' },
+                            ].map((filterOption) => (
+                              <button
+                                key={filterOption.key}
+                                type="button"
+                                onClick={() => {
+                                  setPromptHistoryFilter(filterOption.key);
+                                  setPromptHistoryFilterMenuOpen(false);
+                                }}
+                                className={`w-full text-left px-2 py-1.5 rounded text-xs ${promptHistoryFilter === filterOption.key ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                              >
+                                {filterOption.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
                       {filteredPromptHistory.length === 0 && (
                         <div className="text-[11px] text-gray-500 py-3 text-center">No saved prompts yet.</div>
                       )}
                       {filteredPromptHistory.map((entry) => (
-                        <button
-                          key={entry.id}
-                          type="button"
-                          onClick={() => {
-                            setFloatingPrompt(entry.text || '');
-                            if (entry.format) {
-                              setComposeOutputFormat(entry.format);
-                            }
-                            if (entry.tone) {
-                              setPromptTone(entry.tone);
-                            }
-                            if (entry.lengthMode) {
-                              setPromptLengthMode(entry.lengthMode);
-                            }
-                            if (entry.lengthValue) {
-                              setPromptLengthValue(entry.lengthValue);
-                            }
-                            setPromptLibraryOpen(false);
-                          }}
-                          className="w-full text-left p-2 rounded-lg border border-gray-100 hover:border-violet-200 hover:bg-violet-50/40"
-                        >
-                          <div className="text-[11px] text-gray-700 line-clamp-2">{entry.text}</div>
-                          <div className="text-[10px] text-gray-400 mt-1">{entry.source} • {entry.tone} • ~{entry.lengthValue} {entry.lengthMode}</div>
-                        </button>
+                        <div key={entry.id} className="p-2 rounded-lg border border-gray-100 hover:border-violet-200 hover:bg-violet-50/40">
+                          {editingPromptId === entry.id ? (
+                            <>
+                              <textarea
+                                value={editingPromptValue}
+                                onChange={(e) => setEditingPromptValue(e.target.value)}
+                                rows={2}
+                                className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400 resize-none"
+                              />
+                              <div className="mt-1.5 flex items-center justify-end gap-1.5">
+                                <button type="button" onClick={cancelPromptEdit} className="px-2 py-1 text-[10px] rounded border border-gray-200 text-gray-600">Cancel</button>
+                                <button type="button" onClick={() => savePromptEdit(entry.id)} className="px-2 py-1 text-[10px] rounded bg-violet-600 text-white">Save</button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFloatingPrompt(entry.text || '');
+                                  if (entry.format) {
+                                    setComposeOutputFormat(entry.format);
+                                  }
+                                  if (entry.tone) {
+                                    setPromptTone(entry.tone);
+                                  }
+                                  if (entry.lengthMode) {
+                                    setPromptLengthMode(entry.lengthMode);
+                                  }
+                                  if (entry.lengthValue) {
+                                    setPromptLengthValue(entry.lengthValue);
+                                  }
+                                  setPromptLibraryOpen(false);
+                                }}
+                                className="w-full text-left"
+                              >
+                                <div className="text-[11px] text-gray-700 line-clamp-2">{entry.text}</div>
+                              </button>
+                              <div className="mt-1 flex items-center justify-between gap-2">
+                                <div className="text-[10px] text-gray-400">{entry.source} • {entry.tone} • ~{entry.lengthValue} {entry.lengthMode}</div>
+                                <button type="button" onClick={() => beginPromptEdit(entry)} className="text-[10px] text-violet-600 hover:text-violet-700">Edit</button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
+              <input
+                ref={promptFileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  attachFilesToPrompt(event.target.files);
+                  event.target.value = '';
+                }}
+              />
               <button
                 type="button"
-                onClick={() => promptAudioInputRef.current?.click()}
+                onClick={() => promptFileInputRef.current?.click()}
                 className="p-2 rounded-full transition-colors text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                title="Attach audio"
+                title="Attach files"
               >
                 <Upload size={16} />
               </button>
@@ -3194,6 +3473,55 @@ Rules:
           </form>
           </div>
         </div>
+
+        {(isVoiceActive || promptAttachments.length > 0 || lastComposeRun) && (
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 w-[min(860px,94%)] space-y-2">
+            {isVoiceActive && (
+              <div className="mx-auto max-w-[850px] bg-violet-50 border border-violet-200 rounded-full px-4 py-2 flex items-center gap-2 text-xs text-violet-700">
+                <Mic size={14} className="animate-pulse" />
+                <span>Listening live... speak naturally and Compose will transcribe.</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      speechRecognitionRef.current?.stop();
+                    } catch (_error) {
+                      // noop
+                    }
+                    setIsVoiceActive(false);
+                  }}
+                  className="ml-auto text-violet-600 hover:text-violet-800"
+                  title="Dismiss listening"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+            {promptAttachments.length > 0 && (
+              <div className="mx-auto max-w-[850px] bg-white border border-gray-200 rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 shadow-sm">
+                {promptAttachments.map((attachment) => (
+                  <span key={attachment.id} className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-2 py-1 text-[11px] text-gray-600">
+                    <span className="truncate max-w-[180px]">{attachment.name}</span>
+                    <button type="button" onClick={() => removePromptAttachment(attachment.id)} className="text-gray-400 hover:text-gray-700">
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {lastComposeRun && (
+              <div className="mx-auto max-w-[850px] bg-white border border-violet-200 rounded-xl px-3 py-2 flex items-center gap-2 shadow-sm">
+                <span className="text-xs text-gray-600">Output actions:</span>
+                <button type="button" onClick={handleComposeRetry} className="px-2 py-1 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Retry</button>
+                <button type="button" onClick={handleComposeUndo} className="px-2 py-1 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Undo</button>
+                <button type="button" onClick={handleComposeDelete} className="px-2 py-1 text-[11px] rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50">Delete</button>
+                <button type="button" onClick={() => setLastComposeRun(null)} className="ml-auto text-gray-400 hover:text-gray-700" title="Dismiss actions">
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {uploadedPromptAudio && (
           <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 w-[min(820px,92%)] bg-white border border-gray-200 rounded-xl p-3 shadow-lg flex items-center gap-3">
