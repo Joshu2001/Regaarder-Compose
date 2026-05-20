@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 
 const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
+const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
+const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
 
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
@@ -76,6 +78,15 @@ export default function App() {
   const [shareLink, setShareLink] = useState('');
   const [composeOutputFormat, setComposeOutputFormat] = useState('Auto (Compose decides)');
   const [customComposeFormat, setCustomComposeFormat] = useState('');
+  const [promptTone, setPromptTone] = useState('normal');
+  const [promptLengthMode, setPromptLengthMode] = useState('words');
+  const [promptLengthValue, setPromptLengthValue] = useState(220);
+  const [promptTuneMenuOpen, setPromptTuneMenuOpen] = useState(false);
+  const [promptFormatMenuOpen, setPromptFormatMenuOpen] = useState(false);
+  const [promptLibraryOpen, setPromptLibraryOpen] = useState(false);
+  const [promptHistory, setPromptHistory] = useState([]);
+  const [promptHistorySearch, setPromptHistorySearch] = useState('');
+  const [promptHistoryFilter, setPromptHistoryFilter] = useState('all');
   const [apiMode, setApiMode] = useState('demo');
   const [userApiKey, setUserApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -99,6 +110,9 @@ export default function App() {
   const chatInputRef = useRef(null);
   const scheduleInputRef = useRef(null);
   const promptMenuRef = useRef(null);
+  const promptTuneRef = useRef(null);
+  const promptFormatRef = useRef(null);
+  const promptLibraryRef = useRef(null);
   const calendarMenuRef = useRef(null);
   const modelCandidatesCacheRef = useRef(null);
   const modelCandidatesCacheKeyRef = useRef('');
@@ -160,6 +174,13 @@ export default function App() {
   const fontOptions = ['Inter', 'Georgia', 'Verdana', 'Courier New', 'Times New Roman', 'Trebuchet MS'];
   const sizeOptions = [12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64];
   const composeFormatOptions = ['Auto (Compose decides)', 'Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft', 'Proposal', 'Plain Text', 'Custom...'];
+  const promptToneOptions = [
+    { key: 'formal', label: 'Formal' },
+    { key: 'normal', label: 'Normal' },
+    { key: 'geeky', label: 'Geeky' },
+    { key: 'naive', label: 'Naive' },
+    { key: 'concise', label: 'Concise' },
+  ];
 
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
@@ -181,6 +202,10 @@ export default function App() {
       const storedCapture = localStorage.getItem('rc.memoryCapture');
       const storedRetention = localStorage.getItem('rc.memoryRetentionDays');
       const storedEntries = localStorage.getItem('rc.memoryEntries');
+      const storedPromptHistory = localStorage.getItem('rc.promptHistory');
+      const storedPromptTone = localStorage.getItem('rc.promptTone');
+      const storedPromptLengthMode = localStorage.getItem('rc.promptLengthMode');
+      const storedPromptLengthValue = localStorage.getItem('rc.promptLengthValue');
 
       if (storedApiMode === 'demo' || storedApiMode === 'byok') {
         setApiMode(storedApiMode);
@@ -201,6 +226,24 @@ export default function App() {
         const parsedEntries = JSON.parse(storedEntries);
         if (Array.isArray(parsedEntries)) {
           setMemoryEntries(parsedEntries.slice(0, 300));
+        }
+      }
+      if (storedPromptHistory) {
+        const parsedPromptHistory = JSON.parse(storedPromptHistory);
+        if (Array.isArray(parsedPromptHistory)) {
+          setPromptHistory(parsedPromptHistory.slice(0, 120));
+        }
+      }
+      if (storedPromptTone && ['formal', 'normal', 'geeky', 'naive', 'concise'].includes(storedPromptTone)) {
+        setPromptTone(storedPromptTone);
+      }
+      if (storedPromptLengthMode && ['words', 'characters'].includes(storedPromptLengthMode)) {
+        setPromptLengthMode(storedPromptLengthMode);
+      }
+      if (storedPromptLengthValue) {
+        const parsedLength = Number(storedPromptLengthValue);
+        if (!Number.isNaN(parsedLength) && parsedLength >= 40 && parsedLength <= 3000) {
+          setPromptLengthValue(parsedLength);
         }
       }
     } catch (_error) {
@@ -227,6 +270,22 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('rc.memoryEntries', JSON.stringify(memoryEntries.slice(0, 300)));
   }, [memoryEntries]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.promptHistory', JSON.stringify(promptHistory.slice(0, 120)));
+  }, [promptHistory]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.promptTone', promptTone);
+  }, [promptTone]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.promptLengthMode', promptLengthMode);
+  }, [promptLengthMode]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.promptLengthValue', String(promptLengthValue));
+  }, [promptLengthValue]);
 
   const buildSnapshot = () => ({
     docTitle,
@@ -412,6 +471,15 @@ export default function App() {
       }
       if (promptMenuRef.current && !promptMenuRef.current.contains(event.target)) {
         setIsPromptMenuOpen(false);
+      }
+      if (promptTuneRef.current && !promptTuneRef.current.contains(event.target)) {
+        setPromptTuneMenuOpen(false);
+      }
+      if (promptFormatRef.current && !promptFormatRef.current.contains(event.target)) {
+        setPromptFormatMenuOpen(false);
+      }
+      if (promptLibraryRef.current && !promptLibraryRef.current.contains(event.target)) {
+        setPromptLibraryOpen(false);
       }
       if (!event.target.closest('[data-workspace-menu-root]')) {
         setOpenWorkspaceMenuId(null);
@@ -631,6 +699,9 @@ export default function App() {
     setTextStyleMenuOpen(false);
     setOpenDocMenuId(null);
     setIsPromptMenuOpen(false);
+    setPromptTuneMenuOpen(false);
+    setPromptFormatMenuOpen(false);
+    setPromptLibraryOpen(false);
     setOpenWorkspaceMenuId(null);
     setLanguageMenuOpen(false);
   };
@@ -649,6 +720,74 @@ export default function App() {
     };
 
     setMemoryEntries((prev) => [entry, ...prev].slice(0, 300));
+  };
+
+  const registerPromptHistory = ({ text, source = 'compose', format = 'Auto', tone = 'normal', lengthMode = 'words', lengthValue = 220 }) => {
+    const normalizedText = String(text || '').trim();
+    if (!normalizedText) {
+      return;
+    }
+
+    const nextEntry = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      text: normalizedText,
+      source,
+      format,
+      tone,
+      lengthMode,
+      lengthValue,
+      timestamp: Date.now(),
+    };
+
+    setPromptHistory((prev) => {
+      const withoutDuplicate = prev.filter(
+        (entry) => String(entry.text || '').trim().toLowerCase() !== normalizedText.toLowerCase(),
+      );
+      return [nextEntry, ...withoutDuplicate].slice(0, 120);
+    });
+  };
+
+  const escapeHtml = (value) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const renderDocActionHtml = (action) => {
+    if (!action) {
+      return '';
+    }
+
+    const title = escapeHtml(action.title || 'Compose AI Output');
+    if (action.type === 'timeline' && Array.isArray(action.content)) {
+      const rows = action.content.map((item) => `
+        <div style="padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:8px;background:#f8fafc;">
+          <div style="font-size:12px;font-weight:700;color:#6d28d9;">${escapeHtml(item.dates)}</div>
+          <div style="font-size:14px;font-weight:600;color:#0f172a;margin-top:3px;">${escapeHtml(item.phase)}</div>
+          <div style="font-size:13px;color:#475569;margin-top:2px;">${escapeHtml(item.detail)}</div>
+        </div>
+      `).join('');
+      return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2>${rows}`;
+    }
+
+    if (action.type === 'tasks' && Array.isArray(action.content)) {
+      const items = action.content.map((task) => `<li style="margin-bottom:8px;">${escapeHtml(task)}</li>`).join('');
+      return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2><ul style="padding-left:20px;color:#334155;line-height:1.7;">${items}</ul>`;
+    }
+
+    if (action.type === 'risks' && Array.isArray(action.content)) {
+      const items = action.content.map((risk) => `
+        <div style="padding:10px 12px;border:1px solid #fecdd3;border-radius:10px;margin-bottom:8px;background:#fff1f2;">
+          <div style="font-size:13px;font-weight:700;color:#be123c;">${escapeHtml(risk.threat)}</div>
+          <div style="font-size:12px;color:#9f1239;margin-top:3px;">Impact: ${escapeHtml(risk.impact)}</div>
+          <div style="font-size:12px;color:#475569;margin-top:4px;">Mitigation: ${escapeHtml(risk.fix)}</div>
+        </div>
+      `).join('');
+      return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2>${items}`;
+    }
+
+    return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2><p style="font-size:16px;color:#334155;line-height:1.8;">${escapeHtml(action.paragraph || '')}</p>`;
   };
 
   const getActiveGeminiApiKey = () => {
@@ -869,6 +1008,20 @@ export default function App() {
     });
   }, [memoryEntries, memoryFilter, memorySearch]);
 
+  const filteredPromptHistory = useMemo(() => {
+    const query = promptHistorySearch.trim().toLowerCase();
+    return promptHistory.filter((entry) => {
+      if (promptHistoryFilter !== 'all' && entry.source !== promptHistoryFilter) {
+        return false;
+      }
+      if (!query) {
+        return true;
+      }
+      const metadata = `${entry.format || ''} ${entry.tone || ''}`.toLowerCase();
+      return String(entry.text || '').toLowerCase().includes(query) || metadata.includes(query);
+    });
+  }, [promptHistory, promptHistoryFilter, promptHistorySearch]);
+
   const resolveDocTypeFromComposeFormat = (formatLabel) => {
     const normalized = String(formatLabel || '').toLowerCase();
     if (normalized.includes('timeline')) {
@@ -893,6 +1046,18 @@ export default function App() {
     const requestedFormat = options.composeFormat || 'Auto (Compose decides)';
     const shouldBuildDocument = forceDocBuild || source === 'compose';
     const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
+    const requestedTone = String(options.tone || 'normal');
+    const requestedLengthMode = String(options.lengthMode || 'words');
+    const requestedLengthValue = Number(options.lengthValue || 220);
+
+    registerPromptHistory({
+      text: promptText,
+      source,
+      format: requestedFormat,
+      tone: requestedTone,
+      lengthMode: requestedLengthMode,
+      lengthValue: requestedLengthValue,
+    });
 
     setIsComposing(true);
     trackMemoryAction('ai', 'Prompt sent to AI', {
@@ -900,6 +1065,8 @@ export default function App() {
       mode: apiMode,
       source,
       requestedFormat,
+      tone: requestedTone,
+      [`${requestedLengthMode}`]: requestedLengthValue,
     });
 
     if (!suppressChatEcho) {
@@ -966,6 +1133,8 @@ Context title: ${docTitle || 'Untitled'}.
 Context subtitle: ${docSubtitle || 'No subtitle'}.
 Requested output format: ${requestedFormat}.
 Preferred doc action type: ${preferredDocType}.
+Tone style: ${requestedTone}.
+Length target: around ${requestedLengthValue} ${requestedLengthMode}.
 Rules:
 - If the input comes from Compose canvas prompt, always set hasAction=true and provide docAction that can be inserted into the main document immediately.
 - docAction.type must be one of: timeline, tasks, risks, text.
@@ -1061,9 +1230,22 @@ Rules:
 
     if (docAction) {
       const finalizedAction = { ...docAction, sectionId: actionSectionId };
-      setIsBlankDocument(false);
-      setAppendedSections((prev) => [...prev, finalizedAction]);
-      showToast(`Composed: ${docAction.title} injected into main document!`);
+      if (shouldBuildDocument) {
+        const composedHtml = renderDocActionHtml(finalizedAction);
+        setIsBlankDocument(true);
+        setAppendedSections([]);
+        setDocBodyHtml(composedHtml);
+        if (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
+          setDocTitle(finalizedAction.title?.replace(/^✨\s*/, '') || 'Compose Draft');
+        }
+        if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
+          setDocSubtitle(`Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`);
+        }
+      } else {
+        setIsBlankDocument(false);
+        setAppendedSections((prev) => [...prev, finalizedAction]);
+      }
+      showToast(`Composed: ${docAction.title} injected into document!`);
       trackMemoryAction('automation', 'AI injected section', {
         section: docAction.title,
         sectionId: actionSectionId,
@@ -1096,6 +1278,9 @@ Rules:
       forceDocBuild: true,
       suppressChatEcho: true,
       composeFormat: formatLabel,
+      tone: promptTone,
+      lengthMode: promptLengthMode,
+      lengthValue: promptLengthValue,
     });
     setFloatingPrompt('');
     setUploadedPromptAudio(null);
@@ -2101,7 +2286,7 @@ Rules:
                 {workspace.hasDocuments && (
                   <div className="ml-7 mt-1 space-y-0.5 border-l border-gray-200 pl-1">
                     {orderedDocuments.map((doc) => {
-                      const label = doc.title?.trim() ? doc.title : 'Tap your text here';
+                      const label = doc.title?.trim() ? doc.title : UNTITLED_COMPOSITION_LABEL;
                       const isActive = activeDocId === doc.id;
 
                       return (
@@ -2155,7 +2340,7 @@ Rules:
             </button>
             <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
               <FileText size={16} className="text-gray-400" />
-              {docTitle?.trim() ? docTitle : 'Tap your text here'}
+              {docTitle?.trim() ? docTitle : UNTITLED_COMPOSITION_LABEL}
             </div>
             <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-4">
               <Cloud size={14} /> Saved Just now
@@ -2215,7 +2400,7 @@ Rules:
 
         <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-[140]">
           {orderedDocuments.map((doc) => {
-            const label = doc.title?.trim() ? doc.title : 'Tap your text here';
+            const label = doc.title?.trim() ? doc.title : UNTITLED_COMPOSITION_LABEL;
             const isActive = activeDocId === doc.id;
 
             return (
@@ -2477,27 +2662,27 @@ Rules:
             <div
               contentEditable
               suppressContentEditableWarning
-              onFocus={(e) => clearPlaceholderOnFocus(e, 'Tap your text here')}
+              onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
               onBlur={(e) => setDocTitle(e.currentTarget.textContent || '')}
               dir="ltr"
               style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
               className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
             >
-              {docTitle || 'Tap your text here'}
+              {docTitle || AI_NATIVE_PLACEHOLDER}
             </div>
             
             <div
               contentEditable
               suppressContentEditableWarning
-              onFocus={(e) => clearPlaceholderOnFocus(e, 'Tap your text here')}
+              onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
               onBlur={(e) => setDocSubtitle(e.currentTarget.textContent || '')}
               dir="ltr"
               style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
             >
-              {docSubtitle || 'Tap your text here'}
+              {docSubtitle || AI_NATIVE_PLACEHOLDER}
             </div>
 
             {isBlankDocument && (
@@ -2718,15 +2903,96 @@ Rules:
                 <div className="flex-1 min-w-0 space-y-2 py-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[11px] font-semibold text-gray-500">Compose format</span>
-                    <select
-                      value={composeOutputFormat}
-                      onChange={(e) => setComposeOutputFormat(e.target.value)}
-                      className="bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
-                    >
-                      {composeFormatOptions.map((option) => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
+                    <div className="relative" ref={promptFormatRef}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeTransientMenus();
+                          setPromptFormatMenuOpen((prev) => !prev);
+                        }}
+                        className="inline-flex items-center gap-2 bg-violet-50/70 border border-violet-200 rounded-lg px-2.5 py-1.5 text-xs text-violet-700 hover:bg-violet-100"
+                      >
+                        <span>{composeOutputFormat}</span>
+                        <ChevronDown size={12} />
+                      </button>
+                      {promptFormatMenuOpen && (
+                        <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl p-1 z-[9999]">
+                          {composeFormatOptions.map((option) => (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => {
+                                setComposeOutputFormat(option);
+                                setPromptFormatMenuOpen(false);
+                              }}
+                              className={`w-full text-left px-2.5 py-2 rounded-lg text-xs ${composeOutputFormat === option ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="relative" ref={promptTuneRef}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeTransientMenus();
+                          setPromptTuneMenuOpen((prev) => !prev);
+                        }}
+                        className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100"
+                      >
+                        <Settings size={12} />
+                        <span>Tune</span>
+                      </button>
+                      {promptTuneMenuOpen && (
+                        <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-[9999] space-y-3">
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Style</div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {promptToneOptions.map((toneOption) => (
+                                <button
+                                  key={toneOption.key}
+                                  type="button"
+                                  onClick={() => setPromptTone(toneOption.key)}
+                                  className={`px-2 py-1 rounded-full text-[10px] border ${promptTone === toneOption.key ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                  {toneOption.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Length target</div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <button
+                                type="button"
+                                onClick={() => setPromptLengthMode('words')}
+                                className={`px-2 py-1 rounded text-[10px] border ${promptLengthMode === 'words' ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-gray-200 text-gray-600'}`}
+                              >
+                                Words
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPromptLengthMode('characters')}
+                                className={`px-2 py-1 rounded text-[10px] border ${promptLengthMode === 'characters' ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-gray-200 text-gray-600'}`}
+                              >
+                                Characters
+                              </button>
+                            </div>
+                            <input
+                              type="number"
+                              min={40}
+                              max={3000}
+                              value={promptLengthValue}
+                              onChange={(e) => setPromptLengthValue(Math.max(40, Math.min(3000, Number(e.target.value) || 220)))}
+                              className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-gray-400">{promptTone} • ~{promptLengthValue} {promptLengthMode}</span>
                     <div className="flex flex-wrap gap-1.5">
                       {['Timeline', 'Article', 'Checklist', 'Presentation Draft'].map((preset) => (
                         <button
@@ -2840,6 +3106,73 @@ Rules:
                       <FileText size={14} />
                       <span>Images</span>
                     </button>
+                  </div>
+                )}
+              </div>
+              <div className="relative" ref={promptLibraryRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeTransientMenus();
+                    setPromptLibraryOpen((prev) => !prev);
+                  }}
+                  className={`p-2 rounded-full transition-colors ${promptLibraryOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                  title="Prompt library"
+                >
+                  <BookOpen size={16} />
+                </button>
+                {promptLibraryOpen && (
+                  <div className="absolute right-0 bottom-full mb-1 w-[320px] bg-white border border-gray-200 rounded-xl shadow-2xl p-3 z-[9999]">
+                    <div className="text-xs font-semibold text-gray-700 mb-2">Prompt Library</div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        type="text"
+                        value={promptHistorySearch}
+                        onChange={(e) => setPromptHistorySearch(e.target.value)}
+                        placeholder="Search prompts"
+                        className="flex-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
+                      />
+                      <select
+                        value={promptHistoryFilter}
+                        onChange={(e) => setPromptHistoryFilter(e.target.value)}
+                        className="bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
+                      >
+                        <option value="all">All</option>
+                        <option value="compose">Compose</option>
+                        <option value="chat">Chat</option>
+                      </select>
+                    </div>
+                    <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
+                      {filteredPromptHistory.length === 0 && (
+                        <div className="text-[11px] text-gray-500 py-3 text-center">No saved prompts yet.</div>
+                      )}
+                      {filteredPromptHistory.map((entry) => (
+                        <button
+                          key={entry.id}
+                          type="button"
+                          onClick={() => {
+                            setFloatingPrompt(entry.text || '');
+                            if (entry.format) {
+                              setComposeOutputFormat(entry.format);
+                            }
+                            if (entry.tone) {
+                              setPromptTone(entry.tone);
+                            }
+                            if (entry.lengthMode) {
+                              setPromptLengthMode(entry.lengthMode);
+                            }
+                            if (entry.lengthValue) {
+                              setPromptLengthValue(entry.lengthValue);
+                            }
+                            setPromptLibraryOpen(false);
+                          }}
+                          className="w-full text-left p-2 rounded-lg border border-gray-100 hover:border-violet-200 hover:bg-violet-50/40"
+                        >
+                          <div className="text-[11px] text-gray-700 line-clamp-2">{entry.text}</div>
+                          <div className="text-[10px] text-gray-400 mt-1">{entry.source} • {entry.tone} • ~{entry.lengthValue} {entry.lengthMode}</div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
