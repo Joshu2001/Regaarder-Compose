@@ -41,7 +41,7 @@ export default function App() {
   const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
-  const [isPromptExpanded, setIsPromptExpanded] = useState(false);
+  const [isPromptExpanded, setIsPromptExpanded] = useState(true);
   const [promptWidth, setPromptWidth] = useState(620);
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   
@@ -71,9 +71,11 @@ export default function App() {
   const [shareTargetDocId, setShareTargetDocId] = useState(null);
   const [shareTargetDocTitle, setShareTargetDocTitle] = useState('');
   const [shareDestination, setShareDestination] = useState('friends');
-  const [shareFormat, setShareFormat] = useState('Regaarder (.rgc)');
+  const [shareFormat, setShareFormat] = useState('Compose (.cmp)');
   const [shareAccess, setShareAccess] = useState('Viewer');
   const [shareLink, setShareLink] = useState('');
+  const [composeOutputFormat, setComposeOutputFormat] = useState('Auto (Compose decides)');
+  const [customComposeFormat, setCustomComposeFormat] = useState('');
   const [apiMode, setApiMode] = useState('demo');
   const [userApiKey, setUserApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -157,6 +159,7 @@ export default function App() {
   const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
   const fontOptions = ['Inter', 'Georgia', 'Verdana', 'Courier New', 'Times New Roman', 'Trebuchet MS'];
   const sizeOptions = [12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64];
+  const composeFormatOptions = ['Auto (Compose decides)', 'Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft', 'Proposal', 'Plain Text', 'Custom...'];
 
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
@@ -866,26 +869,48 @@ export default function App() {
     });
   }, [memoryEntries, memoryFilter, memorySearch]);
 
+  const resolveDocTypeFromComposeFormat = (formatLabel) => {
+    const normalized = String(formatLabel || '').toLowerCase();
+    if (normalized.includes('timeline')) {
+      return 'timeline';
+    }
+    if (normalized.includes('checklist') || normalized.includes('task')) {
+      return 'tasks';
+    }
+    if (normalized.includes('risk')) {
+      return 'risks';
+    }
+    return 'text';
+  };
+
   // Function to process AI prompt and generate structured output
-  const handleAISubmit = async (promptText) => {
+  const handleAISubmit = async (promptText, options = {}) => {
     if (!promptText.trim()) return;
+
+    const source = options.source || 'chat';
+    const forceDocBuild = Boolean(options.forceDocBuild);
+    const suppressChatEcho = Boolean(options.suppressChatEcho);
+    const requestedFormat = options.composeFormat || 'Auto (Compose decides)';
+    const shouldBuildDocument = forceDocBuild || source === 'compose';
+    const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
 
     setIsComposing(true);
     trackMemoryAction('ai', 'Prompt sent to AI', {
       length: promptText.trim().length,
       mode: apiMode,
+      source,
+      requestedFormat,
     });
-    
-    // Add user message to chat feed
-    const userMsgId = Date.now();
-    setChatMessages(prev => [...prev, {
-      id: userMsgId,
-      sender: 'user',
-      text: promptText
-    }]);
 
-    // Scroll to bottom
-    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    if (!suppressChatEcho) {
+      const userMsgId = Date.now();
+      setChatMessages((prev) => [...prev, {
+        id: userMsgId,
+        sender: 'user',
+        text: promptText,
+      }]);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    }
 
     let aiResponseText = '';
     let docAction = null;
@@ -939,10 +964,13 @@ export default function App() {
         systemPrompt: `You are Compose AI. Return JSON only.
 Context title: ${docTitle || 'Untitled'}.
 Context subtitle: ${docSubtitle || 'No subtitle'}.
+Requested output format: ${requestedFormat}.
+Preferred doc action type: ${preferredDocType}.
 Rules:
-- If the user asks to build/create/write/generate a document, plan, proposal, brief, presentation, timeline, checklist, or risk analysis, set hasAction=true and fill docAction.
+- If the input comes from Compose canvas prompt, always set hasAction=true and provide docAction that can be inserted into the main document immediately.
 - docAction.type must be one of: timeline, tasks, risks, text.
-- For general Q&A requests, hasAction can be false and provide aiResponseText only.
+- Prefer using the requested output format and preferred doc action type.
+- For chat-only questions, hasAction can be false and provide aiResponseText only.
 - Keep aiResponseText concise, actionable, and specific.
 - Do not simulate placeholders. Produce useful output.` ,
         schema: actionSchema,
@@ -988,6 +1016,16 @@ Rules:
             };
           }
         }
+
+        if (shouldBuildDocument && !docAction) {
+          docAction = {
+            title: requestedFormat === 'Auto (Compose decides)'
+              ? '✨ AI Composed Section'
+              : `✨ ${requestedFormat}`,
+            type: 'text',
+            paragraph: (result.docAction?.textParagraph || aiResponseText || '').trim(),
+          };
+        }
       }
     } catch (_error) {
       usedLiveModel = false;
@@ -995,7 +1033,7 @@ Rules:
 
     if (!usedLiveModel) {
       if (!getActiveGeminiApiKey()) {
-        aiResponseText = 'Live AI is not configured. Add a key in Memory tab or set VITE_GEMINI_DEMO_API_KEY in Vercel.';
+        aiResponseText = 'Live AI is not configured. Add a key in Memory tab or set VITE_GEMINI_DEMO_API_KEY or VITE_GEMINI_API_KEY in Vercel.';
       } else {
         aiResponseText = `Live AI request failed. ${lastAiError || 'Check API key restrictions, billing, and model access.'}`;
       }
@@ -1010,14 +1048,16 @@ Rules:
       ? `sec_${Date.now()}_${Math.floor(Math.random() * 1000)}`
       : null;
 
-    setChatMessages((prev) => [...prev, {
-      id: Date.now() + 1,
-      sender: 'ai',
-      text: aiResponseText,
-      type: docAction ? 'action_completed' : 'standard',
-      actionTitle: docAction?.title,
-      actionSectionId,
-    }]);
+    if (!suppressChatEcho || !docAction) {
+      setChatMessages((prev) => [...prev, {
+        id: Date.now() + 1,
+        sender: 'ai',
+        text: aiResponseText,
+        type: docAction ? 'action_completed' : 'standard',
+        actionTitle: docAction?.title,
+        actionSectionId,
+      }]);
+    }
 
     if (docAction) {
       const finalizedAction = { ...docAction, sectionId: actionSectionId };
@@ -1040,15 +1080,23 @@ Rules:
   const handleSidebarSend = (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
-    handleAISubmit(chatInput);
+    handleAISubmit(chatInput, { source: 'chat' });
     setChatInput('');
   };
 
   const handleFloatingSend = (e) => {
     e.preventDefault();
     if (!floatingPrompt.trim() && !uploadedPromptAudio) return;
+    const formatLabel = composeOutputFormat === 'Custom...'
+      ? (customComposeFormat.trim() || 'Custom Document')
+      : composeOutputFormat;
     const finalPrompt = floatingPrompt.trim() || `Transcribe attached audio: ${uploadedPromptAudio.name}`;
-    handleAISubmit(finalPrompt);
+    handleAISubmit(finalPrompt, {
+      source: 'compose',
+      forceDocBuild: true,
+      suppressChatEcho: true,
+      composeFormat: formatLabel,
+    });
     setFloatingPrompt('');
     setUploadedPromptAudio(null);
   };
@@ -1430,10 +1478,10 @@ Rules:
       return exportCurrentDocumentAsPdf(`${fileBase}.pdf`);
     }
 
-    if (format === 'Regaarder (.rgc)') {
+    if (format === 'Compose (.cmp)') {
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      triggerBlobDownload(`${fileBase}.rgc`, blob);
-      trackMemoryAction('export', 'Exported document', { format: 'Regaarder (.rgc)' });
+      triggerBlobDownload(`${fileBase}.cmp`, blob);
+      trackMemoryAction('export', 'Exported document', { format: 'Compose (.cmp)' });
       return true;
     }
 
@@ -1474,7 +1522,7 @@ Rules:
     setShareTargetDocId(docId);
     setShareTargetDocTitle(target.title?.trim() || 'Untitled composition');
     setShareDestination('friends');
-    setShareFormat('Regaarder (.rgc)');
+    setShareFormat('Compose (.cmp)');
     setShareAccess('Viewer');
     setShareLink(`${base}?doc=${docId}&access=viewer`);
     setShareModalOpen(true);
@@ -1847,51 +1895,50 @@ Rules:
       )}
 
       {shareModalOpen && (
-        <div className="absolute inset-0 z-[120] bg-black/25 backdrop-blur-[1px] flex items-center justify-center">
-          <div className="w-[520px] max-w-[92vw] rounded-xl bg-white border border-gray-100 shadow-2xl p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-1">Share Composition</h3>
-            <p className="text-xs text-gray-500 mb-4">Share <span className="font-medium text-gray-700">{shareTargetDocTitle}</span> via link, apps, or downloads.</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+        <div className="absolute inset-0 z-[120] bg-slate-900/25 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-[640px] max-w-[95vw] rounded-2xl bg-white border border-slate-200 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.65)] p-6">
+            <div className="flex items-start justify-between gap-4 mb-5">
               <div>
-                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block mb-1">Destination</label>
-                <select
-                  value={shareDestination}
-                  onChange={(e) => setShareDestination(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400"
-                >
-                  <option value="friends">Share via link</option>
-                  <option value="apps">Share to apps</option>
-                  <option value="downloads">Downloads</option>
-                </select>
+                <h3 className="text-lg font-semibold text-slate-900">Share from Compose</h3>
+                <p className="text-xs text-slate-500 mt-1">{shareTargetDocTitle}</p>
               </div>
+              <button
+                type="button"
+                onClick={() => setShareModalOpen(false)}
+                className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                title="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
 
-              <div>
-                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block mb-1">Format</label>
-                <select
-                  value={shareFormat}
-                  onChange={(e) => setShareFormat(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:border-violet-400"
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-5">
+              {[
+                { key: 'friends', label: 'Copy link', sub: 'Share instantly' },
+                { key: 'apps', label: 'Native apps', sub: 'Use system sheet' },
+                { key: 'downloads', label: 'Download', sub: 'Export file' },
+              ].map((destination) => (
+                <button
+                  key={destination.key}
+                  type="button"
+                  onClick={() => setShareDestination(destination.key)}
+                  className={`text-left rounded-xl border px-3 py-2.5 transition-colors ${shareDestination === destination.key ? 'border-violet-300 bg-violet-50/70 text-violet-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
                 >
-                  <option>Regaarder (.rgc)</option>
-                  <option>PDF</option>
-                  <option>DOC (Word-compatible)</option>
-                  <option>Markdown</option>
-                  <option>Plain Text</option>
-                  <option>HTML</option>
-                </select>
-              </div>
+                  <div className="text-sm font-semibold">{destination.label}</div>
+                  <div className="text-[11px] text-slate-500">{destination.sub}</div>
+                </button>
+              ))}
             </div>
 
             <div className="mb-4">
-              <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block mb-1">Access</label>
-              <div className="flex items-center gap-2">
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-2">Access level</label>
+              <div className="flex flex-wrap items-center gap-2">
                 {['Viewer', 'Commenter', 'Editor'].map((level) => (
                   <button
                     key={level}
                     type="button"
                     onClick={() => setShareAccess(level)}
-                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${shareAccess === level ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${shareAccess === level ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                   >
                     {level}
                   </button>
@@ -1899,25 +1946,41 @@ Rules:
               </div>
             </div>
 
+            <div className="mb-5">
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-2">File format</label>
+              <div className="flex flex-wrap gap-2">
+                {['Compose (.cmp)', 'PDF', 'DOC (Word-compatible)', 'Markdown', 'Plain Text', 'HTML'].map((format) => (
+                  <button
+                    key={format}
+                    type="button"
+                    onClick={() => setShareFormat(format)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs border transition-colors ${shareFormat === format ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    {format}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {shareDestination === 'friends' && (
-              <div className="mb-4">
-                <label className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide block mb-1">Share Link</label>
-                <div className="border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 break-all bg-gray-50">{shareLink}</div>
+              <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">Share link</div>
+                <div className="text-xs text-slate-600 break-all">{shareLink}</div>
               </div>
             )}
 
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={() => setShareModalOpen(false)}
-                className="px-3 py-1.5 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
+                className="px-3 py-2 rounded-lg text-xs border border-slate-200 text-slate-600 hover:bg-slate-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleShareModalConfirm}
-                className="px-3 py-1.5 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700"
               >
-                {shareDestination === 'downloads' ? 'Export' : shareDestination === 'apps' ? 'Share to Apps' : 'Copy Link'}
+                {shareDestination === 'downloads' ? `Export ${shareFormat}` : shareDestination === 'apps' ? 'Share to Apps' : 'Copy Link'}
               </button>
             </div>
           </div>
@@ -2638,7 +2701,7 @@ Rules:
           <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
           <form
             onSubmit={handleFloatingSend}
-            className={`pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'}`}
+            className={`pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'}`}
             style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 760))}px`, maxWidth: '100%' }}
           >
             <button
@@ -2649,25 +2712,60 @@ Rules:
             >
               <Move size={14} />
             </button>
-            <div className="flex items-center gap-3 px-2 flex-1">
-              <Sparkles size={18} className="text-violet-500 shrink-0" />
+            <div className="flex items-center gap-3 px-2 flex-1 min-w-0">
+              <Sparkles size={18} className="text-violet-500 shrink-0 self-start mt-2" />
               {isPromptExpanded ? (
-                <textarea
-                  ref={floatingPromptRef}
-                  value={floatingPrompt}
-                  onChange={(e) => setFloatingPrompt(e.target.value)}
-                  onInput={(e) => autoResizeTextarea(e.currentTarget, 160)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleFloatingSend(e);
-                    }
-                  }}
-                  placeholder="Ask Compose AI..."
-                  rows={1}
-                  style={{ textAlign: alignMode }}
-                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-1 resize-none"
-                />
+                <div className="flex-1 min-w-0 space-y-2 py-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] font-semibold text-gray-500">Compose format</span>
+                    <select
+                      value={composeOutputFormat}
+                      onChange={(e) => setComposeOutputFormat(e.target.value)}
+                      className="bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
+                    >
+                      {composeFormatOptions.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['Timeline', 'Article', 'Checklist', 'Presentation Draft'].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setComposeOutputFormat(preset)}
+                          className={`px-2 py-1 rounded-full text-[10px] border ${composeOutputFormat === preset ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {composeOutputFormat === 'Custom...' && (
+                    <input
+                      type="text"
+                      value={customComposeFormat}
+                      onChange={(e) => setCustomComposeFormat(e.target.value)}
+                      placeholder="Enter custom format (e.g. investor memo, press release)"
+                      className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
+                    />
+                  )}
+                  <textarea
+                    ref={floatingPromptRef}
+                    value={floatingPrompt}
+                    onChange={(e) => setFloatingPrompt(e.target.value)}
+                    onInput={(e) => autoResizeTextarea(e.currentTarget, 160)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleFloatingSend(e);
+                      }
+                    }}
+                    placeholder="Describe what you need. Compose will build it into your document."
+                    rows={1}
+                    style={{ textAlign: alignMode }}
+                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-1 resize-none"
+                  />
+                </div>
               ) : (
                 <input
                   type="text"
@@ -3473,7 +3571,7 @@ Rules:
                 <div className="text-[11px] text-gray-500 flex items-center gap-2">
                   <KeyRound size={12} />
                   {apiMode === 'demo'
-                    ? (DEMO_GEMINI_API_KEY ? 'Demo API is configured.' : 'Demo API is missing (set VITE_GEMINI_DEMO_API_KEY).')
+                    ? (DEMO_GEMINI_API_KEY ? 'Demo API is configured.' : 'Demo API is missing (set VITE_GEMINI_DEMO_API_KEY or VITE_GEMINI_API_KEY).')
                     : (userApiKey.trim() ? 'Your API key is stored locally in this browser.' : 'Paste your API key to enable live responses.')}
                 </div>
 
