@@ -14,7 +14,7 @@ import {
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 
-const DEMO_GEMINI_API_KEY = import.meta.env.VITE_GEMINI_DEMO_API_KEY || '';
+const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
 
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
@@ -98,6 +98,8 @@ export default function App() {
   const scheduleInputRef = useRef(null);
   const promptMenuRef = useRef(null);
   const calendarMenuRef = useRef(null);
+  const modelCandidatesCacheRef = useRef(null);
+  const modelCandidatesCacheKeyRef = useRef('');
   const dragStateRef = useRef({
     startX: 0,
     startY: 0,
@@ -674,15 +676,71 @@ export default function App() {
     }
   };
 
+  const getGemini25ModelCandidates = async (apiKey) => {
+    const fallbackModels = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+    if (!apiKey) {
+      return fallbackModels;
+    }
+
+    if (modelCandidatesCacheRef.current && modelCandidatesCacheKeyRef.current === apiKey) {
+      return modelCandidatesCacheRef.current;
+    }
+
+    try {
+      const modelsResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+      if (!modelsResponse.ok) {
+        modelCandidatesCacheRef.current = fallbackModels;
+        modelCandidatesCacheKeyRef.current = apiKey;
+        return fallbackModels;
+      }
+
+      const modelsPayload = await modelsResponse.json();
+      const models = Array.isArray(modelsPayload?.models) ? modelsPayload.models : [];
+      const candidates = models
+        .filter((model) => {
+          const name = model?.name || '';
+          const methods = Array.isArray(model?.supportedGenerationMethods) ? model.supportedGenerationMethods : [];
+          return name.includes('models/gemini-2.5') && methods.includes('generateContent');
+        })
+        .map((model) => (model.name || '').replace('models/', ''))
+        .filter(Boolean);
+
+      const ranked = candidates
+        .sort((a, b) => {
+          const score = (model) => {
+            if (model.includes('flash')) return 0;
+            if (model.includes('pro')) return 1;
+            return 2;
+          };
+          return score(a) - score(b);
+        })
+        .filter((model, index, arr) => arr.indexOf(model) === index);
+
+      const resolvedModels = ranked.length ? ranked : [];
+      modelCandidatesCacheRef.current = resolvedModels;
+      modelCandidatesCacheKeyRef.current = apiKey;
+      return resolvedModels;
+    } catch (_error) {
+      modelCandidatesCacheRef.current = fallbackModels;
+      modelCandidatesCacheKeyRef.current = apiKey;
+      return fallbackModels;
+    }
+  };
+
   const callGemini = async ({ userPrompt, systemPrompt, schema, overrideApiKey }) => {
     const apiKey = (overrideApiKey || getActiveGeminiApiKey()).trim();
     if (!apiKey) {
-      setLastAiError('Missing API key');
+      setLastAiError('Missing API key. Set VITE_GEMINI_DEMO_API_KEY or VITE_GEMINI_API_KEY in Vercel.');
       return null;
     }
 
-    const modelCandidates = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+    const modelCandidates = await getGemini25ModelCandidates(apiKey);
     let lastErrorMessage = '';
+
+    if (!modelCandidates.length) {
+      setLastAiError('No Gemini 2.5 generateContent model is enabled for this API key/project.');
+      return null;
+    }
 
     setLastAiError('');
 
