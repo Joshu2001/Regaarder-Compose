@@ -53,6 +53,10 @@ export default function App() {
   const [newTaskInput, setNewTaskInput] = useState('');
   const [scheduleInput, setScheduleInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
+  const [upcomingEvents, setUpcomingEvents] = useState([
+    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 • 10:00 AM' },
+    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 • 2:30 PM' },
+  ]);
   const [calendarMonth, setCalendarMonth] = useState(4); // 0=Jan, 4=May
   const [calendarYear, setCalendarYear] = useState(2026);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date(2026, 4, 15));
@@ -180,8 +184,17 @@ export default function App() {
   const [isStrikeActive, setIsStrikeActive] = useState(false);
   const [alignMode, setAlignMode] = useState('left');
   const [isListActive, setIsListActive] = useState(false);
+  const [showPageNumbers, setShowPageNumbers] = useState(true);
+  const [showPageNumberOnFirstPage, setShowPageNumberOnFirstPage] = useState(true);
+  const [pageNumberPosition, setPageNumberPosition] = useState('center');
 
   const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
+  const headingMeta = {
+    'Heading 1': { tag: 'H1', size: 42, previewClass: 'text-base font-bold' },
+    'Heading 2': { tag: 'H2', size: 34, previewClass: 'text-sm font-semibold' },
+    'Heading 3': { tag: 'H3', size: 26, previewClass: 'text-xs font-semibold' },
+    Paragraph: { tag: 'P', size: 16, previewClass: 'text-xs font-normal' },
+  };
   const fontOptions = ['Inter', 'Georgia', 'Verdana', 'Courier New', 'Times New Roman', 'Trebuchet MS'];
   const sizeOptions = [12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64];
   const composeFormatOptions = ['Auto (Compose decides)', 'Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft', 'Proposal', 'Plain Text', 'Custom...'];
@@ -727,23 +740,12 @@ export default function App() {
 
   // Conversational state with pre-loaded AI response cards
   const [chatMessages, setChatMessages] = useState([
-    { 
-      id: 1, 
-      sender: 'ai', 
-      text: "Good morning Alex! I've fully parsed the **Product Launch Plan**. I'm here as your active workspace companion.",
-      type: 'welcome'
-    },
     {
-      id: 2,
+      id: 1,
       sender: 'ai',
-      text: "I analyzed the document and noticed you might want to structure your execution. Would you like me to instantly compose any of these into the document?",
-      type: 'suggestions',
-      suggestions: [
-        { label: '📅 Create a launch timeline', action: 'timeline' },
-        { label: '📋 Extract key task checklist', action: 'tasks' },
-        { label: '🛡️ Generate marketing risk items', action: 'risks' }
-      ]
-    }
+      text: 'Compose AI is ready. Ask, summarize, or instruct to update your document.',
+      type: 'welcome',
+    },
   ]);
 
   // Handle status cycle on initiatives
@@ -925,6 +927,25 @@ export default function App() {
     .replace(/\"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
+  const getPlainText = (value) => String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const toParagraphHtml = (value) => {
+    const normalized = String(value || '').replace(/\r/g, '').trim();
+    if (!normalized) {
+      return '<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;"></p>';
+    }
+
+    return normalized
+      .split(/\n{2,}/)
+      .map((block) => block.trim())
+      .filter(Boolean)
+      .map((block) => `<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;">${escapeHtml(block).replace(/\n/g, '<br/>')}</p>`)
+      .join('');
+  };
+
   const renderDocActionHtml = (action) => {
     if (!action) {
       return '';
@@ -958,7 +979,7 @@ export default function App() {
       return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2>${items}`;
     }
 
-    return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2><p style="font-size:16px;color:#334155;line-height:1.8;">${escapeHtml(action.paragraph || '')}</p>`;
+    return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2>${toParagraphHtml(action.paragraph || '')}`;
   };
 
   const getActiveGeminiApiKey = () => {
@@ -1207,6 +1228,25 @@ export default function App() {
     return 'text';
   };
 
+  const shouldStartNewComposition = ({ promptText, source, actionType }) => {
+    const normalizedPrompt = String(promptText || '').toLowerCase();
+    const explicitNewDoc = /(new\s+(composition|document|doc|page)|separate\s+(composition|document|doc|page)|another\s+(composition|document|doc|page)|start\s+fresh)/i.test(normalizedPrompt);
+    const explicitSameDoc = /(same\s+(document|doc|page)|current\s+(document|doc|page)|this\s+(document|doc|page)|keep\s+here)/i.test(normalizedPrompt);
+
+    if (explicitNewDoc) {
+      return true;
+    }
+
+    if (explicitSameDoc) {
+      return false;
+    }
+
+    const docHasMeaningfulContent = getPlainText(docBodyHtml).length > 120;
+    const taskLikeAction = ['tasks', 'timeline', 'risks'].includes(String(actionType || '').toLowerCase());
+
+    return source === 'chat' && taskLikeAction && docHasMeaningfulContent;
+  };
+
   // Function to process AI prompt and generate structured output
   const handleAISubmit = async (promptText, options = {}) => {
     if (!promptText.trim()) return;
@@ -1312,6 +1352,7 @@ Rules:
 - docAction.type must be one of: timeline, tasks, risks, text.
 - Prefer using the requested output format and preferred doc action type.
 - For chat-only questions, hasAction can be false and provide aiResponseText only.
+- Preserve paragraph structure for text outputs using meaningful line breaks.
 - Keep aiResponseText concise, actionable, and specific.
 - Do not simulate placeholders. Produce useful output.` ,
         schema: actionSchema,
@@ -1404,11 +1445,21 @@ Rules:
       const finalizedAction = { ...docAction, sectionId: actionSectionId };
       if (shouldBuildDocument) {
         const targetedText = finalizedAction.type === 'text'
-          ? finalizedAction.paragraph
+          ? String(finalizedAction.paragraph || '').replace(/\n{2,}/g, '\n\n')
           : aiResponseText;
         const injectedToSelection = selectionScoped && injectIntoSavedSelection(targetedText);
 
         if (!injectedToSelection) {
+          const spawnNewComposition = shouldStartNewComposition({
+            promptText,
+            source,
+            actionType: finalizedAction.type,
+          });
+
+          if (spawnNewComposition) {
+            createNewComposition({ silent: true });
+          }
+
           const composedHtml = renderDocActionHtml(finalizedAction);
           setIsBlankDocument(true);
           setAppendedSections([]);
@@ -1418,6 +1469,9 @@ Rules:
           }
           if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
             setDocSubtitle(`Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`);
+          }
+          if (spawnNewComposition) {
+            showToast(`Opened a new composition for ${finalizedAction.type} output`);
           }
         }
       } else {
@@ -1447,6 +1501,7 @@ Rules:
 
   const handleFloatingSend = (e) => {
     e.preventDefault();
+    if (isComposing) return;
     if (!floatingPrompt.trim() && !promptAttachments.length) return;
     const formatLabel = composeOutputFormat === 'Custom...'
       ? (customComposeFormat.trim() || 'Custom Document')
@@ -1476,6 +1531,8 @@ Rules:
     setLastComposeRun({
       prompt: finalPrompt,
       options: composeOptions,
+      documentId: activeDocId,
+      createdAt: Date.now(),
     });
     setFloatingPrompt('');
     setSelectedEditorText('');
@@ -1657,7 +1714,7 @@ Rules:
     setDocBodyHtml(targetDoc.bodyHtml || '');
   };
 
-  const createNewComposition = () => {
+  const createNewComposition = ({ silent = false } = {}) => {
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
       title: '',
@@ -1677,11 +1734,15 @@ Rules:
     setAppendedSections([]);
     setInitiatives([]);
     setDocBodyHtml('');
+    setLastComposeRun(null);
     setLeftSidebarOpen(false);
-    trackMemoryAction('document', 'Created new blank composition', {
+    trackMemoryAction('document', silent ? 'Created new blank composition (auto)' : 'Created new blank composition', {
       documentId: String(newDoc.id),
     });
-    showToast('Blank composition created');
+    if (!silent) {
+      showToast('Blank composition created');
+    }
+    return newDoc.id;
   };
 
   const requestCloseDocument = (docId) => {
@@ -2080,6 +2141,7 @@ Rules:
       slot: `${String(9 + (nextIndex % 10)).padStart(2, '0')}:00`,
       title: trimmed,
       summary: 'Added directly from Tasks as a schedule-ready action.',
+      approved: false,
     };
 
     setScheduleOutput((prev) => [...prev, scheduleItem]);
@@ -2106,6 +2168,7 @@ Rules:
       slot: `${String(9 + index).padStart(2, '0')}:00`,
       title: item.charAt(0).toUpperCase() + item.slice(1),
       summary: `Action-ready block created from raw input item #${index + 1}.`,
+      approved: false,
     }));
 
     setScheduleOutput(cleanItems);
@@ -2113,6 +2176,31 @@ Rules:
       items: cleanItems.length,
     });
     showToast('Messy schedule converted to clean timeline');
+  };
+
+  const updateScheduleItem = (id, field, value) => {
+    setScheduleOutput((prev) => prev.map((item) => (
+      item.id === id ? { ...item, [field]: value } : item
+    )));
+  };
+
+  const approveScheduleItem = (id) => {
+    setScheduleOutput((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (!target) return prev;
+
+      setUpcomingEvents((existing) => [
+        {
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          title: target.title,
+          slotLabel: `${selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • ${target.slot}`,
+        },
+        ...existing,
+      ]);
+
+      showToast('Schedule item approved and added to upcoming events');
+      return prev.filter((item) => item.id !== id);
+    });
   };
 
   const beginPanelResize = (target, event) => {
@@ -2225,6 +2313,18 @@ Rules:
     }
     return a.pinned ? -1 : 1;
   });
+
+  const canShowComposeActions = Boolean(
+    lastComposeRun
+    && lastComposeRun.documentId === activeDocId
+    && getPlainText(docBodyHtml).length
+  );
+  const shouldDockVoiceWidget = !isBlankDocument || getPlainText(docBodyHtml).length > 90;
+  const pageNumberPositionClass = pageNumberPosition === 'left'
+    ? 'left-12 text-left'
+    : pageNumberPosition === 'right'
+      ? 'right-12 text-right'
+      : 'left-1/2 -translate-x-1/2 text-center';
 
   return (
     <div className="flex h-screen bg-[#FDFDFD] font-sans text-gray-800 overflow-hidden relative">
@@ -2755,16 +2855,72 @@ Rules:
                       <button
                         key={option}
                         onClick={() => {
+                          const nextHeading = headingMeta[option] || headingMeta.Paragraph;
                           setEditorHeading(option);
-                          const tag = option === 'Heading 1' ? 'H1' : option === 'Heading 2' ? 'H2' : option === 'Heading 3' ? 'H3' : 'P';
-                          applyFormatCommand('formatBlock', tag);
+                          setEditorSize(nextHeading.size);
+                          applyFormatCommand('formatBlock', nextHeading.tag);
+                          applyFormatCommand('fontSize', String(nextHeading.size));
                           setOpenDropdown(null);
                         }}
                         className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
                       >
-                        {option}
+                        <span className={headingMeta[option]?.previewClass || 'text-xs'}>{option}</span>
                       </button>
                     ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={createNewComposition}
+            className="h-7 w-7 rounded-full border border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-600 hover:text-violet-700 flex items-center justify-center"
+            title="Create new composition"
+            aria-label="Create new composition"
+          >
+            <Plus size={14} />
+          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                closeTransientMenus();
+                setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
+              }}
+              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded text-xs"
+              title="Page numbering"
+            >
+              Page # <ChevronDown size={13} className="text-gray-400" />
+            </button>
+            {openDropdown === 'page-number' && (
+              <div className="absolute top-9 left-0 z-[230] w-52 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPageNumbers((prev) => !prev)}
+                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                >
+                  {showPageNumbers ? 'Hide page numbers' : 'Show page numbers'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPageNumberOnFirstPage((prev) => !prev)}
+                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                >
+                  {showPageNumberOnFirstPage ? 'Hide on first page' : 'Show on first page'}
+                </button>
+                <div className="border-t border-gray-100 pt-1">
+                  <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-gray-400">Position</div>
+                  <div className="grid grid-cols-3 gap-1 px-1 pb-1">
+                    {['left', 'center', 'right'].map((position) => (
+                      <button
+                        key={position}
+                        type="button"
+                        onClick={() => setPageNumberPosition(position)}
+                        className={`text-[11px] rounded px-2 py-1 border ${pageNumberPosition === position ? 'bg-violet-50 border-violet-200 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        {position}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -2950,7 +3106,7 @@ Rules:
                   style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                   dangerouslySetInnerHTML={{ __html: docBodyHtml }}
                 />
-                {lastComposeRun && (
+                {canShowComposeActions && (
                   <div className="mb-8 flex items-center justify-end gap-2">
                     <button type="button" onClick={handleComposeAccept} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50">Accept</button>
                     <button type="button" onClick={handleComposeRetry} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Retry</button>
@@ -3102,18 +3258,33 @@ Rules:
               </div>
             ))}
 
+            {showPageNumbers && showPageNumberOnFirstPage && (
+              <div className={`absolute bottom-10 ${pageNumberPositionClass} text-[11px] font-medium text-gray-400`}>
+                1
+              </div>
+            )}
+
             {/* Composing / Analyzing State Glow */}
             {isComposing && (
-              <div className="absolute inset-x-0 bottom-24 flex items-center justify-center bg-white/80 backdrop-blur-xs py-8 z-30 animate-pulse">
-                <div className="flex items-center gap-3 bg-gray-900 text-white px-5 py-3 rounded-full shadow-lg">
-                  <Loader2 className="animate-spin text-violet-400" size={16} />
-                  <span className="text-xs font-semibold tracking-wide">Composing & structuring document details...</span>
+              <div className="absolute inset-0 z-30 bg-white/85 backdrop-blur-[2px] flex items-center justify-center px-6">
+                <div className="w-full max-w-xl rounded-2xl border border-violet-100 bg-white shadow-[0_20px_50px_-20px_rgba(109,40,217,0.35)] p-5">
+                  <div className="flex items-center gap-2 text-violet-700 mb-3">
+                    <Loader2 className="animate-spin" size={16} />
+                    <span className="text-xs font-semibold tracking-wide">Provisioning your composition</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-3 rounded bg-violet-100/70 animate-pulse w-4/5"></div>
+                    <div className="h-3 rounded bg-violet-100/70 animate-pulse w-full"></div>
+                    <div className="h-3 rounded bg-violet-100/70 animate-pulse w-3/4"></div>
+                    <div className="h-3 rounded bg-violet-100/70 animate-pulse w-5/6"></div>
+                  </div>
+                  <p className="mt-3 text-[11px] text-gray-500">Structuring headings, sections, and action-ready blocks.</p>
                 </div>
               </div>
             )}
 
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
-              <div className="pointer-events-auto flex flex-col items-center gap-3 -mt-10">
+            <div className={`pointer-events-none absolute inset-0 z-40 ${shouldDockVoiceWidget ? 'flex items-end justify-end p-6 pb-32' : 'flex items-center justify-center'}`}>
+              <div className={`pointer-events-auto flex flex-col items-center gap-3 ${shouldDockVoiceWidget ? '' : '-mt-10'}`}>
                 <button
                   type="button"
                   onClick={toggleVoiceRecording}
@@ -3135,6 +3306,17 @@ Rules:
                   <button
                     type="button"
                     onClick={() => {
+                      try {
+                        speechRecognitionRef.current?.stop();
+                      } catch (_error) {
+                        // noop
+                      }
+                      setIsVoiceActive(false);
+                      setLiveSpeechInterimText('');
+                    }}
+                    onPointerDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
                       try {
                         speechRecognitionRef.current?.stop();
                       } catch (_error) {
@@ -3579,9 +3761,10 @@ Rules:
               </button>
               <button
                 type="submit"
-                className="bg-violet-600 hover:bg-violet-700 text-white p-2 rounded-full transition-colors flex items-center justify-center h-8 w-8 active:scale-90"
+                disabled={isComposing}
+                className={`text-white p-2 rounded-full transition-colors flex items-center justify-center h-8 w-8 active:scale-90 ${isComposing ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}`}
               >
-                <ArrowRight size={16} />
+                {isComposing ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
               </button>
             </div>
           </form>
@@ -3813,42 +3996,44 @@ Rules:
                     </div>
 
                     {chatFeedbackDrafts[msg.id]?.open && (
-                      <div className="mt-1.5 flex items-center gap-2 w-full">
-                        <input
-                          type="text"
-                          value={chatFeedbackDrafts[msg.id]?.text || ''}
-                          onChange={(event) => {
-                            const value = event.target.value;
-                            setChatFeedbackDrafts((prev) => ({
-                              ...prev,
-                              [msg.id]: {
-                                ...(prev[msg.id] || { open: true }),
-                                open: true,
-                                text: value,
-                              },
-                            }));
-                          }}
-                          placeholder="Tell AI how to improve this response..."
-                          className="flex-1 min-w-0 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-[11px] text-gray-700 focus:outline-none focus:border-violet-400"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const comment = chatFeedbackDrafts[msg.id]?.text?.trim() || '';
-                            if (!comment) {
-                              return;
-                            }
-                            recordChatFeedback(msg, 'comment', comment);
-                            setChatFeedbackDrafts((prev) => ({
-                              ...prev,
-                              [msg.id]: { open: false, text: '' },
-                            }));
-                            showToast('Feedback saved to memory');
-                          }}
-                          className="px-2 py-1.5 rounded-md text-[11px] bg-violet-600 text-white hover:bg-violet-700"
-                        >
-                          Save
-                        </button>
+                      <div className="mt-1.5 w-full">
+                        <div className="relative flex items-center bg-white border border-gray-200 rounded-full px-2 py-1 hover:border-violet-200 focus-within:border-violet-400 transition-colors">
+                          <input
+                            type="text"
+                            value={chatFeedbackDrafts[msg.id]?.text || ''}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              setChatFeedbackDrafts((prev) => ({
+                                ...prev,
+                                [msg.id]: {
+                                  ...(prev[msg.id] || { open: true }),
+                                  open: true,
+                                  text: value,
+                                },
+                              }));
+                            }}
+                            placeholder="Tell AI how to improve this response..."
+                            className="w-full min-w-0 bg-transparent border-none focus:outline-none text-[11px] text-gray-700 py-1 pl-1 pr-14"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const comment = chatFeedbackDrafts[msg.id]?.text?.trim() || '';
+                              if (!comment) {
+                                return;
+                              }
+                              recordChatFeedback(msg, 'comment', comment);
+                              setChatFeedbackDrafts((prev) => ({
+                                ...prev,
+                                [msg.id]: { open: false, text: '' },
+                              }));
+                              showToast('Feedback saved to memory');
+                            }}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full text-[11px] bg-violet-600 text-white hover:bg-violet-700"
+                          >
+                            Save
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -4044,12 +4229,34 @@ Rules:
                   <div className="space-y-2">
                     <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider block">Processed List</span>
                     {scheduleOutput.map((item) => (
-                      <div key={item.id} className="p-3 rounded-lg border border-violet-100 bg-white">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="text-xs font-semibold text-gray-800">{item.title}</div>
-                          <div className="text-[10px] font-semibold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-full">{item.slot}</div>
+                      <div key={item.id} className="p-3 rounded-lg border border-violet-100 bg-white space-y-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={item.title}
+                            onChange={(event) => updateScheduleItem(item.id, 'title', event.target.value)}
+                            className="flex-1 text-xs font-semibold text-gray-800 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-violet-400"
+                          />
+                          <input
+                            value={item.slot}
+                            onChange={(event) => updateScheduleItem(item.id, 'slot', event.target.value)}
+                            className="w-24 text-[10px] font-semibold text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2 py-1 focus:outline-none focus:border-violet-400"
+                          />
                         </div>
-                        <div className="text-[11px] text-gray-500">{item.summary}</div>
+                        <textarea
+                          value={item.summary}
+                          onChange={(event) => updateScheduleItem(item.id, 'summary', event.target.value)}
+                          rows={2}
+                          className="w-full text-[11px] text-gray-600 border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400 resize-none"
+                        />
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => approveScheduleItem(item.id)}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-full px-2.5 py-1"
+                          >
+                            <Check size={12} /> Approve
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -4201,14 +4408,12 @@ Rules:
 
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
-                  <div className="p-3 rounded-lg border border-violet-100 bg-violet-50/20 text-xs">
-                    <div className="font-bold text-violet-700">Beta Launch Kickoff</div>
-                    <div className="text-gray-500 mt-0.5">May 15 • 10:00 AM</div>
-                  </div>
-                  <div className="p-3 rounded-lg border border-gray-100 text-xs">
-                    <div className="font-bold text-gray-700">Product Hunt Checklist Finalization</div>
-                    <div className="text-gray-500 mt-0.5">June 14 • 2:30 PM</div>
-                  </div>
+                  {upcomingEvents.map((event, index) => (
+                    <div key={event.id} className={`p-3 rounded-lg border text-xs ${index === 0 ? 'border-violet-100 bg-violet-50/20' : 'border-gray-100 bg-white'}`}>
+                      <div className={`font-bold ${index === 0 ? 'text-violet-700' : 'text-gray-700'}`}>{event.title}</div>
+                      <div className="text-gray-500 mt-0.5">{event.slotLabel}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
