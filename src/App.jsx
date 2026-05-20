@@ -131,6 +131,8 @@ export default function App() {
   const selectedEditorTextRef = useRef('');
   const pointerDownInPromptRef = useRef(false);
   const calendarMenuRef = useRef(null);
+  const formattingDropdownCloseTimerRef = useRef(null);
+  const textStyleMenuCloseTimerRef = useRef(null);
   const modelCandidatesCacheRef = useRef(null);
   const modelCandidatesCacheKeyRef = useRef('');
   const dragStateRef = useRef({
@@ -174,6 +176,8 @@ export default function App() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
+  const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
+  const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -230,6 +234,7 @@ export default function App() {
       const storedPromptTone = localStorage.getItem('rc.promptTone');
       const storedPromptLengthMode = localStorage.getItem('rc.promptLengthMode');
       const storedPromptLengthValue = localStorage.getItem('rc.promptLengthValue');
+      const storedEditorPrefs = localStorage.getItem('rc.editorPrefs');
 
       if (storedApiMode === 'demo' || storedApiMode === 'byok') {
         setApiMode(storedApiMode);
@@ -268,6 +273,41 @@ export default function App() {
         const parsedLength = Number(storedPromptLengthValue);
         if (!Number.isNaN(parsedLength) && parsedLength >= 40 && parsedLength <= 3000) {
           setPromptLengthValue(parsedLength);
+        }
+      }
+      if (storedEditorPrefs) {
+        const parsedPrefs = JSON.parse(storedEditorPrefs);
+        if (parsedPrefs && typeof parsedPrefs === 'object') {
+          if (typeof parsedPrefs.editorHeading === 'string' && headingOptions.includes(parsedPrefs.editorHeading)) {
+            setEditorHeading(parsedPrefs.editorHeading);
+          }
+          if (typeof parsedPrefs.editorFont === 'string' && parsedPrefs.editorFont.trim()) {
+            setEditorFont(parsedPrefs.editorFont);
+          }
+          const parsedSize = Number(parsedPrefs.editorSize);
+          if (!Number.isNaN(parsedSize) && parsedSize >= 10 && parsedSize <= 72) {
+            setEditorSize(parsedSize);
+          }
+          if (typeof parsedPrefs.alignMode === 'string' && ['left', 'center', 'right'].includes(parsedPrefs.alignMode)) {
+            setAlignMode(parsedPrefs.alignMode);
+          }
+          setIsBoldActive(Boolean(parsedPrefs.isBoldActive));
+          setIsItalicActive(Boolean(parsedPrefs.isItalicActive));
+          setIsUnderlineActive(Boolean(parsedPrefs.isUnderlineActive));
+          setIsStrikeActive(Boolean(parsedPrefs.isStrikeActive));
+          setIsListActive(Boolean(parsedPrefs.isListActive));
+          setShowPageNumbers(parsedPrefs.showPageNumbers !== false);
+          setShowPageNumberOnFirstPage(parsedPrefs.showPageNumberOnFirstPage !== false);
+          if (typeof parsedPrefs.pageNumberPosition === 'string' && ['left', 'center', 'right'].includes(parsedPrefs.pageNumberPosition)) {
+            setPageNumberPosition(parsedPrefs.pageNumberPosition);
+          }
+          if (typeof parsedPrefs.currentLanguage === 'string' && parsedPrefs.currentLanguage.trim()) {
+            setCurrentLanguage(parsedPrefs.currentLanguage);
+          }
+          const parsedZoom = Number(parsedPrefs.zoomLevel);
+          if (!Number.isNaN(parsedZoom) && parsedZoom >= 50 && parsedZoom <= 200) {
+            setZoomLevel(parsedZoom);
+          }
         }
       }
     } catch (_error) {
@@ -310,6 +350,40 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('rc.promptLengthValue', String(promptLengthValue));
   }, [promptLengthValue]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.editorPrefs', JSON.stringify({
+      editorHeading,
+      editorFont,
+      editorSize,
+      alignMode,
+      isBoldActive,
+      isItalicActive,
+      isUnderlineActive,
+      isStrikeActive,
+      isListActive,
+      showPageNumbers,
+      showPageNumberOnFirstPage,
+      pageNumberPosition,
+      currentLanguage,
+      zoomLevel,
+    }));
+  }, [
+    editorHeading,
+    editorFont,
+    editorSize,
+    alignMode,
+    isBoldActive,
+    isItalicActive,
+    isUnderlineActive,
+    isStrikeActive,
+    isListActive,
+    showPageNumbers,
+    showPageNumberOnFirstPage,
+    pageNumberPosition,
+    currentLanguage,
+    zoomLevel,
+  ]);
 
   const buildSnapshot = () => ({
     docTitle,
@@ -412,6 +486,16 @@ export default function App() {
         return;
       }
 
+      if (key === 'a') {
+        const activeElement = document.activeElement;
+        const insideEditor = Boolean(activeElement && documentCardRef.current?.contains(activeElement));
+        if (insideEditor) {
+          event.preventDefault();
+          selectEntireComposition();
+        }
+        return;
+      }
+
       if (key === 'z' && !event.shiftKey) {
         event.preventDefault();
         undoDocumentChange();
@@ -427,6 +511,58 @@ export default function App() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
+
+  useEffect(() => {
+    if (!openDropdown) {
+      if (formattingDropdownCloseTimerRef.current) {
+        clearTimeout(formattingDropdownCloseTimerRef.current);
+      }
+      return;
+    }
+
+    if (isFormattingDropdownHovered) {
+      if (formattingDropdownCloseTimerRef.current) {
+        clearTimeout(formattingDropdownCloseTimerRef.current);
+      }
+      return;
+    }
+
+    formattingDropdownCloseTimerRef.current = setTimeout(() => {
+      setOpenDropdown(null);
+    }, 2000);
+
+    return () => {
+      if (formattingDropdownCloseTimerRef.current) {
+        clearTimeout(formattingDropdownCloseTimerRef.current);
+      }
+    };
+  }, [openDropdown, isFormattingDropdownHovered]);
+
+  useEffect(() => {
+    if (!textStyleMenuOpen) {
+      if (textStyleMenuCloseTimerRef.current) {
+        clearTimeout(textStyleMenuCloseTimerRef.current);
+      }
+      return;
+    }
+
+    if (isTextStyleMenuHovered) {
+      if (textStyleMenuCloseTimerRef.current) {
+        clearTimeout(textStyleMenuCloseTimerRef.current);
+      }
+      return;
+    }
+
+    textStyleMenuCloseTimerRef.current = setTimeout(() => {
+      setTextStyleMenuOpen(false);
+    }, 2000);
+
+    return () => {
+      if (textStyleMenuCloseTimerRef.current) {
+        clearTimeout(textStyleMenuCloseTimerRef.current);
+      }
+    };
+  }, [textStyleMenuOpen, isTextStyleMenuHovered]);
 
   useEffect(() => {
     const now = Date.now();
@@ -584,6 +720,23 @@ export default function App() {
     return true;
   };
 
+  const selectEntireComposition = () => {
+    if (!documentCardRef.current) {
+      return;
+    }
+
+    const selection = window.getSelection();
+    if (!selection) {
+      return;
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(documentCardRef.current);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    savedSelectionRef.current = range.cloneRange();
+  };
+
   const normalizeEditableDirection = (element) => {
     if (!element) {
       return;
@@ -598,6 +751,25 @@ export default function App() {
     const currentValue = event.currentTarget.textContent?.trim() || '';
     if (currentValue === placeholder) {
       event.currentTarget.textContent = '';
+    }
+  };
+
+  const handleEditablePaste = (event, placeholder, afterPaste) => {
+    const target = event.currentTarget;
+    const plainText = event.clipboardData?.getData('text/plain') || '';
+    const currentValue = target.textContent?.trim() || '';
+
+    if (currentValue === placeholder || currentValue === AI_NATIVE_PLACEHOLDER) {
+      target.textContent = '';
+    }
+
+    event.preventDefault();
+    if (plainText) {
+      document.execCommand('insertText', false, plainText);
+    }
+    normalizeEditableDirection(target);
+    if (afterPaste) {
+      afterPaste(target);
     }
   };
 
@@ -644,6 +816,11 @@ export default function App() {
         }
         setSelectedEditorText('');
         selectedEditorTextRef.current = '';
+        setIsBoldActive(false);
+        setIsItalicActive(false);
+        setIsUnderlineActive(false);
+        setIsStrikeActive(false);
+        setIsListActive(false);
         return;
       }
 
@@ -652,6 +829,16 @@ export default function App() {
       const next = truncateText(selectedText, 180);
       setSelectedEditorText(next);
       selectedEditorTextRef.current = selectedText;
+
+      try {
+        setIsBoldActive(Boolean(document.queryCommandState('bold')));
+        setIsItalicActive(Boolean(document.queryCommandState('italic')));
+        setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
+        setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
+        setIsListActive(Boolean(document.queryCommandState('insertUnorderedList')));
+      } catch (_error) {
+        // noop
+      }
     };
 
     document.addEventListener('selectionchange', handleSelectionChange);
@@ -2094,12 +2281,12 @@ Rules:
   const applyFormatCommand = (command, value) => {
     let range = getEditorSelectionRange();
 
-    if ((!range || range.collapsed) && restoreSavedSelection()) {
+    if (!range && restoreSavedSelection()) {
       range = getEditorSelectionRange();
     }
 
-    if (!range || range.collapsed) {
-      showToast('Select text first to apply formatting');
+    if (!range) {
+      blankBodyRef.current?.focus();
       return;
     }
 
@@ -2112,6 +2299,16 @@ Rules:
 
     if (blankBodyRef.current) {
       setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+
+    try {
+      setIsBoldActive(Boolean(document.queryCommandState('bold')));
+      setIsItalicActive(Boolean(document.queryCommandState('italic')));
+      setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
+      setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
+      setIsListActive(Boolean(document.queryCommandState('insertUnorderedList')));
+    } catch (_error) {
+      // noop
     }
   };
 
@@ -2127,6 +2324,11 @@ Rules:
       textLength: trimmed.length,
     });
     showToast('Task added');
+  };
+
+  const removeTask = (taskId) => {
+    setTasks((prev) => prev.filter((task) => task.id !== taskId));
+    showToast('Task removed');
   };
 
   const convertTaskToSchedule = (taskText) => {
@@ -2551,7 +2753,11 @@ Rules:
         </div>
 
         <div className="px-4 pb-2">
-          <div className="relative">
+          <div
+            className="relative"
+            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+          >
             <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
             <input 
               type="text" 
@@ -2830,7 +3036,11 @@ Rules:
           }}
           className="h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130]"
         >
-          <div className="relative">
+          <div
+            className="relative"
+            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+          >
             <button
               onClick={() => {
                 closeTransientMenus();
@@ -2879,7 +3089,11 @@ Rules:
           >
             <Plus size={14} />
           </button>
-          <div className="relative">
+          <div
+            className="relative"
+            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+          >
             <button
               type="button"
               onClick={() => {
@@ -2926,7 +3140,11 @@ Rules:
             )}
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div className="relative">
+          <div
+            className="relative"
+            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+          >
             <button
               onClick={() => {
                 closeTransientMenus();
@@ -2965,13 +3183,21 @@ Rules:
             )}
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div className="relative flex items-center gap-1">
+          <div
+            className="relative flex items-center gap-1"
+            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+          >
             <input
               type="number"
               min={10}
               max={72}
               value={editorSize}
-              onChange={(e) => setEditorSize(Number(e.target.value) || 32)}
+              onChange={(e) => {
+                const nextSize = Number(e.target.value) || 32;
+                setEditorSize(nextSize);
+                applyFormatCommand('fontSize', String(nextSize));
+              }}
               className="w-14 bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
             />
             <button
@@ -2998,6 +3224,7 @@ Rules:
                         key={option}
                         onClick={() => {
                           setEditorSize(option);
+                          applyFormatCommand('fontSize', String(option));
                           setOpenDropdown(null);
                         }}
                         className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
@@ -3011,11 +3238,15 @@ Rules:
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-4">
-            <button onClick={() => { setIsBoldActive((prev) => !prev); applyFormatCommand('bold'); }} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
-            <button onClick={() => { setIsItalicActive((prev) => !prev); applyFormatCommand('italic'); }} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
-            <button onClick={() => { setIsUnderlineActive((prev) => !prev); applyFormatCommand('underline'); }} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
-            <button onClick={() => { setIsStrikeActive((prev) => !prev); applyFormatCommand('strikeThrough'); }} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
-            <div className="relative">
+            <button onClick={() => applyFormatCommand('bold')} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
+            <button onClick={() => applyFormatCommand('italic')} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
+            <button onClick={() => applyFormatCommand('underline')} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
+            <button onClick={() => applyFormatCommand('strikeThrough')} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
+            <div
+              className="relative"
+              onMouseEnter={() => setIsTextStyleMenuHovered(true)}
+              onMouseLeave={() => setIsTextStyleMenuHovered(false)}
+            >
               <button
                 onClick={() => setTextStyleMenuOpen((prev) => !prev)}
                 className="flex items-center gap-1.5 hover:text-gray-900 cursor-pointer pl-0.5"
@@ -3044,7 +3275,7 @@ Rules:
             <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`${alignMode === 'left' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
             <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} className={`${alignMode === 'center' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
             <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} className={`${alignMode === 'right' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
-            <List onClick={() => { setIsListActive((prev) => !prev); applyFormatCommand('insertUnorderedList'); }} size={16} className={`${isListActive ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
+            <List onClick={() => applyFormatCommand('insertUnorderedList')} size={16} className={`${isListActive ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
@@ -3072,6 +3303,7 @@ Rules:
               suppressContentEditableWarning
               onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+              onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocTitle(target.textContent || ''))}
               onBlur={(e) => setDocTitle(e.currentTarget.textContent || '')}
               dir="ltr"
               style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
@@ -3085,6 +3317,7 @@ Rules:
               suppressContentEditableWarning
               onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+              onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocSubtitle(target.textContent || ''))}
               onBlur={(e) => setDocSubtitle(e.currentTarget.textContent || '')}
               dir="ltr"
               style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
@@ -3100,6 +3333,7 @@ Rules:
                   contentEditable
                   suppressContentEditableWarning
                   onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+                  onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
                   onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
                   dir="ltr"
                   className="mb-4 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed relative"
@@ -4200,7 +4434,20 @@ Rules:
                       {task.completed && <Check size={12} className="stroke-[3]" />}
                     </div>
                     <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
                       <span className="text-xs font-medium leading-relaxed block">{task.text}</span>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            removeTask(task.id);
+                          }}
+                          className="p-1 rounded-md text-gray-400 hover:text-rose-600 hover:bg-rose-50"
+                          title="Delete task"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                       <button
                         type="button"
                         onClick={(event) => {
