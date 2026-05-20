@@ -10,7 +10,7 @@ import {
   List, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Volume2, VolumeX, Database, KeyRound,
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 
@@ -92,6 +92,7 @@ export default function App() {
   const [editingPromptValue, setEditingPromptValue] = useState('');
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [promptAttachments, setPromptAttachments] = useState([]);
+  const [previewAttachment, setPreviewAttachment] = useState(null);
   const [lastComposeRun, setLastComposeRun] = useState(null);
   const [apiMode, setApiMode] = useState('demo');
   const [userApiKey, setUserApiKey] = useState('');
@@ -166,8 +167,6 @@ export default function App() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
-  const [uploadedPromptAudio, setUploadedPromptAudio] = useState(null);
-  const [isUploadedAudioMuted, setIsUploadedAudioMuted] = useState(false);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -751,10 +750,15 @@ export default function App() {
 
   const removePromptAttachment = (attachmentId) => {
     setPromptAttachments((prev) => {
-      const next = prev.filter((attachment) => attachment.id !== attachmentId);
-      if (uploadedPromptAudio && uploadedPromptAudio.id === attachmentId) {
-        setUploadedPromptAudio(null);
+      const target = prev.find((attachment) => attachment.id === attachmentId);
+      if (target?.url) {
+        try {
+          URL.revokeObjectURL(target.url);
+        } catch (_error) {
+          // noop
+        }
       }
+      const next = prev.filter((attachment) => attachment.id !== attachmentId);
       return next;
     });
   };
@@ -770,18 +774,11 @@ export default function App() {
       type: file.type || 'application/octet-stream',
       size: file.size || 0,
       file,
+      url: URL.createObjectURL(file),
+      isImage: (file.type || '').startsWith('image/'),
     }));
 
     setPromptAttachments((prev) => [...attachments, ...prev].slice(0, 24));
-
-    const firstAudio = attachments.find((attachment) => attachment.type.startsWith('audio/'));
-    if (firstAudio) {
-      setUploadedPromptAudio({
-        id: firstAudio.id,
-        name: firstAudio.name,
-        url: URL.createObjectURL(firstAudio.file),
-      });
-    }
 
     trackMemoryAction('upload', 'Attached files to prompt', {
       count: attachments.length,
@@ -1421,7 +1418,7 @@ Rules:
 
   const handleFloatingSend = (e) => {
     e.preventDefault();
-    if (!floatingPrompt.trim() && !uploadedPromptAudio) return;
+    if (!floatingPrompt.trim() && !promptAttachments.length) return;
     const formatLabel = composeOutputFormat === 'Custom...'
       ? (customComposeFormat.trim() || 'Custom Document')
       : composeOutputFormat;
@@ -1429,9 +1426,12 @@ Rules:
     const attachmentSummary = promptAttachments.length
       ? `\nAttached files: ${promptAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
       : '';
+    const fallbackPrompt = promptAttachments.length
+      ? `Use attached files as source context and generate the requested output.`
+      : '';
     const scopedInstruction = selectedScope
-      ? `Modify ONLY the selected excerpt below. Do not rewrite unrelated sections.\nSelected excerpt:\n"""${selectedScope}"""\n\nUser request: ${floatingPrompt.trim() || `Transcribe attached audio: ${uploadedPromptAudio.name}`}`
-      : (floatingPrompt.trim() || `Transcribe attached audio: ${uploadedPromptAudio.name}`);
+      ? `Modify ONLY the selected excerpt below. Do not rewrite unrelated sections.\nSelected excerpt:\n"""${selectedScope}"""\n\nUser request: ${floatingPrompt.trim() || fallbackPrompt}`
+      : (floatingPrompt.trim() || fallbackPrompt);
     const finalPrompt = `${scopedInstruction}${attachmentSummary}`;
     const composeOptions = {
       source: 'compose',
@@ -1449,8 +1449,6 @@ Rules:
       options: composeOptions,
     });
     setFloatingPrompt('');
-    setUploadedPromptAudio(null);
-    setPromptAttachments([]);
     setSelectedEditorText('');
     selectedEditorTextRef.current = '';
   };
@@ -1579,8 +1577,7 @@ Rules:
       return;
     }
 
-    const url = URL.createObjectURL(file);
-    setUploadedPromptAudio({ name: file.name, url });
+    attachFilesToPrompt([file]);
     trackMemoryAction('upload', 'Uploaded prompt audio', {
       name: file.name,
       size: file.size,
@@ -2369,6 +2366,35 @@ Rules:
         </div>
       )}
 
+      {previewAttachment && (
+        <div className="absolute inset-0 z-[130] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-[640px] max-w-[95vw] max-h-[90vh] overflow-auto rounded-2xl bg-white border border-gray-200 shadow-2xl p-4">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900 truncate">{previewAttachment.name}</div>
+                <div className="text-[11px] text-gray-500">{previewAttachment.type || 'Unknown type'} • {Math.round((previewAttachment.size || 0) / 1024)} KB</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewAttachment(null)}
+                className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+              >
+                <X size={14} />
+              </button>
+            </div>
+            {previewAttachment.isImage ? (
+              <img src={previewAttachment.url} alt={previewAttachment.name} className="w-full h-auto rounded-xl border border-gray-200" />
+            ) : previewAttachment.type?.startsWith('audio/') ? (
+              <audio controls src={previewAttachment.url} className="w-full" />
+            ) : (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-600">
+                Preview is not available for this file type. It is still attached to your prompt context.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 1. Left Navigation Sidebar */}
       <div
         className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
@@ -2883,17 +2909,29 @@ Rules:
             </div>
 
             {isBlankDocument && (
-              <div
-                ref={blankBodyRef}
-                contentEditable
-                suppressContentEditableWarning
-                onInput={(e) => normalizeEditableDirection(e.currentTarget)}
-                onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
-                dir="ltr"
-                className="mb-10 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed relative"
-                style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-                dangerouslySetInnerHTML={{ __html: docBodyHtml }}
-              />
+              <>
+                <div
+                  ref={blankBodyRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+                  onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                  dir="ltr"
+                  className="mb-4 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed relative"
+                  style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
+                  dangerouslySetInnerHTML={{ __html: docBodyHtml }}
+                />
+                {lastComposeRun && (
+                  <div className="mb-8 flex items-center justify-end gap-2">
+                    <button type="button" onClick={handleComposeRetry} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Retry</button>
+                    <button type="button" onClick={handleComposeUndo} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Undo</button>
+                    <button type="button" onClick={handleComposeDelete} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50">Delete</button>
+                    <button type="button" onClick={() => setLastComposeRun(null)} className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="Dismiss actions">
+                      <X size={12} />
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {!isBlankDocument && (
@@ -3033,33 +3071,6 @@ Rules:
                 )}
               </div>
             ))}
-
-            {/* Simulated Voice Waveform Indicator */}
-            {isVoiceActive && (
-              <div className="absolute inset-x-0 bottom-24 flex flex-col items-center justify-center bg-white/95 backdrop-blur-xs py-8 z-30 animate-fade-in">
-                <div className="flex items-end gap-1 mb-3">
-                  <div className="w-1.5 h-6 bg-violet-600 rounded-full animate-pulse"></div>
-                  <div className="w-1.5 h-12 bg-violet-500 rounded-full animate-pulse delay-75"></div>
-                  <div className="w-1.5 h-8 bg-indigo-500 rounded-full animate-pulse delay-150"></div>
-                  <div className="w-1.5 h-14 bg-violet-600 rounded-full animate-pulse delay-300"></div>
-                  <div className="w-1.5 h-6 bg-purple-500 rounded-full animate-pulse delay-200"></div>
-                </div>
-                <p className="text-xs font-medium text-violet-700 animate-pulse">Listening... Speak naturally to compose into document.</p>
-                <button 
-                  onClick={() => {
-                    try {
-                      speechRecognitionRef.current?.stop();
-                    } catch (_error) {
-                      // noop
-                    }
-                    setIsVoiceActive(false);
-                  }}
-                  className="mt-3 text-[10px] text-gray-500 hover:text-gray-900 border border-gray-200 px-3 py-1 rounded-full transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
 
             {/* Composing / Analyzing State Glow */}
             {isComposing && (
@@ -3229,6 +3240,36 @@ Rules:
                       </button>
                     </div>
                   )}
+                  {promptAttachments.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {promptAttachments.map((attachment) => (
+                        <button
+                          key={attachment.id}
+                          type="button"
+                          onClick={() => setPreviewAttachment(attachment)}
+                          className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-2 py-1 text-[11px] text-gray-600 max-w-[210px]"
+                          title="Click to preview"
+                        >
+                          {attachment.isImage ? (
+                            <img src={attachment.url} alt={attachment.name} className="w-4 h-4 rounded object-cover" />
+                          ) : (
+                            <File size={12} className="text-gray-400" />
+                          )}
+                          <span className="truncate">{attachment.name}</span>
+                          <span
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              removePromptAttachment(attachment.id);
+                            }}
+                            className="text-gray-400 hover:text-gray-700"
+                            title="Remove"
+                          >
+                            <X size={12} />
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <textarea
                     ref={floatingPromptRef}
                     value={floatingPrompt}
@@ -3327,12 +3368,15 @@ Rules:
               <button
                 type="button"
                 onClick={toggleVoiceRecording}
-                className={`relative p-2 rounded-full transition-colors ${isVoiceActive ? 'bg-violet-100 text-violet-700' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                className={`relative p-2 rounded-full transition-all ${isVoiceActive ? 'text-violet-600 bg-violet-50 shadow-[0_0_0_2px_rgba(139,92,246,0.22),0_0_18px_rgba(139,92,246,0.55)]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                 title={isVoiceActive ? 'Stop live transcription' : 'Start live transcription'}
               >
-                <Mic size={16} />
+                <Mic size={16} className={isVoiceActive ? 'animate-pulse' : ''} />
                 {isVoiceActive && (
-                  <span className="absolute inset-0 rounded-full border-2 border-violet-400 animate-ping"></span>
+                  <>
+                    <span className="absolute inset-0 rounded-full border border-violet-400/70 animate-ping"></span>
+                    <span className="absolute -inset-1 rounded-full border border-violet-300/60 animate-pulse"></span>
+                  </>
                 )}
               </button>
               <div className="relative" ref={promptLibraryRef}>
@@ -3368,7 +3412,7 @@ Rules:
                           <ChevronDown size={12} />
                         </button>
                         {promptHistoryFilterMenuOpen && (
-                          <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-1 z-[9999] min-w-[110px]">
+                          <div className="absolute right-0 bottom-full mb-1 bg-white border border-gray-200 rounded-xl shadow-lg p-1.5 z-[9999] min-w-[130px]">
                             {[
                               { key: 'all', label: 'All' },
                               { key: 'compose', label: 'Compose' },
@@ -3381,7 +3425,7 @@ Rules:
                                   setPromptHistoryFilter(filterOption.key);
                                   setPromptHistoryFilterMenuOpen(false);
                                 }}
-                                className={`w-full text-left px-2 py-1.5 rounded text-xs ${promptHistoryFilter === filterOption.key ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs ${promptHistoryFilter === filterOption.key ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'text-gray-700 hover:bg-gray-50 border border-transparent'}`}
                               >
                                 {filterOption.label}
                               </button>
@@ -3473,76 +3517,6 @@ Rules:
           </form>
           </div>
         </div>
-
-        {(isVoiceActive || promptAttachments.length > 0 || lastComposeRun) && (
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 w-[min(860px,94%)] space-y-2">
-            {isVoiceActive && (
-              <div className="mx-auto max-w-[850px] bg-violet-50 border border-violet-200 rounded-full px-4 py-2 flex items-center gap-2 text-xs text-violet-700">
-                <Mic size={14} className="animate-pulse" />
-                <span>Listening live... speak naturally and Compose will transcribe.</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    try {
-                      speechRecognitionRef.current?.stop();
-                    } catch (_error) {
-                      // noop
-                    }
-                    setIsVoiceActive(false);
-                  }}
-                  className="ml-auto text-violet-600 hover:text-violet-800"
-                  title="Dismiss listening"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-            {promptAttachments.length > 0 && (
-              <div className="mx-auto max-w-[850px] bg-white border border-gray-200 rounded-xl px-3 py-2 flex flex-wrap items-center gap-2 shadow-sm">
-                {promptAttachments.map((attachment) => (
-                  <span key={attachment.id} className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-2 py-1 text-[11px] text-gray-600">
-                    <span className="truncate max-w-[180px]">{attachment.name}</span>
-                    <button type="button" onClick={() => removePromptAttachment(attachment.id)} className="text-gray-400 hover:text-gray-700">
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-            {lastComposeRun && (
-              <div className="mx-auto max-w-[850px] bg-white border border-violet-200 rounded-xl px-3 py-2 flex items-center gap-2 shadow-sm">
-                <span className="text-xs text-gray-600">Output actions:</span>
-                <button type="button" onClick={handleComposeRetry} className="px-2 py-1 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Retry</button>
-                <button type="button" onClick={handleComposeUndo} className="px-2 py-1 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Undo</button>
-                <button type="button" onClick={handleComposeDelete} className="px-2 py-1 text-[11px] rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50">Delete</button>
-                <button type="button" onClick={() => setLastComposeRun(null)} className="ml-auto text-gray-400 hover:text-gray-700" title="Dismiss actions">
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {uploadedPromptAudio && (
-          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 w-[min(820px,92%)] bg-white border border-gray-200 rounded-xl p-3 shadow-lg flex items-center gap-3">
-            <div className="text-xs text-gray-600 font-medium truncate max-w-[220px]">{uploadedPromptAudio.name}</div>
-            <audio className="flex-1" controls src={uploadedPromptAudio.url} muted={isUploadedAudioMuted} />
-            <button
-              onClick={() => setIsUploadedAudioMuted((prev) => !prev)}
-              className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
-              title={isUploadedAudioMuted ? 'Unmute uploaded audio preview' : 'Mute uploaded audio preview'}
-            >
-              {isUploadedAudioMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-            </button>
-            <button
-              onClick={() => setUploadedPromptAudio(null)}
-              className="p-1.5 rounded hover:bg-rose-50 text-gray-500 hover:text-rose-600"
-              title="Remove uploaded audio"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        )}
 
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
