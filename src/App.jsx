@@ -44,6 +44,7 @@ export default function App() {
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
+  const [isPromptCompact, setIsPromptCompact] = useState(false);
   const [promptWidth, setPromptWidth] = useState(620);
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
@@ -1030,7 +1031,6 @@ export default function App() {
     const activeEditable = active?.isContentEditable && documentCardRef.current?.contains(active)
       ? active
       : null;
-    const activeOutsideDocument = Boolean(active && documentCardRef.current && !documentCardRef.current.contains(active));
 
     let target = activeEditable;
     if (!target) {
@@ -1047,9 +1047,7 @@ export default function App() {
       return;
     }
 
-    if (!activeOutsideDocument) {
-      target.focus();
-    }
+    target.focus();
     if ((target.textContent || '').trim() === AI_NATIVE_PLACEHOLDER) {
       target.textContent = '';
     }
@@ -1089,6 +1087,15 @@ export default function App() {
         fallbackSelection.removeAllRanges();
         fallbackSelection.addRange(fallbackRange);
       }
+    }
+
+    const finalSelection = window.getSelection();
+    if (finalSelection) {
+      const endRange = document.createRange();
+      endRange.selectNodeContents(target);
+      endRange.collapse(false);
+      finalSelection.removeAllRanges();
+      finalSelection.addRange(endRange);
     }
     normalizeEditableDirection(target);
 
@@ -2941,6 +2948,8 @@ Rules:
     setShareFormat('Compose (.cmp)');
     setShareAccess('Viewer');
     setShareLink(`${base}?doc=${docId}&access=viewer`);
+    closeTransientMenus();
+    setRightSidebarOpen(false);
     setShareModalOpen(true);
     trackMemoryAction('share', 'Opened share modal', {
       documentId: String(docId),
@@ -3503,10 +3512,10 @@ Rules:
       }
 
       if (dragTarget === 'prompt') {
+        const nextX = Math.min(260, Math.max(-260, dragStateRef.current.promptX + deltaX));
         const deltaY = event.clientY - dragStateRef.current.startY;
         const nextY = Math.min(40, Math.max(-180, dragStateRef.current.promptY - deltaY));
-        // Keep prompt horizontally aligned to the document content area.
-        setPromptOffset({ x: 0, y: nextY });
+        setPromptOffset({ x: nextX, y: nextY });
       }
     };
 
@@ -3671,7 +3680,7 @@ Rules:
       )}
 
       {shareModalOpen && (
-        <div className="absolute inset-0 z-[120] bg-slate-900/25 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="absolute inset-0 z-[520] bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-[640px] max-w-[95vw] rounded-2xl bg-white border border-slate-200 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.65)] p-6">
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
@@ -4701,12 +4710,12 @@ Rules:
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
-          <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
+          <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 760))}px`, maxWidth: '100%' }}
+            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? (isPromptCompact ? 'rounded-[22px]' : 'rounded-2xl') : 'rounded-full'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? (isPromptCompact ? 520 : 860) : 760))}px`, maxWidth: '100%' }}
           >
             <button
               type="button"
@@ -4920,7 +4929,20 @@ Rules:
               />
               <button
                 type="button"
-                onClick={() => setIsPromptExpanded((prev) => !prev)}
+                onClick={() => {
+                  setIsPromptExpanded((prev) => {
+                    const next = !prev;
+                    if (next) {
+                      setIsPromptCompact(false);
+                      setTimeout(() => {
+                        setIsPromptCompact(true);
+                      }, 180);
+                    } else {
+                      setIsPromptCompact(false);
+                    }
+                    return next;
+                  });
+                }}
                 className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                 title="Expand prompt input"
               >
@@ -5190,7 +5212,7 @@ Rules:
         </div>
       </div>
 
-      {rightSidebarOpen && (
+      {!shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
           className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors"
@@ -5201,9 +5223,9 @@ Rules:
       {/* 3. Right Sidebar (AI Assistant / Smart Chat / Tools) */}
       <div 
         className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 relative z-[260] ${
-          rightSidebarOpen ? '' : 'w-0 overflow-hidden border-l-0'
+          rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
-        style={{ width: rightSidebarOpen ? `${rightSidebarWidth}px` : '0px' }}
+        style={{ width: rightSidebarOpen && !shareModalOpen ? `${rightSidebarWidth}px` : '0px' }}
       >
         {/* Sidebar Header Tabs */}
         <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
