@@ -160,6 +160,7 @@ export default function App() {
     promptY: -14,
   });
   const wholeDocSelectionRef = useRef(false);
+  const micPermissionGrantedRef = useRef(false);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState(defaultTitle);
@@ -1206,10 +1207,22 @@ export default function App() {
       }
     };
 
-    recognition.onerror = () => {
+    recognition.onstart = () => {
+      setIsVoiceActive(true);
+    };
+
+    recognition.onerror = (event) => {
       setIsVoiceActive(false);
       setLiveSpeechInterimText('');
-      showToast('Microphone could not capture speech. Check permissions and input device.');
+      if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
+        showToast('Microphone permission is blocked. Allow microphone access in browser settings.');
+        return;
+      }
+      if (event?.error === 'no-speech') {
+        showToast('No speech detected. Try speaking closer to the microphone.');
+        return;
+      }
+      showToast('Microphone could not capture speech. Check input device and retry.');
     };
 
     recognition.onend = () => {
@@ -1260,6 +1273,14 @@ export default function App() {
     { id: 3, text: 'Coordinate with marketing for Creator pricing model tier', completed: false, owner: 'user' },
     { id: 4, text: 'Check analytics dashboard integration is live', completed: false, owner: 'agent' },
   ]);
+  const [taskOwnerFilter, setTaskOwnerFilter] = useState('all');
+
+  const visibleTasks = useMemo(() => {
+    if (taskOwnerFilter === 'all') {
+      return tasks;
+    }
+    return tasks.filter((task) => task.owner === taskOwnerFilter);
+  }, [tasks, taskOwnerFilter]);
 
   // Conversational state with pre-loaded AI response cards
   const [chatMessages, setChatMessages] = useState([
@@ -2023,6 +2044,29 @@ Rules:
     setChatInput('');
   };
 
+  const runSmartAssistAction = (instruction) => {
+    const selectedScope = selectedEditorTextRef.current || selectedEditorText;
+    const hasSelection = Boolean(selectedScope);
+    const scopedPrompt = hasSelection
+      ? `${instruction}\n\nRefine ONLY this selected excerpt and preserve intent:\n"""${selectedScope}"""`
+      : `${instruction}\n\nUse the current document context and provide a directly usable rewrite.`;
+
+    setRightSidebarOpen(true);
+    setActiveRightTab('chat');
+    showToast('Smart Assist is running...');
+
+    handleAISubmit(scopedPrompt, {
+      source: hasSelection ? 'compose' : 'chat',
+      forceDocBuild: hasSelection,
+      suppressChatEcho: false,
+      composeFormat: hasSelection ? 'Plain Text' : 'Auto (Compose decides)',
+      selectionScoped: hasSelection,
+      tone: promptTone,
+      lengthMode: promptLengthMode,
+      lengthValue: promptLengthValue,
+    });
+  };
+
   const handleFloatingSend = (e) => {
     e.preventDefault();
     if (isComposing) return;
@@ -2135,12 +2179,32 @@ Rules:
   };
 
   const ensureMicrophonePermission = async () => {
+    if (micPermissionGrantedRef.current) {
+      return true;
+    }
+
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error('media-devices-unsupported');
     }
 
+    if (navigator.permissions?.query) {
+      try {
+        const permissionStatus = await navigator.permissions.query({ name: 'microphone' });
+        if (permissionStatus.state === 'granted') {
+          micPermissionGrantedRef.current = true;
+          return true;
+        }
+        if (permissionStatus.state === 'denied') {
+          throw new Error('microphone-denied');
+        }
+      } catch (_error) {
+        // Some browsers do not support querying microphone permissions.
+      }
+    }
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     stream.getTracks().forEach((track) => track.stop());
+    micPermissionGrantedRef.current = true;
     return true;
   };
 
@@ -2181,11 +2245,14 @@ Rules:
 
     try {
       await ensureMicrophonePermission();
-      if (speechRecognitionRef.current) {
-        speechRecognitionRef.current.lang = currentLanguage === 'Spanish' ? 'es-ES' : 'en-US';
+      const recognition = speechRecognitionRef.current;
+      if (!recognition) {
+        showToast('Voice engine is initializing. Please tap mic again in a moment.');
+        return;
       }
-      speechRecognitionRef.current?.start();
-      setIsVoiceActive(true);
+
+      recognition.lang = currentLanguage === 'Spanish' ? 'es-ES' : 'en-US';
+      recognition.start();
       showToast('Voice transcription started');
     } catch (_error) {
       setIsVoiceActive(false);
@@ -2954,6 +3021,13 @@ Rules:
       return `Tomorrow • ${slotLabel}`;
     }
     return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} • ${slotLabel}`;
+  };
+
+  const formatUpcomingHeaderDate = (dateValue) => {
+    const safeDate = dateValue instanceof Date ? dateValue : new Date();
+    const weekday = safeDate.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+    const month = safeDate.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
+    return `${weekday} ${month} ${safeDate.getDate()}`;
   };
 
   const convertTaskToSchedule = async (taskValue) => {
@@ -5021,7 +5095,7 @@ Rules:
               {/* Action Buttons Grid */}
               <div className="space-y-2">
                 <button 
-                  onClick={() => handleAISubmit("Improve the writing tone and professional clarity")}
+                  onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
                   className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
                 >
                   <PenTool size={16} className="text-violet-500" />
@@ -5032,7 +5106,7 @@ Rules:
                 </button>
 
                 <button 
-                  onClick={() => handleAISubmit("Summarize the launch plan concisely")}
+                  onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
                   className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
                 >
                   <FileText size={16} className="text-indigo-500" />
@@ -5043,7 +5117,7 @@ Rules:
                 </button>
 
                 <button 
-                  onClick={() => handleAISubmit("Make the plan shorter and more direct")}
+                  onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
                   className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
                 >
                   <Scissors size={16} className="text-violet-400" />
@@ -5054,7 +5128,7 @@ Rules:
                 </button>
 
                 <button 
-                  onClick={() => handleAISubmit("Analyze risks and mitigation strategies")}
+                  onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
                   className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
                 >
                   <AlertTriangle size={16} className="text-amber-500" />
@@ -5092,17 +5166,30 @@ Rules:
                 <div className="flex items-center gap-2 mb-2">
                   <button
                     type="button"
-                    onClick={() => setNewTaskOwner('user')}
-                    className={`px-2 py-1 rounded-full text-[10px] border ${newTaskOwner === 'user' ? 'bg-violet-50 border-violet-200 text-violet-700' : 'bg-white border-gray-200 text-gray-500'}`}
+                    onClick={() => {
+                      setNewTaskOwner('user');
+                      setTaskOwnerFilter('user');
+                    }}
+                    className={`px-2 py-1 rounded-full text-[10px] border ${taskOwnerFilter === 'user' ? 'bg-violet-50 border-violet-200 text-violet-700' : 'bg-white border-gray-200 text-gray-500'}`}
                   >
                     User Task
                   </button>
                   <button
                     type="button"
-                    onClick={() => setNewTaskOwner('agent')}
-                    className={`px-2 py-1 rounded-full text-[10px] border ${newTaskOwner === 'agent' ? 'bg-sky-50 border-sky-200 text-sky-700' : 'bg-white border-gray-200 text-gray-500'}`}
+                    onClick={() => {
+                      setNewTaskOwner('agent');
+                      setTaskOwnerFilter('agent');
+                    }}
+                    className={`px-2 py-1 rounded-full text-[10px] border ${taskOwnerFilter === 'agent' ? 'bg-sky-50 border-sky-200 text-sky-700' : 'bg-white border-gray-200 text-gray-500'}`}
                   >
                     Agent Task
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTaskOwnerFilter('all')}
+                    className={`px-2 py-1 rounded-full text-[10px] border ${taskOwnerFilter === 'all' ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500'}`}
+                  >
+                    All
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -5129,7 +5216,7 @@ Rules:
               </div>
 
               <div className="space-y-2">
-                {tasks.map(task => (
+                {visibleTasks.map(task => (
                   <div 
                     key={task.id} 
                     onClick={() => {
@@ -5209,6 +5296,11 @@ Rules:
                     </div>
                   </div>
                 ))}
+                {visibleTasks.length === 0 && (
+                  <div className="rounded-lg border border-dashed border-gray-200 p-3 text-[11px] text-gray-500 bg-white">
+                    No tasks in this view yet.
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -5458,6 +5550,10 @@ Rules:
 
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
+                  <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.24em] text-slate-500 uppercase">
+                    <Calendar size={13} className="text-violet-500" />
+                    <span>{formatUpcomingHeaderDate(selectedCalendarDate)}</span>
+                  </div>
                   {upcomingEvents.map((event, index) => (
                     <div key={event.id} className={`p-3 rounded-xl border text-xs relative overflow-hidden ${event.urgency === 'high' ? 'border-red-100 bg-red-50/20' : event.urgency === 'medium' ? 'border-yellow-100 bg-yellow-50/20' : index === 0 ? 'border-blue-100 bg-blue-50/20' : 'border-gray-100 bg-white'}`}>
                       <div className={`absolute left-0 top-0 bottom-0 w-1 ${event.urgency === 'high' ? 'bg-red-500' : event.urgency === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
