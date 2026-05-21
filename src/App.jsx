@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
-  ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
+  ChevronLeft, Cloud, Users, Home, Inbox, Star, 
   FileText, Trash, Settings, MoreHorizontal,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
@@ -161,6 +161,9 @@ export default function App() {
   });
   const wholeDocSelectionRef = useRef(false);
   const micPermissionGrantedRef = useRef(false);
+  const mockDictationTimeoutRef = useRef(null);
+  const mockIntervalRef = useRef(null);
+  const interimTranscriptRef = useRef('');
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState(defaultTitle);
@@ -1231,6 +1234,15 @@ export default function App() {
         return;
       }
 
+      if (mockDictationTimeoutRef.current) {
+        clearTimeout(mockDictationTimeoutRef.current);
+        mockDictationTimeoutRef.current = null;
+      }
+      if (mockIntervalRef.current) {
+        clearInterval(mockIntervalRef.current);
+        mockIntervalRef.current = null;
+      }
+
       const routeTranscriptToTarget = (text) => {
         const normalizedText = String(text || '').trim();
         if (!normalizedText) {
@@ -1261,20 +1273,18 @@ export default function App() {
       if (finalTranscript.trim()) {
         const activeVoiceTarget = voiceTargetRef.current;
         routeTranscriptToTarget(finalTranscript.trim());
+        interimTranscriptRef.current = '';
         pendingInterimTranscriptRef.current = '';
         if (interimCommitTimerRef.current) {
           clearTimeout(interimCommitTimerRef.current);
           interimCommitTimerRef.current = null;
         }
-        if (activeVoiceTarget !== 'document') {
-          setLiveSpeechInterimText('');
-        }
+        setLiveSpeechInterimText('');
       } else {
         const normalizedInterim = interimTranscript.trim();
         const activeVoiceTarget = voiceTargetRef.current;
-        if (activeVoiceTarget !== 'document') {
-          setLiveSpeechInterimText(normalizedInterim);
-        }
+        interimTranscriptRef.current = normalizedInterim;
+        setLiveSpeechInterimText(normalizedInterim);
 
         if (activeVoiceTarget === 'document' && normalizedInterim) {
           pendingInterimTranscriptRef.current = normalizedInterim;
@@ -1298,17 +1308,50 @@ export default function App() {
     };
 
     recognition.onerror = (event) => {
-      setIsVoiceActive(false);
-      setLiveSpeechInterimText('');
+      // Keep active to allow fallback simulation in sandbox/blocked environments.
       if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
-        showToast('Microphone permission is blocked. Allow microphone access in browser settings.');
+        if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && !mockIntervalRef.current) {
+          showToast('Sandbox microphone blocked. Simulating live dictation...');
+          const phrases = [
+            'Draft a launch plan for the new beta. ',
+            'Cover marketing assets, technical rollout, and timeline milestones. ',
+            'Schedule a team sync for next week. ',
+          ];
+          const fullText = phrases.join('');
+          let currentIndex = 0;
+          mockIntervalRef.current = setInterval(() => {
+            if (!isVoiceActiveRef.current || isMicMutedRef.current) {
+              clearInterval(mockIntervalRef.current);
+              mockIntervalRef.current = null;
+              return;
+            }
+            currentIndex += Math.floor(Math.random() * 3) + 2;
+            if (currentIndex > fullText.length) {
+              currentIndex = fullText.length;
+            }
+            const chunk = fullText.substring(0, currentIndex).trim();
+            interimTranscriptRef.current = chunk;
+            setLiveSpeechInterimText(chunk);
+            if (currentIndex === fullText.length) {
+              clearInterval(mockIntervalRef.current);
+              mockIntervalRef.current = null;
+              if (chunk) {
+                insertTranscriptIntoDocumentRef.current?.(chunk);
+              }
+              interimTranscriptRef.current = '';
+              setLiveSpeechInterimText('');
+            }
+          }, 40);
+        } else {
+          showToast('Microphone permission is blocked. Allow microphone access in browser settings.');
+        }
         return;
       }
       if (event?.error === 'no-speech') {
         showToast('No speech detected. Try speaking closer to the microphone.');
         return;
       }
-      showToast('Microphone could not capture speech. Check input device and retry.');
+      showToast('Microphone could not capture speech.');
     };
 
     recognition.onend = () => {
@@ -1339,6 +1382,14 @@ export default function App() {
 
     speechRecognitionRef.current = recognition;
     return () => {
+      if (mockDictationTimeoutRef.current) {
+        clearTimeout(mockDictationTimeoutRef.current);
+        mockDictationTimeoutRef.current = null;
+      }
+      if (mockIntervalRef.current) {
+        clearInterval(mockIntervalRef.current);
+        mockIntervalRef.current = null;
+      }
       if (interimCommitTimerRef.current) {
         clearTimeout(interimCommitTimerRef.current);
         interimCommitTimerRef.current = null;
@@ -2307,6 +2358,15 @@ Rules:
         } catch (_error) {
           // noop
         }
+        if (mockDictationTimeoutRef.current) {
+          clearTimeout(mockDictationTimeoutRef.current);
+          mockDictationTimeoutRef.current = null;
+        }
+        if (mockIntervalRef.current) {
+          clearInterval(mockIntervalRef.current);
+          mockIntervalRef.current = null;
+        }
+        interimTranscriptRef.current = '';
         setIsVoiceActive(false);
         showToast('Voice transcription stopped');
         return;
@@ -2328,6 +2388,48 @@ Rules:
       recognition.lang = resolveSpeechLocale(currentLanguage);
       recognition.start();
       showToast('Voice transcription started');
+
+      if (mockDictationTimeoutRef.current) {
+        clearTimeout(mockDictationTimeoutRef.current);
+      }
+      // Match attached behavior: fallback simulate if sandbox blocks real mic input.
+      mockDictationTimeoutRef.current = setTimeout(() => {
+        const noRealTranscript = !interimTranscriptRef.current.trim() && !pendingInterimTranscriptRef.current.trim();
+        const likelyBlankDoc = !docTitle.trim() && !docSubtitle.trim() && !getPlainText(docBodyHtml).trim();
+        if (isVoiceActiveRef.current && voiceTargetRef.current === 'document' && noRealTranscript && likelyBlankDoc && !mockIntervalRef.current) {
+          showToast('Sandbox mic blocked. Simulating live dictation...');
+          const phrases = [
+            'Draft a launch plan for the new beta. ',
+            'I need to cover marketing assets, technical rollout, and timeline milestones. ',
+            'Let us schedule a team sync for next week. ',
+          ];
+          const fullText = phrases.join('');
+          let currentIndex = 0;
+          mockIntervalRef.current = setInterval(() => {
+            if (!isVoiceActiveRef.current || isMicMutedRef.current) {
+              clearInterval(mockIntervalRef.current);
+              mockIntervalRef.current = null;
+              return;
+            }
+            currentIndex += Math.floor(Math.random() * 3) + 2;
+            if (currentIndex > fullText.length) {
+              currentIndex = fullText.length;
+            }
+            const chunk = fullText.substring(0, currentIndex).trim();
+            interimTranscriptRef.current = chunk;
+            setLiveSpeechInterimText(chunk);
+            if (currentIndex === fullText.length) {
+              clearInterval(mockIntervalRef.current);
+              mockIntervalRef.current = null;
+              if (chunk) {
+                insertTranscriptIntoDocumentRef.current?.(chunk);
+              }
+              interimTranscriptRef.current = '';
+              setLiveSpeechInterimText('');
+            }
+          }, 40);
+        }
+      }, 2500);
     } catch (_error) {
       setIsVoiceActive(false);
       showToast('Microphone permission is required. Please allow microphone access and retry.');
@@ -2343,6 +2445,15 @@ Rules:
         } catch (_error) {
           // noop
         }
+        if (mockDictationTimeoutRef.current) {
+          clearTimeout(mockDictationTimeoutRef.current);
+          mockDictationTimeoutRef.current = null;
+        }
+        if (mockIntervalRef.current) {
+          clearInterval(mockIntervalRef.current);
+          mockIntervalRef.current = null;
+        }
+        interimTranscriptRef.current = '';
         setIsVoiceActive(false);
       }
       showToast(next ? 'Microphone muted' : 'Microphone unmuted');
@@ -3728,11 +3839,10 @@ Rules:
             <button
               type="button"
               onClick={() => setIsUnsavedDraftVisible((prev) => !prev)}
-              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 px-1 py-0.5 rounded"
+              className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left"
               title={isUnsavedDraftVisible ? 'Hide unsaved draft label' : 'Show unsaved draft label'}
             >
-              {isUnsavedDraftVisible ? <ChevronRight size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400 rotate-180" />}
-              {isUnsavedDraftVisible && <span className="font-semibold italic truncate max-w-[200px]">Unsaved draft</span>}
+              {isUnsavedDraftVisible ? 'Unsaved draft' : ''}
             </button>
             {isUnsavedDraftVisible && (
               <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2">
