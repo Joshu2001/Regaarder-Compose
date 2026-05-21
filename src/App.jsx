@@ -4735,12 +4735,12 @@ Rules:
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
-          <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
+          <div className="max-w-[1240px] mx-auto px-6 md:px-8 flex justify-start pl-[280px]" style={{ transform: `translateX(${promptOffset.x}px)` }}>
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? 'rounded-xl' : 'rounded-2xl'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 700))}px`, maxWidth: '100%' }}
+            className={`relative bg-white border border-violet-100 shadow-[0_15px_45px_-12px_rgba(109,40,217,0.18)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? 'rounded-2xl' : 'rounded-3xl'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 760 : 640))}px`, maxWidth: '100%' }}
           >
             {isPromptExpanded && (
               <button
@@ -5191,10 +5191,10 @@ Rules:
           <button
             type="button"
             onClick={() => setIsPromptMinimized(false)}
-            className="absolute right-24 bottom-24 z-[340] h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
+            className="absolute left-[300px] bottom-24 z-[340] h-12 w-12 rounded-2xl bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all flex items-center justify-center hover:scale-105 active:scale-95"
             title="Open AI prompt"
           >
-            <PenTool size={18} className="mx-auto" />
+            <PenTool size={18} />
           </button>
         )}
 
@@ -5535,82 +5535,89 @@ Rules:
 
           {/* B. ACTIVE TAB: AI ASSISTANT CO-WRITER */}
           {activeRightTab === 'assistant' && (
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              {selectedEditorText && (
-                <div className="rounded-xl border border-violet-200 bg-violet-50/70 px-3 py-2">
-                  <div className="text-[11px] font-semibold text-violet-700 mb-0.5">Quick Assist Available</div>
-                  <div className="text-[11px] text-violet-700/80">Text is highlighted. Tap an action to run immediately.</div>
+            <div className="flex-1 flex flex-col min-h-0 relative">
+              <div className="flex-1 overflow-y-auto p-5 pb-32 space-y-6">
+                {selectedEditorText && (
+                  <div className="rounded-xl border border-violet-200 bg-violet-50/70 px-3 py-2">
+                    <div className="text-[11px] font-semibold text-violet-700 mb-0.5">Quick Assist Available</div>
+                    <div className="text-[11px] text-violet-700/80">Text is highlighted. Tap an action to run immediately.</div>
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
+                  <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
                 </div>
-              )}
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
-                <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
+
+                {/* Action Buttons Grid */}
+                <div className="space-y-2">
+                  <button 
+                    onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                  >
+                    <PenTool size={16} className="text-violet-500" />
+                    <div>
+                      <div className="font-semibold text-xs">Improve writing</div>
+                      <p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                  >
+                    <FileText size={16} className="text-indigo-500" />
+                    <div>
+                      <div className="font-semibold text-xs">Summarize document</div>
+                      <p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                  >
+                    <Scissors size={16} className="text-violet-400" />
+                    <div>
+                      <div className="font-semibold text-xs">Make shorter</div>
+                      <p className="text-[10px] text-gray-400">Prune unnecessary wording</p>
+                    </div>
+                  </button>
+
+                  <button 
+                    onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                  >
+                    <AlertTriangle size={16} className="text-amber-500" />
+                    <div>
+                      <div className="font-semibold text-xs">Check for gaps & risks</div>
+                      <p className="text-[10px] text-gray-400">Locate potential launch bottle necks</p>
+                    </div>
+                  </button>
+                </div>
               </div>
 
-              {/* Action Buttons Grid */}
-              <div className="space-y-2">
-                <button 
-                  onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+              {/* Floating AI Prompt Box for Assistant */}
+              <div className="absolute inset-x-0 bottom-6 px-4 pointer-events-none">
+                <form 
+                  onSubmit={handleAssistantQuickPromptSend} 
+                  className="bg-white rounded-2xl p-2.5 border border-violet-100 shadow-[0_15px_40px_-10px_rgba(109,40,217,0.25)] space-y-2 pointer-events-auto"
                 >
-                  <PenTool size={16} className="text-violet-500" />
-                  <div>
-                    <div className="font-semibold text-xs">Improve writing</div>
-                    <p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <FileText size={16} className="text-indigo-500" />
-                  <div>
-                    <div className="font-semibold text-xs">Summarize document</div>
-                    <p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <Scissors size={16} className="text-violet-400" />
-                  <div>
-                    <div className="font-semibold text-xs">Make shorter</div>
-                    <p className="text-[10px] text-gray-400">Prune unnecessary wording</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <AlertTriangle size={16} className="text-amber-500" />
-                  <div>
-                    <div className="font-semibold text-xs">Check for gaps & risks</div>
-                    <p className="text-[10px] text-gray-400">Locate potential launch bottle necks</p>
-                  </div>
-                </button>
-              </div>
-
-              <div>
-                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
-                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#FAFAFC] rounded-lg p-3 border border-gray-100 space-y-2">
                   <textarea
                     value={assistantQuickPrompt}
                     onChange={(e) => setAssistantQuickPrompt(e.target.value)}
                     placeholder="Ask AI Assistant from here..."
                     rows={2}
-                    className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
+                    className="w-full bg-violet-50/30 border-none rounded-xl px-3 py-2 text-xs text-gray-700 outline-none focus:ring-1 focus:ring-violet-200 resize-none min-h-[64px]"
                   />
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] text-gray-400 italic">Floating Co-Pilot</span>
                     <button
                       type="submit"
                       disabled={isComposing || !assistantQuickPrompt.trim()}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all active:scale-95 ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-100 text-violet-400 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-md shadow-violet-200'}`}
                     >
-                      Send to AI
+                      {isComposing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                      Run Assist
                     </button>
                   </div>
                 </form>
