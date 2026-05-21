@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
-  ChevronLeft, Cloud, Users, Home, Inbox, Star, 
+  ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
   FileText, Trash, Settings, MoreHorizontal,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
@@ -44,9 +44,10 @@ export default function App() {
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
-  const [isPromptVisible, setIsPromptVisible] = useState(false);
   const [promptWidth, setPromptWidth] = useState(620);
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
+  const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
+  const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -165,9 +166,9 @@ export default function App() {
   const mockDictationTimeoutRef = useRef(null);
   const mockIntervalRef = useRef(null);
   const interimTranscriptRef = useRef('');
-  const lastVoiceCommitRef = useRef({ key: '', at: 0 });
+  const lastDocumentTranscriptRef = useRef({ text: '', source: '', at: 0 });
+  const toastTimerRef = useRef(null);
   const promptRevealTimerRef = useRef(null);
-  const toastTimeoutRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState(defaultTitle);
@@ -198,6 +199,8 @@ export default function App() {
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('Auto detect');
   const [isUnsavedDraftVisible, setIsUnsavedDraftVisible] = useState(true);
+  const [isEditingUnsavedDraftName, setIsEditingUnsavedDraftName] = useState(false);
+  const [unsavedDraftNameInput, setUnsavedDraftNameInput] = useState('');
   const [activePrimaryNav, setActivePrimaryNav] = useState('drafts');
   const [documentStats, setDocumentStats] = useState({ words: 0, characters: 0 });
   const [zoomLevel, setZoomLevel] = useState(100);
@@ -311,6 +314,32 @@ export default function App() {
   useEffect(() => {
     isVoiceActiveRef.current = isVoiceActive;
   }, [isVoiceActive]);
+
+  useEffect(() => {
+    if (hasVoiceInteraction) {
+      setIsPromptAutoVisible(true);
+      if (promptRevealTimerRef.current) {
+        clearTimeout(promptRevealTimerRef.current);
+        promptRevealTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (promptRevealTimerRef.current) {
+      clearTimeout(promptRevealTimerRef.current);
+    }
+    promptRevealTimerRef.current = setTimeout(() => {
+      setIsPromptAutoVisible(true);
+      promptRevealTimerRef.current = null;
+    }, 7000);
+
+    return () => {
+      if (promptRevealTimerRef.current) {
+        clearTimeout(promptRevealTimerRef.current);
+        promptRevealTimerRef.current = null;
+      }
+    };
+  }, [hasVoiceInteraction]);
 
   useEffect(() => {
     if (!activeDocId && documents.length) {
@@ -946,51 +975,6 @@ export default function App() {
     element.style.unicodeBidi = 'plaintext';
   };
 
-  const clearPromptRevealTimer = () => {
-    if (promptRevealTimerRef.current) {
-      clearTimeout(promptRevealTimerRef.current);
-      promptRevealTimerRef.current = null;
-    }
-  };
-
-  const schedulePromptReveal = (delayMs = 5000) => {
-    clearPromptRevealTimer();
-    promptRevealTimerRef.current = setTimeout(() => {
-      if (!isVoiceActiveRef.current) {
-        setIsPromptVisible(true);
-      }
-      promptRevealTimerRef.current = null;
-    }, delayMs);
-  };
-
-  const commitVoiceTranscript = (text, forcedTarget = null) => {
-    const normalizedText = String(text || '').trim();
-    if (!normalizedText) {
-      return;
-    }
-
-    const target = forcedTarget || voiceTargetRef.current;
-    const dedupeKey = `${target}:${normalizedText.toLowerCase().replace(/\s+/g, ' ')}`;
-    const now = Date.now();
-    if (lastVoiceCommitRef.current.key === dedupeKey && now - lastVoiceCommitRef.current.at < 2500) {
-      return;
-    }
-    lastVoiceCommitRef.current = { key: dedupeKey, at: now };
-
-    if (target === 'schedule') {
-      setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
-      return;
-    }
-
-    if (target === 'document') {
-      insertTranscriptIntoDocumentRef.current?.(normalizedText, { forceAppendToEnd: true });
-      return;
-    }
-
-    setIsPromptVisible(true);
-    setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
-  };
-
   const clearPlaceholderOnFocus = (event, placeholder) => {
     const currentValue = event.currentTarget.textContent?.trim() || '';
     if (currentValue === placeholder) {
@@ -1121,23 +1105,6 @@ export default function App() {
   useEffect(() => {
     insertTranscriptIntoDocumentRef.current = insertTranscriptIntoDocument;
   }, [insertTranscriptIntoDocument]);
-
-  useEffect(() => {
-    schedulePromptReveal(5000);
-    return () => clearPromptRevealTimer();
-  }, []);
-
-  useEffect(() => {
-    if (isVoiceActive && voiceTarget === 'document') {
-      setIsPromptVisible(false);
-      clearPromptRevealTimer();
-      return;
-    }
-
-    if (!isVoiceActive) {
-      schedulePromptReveal(5000);
-    }
-  }, [isVoiceActive, voiceTarget]);
 
   const createAttachmentItems = (files, source = 'chat') => Array.from(files || []).map((file, index) => ({
     id: `${source}-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
@@ -1317,6 +1284,44 @@ export default function App() {
         mockIntervalRef.current = null;
       }
 
+      const routeTranscriptToTarget = (text, source = 'final') => {
+        const normalizedText = String(text || '').trim();
+        if (!normalizedText) {
+          return;
+        }
+
+        const activeVoiceTarget = voiceTargetRef.current;
+        if (activeVoiceTarget === 'schedule') {
+          setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+        } else if (activeVoiceTarget === 'document') {
+          const previous = lastDocumentTranscriptRef.current;
+          let textToInsert = normalizedText;
+          const shouldCompareWithInterim = previous.text
+            && previous.source === 'interim'
+            && source !== 'interim'
+            && Date.now() - previous.at < 3500;
+
+          if (shouldCompareWithInterim) {
+            const previousLower = previous.text.toLowerCase();
+            const normalizedLower = normalizedText.toLowerCase();
+            if (normalizedLower === previousLower) {
+              return;
+            }
+            if (normalizedLower.startsWith(previousLower)) {
+              textToInsert = normalizedText.slice(previous.text.length).trim();
+              if (!textToInsert) {
+                return;
+              }
+            }
+          }
+
+          insertTranscriptIntoDocumentRef.current?.(textToInsert, { forceAppendToEnd: true });
+          lastDocumentTranscriptRef.current = { text: normalizedText, source, at: Date.now() };
+        } else {
+          setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+        }
+      };
+
       let finalTranscript = '';
       let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
@@ -1329,7 +1334,7 @@ export default function App() {
       }
 
       if (finalTranscript.trim()) {
-        commitVoiceTranscript(finalTranscript.trim(), voiceTargetRef.current);
+        routeTranscriptToTarget(finalTranscript.trim(), 'final');
         interimTranscriptRef.current = '';
         pendingInterimTranscriptRef.current = '';
         if (interimCommitTimerRef.current) {
@@ -1351,7 +1356,7 @@ export default function App() {
           interimCommitTimerRef.current = setTimeout(() => {
             const buffered = pendingInterimTranscriptRef.current.trim();
             if (buffered) {
-              commitVoiceTranscript(buffered, activeVoiceTarget);
+              routeTranscriptToTarget(buffered, 'interim');
               pendingInterimTranscriptRef.current = '';
             }
             interimCommitTimerRef.current = null;
@@ -1371,7 +1376,7 @@ export default function App() {
       // Match attached behavior: do not hard-stop on recognizer errors.
       const recoverableErrors = ['not-allowed', 'service-not-allowed', 'audio-capture', 'aborted', 'network'];
       if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && recoverableErrors.includes(errorCode) && !mockIntervalRef.current) {
-        showToast('Sandbox mic blocked. Simulating live dictation...');
+        showToast('Microphone stream interrupted. Switching to fallback dictation.');
         const phrases = [
           'Draft a launch plan for the new beta. ',
           'I need to make sure we cover the marketing assets, technical rollout, and timeline milestones. ',
@@ -1403,7 +1408,7 @@ export default function App() {
             mockIntervalRef.current = null;
             setTimeout(() => {
               if (isVoiceActiveRef.current && chunk) {
-                commitVoiceTranscript(chunk, 'document');
+                insertTranscriptIntoDocumentRef.current?.(chunk, { forceAppendToEnd: true });
               }
               interimTranscriptRef.current = '';
               setLiveSpeechInterimText('');
@@ -1417,7 +1422,14 @@ export default function App() {
     recognition.onend = () => {
       const buffered = pendingInterimTranscriptRef.current.trim();
       if (buffered) {
-        commitVoiceTranscript(buffered, voiceTargetRef.current);
+        if (voiceTargetRef.current === 'schedule') {
+          setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${buffered}`);
+        } else if (voiceTargetRef.current === 'document') {
+          insertTranscriptIntoDocumentRef.current?.(buffered, { forceAppendToEnd: true });
+          lastDocumentTranscriptRef.current = { text: buffered, source: 'onend', at: Date.now() };
+        } else {
+          setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${buffered}`);
+        }
         pendingInterimTranscriptRef.current = '';
         if (voiceTargetRef.current !== 'document') {
           setLiveSpeechInterimText('');
@@ -1497,20 +1509,20 @@ export default function App() {
 
   // Toast notifier helper
   const showToast = (msg) => {
-    setToastMessage(msg);
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
     }
-    toastTimeoutRef.current = setTimeout(() => {
+    setToastMessage(msg);
+    toastTimerRef.current = setTimeout(() => {
       setToastMessage('');
-      toastTimeoutRef.current = null;
-    }, 3000);
+      toastTimerRef.current = null;
+    }, 2800);
   };
 
   useEffect(() => () => {
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-      toastTimeoutRef.current = null;
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+      toastTimerRef.current = null;
     }
   }, []);
 
@@ -2389,9 +2401,9 @@ Rules:
         if (permissionStatus.state === 'denied') {
           throw new Error('microphone-denied');
         }
-      } catch (error) {
-        if (String(error?.message || '').includes('microphone-denied')) {
-          throw error;
+      } catch (_error) {
+        if (String(_error?.message || '').includes('microphone-denied')) {
+          throw _error;
         }
         // Some browsers do not support querying microphone permissions.
       }
@@ -2412,12 +2424,10 @@ Rules:
     const nextTarget = targetMode || 'compose';
     setVoiceTarget(nextTarget);
     voiceTargetRef.current = nextTarget;
-    pendingInterimTranscriptRef.current = '';
-    interimTranscriptRef.current = '';
-
+    setHasVoiceInteraction(true);
     if (nextTarget === 'compose') {
-      setIsPromptVisible(true);
-      clearPromptRevealTimer();
+      setIsPromptExpanded(true);
+      setIsPromptAutoVisible(true);
     }
 
     if (isVoiceActive) {
@@ -2463,7 +2473,28 @@ Rules:
       }
 
       recognition.lang = resolveSpeechLocale(currentLanguage);
-      recognition.start();
+      try {
+        recognition.start();
+      } catch (startError) {
+        const startName = String(startError?.name || '').toLowerCase();
+        if (startName.includes('invalidstate')) {
+          try {
+            recognition.stop();
+          } catch (_stopError) {
+            // noop
+          }
+          setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (_retryError) {
+              setIsVoiceActive(false);
+              showToast('Microphone could not restart. Please tap once more.');
+            }
+          }, 120);
+        } else {
+          throw startError;
+        }
+      }
       showToast('Voice transcription started');
 
       if (mockDictationTimeoutRef.current) {
@@ -2473,7 +2504,7 @@ Rules:
       mockDictationTimeoutRef.current = setTimeout(() => {
         const noRealTranscript = !interimTranscriptRef.current.trim() && !pendingInterimTranscriptRef.current.trim();
         if (isVoiceActiveRef.current && voiceTargetRef.current === 'document' && noRealTranscript && !mockIntervalRef.current) {
-          showToast('Sandbox mic blocked. Simulating live dictation...');
+          showToast('No live mic input yet. Switching to fallback dictation.');
           const phrases = [
             'Draft a launch plan for the new beta. ',
             'I need to cover marketing assets, technical rollout, and timeline milestones. ',
@@ -2499,7 +2530,7 @@ Rules:
               mockIntervalRef.current = null;
               setTimeout(() => {
                 if (isVoiceActiveRef.current && chunk) {
-                  commitVoiceTranscript(chunk, 'document');
+                  insertTranscriptIntoDocumentRef.current?.(chunk, { forceAppendToEnd: true });
                 }
                 interimTranscriptRef.current = '';
                 setLiveSpeechInterimText('');
@@ -2509,16 +2540,17 @@ Rules:
           }, 40);
         }
       }, 2500);
-    } catch (error) {
+    } catch (_error) {
       setIsVoiceActive(false);
-      const errorMessage = String(error?.message || '').toLowerCase();
-      const errorName = String(error?.name || '').toLowerCase();
-      if (errorMessage.includes('microphone-denied') || errorName === 'notallowederror' || errorName === 'permissiondeniederror') {
-        showToast('Microphone access is blocked. Please allow microphone access in your browser settings and retry.');
-      } else if (errorName === 'invalidstateerror') {
-        showToast('Voice engine is already active. Please try again in a moment.');
+      const errorName = String(_error?.name || '').toLowerCase();
+      const errorMessage = String(_error?.message || '').toLowerCase();
+      const isPermissionIssue = errorName.includes('notallowed')
+        || errorName.includes('permission')
+        || errorMessage.includes('microphone-denied');
+      if (isPermissionIssue) {
+        showToast('Microphone access is blocked. Please allow access in browser settings.');
       } else {
-        showToast('Voice capture could not start right now. Please retry.');
+        showToast('Microphone could not start right now. Please tap mic again.');
       }
     }
   };
@@ -2724,6 +2756,30 @@ Rules:
     }
     setRenamingDocId(null);
     setRenameDocValue('');
+    showToast('Document renamed');
+  };
+
+  const beginUnsavedDraftRename = () => {
+    const activeDoc = documents.find((doc) => doc.id === activeDocId);
+    const currentName = (activeDoc?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft';
+    setUnsavedDraftNameInput(currentName);
+    setIsEditingUnsavedDraftName(true);
+  };
+
+  const commitUnsavedDraftRename = () => {
+    const nextTitle = unsavedDraftNameInput.trim();
+    if (!nextTitle) {
+      setIsEditingUnsavedDraftName(false);
+      setUnsavedDraftNameInput('');
+      return;
+    }
+
+    if (activeDocId) {
+      setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
+    }
+    setDocTitle(nextTitle);
+    setIsEditingUnsavedDraftName(false);
+    setUnsavedDraftNameInput('');
     showToast('Document renamed');
   };
 
@@ -3543,13 +3599,9 @@ Rules:
       
       {/* Dynamic Toast System */}
       {toastMessage && (
-        <div className="absolute top-4 right-6 z-[380] pointer-events-none">
-          <div className="min-w-[320px] max-w-[560px] rounded-2xl border border-violet-200/70 bg-white/95 text-slate-700 text-sm font-medium px-4 py-3 shadow-[0_22px_50px_-30px_rgba(76,29,149,0.6)] backdrop-blur-md animate-fade-in">
-            <div className="flex items-start gap-2.5 leading-5">
-              <span className="mt-1 inline-block h-2 w-2 rounded-full bg-violet-500"></span>
-              <span>{toastMessage}</span>
-            </div>
-          </div>
+        <div className="absolute top-16 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
+          <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+          <span>{toastMessage}</span>
         </div>
       )}
 
@@ -3930,16 +3982,47 @@ Rules:
             <button
               type="button"
               onClick={() => setIsUnsavedDraftVisible((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[140px] text-left"
-              title={isUnsavedDraftVisible ? 'Collapse Regaarder Compose status' : 'Expand Regaarder Compose status'}
+              className="inline-flex items-center gap-1 text-gray-400 hover:text-gray-600 px-1 py-0.5 rounded"
+              title={isUnsavedDraftVisible ? 'Collapse draft indicator' : 'Expand draft indicator'}
             >
-              {isUnsavedDraftVisible ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-              <span>Unsaved draft</span>
+              <ChevronRight size={14} className={`transition-transform duration-200 ${isUnsavedDraftVisible ? 'rotate-90' : 'rotate-0'}`} />
             </button>
             {isUnsavedDraftVisible && (
-              <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2">
-                <Cloud size={14} /> Saved Just now
-              </div>
+              <>
+                {isEditingUnsavedDraftName ? (
+                  <input
+                    autoFocus
+                    type="text"
+                    value={unsavedDraftNameInput}
+                    onChange={(e) => setUnsavedDraftNameInput(e.target.value)}
+                    onBlur={commitUnsavedDraftRename}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        commitUnsavedDraftRename();
+                      }
+                      if (e.key === 'Escape') {
+                        setIsEditingUnsavedDraftName(false);
+                        setUnsavedDraftNameInput('');
+                      }
+                    }}
+                    className="text-sm text-gray-500 font-medium italic bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
+                    placeholder="Rename draft"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={beginUnsavedDraftRename}
+                    className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left"
+                    title="Rename current draft"
+                  >
+                    {(documents.find((doc) => doc.id === activeDocId)?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft'}
+                  </button>
+                )}
+                <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2">
+                  <Cloud size={14} /> Saved Just now
+                </div>
+              </>
             )}
           </div>
 
@@ -4615,14 +4698,14 @@ Rules:
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ${isPromptVisible && !(isVoiceActive && voiceTarget === 'document') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
           <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'} ${isPromptVisible && !(isVoiceActive && voiceTarget === 'document') ? 'pointer-events-auto' : 'pointer-events-none'}`}
+            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
             style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 760))}px`, maxWidth: '100%' }}
           >
             <button
