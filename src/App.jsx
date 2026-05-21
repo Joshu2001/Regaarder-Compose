@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
-  ChevronLeft, Cloud, Users, Home, Inbox, Star, 
+  ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
   FileText, Trash, Settings, MoreHorizontal,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
@@ -189,7 +189,10 @@ export default function App() {
   const [renamingDocId, setRenamingDocId] = useState(null);
   const [renameDocValue, setRenameDocValue] = useState('');
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState('English (US)');
+  const [currentLanguage, setCurrentLanguage] = useState('Auto detect');
+  const [isUnsavedDraftVisible, setIsUnsavedDraftVisible] = useState(true);
+  const [activePrimaryNav, setActivePrimaryNav] = useState('drafts');
+  const [documentStats, setDocumentStats] = useState({ words: 0, characters: 0 });
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
@@ -668,6 +671,34 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    computeDocumentStats();
+    if (!documentCardRef.current || typeof MutationObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      computeDocumentStats();
+    });
+
+    observer.observe(documentCardRef.current, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => observer.disconnect();
+  }, [
+    computeDocumentStats,
+    activeDocId,
+    isBlankDocument,
+    docBodyHtml,
+    docTitle,
+    docSubtitle,
+    initiatives,
+    appendedSections,
+  ]);
+
+  useEffect(() => {
     if (!shareTargetDocId) {
       return;
     }
@@ -1138,7 +1169,7 @@ export default function App() {
     const recognition = new RecognitionCtor();
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = currentLanguage === 'Spanish' ? 'es-ES' : 'en-US';
+    recognition.lang = resolveSpeechLocale(currentLanguage);
 
     recognition.onresult = (event) => {
       if (isMicMutedRef.current) {
@@ -1475,6 +1506,49 @@ export default function App() {
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+  const detectBrowserLocale = () => {
+    if (typeof navigator === 'undefined') {
+      return 'en-US';
+    }
+    const preferred = Array.isArray(navigator.languages) && navigator.languages.length
+      ? navigator.languages[0]
+      : navigator.language;
+    return String(preferred || 'en-US');
+  };
+
+  const resolveSpeechLocale = (languageLabel = currentLanguage) => {
+    const map = {
+      'English (US)': 'en-US',
+      'English (UK)': 'en-GB',
+      Spanish: 'es-ES',
+      French: 'fr-FR',
+      German: 'de-DE',
+      Chinese: 'zh-CN',
+    };
+    if (languageLabel === 'Auto detect') {
+      return detectBrowserLocale();
+    }
+    return map[languageLabel] || detectBrowserLocale();
+  };
+
+  const getDisplayLanguageLabel = () => {
+    if (currentLanguage !== 'Auto detect') {
+      return currentLanguage;
+    }
+    const locale = resolveSpeechLocale('Auto detect');
+    return `Auto detect (${locale})`;
+  };
+
+  const computeDocumentStats = useCallback(() => {
+    const rawText = String(documentCardRef.current?.innerText || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const words = rawText ? rawText.split(' ').filter(Boolean).length : 0;
+    const characters = rawText.length;
+    setDocumentStats({ words, characters });
+  }, []);
 
   const toParagraphHtml = (value) => {
     const normalized = String(value || '').replace(/\r/g, '').trim();
@@ -2251,7 +2325,7 @@ Rules:
         return;
       }
 
-      recognition.lang = currentLanguage === 'Spanish' ? 'es-ES' : 'en-US';
+      recognition.lang = resolveSpeechLocale(currentLanguage);
       recognition.start();
       showToast('Voice transcription started');
     } catch (_error) {
@@ -3508,15 +3582,32 @@ Rules:
 
         {/* Main Nav Links */}
         <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
-          <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+          <button
+            onClick={() => setActivePrimaryNav('home')}
+            className={`w-full flex items-center gap-3 px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'home' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
             <Home size={16} /> Home
           </button>
-          <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm bg-violet-50 text-violet-700 rounded-md font-medium">
+          <button
+            onClick={() => setActivePrimaryNav('library')}
+            className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'library' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
             <div className="flex items-center gap-3">
-              <BookOpen size={16} className="text-violet-600" /> Library
+              <BookOpen size={16} className={activePrimaryNav === 'library' ? 'text-violet-600' : ''} /> Library
             </div>
           </button>
-          <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+          <button
+            onClick={() => setActivePrimaryNav('drafts')}
+            className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'drafts' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
+            <div className="flex items-center gap-3">
+              <FileText size={16} className={activePrimaryNav === 'drafts' ? 'text-violet-600' : ''} /> Drafts
+            </div>
+          </button>
+          <button
+            onClick={() => setActivePrimaryNav('inbox')}
+            className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'inbox' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+          >
             <div className="flex items-center gap-3">
               <Inbox size={16} /> Inbox
             </div>
@@ -3634,13 +3725,20 @@ Rules:
             >
               <ChevronLeft size={18} />
             </button>
-            <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
-              <FileText size={16} className="text-gray-400" />
-              {docTitle?.trim() ? docTitle : UNTITLED_COMPOSITION_LABEL}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-4">
-              <Cloud size={14} /> Saved Just now
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsUnsavedDraftVisible((prev) => !prev)}
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 px-1 py-0.5 rounded"
+              title={isUnsavedDraftVisible ? 'Hide unsaved draft label' : 'Show unsaved draft label'}
+            >
+              {isUnsavedDraftVisible ? <ChevronRight size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400 rotate-180" />}
+              {isUnsavedDraftVisible && <span className="font-semibold italic truncate max-w-[200px]">Unsaved draft</span>}
+            </button>
+            {isUnsavedDraftVisible && (
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2">
+                <Cloud size={14} /> Saved Just now
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
@@ -4752,7 +4850,7 @@ Rules:
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
-            <span title="Real-time word count">{docBodyHtml.split(/\s+/).filter(w => w.length > 0).length + (docTitle?.split(/\s+/).filter(w => w.length > 0).length || 0) + (docSubtitle?.split(/\s+/).filter(w => w.length > 0).length || 0)} words</span>
+            <span title="Real-time document stats">{documentStats.words} words • {documentStats.characters} characters</span>
             <div className="relative">
               <button
                 data-language-menu-root
@@ -4762,11 +4860,11 @@ Rules:
                 }}
                 className="flex items-center gap-1 cursor-pointer hover:text-gray-800 px-2 py-1 rounded hover:bg-gray-50"
               >
-                {currentLanguage} <ChevronDown size={12} />
+                {getDisplayLanguageLabel()} <ChevronDown size={12} />
               </button>
               {languageMenuOpen && (
                 <div className="absolute left-0 bottom-full mb-1 z-40 w-40 bg-white border border-gray-200 rounded-lg shadow-lg p-1" data-language-menu-root>
-                  {['English (US)', 'English (UK)', 'Spanish', 'French', 'German', 'Chinese'].map((lang) => (
+                  {['Auto detect', 'English (US)', 'English (UK)', 'Spanish', 'French', 'German', 'Chinese'].map((lang) => (
                     <button
                       key={lang}
                       onClick={() => {
