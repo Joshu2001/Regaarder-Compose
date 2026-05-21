@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
-  ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
+  ChevronLeft, Cloud, Users, Home, Inbox, Star, 
   FileText, Trash, Settings, MoreHorizontal,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
@@ -1208,12 +1208,6 @@ export default function App() {
   }, [floatingPrompt, isPromptExpanded]);
 
   useEffect(() => {
-    if (floatingPrompt.trim() && isPromptExpanded) {
-      setIsPromptCompact(true);
-    }
-  }, [floatingPrompt, isPromptExpanded]);
-
-  useEffect(() => {
     const trackPointerOrigin = (event) => {
       pointerDownInPromptRef.current = Boolean(promptRootRef.current && promptRootRef.current.contains(event.target));
     };
@@ -1221,6 +1215,14 @@ export default function App() {
     window.addEventListener('pointerdown', trackPointerOrigin, true);
     return () => window.removeEventListener('pointerdown', trackPointerOrigin, true);
   }, []);
+
+  useEffect(() => {
+    if (!selectedEditorText) {
+      return;
+    }
+    setRightSidebarOpen(true);
+    setActiveRightTab('assistant');
+  }, [selectedEditorText]);
 
   useEffect(() => {
     const handleSelectionChange = () => {
@@ -3610,7 +3612,6 @@ Rules:
     && lastComposeRun.documentId === activeDocId
     && getPlainText(docBodyHtml).length
   );
-  const shouldDockVoiceWidget = !isBlankDocument || getPlainText(docBodyHtml).length > 90;
   const pageNumberPositionClass = pageNumberPosition === 'left'
     ? 'left-12 text-left'
     : pageNumberPosition === 'right'
@@ -4001,14 +4002,6 @@ Rules:
               className="text-gray-400 hover:text-gray-600"
             >
               <ChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsUnsavedDraftVisible((prev) => !prev)}
-              className="inline-flex items-center gap-1 text-gray-400 hover:text-gray-600 px-1 py-0.5 rounded"
-              title={isUnsavedDraftVisible ? 'Collapse draft indicator' : 'Expand draft indicator'}
-            >
-              <ChevronRight size={14} className={`transition-transform duration-200 ${isUnsavedDraftVisible ? 'rotate-90' : 'rotate-0'}`} />
             </button>
             {isUnsavedDraftVisible && (
               <>
@@ -4663,8 +4656,8 @@ Rules:
               </div>
             )}
 
-            <div className={`pointer-events-none absolute inset-0 z-40 ${shouldDockVoiceWidget ? 'flex items-end justify-end p-6 pb-32' : 'flex items-center justify-center'}`}>
-              <div className={`pointer-events-auto flex flex-col items-center gap-3 ${shouldDockVoiceWidget ? '' : '-mt-10'}`}>
+            <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+              <div className="pointer-events-auto flex flex-col items-center gap-3 -mt-10">
                 <button
                   type="button"
                   onClick={async () => {
@@ -4734,7 +4727,7 @@ Rules:
             <button
               type="button"
               onPointerDown={(event) => beginPanelResize('prompt', event)}
-              className="p-2 text-gray-300 hover:text-gray-500 cursor-move touch-none"
+              className="p-2.5 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 cursor-move touch-none shrink-0"
               title="Move prompt bar"
             >
               <Move size={14} />
@@ -4907,19 +4900,9 @@ Rules:
                   <textarea
                     ref={floatingPromptRef}
                     value={floatingPrompt}
-                    onChange={(e) => {
-                      setFloatingPrompt(e.target.value);
-                      if (!isPromptCompact) {
-                        setIsPromptCompact(true);
-                      }
-                    }}
+                    onChange={(e) => setFloatingPrompt(e.target.value)}
                     onPaste={handleFloatingPaste}
                     onInput={(e) => autoResizeTextarea(e.currentTarget, 160)}
-                    onFocus={() => {
-                      if (!isPromptCompact) {
-                        setIsPromptCompact(true);
-                      }
-                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -4936,17 +4919,7 @@ Rules:
                 <input
                   type="text"
                   value={floatingPrompt}
-                  onChange={(e) => {
-                    setFloatingPrompt(e.target.value);
-                    if (!isPromptCompact) {
-                      setIsPromptCompact(true);
-                    }
-                  }}
-                  onFocus={() => {
-                    if (!isPromptCompact) {
-                      setIsPromptCompact(true);
-                    }
-                  }}
+                  onChange={(e) => setFloatingPrompt(e.target.value)}
                   placeholder="Ask Compose AI..."
                   style={{ textAlign: alignMode }}
                   className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
@@ -5507,14 +5480,14 @@ Rules:
                   <button
                     type="button"
                     onClick={() => chatFileInputRef.current?.click()}
-                    className="absolute left-1.5 p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                    className="absolute left-1.5 bottom-1.5 p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
                     title="Attach files"
                   >
                     <Upload size={14} />
                   </button>
                   <button 
                     type="submit" 
-                    className="absolute right-1.5 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
+                    className="absolute right-1.5 bottom-1.5 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
                   >
                     <Send size={14} />
                   </button>
@@ -5526,6 +5499,17 @@ Rules:
           {/* B. ACTIVE TAB: AI ASSISTANT CO-WRITER */}
           {activeRightTab === 'assistant' && (
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              {selectedEditorText && (
+                <div className="rounded-xl border border-violet-200 bg-violet-50/70 px-3 py-2">
+                  <div className="text-[11px] font-semibold text-violet-700 mb-1">Quick Assist Available</div>
+                  <div className="text-[11px] text-violet-700/80 mb-2">Text is highlighted. Tap an action to run immediately.</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')} className="px-2 py-1 rounded-full text-[10px] border border-violet-300 bg-white text-violet-700 hover:bg-violet-100">Improve</button>
+                    <button onClick={() => runSmartAssistAction('Summarize this content into key bullets')} className="px-2 py-1 rounded-full text-[10px] border border-violet-300 bg-white text-violet-700 hover:bg-violet-100">Summarize</button>
+                    <button onClick={() => runSmartAssistAction('Make this passage shorter and clearer while preserving meaning')} className="px-2 py-1 rounded-full text-[10px] border border-violet-300 bg-white text-violet-700 hover:bg-violet-100">Shorten</button>
+                  </div>
+                </div>
+              )}
               <div>
                 <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
                 <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
@@ -6254,8 +6238,9 @@ Rules:
             activeRightTab === 'assistant' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-xl transition-all relative ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100' : ''} ${selectedEditorText ? 'ring-2 ring-violet-300 ring-offset-2 ring-offset-[#FAFAFC]' : ''}`}>
             <PenTool size={20} />
+            {selectedEditorText && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse" />}
           </div>
           <span className="text-[9px] font-semibold">Assist</span>
         </div>
