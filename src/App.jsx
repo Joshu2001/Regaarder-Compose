@@ -231,6 +231,61 @@ export default function App() {
     { key: 'concise', label: 'Concise' },
   ];
 
+  const escapeHtml = (value) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const getPlainText = (value) => String(value || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const detectBrowserLocale = () => {
+    if (typeof navigator === 'undefined') {
+      return 'en-US';
+    }
+    const preferred = Array.isArray(navigator.languages) && navigator.languages.length
+      ? navigator.languages[0]
+      : navigator.language;
+    return String(preferred || 'en-US');
+  };
+
+  const resolveSpeechLocale = (languageLabel = currentLanguage) => {
+    const map = {
+      'English (US)': 'en-US',
+      'English (UK)': 'en-GB',
+      Spanish: 'es-ES',
+      French: 'fr-FR',
+      German: 'de-DE',
+      Chinese: 'zh-CN',
+    };
+    if (languageLabel === 'Auto detect') {
+      return detectBrowserLocale();
+    }
+    return map[languageLabel] || detectBrowserLocale();
+  };
+
+  const getDisplayLanguageLabel = () => {
+    if (currentLanguage !== 'Auto detect') {
+      return currentLanguage;
+    }
+    const locale = resolveSpeechLocale('Auto detect');
+    return `Auto detect (${locale})`;
+  };
+
+  const computeDocumentStats = useCallback(() => {
+    const rawText = String(documentCardRef.current?.innerText || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const words = rawText ? rawText.split(' ').filter(Boolean).length : 0;
+    const characters = rawText.length;
+    setDocumentStats({ words, characters });
+  }, []);
+
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
   const historyMuteRef = useRef(false);
@@ -1494,61 +1549,6 @@ export default function App() {
       return [nextEntry, ...withoutDuplicate].slice(0, 120);
     });
   };
-
-  const escapeHtml = (value) => String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-
-  const getPlainText = (value) => String(value || '')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  const detectBrowserLocale = () => {
-    if (typeof navigator === 'undefined') {
-      return 'en-US';
-    }
-    const preferred = Array.isArray(navigator.languages) && navigator.languages.length
-      ? navigator.languages[0]
-      : navigator.language;
-    return String(preferred || 'en-US');
-  };
-
-  const resolveSpeechLocale = (languageLabel = currentLanguage) => {
-    const map = {
-      'English (US)': 'en-US',
-      'English (UK)': 'en-GB',
-      Spanish: 'es-ES',
-      French: 'fr-FR',
-      German: 'de-DE',
-      Chinese: 'zh-CN',
-    };
-    if (languageLabel === 'Auto detect') {
-      return detectBrowserLocale();
-    }
-    return map[languageLabel] || detectBrowserLocale();
-  };
-
-  const getDisplayLanguageLabel = () => {
-    if (currentLanguage !== 'Auto detect') {
-      return currentLanguage;
-    }
-    const locale = resolveSpeechLocale('Auto detect');
-    return `Auto detect (${locale})`;
-  };
-
-  const computeDocumentStats = useCallback(() => {
-    const rawText = String(documentCardRef.current?.innerText || '')
-      .replace(/\u00a0/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const words = rawText ? rawText.split(' ').filter(Boolean).length : 0;
-    const characters = rawText.length;
-    setDocumentStats({ words, characters });
-  }, []);
 
   const toParagraphHtml = (value) => {
     const normalized = String(value || '').replace(/\r/g, '').trim();
