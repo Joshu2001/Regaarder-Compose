@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
-  ChevronLeft, Cloud, Users, Home, Inbox, Star, 
+  ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
   FileText, Trash, Settings, MoreHorizontal,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
@@ -102,6 +102,8 @@ export default function App() {
   const [promptHistoryFilterMenuOpen, setPromptHistoryFilterMenuOpen] = useState(false);
   const [editingPromptId, setEditingPromptId] = useState(null);
   const [editingPromptValue, setEditingPromptValue] = useState('');
+  const [assistantQuickPrompt, setAssistantQuickPrompt] = useState('');
+  const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
@@ -2275,6 +2277,16 @@ Rules:
     setChatInput('');
   };
 
+  const handleAssistantQuickPromptSend = (event) => {
+    event.preventDefault();
+    const prompt = assistantQuickPrompt.trim();
+    if (!prompt || isComposing) {
+      return;
+    }
+    handleAISubmit(prompt, { source: 'chat' });
+    setAssistantQuickPrompt('');
+  };
+
   const runSmartAssistAction = (instruction) => {
     const selectedScope = selectedEditorTextRef.current || selectedEditorText;
     const hasSelection = Boolean(selectedScope);
@@ -4005,7 +4017,7 @@ Rules:
               onClick={() => setLeftSidebarOpen((prev) => !prev)}
               className="text-gray-400 hover:text-gray-600"
             >
-              <ChevronLeft size={18} />
+              {leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
             </button>
             {isUnsavedDraftVisible && (
               <>
@@ -4720,16 +4732,26 @@ Rules:
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
           <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? 'rounded-xl' : 'rounded-2xl'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            className={`relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? 'rounded-xl' : 'rounded-2xl'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
             style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 700))}px`, maxWidth: '100%' }}
           >
+            {isPromptExpanded && (
+              <button
+                type="button"
+                onClick={() => setIsPromptMinimized(true)}
+                className="absolute right-2 top-2 p-1 rounded-md text-gray-400 hover:text-violet-700 hover:bg-violet-50"
+                title="Minimize AI prompt"
+              >
+                <X size={14} />
+              </button>
+            )}
             <button
               type="button"
               onPointerDown={(event) => beginPanelResize('prompt', event)}
@@ -5165,6 +5187,17 @@ Rules:
           </div>
         </div>
 
+        {isPromptMinimized && (
+          <button
+            type="button"
+            onClick={() => setIsPromptMinimized(false)}
+            className="absolute right-24 bottom-24 z-[340] h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
+            title="Open AI prompt"
+          >
+            <PenTool size={18} className="mx-auto" />
+          </button>
+        )}
+
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
@@ -5562,11 +5595,25 @@ Rules:
               </div>
 
               <div>
-                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Workspace Quicklinks</h4>
-                <div className="bg-[#FAFAFC] rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-all border border-gray-100">
-                  <div className="text-xs font-semibold text-gray-800">PRD - Compose v1.0</div>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Linked project scope files</p>
-                </div>
+                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
+                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#FAFAFC] rounded-lg p-3 border border-gray-100 space-y-2">
+                  <textarea
+                    value={assistantQuickPrompt}
+                    onChange={(e) => setAssistantQuickPrompt(e.target.value)}
+                    placeholder="Ask AI Assistant from here..."
+                    rows={2}
+                    className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
+                  />
+                  <div className="flex items-center justify-end">
+                    <button
+                      type="submit"
+                      disabled={isComposing || !assistantQuickPrompt.trim()}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
+                    >
+                      Send to AI
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
