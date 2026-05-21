@@ -44,7 +44,6 @@ export default function App() {
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
-  const [isPromptCompact, setIsPromptCompact] = useState(false);
   const [promptWidth, setPromptWidth] = useState(620);
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
@@ -1709,11 +1708,16 @@ export default function App() {
       return '<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;"></p>';
     }
 
+    const applyInlineFormatting = (text) => String(text || '')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.+?)__/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
     return normalized
       .split(/\n{2,}/)
       .map((block) => block.trim())
       .filter(Boolean)
-      .map((block) => `<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;">${escapeHtml(block).replace(/\n/g, '<br/>')}</p>`)
+      .map((block) => `<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;">${applyInlineFormatting(escapeHtml(block).replace(/\n/g, '<br/>'))}</p>`)
       .join('');
   };
 
@@ -2132,7 +2136,7 @@ Rules:
       if (modelResponse?.parsed) {
         usedLiveModel = true;
         const result = modelResponse.parsed;
-        aiResponseText = result.aiResponseText?.trim() || 'Completed your request with live AI.';
+        aiResponseText = result.aiResponseText?.trim() || (result.docAction?.textParagraph ? String(result.docAction.textParagraph).trim() : 'Composed with live AI.');
 
         if (result.hasAction && result.docAction) {
           const rawType = String(result.docAction.type || '').toLowerCase();
@@ -3528,9 +3532,9 @@ Rules:
       }
 
       if (dragTarget === 'prompt') {
-        const nextX = Math.min(260, Math.max(-260, dragStateRef.current.promptX + deltaX));
+        const nextX = Math.min(620, Math.max(-620, dragStateRef.current.promptX + deltaX));
         const deltaY = event.clientY - dragStateRef.current.startY;
-        const nextY = Math.min(40, Math.max(-180, dragStateRef.current.promptY - deltaY));
+        const nextY = Math.min(320, Math.max(-540, dragStateRef.current.promptY - deltaY));
         setPromptOffset({ x: nextX, y: nextY });
       }
     };
@@ -4656,8 +4660,9 @@ Rules:
               </div>
             )}
 
-            <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-              <div className="pointer-events-auto flex flex-col items-center gap-3 -mt-10">
+            {!isComposing && (
+              <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+                <div className="pointer-events-auto flex flex-col items-center gap-3 -mt-10">
                 <button
                   type="button"
                   onClick={async () => {
@@ -4705,8 +4710,9 @@ Rules:
                     Dismiss
                   </button>
                 )}
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
           </div>
@@ -4721,8 +4727,8 @@ Rules:
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? (isPromptCompact ? 'rounded-[22px]' : 'rounded-2xl') : 'rounded-full'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? (isPromptCompact ? 520 : 860) : 760))}px`, maxWidth: '100%' }}
+            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? 'rounded-xl' : 'rounded-2xl'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 700))}px`, maxWidth: '100%' }}
           >
             <button
               type="button"
@@ -4936,20 +4942,7 @@ Rules:
               />
               <button
                 type="button"
-                onClick={() => {
-                  setIsPromptExpanded((prev) => {
-                    const next = !prev;
-                    if (next) {
-                      setIsPromptCompact(false);
-                      setTimeout(() => {
-                        setIsPromptCompact(true);
-                      }, 180);
-                    } else {
-                      setIsPromptCompact(false);
-                    }
-                    return next;
-                  });
-                }}
+                onClick={() => setIsPromptExpanded((prev) => !prev)}
                 className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                 title="Expand prompt input"
               >
