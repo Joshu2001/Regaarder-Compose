@@ -1208,6 +1208,12 @@ export default function App() {
   }, [floatingPrompt, isPromptExpanded]);
 
   useEffect(() => {
+    if (floatingPrompt.trim() && isPromptExpanded) {
+      setIsPromptCompact(true);
+    }
+  }, [floatingPrompt, isPromptExpanded]);
+
+  useEffect(() => {
     const trackPointerOrigin = (event) => {
       pointerDownInPromptRef.current = Boolean(promptRootRef.current && promptRootRef.current.contains(event.target));
     };
@@ -1326,6 +1332,14 @@ export default function App() {
           lastDocumentTranscriptRef.current = { text: normalizedText, source, at: Date.now() };
         } else {
           setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+          requestAnimationFrame(() => {
+            const promptEl = floatingPromptRef.current;
+            if (promptEl && typeof promptEl.setSelectionRange === 'function') {
+              const end = promptEl.value.length;
+              promptEl.focus();
+              promptEl.setSelectionRange(end, end);
+            }
+          });
         }
       };
 
@@ -4893,9 +4907,19 @@ Rules:
                   <textarea
                     ref={floatingPromptRef}
                     value={floatingPrompt}
-                    onChange={(e) => setFloatingPrompt(e.target.value)}
+                    onChange={(e) => {
+                      setFloatingPrompt(e.target.value);
+                      if (!isPromptCompact) {
+                        setIsPromptCompact(true);
+                      }
+                    }}
                     onPaste={handleFloatingPaste}
                     onInput={(e) => autoResizeTextarea(e.currentTarget, 160)}
+                    onFocus={() => {
+                      if (!isPromptCompact) {
+                        setIsPromptCompact(true);
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -4912,7 +4936,17 @@ Rules:
                 <input
                   type="text"
                   value={floatingPrompt}
-                  onChange={(e) => setFloatingPrompt(e.target.value)}
+                  onChange={(e) => {
+                    setFloatingPrompt(e.target.value);
+                    if (!isPromptCompact) {
+                      setIsPromptCompact(true);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (!isPromptCompact) {
+                      setIsPromptCompact(true);
+                    }
+                  }}
                   placeholder="Ask Compose AI..."
                   style={{ textAlign: alignMode }}
                   className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
