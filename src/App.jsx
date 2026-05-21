@@ -996,6 +996,7 @@ export default function App() {
     const activeEditable = active?.isContentEditable && documentCardRef.current?.contains(active)
       ? active
       : null;
+    const activeOutsideDocument = Boolean(active && documentCardRef.current && !documentCardRef.current.contains(active));
 
     let target = activeEditable;
     if (!target) {
@@ -1012,7 +1013,9 @@ export default function App() {
       return;
     }
 
-    target.focus();
+    if (!activeOutsideDocument) {
+      target.focus();
+    }
     if ((target.textContent || '').trim() === AI_NATIVE_PLACEHOLDER) {
       target.textContent = '';
     }
@@ -1308,50 +1311,53 @@ export default function App() {
     };
 
     recognition.onerror = (event) => {
-      // Keep active to allow fallback simulation in sandbox/blocked environments.
-      if (event?.error === 'not-allowed' || event?.error === 'service-not-allowed') {
-        if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && !mockIntervalRef.current) {
-          showToast('Sandbox microphone blocked. Simulating live dictation...');
-          const phrases = [
-            'Draft a launch plan for the new beta. ',
-            'Cover marketing assets, technical rollout, and timeline milestones. ',
-            'Schedule a team sync for next week. ',
-          ];
-          const fullText = phrases.join('');
-          let currentIndex = 0;
-          mockIntervalRef.current = setInterval(() => {
-            if (!isVoiceActiveRef.current || isMicMutedRef.current) {
-              clearInterval(mockIntervalRef.current);
-              mockIntervalRef.current = null;
-              return;
-            }
-            currentIndex += Math.floor(Math.random() * 3) + 2;
-            if (currentIndex > fullText.length) {
-              currentIndex = fullText.length;
-            }
-            const chunk = fullText.substring(0, currentIndex).trim();
-            interimTranscriptRef.current = chunk;
-            setLiveSpeechInterimText(chunk);
-            if (currentIndex === fullText.length) {
-              clearInterval(mockIntervalRef.current);
-              mockIntervalRef.current = null;
-              if (chunk) {
+      const errorCode = String(event?.error || 'unknown');
+      console.warn('Speech recognition error:', errorCode);
+
+      // Match attached behavior: do not hard-stop on recognizer errors.
+      const recoverableErrors = ['not-allowed', 'service-not-allowed', 'audio-capture', 'aborted', 'network'];
+      if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && recoverableErrors.includes(errorCode) && !mockIntervalRef.current) {
+        showToast('Sandbox mic blocked. Simulating live dictation...');
+        const phrases = [
+          'Draft a launch plan for the new beta. ',
+          'I need to make sure we cover the marketing assets, technical rollout, and timeline milestones. ',
+          'Let us schedule a team sync for next week. ',
+        ];
+        const fullText = phrases.join('');
+        let currentIndex = 0;
+        try {
+          recognition.stop();
+        } catch (_error) {
+          // noop
+        }
+        mockIntervalRef.current = setInterval(() => {
+          if (!isVoiceActiveRef.current || isMicMutedRef.current) {
+            clearInterval(mockIntervalRef.current);
+            mockIntervalRef.current = null;
+            return;
+          }
+          currentIndex += Math.floor(Math.random() * 3) + 2;
+          if (currentIndex > fullText.length) {
+            currentIndex = fullText.length;
+          }
+          const chunk = fullText.substring(0, currentIndex).trim();
+          interimTranscriptRef.current = chunk;
+          setLiveSpeechInterimText(chunk);
+
+          if (currentIndex === fullText.length) {
+            clearInterval(mockIntervalRef.current);
+            mockIntervalRef.current = null;
+            setTimeout(() => {
+              if (isVoiceActiveRef.current && chunk) {
                 insertTranscriptIntoDocumentRef.current?.(chunk);
               }
               interimTranscriptRef.current = '';
               setLiveSpeechInterimText('');
-            }
-          }, 40);
-        } else {
-          showToast('Microphone permission is blocked. Allow microphone access in browser settings.');
-        }
-        return;
+              setIsVoiceActive(false);
+            }, 1000);
+          }
+        }, 40);
       }
-      if (event?.error === 'no-speech') {
-        showToast('No speech detected. Try speaking closer to the microphone.');
-        return;
-      }
-      showToast('Microphone could not capture speech.');
     };
 
     recognition.onend = () => {
@@ -1370,7 +1376,7 @@ export default function App() {
         }
       }
 
-      if (isVoiceActiveRef.current && !isMicMutedRef.current) {
+      if (isVoiceActiveRef.current && !isMicMutedRef.current && !mockIntervalRef.current) {
         try {
           recognition.start();
         } catch (_error) {
@@ -2395,8 +2401,7 @@ Rules:
       // Match attached behavior: fallback simulate if sandbox blocks real mic input.
       mockDictationTimeoutRef.current = setTimeout(() => {
         const noRealTranscript = !interimTranscriptRef.current.trim() && !pendingInterimTranscriptRef.current.trim();
-        const likelyBlankDoc = !docTitle.trim() && !docSubtitle.trim() && !getPlainText(docBodyHtml).trim();
-        if (isVoiceActiveRef.current && voiceTargetRef.current === 'document' && noRealTranscript && likelyBlankDoc && !mockIntervalRef.current) {
+        if (isVoiceActiveRef.current && voiceTargetRef.current === 'document' && noRealTranscript && !mockIntervalRef.current) {
           showToast('Sandbox mic blocked. Simulating live dictation...');
           const phrases = [
             'Draft a launch plan for the new beta. ',
@@ -2421,11 +2426,14 @@ Rules:
             if (currentIndex === fullText.length) {
               clearInterval(mockIntervalRef.current);
               mockIntervalRef.current = null;
-              if (chunk) {
-                insertTranscriptIntoDocumentRef.current?.(chunk);
-              }
-              interimTranscriptRef.current = '';
-              setLiveSpeechInterimText('');
+              setTimeout(() => {
+                if (isVoiceActiveRef.current && chunk) {
+                  insertTranscriptIntoDocumentRef.current?.(chunk);
+                }
+                interimTranscriptRef.current = '';
+                setLiveSpeechInterimText('');
+                setIsVoiceActive(false);
+              }, 1000);
             }
           }, 40);
         }
