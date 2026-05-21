@@ -4739,7 +4739,67 @@ Rules:
               <Move size={14} />
             </button>
             <div className="flex items-center gap-3 px-2 flex-1 min-w-0">
-              <Sparkles size={18} className="text-violet-500 shrink-0 self-start mt-2" />
+              <div className="relative shrink-0 self-start mt-1" ref={promptMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeTransientMenus();
+                    setIsPromptMenuOpen((prev) => !prev);
+                  }}
+                  className={`p-2 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                  title="Add files, images, audio, or open prompt library"
+                >
+                  <Plus size={16} />
+                </button>
+                {isPromptMenuOpen && (
+                  <div className="absolute left-0 bottom-full mb-1 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1 w-[210px] z-[9999]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        promptAudioInputRef.current?.click();
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <Upload size={14} />
+                      <span>Audio</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        promptFileInputRef.current?.click();
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <File size={14} />
+                      <span>Files</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        promptFileInputRef.current?.click();
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <FileText size={14} />
+                      <span>Images</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPromptLibraryOpen(true);
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <BookOpen size={14} />
+                      <span>Prompt library</span>
+                    </button>
+                  </div>
+                )}
+              </div>
               {isPromptExpanded ? (
                 <div className="flex-1 min-w-0 space-y-2 py-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -4908,7 +4968,7 @@ Rules:
                     value={floatingPrompt}
                     onChange={(e) => setFloatingPrompt(e.target.value)}
                     onPaste={handleFloatingPaste}
-                    onInput={(e) => autoResizeTextarea(e.currentTarget, 160)}
+                    onInput={(e) => autoResizeTextarea(e.currentTarget, 360)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -4918,17 +4978,18 @@ Rules:
                     placeholder="Describe what you need. Compose will build it into your document."
                     rows={1}
                     style={{ textAlign: alignMode }}
-                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-1 resize-none"
+                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-1 resize-y min-h-[42px] max-h-[360px]"
                   />
                 </div>
               ) : (
-                <input
-                  type="text"
+                <textarea
                   value={floatingPrompt}
                   onChange={(e) => setFloatingPrompt(e.target.value)}
+                  onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
                   placeholder="Ask Compose AI..."
+                  rows={1}
                   style={{ textAlign: alignMode }}
-                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
+                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2 resize-y min-h-[38px] max-h-[120px]"
                 />
               )}
             </div>
@@ -4948,56 +5009,6 @@ Rules:
               >
                 <Expand size={16} />
               </button>
-              <div className="relative" ref={promptMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeTransientMenus();
-                    setIsPromptMenuOpen((prev) => !prev);
-                  }}
-                  className={`p-2 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                  title="Add files, images, or audio"
-                >
-                  <Plus size={16} />
-                </button>
-                {isPromptMenuOpen && (
-                  <div className="absolute right-0 bottom-full mb-1 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1 w-[170px] z-[9999]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        promptAudioInputRef.current?.click();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <Upload size={14} />
-                      <span>Audio</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        promptFileInputRef.current?.click();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <File size={14} />
-                      <span>Files</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        promptFileInputRef.current?.click();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <FileText size={14} />
-                      <span>Images</span>
-                    </button>
-                  </div>
-                )}
-              </div>
               <button
                 type="button"
                 onClick={async () => {
@@ -5014,7 +5025,7 @@ Rules:
                   </>
                 )}
               </button>
-              <div className="relative" ref={promptLibraryRef}>
+              <div className="relative hidden" ref={promptLibraryRef}>
                 <button
                   type="button"
                   onClick={() => {
@@ -5494,13 +5505,8 @@ Rules:
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
               {selectedEditorText && (
                 <div className="rounded-xl border border-violet-200 bg-violet-50/70 px-3 py-2">
-                  <div className="text-[11px] font-semibold text-violet-700 mb-1">Quick Assist Available</div>
-                  <div className="text-[11px] text-violet-700/80 mb-2">Text is highlighted. Tap an action to run immediately.</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    <button onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')} className="px-2 py-1 rounded-full text-[10px] border border-violet-300 bg-white text-violet-700 hover:bg-violet-100">Improve</button>
-                    <button onClick={() => runSmartAssistAction('Summarize this content into key bullets')} className="px-2 py-1 rounded-full text-[10px] border border-violet-300 bg-white text-violet-700 hover:bg-violet-100">Summarize</button>
-                    <button onClick={() => runSmartAssistAction('Make this passage shorter and clearer while preserving meaning')} className="px-2 py-1 rounded-full text-[10px] border border-violet-300 bg-white text-violet-700 hover:bg-violet-100">Shorten</button>
-                  </div>
+                  <div className="text-[11px] font-semibold text-violet-700 mb-0.5">Quick Assist Available</div>
+                  <div className="text-[11px] text-violet-700/80">Text is highlighted. Tap an action to run immediately.</div>
                 </div>
               )}
               <div>
@@ -5512,7 +5518,7 @@ Rules:
               <div className="space-y-2">
                 <button 
                   onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
-                  className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
                 >
                   <PenTool size={16} className="text-violet-500" />
                   <div>
@@ -5523,7 +5529,7 @@ Rules:
 
                 <button 
                   onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
-                  className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
                 >
                   <FileText size={16} className="text-indigo-500" />
                   <div>
@@ -5534,7 +5540,7 @@ Rules:
 
                 <button 
                   onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
-                  className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
                 >
                   <Scissors size={16} className="text-violet-400" />
                   <div>
@@ -5545,7 +5551,7 @@ Rules:
 
                 <button 
                   onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
-                  className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
                 >
                   <AlertTriangle size={16} className="text-amber-500" />
                   <div>

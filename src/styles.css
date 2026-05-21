@@ -2,3 +2,17 @@
 * { box-sizing: border-box; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+@keyframes assistSnake {
+	0% { background-position: 0% 50%; }
+	100% { background-position: 200% 50%; }
+}
+
+.assist-option-snake {
+	border-color: transparent !important;
+	background:
+		linear-gradient(#ffffff, #ffffff) padding-box,
+		linear-gradient(90deg, #8b5cf6, #c4b5fd, #8b5cf6) border-box;
+	background-size: 100% 100%, 200% 100%;
+	animation: assistSnake 2.2s linear infinite;
+}
