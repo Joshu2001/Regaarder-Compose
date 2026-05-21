@@ -44,6 +44,7 @@ export default function App() {
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
+  const [isPromptVisible, setIsPromptVisible] = useState(false);
   const [promptWidth, setPromptWidth] = useState(620);
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   
@@ -164,6 +165,9 @@ export default function App() {
   const mockDictationTimeoutRef = useRef(null);
   const mockIntervalRef = useRef(null);
   const interimTranscriptRef = useRef('');
+  const lastVoiceCommitRef = useRef({ key: '', at: 0 });
+  const promptRevealTimerRef = useRef(null);
+  const toastTimeoutRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState(defaultTitle);
@@ -942,6 +946,51 @@ export default function App() {
     element.style.unicodeBidi = 'plaintext';
   };
 
+  const clearPromptRevealTimer = () => {
+    if (promptRevealTimerRef.current) {
+      clearTimeout(promptRevealTimerRef.current);
+      promptRevealTimerRef.current = null;
+    }
+  };
+
+  const schedulePromptReveal = (delayMs = 5000) => {
+    clearPromptRevealTimer();
+    promptRevealTimerRef.current = setTimeout(() => {
+      if (!isVoiceActiveRef.current) {
+        setIsPromptVisible(true);
+      }
+      promptRevealTimerRef.current = null;
+    }, delayMs);
+  };
+
+  const commitVoiceTranscript = (text, forcedTarget = null) => {
+    const normalizedText = String(text || '').trim();
+    if (!normalizedText) {
+      return;
+    }
+
+    const target = forcedTarget || voiceTargetRef.current;
+    const dedupeKey = `${target}:${normalizedText.toLowerCase().replace(/\s+/g, ' ')}`;
+    const now = Date.now();
+    if (lastVoiceCommitRef.current.key === dedupeKey && now - lastVoiceCommitRef.current.at < 2500) {
+      return;
+    }
+    lastVoiceCommitRef.current = { key: dedupeKey, at: now };
+
+    if (target === 'schedule') {
+      setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+      return;
+    }
+
+    if (target === 'document') {
+      insertTranscriptIntoDocumentRef.current?.(normalizedText, { forceAppendToEnd: true });
+      return;
+    }
+
+    setIsPromptVisible(true);
+    setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+  };
+
   const clearPlaceholderOnFocus = (event, placeholder) => {
     const currentValue = event.currentTarget.textContent?.trim() || '';
     if (currentValue === placeholder) {
@@ -1072,6 +1121,23 @@ export default function App() {
   useEffect(() => {
     insertTranscriptIntoDocumentRef.current = insertTranscriptIntoDocument;
   }, [insertTranscriptIntoDocument]);
+
+  useEffect(() => {
+    schedulePromptReveal(5000);
+    return () => clearPromptRevealTimer();
+  }, []);
+
+  useEffect(() => {
+    if (isVoiceActive && voiceTarget === 'document') {
+      setIsPromptVisible(false);
+      clearPromptRevealTimer();
+      return;
+    }
+
+    if (!isVoiceActive) {
+      schedulePromptReveal(5000);
+    }
+  }, [isVoiceActive, voiceTarget]);
 
   const createAttachmentItems = (files, source = 'chat') => Array.from(files || []).map((file, index) => ({
     id: `${source}-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`,
@@ -1251,22 +1317,6 @@ export default function App() {
         mockIntervalRef.current = null;
       }
 
-      const routeTranscriptToTarget = (text) => {
-        const normalizedText = String(text || '').trim();
-        if (!normalizedText) {
-          return;
-        }
-
-        const activeVoiceTarget = voiceTargetRef.current;
-        if (activeVoiceTarget === 'schedule') {
-          setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
-        } else if (activeVoiceTarget === 'document') {
-          insertTranscriptIntoDocumentRef.current?.(normalizedText, { forceAppendToEnd: true });
-        } else {
-          setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
-        }
-      };
-
       let finalTranscript = '';
       let interimTranscript = '';
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
@@ -1279,8 +1329,7 @@ export default function App() {
       }
 
       if (finalTranscript.trim()) {
-        const activeVoiceTarget = voiceTargetRef.current;
-        routeTranscriptToTarget(finalTranscript.trim());
+        commitVoiceTranscript(finalTranscript.trim(), voiceTargetRef.current);
         interimTranscriptRef.current = '';
         pendingInterimTranscriptRef.current = '';
         if (interimCommitTimerRef.current) {
@@ -1302,7 +1351,7 @@ export default function App() {
           interimCommitTimerRef.current = setTimeout(() => {
             const buffered = pendingInterimTranscriptRef.current.trim();
             if (buffered) {
-              routeTranscriptToTarget(buffered);
+              commitVoiceTranscript(buffered, activeVoiceTarget);
               pendingInterimTranscriptRef.current = '';
             }
             interimCommitTimerRef.current = null;
@@ -1354,7 +1403,7 @@ export default function App() {
             mockIntervalRef.current = null;
             setTimeout(() => {
               if (isVoiceActiveRef.current && chunk) {
-                insertTranscriptIntoDocumentRef.current?.(chunk, { forceAppendToEnd: true });
+                commitVoiceTranscript(chunk, 'document');
               }
               interimTranscriptRef.current = '';
               setLiveSpeechInterimText('');
@@ -1368,13 +1417,7 @@ export default function App() {
     recognition.onend = () => {
       const buffered = pendingInterimTranscriptRef.current.trim();
       if (buffered) {
-        if (voiceTargetRef.current === 'schedule') {
-          setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${buffered}`);
-        } else if (voiceTargetRef.current === 'document') {
-          insertTranscriptIntoDocumentRef.current?.(buffered, { forceAppendToEnd: true });
-        } else {
-          setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${buffered}`);
-        }
+        commitVoiceTranscript(buffered, voiceTargetRef.current);
         pendingInterimTranscriptRef.current = '';
         if (voiceTargetRef.current !== 'document') {
           setLiveSpeechInterimText('');
@@ -1455,8 +1498,21 @@ export default function App() {
   // Toast notifier helper
   const showToast = (msg) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3000);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMessage('');
+      toastTimeoutRef.current = null;
+    }, 3000);
   };
+
+  useEffect(() => () => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = null;
+    }
+  }, []);
 
   const truncateText = (value, max = 120) => {
     const raw = String(value || '').trim();
@@ -2333,7 +2389,10 @@ Rules:
         if (permissionStatus.state === 'denied') {
           throw new Error('microphone-denied');
         }
-      } catch (_error) {
+      } catch (error) {
+        if (String(error?.message || '').includes('microphone-denied')) {
+          throw error;
+        }
         // Some browsers do not support querying microphone permissions.
       }
     }
@@ -2353,6 +2412,13 @@ Rules:
     const nextTarget = targetMode || 'compose';
     setVoiceTarget(nextTarget);
     voiceTargetRef.current = nextTarget;
+    pendingInterimTranscriptRef.current = '';
+    interimTranscriptRef.current = '';
+
+    if (nextTarget === 'compose') {
+      setIsPromptVisible(true);
+      clearPromptRevealTimer();
+    }
 
     if (isVoiceActive) {
       // If a different voice surface is requested, restart with the new target.
@@ -2433,7 +2499,7 @@ Rules:
               mockIntervalRef.current = null;
               setTimeout(() => {
                 if (isVoiceActiveRef.current && chunk) {
-                  insertTranscriptIntoDocumentRef.current?.(chunk, { forceAppendToEnd: true });
+                  commitVoiceTranscript(chunk, 'document');
                 }
                 interimTranscriptRef.current = '';
                 setLiveSpeechInterimText('');
@@ -2443,9 +2509,17 @@ Rules:
           }, 40);
         }
       }, 2500);
-    } catch (_error) {
+    } catch (error) {
       setIsVoiceActive(false);
-      showToast('Microphone permission is required. Please allow microphone access and retry.');
+      const errorMessage = String(error?.message || '').toLowerCase();
+      const errorName = String(error?.name || '').toLowerCase();
+      if (errorMessage.includes('microphone-denied') || errorName === 'notallowederror' || errorName === 'permissiondeniederror') {
+        showToast('Microphone access is blocked. Please allow microphone access in your browser settings and retry.');
+      } else if (errorName === 'invalidstateerror') {
+        showToast('Voice engine is already active. Please try again in a moment.');
+      } else {
+        showToast('Voice capture could not start right now. Please retry.');
+      }
     }
   };
 
@@ -3469,9 +3543,13 @@ Rules:
       
       {/* Dynamic Toast System */}
       {toastMessage && (
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs font-medium px-4 py-2.5 rounded-lg shadow-xl z-50 flex items-center gap-2 animate-fade-in transition-all">
-          <Sparkles size={14} className="text-violet-400" />
-          {toastMessage}
+        <div className="absolute top-4 right-6 z-[380] pointer-events-none">
+          <div className="min-w-[320px] max-w-[560px] rounded-2xl border border-violet-200/70 bg-white/95 text-slate-700 text-sm font-medium px-4 py-3 shadow-[0_22px_50px_-30px_rgba(76,29,149,0.6)] backdrop-blur-md animate-fade-in">
+            <div className="flex items-start gap-2.5 leading-5">
+              <span className="mt-1 inline-block h-2 w-2 rounded-full bg-violet-500"></span>
+              <span>{toastMessage}</span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -3852,10 +3930,11 @@ Rules:
             <button
               type="button"
               onClick={() => setIsUnsavedDraftVisible((prev) => !prev)}
-              className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left"
-              title={isUnsavedDraftVisible ? 'Hide unsaved draft label' : 'Show unsaved draft label'}
+              className="inline-flex items-center gap-1.5 text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[140px] text-left"
+              title={isUnsavedDraftVisible ? 'Collapse Regaarder Compose status' : 'Expand Regaarder Compose status'}
             >
-              {isUnsavedDraftVisible ? 'Unsaved draft' : ''}
+              {isUnsavedDraftVisible ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+              <span>Unsaved draft</span>
             </button>
             {isUnsavedDraftVisible && (
               <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2">
@@ -4536,14 +4615,14 @@ Rules:
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-300 ${isVoiceActive && voiceTarget === 'document' ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ${isPromptVisible && !(isVoiceActive && voiceTarget === 'document') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
           <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'} ${isPromptVisible && !(isVoiceActive && voiceTarget === 'document') ? 'pointer-events-auto' : 'pointer-events-none'}`}
             style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 760))}px`, maxWidth: '100%' }}
           >
             <button
