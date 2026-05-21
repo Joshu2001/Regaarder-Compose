@@ -968,11 +968,12 @@ export default function App() {
     }
   };
 
-  const insertTranscriptIntoDocument = (spokenText) => {
+  const insertTranscriptIntoDocument = (spokenText, options = {}) => {
     const normalized = String(spokenText || '').trim();
     if (!normalized) {
       return;
     }
+    const forceAppendToEnd = Boolean(options.forceAppendToEnd);
 
     const getFallbackDocumentTarget = () => {
       if (blankBodyRef.current) {
@@ -1021,15 +1022,19 @@ export default function App() {
     }
 
     const selection = window.getSelection();
-    let shouldResetToEnd = true;
+    let shouldResetToEnd = forceAppendToEnd;
     if (selection && selection.rangeCount) {
-      const currentRange = selection.getRangeAt(0);
-      const anchorNode = selection.anchorNode;
-      const anchorElement = anchorNode?.nodeType === Node.TEXT_NODE ? anchorNode.parentNode : anchorNode;
-      shouldResetToEnd = !anchorElement || !target.contains(anchorElement);
-      if (!shouldResetToEnd && !isRangeInsideEditor(currentRange)) {
-        shouldResetToEnd = true;
+      if (!forceAppendToEnd) {
+        const currentRange = selection.getRangeAt(0);
+        const anchorNode = selection.anchorNode;
+        const anchorElement = anchorNode?.nodeType === Node.TEXT_NODE ? anchorNode.parentNode : anchorNode;
+        shouldResetToEnd = !anchorElement || !target.contains(anchorElement);
+        if (!shouldResetToEnd && !isRangeInsideEditor(currentRange)) {
+          shouldResetToEnd = true;
+        }
       }
+    } else if (!forceAppendToEnd) {
+      shouldResetToEnd = true;
     }
 
     if (selection && shouldResetToEnd) {
@@ -1256,7 +1261,7 @@ export default function App() {
         if (activeVoiceTarget === 'schedule') {
           setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
         } else if (activeVoiceTarget === 'document') {
-          insertTranscriptIntoDocumentRef.current?.(normalizedText);
+          insertTranscriptIntoDocumentRef.current?.(normalizedText, { forceAppendToEnd: true });
         } else {
           setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
         }
@@ -1349,7 +1354,7 @@ export default function App() {
             mockIntervalRef.current = null;
             setTimeout(() => {
               if (isVoiceActiveRef.current && chunk) {
-                insertTranscriptIntoDocumentRef.current?.(chunk);
+                insertTranscriptIntoDocumentRef.current?.(chunk, { forceAppendToEnd: true });
               }
               interimTranscriptRef.current = '';
               setLiveSpeechInterimText('');
@@ -1366,7 +1371,7 @@ export default function App() {
         if (voiceTargetRef.current === 'schedule') {
           setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${buffered}`);
         } else if (voiceTargetRef.current === 'document') {
-          insertTranscriptIntoDocumentRef.current?.(buffered);
+          insertTranscriptIntoDocumentRef.current?.(buffered, { forceAppendToEnd: true });
         } else {
           setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${buffered}`);
         }
@@ -2428,7 +2433,7 @@ Rules:
               mockIntervalRef.current = null;
               setTimeout(() => {
                 if (isVoiceActiveRef.current && chunk) {
-                  insertTranscriptIntoDocumentRef.current?.(chunk);
+                  insertTranscriptIntoDocumentRef.current?.(chunk, { forceAppendToEnd: true });
                 }
                 interimTranscriptRef.current = '';
                 setLiveSpeechInterimText('');
@@ -4531,14 +4536,14 @@ Rules:
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-14 z-[320]"
+          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-300 ${isVoiceActive && voiceTarget === 'document' ? 'opacity-0 translate-y-4' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
           <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`pointer-events-auto bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'}`}
+            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
             style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 760))}px`, maxWidth: '100%' }}
           >
             <button
