@@ -40,7 +40,7 @@ export default function App() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
-  const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
@@ -198,7 +198,7 @@ export default function App() {
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
-  const [editorSize, setEditorSize] = useState(32);
+  const [editorSize, setEditorSize] = useState(36);
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
   const [isUnderlineActive, setIsUnderlineActive] = useState(false);
@@ -2240,7 +2240,7 @@ Rules:
     }
 
     event.preventDefault();
-    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'memory'];
+    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'memory'];
     const currentIndex = tabOrder.indexOf(activeRightTab);
     const safeIndex = currentIndex >= 0 ? currentIndex : 0;
     const nextIndex = event.key === 'ArrowRight'
@@ -5699,7 +5699,7 @@ Rules:
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none">
+      <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto no-scrollbar">
         
         <div 
           onClick={() => handleMiniSidebarClick('chat')}
@@ -5759,6 +5759,18 @@ Rules:
             <Database size={20} />
           </div>
           <span className="text-[9px] font-semibold">Memory</span>
+        </div>
+
+        <div
+          onClick={() => handleMiniSidebarClick('room')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <MonitorPlay size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">Room</span>
         </div>
 
         <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">

@@ -51,6 +51,29 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
   );
 };
 
+const RoomStageFeed = ({ stream, placeholder }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream || null;
+    }
+  }, [stream]);
+
+  if (!stream) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 text-slate-200">
+        <div className="text-center">
+          <div className="text-sm font-semibold">{placeholder}</div>
+          <div className="text-xs text-slate-300 mt-1">Waiting for media input</div>
+        </div>
+      </div>
+    );
+  }
+
+  return <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />;
+};
+
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
   const defaultSubtitle = 'A strategic plan to successfully launch Regaarder Compose and drive adoption, engagement, and growth.';
@@ -116,6 +139,12 @@ export default function App() {
   const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
+  const [screenShareStream, setScreenShareStream] = useState(null);
+  const [roomPanelMode, setRoomPanelMode] = useState('expanded');
+  const [meetingStartedAt, setMeetingStartedAt] = useState(null);
+  const [meetingDurationLabel, setMeetingDurationLabel] = useState('00:00');
+  const [meetingSummary, setMeetingSummary] = useState(null);
+  const [collaboratorInvite, setCollaboratorInvite] = useState('');
   const [mediaError, setMediaError] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -200,6 +229,7 @@ export default function App() {
   const textStyleMenuCloseTimerRef = useRef(null);
   const modelCandidatesCacheRef = useRef(null);
   const modelCandidatesCacheKeyRef = useRef('');
+  const didAutoJoinRoomRef = useRef(false);
   const dragStateRef = useRef({
     startX: 0,
     startY: 0,
@@ -263,7 +293,7 @@ export default function App() {
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
-  const [editorSize, setEditorSize] = useState(32);
+  const [editorSize, setEditorSize] = useState(36);
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
   const [isUnderlineActive, setIsUnderlineActive] = useState(false);
@@ -2693,6 +2723,44 @@ Rules:
     }
   };
 
+  const formatMeetingElapsed = useCallback((startedAt) => {
+    if (!startedAt) {
+      return '00:00';
+    }
+    const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+    const mins = Math.floor(seconds / 60);
+    const remaining = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
+  }, []);
+
+  const normalizeRoomCode = useCallback((value) => {
+    const input = String(value || '').trim();
+    if (!input) {
+      return '';
+    }
+    if (/^https?:\/\//i.test(input)) {
+      try {
+        const parsed = new URL(input);
+        const roomFromQuery = parsed.searchParams.get('room');
+        if (roomFromQuery) {
+          return roomFromQuery.trim().toLowerCase();
+        }
+        const cleanPath = parsed.pathname.split('/').filter(Boolean);
+        if (cleanPath.length > 0) {
+          return cleanPath[cleanPath.length - 1].trim().toLowerCase();
+        }
+      } catch (_error) {
+        return input.toLowerCase();
+      }
+    }
+    return input.replace(/\s+/g, '-').toLowerCase();
+  }, []);
+
+  const getMeetingLink = useCallback((code) => {
+    const normalized = normalizeRoomCode(code || roomId || generateRoomCode());
+    return `${window.location.origin}${window.location.pathname}?room=${normalized}`;
+  }, [normalizeRoomCode, roomId]);
+
   const requestMediaPermissions = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -2703,12 +2771,14 @@ Rules:
       setMediaError(false);
       setIsRoomCameraOn(true);
       setIsRoomMicOn(true);
+      return true;
     } catch (err) {
       console.warn('Media access denied or unavailable', err);
       setMediaError(true);
       setIsRoomCameraOn(false);
       setIsRoomMicOn(false);
       showToast('Camera/Mic access denied. Please check browser permissions.');
+      return false;
     }
   };
 
@@ -2717,6 +2787,11 @@ Rules:
       localStream.getTracks().forEach((track) => track.stop());
       setLocalStream(null);
     }
+    if (screenShareStream) {
+      screenShareStream.getTracks().forEach((track) => track.stop());
+      setScreenShareStream(null);
+    }
+    setIsScreenSharing(false);
   };
 
   const generateRoomCode = () => {
@@ -2726,36 +2801,87 @@ Rules:
   };
 
   const joinRoom = async (code) => {
-    setRoomId(code);
+    const normalizedCode = normalizeRoomCode(code) || generateRoomCode();
+    setRoomId(normalizedCode);
     setRoomState('active');
     setMainView('room');
-    showToast(`Joined room: ${code}`);
+    setRoomPanelMode('expanded');
+    setMeetingSummary(null);
+    setMeetingStartedAt(Date.now());
+    setMeetingDurationLabel('00:00');
+    showToast(`Joined meeting: ${normalizedCode}`);
     await requestMediaPermissions();
   };
 
   const leaveRoom = () => {
+    const completedDuration = formatMeetingElapsed(meetingStartedAt);
+    setMeetingSummary({
+      roomCode: roomId,
+      durationLabel: completedDuration,
+      participantsCount: 4,
+      decisions: [
+        'Beta launch officially locked for May 15th.',
+        'Marketing budget increased by 15% for initial push.',
+      ],
+      actionItems: [
+        'Sarah to upload final assets by Friday.',
+        'Alex to update Compose AI prompts.',
+      ],
+    });
+    setMeetingDurationLabel(completedDuration);
     setRoomState('summary');
     setMainView('document');
+    setRoomPanelMode('docked');
     stopMediaStream();
-    showToast('Left the room. AI generating summary...');
+    showToast('Left the meeting. AI generating summary...');
   };
 
-  const handleCopyLink = () => {
-    const link = `regaarder.app/room/${roomId || 'q2-launch'}`;
-    const textArea = document.createElement('textarea');
-    textArea.value = link;
-    document.body.appendChild(textArea);
-    textArea.select();
+  const handleCopyLink = async () => {
+    const link = getMeetingLink(roomId || generateRoomCode());
     try {
-      document.execCommand('copy');
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = link;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
       showToast(`Meeting link copied: ${link}`);
     } catch (_err) {
-      showToast(`Link copied: ${link}`);
+      showToast('Could not copy link automatically. Please copy from the invite bar.');
     }
-    document.body.removeChild(textArea);
   };
 
-  const toggleRoomCamera = () => {
+  const handleShareMeeting = async () => {
+    const link = getMeetingLink(roomId || generateRoomCode());
+    const title = 'Join my Regaarder meeting';
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text: 'Join the call with this link', url: link });
+        showToast('Meeting invitation shared');
+        return;
+      } catch (_error) {
+        // Fall through to clipboard behavior.
+      }
+    }
+    await handleCopyLink();
+  };
+
+  const inviteCollaborator = async () => {
+    const invite = collaboratorInvite.trim();
+    if (!invite) {
+      showToast('Enter an email or collaborator name first.');
+      return;
+    }
+    await handleShareMeeting();
+    setCollaboratorInvite('');
+    showToast(`Invitation prepared for ${invite}`);
+  };
+
+  const toggleRoomCamera = async () => {
     if (localStream && !mediaError) {
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
@@ -2763,12 +2889,15 @@ Rules:
         videoTrack.enabled = nextEnabled;
         setIsRoomCameraOn(nextEnabled);
       }
-    } else if (!localStream && !isRoomCameraOn) {
-      requestMediaPermissions();
+    } else {
+      const granted = await requestMediaPermissions();
+      if (!granted) {
+        return;
+      }
     }
   };
 
-  const toggleRoomMic = () => {
+  const toggleRoomMic = async () => {
     if (localStream && !mediaError) {
       const audioTrack = localStream.getAudioTracks()[0];
       if (audioTrack) {
@@ -2776,17 +2905,53 @@ Rules:
         audioTrack.enabled = nextEnabled;
         setIsRoomMicOn(nextEnabled);
       }
+    } else {
+      const granted = await requestMediaPermissions();
+      if (!granted) {
+        return;
+      }
     }
   };
 
-  const toggleScreenShare = () => {
-    setIsScreenSharing((prev) => !prev);
-    if (!isScreenSharing) {
-      showToast('Screen sharing started');
-    } else {
+  const toggleScreenShare = async () => {
+    if (isScreenSharing && screenShareStream) {
+      screenShareStream.getTracks().forEach((track) => track.stop());
+      setScreenShareStream(null);
+      setIsScreenSharing(false);
       showToast('Screen sharing stopped');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+      const [track] = stream.getVideoTracks();
+      if (track) {
+        track.onended = () => {
+          setIsScreenSharing(false);
+          setScreenShareStream(null);
+          showToast('Screen sharing stopped');
+        };
+      }
+      setScreenShareStream(stream);
+      setIsScreenSharing(true);
+      showToast('Screen sharing started');
+    } catch (_err) {
+      showToast('Screen share permission denied or unavailable.');
     }
   };
+
+  useEffect(() => {
+    if (roomState !== 'active' || !meetingStartedAt) {
+      return undefined;
+    }
+    const interval = setInterval(() => {
+      setMeetingDurationLabel(formatMeetingElapsed(meetingStartedAt));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [roomState, meetingStartedAt, formatMeetingElapsed]);
 
   const handleRightSidebarTabsKeyDown = (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
@@ -2804,6 +2969,19 @@ Rules:
     setActiveRightTab(tabOrder[nextIndex]);
     setRightSidebarOpen(true);
   };
+
+  useEffect(() => {
+    if (didAutoJoinRoomRef.current) {
+      return;
+    }
+    const meetingCode = new URLSearchParams(window.location.search).get('room');
+    if (!meetingCode) {
+      return;
+    }
+    didAutoJoinRoomRef.current = true;
+    setActiveRightTab('room');
+    joinRoom(meetingCode);
+  }, []);
 
   const switchDocument = (docId) => {
     const targetDoc = documents.find((doc) => doc.id === docId);
@@ -6325,7 +6503,7 @@ Rules:
                   </div>
                   <div>
                     <h3 className="text-[18px] font-bold text-gray-900 tracking-tight">Regaarder Room</h3>
-                    <p className="text-xs text-gray-500 mt-2 leading-relaxed">Join a collaborative intelligence workspace to sync with your team and AI.</p>
+                    <p className="text-xs text-gray-500 mt-2 leading-relaxed">Start, share, and rejoin a live collaborative call. Keep writing while your meeting stays active.</p>
                   </div>
 
                   <div className="w-full space-y-3 pt-4">
@@ -6333,7 +6511,14 @@ Rules:
                       onClick={() => joinRoom(generateRoomCode())}
                       className="w-full bg-violet-600 text-white rounded-xl py-3 text-sm font-bold hover:bg-violet-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm"
                     >
-                      <Plus size={16} /> Start New Room
+                      <Plus size={16} /> Create Meeting
+                    </button>
+
+                    <button
+                      onClick={handleShareMeeting}
+                      className="w-full bg-white border border-violet-200 text-violet-700 rounded-xl py-2.5 text-sm font-semibold hover:bg-violet-50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <UserPlus size={15} /> Share Meeting Link
                     </button>
 
                     <div className="relative group">
@@ -6357,6 +6542,7 @@ Rules:
                         <ArrowRight size={16} />
                       </button>
                     </div>
+                    <div className="text-[10px] text-gray-400 text-left">Meeting links accept direct codes or full URLs, like Meet-style joins.</div>
                   </div>
 
                   <div className="w-full pt-6 border-t border-gray-200/60 mt-6 text-left">
@@ -6380,6 +6566,27 @@ Rules:
               {roomState === 'active' && (
                 <div className="flex-1 flex flex-col h-full animate-fade-in relative">
 
+                  {mediaError && (
+                    <div className="mx-4 mt-4 mb-1 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center justify-between gap-3">
+                      <span>Camera and microphone are blocked. Allow permissions to fully join.</span>
+                      <button onClick={requestMediaPermissions} className="shrink-0 px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold">Allow</button>
+                    </div>
+                  )}
+
+                  <div className="mx-4 mt-4 rounded-xl border border-gray-200 bg-white px-3 py-2 flex items-center gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Live</span>
+                    <span className="text-xs text-gray-600 font-mono">{meetingDurationLabel}</span>
+                    <div className="w-px h-4 bg-gray-200"></div>
+                    <input
+                      value={collaboratorInvite}
+                      onChange={(e) => setCollaboratorInvite(e.target.value)}
+                      placeholder="Invite collaborator"
+                      className="flex-1 min-w-0 text-xs text-gray-700 border-none focus:outline-none"
+                    />
+                    <button onClick={inviteCollaborator} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Invite</button>
+                    <button onClick={handleCopyLink} className="px-2 py-1 text-[11px] rounded border border-gray-200 text-gray-700 hover:bg-gray-50">Copy Link</button>
+                  </div>
+
                   {mainView === 'document' && (
                     <div className="flex flex-col border-b border-gray-100 bg-white">
                       <div className="p-3 pb-2 flex justify-between items-center">
@@ -6387,7 +6594,7 @@ Rules:
                           <div className="text-xs font-bold text-gray-900 truncate">Q2 Launch Strategy</div>
                           <div className="text-[10px] text-gray-400 font-mono mt-0.5">{roomId}</div>
                         </div>
-                        <button onClick={() => setMainView('room')} className="p-1.5 bg-violet-50 text-violet-600 rounded hover:bg-violet-100 transition-colors" title="Expand to Main View">
+                        <button onClick={() => { setMainView('room'); setRoomPanelMode('expanded'); }} className="p-1.5 bg-violet-50 text-violet-600 rounded hover:bg-violet-100 transition-colors" title="Expand to Main View">
                           <Maximize2 size={14} />
                         </button>
                       </div>
@@ -6455,6 +6662,9 @@ Rules:
                       <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${isRoomCameraOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
                         {isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
                       </button>
+                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100'}`}>
+                        <MonitorPlay size={16} />
+                      </button>
                       <div className="w-px h-5 bg-gray-200 mx-1"></div>
                       <button onClick={leaveRoom} className="px-2.5 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-sm flex items-center gap-1.5 font-medium text-[11px] border border-red-600 active:scale-95">
                         <PhoneOff size={14} /> Leave
@@ -6472,7 +6682,7 @@ Rules:
                       <PhoneOff size={20} />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 tracking-tight">Room Ended</h3>
-                    <p className="text-xs text-gray-500 mt-1">Q2 Launch Strategy ??45m duration</p>
+                    <p className="text-xs text-gray-500 mt-1">{meetingSummary?.roomCode || 'q2-launch'} • {meetingSummary?.durationLabel || meetingDurationLabel} duration</p>
                   </div>
 
                   <div className="space-y-4">
@@ -6484,16 +6694,18 @@ Rules:
                       <div>
                         <h4 className="text-xs font-bold text-gray-800 mb-1">Key Decisions</h4>
                         <ul className="text-xs text-gray-600 space-y-1.5 pl-4 list-disc marker:text-emerald-500">
-                          <li>Beta launch officially locked for May 15th.</li>
-                          <li>Marketing budget increased by 15% for initial push.</li>
+                          {(meetingSummary?.decisions || ['Beta launch officially locked for May 15th.', 'Marketing budget increased by 15% for initial push.']).map((decision) => (
+                            <li key={decision}>{decision}</li>
+                          ))}
                         </ul>
                       </div>
                       <div className="h-px w-full bg-gray-200/60"></div>
                       <div>
                         <h4 className="text-xs font-bold text-gray-800 mb-1">Action Items</h4>
                         <ul className="text-xs text-gray-600 space-y-1.5 pl-4 list-disc marker:text-violet-400">
-                          <li>Sarah to upload final assets by Friday.</li>
-                          <li>Alex to update Compose AI prompts.</li>
+                          {(meetingSummary?.actionItems || ['Sarah to upload final assets by Friday.', 'Alex to update Compose AI prompts.']).map((actionItem) => (
+                            <li key={actionItem}>{actionItem}</li>
+                          ))}
                         </ul>
                       </div>
                     </div>
@@ -6759,6 +6971,75 @@ Rules:
           <span className="text-[9px] font-semibold">More</span>
         </div>
       </div>
+
+      {roomState === 'active' && roomPanelMode === 'expanded' && mainView === 'room' && (
+        <div className="fixed bottom-5 right-24 w-[min(76vw,980px)] h-[min(74vh,560px)] rounded-3xl overflow-hidden border border-white/40 shadow-[0_24px_70px_rgba(15,23,42,0.35)] bg-slate-900 z-[320]">
+          <div className="h-12 px-4 bg-black/45 backdrop-blur-md flex items-center justify-between text-white">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-sm font-semibold truncate">Meeting: {roomId || 'live-room'}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">LIVE {meetingDurationLabel}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={handleShareMeeting} className="px-2.5 py-1.5 rounded-lg text-xs bg-white/15 hover:bg-white/25 transition">Share</button>
+              <button onClick={() => { setRoomPanelMode('docked'); setMainView('document'); }} className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition" title="Minimize meeting"><Minimize2 size={15} /></button>
+            </div>
+          </div>
+
+          <div className="h-[calc(100%-3rem)] flex">
+            <div className="flex-1 relative bg-black">
+              <RoomStageFeed stream={isScreenSharing ? screenShareStream : localStream} placeholder={isScreenSharing ? 'Screen share preview' : 'Camera preview'} />
+              <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/45 text-white text-xs">
+                {isScreenSharing ? 'Presenting Screen' : 'You are on camera'}
+              </div>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20">
+                <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition ${isRoomMicOn ? 'bg-white text-slate-800' : 'bg-red-500 text-white'}`} title="Microphone">
+                  {isRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}
+                </button>
+                <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition ${isRoomCameraOn ? 'bg-white text-slate-800' : 'bg-red-500 text-white'}`} title="Camera">
+                  {isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                </button>
+                <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-slate-800'}`} title="Share screen">
+                  <MonitorPlay size={16} />
+                </button>
+                <button onClick={leaveRoom} className="px-3 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold" title="Leave meeting">
+                  Leave
+                </button>
+              </div>
+            </div>
+
+            <div className="w-52 bg-slate-950/90 border-l border-white/10 p-3 space-y-3">
+              <div className="text-[11px] uppercase tracking-wider text-slate-300 font-semibold">Participants</div>
+              <div className="space-y-2">
+                <div className="rounded-xl overflow-hidden border border-emerald-300/30 bg-slate-800">
+                  <div className="h-24 bg-slate-900">
+                    <RoomStageFeed stream={localStream} placeholder="You" />
+                  </div>
+                  <div className="px-2 py-1 text-[11px] text-slate-100 flex items-center justify-between"><span>You</span>{!isRoomMicOn && <MicOff size={12} className="text-red-400" />}</div>
+                </div>
+                {[
+                  { name: 'Sarah', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=320&q=80' },
+                  { name: 'Mike', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80' },
+                  { name: 'Ana', img: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=320&q=80' },
+                ].map((participant) => (
+                  <div key={participant.name} className="rounded-xl overflow-hidden border border-white/10 bg-slate-800">
+                    <img src={participant.img} alt={participant.name} className="w-full h-20 object-cover" />
+                    <div className="px-2 py-1 text-[11px] text-slate-100">{participant.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {roomState === 'active' && (roomPanelMode === 'docked' || mainView === 'document') && (
+        <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="text-xs font-semibold text-gray-700">Meeting live • {meetingDurationLabel}</span>
+          <button onClick={() => { setMainView('room'); setRoomPanelMode('expanded'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Return</button>
+          <button onClick={leaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50">Leave</button>
+        </div>
+      )}
 
     </div>
   );
