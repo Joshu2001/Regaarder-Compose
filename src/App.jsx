@@ -11,12 +11,44 @@ import {
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
+  UserPlus, Link2 as LinkIcon, Clock, Maximize2, Minimize2, Sidebar,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 
 const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
+
+// Sub-component to cleanly handle the local video stream without cluttering the main render
+const LocalVideoFeed = ({ stream, isCameraOn }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  if (!isCameraOn || !stream) {
+    return (
+      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+        <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-xl font-bold">
+          You
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <video
+      ref={videoRef}
+      autoPlay
+      muted
+      playsInline
+      className="w-full h-full object-cover transform scale-x-[-1]"
+    />
+  );
+};
 
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
@@ -31,7 +63,6 @@ export default function App() {
     { id: 1, name: 'Regaarder', letter: 'R', colorClass: 'bg-indigo-500', hasDocuments: false },
     { id: 2, name: 'Product', letter: 'P', colorClass: 'bg-orange-500', hasDocuments: true },
     { id: 3, name: 'Marketing', letter: 'M', colorClass: 'bg-emerald-500', hasDocuments: false },
-                { key: 'room', label: 'Room' },
     { id: 4, name: 'Finance', letter: 'F', colorClass: 'bg-blue-500', hasDocuments: false },
     { id: 5, name: 'Personal', letter: 'P', colorClass: 'bg-fuchsia-500', hasDocuments: false },
   ];
@@ -76,8 +107,15 @@ export default function App() {
   const [isComposing, setIsComposing] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [mainView, setMainView] = useState('document');
+  const [roomState, setRoomState] = useState('lobby');
+  const [roomId, setRoomId] = useState('');
+  const [joinCode, setJoinCode] = useState('');
   const [isRoomMicOn, setIsRoomMicOn] = useState(true);
   const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [localStream, setLocalStream] = useState(null);
+  const [mediaError, setMediaError] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [workspaces, setWorkspaces] = useState(defaultWorkspaces);
@@ -2651,6 +2689,101 @@ Rules:
     } else {
       setRightSidebarOpen(true);
       setActiveRightTab(tabKey);
+    }
+  };
+
+  const requestMediaPermissions = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      setLocalStream(stream);
+      setMediaError(false);
+      setIsRoomCameraOn(true);
+      setIsRoomMicOn(true);
+    } catch (err) {
+      console.warn('Media access denied or unavailable', err);
+      setMediaError(true);
+      setIsRoomCameraOn(false);
+      setIsRoomMicOn(false);
+      showToast('Camera/Mic access denied. Please check browser permissions.');
+    }
+  };
+
+  const stopMediaStream = () => {
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+      setLocalStream(null);
+    }
+  };
+
+  const generateRoomCode = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const getStr = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    return `${getStr(3)}-${getStr(4)}-${getStr(3)}`;
+  };
+
+  const joinRoom = async (code) => {
+    setRoomId(code);
+    setRoomState('active');
+    setMainView('room');
+    showToast(`Joined room: ${code}`);
+    await requestMediaPermissions();
+  };
+
+  const leaveRoom = () => {
+    setRoomState('summary');
+    setMainView('document');
+    stopMediaStream();
+    showToast('Left the room. AI generating summary...');
+  };
+
+  const handleCopyLink = () => {
+    const link = `regaarder.app/room/${roomId || 'q2-launch'}`;
+    const textArea = document.createElement('textarea');
+    textArea.value = link;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      showToast(`Meeting link copied: ${link}`);
+    } catch (_err) {
+      showToast(`Link copied: ${link}`);
+    }
+    document.body.removeChild(textArea);
+  };
+
+  const toggleRoomCamera = () => {
+    if (localStream && !mediaError) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        const nextEnabled = !videoTrack.enabled;
+        videoTrack.enabled = nextEnabled;
+        setIsRoomCameraOn(nextEnabled);
+      }
+    } else if (!localStream && !isRoomCameraOn) {
+      requestMediaPermissions();
+    }
+  };
+
+  const toggleRoomMic = () => {
+    if (localStream && !mediaError) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        const nextEnabled = !audioTrack.enabled;
+        audioTrack.enabled = nextEnabled;
+        setIsRoomMicOn(nextEnabled);
+      }
+    }
+  };
+
+  const toggleScreenShare = () => {
+    setIsScreenSharing((prev) => !prev);
+    if (!isScreenSharing) {
+      showToast('Screen sharing started');
+    } else {
+      showToast('Screen sharing stopped');
     }
   };
 
@@ -6179,93 +6312,203 @@ Rules:
             </div>
           )}
 
-          {/* E. ACTIVE TAB: REGAARDER ROOM */}
+          {/* REGAARDER ROOM TAB */}
           {activeRightTab === 'room' && (
             <div className="flex-1 flex flex-col min-h-0 bg-[#FAFAFC] animate-fade-in min-w-[340px] relative">
-              <div className="p-4 bg-white border-b border-gray-100 shrink-0">
-                <div className="flex justify-between items-start mb-1">
-                  <h3 className="text-sm font-bold text-gray-900 tracking-tight">Q2 Launch Strategy</h3>
-                  <span className="flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-500">Today • 10:00–11:30 AM • 4 participants</p>
-              </div>
 
-              <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 overflow-x-auto no-scrollbar shrink-0 shadow-sm relative z-0">
-                <div className="relative w-12 h-16 rounded-[10px] overflow-hidden ring-2 ring-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.25)] flex-shrink-0 transition-transform hover:scale-105">
-                  <img src="[https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80](https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80)" alt="Alex" className="object-cover w-full h-full" />
-                  <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md text-white text-[9px] px-1.5 py-0.5 rounded font-medium">Alex</div>
-                </div>
-                <div className="relative w-12 h-16 rounded-[10px] overflow-hidden border border-gray-200 opacity-90 flex-shrink-0 transition-transform hover:scale-105">
-                  <img src="[https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80](https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80)" alt="Sarah" className="object-cover w-full h-full grayscale-[20%]" />
-                  <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md text-white text-[9px] px-1.5 py-0.5 rounded font-medium">Sarah</div>
-                </div>
-                <div className="relative w-12 h-16 rounded-[10px] overflow-hidden border border-gray-200 opacity-90 flex-shrink-0 transition-transform hover:scale-105">
-                  <img src="[https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80](https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80)" alt="Mike" className="object-cover w-full h-full grayscale-[20%]" />
-                  <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md text-white text-[9px] px-1.5 py-0.5 rounded font-medium">Mike</div>
-                </div>
-                <div className="relative w-12 h-16 rounded-[10px] overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-gray-200 transition-colors">
-                  <span className="text-xs font-bold text-gray-500">+1</span>
-                </div>
-              </div>
+              {/* STATE: LOBBY */}
+              {roomState === 'lobby' && (
+                <div className="flex-1 flex flex-col p-6 items-center justify-center text-center space-y-6 animate-fade-in">
+                  <div className="w-16 h-16 bg-violet-50 border-2 border-violet-100 rounded-2xl flex items-center justify-center text-violet-600 mb-2 shadow-sm">
+                    <MonitorPlay size={32} className="ml-1" />
+                  </div>
+                  <div>
+                    <h3 className="text-[18px] font-bold text-gray-900 tracking-tight">Regaarder Room</h3>
+                    <p className="text-xs text-gray-500 mt-2 leading-relaxed">Join a collaborative intelligence workspace to sync with your team and AI.</p>
+                  </div>
 
-              <div className="flex-1 overflow-y-auto pb-24 space-y-5 px-4 pt-4 relative z-0">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-violet-600 uppercase tracking-wider">
-                    <Sparkles size={10} /> Live Context
+                  <div className="w-full space-y-3 pt-4">
+                    <button
+                      onClick={() => joinRoom(generateRoomCode())}
+                      className="w-full bg-violet-600 text-white rounded-xl py-3 text-sm font-bold hover:bg-violet-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm"
+                    >
+                      <Plus size={16} /> Start New Room
+                    </button>
+
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <LinkIcon size={14} className="text-gray-400 group-focus-within:text-violet-500 transition-colors" />
+                      </div>
+                      <input
+                        type="text"
+                        value={joinCode}
+                        onChange={(e) => setJoinCode(e.target.value)}
+                        placeholder="Enter room code or link..."
+                        className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-9 pr-10 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-50 transition-all shadow-sm"
+                      />
+                      <button
+                        onClick={() => {
+                          if (joinCode.trim()) joinRoom(joinCode.trim());
+                          else showToast('Please enter a room code');
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
+                      >
+                        <ArrowRight size={16} />
+                      </button>
+                    </div>
                   </div>
-                  <div className="bg-violet-50/50 border border-violet-100 rounded-xl p-3 text-xs text-gray-700 leading-relaxed shadow-sm">
-                    Discussing the Q2 launch timelines. Sarah is presenting the new branding assets for final review before deployment.
+
+                  <div className="w-full pt-6 border-t border-gray-200/60 mt-6 text-left">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Recent Rooms</span>
+                    <div className="space-y-2">
+                      <button onClick={() => joinRoom('q2-launch')} className="w-full flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-violet-200 hover:bg-violet-50/30 transition-colors group text-left">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                          <Clock size={14} />
+                        </div>
+                        <div>
+                          <div className="text-xs font-bold text-gray-800 group-hover:text-violet-700 transition-colors">Q2 Launch Strategy</div>
+                          <div className="text-[10px] text-gray-400 mt-0.5">Ended 2 hours ago</div>
+                        </div>
+                      </button>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Decisions</div>
-                  <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-default">
-                    <div className="mt-0.5 bg-emerald-100 p-0.5 rounded text-emerald-600"><Check size={10} strokeWidth={3} /></div>
-                    <span className="text-xs text-gray-700">Beta launch officially locked for May 15th.</span>
+              {/* STATE: ACTIVE ROOM (Sidebar Panel View) */}
+              {roomState === 'active' && (
+                <div className="flex-1 flex flex-col h-full animate-fade-in relative">
+
+                  {mainView === 'document' && (
+                    <div className="flex flex-col border-b border-gray-100 bg-white">
+                      <div className="p-3 pb-2 flex justify-between items-center">
+                        <div>
+                          <div className="text-xs font-bold text-gray-900 truncate">Q2 Launch Strategy</div>
+                          <div className="text-[10px] text-gray-400 font-mono mt-0.5">{roomId}</div>
+                        </div>
+                        <button onClick={() => setMainView('room')} className="p-1.5 bg-violet-50 text-violet-600 rounded hover:bg-violet-100 transition-colors" title="Expand to Main View">
+                          <Maximize2 size={14} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 px-3 pb-3 overflow-x-auto no-scrollbar shrink-0">
+                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-sm flex-shrink-0 bg-gray-900">
+                          <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
+                          {!isRoomMicOn && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
+                        </div>
+                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden ring-2 ring-emerald-500 shadow-sm flex-shrink-0">
+                          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Sarah" className="object-cover w-full h-full" />
+                        </div>
+                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" alt="Mike" className="object-cover w-full h-full grayscale-[20%]" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex-1 overflow-y-auto pb-24 space-y-5 px-4 pt-4 relative z-0">
+
+                    {mainView === 'room' && (
+                      <div className="bg-violet-50 text-violet-700 text-xs px-3 py-2 rounded-lg flex items-center justify-between border border-violet-100 mb-2">
+                        <span>Room is expanded</span>
+                        <Maximize2 size={12} className="opacity-50" />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-violet-600 uppercase tracking-wider">
+                        <Sparkles size={10} /> Live Context
+                      </div>
+                      <div className="bg-white border border-gray-100 rounded-xl p-3 text-xs text-gray-700 leading-relaxed shadow-sm">
+                        Discussing the Q2 launch timelines. Sarah is presenting the new branding assets for final review before deployment.
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Decisions</div>
+                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-default">
+                        <div className="mt-0.5 bg-emerald-100 p-0.5 rounded text-emerald-600"><Check size={10} strokeWidth={3} /></div>
+                        <span className="text-xs text-gray-700">Beta launch officially locked for May 15th.</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                        Action Items <button className="text-violet-600 hover:text-violet-700 normal-case tracking-normal">Add</button>
+                      </div>
+                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
+                        <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
+                        <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Sarah to upload final assets to the shared drive by Friday.</span>
+                      </div>
+                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
+                        <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
+                        <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Alex to update the Compose AI prompt templates.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {mainView === 'document' && (
+                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 p-1.5 bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-10 w-max">
+                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${isRoomMicOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                        {isRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}
+                      </button>
+                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${isRoomCameraOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                        {isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                      </button>
+                      <div className="w-px h-5 bg-gray-200 mx-1"></div>
+                      <button onClick={leaveRoom} className="px-2.5 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-sm flex items-center gap-1.5 font-medium text-[11px] border border-red-600 active:scale-95">
+                        <PhoneOff size={14} /> Leave
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STATE: MEETING SUMMARY */}
+              {roomState === 'summary' && (
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white animate-fade-in relative">
+                  <div className="text-center pb-6 border-b border-gray-100">
+                    <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+                      <PhoneOff size={20} />
+                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 tracking-tight">Room Ended</h3>
+                    <p className="text-xs text-gray-500 mt-1">Q2 Launch Strategy • 45m duration</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-violet-600 uppercase tracking-wider">
+                      <Sparkles size={14} /> AI Session Recap
+                    </div>
+
+                    <div className="bg-[#FAFAFC] border border-gray-100 rounded-2xl p-4 space-y-4">
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-800 mb-1">Key Decisions</h4>
+                        <ul className="text-xs text-gray-600 space-y-1.5 pl-4 list-disc marker:text-emerald-500">
+                          <li>Beta launch officially locked for May 15th.</li>
+                          <li>Marketing budget increased by 15% for initial push.</li>
+                        </ul>
+                      </div>
+                      <div className="h-px w-full bg-gray-200/60"></div>
+                      <div>
+                        <h4 className="text-xs font-bold text-gray-800 mb-1">Action Items</h4>
+                        <ul className="text-xs text-gray-600 space-y-1.5 pl-4 list-disc marker:text-violet-400">
+                          <li>Sarah to upload final assets by Friday.</li>
+                          <li>Alex to update Compose AI prompts.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4">
+                    <button
+                      onClick={() => setRoomState('lobby')}
+                      className="w-full bg-gray-100 text-gray-700 border border-gray-200 rounded-xl py-3 text-sm font-bold hover:bg-gray-200 transition-all active:scale-[0.98]"
+                    >
+                      Back to Lobby
+                    </button>
                   </div>
                 </div>
+              )}
 
-                <div className="space-y-2">
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
-                    Action Items <button className="text-violet-600 hover:text-violet-700 normal-case tracking-normal">Add</button>
-                  </div>
-                  <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
-                    <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
-                    <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Sarah to upload final assets to the shared drive by Friday.</span>
-                  </div>
-                  <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
-                    <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
-                    <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Alex to update the Compose AI prompt templates.</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 p-1.5 bg-white/70 backdrop-blur-xl border border-gray-200/50 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] z-10">
-                <button
-                  onClick={() => setIsRoomMicOn(!isRoomMicOn)}
-                  className={`p-2 rounded-xl transition-all ${isRoomMicOn ? 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm' : 'bg-red-50 text-red-600'}`}
-                  title={isRoomMicOn ? 'Mute Mic' : 'Unmute Mic'}
-                >
-                  {isRoomMicOn ? <Mic size={18} /> : <MicOff size={18} />}
-                </button>
-                <button
-                  onClick={() => setIsRoomCameraOn(!isRoomCameraOn)}
-                  className={`p-2 rounded-xl transition-all ${isRoomCameraOn ? 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm' : 'bg-red-50 text-red-600'}`}
-                  title={isRoomCameraOn ? 'Turn off Camera' : 'Turn on Camera'}
-                >
-                  {isRoomCameraOn ? <Video size={18} /> : <VideoOff size={18} />}
-                </button>
-                <button className="p-2 rounded-xl bg-white text-gray-700 hover:bg-gray-50 transition-all shadow-sm" title="Present Screen">
-                  <MonitorPlay size={18} />
-                </button>
-                <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                <button className="px-3 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-sm flex items-center gap-2 font-medium text-xs">
-                  <PhoneOff size={16} /> Leave
-                </button>
-              </div>
             </div>
           )}
 
@@ -6419,7 +6662,7 @@ Rules:
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none">
+      <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto no-scrollbar">
         
         <div 
           onClick={() => handleMiniSidebarClick('chat')}
