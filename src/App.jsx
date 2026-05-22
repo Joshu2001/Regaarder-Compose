@@ -104,6 +104,10 @@ export default function App() {
   const [editingPromptValue, setEditingPromptValue] = useState('');
   const [assistantQuickPrompt, setAssistantQuickPrompt] = useState('');
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
+  const [promptMinimizedPosition, setPromptMinimizedPosition] = useState(() => ({
+    x: 24,
+    y: typeof window !== 'undefined' ? Math.max(120, window.innerHeight - 120) : 640,
+  }));
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
@@ -171,6 +175,12 @@ export default function App() {
   const lastDocumentTranscriptRef = useRef({ text: '', source: '', at: 0 });
   const toastTimerRef = useRef(null);
   const promptRevealTimerRef = useRef(null);
+  const promptMinimizedDragRef = useRef({
+    isDragging: false,
+    moved: false,
+    pointerOffsetX: 0,
+    pointerOffsetY: 0,
+  });
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState(defaultTitle);
@@ -348,6 +358,70 @@ export default function App() {
       setActiveDocId(documents[0].id);
     }
   }, [documents, activeDocId]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setPromptMinimizedPosition((prev) => {
+        const maxX = Math.max(12, window.innerWidth - 60);
+        const maxY = Math.max(60, window.innerHeight - 60);
+        return {
+          x: Math.min(Math.max(12, prev.x), maxX),
+          y: Math.min(Math.max(60, prev.y), maxY),
+        };
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const startPromptMinimizedDrag = (event) => {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    const startX = event.clientX;
+    const startY = event.clientY;
+    promptMinimizedDragRef.current = {
+      isDragging: true,
+      moved: false,
+      pointerOffsetX: startX - promptMinimizedPosition.x,
+      pointerOffsetY: startY - promptMinimizedPosition.y,
+    };
+
+    const handleMove = (moveEvent) => {
+      if (!promptMinimizedDragRef.current.isDragging) {
+        return;
+      }
+
+      const nextX = moveEvent.clientX - promptMinimizedDragRef.current.pointerOffsetX;
+      const nextY = moveEvent.clientY - promptMinimizedDragRef.current.pointerOffsetY;
+      const clampedX = Math.min(Math.max(12, nextX), window.innerWidth - 60);
+      const clampedY = Math.min(Math.max(60, nextY), window.innerHeight - 60);
+      if (Math.abs(moveEvent.clientX - startX) > 3 || Math.abs(moveEvent.clientY - startY) > 3) {
+        promptMinimizedDragRef.current.moved = true;
+      }
+      setPromptMinimizedPosition({ x: clampedX, y: clampedY });
+    };
+
+    const handleUp = () => {
+      promptMinimizedDragRef.current.isDragging = false;
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+  };
+
+  const handlePromptMinimizedBubbleClick = () => {
+    if (promptMinimizedDragRef.current.moved) {
+      promptMinimizedDragRef.current.moved = false;
+      return;
+    }
+    setIsPromptMinimized(false);
+  };
 
   useEffect(() => {
     try {
@@ -5190,13 +5264,26 @@ Rules:
         {isPromptMinimized && (
           <button
             type="button"
-            onClick={() => setIsPromptMinimized(false)}
-            className="absolute left-6 top-6 z-[340] h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
+            onMouseDown={startPromptMinimizedDrag}
+            onClick={handlePromptMinimizedBubbleClick}
+            className="fixed z-[340] h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-grab active:cursor-grabbing"
+            style={{ left: `${promptMinimizedPosition.x}px`, top: `${promptMinimizedPosition.y}px` }}
             title="Open AI prompt"
           >
             <PenTool size={18} className="mx-auto" />
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={async () => {
+            await toggleVoiceRecording('document');
+          }}
+          className={`fixed right-6 bottom-16 z-[345] h-12 w-12 rounded-full border shadow-md transition-all ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-300 bg-violet-100 text-violet-700' : 'border-gray-200 bg-white text-gray-500 hover:border-violet-300 hover:text-violet-600'}`}
+          title={isVoiceActive && voiceTarget === 'document' ? 'Stop dictation' : 'Start dictation'}
+        >
+          <Mic size={18} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'animate-pulse' : ''}`} />
+        </button>
 
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
@@ -6065,54 +6152,44 @@ Rules:
                       event.target.value = '';
                     }}
                   />
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await toggleVoiceRecording('schedule');
+                  <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
+                  <textarea
+                    ref={scheduleInputRef}
+                    value={scheduleInput}
+                    onChange={(e) => setScheduleInput(e.target.value)}
+                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                    onPaste={handleSchedulePaste}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        convertMessyScheduleToPlan();
+                      }
                     }}
-                    className={`absolute left-5 top-[43px] -translate-y-1/2 z-10 p-1.5 rounded-full border shadow-sm transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 border-violet-200 text-violet-700' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-500'}`}
-                    title="Dictate schedule input"
-                  >
-                    <Mic size={13} className={voiceTarget === 'schedule' && isVoiceActive ? 'animate-pulse' : ''} />
-                  </button>
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">AI Prompt Box</h4>
-                    <button
-                      type="button"
-                      onClick={() => scheduleFileInputRef.current?.click()}
-                      className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
-                      title="Attach files or images"
-                    >
-                      <Upload size={13} />
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <textarea
-                      ref={scheduleInputRef}
-                      value={scheduleInput}
-                      onChange={(e) => setScheduleInput(e.target.value)}
-                      onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                      onPaste={handleSchedulePaste}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          convertMessyScheduleToPlan();
-                        }
-                      }}
-                      placeholder="Paste messy tasks, notes, or shorthand..."
-                      rows={2}
-                      className="w-full bg-white border border-gray-200 rounded-lg pl-9 pr-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveRightTab('assistant')}
-                    className="text-[11px] text-gray-500 hover:text-violet-600 transition-colors text-left"
-                    title="Open AI Assistant"
-                  >
-                    Use full assistant
-                  </button>
-                  <div className="flex items-center justify-end">
+                    placeholder="Paste messy tasks, notes, or shorthand..."
+                    rows={2}
+                    className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
+                  />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => scheduleFileInputRef.current?.click()}
+                        className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                        title="Attach files or images"
+                      >
+                        <Upload size={13} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await toggleVoiceRecording('schedule');
+                        }}
+                        className={`p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-gray-50 hover:bg-gray-100 text-gray-500'}`}
+                        title="Dictate schedule input"
+                      >
+                        <Mic size={13} className={voiceTarget === 'schedule' && isVoiceActive ? 'animate-pulse' : ''} />
+                      </button>
+                    </div>
                     <button
                       type="submit"
                       disabled={isComposing || !scheduleInput.trim()}
