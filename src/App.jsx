@@ -3427,6 +3427,21 @@ Rules:
     showToast('Task converted to schedule');
   };
 
+  const convertVisibleTasksToSchedule = async () => {
+    const pendingTasks = visibleTasks.filter((task) => !task.completed);
+    if (!pendingTasks.length) {
+      showToast('No pending tasks to convert');
+      return;
+    }
+
+    for (const task of pendingTasks) {
+      // Sequential conversion keeps generated slots stable and predictable.
+      // eslint-disable-next-line no-await-in-loop
+      await convertTaskToSchedule(task);
+    }
+    showToast(`Converted ${pendingTasks.length} task${pendingTasks.length > 1 ? 's' : ''} to schedule`);
+  };
+
   const convertMessyScheduleToPlan = async () => {
     const rawItems = scheduleInput
       .split(/\n|;/)
@@ -4673,8 +4688,10 @@ Rules:
             )}
 
             {!isComposing && (
-              <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-                <div className="pointer-events-auto flex flex-col items-center gap-3 -mt-10">
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-40 flex items-center">
+                <div className="pointer-events-auto ml-14 mb-10 flex items-center gap-4">
+                <div className="h-[290px] w-[3px] rounded-full bg-gradient-to-b from-fuchsia-500/90 via-violet-400/75 to-transparent shadow-[0_0_16px_rgba(217,70,239,0.55)]"></div>
+                <div className="flex flex-col items-center gap-3">
                 <button
                   type="button"
                   onClick={async () => {
@@ -4723,6 +4740,7 @@ Rules:
                   </button>
                 )}
                 </div>
+                </div>
               </div>
             )}
 
@@ -4735,12 +4753,12 @@ Rules:
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
-          <div className="max-w-[1240px] mx-auto px-6 md:px-8 flex justify-start pl-[280px]" style={{ transform: `translateX(${promptOffset.x}px)` }}>
+          <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`relative bg-white border border-violet-100 shadow-[0_15px_45px_-12px_rgba(109,40,217,0.18)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? 'rounded-2xl' : 'rounded-3xl'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 760 : 640))}px`, maxWidth: '100%' }}
+            className={`relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? 'rounded-xl' : 'rounded-2xl'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 700))}px`, maxWidth: '100%' }}
           >
             {isPromptExpanded && (
               <button
@@ -5191,10 +5209,10 @@ Rules:
           <button
             type="button"
             onClick={() => setIsPromptMinimized(false)}
-            className="absolute left-[300px] bottom-24 z-[340] h-12 w-12 rounded-2xl bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all flex items-center justify-center hover:scale-105 active:scale-95"
+            className="absolute left-24 bottom-24 z-[340] h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
             title="Open AI prompt"
           >
-            <PenTool size={18} />
+            <PenTool size={18} className="mx-auto" />
           </button>
         )}
 
@@ -5535,88 +5553,83 @@ Rules:
 
           {/* B. ACTIVE TAB: AI ASSISTANT CO-WRITER */}
           {activeRightTab === 'assistant' && (
-            <div className="flex-1 flex flex-col min-h-0 relative">
-              <div className="flex-1 overflow-y-auto p-5 pb-32 space-y-6">
-                {selectedEditorText && (
-                  <div className="rounded-xl border border-violet-200 bg-violet-50/70 px-3 py-2">
-                    <div className="text-[11px] font-semibold text-violet-700 mb-0.5">Quick Assist Available</div>
-                    <div className="text-[11px] text-violet-700/80">Text is highlighted. Tap an action to run immediately.</div>
-                  </div>
-                )}
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
-                  <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              {selectedEditorText && (
+                <div className="rounded-xl border border-violet-200 bg-violet-50/70 px-3 py-2">
+                  <div className="text-[11px] font-semibold text-violet-700 mb-0.5">Quick Assist Available</div>
+                  <div className="text-[11px] text-violet-700/80">Text is highlighted. Tap an action to run immediately.</div>
                 </div>
-
-                {/* Action Buttons Grid */}
-                <div className="space-y-2">
-                  <button 
-                    onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                  >
-                    <PenTool size={16} className="text-violet-500" />
-                    <div>
-                      <div className="font-semibold text-xs">Improve writing</div>
-                      <p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p>
-                    </div>
-                  </button>
-
-                  <button 
-                    onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                  >
-                    <FileText size={16} className="text-indigo-500" />
-                    <div>
-                      <div className="font-semibold text-xs">Summarize document</div>
-                      <p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p>
-                    </div>
-                  </button>
-
-                  <button 
-                    onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                  >
-                    <Scissors size={16} className="text-violet-400" />
-                    <div>
-                      <div className="font-semibold text-xs">Make shorter</div>
-                      <p className="text-[10px] text-gray-400">Prune unnecessary wording</p>
-                    </div>
-                  </button>
-
-                  <button 
-                    onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                  >
-                    <AlertTriangle size={16} className="text-amber-500" />
-                    <div>
-                      <div className="font-semibold text-xs">Check for gaps & risks</div>
-                      <p className="text-[10px] text-gray-400">Locate potential launch bottle necks</p>
-                    </div>
-                  </button>
-                </div>
+              )}
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
+                <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
               </div>
 
-              {/* Floating AI Prompt Box for Assistant */}
-              <div className="absolute inset-x-0 bottom-6 px-4 pointer-events-none">
-                <form 
-                  onSubmit={handleAssistantQuickPromptSend} 
-                  className="bg-white rounded-2xl p-2.5 border border-violet-100 shadow-[0_15px_40px_-10px_rgba(109,40,217,0.25)] space-y-2 pointer-events-auto"
+              {/* Action Buttons Grid */}
+              <div className="space-y-2">
+                <button 
+                  onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
                 >
+                  <PenTool size={16} className="text-violet-500" />
+                  <div>
+                    <div className="font-semibold text-xs">Improve writing</div>
+                    <p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                >
+                  <FileText size={16} className="text-indigo-500" />
+                  <div>
+                    <div className="font-semibold text-xs">Summarize document</div>
+                    <p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                >
+                  <Scissors size={16} className="text-violet-400" />
+                  <div>
+                    <div className="font-semibold text-xs">Make shorter</div>
+                    <p className="text-[10px] text-gray-400">Prune unnecessary wording</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                >
+                  <AlertTriangle size={16} className="text-amber-500" />
+                  <div>
+                    <div className="font-semibold text-xs">Check for gaps & risks</div>
+                    <p className="text-[10px] text-gray-400">Locate potential launch bottle necks</p>
+                  </div>
+                </button>
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
+                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#F6F5FC] rounded-2xl p-3.5 border border-violet-100 shadow-[0_10px_35px_-25px_rgba(124,58,237,0.7)] space-y-2.5">
                   <textarea
                     value={assistantQuickPrompt}
                     onChange={(e) => setAssistantQuickPrompt(e.target.value)}
                     placeholder="Ask AI Assistant from here..."
                     rows={2}
-                    className="w-full bg-violet-50/30 border-none rounded-xl px-3 py-2 text-xs text-gray-700 outline-none focus:ring-1 focus:ring-violet-200 resize-none min-h-[64px]"
+                    className="w-full bg-white/70 border border-transparent rounded-xl px-3 py-3 text-xs text-gray-700 outline-none focus:bg-white focus:border-violet-300 resize-none min-h-[74px]"
                   />
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] text-gray-400 italic">Floating Co-Pilot</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] italic text-gray-400">Floating Co-Pilot</span>
                     <button
                       type="submit"
                       disabled={isComposing || !assistantQuickPrompt.trim()}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all active:scale-95 ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-100 text-violet-400 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-md shadow-violet-200'}`}
+                      className={`px-4 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-100 text-violet-700 hover:bg-violet-200'}`}
                     >
-                      {isComposing ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                      <Sparkles size={12} />
                       Run Assist
                     </button>
                   </div>
@@ -5638,36 +5651,8 @@ Rules:
                 </button>
               </div>
 
-              <div className="mb-3 rounded-xl border border-gray-100 bg-[#FAFAFC] p-2.5">
-                <div className="flex items-center gap-2 mb-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewTaskOwner('user');
-                      setTaskOwnerFilter('user');
-                    }}
-                    className={`px-2 py-1 rounded-full text-[10px] border ${taskOwnerFilter === 'user' ? 'bg-violet-50 border-violet-200 text-violet-700' : 'bg-white border-gray-200 text-gray-500'}`}
-                  >
-                    User Task
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNewTaskOwner('agent');
-                      setTaskOwnerFilter('agent');
-                    }}
-                    className={`px-2 py-1 rounded-full text-[10px] border ${taskOwnerFilter === 'agent' ? 'bg-sky-50 border-sky-200 text-sky-700' : 'bg-white border-gray-200 text-gray-500'}`}
-                  >
-                    Agent Task
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTaskOwnerFilter('all')}
-                    className={`px-2 py-1 rounded-full text-[10px] border ${taskOwnerFilter === 'all' ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500'}`}
-                  >
-                    All
-                  </button>
-                </div>
+              <div className="mb-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/60 to-white p-3 shadow-[0_14px_40px_-30px_rgba(124,58,237,0.65)]">
+                <div className="text-[11px] font-semibold text-violet-600 mb-2">Capture next action</div>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -5679,12 +5664,12 @@ Rules:
                         addTaskFromInput();
                       }
                     }}
-                    placeholder="Add a new action item..."
-                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
+                    placeholder="Write your next workspace action..."
+                    className="flex-1 bg-white border border-violet-100 rounded-xl px-3.5 py-3 text-[13px] text-gray-700 focus:outline-none focus:border-violet-400"
                   />
                   <button
                     onClick={addTaskFromInput}
-                    className="px-3 py-2 rounded-lg text-xs font-medium bg-violet-600 text-white hover:bg-violet-700"
+                    className="px-4 py-3 rounded-xl text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700"
                   >
                     Save
                   </button>
@@ -5713,9 +5698,6 @@ Rules:
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold border mb-1 ${task.owner === 'agent' ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-violet-50 text-violet-700 border-violet-200'}`}>
-                            {task.owner === 'agent' ? 'Agent' : 'User'}
-                          </span>
                           {editingTaskId === task.id ? (
                             <input
                               autoFocus
@@ -5759,16 +5741,6 @@ Rules:
                           <Trash2 size={12} />
                         </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          convertTaskToSchedule(task);
-                        }}
-                        className="mt-2 text-[11px] text-violet-600 hover:text-violet-700 font-medium"
-                      >
-                        Convert to Schedule
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -5777,6 +5749,17 @@ Rules:
                     No tasks in this view yet.
                   </div>
                 )}
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-gray-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 sticky bottom-0">
+                <button
+                  type="button"
+                  onClick={convertVisibleTasksToSchedule}
+                  disabled={!visibleTasks.some((task) => !task.completed)}
+                  className={`w-full rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors ${visibleTasks.some((task) => !task.completed) ? 'bg-violet-600 text-white hover:bg-violet-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                >
+                  Convert Visible Tasks to Schedule ({visibleTasks.filter((task) => !task.completed).length})
+                </button>
               </div>
             </div>
           )}
@@ -6020,10 +6003,6 @@ Rules:
                   </div>
                 </div>
 
-                <div className="text-[11px] text-violet-700 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2">
-                  Selected date: {selectedCalendarDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                </div>
-
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
                   <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.24em] text-slate-500 uppercase">
@@ -6031,7 +6010,7 @@ Rules:
                     <span>{formatUpcomingHeaderDate(selectedCalendarDate)}</span>
                   </div>
                   {upcomingEvents.map((event, index) => (
-                    <div key={event.id} className={`p-3 rounded-xl border text-xs relative overflow-hidden ${event.urgency === 'high' ? 'border-red-100 bg-red-50/20' : event.urgency === 'medium' ? 'border-yellow-100 bg-yellow-50/20' : index === 0 ? 'border-blue-100 bg-blue-50/20' : 'border-gray-100 bg-white'}`}>
+                    <div key={event.id} className={`p-3.5 rounded-2xl border text-xs relative overflow-hidden shadow-[0_16px_35px_-28px_rgba(15,23,42,0.5)] ${event.urgency === 'high' ? 'border-red-100 bg-red-50/25' : event.urgency === 'medium' ? 'border-yellow-100 bg-yellow-50/25' : index === 0 ? 'border-blue-100 bg-blue-50/30' : 'border-gray-100 bg-white'}`}>
                       <div className={`absolute left-0 top-0 bottom-0 w-1 ${event.urgency === 'high' ? 'bg-red-500' : event.urgency === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
                       <div className={`font-bold text-sm ${event.urgency === 'high' ? 'text-red-700' : event.urgency === 'medium' ? 'text-yellow-700' : index === 0 ? 'text-blue-700' : 'text-gray-700'}`}>{event.title}</div>
                       <div className="mt-2 flex items-center gap-1.5 flex-wrap">
@@ -6039,7 +6018,7 @@ Rules:
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">{event.durationMinutes || 60}m</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-white text-violet-700">{event.slot || formatEventSlotLabel(event).split('•').slice(-1)[0].trim()}</span>
                       </div>
-                      <div className="text-gray-500 mt-1">{formatEventSlotLabel(event)}</div>
+                      <div className="mt-2 h-[3px] w-28 rounded-full bg-fuchsia-500/80"></div>
                     </div>
                   ))}
                 </div>
@@ -6061,7 +6040,7 @@ Rules:
                     ))}
                   </div>
                 )}
-                <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
+                <div className="bg-[#F6F5FC] border border-violet-100 shadow-[0_12px_35px_-26px_rgba(124,58,237,0.7)] flex items-center px-2 py-2 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-2xl">
                   <input
                     ref={scheduleFileInputRef}
                     type="file"
@@ -6075,7 +6054,7 @@ Rules:
                   <button
                     type="button"
                     onClick={() => scheduleFileInputRef.current?.click()}
-                    className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                    className="p-1.5 rounded-lg bg-white hover:bg-gray-50 text-gray-500 transition-colors"
                     title="Attach files or images"
                   >
                     <Upload size={13} />
@@ -6085,7 +6064,7 @@ Rules:
                     onClick={async () => {
                       await toggleVoiceRecording('schedule');
                     }}
-                    className={`ml-1 p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-gray-50 hover:bg-gray-100 text-gray-500'}`}
+                    className={`ml-1 p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-white hover:bg-gray-50 text-gray-500'}`}
                     title="Dictate schedule input"
                   >
                     <Mic size={13} />
@@ -6110,10 +6089,10 @@ Rules:
                   />
                   <button
                     type="submit"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-violet-100 hover:bg-violet-200 text-violet-700 transition-colors text-[11px] font-semibold inline-flex items-center gap-1"
                     title="Process list"
                   >
-                    <Send size={14} />
+                    <Sparkles size={12} /> Run Assist
                   </button>
                   </div>
                 </div>
