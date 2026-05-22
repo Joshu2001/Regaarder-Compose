@@ -220,7 +220,6 @@ export default function App() {
   const [activeDocId, setActiveDocId] = useState(null);
   const [docBodyHtml, setDocBodyHtml] = useState('');
   const [closeConfirmDocId, setCloseConfirmDocId] = useState(null);
-                { key: 'room', label: 'Room' },
   const [openDropdown, setOpenDropdown] = useState(null);
   const [headingSearch, setHeadingSearch] = useState('');
   const [fontSearch, setFontSearch] = useState('');
