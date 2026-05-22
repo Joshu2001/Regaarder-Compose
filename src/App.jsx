@@ -53,7 +53,6 @@ export default function App() {
     { id: 1, name: 'Regaarder', letter: 'R', colorClass: 'bg-indigo-500', hasDocuments: false },
     { id: 2, name: 'Product', letter: 'P', colorClass: 'bg-orange-500', hasDocuments: true },
     { id: 3, name: 'Marketing', letter: 'M', colorClass: 'bg-emerald-500', hasDocuments: false },
-                { key: 'room', label: 'Room' },
     { id: 4, name: 'Finance', letter: 'F', colorClass: 'bg-blue-500', hasDocuments: false },
     { id: 5, name: 'Personal', letter: 'P', colorClass: 'bg-fuchsia-500', hasDocuments: false },
   ];
@@ -221,6 +220,7 @@ export default function App() {
   const [activeDocId, setActiveDocId] = useState(null);
   const [docBodyHtml, setDocBodyHtml] = useState('');
   const [closeConfirmDocId, setCloseConfirmDocId] = useState(null);
+                { key: 'room', label: 'Room' },
   const [openDropdown, setOpenDropdown] = useState(null);
   const [headingSearch, setHeadingSearch] = useState('');
   const [fontSearch, setFontSearch] = useState('');
