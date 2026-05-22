@@ -3427,21 +3427,6 @@ Rules:
     showToast('Task converted to schedule');
   };
 
-  const convertVisibleTasksToSchedule = async () => {
-    const pendingTasks = visibleTasks.filter((task) => !task.completed);
-    if (!pendingTasks.length) {
-      showToast('No pending tasks to convert');
-      return;
-    }
-
-    for (const task of pendingTasks) {
-      // Sequential conversion keeps generated slots stable and predictable.
-      // eslint-disable-next-line no-await-in-loop
-      await convertTaskToSchedule(task);
-    }
-    showToast(`Converted ${pendingTasks.length} task${pendingTasks.length > 1 ? 's' : ''} to schedule`);
-  };
-
   const convertMessyScheduleToPlan = async () => {
     const rawItems = scheduleInput
       .split(/\n|;/)
@@ -4688,10 +4673,8 @@ Rules:
             )}
 
             {!isComposing && (
-              <div className="pointer-events-none absolute inset-y-0 left-0 z-40 flex items-center">
-                <div className="pointer-events-auto ml-14 mb-10 flex items-center gap-4">
-                <div className="h-[290px] w-[3px] rounded-full bg-gradient-to-b from-fuchsia-500/90 via-violet-400/75 to-transparent shadow-[0_0_16px_rgba(217,70,239,0.55)]"></div>
-                <div className="flex flex-col items-center gap-3">
+              <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
+                <div className="pointer-events-auto flex flex-col items-center gap-3 -mt-10">
                 <button
                   type="button"
                   onClick={async () => {
@@ -4739,7 +4722,6 @@ Rules:
                     Dismiss
                   </button>
                 )}
-                </div>
                 </div>
               </div>
             )}
@@ -5209,7 +5191,7 @@ Rules:
           <button
             type="button"
             onClick={() => setIsPromptMinimized(false)}
-            className="absolute left-24 bottom-24 z-[340] h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
+            className="absolute left-6 top-6 z-[340] h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
             title="Open AI prompt"
           >
             <PenTool size={18} className="mx-auto" />
@@ -5614,23 +5596,21 @@ Rules:
 
               <div>
                 <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
-                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#F6F5FC] rounded-2xl p-3.5 border border-violet-100 shadow-[0_10px_35px_-25px_rgba(124,58,237,0.7)] space-y-2.5">
+                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#FAFAFC] rounded-lg p-3 border border-gray-100 space-y-2">
                   <textarea
                     value={assistantQuickPrompt}
                     onChange={(e) => setAssistantQuickPrompt(e.target.value)}
                     placeholder="Ask AI Assistant from here..."
                     rows={2}
-                    className="w-full bg-white/70 border border-transparent rounded-xl px-3 py-3 text-xs text-gray-700 outline-none focus:bg-white focus:border-violet-300 resize-none min-h-[74px]"
+                    className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
                   />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] italic text-gray-400">Floating Co-Pilot</span>
+                  <div className="flex items-center justify-end">
                     <button
                       type="submit"
                       disabled={isComposing || !assistantQuickPrompt.trim()}
-                      className={`px-4 py-2 rounded-lg text-xs font-semibold inline-flex items-center gap-1.5 ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-100 text-violet-700 hover:bg-violet-200'}`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
                     >
-                      <Sparkles size={12} />
-                      Run Assist
+                      Send to AI
                     </button>
                   </div>
                 </form>
@@ -5651,8 +5631,36 @@ Rules:
                 </button>
               </div>
 
-              <div className="mb-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/60 to-white p-3 shadow-[0_14px_40px_-30px_rgba(124,58,237,0.65)]">
-                <div className="text-[11px] font-semibold text-violet-600 mb-2">Capture next action</div>
+              <div className="mb-3 rounded-xl border border-gray-100 bg-[#FAFAFC] p-2.5">
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewTaskOwner('user');
+                      setTaskOwnerFilter('user');
+                    }}
+                    className={`px-2 py-1 rounded-full text-[10px] border ${taskOwnerFilter === 'user' ? 'bg-violet-50 border-violet-200 text-violet-700' : 'bg-white border-gray-200 text-gray-500'}`}
+                  >
+                    User Task
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewTaskOwner('agent');
+                      setTaskOwnerFilter('agent');
+                    }}
+                    className={`px-2 py-1 rounded-full text-[10px] border ${taskOwnerFilter === 'agent' ? 'bg-sky-50 border-sky-200 text-sky-700' : 'bg-white border-gray-200 text-gray-500'}`}
+                  >
+                    Agent Task
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTaskOwnerFilter('all')}
+                    className={`px-2 py-1 rounded-full text-[10px] border ${taskOwnerFilter === 'all' ? 'bg-gray-100 border-gray-300 text-gray-700' : 'bg-white border-gray-200 text-gray-500'}`}
+                  >
+                    All
+                  </button>
+                </div>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -5664,12 +5672,12 @@ Rules:
                         addTaskFromInput();
                       }
                     }}
-                    placeholder="Write your next workspace action..."
-                    className="flex-1 bg-white border border-violet-100 rounded-xl px-3.5 py-3 text-[13px] text-gray-700 focus:outline-none focus:border-violet-400"
+                    placeholder="Add a new action item..."
+                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
                   />
                   <button
                     onClick={addTaskFromInput}
-                    className="px-4 py-3 rounded-xl text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700"
+                    className="px-3 py-2 rounded-lg text-xs font-medium bg-violet-600 text-white hover:bg-violet-700"
                   >
                     Save
                   </button>
@@ -5698,6 +5706,9 @@ Rules:
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-semibold border mb-1 ${task.owner === 'agent' ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-violet-50 text-violet-700 border-violet-200'}`}>
+                            {task.owner === 'agent' ? 'Agent' : 'User'}
+                          </span>
                           {editingTaskId === task.id ? (
                             <input
                               autoFocus
@@ -5741,6 +5752,16 @@ Rules:
                           <Trash2 size={12} />
                         </button>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          convertTaskToSchedule(task);
+                        }}
+                        className="mt-2 text-[11px] text-violet-600 hover:text-violet-700 font-medium"
+                      >
+                        Convert to Schedule
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -5749,17 +5770,6 @@ Rules:
                     No tasks in this view yet.
                   </div>
                 )}
-              </div>
-
-              <div className="mt-4 pt-3 border-t border-gray-100 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 sticky bottom-0">
-                <button
-                  type="button"
-                  onClick={convertVisibleTasksToSchedule}
-                  disabled={!visibleTasks.some((task) => !task.completed)}
-                  className={`w-full rounded-xl px-4 py-2.5 text-xs font-semibold transition-colors ${visibleTasks.some((task) => !task.completed) ? 'bg-violet-600 text-white hover:bg-violet-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
-                >
-                  Convert Visible Tasks to Schedule ({visibleTasks.filter((task) => !task.completed).length})
-                </button>
               </div>
             </div>
           )}
@@ -6003,6 +6013,10 @@ Rules:
                   </div>
                 </div>
 
+                <div className="text-[11px] text-violet-700 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2">
+                  Selected date: {selectedCalendarDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                </div>
+
                 <div className="space-y-2">
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
                   <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.24em] text-slate-500 uppercase">
@@ -6010,7 +6024,7 @@ Rules:
                     <span>{formatUpcomingHeaderDate(selectedCalendarDate)}</span>
                   </div>
                   {upcomingEvents.map((event, index) => (
-                    <div key={event.id} className={`p-3.5 rounded-2xl border text-xs relative overflow-hidden shadow-[0_16px_35px_-28px_rgba(15,23,42,0.5)] ${event.urgency === 'high' ? 'border-red-100 bg-red-50/25' : event.urgency === 'medium' ? 'border-yellow-100 bg-yellow-50/25' : index === 0 ? 'border-blue-100 bg-blue-50/30' : 'border-gray-100 bg-white'}`}>
+                    <div key={event.id} className={`p-3 rounded-xl border text-xs relative overflow-hidden ${event.urgency === 'high' ? 'border-red-100 bg-red-50/20' : event.urgency === 'medium' ? 'border-yellow-100 bg-yellow-50/20' : index === 0 ? 'border-blue-100 bg-blue-50/20' : 'border-gray-100 bg-white'}`}>
                       <div className={`absolute left-0 top-0 bottom-0 w-1 ${event.urgency === 'high' ? 'bg-red-500' : event.urgency === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
                       <div className={`font-bold text-sm ${event.urgency === 'high' ? 'text-red-700' : event.urgency === 'medium' ? 'text-yellow-700' : index === 0 ? 'text-blue-700' : 'text-gray-700'}`}>{event.title}</div>
                       <div className="mt-2 flex items-center gap-1.5 flex-wrap">
@@ -6018,7 +6032,7 @@ Rules:
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">{event.durationMinutes || 60}m</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-white text-violet-700">{event.slot || formatEventSlotLabel(event).split('•').slice(-1)[0].trim()}</span>
                       </div>
-                      <div className="mt-2 h-[3px] w-28 rounded-full bg-fuchsia-500/80"></div>
+                      <div className="text-gray-500 mt-1">{formatEventSlotLabel(event)}</div>
                     </div>
                   ))}
                 </div>
@@ -6040,7 +6054,7 @@ Rules:
                     ))}
                   </div>
                 )}
-                <div className="bg-[#F6F5FC] border border-violet-100 shadow-[0_12px_35px_-26px_rgba(124,58,237,0.7)] flex items-center px-2 py-2 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-2xl">
+                <div className="bg-[#FAFAFC] rounded-lg p-3 border border-gray-100 space-y-2 relative">
                   <input
                     ref={scheduleFileInputRef}
                     type="file"
@@ -6053,47 +6067,60 @@ Rules:
                   />
                   <button
                     type="button"
-                    onClick={() => scheduleFileInputRef.current?.click()}
-                    className="p-1.5 rounded-lg bg-white hover:bg-gray-50 text-gray-500 transition-colors"
-                    title="Attach files or images"
-                  >
-                    <Upload size={13} />
-                  </button>
-                  <button
-                    type="button"
                     onClick={async () => {
                       await toggleVoiceRecording('schedule');
                     }}
-                    className={`ml-1 p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-white hover:bg-gray-50 text-gray-500'}`}
+                    className={`absolute left-5 top-[43px] -translate-y-1/2 z-10 p-1.5 rounded-full border shadow-sm transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 border-violet-200 text-violet-700' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-500'}`}
                     title="Dictate schedule input"
                   >
-                    <Mic size={13} />
+                    <Mic size={13} className={voiceTarget === 'schedule' && isVoiceActive ? 'animate-pulse' : ''} />
                   </button>
-                  <PenTool size={14} className="text-gray-400 mx-2 shrink-0" />
-                  <div className="relative flex-1">
-                  <textarea
-                    ref={scheduleInputRef}
-                    value={scheduleInput}
-                    onChange={(e) => setScheduleInput(e.target.value)}
-                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                    onPaste={handleSchedulePaste}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        convertMessyScheduleToPlan();
-                      }
-                    }}
-                    placeholder="Paste messy tasks, notes, or shorthand..."
-                    rows={1}
-                    className="w-full bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 py-1 pr-10 resize-none"
-                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">AI Prompt Box</h4>
+                    <button
+                      type="button"
+                      onClick={() => scheduleFileInputRef.current?.click()}
+                      className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                      title="Attach files or images"
+                    >
+                      <Upload size={13} />
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <textarea
+                      ref={scheduleInputRef}
+                      value={scheduleInput}
+                      onChange={(e) => setScheduleInput(e.target.value)}
+                      onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                      onPaste={handleSchedulePaste}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          convertMessyScheduleToPlan();
+                        }
+                      }}
+                      placeholder="Paste messy tasks, notes, or shorthand..."
+                      rows={2}
+                      className="w-full bg-white border border-gray-200 rounded-lg pl-9 pr-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
+                    />
+                  </div>
                   <button
-                    type="submit"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-violet-100 hover:bg-violet-200 text-violet-700 transition-colors text-[11px] font-semibold inline-flex items-center gap-1"
-                    title="Process list"
+                    type="button"
+                    onClick={() => setActiveRightTab('assistant')}
+                    className="text-[11px] text-gray-500 hover:text-violet-600 transition-colors text-left"
+                    title="Open AI Assistant"
                   >
-                    <Sparkles size={12} /> Run Assist
+                    Use full assistant
                   </button>
+                  <div className="flex items-center justify-end">
+                    <button
+                      type="submit"
+                      disabled={isComposing || !scheduleInput.trim()}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${isComposing || !scheduleInput.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
+                      title="Process list"
+                    >
+                      Send to AI
+                    </button>
                   </div>
                 </div>
               </form>
