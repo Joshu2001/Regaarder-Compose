@@ -4466,6 +4466,9 @@ Rules:
         </div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
+        {activeRightTab === 'room' ? (
+          <RoomWorkspace />
+        ) : (
         <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
           <div
             className="mx-auto"
@@ -4704,8 +4707,10 @@ Rules:
           </div>
           </div>
         </div>
+        )}
 
         {/* Persistent Floating AI Prompt Bar */}
+        {activeRightTab !== 'room' && (
         <div
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
@@ -5161,8 +5166,9 @@ Rules:
           </form>
           </div>
         </div>
+        )}
 
-        {!isComposing && (
+        {!isComposing && activeRightTab !== 'room' && (
           <div
             className="pointer-events-none absolute left-6 bottom-24 z-[338]"
             style={{ transform: `translate(${dictationOffset.x}px, ${-dictationOffset.y}px)` }}
@@ -5227,7 +5233,7 @@ Rules:
           </div>
         )}
 
-        {isPromptMinimized && (
+        {isPromptMinimized && activeRightTab !== 'room' && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[340]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
