@@ -10,16 +10,11 @@ import {
   List, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
-  UserPlus, Link2 as LinkIcon, Clock, Maximize2, Minimize2, Sidebar,
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff, Clock, UserPlus, Maximize2,
+  Link as LinkIcon,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 
-const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
-const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
-const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
-
-// Sub-component to cleanly handle the local video stream without cluttering the main render
 const LocalVideoFeed = ({ stream, isCameraOn }) => {
   const videoRef = useRef(null);
 
@@ -41,6 +36,7 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
 
   return (
     <video
+                { key: 'room', label: 'Room' },
       ref={videoRef}
       autoPlay
       muted
@@ -49,6 +45,10 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
     />
   );
 };
+
+const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
+const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
+const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
 
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
@@ -72,7 +72,8 @@ export default function App() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
-  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
+  const [mainView, setMainView] = useState('document');
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
@@ -107,12 +108,11 @@ export default function App() {
   const [isComposing, setIsComposing] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
-  const [mainView, setMainView] = useState('document');
+  const [isRoomMicOn, setIsRoomMicOn] = useState(true);
+  const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
   const [roomState, setRoomState] = useState('lobby');
   const [roomId, setRoomId] = useState('');
   const [joinCode, setJoinCode] = useState('');
-  const [isRoomMicOn, setIsRoomMicOn] = useState(true);
-  const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [mediaError, setMediaError] = useState(false);
@@ -1602,6 +1602,81 @@ export default function App() {
     }
   }, []);
 
+  const requestMediaPermissions = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      setLocalStream(stream);
+      setMediaError(false);
+      setIsRoomCameraOn(true);
+      setIsRoomMicOn(true);
+    } catch (_err) {
+      setMediaError(true);
+      setIsRoomCameraOn(false);
+      setIsRoomMicOn(false);
+      showToast('Camera/Mic access denied. Please check browser permissions.');
+    }
+  };
+
+  const stopMediaStream = () => {
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+      setLocalStream(null);
+    }
+  };
+
+  const generateRoomCode = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const getStr = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    return `${getStr(3)}-${getStr(4)}-${getStr(3)}`;
+  };
+
+  const joinRoom = async (code) => {
+    setRoomId(code);
+    setRoomState('active');
+    setMainView('room');
+    showToast(`Joined room: ${code}`);
+    await requestMediaPermissions();
+  };
+
+  const leaveRoom = () => {
+    setRoomState('summary');
+    setMainView('document');
+    stopMediaStream();
+    showToast('Left the room. AI generating summary...');
+  };
+
+  const toggleRoomCamera = () => {
+    if (localStream && !mediaError) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        const nextEnabled = !videoTrack.enabled;
+        videoTrack.enabled = nextEnabled;
+        setIsRoomCameraOn(nextEnabled);
+      }
+    } else if (!localStream && !isRoomCameraOn) {
+      requestMediaPermissions();
+    }
+  };
+
+  const toggleRoomMic = () => {
+    if (localStream && !mediaError) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        const nextEnabled = !audioTrack.enabled;
+        audioTrack.enabled = nextEnabled;
+        setIsRoomMicOn(nextEnabled);
+      }
+    }
+  };
+
+  const toggleScreenShare = () => {
+    setIsScreenSharing((prev) => !prev);
+    showToast(!isScreenSharing ? 'Screen sharing started' : 'Screen sharing stopped');
+  };
+
   const truncateText = (value, max = 120) => {
     const raw = String(value || '').trim();
     if (raw.length <= max) {
@@ -2689,101 +2764,6 @@ Rules:
     } else {
       setRightSidebarOpen(true);
       setActiveRightTab(tabKey);
-    }
-  };
-
-  const requestMediaPermissions = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
-      setLocalStream(stream);
-      setMediaError(false);
-      setIsRoomCameraOn(true);
-      setIsRoomMicOn(true);
-    } catch (err) {
-      console.warn('Media access denied or unavailable', err);
-      setMediaError(true);
-      setIsRoomCameraOn(false);
-      setIsRoomMicOn(false);
-      showToast('Camera/Mic access denied. Please check browser permissions.');
-    }
-  };
-
-  const stopMediaStream = () => {
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-      setLocalStream(null);
-    }
-  };
-
-  const generateRoomCode = () => {
-    const chars = 'abcdefghijklmnopqrstuvwxyz';
-    const getStr = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-    return `${getStr(3)}-${getStr(4)}-${getStr(3)}`;
-  };
-
-  const joinRoom = async (code) => {
-    setRoomId(code);
-    setRoomState('active');
-    setMainView('room');
-    showToast(`Joined room: ${code}`);
-    await requestMediaPermissions();
-  };
-
-  const leaveRoom = () => {
-    setRoomState('summary');
-    setMainView('document');
-    stopMediaStream();
-    showToast('Left the room. AI generating summary...');
-  };
-
-  const handleCopyLink = () => {
-    const link = `regaarder.app/room/${roomId || 'q2-launch'}`;
-    const textArea = document.createElement('textarea');
-    textArea.value = link;
-    document.body.appendChild(textArea);
-    textArea.select();
-    try {
-      document.execCommand('copy');
-      showToast(`Meeting link copied: ${link}`);
-    } catch (_err) {
-      showToast(`Link copied: ${link}`);
-    }
-    document.body.removeChild(textArea);
-  };
-
-  const toggleRoomCamera = () => {
-    if (localStream && !mediaError) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        const nextEnabled = !videoTrack.enabled;
-        videoTrack.enabled = nextEnabled;
-        setIsRoomCameraOn(nextEnabled);
-      }
-    } else if (!localStream && !isRoomCameraOn) {
-      requestMediaPermissions();
-    }
-  };
-
-  const toggleRoomMic = () => {
-    if (localStream && !mediaError) {
-      const audioTrack = localStream.getAudioTracks()[0];
-      if (audioTrack) {
-        const nextEnabled = !audioTrack.enabled;
-        audioTrack.enabled = nextEnabled;
-        setIsRoomMicOn(nextEnabled);
-      }
-    }
-  };
-
-  const toggleScreenShare = () => {
-    setIsScreenSharing((prev) => !prev);
-    if (!isScreenSharing) {
-      showToast('Screen sharing started');
-    } else {
-      showToast('Screen sharing stopped');
     }
   };
 
@@ -6312,11 +6292,10 @@ Rules:
             </div>
           )}
 
-          {/* REGAARDER ROOM TAB */}
+          {/* E. ACTIVE TAB: REGAARDER ROOM */}
           {activeRightTab === 'room' && (
             <div className="flex-1 flex flex-col min-h-0 bg-[#FAFAFC] animate-fade-in min-w-[340px] relative">
 
-              {/* STATE: LOBBY */}
               {roomState === 'lobby' && (
                 <div className="flex-1 flex flex-col p-6 items-center justify-center text-center space-y-6 animate-fade-in">
                   <div className="w-16 h-16 bg-violet-50 border-2 border-violet-100 rounded-2xl flex items-center justify-center text-violet-600 mb-2 shadow-sm">
@@ -6375,10 +6354,8 @@ Rules:
                 </div>
               )}
 
-              {/* STATE: ACTIVE ROOM (Sidebar Panel View) */}
               {roomState === 'active' && (
                 <div className="flex-1 flex flex-col h-full animate-fade-in relative">
-
                   {mainView === 'document' && (
                     <div className="flex flex-col border-b border-gray-100 bg-white">
                       <div className="p-3 pb-2 flex justify-between items-center">
@@ -6406,7 +6383,6 @@ Rules:
                   )}
 
                   <div className="flex-1 overflow-y-auto pb-24 space-y-5 px-4 pt-4 relative z-0">
-
                     {mainView === 'room' && (
                       <div className="bg-violet-50 text-violet-700 text-xs px-3 py-2 rounded-lg flex items-center justify-between border border-violet-100 mb-2">
                         <span>Room is expanded</span>
@@ -6454,6 +6430,9 @@ Rules:
                       <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${isRoomCameraOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
                         {isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
                       </button>
+                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100'}`}>
+                        <MonitorPlay size={16} />
+                      </button>
                       <div className="w-px h-5 bg-gray-200 mx-1"></div>
                       <button onClick={leaveRoom} className="px-2.5 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-sm flex items-center gap-1.5 font-medium text-[11px] border border-red-600 active:scale-95">
                         <PhoneOff size={14} /> Leave
@@ -6463,7 +6442,6 @@ Rules:
                 </div>
               )}
 
-              {/* STATE: MEETING SUMMARY */}
               {roomState === 'summary' && (
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white animate-fade-in relative">
                   <div className="text-center pb-6 border-b border-gray-100">
@@ -6508,7 +6486,6 @@ Rules:
                   </div>
                 </div>
               )}
-
             </div>
           )}
 
