@@ -5160,7 +5160,7 @@ Rules:
             </div>
           </form>
           </div>
-                  className="bg-white rounded-2xl p-2.5 border border-violet-100 space-y-2 pointer-events-auto"
+        </div>
 
         {!isComposing && (
           <div
