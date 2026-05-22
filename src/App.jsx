@@ -11,6 +11,7 @@ import {
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound,
+  Video, VideoOff, MicOff, PhoneOff, Maximize2, Link2 as LinkIcon, Clock,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 
@@ -18,6 +19,27 @@ const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
 
+const LocalVideoFeed = ({ stream, isCameraOn }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream]);
+
+  if (!isCameraOn || !stream) {
+    return (
+      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 text-xs font-bold">
+          You
+        </div>
+      </div>
+    );
+  }
+
+  return <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover transform scale-x-[-1]" />;
+};
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
   const defaultSubtitle = 'A strategic plan to successfully launch Regaarder Compose and drive adoption, engagement, and growth.';
@@ -31,6 +53,7 @@ export default function App() {
     { id: 1, name: 'Regaarder', letter: 'R', colorClass: 'bg-indigo-500', hasDocuments: false },
     { id: 2, name: 'Product', letter: 'P', colorClass: 'bg-orange-500', hasDocuments: true },
     { id: 3, name: 'Marketing', letter: 'M', colorClass: 'bg-emerald-500', hasDocuments: false },
+                { key: 'room', label: 'Room' },
     { id: 4, name: 'Finance', letter: 'F', colorClass: 'bg-blue-500', hasDocuments: false },
     { id: 5, name: 'Personal', letter: 'P', colorClass: 'bg-fuchsia-500', hasDocuments: false },
   ];
@@ -40,7 +63,7 @@ export default function App() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
-  const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
@@ -73,6 +96,15 @@ export default function App() {
   const [isComposing, setIsComposing] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [mainView, setMainView] = useState('document');
+  const [roomState, setRoomState] = useState('lobby');
+  const [roomId, setRoomId] = useState('');
+  const [joinCode, setJoinCode] = useState('');
+  const [isRoomMicOn, setIsRoomMicOn] = useState(true);
+  const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [localStream, setLocalStream] = useState(null);
+  const [mediaError, setMediaError] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [workspaces, setWorkspaces] = useState(defaultWorkspaces);
@@ -2605,13 +2637,105 @@ Rules:
     }
   };
 
+  const requestMediaPermissions = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      setLocalStream(stream);
+      setMediaError(false);
+      setIsRoomCameraOn(true);
+      setIsRoomMicOn(true);
+      return true;
+    } catch (_error) {
+      setMediaError(true);
+      setIsRoomCameraOn(false);
+      setIsRoomMicOn(false);
+      showToast('Camera/Mic access denied. Please allow browser permissions.');
+      return false;
+    }
+  };
+
+  const stopMediaStream = () => {
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+      setLocalStream(null);
+    }
+    setIsScreenSharing(false);
+  };
+
+  const generateRoomCode = () => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    const getStr = (len) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    return `${getStr(3)}-${getStr(4)}-${getStr(3)}`;
+  };
+
+  const joinRoom = async (code) => {
+    const normalized = String(code || '').trim() || generateRoomCode();
+    setRoomId(normalized);
+    setRoomState('active');
+    setMainView('room');
+    showToast(`Joined room: ${normalized}`);
+    await requestMediaPermissions();
+  };
+
+  const leaveRoom = () => {
+    setRoomState('summary');
+    setMainView('document');
+    stopMediaStream();
+    showToast('Left room. Summary is ready.');
+  };
+
+  const handleCopyRoomLink = async () => {
+    const link = `${window.location.origin}${window.location.pathname}?room=${roomId || generateRoomCode()}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      }
+      showToast('Meeting link copied');
+    } catch (_error) {
+      showToast(link);
+    }
+  };
+
+  const toggleRoomCamera = async () => {
+    if (!localStream) {
+      await requestMediaPermissions();
+      return;
+    }
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (!videoTrack) {
+      return;
+    }
+    const nextEnabled = !videoTrack.enabled;
+    videoTrack.enabled = nextEnabled;
+    setIsRoomCameraOn(nextEnabled);
+  };
+
+  const toggleRoomMic = async () => {
+    if (!localStream) {
+      await requestMediaPermissions();
+      return;
+    }
+    const audioTrack = localStream.getAudioTracks()[0];
+    if (!audioTrack) {
+      return;
+    }
+    const nextEnabled = !audioTrack.enabled;
+    audioTrack.enabled = nextEnabled;
+    setIsRoomMicOn(nextEnabled);
+  };
+
+  const toggleScreenShare = () => {
+    setIsScreenSharing((prev) => !prev);
+    showToast(!isScreenSharing ? 'Screen sharing started' : 'Screen sharing stopped');
+  };
+
   const handleRightSidebarTabsKeyDown = (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
       return;
     }
 
     event.preventDefault();
-    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'memory'];
+    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'memory'];
     const currentIndex = tabOrder.indexOf(activeRightTab);
     const safeIndex = currentIndex >= 0 ? currentIndex : 0;
     const nextIndex = event.key === 'ArrowRight'
@@ -6028,6 +6152,83 @@ Rules:
             </div>
           )}
 
+          {activeRightTab === 'room' && (
+            <div className="flex-1 flex flex-col min-h-0 bg-[#FAFAFC] animate-fade-in min-w-[340px] relative">
+              {roomState === 'lobby' && (
+                <div className="flex-1 flex flex-col p-6 items-center justify-center text-center space-y-6">
+                  <div className="w-16 h-16 bg-violet-50 border-2 border-violet-100 rounded-2xl flex items-center justify-center text-violet-600">
+                    <MonitorPlay size={30} className="ml-1" />
+                  </div>
+                  <div>
+                    <h3 className="text-[18px] font-bold text-gray-900 tracking-tight">Regaarder Room</h3>
+                    <p className="text-xs text-gray-500 mt-2">Create or join a meeting and collaborate live.</p>
+                  </div>
+                  <div className="w-full space-y-3">
+                    <button onClick={() => joinRoom(generateRoomCode())} className="w-full bg-violet-600 text-white rounded-xl py-3 text-sm font-bold hover:bg-violet-700 transition-all flex items-center justify-center gap-2">
+                      <Plus size={16} /> Create Meeting
+                    </button>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <LinkIcon size={14} className="text-gray-400" />
+                      </div>
+                      <input
+                        type="text"
+                        value={joinCode}
+                        onChange={(e) => setJoinCode(e.target.value)}
+                        placeholder="Enter room code or meeting link"
+                        className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-9 pr-10 text-sm focus:outline-none focus:border-violet-400"
+                      />
+                      <button onClick={() => (joinCode.trim() ? joinRoom(joinCode.trim()) : showToast('Enter a room code'))} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-violet-600">
+                        <ArrowRight size={16} />
+                      </button>
+                    </div>
+                  </div>
+                  <button onClick={handleCopyRoomLink} className="text-xs font-semibold text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-3 py-1.5">Copy Invite Link</button>
+                </div>
+              )}
+
+              {roomState === 'active' && (
+                <div className="flex-1 flex flex-col min-h-0">
+                  <div className="p-3 border-b border-gray-100 bg-white flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-bold text-gray-900">Live Meeting</div>
+                      <div className="text-[10px] text-gray-400 font-mono">{roomId}</div>
+                    </div>
+                    <button onClick={handleCopyRoomLink} className="text-[11px] font-medium text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2.5 py-1">Share</button>
+                  </div>
+                  <div className="p-3 border-b border-gray-100 bg-white">
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                      <div className="relative w-16 h-16 rounded-[10px] overflow-hidden border border-gray-200 bg-gray-900 shrink-0">
+                        <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
+                      </div>
+                      <div className="relative w-16 h-16 rounded-[10px] overflow-hidden ring-2 ring-emerald-500 shrink-0"><img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Sarah" className="object-cover w-full h-full" /></div>
+                      <div className="relative w-16 h-16 rounded-[10px] overflow-hidden border border-gray-200 shrink-0"><img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" alt="Mike" className="object-cover w-full h-full" /></div>
+                    </div>
+                    {mediaError && <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">Camera/Mic blocked. Allow permissions to fully join.</div>}
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                    <div className="text-[10px] font-bold text-violet-600 uppercase tracking-wider flex items-center gap-1"><Sparkles size={10} /> Live Context</div>
+                    <div className="bg-white border border-gray-100 rounded-xl p-3 text-xs text-gray-700">Meeting is active and synced with your workspace while you continue editing.</div>
+                  </div>
+                  <div className="p-3 border-t border-gray-100 bg-white flex items-center justify-center gap-2">
+                    <button onClick={toggleRoomMic} className={`p-2 rounded-xl border ${isRoomMicOn ? 'bg-white text-gray-700 border-gray-200' : 'bg-red-50 text-red-600 border-red-100'}`}>{isRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}</button>
+                    <button onClick={toggleRoomCamera} className={`p-2 rounded-xl border ${isRoomCameraOn ? 'bg-white text-gray-700 border-gray-200' : 'bg-red-50 text-red-600 border-red-100'}`}>{isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}</button>
+                    <button onClick={toggleScreenShare} className={`p-2 rounded-xl border ${isScreenSharing ? 'bg-emerald-500 text-white border-emerald-600' : 'bg-white text-gray-700 border-gray-200'}`}><MonitorPlay size={16} /></button>
+                    <button onClick={leaveRoom} className="px-3 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[11px] font-semibold flex items-center gap-1.5"><PhoneOff size={14} /> Leave</button>
+                  </div>
+                </div>
+              )}
+
+              {roomState === 'summary' && (
+                <div className="flex-1 p-6 space-y-4">
+                  <h3 className="text-lg font-bold text-gray-900">Meeting Summary</h3>
+                  <div className="bg-white border border-gray-100 rounded-xl p-3 text-xs text-gray-700">Decisions and action items were captured. Resume or start a new room anytime.</div>
+                  <button onClick={() => setRoomState('lobby')} className="w-full bg-gray-100 text-gray-700 border border-gray-200 rounded-xl py-3 text-sm font-bold hover:bg-gray-200">Back to Lobby</button>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeRightTab === 'memory' && (
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               <div>
@@ -6238,6 +6439,18 @@ Rules:
             <Database size={20} />
           </div>
           <span className="text-[9px] font-semibold">Memory</span>
+        </div>
+
+        <div
+          onClick={() => handleMiniSidebarClick('room')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <MonitorPlay size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">Room</span>
         </div>
 
         <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
