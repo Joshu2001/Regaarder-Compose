@@ -2197,7 +2197,7 @@ Rules:
           const rawType = String(result.docAction.type || '').toLowerCase();
           if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
             docAction = {
-              title: result.docAction.title || '??ï¿?AI Timeline',
+              title: result.docAction.title || '??ï¿½?AI Timeline',
               type: 'timeline',
               content: result.docAction.timelineItems,
             };
@@ -2217,7 +2217,7 @@ Rules:
             setTasks((prev) => [...prev, ...syncedTasks]);
           } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
             docAction = {
-              title: result.docAction.title || '?ï¿½ï¿½ï¿?AI Risk Matrix',
+              title: result.docAction.title || '?ï¿½ï¿½ï¿½?AI Risk Matrix',
               type: 'risks',
               content: result.docAction.riskItems,
             };
@@ -6229,7 +6229,7 @@ Rules:
                       <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700">{event.category || 'General'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">{event.durationMinutes || 60}m</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-white text-violet-700">{event.slot || formatEventSlotLabel(event).split('??).slice(-1)[0].trim()}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-white text-violet-700">{event.slot || formatEventSlotLabel(event).split(/\u2022/).slice(-1)[0].trim()}</span>
                       </div>
                       <div className="text-gray-500 mt-1">{formatEventSlotLabel(event)}</div>
                     </div>
