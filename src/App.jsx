@@ -48,6 +48,8 @@ export default function App() {
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
   const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
+  const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
+  const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -104,10 +106,6 @@ export default function App() {
   const [editingPromptValue, setEditingPromptValue] = useState('');
   const [assistantQuickPrompt, setAssistantQuickPrompt] = useState('');
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
-  const [promptMinimizedPosition, setPromptMinimizedPosition] = useState(() => ({
-    x: typeof window !== 'undefined' ? Math.max(12, window.innerWidth - 84) : 1220,
-    y: 92,
-  }));
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
@@ -166,6 +164,10 @@ export default function App() {
     rightWidth: 340,
     promptX: 0,
     promptY: -14,
+    miniPromptX: 0,
+    miniPromptY: 0,
+    dictationX: 0,
+    dictationY: 0,
   });
   const wholeDocSelectionRef = useRef(false);
   const micPermissionGrantedRef = useRef(false);
@@ -175,12 +177,6 @@ export default function App() {
   const lastDocumentTranscriptRef = useRef({ text: '', source: '', at: 0 });
   const toastTimerRef = useRef(null);
   const promptRevealTimerRef = useRef(null);
-  const promptMinimizedDragRef = useRef({
-    isDragging: false,
-    moved: false,
-    pointerOffsetX: 0,
-    pointerOffsetY: 0,
-  });
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState(defaultTitle);
@@ -358,109 +354,6 @@ export default function App() {
       setActiveDocId(documents[0].id);
     }
   }, [documents, activeDocId]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setPromptMinimizedPosition((prev) => {
-        const maxX = Math.max(12, window.innerWidth - 60);
-        const maxY = Math.max(60, window.innerHeight - 60);
-        return {
-          x: Math.min(Math.max(12, prev.x), maxX),
-          y: Math.min(Math.max(60, prev.y), maxY),
-        };
-      });
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const getPromptTopRightPosition = useCallback(() => ({
-    x: Math.max(12, window.innerWidth - 84),
-    y: 92,
-  }), []);
-
-  useEffect(() => {
-    const handleTypingOutsidePrompt = (event) => {
-      if (isPromptMinimized || isComposing) {
-        return;
-      }
-      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) {
-        return;
-      }
-
-      const key = event.key;
-      const isTypingKey = key.length === 1 || key === 'Backspace' || key === 'Delete' || key === 'Enter';
-      if (!isTypingKey) {
-        return;
-      }
-
-      const target = event.target;
-      if (promptRootRef.current && target instanceof Node && promptRootRef.current.contains(target)) {
-        return;
-      }
-
-      const isEditableTarget = target instanceof HTMLElement
-        && (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
-      if (!isEditableTarget) {
-        return;
-      }
-
-      setPromptMinimizedPosition(getPromptTopRightPosition());
-      setIsPromptMinimized(true);
-    };
-
-    window.addEventListener('keydown', handleTypingOutsidePrompt, true);
-    return () => window.removeEventListener('keydown', handleTypingOutsidePrompt, true);
-  }, [isPromptMinimized, isComposing, getPromptTopRightPosition]);
-
-  const startPromptMinimizedDrag = (event) => {
-    if (event.button !== 0) {
-      return;
-    }
-
-    event.preventDefault();
-    const startX = event.clientX;
-    const startY = event.clientY;
-    promptMinimizedDragRef.current = {
-      isDragging: true,
-      moved: false,
-      pointerOffsetX: startX - promptMinimizedPosition.x,
-      pointerOffsetY: startY - promptMinimizedPosition.y,
-    };
-
-    const handleMove = (moveEvent) => {
-      if (!promptMinimizedDragRef.current.isDragging) {
-        return;
-      }
-
-      const nextX = moveEvent.clientX - promptMinimizedDragRef.current.pointerOffsetX;
-      const nextY = moveEvent.clientY - promptMinimizedDragRef.current.pointerOffsetY;
-      const clampedX = Math.min(Math.max(12, nextX), window.innerWidth - 60);
-      const clampedY = Math.min(Math.max(60, nextY), window.innerHeight - 60);
-      if (Math.abs(moveEvent.clientX - startX) > 3 || Math.abs(moveEvent.clientY - startY) > 3) {
-        promptMinimizedDragRef.current.moved = true;
-      }
-      setPromptMinimizedPosition({ x: clampedX, y: clampedY });
-    };
-
-    const handleUp = () => {
-      promptMinimizedDragRef.current.isDragging = false;
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
-    };
-
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
-  };
-
-  const handlePromptMinimizedBubbleClick = () => {
-    if (promptMinimizedDragRef.current.moved) {
-      promptMinimizedDragRef.current.moved = false;
-      return;
-    }
-    setIsPromptMinimized(false);
-  };
 
   useEffect(() => {
     try {
@@ -3627,6 +3520,9 @@ Rules:
 
   const beginPanelResize = (target, event) => {
     const point = event.touches?.[0] || event;
+    if (!event.touches && event.button !== 0) {
+      return;
+    }
     dragStateRef.current = {
       startX: point.clientX,
       startY: point.clientY,
@@ -3634,6 +3530,10 @@ Rules:
       rightWidth: rightSidebarWidth,
       promptX: promptOffset.x,
       promptY: promptOffset.y,
+      miniPromptX: miniPromptOffset.x,
+      miniPromptY: miniPromptOffset.y,
+      dictationX: dictationOffset.x,
+      dictationY: dictationOffset.y,
     };
     setDragTarget(target);
   };
@@ -3662,13 +3562,27 @@ Rules:
         const nextY = Math.min(320, Math.max(-540, dragStateRef.current.promptY - deltaY));
         setPromptOffset({ x: nextX, y: nextY });
       }
+
+      if (dragTarget === 'miniPrompt') {
+        const nextX = Math.min(840, Math.max(-20, dragStateRef.current.miniPromptX + deltaX));
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextY = Math.min(560, Math.max(-40, dragStateRef.current.miniPromptY + deltaY));
+        setMiniPromptOffset({ x: nextX, y: nextY });
+      }
+
+      if (dragTarget === 'dictation') {
+        const nextX = Math.min(840, Math.max(-20, dragStateRef.current.dictationX + deltaX));
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextY = Math.min(520, Math.max(-80, dragStateRef.current.dictationY - deltaY));
+        setDictationOffset({ x: nextX, y: nextY });
+      }
     };
 
     const handlePointerUp = () => {
       setDragTarget(null);
     };
 
-    document.body.style.cursor = dragTarget === 'prompt' ? 'grabbing' : 'col-resize';
+    document.body.style.cursor = ['prompt', 'miniPrompt', 'dictation'].includes(dragTarget) ? 'grabbing' : 'col-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
@@ -4804,10 +4718,7 @@ Rules:
             {isPromptExpanded && (
               <button
                 type="button"
-                onClick={() => {
-                  setPromptMinimizedPosition(getPromptTopRightPosition());
-                  setIsPromptMinimized(true);
-                }}
+                onClick={() => setIsPromptMinimized(true)}
                 className="absolute right-2 top-2 p-1 rounded-md text-gray-400 hover:text-violet-700 hover:bg-violet-50"
                 title="Minimize AI prompt"
               >
@@ -5249,30 +5160,96 @@ Rules:
           </div>
         </div>
 
-        {isPromptMinimized && (
-          <button
-            type="button"
-            onMouseDown={startPromptMinimizedDrag}
-            onClick={handlePromptMinimizedBubbleClick}
-            className="fixed z-[340] h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-grab active:cursor-grabbing"
-            style={{ left: `${promptMinimizedPosition.x}px`, top: `${promptMinimizedPosition.y}px` }}
-            title="Open AI prompt"
+        {!isComposing && (
+          <div
+            className="pointer-events-none absolute left-6 bottom-24 z-[338]"
+            style={{ transform: `translate(${dictationOffset.x}px, ${-dictationOffset.y}px)` }}
           >
-            <PenTool size={18} className="mx-auto" />
-          </button>
+            <div className="pointer-events-auto flex flex-col items-center gap-3">
+              <button
+                type="button"
+                onPointerDown={(event) => beginPanelResize('dictation', event)}
+                className="h-7 w-7 rounded-full bg-white/95 border border-gray-200 text-gray-400 hover:text-violet-600 hover:border-violet-200 cursor-move touch-none flex items-center justify-center"
+                title="Move dictation control"
+              >
+                <Move size={13} />
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await toggleVoiceRecording('document');
+                }}
+                className={`relative w-24 h-24 rounded-full border transition-all ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
+                title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
+              >
+                <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
+                {isVoiceActive && voiceTarget === 'document' && (
+                  <>
+                    <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
+                    <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
+                  </>
+                )}
+              </button>
+              <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
+                {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
+              </div>
+              {isVoiceActive && voiceTarget === 'document' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      speechRecognitionRef.current?.stop();
+                    } catch (_error) {
+                      // noop
+                    }
+                    setIsVoiceActive(false);
+                    setLiveSpeechInterimText('');
+                  }}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    try {
+                      speechRecognitionRef.current?.stop();
+                    } catch (_error) {
+                      // noop
+                    }
+                    setIsVoiceActive(false);
+                    setLiveSpeechInterimText('');
+                  }}
+                  className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
+                >
+                  Dismiss
+                </button>
+              )}
+            </div>
+          </div>
         )}
 
-        <button
-          type="button"
-          onClick={async () => {
-            await toggleVoiceRecording('document');
-          }}
-          className={`fixed bottom-16 z-[345] h-12 w-12 rounded-full border shadow-md transition-all ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-300 bg-violet-100 text-violet-700' : 'border-gray-200 bg-white text-gray-500 hover:border-violet-300 hover:text-violet-600'}`}
-          style={{ right: `${(rightSidebarOpen ? rightSidebarWidth : 0) + 24}px` }}
-          title={isVoiceActive && voiceTarget === 'document' ? 'Stop dictation' : 'Start dictation'}
-        >
-          <Mic size={18} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'animate-pulse' : ''}`} />
-        </button>
+        {isPromptMinimized && (
+          <div
+            className="pointer-events-none absolute left-6 top-20 z-[340]"
+            style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
+          >
+            <div className="pointer-events-auto flex items-center gap-2">
+              <button
+                type="button"
+                onPointerDown={(event) => beginPanelResize('miniPrompt', event)}
+                className="h-8 w-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-violet-600 hover:border-violet-200 cursor-move touch-none flex items-center justify-center shadow-sm"
+                title="Move AI bubble"
+              >
+                <Move size={14} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPromptMinimized(false)}
+                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
+                title="Open AI prompt"
+              >
+                <PenTool size={18} className="mx-auto" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
@@ -5672,22 +5649,21 @@ Rules:
 
               <div>
                 <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
-                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#F6F5FC] rounded-2xl p-3.5 border border-violet-100 shadow-[0_10px_35px_-25px_rgba(124,58,237,0.7)] space-y-2.5">
+                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#FAFAFC] rounded-lg p-3 border border-gray-100 space-y-2">
                   <textarea
                     value={assistantQuickPrompt}
                     onChange={(e) => setAssistantQuickPrompt(e.target.value)}
                     placeholder="Ask AI Assistant from here..."
                     rows={2}
-                    className="w-full bg-white/70 border border-transparent rounded-xl px-3 py-3 text-xs text-gray-700 outline-none focus:bg-white focus:border-violet-300 resize-none min-h-[74px]"
+                    className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
                   />
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] italic text-gray-400">Floating Co-Pilot</span>
+                  <div className="flex items-center justify-end">
                     <button
                       type="submit"
                       disabled={isComposing || !assistantQuickPrompt.trim()}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
                     >
-                      Run Assist
+                      Send to AI
                     </button>
                   </div>
                 </form>
@@ -6131,7 +6107,7 @@ Rules:
                     ))}
                   </div>
                 )}
-                <div className="bg-[#FAFAFC] rounded-lg p-3 border border-gray-100 space-y-2 relative">
+                <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
                   <input
                     ref={scheduleFileInputRef}
                     type="file"
@@ -6142,7 +6118,26 @@ Rules:
                       event.target.value = '';
                     }}
                   />
-                  <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
+                  <button
+                    type="button"
+                    onClick={() => scheduleFileInputRef.current?.click()}
+                    className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                    title="Attach files or images"
+                  >
+                    <Upload size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await toggleVoiceRecording('schedule');
+                    }}
+                    className={`ml-1 p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-gray-50 hover:bg-gray-100 text-gray-500'}`}
+                    title="Dictate schedule input"
+                  >
+                    <Mic size={13} />
+                  </button>
+                  <PenTool size={14} className="text-gray-400 mx-2 shrink-0" />
+                  <div className="relative flex-1">
                   <textarea
                     ref={scheduleInputRef}
                     value={scheduleInput}
@@ -6156,38 +6151,16 @@ Rules:
                       }
                     }}
                     placeholder="Paste messy tasks, notes, or shorthand..."
-                    rows={2}
-                    className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
+                    rows={1}
+                    className="w-full bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 py-1 pr-10 resize-none"
                   />
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => scheduleFileInputRef.current?.click()}
-                        className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
-                        title="Attach files or images"
-                      >
-                        <Upload size={13} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await toggleVoiceRecording('schedule');
-                        }}
-                        className={`p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-gray-50 hover:bg-gray-100 text-gray-500'}`}
-                        title="Dictate schedule input"
-                      >
-                        <Mic size={13} className={voiceTarget === 'schedule' && isVoiceActive ? 'animate-pulse' : ''} />
-                      </button>
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={isComposing || !scheduleInput.trim()}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${isComposing || !scheduleInput.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
-                      title="Process list"
-                    >
-                      Send to AI
-                    </button>
+                  <button
+                    type="submit"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
+                    title="Process list"
+                  >
+                    <Send size={14} />
+                  </button>
                   </div>
                 </div>
               </form>
