@@ -17,6 +17,8 @@ import {
 const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
+const DEFAULT_CANVA_LINK = 'https://canva.link/rdz63nph2e1vk5j';
+const DEFAULT_BODY_HTML = `<p><a href="${DEFAULT_CANVA_LINK}" target="_blank" rel="noopener noreferrer">${DEFAULT_CANVA_LINK}</a></p>`;
 
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
@@ -179,23 +181,23 @@ export default function App() {
   const promptRevealTimerRef = useRef(null);
 
   // Stateful document content
-  const [docTitle, setDocTitle] = useState(defaultTitle);
-  const [docSubtitle, setDocSubtitle] = useState(defaultSubtitle);
+  const [docTitle, setDocTitle] = useState('');
+  const [docSubtitle, setDocSubtitle] = useState('');
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
-  const [isBlankDocument, setIsBlankDocument] = useState(false);
+  const [isBlankDocument, setIsBlankDocument] = useState(true);
   const [documents, setDocuments] = useState([
     {
       id: Date.now(),
-      title: defaultTitle,
-      subtitle: defaultSubtitle,
+      title: '',
+      subtitle: '',
       initiatives: defaultInitiatives,
       appendedSections: [],
-      isBlank: false,
-      bodyHtml: '',
+      isBlank: true,
+      bodyHtml: DEFAULT_BODY_HTML,
     },
   ]);
   const [activeDocId, setActiveDocId] = useState(null);
-  const [docBodyHtml, setDocBodyHtml] = useState('');
+  const [docBodyHtml, setDocBodyHtml] = useState(DEFAULT_BODY_HTML);
   const [closeConfirmDocId, setCloseConfirmDocId] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [headingSearch, setHeadingSearch] = useState('');
