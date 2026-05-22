@@ -155,6 +155,7 @@ export default function App() {
   const interimCommitTimerRef = useRef(null);
   const selectedEditorTextRef = useRef('');
   const pointerDownInPromptRef = useRef(false);
+  const pointerDownInDocumentRef = useRef(false);
   const calendarMenuRef = useRef(null);
   const formattingDropdownCloseTimerRef = useRef(null);
   const textStyleMenuCloseTimerRef = useRef(null);
@@ -1220,6 +1221,7 @@ export default function App() {
   useEffect(() => {
     const trackPointerOrigin = (event) => {
       pointerDownInPromptRef.current = Boolean(promptRootRef.current && promptRootRef.current.contains(event.target));
+      pointerDownInDocumentRef.current = Boolean(documentCardRef.current && documentCardRef.current.contains(event.target));
     };
 
     window.addEventListener('pointerdown', trackPointerOrigin, true);
@@ -1239,6 +1241,10 @@ export default function App() {
       const range = getEditorSelectionRange();
       if (!range) {
         if (pointerDownInPromptRef.current) {
+          pointerDownInDocumentRef.current = false;
+          return;
+        }
+        if (!pointerDownInDocumentRef.current) {
           return;
         }
         setSelectedEditorText('');
@@ -1249,6 +1255,7 @@ export default function App() {
         setIsStrikeActive(false);
         setIsListActive(false);
         wholeDocSelectionRef.current = false;
+        pointerDownInDocumentRef.current = false;
         return;
       }
 
@@ -1268,6 +1275,8 @@ export default function App() {
       } catch (_error) {
         // noop
       }
+
+      pointerDownInDocumentRef.current = false;
     };
 
     document.addEventListener('selectionchange', handleSelectionChange);
@@ -1410,11 +1419,7 @@ export default function App() {
       const recoverableErrors = ['not-allowed', 'service-not-allowed', 'audio-capture', 'aborted', 'network'];
       if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && recoverableErrors.includes(errorCode) && !mockIntervalRef.current) {
         showToast('Microphone stream interrupted. Switching to fallback dictation.');
-        const phrases = [
-          'Draft a launch plan for the new beta. ',
-          'I need to make sure we cover the marketing assets, technical rollout, and timeline milestones. ',
-          'Let us schedule a team sync for next week. ',
-        ];
+        const phrases = [''];
         const fullText = phrases.join('');
         let currentIndex = 0;
         try {
@@ -2553,11 +2558,7 @@ Rules:
         const noRealTranscript = !interimTranscriptRef.current.trim() && !pendingInterimTranscriptRef.current.trim();
         if (isVoiceActiveRef.current && voiceTargetRef.current === 'document' && noRealTranscript && !mockIntervalRef.current) {
           showToast('No live mic input yet. Switching to fallback dictation.');
-          const phrases = [
-            'Draft a launch plan for the new beta. ',
-            'I need to cover marketing assets, technical rollout, and timeline milestones. ',
-            'Let us schedule a team sync for next week. ',
-          ];
+          const phrases = [''];
           const fullText = phrases.join('');
           let currentIndex = 0;
           mockIntervalRef.current = setInterval(() => {
@@ -3097,6 +3098,28 @@ Rules:
 
     if (!range) {
       blankBodyRef.current?.focus();
+      return;
+    }
+
+    if (command === 'fontSize') {
+      const parsedSize = Number(value);
+      const safeSize = Number.isFinite(parsedSize) ? Math.min(72, Math.max(10, parsedSize)) : editorSize;
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand('fontSize', false, '7');
+      if (blankBodyRef.current) {
+        const fontNodes = blankBodyRef.current.querySelectorAll('font[size="7"]');
+        fontNodes.forEach((node) => {
+          node.removeAttribute('size');
+          node.style.fontSize = `${safeSize}px`;
+        });
+      }
+      const selectionAfterSize = window.getSelection();
+      if (selectionAfterSize && selectionAfterSize.rangeCount) {
+        savedSelectionRef.current = selectionAfterSize.getRangeAt(0).cloneRange();
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
       return;
     }
 
