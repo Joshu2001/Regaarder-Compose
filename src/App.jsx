@@ -105,8 +105,8 @@ export default function App() {
   const [assistantQuickPrompt, setAssistantQuickPrompt] = useState('');
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [promptMinimizedPosition, setPromptMinimizedPosition] = useState(() => ({
-    x: 24,
-    y: typeof window !== 'undefined' ? Math.max(120, window.innerHeight - 120) : 640,
+    x: typeof window !== 'undefined' ? Math.max(12, window.innerWidth - 84) : 1220,
+    y: 92,
   }));
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [promptAttachments, setPromptAttachments] = useState([]);
@@ -374,6 +374,45 @@ export default function App() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const getPromptTopRightPosition = useCallback(() => ({
+    x: Math.max(12, window.innerWidth - 84),
+    y: 92,
+  }), []);
+
+  useEffect(() => {
+    const handleTypingOutsidePrompt = (event) => {
+      if (isPromptMinimized || isComposing) {
+        return;
+      }
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      const key = event.key;
+      const isTypingKey = key.length === 1 || key === 'Backspace' || key === 'Delete' || key === 'Enter';
+      if (!isTypingKey) {
+        return;
+      }
+
+      const target = event.target;
+      if (promptRootRef.current && target instanceof Node && promptRootRef.current.contains(target)) {
+        return;
+      }
+
+      const isEditableTarget = target instanceof HTMLElement
+        && (target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+      if (!isEditableTarget) {
+        return;
+      }
+
+      setPromptMinimizedPosition(getPromptTopRightPosition());
+      setIsPromptMinimized(true);
+    };
+
+    window.addEventListener('keydown', handleTypingOutsidePrompt, true);
+    return () => window.removeEventListener('keydown', handleTypingOutsidePrompt, true);
+  }, [isPromptMinimized, isComposing, getPromptTopRightPosition]);
 
   const startPromptMinimizedDrag = (event) => {
     if (event.button !== 0) {
@@ -4746,60 +4785,6 @@ Rules:
               </div>
             )}
 
-            {!isComposing && (
-              <div className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center">
-                <div className="pointer-events-auto flex flex-col items-center gap-3 -mt-10">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await toggleVoiceRecording('document');
-                  }}
-                  className={`relative w-24 h-24 rounded-full border transition-all ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
-                  title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
-                >
-                  <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
-                  {isVoiceActive && voiceTarget === 'document' && (
-                    <>
-                      <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
-                      <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
-                    </>
-                  )}
-                </button>
-                <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
-                  {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
-                </div>
-                {isVoiceActive && voiceTarget === 'document' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      try {
-                        speechRecognitionRef.current?.stop();
-                      } catch (_error) {
-                        // noop
-                      }
-                      setIsVoiceActive(false);
-                      setLiveSpeechInterimText('');
-                    }}
-                    onPointerDown={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      try {
-                        speechRecognitionRef.current?.stop();
-                      } catch (_error) {
-                        // noop
-                      }
-                      setIsVoiceActive(false);
-                      setLiveSpeechInterimText('');
-                    }}
-                    className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
-                  >
-                    Dismiss
-                  </button>
-                )}
-                </div>
-              </div>
-            )}
-
           </div>
           </div>
         </div>
@@ -4819,7 +4804,10 @@ Rules:
             {isPromptExpanded && (
               <button
                 type="button"
-                onClick={() => setIsPromptMinimized(true)}
+                onClick={() => {
+                  setPromptMinimizedPosition(getPromptTopRightPosition());
+                  setIsPromptMinimized(true);
+                }}
                 className="absolute right-2 top-2 p-1 rounded-md text-gray-400 hover:text-violet-700 hover:bg-violet-50"
                 title="Minimize AI prompt"
               >
@@ -5279,7 +5267,8 @@ Rules:
           onClick={async () => {
             await toggleVoiceRecording('document');
           }}
-          className={`fixed right-6 bottom-16 z-[345] h-12 w-12 rounded-full border shadow-md transition-all ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-300 bg-violet-100 text-violet-700' : 'border-gray-200 bg-white text-gray-500 hover:border-violet-300 hover:text-violet-600'}`}
+          className={`fixed bottom-16 z-[345] h-12 w-12 rounded-full border shadow-md transition-all ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-300 bg-violet-100 text-violet-700' : 'border-gray-200 bg-white text-gray-500 hover:border-violet-300 hover:text-violet-600'}`}
+          style={{ right: `${(rightSidebarOpen ? rightSidebarWidth : 0) + 24}px` }}
           title={isVoiceActive && voiceTarget === 'document' ? 'Stop dictation' : 'Start dictation'}
         >
           <Mic size={18} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'animate-pulse' : ''}`} />
@@ -5683,21 +5672,22 @@ Rules:
 
               <div>
                 <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
-                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#FAFAFC] rounded-lg p-3 border border-gray-100 space-y-2">
+                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#F6F5FC] rounded-2xl p-3.5 border border-violet-100 shadow-[0_10px_35px_-25px_rgba(124,58,237,0.7)] space-y-2.5">
                   <textarea
                     value={assistantQuickPrompt}
                     onChange={(e) => setAssistantQuickPrompt(e.target.value)}
                     placeholder="Ask AI Assistant from here..."
                     rows={2}
-                    className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
+                    className="w-full bg-white/70 border border-transparent rounded-xl px-3 py-3 text-xs text-gray-700 outline-none focus:bg-white focus:border-violet-300 resize-none min-h-[74px]"
                   />
-                  <div className="flex items-center justify-end">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] italic text-gray-400">Floating Co-Pilot</span>
                     <button
                       type="submit"
                       disabled={isComposing || !assistantQuickPrompt.trim()}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
                     >
-                      Send to AI
+                      Run Assist
                     </button>
                   </div>
                 </form>
