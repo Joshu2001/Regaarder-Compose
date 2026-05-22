@@ -36,7 +36,6 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
 
   return (
     <video
-                { key: 'room', label: 'Room' },
       ref={videoRef}
       autoPlay
       muted
@@ -97,8 +96,8 @@ export default function App() {
   const [scheduleInput, setScheduleInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([
-    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 • 10:00 AM' },
-    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 • 2:30 PM' },
+    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 ??10:00 AM' },
+    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 ??2:30 PM' },
   ]);
   const [calendarMonth, setCalendarMonth] = useState(4); // 0=Jan, 4=May
   const [calendarYear, setCalendarYear] = useState(2026);
@@ -2271,14 +2270,14 @@ Rules:
           const rawType = String(result.docAction.type || '').toLowerCase();
           if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
             docAction = {
-              title: result.docAction.title || '🗓️ AI Timeline',
+              title: result.docAction.title || '??�?AI Timeline',
               type: 'timeline',
               content: result.docAction.timelineItems,
             };
           } else if (rawType === 'tasks' && Array.isArray(result.docAction.taskItems) && result.docAction.taskItems.length) {
             const sanitizedTasks = result.docAction.taskItems.filter(Boolean).map((item) => String(item));
             docAction = {
-              title: result.docAction.title || '📋 AI Checklist',
+              title: result.docAction.title || '?? AI Checklist',
               type: 'tasks',
               content: sanitizedTasks,
             };
@@ -2291,13 +2290,13 @@ Rules:
             setTasks((prev) => [...prev, ...syncedTasks]);
           } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
             docAction = {
-              title: result.docAction.title || '🛡️ AI Risk Matrix',
+              title: result.docAction.title || '?���?AI Risk Matrix',
               type: 'risks',
               content: result.docAction.riskItems,
             };
           } else if (rawType === 'text' && result.docAction.textParagraph) {
             docAction = {
-              title: result.docAction.title || '✨ AI Composed Section',
+              title: result.docAction.title || '??AI Composed Section',
               type: 'text',
               paragraph: result.docAction.textParagraph,
             };
@@ -2307,8 +2306,8 @@ Rules:
         if (shouldBuildDocument && !docAction) {
           docAction = {
             title: requestedFormat === 'Auto (Compose decides)'
-              ? '✨ AI Composed Section'
-              : `✨ ${requestedFormat}`,
+              ? '??AI Composed Section'
+              : `??${requestedFormat}`,
             type: 'text',
             paragraph: (result.docAction?.textParagraph || aiResponseText || '').trim(),
           };
@@ -2370,7 +2369,7 @@ Rules:
           setAppendedSections([]);
           setDocBodyHtml(composedHtml);
           if (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
-            setDocTitle(finalizedAction.title?.replace(/^✨\s*/, '') || 'Compose Draft');
+            setDocTitle(finalizedAction.title?.replace(/^?�\s*/, '') || 'Compose Draft');
           }
           if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
             setDocSubtitle(`Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`);
@@ -3529,12 +3528,12 @@ Rules:
     const slotLabel = event.slot || formatTimeSlot(dateValue.getHours(), dateValue.getMinutes());
 
     if (isSameDay(dateValue, today)) {
-      return `Today • ${slotLabel}`;
+      return `Today ??${slotLabel}`;
     }
     if (isSameDay(dateValue, tomorrow)) {
-      return `Tomorrow • ${slotLabel}`;
+      return `Tomorrow ??${slotLabel}`;
     }
-    return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} • ${slotLabel}`;
+    return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} ??${slotLabel}`;
   };
 
   const formatUpcomingHeaderDate = (dateValue) => {
@@ -3975,7 +3974,7 @@ Rules:
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-gray-900 truncate">{previewAttachment.name}</div>
-                <div className="text-[11px] text-gray-500">{previewAttachment.type || 'Unknown type'} • {Math.round((previewAttachment.size || 0) / 1024)} KB</div>
+                <div className="text-[11px] text-gray-500">{previewAttachment.type || 'Unknown type'} ??{Math.round((previewAttachment.size || 0) / 1024)} KB</div>
               </div>
               <button
                 type="button"
@@ -4036,7 +4035,7 @@ Rules:
               placeholder="Search compositions..." 
               className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
             />
-            <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">⌘ K</span>
+            <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">??K</span>
           </div>
         </div>
 
@@ -4144,7 +4143,7 @@ Rules:
                         >
                           <div className="flex items-center gap-2 truncate">
                             <FileText size={14} className={isActive ? 'text-violet-500' : 'text-gray-400'} />
-                            <span className="truncate">{doc.pinned ? '📌 ' : ''}{label}</span>
+                            <span className="truncate">{doc.pinned ? '?? ' : ''}{label}</span>
                           </div>
                           <MoreHorizontal size={14} className={isActive ? 'text-violet-400' : 'text-gray-300'} />
                         </button>
@@ -4306,7 +4305,7 @@ Rules:
                     className="w-[160px] bg-white border border-violet-200 rounded px-1 py-0.5 text-xs outline-none"
                   />
                 ) : (
-                  <span className="max-w-[160px] truncate">{doc.pinned ? '📌 ' : ''}{label}</span>
+                  <span className="max-w-[160px] truncate">{doc.pinned ? '?? ' : ''}{label}</span>
                 )}
                 <button
                   data-doc-menu-root
@@ -4598,7 +4597,7 @@ Rules:
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
-            <span className="font-serif italic font-bold hover:text-gray-900 cursor-pointer">∑</span>
+            <span className="font-serif italic font-bold hover:text-gray-900 cursor-pointer">??/span>
           </div>
         </div>
 
@@ -4680,7 +4679,7 @@ Rules:
                 {/* 1. Objective */}
                 <div className="mb-10 group relative">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">🎯</span> 1. Objective
+                    <span className="text-2xl">?��</span> 1. Objective
                   </h2>
                   <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Launch Regaarder Compose to establish it as the most intuitive AI-native productivity workspace for modern teams and individuals.
@@ -4690,7 +4689,7 @@ Rules:
                 {/* 2. Key Initiatives Table */}
                 <div className="mb-10 group relative">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">🚀</span> 2. Key Initiatives
+                    <span className="text-2xl">??</span> 2. Key Initiatives
                     <span className="text-[10px] font-normal text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">Click Status to Cycle</span>
                   </h2>
                   
@@ -4732,7 +4731,7 @@ Rules:
                 {/* 3. Target Audience */}
                 <div className="mb-10">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">👥</span> 3. Target Audience
+                    <span className="text-2xl">?��</span> 3. Target Audience
                   </h2>
                   <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Knowledge workers, founders, creators, marketers, and teams who want a smarter, calmer, and more connected workspace.
@@ -5027,7 +5026,7 @@ Rules:
                         </div>
                       )}
                     </div>
-                    <span className="text-[10px] text-gray-400">{promptTone} • ~{promptLengthValue} {promptLengthMode}</span>
+                    <span className="text-[10px] text-gray-400">{promptTone} ??~{promptLengthValue} {promptLengthMode}</span>
                     <div className="flex flex-wrap gap-1.5">
                       {['Timeline', 'Article', 'Checklist', 'Presentation Draft'].map((preset) => (
                         <button
@@ -5258,7 +5257,7 @@ Rules:
                                 <div className="text-[11px] text-gray-700 line-clamp-2">{entry.text}</div>
                               </button>
                               <div className="mt-1 flex items-center justify-between gap-2">
-                                <div className="text-[10px] text-gray-400">{entry.source} • {entry.tone} • ~{entry.lengthValue} {entry.lengthMode}</div>
+                                <div className="text-[10px] text-gray-400">{entry.source} ??{entry.tone} ??~{entry.lengthValue} {entry.lengthMode}</div>
                                 <button type="button" onClick={() => beginPromptEdit(entry)} className="text-[10px] text-violet-600 hover:text-violet-700">Edit</button>
                               </div>
                             </>
@@ -5379,7 +5378,7 @@ Rules:
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
-            <span title="Real-time document stats">{documentStats.words} words • {documentStats.characters} characters</span>
+            <span title="Real-time document stats">{documentStats.words} words ??{documentStats.characters} characters</span>
             <div className="relative">
               <button
                 data-language-menu-root
@@ -5425,7 +5424,7 @@ Rules:
               <button onClick={() => showToast('Quality review complete: no critical formatting issues')} className="p-1 rounded hover:text-gray-600" title="Run quick quality check"><AlertTriangle size={14} /></button>
             </div>
             <div className="relative flex items-center gap-2">
-              <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom out">−</button>
+              <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom out">??/button>
               <span className="w-8 text-center cursor-default">{zoomLevel}%</span>
               <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom in">+</button>
               <ChevronDown size={12} className="cursor-pointer text-gray-400" />
@@ -6139,7 +6138,7 @@ Rules:
                         disabled={calendarYear === 2026 && calendarMonth === 0}
                         className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        ←
+                        ??
                       </button>
                       <button
                         type="button"
@@ -6153,7 +6152,7 @@ Rules:
                         disabled={calendarYear === 2029 && calendarMonth === 11}
                         className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        →
+                        ??
                       </button>
                     </div>
                   </div>
@@ -6208,7 +6207,7 @@ Rules:
                       <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700">{event.category || 'General'}</span>
                         <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">{event.durationMinutes || 60}m</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-white text-violet-700">{event.slot || formatEventSlotLabel(event).split('•').slice(-1)[0].trim()}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-white text-violet-700">{event.slot || formatEventSlotLabel(event).split('??).slice(-1)[0].trim()}</span>
                       </div>
                       <div className="text-gray-500 mt-1">{formatEventSlotLabel(event)}</div>
                     </div>
@@ -6449,7 +6448,7 @@ Rules:
                       <PhoneOff size={20} />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 tracking-tight">Room Ended</h3>
-                    <p className="text-xs text-gray-500 mt-1">Q2 Launch Strategy • 45m duration</p>
+                    <p className="text-xs text-gray-500 mt-1">Q2 Launch Strategy ??45m duration</p>
                   </div>
 
                   <div className="space-y-4">
@@ -6626,7 +6625,7 @@ Rules:
                       </div>
                       <div className="text-[10px] text-gray-500 mt-1">{new Date(entry.timestamp).toLocaleString()}</div>
                       {Object.keys(entry.details || {}).length > 0 && (
-                        <div className="mt-1.5 text-[10px] text-gray-600 break-all">{Object.entries(entry.details).map(([key, value]) => `${key}: ${value}`).join(' • ')}</div>
+                        <div className="mt-1.5 text-[10px] text-gray-600 break-all">{Object.entries(entry.details).map(([key, value]) => `${key}: ${value}`).join(' ??')}</div>
                       )}
                     </div>
                   ))}
