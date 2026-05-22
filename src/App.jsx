@@ -41,6 +41,7 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
 
   return (
     <video
+                { key: 'room', label: 'Room' },
       ref={videoRef}
       autoPlay
       muted
