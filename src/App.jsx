@@ -145,6 +145,11 @@ export default function App() {
   const [meetingDurationLabel, setMeetingDurationLabel] = useState('00:00');
   const [meetingSummary, setMeetingSummary] = useState(null);
   const [collaboratorInvite, setCollaboratorInvite] = useState('');
+  const [meetingParticipants] = useState([
+    { name: 'Sarah', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=320&q=80' },
+    { name: 'Mike', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80' },
+    { name: 'Ana', img: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=320&q=80' },
+  ]);
   const [mediaError, setMediaError] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -2762,6 +2767,14 @@ Rules:
   }, [normalizeRoomCode, roomId]);
 
   const requestMediaPermissions = async () => {
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setMediaError(true);
+      setIsRoomCameraOn(false);
+      setIsRoomMicOn(false);
+      showToast('Camera/Mic is not supported in this browser.');
+      return false;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
@@ -2780,6 +2793,33 @@ Rules:
       showToast('Camera/Mic access denied. Please check browser permissions.');
       return false;
     }
+  };
+
+  const openMeetingSetup = async (code) => {
+    const normalizedCode = normalizeRoomCode(code) || generateRoomCode();
+    setRoomId(normalizedCode);
+    setJoinCode(normalizedCode);
+    setRoomState('ready');
+    setMainView('document');
+    setRoomPanelMode('docked');
+    setMeetingSummary(null);
+    setMeetingStartedAt(null);
+    setMeetingDurationLabel('00:00');
+    await requestMediaPermissions();
+    showToast(`Meeting ready: ${normalizedCode}`);
+  };
+
+  const startMeetingNow = () => {
+    const code = normalizeRoomCode(roomId) || generateRoomCode();
+    setRoomId(code);
+    setJoinCode(code);
+    setRoomState('active');
+    setMainView('room');
+    setRoomPanelMode('expanded');
+    setMeetingSummary(null);
+    setMeetingStartedAt(Date.now());
+    setMeetingDurationLabel('00:00');
+    showToast(`Joined meeting: ${code}`);
   };
 
   const stopMediaStream = () => {
@@ -2801,16 +2841,7 @@ Rules:
   };
 
   const joinRoom = async (code) => {
-    const normalizedCode = normalizeRoomCode(code) || generateRoomCode();
-    setRoomId(normalizedCode);
-    setRoomState('active');
-    setMainView('room');
-    setRoomPanelMode('expanded');
-    setMeetingSummary(null);
-    setMeetingStartedAt(Date.now());
-    setMeetingDurationLabel('00:00');
-    showToast(`Joined meeting: ${normalizedCode}`);
-    await requestMediaPermissions();
+    await openMeetingSetup(code);
   };
 
   const leaveRoom = () => {
@@ -2837,7 +2868,12 @@ Rules:
   };
 
   const handleCopyLink = async () => {
-    const link = getMeetingLink(roomId || generateRoomCode());
+    const normalizedCode = normalizeRoomCode(roomId) || generateRoomCode();
+    if (!roomId) {
+      setRoomId(normalizedCode);
+      setJoinCode(normalizedCode);
+    }
+    const link = getMeetingLink(normalizedCode);
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
@@ -2856,7 +2892,12 @@ Rules:
   };
 
   const handleShareMeeting = async () => {
-    const link = getMeetingLink(roomId || generateRoomCode());
+    const normalizedCode = normalizeRoomCode(roomId) || generateRoomCode();
+    if (!roomId) {
+      setRoomId(normalizedCode);
+      setJoinCode(normalizedCode);
+    }
+    const link = getMeetingLink(normalizedCode);
     const title = 'Join my Regaarder meeting';
     if (navigator.share) {
       try {
@@ -5662,6 +5703,7 @@ Rules:
                 { key: 'assistant', label: 'AI Assistant' },
                 { key: 'tasks', label: `Tasks (${tasks.filter((t) => !t.completed).length})` },
                 { key: 'calendar', label: 'Schedule' },
+                { key: 'room', label: 'Room' },
                 { key: 'memory', label: 'Memory' },
               ].map((tab) => (
                 <button
@@ -6508,7 +6550,7 @@ Rules:
 
                   <div className="w-full space-y-3 pt-4">
                     <button
-                      onClick={() => joinRoom(generateRoomCode())}
+                      onClick={() => openMeetingSetup(generateRoomCode())}
                       className="w-full bg-violet-600 text-white rounded-xl py-3 text-sm font-bold hover:bg-violet-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm"
                     >
                       <Plus size={16} /> Create Meeting
@@ -6534,7 +6576,9 @@ Rules:
                       />
                       <button
                         onClick={() => {
-                          if (joinCode.trim()) joinRoom(joinCode.trim());
+                          if (joinCode.trim()) {
+                            openMeetingSetup(joinCode.trim());
+                          }
                           else showToast('Please enter a room code');
                         }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
@@ -6548,7 +6592,7 @@ Rules:
                   <div className="w-full pt-6 border-t border-gray-200/60 mt-6 text-left">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Recent Rooms</span>
                     <div className="space-y-2">
-                      <button onClick={() => joinRoom('q2-launch')} className="w-full flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-violet-200 hover:bg-violet-50/30 transition-colors group text-left">
+                      <button onClick={() => openMeetingSetup('q2-launch')} className="w-full flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-violet-200 hover:bg-violet-50/30 transition-colors group text-left">
                         <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                           <Clock size={14} />
                         </div>
@@ -6556,6 +6600,78 @@ Rules:
                           <div className="text-xs font-bold text-gray-800 group-hover:text-violet-700 transition-colors">Q2 Launch Strategy</div>
                           <div className="text-[10px] text-gray-400 mt-0.5">Ended 2 hours ago</div>
                         </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {roomState === 'ready' && (
+                <div className="flex-1 flex flex-col p-4 gap-4 animate-fade-in">
+                  <div className="rounded-2xl border border-gray-200 bg-white p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-violet-600">Ready to join</div>
+                      <div className="text-xs text-gray-700 font-mono truncate">{roomId}</div>
+                    </div>
+                    <button
+                      onClick={handleShareMeeting}
+                      className="px-2.5 py-1.5 rounded-lg text-xs border border-violet-200 text-violet-700 hover:bg-violet-50"
+                    >
+                      Share Link
+                    </button>
+                  </div>
+
+                  {mediaError && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center justify-between gap-3">
+                      <span>Camera or microphone access is blocked. Allow permissions to join with media.</span>
+                      <button onClick={requestMediaPermissions} className="shrink-0 px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold">Allow</button>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl overflow-hidden border border-gray-200 bg-slate-900 h-[220px] relative">
+                    <RoomStageFeed stream={localStream} placeholder="Camera preview" />
+                    <div className="absolute bottom-3 left-3 px-2 py-1 rounded-lg bg-black/45 text-white text-[11px]">You</div>
+                  </div>
+
+                  <div className="rounded-2xl border border-gray-200 bg-white p-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Participants</div>
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+                      <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-violet-200 shadow-sm flex-shrink-0 bg-gray-900">
+                        <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
+                        {!isRoomMicOn && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
+                      </div>
+                      {meetingParticipants.map((participant) => (
+                        <div key={participant.name} className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                          <img src={participant.img} alt={participant.name} className="object-cover w-full h-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-auto rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-xl px-3 py-2 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${isRoomMicOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle microphone">
+                        {isRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}
+                      </button>
+                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${isRoomCameraOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle camera">
+                        {isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                      </button>
+                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100'}`} title="Toggle screen share">
+                        <MonitorPlay size={16} />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setRoomState('lobby')}
+                        className="px-2.5 py-1.5 rounded-lg text-[11px] border border-gray-200 text-gray-700 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={startMeetingNow}
+                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-violet-600 text-white hover:bg-violet-700"
+                      >
+                        Join Now
                       </button>
                     </div>
                   </div>
@@ -7016,11 +7132,7 @@ Rules:
                   </div>
                   <div className="px-2 py-1 text-[11px] text-slate-100 flex items-center justify-between"><span>You</span>{!isRoomMicOn && <MicOff size={12} className="text-red-400" />}</div>
                 </div>
-                {[
-                  { name: 'Sarah', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=320&q=80' },
-                  { name: 'Mike', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80' },
-                  { name: 'Ana', img: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=320&q=80' },
-                ].map((participant) => (
+                {meetingParticipants.map((participant) => (
                   <div key={participant.name} className="rounded-xl overflow-hidden border border-white/10 bg-slate-800">
                     <img src={participant.img} alt={participant.name} className="w-full h-20 object-cover" />
                     <div className="px-2 py-1 text-[11px] text-slate-100">{participant.name}</div>
