@@ -2197,7 +2197,7 @@ Rules:
           const rawType = String(result.docAction.type || '').toLowerCase();
           if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
             docAction = {
-              title: result.docAction.title || '??ï¸?AI Timeline',
+              title: result.docAction.title || '??ï¿?AI Timeline',
               type: 'timeline',
               content: result.docAction.timelineItems,
             };
@@ -2217,7 +2217,7 @@ Rules:
             setTasks((prev) => [...prev, ...syncedTasks]);
           } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
             docAction = {
-              title: result.docAction.title || '?›¡ï¸?AI Risk Matrix',
+              title: result.docAction.title || '?ï¿½ï¿½ï¿?AI Risk Matrix',
               type: 'risks',
               content: result.docAction.riskItems,
             };
@@ -2296,7 +2296,7 @@ Rules:
           setAppendedSections([]);
           setDocBodyHtml(composedHtml);
           if (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
-            setDocTitle(finalizedAction.title?.replace(/^?¨\s*/, '') || 'Compose Draft');
+            setDocTitle(finalizedAction.title?.replace(/^[\\s\\?]+/, '') || 'Compose Draft');
           }
           if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
             setDocSubtitle(`Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`);
@@ -4619,7 +4619,7 @@ Rules:
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
-            <span className="font-serif italic font-bold hover:text-gray-900 cursor-pointer">??/span>
+            <span className="font-serif italic font-bold hover:text-gray-900 cursor-pointer">I</span>
           </div>
         </div>
 
@@ -4701,7 +4701,7 @@ Rules:
                 {/* 1. Objective */}
                 <div className="mb-10 group relative">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">?Ž¯</span> 1. Objective
+                    <span className="text-2xl">?ï¿½ï¿½</span> 1. Objective
                   </h2>
                   <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Launch Regaarder Compose to establish it as the most intuitive AI-native productivity workspace for modern teams and individuals.
@@ -4753,7 +4753,7 @@ Rules:
                 {/* 3. Target Audience */}
                 <div className="mb-10">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">?‘¥</span> 3. Target Audience
+                    <span className="text-2xl">?ï¿½ï¿½</span> 3. Target Audience
                   </h2>
                   <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Knowledge workers, founders, creators, marketers, and teams who want a smarter, calmer, and more connected workspace.
@@ -5446,7 +5446,7 @@ Rules:
               <button onClick={() => showToast('Quality review complete: no critical formatting issues')} className="p-1 rounded hover:text-gray-600" title="Run quick quality check"><AlertTriangle size={14} /></button>
             </div>
             <div className="relative flex items-center gap-2">
-              <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom out">??/button>
+              <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom out">-</button>
               <span className="w-8 text-center cursor-default">{zoomLevel}%</span>
               <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom in">+</button>
               <ChevronDown size={12} className="cursor-pointer text-gray-400" />
