@@ -10,15 +10,13 @@ import {
   List, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound,
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 
 const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
-const DEFAULT_CANVA_LINK = 'https://canva.link/rdz63nph2e1vk5j';
-const DEFAULT_BODY_HTML = `<p><a href="${DEFAULT_CANVA_LINK}" target="_blank" rel="noopener noreferrer">${DEFAULT_CANVA_LINK}</a></p>`;
 
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
@@ -33,6 +31,7 @@ export default function App() {
     { id: 1, name: 'Regaarder', letter: 'R', colorClass: 'bg-indigo-500', hasDocuments: false },
     { id: 2, name: 'Product', letter: 'P', colorClass: 'bg-orange-500', hasDocuments: true },
     { id: 3, name: 'Marketing', letter: 'M', colorClass: 'bg-emerald-500', hasDocuments: false },
+                { key: 'room', label: 'Room' },
     { id: 4, name: 'Finance', letter: 'F', colorClass: 'bg-blue-500', hasDocuments: false },
     { id: 5, name: 'Personal', letter: 'P', colorClass: 'bg-fuchsia-500', hasDocuments: false },
   ];
@@ -42,7 +41,7 @@ export default function App() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
-  const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
@@ -77,6 +76,8 @@ export default function App() {
   const [isComposing, setIsComposing] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isRoomMicOn, setIsRoomMicOn] = useState(true);
+  const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [workspaces, setWorkspaces] = useState(defaultWorkspaces);
@@ -193,11 +194,11 @@ export default function App() {
       initiatives: defaultInitiatives,
       appendedSections: [],
       isBlank: true,
-      bodyHtml: DEFAULT_BODY_HTML,
+      bodyHtml: '',
     },
   ]);
   const [activeDocId, setActiveDocId] = useState(null);
-  const [docBodyHtml, setDocBodyHtml] = useState(DEFAULT_BODY_HTML);
+  const [docBodyHtml, setDocBodyHtml] = useState('');
   const [closeConfirmDocId, setCloseConfirmDocId] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [headingSearch, setHeadingSearch] = useState('');
@@ -2658,7 +2659,7 @@ Rules:
     }
 
     event.preventDefault();
-    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'memory'];
+    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'memory'];
     const currentIndex = tabOrder.indexOf(activeRightTab);
     const safeIndex = currentIndex >= 0 ? currentIndex : 0;
     const nextIndex = event.key === 'ArrowRight'
@@ -3575,7 +3576,7 @@ Rules:
       if (dragTarget === 'dictation') {
         const nextX = Math.min(840, Math.max(-20, dragStateRef.current.dictationX + deltaX));
         const deltaY = event.clientY - dragStateRef.current.startY;
-        const nextY = Math.min(520, Math.max(-80, dragStateRef.current.dictationY - deltaY));
+        const nextY = Math.min(520, Math.max(-280, dragStateRef.current.dictationY + deltaY));
         setDictationOffset({ x: nextX, y: nextY });
       }
     };
@@ -4466,9 +4467,6 @@ Rules:
         </div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
-        {activeRightTab === 'room' ? (
-          <RoomWorkspace />
-        ) : (
         <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
           <div
             className="mx-auto"
@@ -4707,10 +4705,8 @@ Rules:
           </div>
           </div>
         </div>
-        )}
 
         {/* Persistent Floating AI Prompt Bar */}
-        {activeRightTab !== 'room' && (
         <div
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
@@ -5166,28 +5162,20 @@ Rules:
           </form>
           </div>
         </div>
-        )}
 
-        {!isComposing && activeRightTab !== 'room' && (
+        {!isComposing && (
           <div
-            className="pointer-events-none absolute left-6 bottom-24 z-[338]"
-            style={{ transform: `translate(${dictationOffset.x}px, ${-dictationOffset.y}px)` }}
+            className="pointer-events-none absolute inset-0 z-[300] flex items-center justify-center"
+            style={{ transform: `translate(${dictationOffset.x}px, ${dictationOffset.y}px)` }}
           >
             <div className="pointer-events-auto flex flex-col items-center gap-3">
               <button
                 type="button"
                 onPointerDown={(event) => beginPanelResize('dictation', event)}
-                className="h-7 w-7 rounded-full bg-white/95 border border-gray-200 text-gray-400 hover:text-violet-600 hover:border-violet-200 cursor-move touch-none flex items-center justify-center"
-                title="Move dictation control"
-              >
-                <Move size={13} />
-              </button>
-              <button
-                type="button"
                 onClick={async () => {
                   await toggleVoiceRecording('document');
                 }}
-                className={`relative w-24 h-24 rounded-full border transition-all ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
+                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
                 title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
               >
                 <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
@@ -5233,7 +5221,7 @@ Rules:
           </div>
         )}
 
-        {isPromptMinimized && activeRightTab !== 'room' && (
+        {isPromptMinimized && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[340]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
@@ -5242,15 +5230,8 @@ Rules:
               <button
                 type="button"
                 onPointerDown={(event) => beginPanelResize('miniPrompt', event)}
-                className="h-8 w-8 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-violet-600 hover:border-violet-200 cursor-move touch-none flex items-center justify-center shadow-sm"
-                title="Move AI bubble"
-              >
-                <Move size={14} />
-              </button>
-              <button
-                type="button"
                 onClick={() => setIsPromptMinimized(false)}
-                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
+                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-move touch-none"
                 title="Open AI prompt"
               >
                 <PenTool size={18} className="mx-auto" />
@@ -5657,19 +5638,19 @@ Rules:
 
               <div>
                 <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
-                <form onSubmit={handleAssistantQuickPromptSend} className="bg-[#FAFAFC] rounded-lg p-3 border border-gray-100 space-y-2">
+                <form onSubmit={handleAssistantQuickPromptSend} className="rounded-xl p-3 border border-violet-100/70 bg-gradient-to-br from-violet-50/60 via-white to-white space-y-2 shadow-[0_10px_25px_-20px_rgba(109,40,217,0.55)]">
                   <textarea
                     value={assistantQuickPrompt}
                     onChange={(e) => setAssistantQuickPrompt(e.target.value)}
                     placeholder="Ask AI Assistant from here..."
                     rows={2}
-                    className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
+                    className="w-full bg-white/95 border border-violet-100 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
                   />
                   <div className="flex items-center justify-end">
                     <button
                       type="submit"
                       disabled={isComposing || !assistantQuickPrompt.trim()}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}
                     >
                       Send to AI
                     </button>
@@ -6175,6 +6156,96 @@ Rules:
             </div>
           )}
 
+          {/* E. ACTIVE TAB: REGAARDER ROOM */}
+          {activeRightTab === 'room' && (
+            <div className="flex-1 flex flex-col min-h-0 bg-[#FAFAFC] animate-fade-in min-w-[340px] relative">
+              <div className="p-4 bg-white border-b border-gray-100 shrink-0">
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="text-sm font-bold text-gray-900 tracking-tight">Q2 Launch Strategy</h3>
+                  <span className="flex items-center gap-1 bg-emerald-50 text-emerald-600 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Live
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-500">Today • 10:00–11:30 AM • 4 participants</p>
+              </div>
+
+              <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-100 overflow-x-auto no-scrollbar shrink-0 shadow-sm relative z-0">
+                <div className="relative w-12 h-16 rounded-[10px] overflow-hidden ring-2 ring-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.25)] flex-shrink-0 transition-transform hover:scale-105">
+                  <img src="[https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80](https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80)" alt="Alex" className="object-cover w-full h-full" />
+                  <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md text-white text-[9px] px-1.5 py-0.5 rounded font-medium">Alex</div>
+                </div>
+                <div className="relative w-12 h-16 rounded-[10px] overflow-hidden border border-gray-200 opacity-90 flex-shrink-0 transition-transform hover:scale-105">
+                  <img src="[https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80](https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80)" alt="Sarah" className="object-cover w-full h-full grayscale-[20%]" />
+                  <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md text-white text-[9px] px-1.5 py-0.5 rounded font-medium">Sarah</div>
+                </div>
+                <div className="relative w-12 h-16 rounded-[10px] overflow-hidden border border-gray-200 opacity-90 flex-shrink-0 transition-transform hover:scale-105">
+                  <img src="[https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80](https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80)" alt="Mike" className="object-cover w-full h-full grayscale-[20%]" />
+                  <div className="absolute bottom-1 left-1 bg-black/60 backdrop-blur-md text-white text-[9px] px-1.5 py-0.5 rounded font-medium">Mike</div>
+                </div>
+                <div className="relative w-12 h-16 rounded-[10px] overflow-hidden border border-gray-200 bg-gray-100 flex items-center justify-center flex-shrink-0 cursor-pointer hover:bg-gray-200 transition-colors">
+                  <span className="text-xs font-bold text-gray-500">+1</span>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto pb-24 space-y-5 px-4 pt-4 relative z-0">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-violet-600 uppercase tracking-wider">
+                    <Sparkles size={10} /> Live Context
+                  </div>
+                  <div className="bg-violet-50/50 border border-violet-100 rounded-xl p-3 text-xs text-gray-700 leading-relaxed shadow-sm">
+                    Discussing the Q2 launch timelines. Sarah is presenting the new branding assets for final review before deployment.
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Decisions</div>
+                  <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-default">
+                    <div className="mt-0.5 bg-emerald-100 p-0.5 rounded text-emerald-600"><Check size={10} strokeWidth={3} /></div>
+                    <span className="text-xs text-gray-700">Beta launch officially locked for May 15th.</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                    Action Items <button className="text-violet-600 hover:text-violet-700 normal-case tracking-normal">Add</button>
+                  </div>
+                  <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
+                    <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
+                    <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Sarah to upload final assets to the shared drive by Friday.</span>
+                  </div>
+                  <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
+                    <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
+                    <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Alex to update the Compose AI prompt templates.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 p-1.5 bg-white/70 backdrop-blur-xl border border-gray-200/50 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] z-10">
+                <button
+                  onClick={() => setIsRoomMicOn(!isRoomMicOn)}
+                  className={`p-2 rounded-xl transition-all ${isRoomMicOn ? 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm' : 'bg-red-50 text-red-600'}`}
+                  title={isRoomMicOn ? 'Mute Mic' : 'Unmute Mic'}
+                >
+                  {isRoomMicOn ? <Mic size={18} /> : <MicOff size={18} />}
+                </button>
+                <button
+                  onClick={() => setIsRoomCameraOn(!isRoomCameraOn)}
+                  className={`p-2 rounded-xl transition-all ${isRoomCameraOn ? 'bg-white text-gray-700 hover:bg-gray-50 shadow-sm' : 'bg-red-50 text-red-600'}`}
+                  title={isRoomCameraOn ? 'Turn off Camera' : 'Turn on Camera'}
+                >
+                  {isRoomCameraOn ? <Video size={18} /> : <VideoOff size={18} />}
+                </button>
+                <button className="p-2 rounded-xl bg-white text-gray-700 hover:bg-gray-50 transition-all shadow-sm" title="Present Screen">
+                  <MonitorPlay size={18} />
+                </button>
+                <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                <button className="px-3 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-sm flex items-center gap-2 font-medium text-xs">
+                  <PhoneOff size={16} /> Leave
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeRightTab === 'memory' && (
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               <div>
@@ -6386,6 +6457,18 @@ Rules:
             <Database size={20} />
           </div>
           <span className="text-[9px] font-semibold">Memory</span>
+        </div>
+
+        <div
+          onClick={() => handleMiniSidebarClick('room')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <MonitorPlay size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">Room</span>
         </div>
 
         <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
