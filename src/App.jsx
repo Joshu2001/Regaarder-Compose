@@ -2751,13 +2751,13 @@ Rules:
     showToast('Left room. Summary is ready.');
   };
 
-  const handleCopyRoomLink = async () => {
+  const handleCopyLink = async () => {
     const normalizedCode = normalizeRoomCode(roomId) || generateRoomCode();
     if (!roomId) {
       setRoomId(normalizedCode);
       setJoinCode(normalizedCode);
     }
-    const link = `${window.location.origin}${window.location.pathname}?room=${normalizedCode}`;
+    const link = getMeetingLink(normalizedCode);
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
@@ -2766,14 +2766,6 @@ Rules:
     } catch (_error) {
       showToast(link);
     }
-  };
-
-  const getMeetingLink = (code) => {
-    return `${window.location.origin}${window.location.pathname}?room=${code}`;
-  };
-
-  const normalizeRoomCode = (code) => {
-    return String(code || '').trim().toLowerCase();
   };
 
   const handleShareMeeting = async () => {
@@ -2793,7 +2785,7 @@ Rules:
         // Fall through to clipboard behavior.
       }
     }
-    await handleCopyRoomLink();
+    await handleCopyLink();
   };
 
   const inviteCollaborator = async () => {
@@ -5456,7 +5448,6 @@ Rules:
                 { key: 'calendar', label: 'Schedule' },
                 { key: 'room', label: 'Room' },
                 { key: 'people', label: 'People' },
-                { key: 'memory', label: 'Memory' },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -6275,13 +6266,12 @@ Rules:
                         placeholder={roomMode === 'calls' ? 'Enter call link or code...' : 'Enter room code or link...'} 
                         className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-9 pr-10 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-50 transition-all shadow-sm" 
                       />
-                      <button
+                      <button 
                         onClick={() => {
                           if (joinCode.trim()) {
                             openMeetingSetup(joinCode.trim());
-                          } else {
-                            showToast('Please enter a room code');
                           }
+                          else showToast('Please enter a room code');
                         }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
                       >
