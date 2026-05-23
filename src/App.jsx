@@ -14,6 +14,7 @@ import {
   UserPlus, Link2 as LinkIcon, Clock, Maximize2, Minimize2, Sidebar,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
+import './thin-scrollbar.css';
 
 const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
@@ -2734,6 +2735,19 @@ Rules:
       setActiveRightTab(tabKey);
     }
   };
+
+  // Ensure only one of the left or right side panels is open at a time.
+  useEffect(() => {
+    if (leftSidebarOpen && rightSidebarOpen) {
+      setRightSidebarOpen(false);
+    }
+  }, [leftSidebarOpen]);
+
+  useEffect(() => {
+    if (rightSidebarOpen && leftSidebarOpen) {
+      setLeftSidebarOpen(false);
+    }
+  }, [rightSidebarOpen]);
 
   const formatMeetingElapsed = useCallback((startedAt) => {
     if (!startedAt) {
@@ -7095,7 +7109,7 @@ Rules:
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto no-scrollbar">
+      <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto thin-scrollbar">
         
         <div 
           onClick={() => handleMiniSidebarClick('chat')}

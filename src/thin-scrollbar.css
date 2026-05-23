@@ -1,0 +1,25 @@
+/* Thin, subtle scrollbar for icon rails and compact panels */
+.thin-scrollbar {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(15,23,42,0.06) transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(15,23,42,0.06);
+  border-radius: 999px;
+  border: 0px solid transparent;
+}
+
+/* Slightly more visible on hover */
+.thin-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(15,23,42,0.12);
+}
