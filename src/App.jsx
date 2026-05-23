@@ -97,6 +97,7 @@ export default function App() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
+  const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
@@ -2728,6 +2729,8 @@ Rules:
 
   // Click handler for Right Mini Sidebar
   const handleMiniSidebarClick = (tabKey) => {
+    // If panel was maximized, un-maximize when switching
+    if (rightPanelMaximized) setRightPanelMaximized(false);
     if (rightSidebarOpen && activeRightTab === tabKey) {
       setRightSidebarOpen(false);
     } else {
@@ -5708,7 +5711,7 @@ Rules:
         className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 relative z-[260] ${
           rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
-        style={{ width: rightSidebarOpen && !shareModalOpen ? `${rightSidebarWidth}px` : '0px' }}
+        style={ rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }
       >
         {/* Sidebar Header Tabs */}
         <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
@@ -5737,11 +5740,19 @@ Rules:
               ))}
             </div>
           </div>
-          <div className="w-10 shrink-0 flex items-center justify-center border-l border-gray-100">
+          <div className="w-14 shrink-0 flex items-center justify-center border-l border-gray-100 gap-2 px-2">
+            <button
+              type="button"
+              title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
+              onClick={() => { setRightPanelMaximized((p) => !p); if (!rightSidebarOpen) setRightSidebarOpen(true); }}
+              className="p-1.5 rounded-md text-gray-400 hover:bg-violet-50 hover:text-gray-700 transition-colors"
+            >
+              {rightPanelMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
             <X 
               size={14} 
               className="text-gray-400 cursor-pointer hover:text-gray-600" 
-              onClick={() => setRightSidebarOpen(false)}
+              onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
             />
           </div>
         </div>
