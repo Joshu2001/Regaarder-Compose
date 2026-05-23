@@ -279,6 +279,7 @@ export default function App() {
       appendedSections: [],
       isBlank: true,
       bodyHtml: '',
+      type: 'compose', // 'compose' or 'deck'
     },
   ]);
   const [activeDocId, setActiveDocId] = useState(null);
@@ -304,6 +305,15 @@ export default function App() {
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
   const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
+
+  // Composition Type Modal & Deck States
+  const [compositionTypeModalOpen, setCompositionTypeModalOpen] = useState(false);
+  const [selectedCompositionType, setSelectedCompositionType] = useState('compose');
+  const [deckSlides, setDeckSlides] = useState([]);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [deckTitle, setDeckTitle] = useState('');
+  const [deckSubtitle, setDeckSubtitle] = useState('');
+  const [deckTheme, setDeckTheme] = useState('minimal'); // 'minimal', 'colorful', 'professional'
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -3063,7 +3073,7 @@ Rules:
     setDocBodyHtml(targetDoc.bodyHtml || '');
   };
 
-  const createNewComposition = ({ silent = false } = {}) => {
+  const createNewComposition = ({ type = 'compose', silent = false } = {}) => {
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
       title: '',
@@ -3073,7 +3083,30 @@ Rules:
       isBlank: true,
       bodyHtml: '',
       pinned: false,
+      type: type, // 'compose' or 'deck'
     };
+
+    // Initialize deck slides if it's a deck
+    if (type === 'deck') {
+      const initialSlides = [
+        {
+          id: 1,
+          type: 'title',
+          title: 'Untitled Deck',
+          subtitle: 'Your presentation starts here',
+        },
+        {
+          id: 2,
+          type: 'content',
+          title: 'Your Title',
+          content: ['• Bullet point 1', '• Bullet point 2', '• Bullet point 3'],
+        },
+      ];
+      setDeckSlides(initialSlides);
+      setDeckTitle('Untitled Deck');
+      setActiveSlideIndex(0);
+      setDeckTheme('minimal');
+    }
 
     setDocuments((prev) => [...prev, newDoc]);
     setActiveDocId(newDoc.id);
@@ -3085,13 +3118,62 @@ Rules:
     setDocBodyHtml('');
     setLastComposeRun(null);
     setLeftSidebarOpen(false);
-    trackMemoryAction('document', silent ? 'Created new blank composition (auto)' : 'Created new blank composition', {
+    setCompositionTypeModalOpen(false);
+    trackMemoryAction('document', silent ? `Created new blank ${type} (auto)` : `Created new blank ${type}`, {
       documentId: String(newDoc.id),
     });
     if (!silent) {
-      showToast('Blank composition created');
+      showToast(`Blank ${type} created`);
     }
     return newDoc.id;
+  };
+
+  // Deck Slide Management Functions
+  const addDeckSlide = (position = 'after') => {
+    const newSlideId = Math.max(...deckSlides.map(s => s.id), 0) + 1;
+    const newSlide = {
+      id: newSlideId,
+      type: 'content',
+      title: 'New Slide',
+      content: ['• Point 1', '• Point 2', '• Point 3'],
+    };
+    
+    if (position === 'after' && activeSlideIndex !== undefined) {
+      const newSlides = [...deckSlides];
+      newSlides.splice(activeSlideIndex + 1, 0, newSlide);
+      setDeckSlides(newSlides);
+      setActiveSlideIndex(activeSlideIndex + 1);
+    } else {
+      setDeckSlides([...deckSlides, newSlide]);
+      setActiveSlideIndex(deckSlides.length);
+    }
+    showToast('New slide added');
+  };
+
+  const deleteDeckSlide = (index) => {
+    if (deckSlides.length <= 1) {
+      showToast('Cannot delete the last slide');
+      return;
+    }
+    const newSlides = deckSlides.filter((_, i) => i !== index);
+    setDeckSlides(newSlides);
+    setActiveSlideIndex(Math.min(index, newSlides.length - 1));
+    showToast('Slide deleted');
+  };
+
+  const updateDeckSlide = (index, field, value) => {
+    const newSlides = [...deckSlides];
+    newSlides[index] = { ...newSlides[index], [field]: value };
+    setDeckSlides(newSlides);
+  };
+
+  const moveDeckSlide = (fromIndex, toIndex) => {
+    if (toIndex < 0 || toIndex >= deckSlides.length) return;
+    const newSlides = [...deckSlides];
+    const [slide] = newSlides.splice(fromIndex, 1);
+    newSlides.splice(toIndex, 0, slide);
+    setDeckSlides(newSlides);
+    setActiveSlideIndex(toIndex);
   };
 
   const requestCloseDocument = (docId) => {
@@ -4262,6 +4344,85 @@ Rules:
         </div>
       )}
 
+      {/* Composition Type Selector Modal */}
+      {compositionTypeModalOpen && (
+        <div className="absolute inset-0 z-[500] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-[640px] max-w-[95vw] rounded-2xl bg-white border border-slate-200 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.65)] p-8">
+            <div className="mb-6">
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Create New Composition</h3>
+              <p className="text-sm text-slate-600">Choose how you want to create: word-style document or presentation slides</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              {/* Compose Option */}
+              <button
+                onClick={() => createNewComposition({ type: 'compose' })}
+                className={`rounded-xl border-2 p-6 text-left transition-all ${selectedCompositionType === 'compose' ? 'border-violet-600 bg-violet-50' : 'border-slate-200 bg-white hover:border-violet-200'}`}
+                onMouseEnter={() => setSelectedCompositionType('compose')}
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                    <FileText size={20} className="text-violet-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-slate-900">Regaarder Compose</div>
+                    <div className="text-xs text-slate-500 mt-1">Word-style document editor</div>
+                  </div>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-1.5">
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-violet-600" /> Voice dictation & AI
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-violet-600" /> Smart formatting
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-violet-600" /> Document structure
+                  </li>
+                </ul>
+              </button>
+
+              {/* Deck Option */}
+              <button
+                onClick={() => createNewComposition({ type: 'deck' })}
+                className={`rounded-xl border-2 p-6 text-left transition-all ${selectedCompositionType === 'deck' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-200'}`}
+                onMouseEnter={() => setSelectedCompositionType('deck')}
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <LayoutGrid size={20} className="text-emerald-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-slate-900">Regaarder Deck</div>
+                    <div className="text-xs text-slate-500 mt-1">PowerPoint-style presentations</div>
+                  </div>
+                </div>
+                <ul className="text-xs text-slate-600 space-y-1.5">
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Slide-based design
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> AI-powered layouts
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check size={14} className="text-emerald-600" /> Voice narration
+                  </li>
+                </ul>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200">
+              <button
+                onClick={() => setCompositionTypeModalOpen(false)}
+                className="px-4 py-2 rounded-lg text-sm border border-slate-200 text-slate-600 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. Left Navigation Sidebar */}
       <div
         className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
@@ -4280,7 +4441,7 @@ Rules:
 
         <div className="px-4 py-3">
           <button 
-            onClick={createNewComposition}
+            onClick={() => setCompositionTypeModalOpen(true)}
             className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 font-medium text-sm transition-colors active:scale-95"
           >
             <Plus size={16} />
@@ -4866,8 +5027,198 @@ Rules:
           </div>
         </div>
 
-        {/* Document Editor Content (Beautifully separated page area) */}
-        <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
+        {/* Document Editor Content - DECK or COMPOSE */}
+        {activeDocId && documents.find(d => d.id === activeDocId)?.type === 'deck' ? (
+          // DECK EDITOR
+          <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+            {/* Deck Header */}
+            <div className="border-b border-slate-700 bg-slate-800/50 px-6 py-4 flex items-center justify-between">
+              <div className="flex-1 min-w-0">
+                <input
+                  type="text"
+                  value={deckTitle}
+                  onChange={(e) => setDeckTitle(e.target.value)}
+                  placeholder="Presentation Title"
+                  className="text-lg font-bold text-white bg-transparent border-none outline-none w-full"
+                />
+                <input
+                  type="text"
+                  value={deckSubtitle}
+                  onChange={(e) => setDeckSubtitle(e.target.value)}
+                  placeholder="Your subtitle..."
+                  className="text-xs text-slate-300 bg-transparent border-none outline-none w-full mt-1"
+                />
+              </div>
+              <div className="flex items-center gap-3 ml-4">
+                <div className="text-xs text-slate-400">Slide {activeSlideIndex + 1} of {deckSlides.length}</div>
+                <button
+                  onClick={() => addDeckSlide('after')}
+                  className="px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+                >
+                  <Plus size={14} /> Add Slide
+                </button>
+              </div>
+            </div>
+
+            {/* Main Deck View */}
+            <div className="flex flex-1 min-h-0 gap-4 p-6 overflow-hidden">
+              {/* Slide Thumbnail Panel */}
+              <div className="w-48 bg-slate-800/50 rounded-lg border border-slate-700 flex flex-col overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-700 text-xs font-semibold text-slate-300 uppercase tracking-wide">Slides</div>
+                <div className="flex-1 overflow-y-auto space-y-2 p-2">
+                  {deckSlides.map((slide, idx) => (
+                    <button
+                      key={slide.id}
+                      onClick={() => setActiveSlideIndex(idx)}
+                      className={`w-full rounded-lg border-2 p-2 text-left transition-all ${activeSlideIndex === idx ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-600 bg-slate-700 hover:border-slate-500'}`}
+                    >
+                      <div className="aspect-video bg-slate-900 rounded mb-2 flex items-center justify-center border border-slate-600">
+                        <span className="text-[10px] text-slate-400 font-mono">{idx + 1}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-200 font-medium truncate">{slide.title || `Slide ${idx + 1}`}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Main Slide Editor */}
+              <div className="flex-1 flex flex-col">
+                {deckSlides[activeSlideIndex] && (
+                  <div className="flex-1 bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col relative">
+                    {/* Slide Content */}
+                    {deckSlides[activeSlideIndex].type === 'title' ? (
+                      <div className="flex-1 flex flex-col items-center justify-center px-12 py-16 text-center bg-gradient-to-br from-violet-50 via-white to-slate-50">
+                        <input
+                          type="text"
+                          value={deckSlides[activeSlideIndex].title || ''}
+                          onChange={(e) => updateDeckSlide(activeSlideIndex, 'title', e.target.value)}
+                          placeholder="Slide Title"
+                          className="text-4xl font-bold text-gray-900 text-center border-none outline-none bg-transparent mb-4 w-full"
+                        />
+                        <input
+                          type="text"
+                          value={deckSlides[activeSlideIndex].subtitle || ''}
+                          onChange={(e) => updateDeckSlide(activeSlideIndex, 'subtitle', e.target.value)}
+                          placeholder="Subtitle or tagline"
+                          className="text-lg text-gray-600 text-center border-none outline-none bg-transparent w-full"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex-1 flex flex-col px-12 py-8 overflow-y-auto">
+                        <input
+                          type="text"
+                          value={deckSlides[activeSlideIndex].title || ''}
+                          onChange={(e) => updateDeckSlide(activeSlideIndex, 'title', e.target.value)}
+                          placeholder="Slide Title"
+                          className="text-2xl font-bold text-gray-900 border-none outline-none bg-transparent mb-6 w-full"
+                        />
+                        <div className="flex-1 space-y-3">
+                          {(deckSlides[activeSlideIndex].content || []).map((point, idx) => (
+                            <div key={idx} className="flex items-start gap-3 group">
+                              <input
+                                type="text"
+                                value={point}
+                                onChange={(e) => {
+                                  const newContent = [...(deckSlides[activeSlideIndex].content || [])];
+                                  newContent[idx] = e.target.value;
+                                  updateDeckSlide(activeSlideIndex, 'content', newContent);
+                                }}
+                                className="flex-1 text-gray-700 border-none outline-none bg-transparent py-1"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newContent = deckSlides[activeSlideIndex].content.filter((_, i) => i !== idx);
+                                  updateDeckSlide(activeSlideIndex, 'content', newContent);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:bg-red-50 rounded transition-opacity"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newContent = [...(deckSlides[activeSlideIndex].content || []), '• New point'];
+                              updateDeckSlide(activeSlideIndex, 'content', newContent);
+                            }}
+                            className="text-xs text-violet-600 hover:text-violet-700 mt-3 flex items-center gap-1.5"
+                          >
+                            <Plus size={14} /> Add Point
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Slide Actions */}
+                    <div className="border-t border-gray-200 px-6 py-3 flex items-center justify-between bg-gray-50">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => moveDeckSlide(activeSlideIndex, activeSlideIndex - 1)}
+                          disabled={activeSlideIndex === 0}
+                          className="p-2 rounded-lg text-gray-600 hover:bg-white disabled:opacity-30"
+                        >
+                          <ChevronLeft size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveDeckSlide(activeSlideIndex, activeSlideIndex + 1)}
+                          disabled={activeSlideIndex === deckSlides.length - 1}
+                          className="p-2 rounded-lg text-gray-600 hover:bg-white disabled:opacity-30"
+                        >
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteDeckSlide(activeSlideIndex)}
+                        className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                      >
+                        Delete Slide
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Deck AI Prompt Box */}
+            <div className="border-t border-slate-700 bg-slate-800/50 px-6 py-4">
+              <form onSubmit={(e) => { e.preventDefault(); handleAssistantQuickPromptSend(e); }} className="max-w-2xl mx-auto space-y-2">
+                <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-2">AI Slide Assistant</div>
+                <textarea
+                  value={assistantQuickPrompt}
+                  onChange={(e) => setAssistantQuickPrompt(e.target.value)}
+                  placeholder="Ask AI to generate slides, create content, or improve layout..."
+                  rows={2}
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 resize-none"
+                />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setVoiceTarget('deck')}
+                      className={`p-2 rounded-lg text-sm transition-colors ${voiceTarget === 'deck' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+                    >
+                      <Mic size={14} />
+                    </button>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isComposing || !assistantQuickPrompt.trim()}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-emerald-700/50 text-white cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
+                  >
+                    {isComposing ? 'Generating...' : 'Generate'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        ) : (
+          // COMPOSE EDITOR
+          <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
           <div
             className="mx-auto"
             style={{
@@ -5105,6 +5456,7 @@ Rules:
           </div>
           </div>
         </div>
+        )}
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
