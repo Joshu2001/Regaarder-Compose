@@ -10,8 +10,8 @@ import {
   List, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound,
-  Video, VideoOff, MicOff, PhoneOff, Maximize2, Minimize2, Link2 as LinkIcon, Clock,
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
+  UserPlus, Link2 as LinkIcon, Clock, Maximize2, Minimize2, Sidebar,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 
@@ -19,6 +19,7 @@ const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
 
+// Sub-component to cleanly handle the local video stream without cluttering the main render
 const LocalVideoFeed = ({ stream, isCameraOn }) => {
   const videoRef = useRef(null);
 
@@ -31,14 +32,23 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
   if (!isCameraOn || !stream) {
     return (
       <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-        <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-300 text-xs font-bold">
+        <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-xl font-bold">
           You
         </div>
       </div>
     );
   }
 
-  return <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover transform scale-x-[-1]" />;
+  return (
+    <video
+
+      ref={videoRef}
+      autoPlay
+      muted
+      playsInline
+      className="w-full h-full object-cover transform scale-x-[-1]"
+    />
+  );
 };
 
 const RoomStageFeed = ({ stream, placeholder }) => {
@@ -86,7 +96,7 @@ export default function App() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
-  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'people' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
@@ -94,10 +104,11 @@ export default function App() {
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
   const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
+  const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
+  const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
-  const [assistantCopilotInput, setAssistantCopilotInput] = useState('');
   const [floatingPrompt, setFloatingPrompt] = useState('');
   const [newTaskInput, setNewTaskInput] = useState('');
   const [newTaskOwner, setNewTaskOwner] = useState('user');
@@ -107,11 +118,10 @@ export default function App() {
   const [scheduleAttachments, setScheduleAttachments] = useState([]);
   const [voiceTarget, setVoiceTarget] = useState('compose');
   const [scheduleInput, setScheduleInput] = useState('');
-  const [scheduleCopilotInput, setScheduleCopilotInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([
-    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 • 10:00 AM' },
-    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 • 2:30 PM' },
+    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 ??10:00 AM' },
+    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 ??2:30 PM' },
   ]);
   const [calendarMonth, setCalendarMonth] = useState(4); // 0=Jan, 4=May
   const [calendarYear, setCalendarYear] = useState(2026);
@@ -124,7 +134,6 @@ export default function App() {
   const [mainView, setMainView] = useState('document');
   const [roomState, setRoomState] = useState('lobby');
   const [roomId, setRoomId] = useState('');
-  const [roomMode, setRoomMode] = useState('meetings');
   const [joinCode, setJoinCode] = useState('');
   const [isRoomMicOn, setIsRoomMicOn] = useState(true);
   const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
@@ -142,12 +151,6 @@ export default function App() {
     { name: 'Ana', img: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=320&q=80' },
   ]);
   const [mediaError, setMediaError] = useState(false);
-  const [platformContacts, setPlatformContacts] = useState([
-    { id: 1, name: 'Sarah Lang', title: 'Product Lead', status: 'active', lastSeen: 'In call now' },
-    { id: 2, name: 'Mike Cohen', title: 'Growth Lead', status: 'active', lastSeen: 'Online' },
-    { id: 3, name: 'Maya Patel', title: 'Design Director', status: 'active', lastSeen: 'Online' },
-    { id: 4, name: 'Jordan Kim', title: 'Operations', status: 'away', lastSeen: '5m ago' },
-  ]);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [workspaces, setWorkspaces] = useState(defaultWorkspaces);
@@ -177,6 +180,8 @@ export default function App() {
   const [promptHistoryFilterMenuOpen, setPromptHistoryFilterMenuOpen] = useState(false);
   const [editingPromptId, setEditingPromptId] = useState(null);
   const [editingPromptValue, setEditingPromptValue] = useState('');
+  const [assistantQuickPrompt, setAssistantQuickPrompt] = useState('');
+  const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
@@ -223,11 +228,13 @@ export default function App() {
   const interimCommitTimerRef = useRef(null);
   const selectedEditorTextRef = useRef('');
   const pointerDownInPromptRef = useRef(false);
+  const pointerDownInDocumentRef = useRef(false);
   const calendarMenuRef = useRef(null);
   const formattingDropdownCloseTimerRef = useRef(null);
   const textStyleMenuCloseTimerRef = useRef(null);
   const modelCandidatesCacheRef = useRef(null);
   const modelCandidatesCacheKeyRef = useRef('');
+  const didAutoJoinRoomRef = useRef(false);
   const dragStateRef = useRef({
     startX: 0,
     startY: 0,
@@ -235,6 +242,10 @@ export default function App() {
     rightWidth: 340,
     promptX: 0,
     promptY: -14,
+    miniPromptX: 0,
+    miniPromptY: 0,
+    dictationX: 0,
+    dictationY: 0,
   });
   const wholeDocSelectionRef = useRef(false);
   const micPermissionGrantedRef = useRef(false);
@@ -246,18 +257,18 @@ export default function App() {
   const promptRevealTimerRef = useRef(null);
 
   // Stateful document content
-  const [docTitle, setDocTitle] = useState(defaultTitle);
-  const [docSubtitle, setDocSubtitle] = useState(defaultSubtitle);
+  const [docTitle, setDocTitle] = useState('');
+  const [docSubtitle, setDocSubtitle] = useState('');
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
-  const [isBlankDocument, setIsBlankDocument] = useState(false);
+  const [isBlankDocument, setIsBlankDocument] = useState(true);
   const [documents, setDocuments] = useState([
     {
       id: Date.now(),
-      title: defaultTitle,
-      subtitle: defaultSubtitle,
+      title: '',
+      subtitle: '',
       initiatives: defaultInitiatives,
       appendedSections: [],
-      isBlank: false,
+      isBlank: true,
       bodyHtml: '',
     },
   ]);
@@ -287,7 +298,7 @@ export default function App() {
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
-  const [editorSize, setEditorSize] = useState(32);
+  const [editorSize, setEditorSize] = useState(36);
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
   const [isUnderlineActive, setIsUnderlineActive] = useState(false);
@@ -1105,7 +1116,6 @@ export default function App() {
     const activeEditable = active?.isContentEditable && documentCardRef.current?.contains(active)
       ? active
       : null;
-    const activeOutsideDocument = Boolean(active && documentCardRef.current && !documentCardRef.current.contains(active));
 
     let target = activeEditable;
     if (!target) {
@@ -1122,9 +1132,7 @@ export default function App() {
       return;
     }
 
-    if (!activeOutsideDocument) {
-      target.focus();
-    }
+    target.focus();
     if ((target.textContent || '').trim() === AI_NATIVE_PLACEHOLDER) {
       target.textContent = '';
     }
@@ -1164,6 +1172,15 @@ export default function App() {
         fallbackSelection.removeAllRanges();
         fallbackSelection.addRange(fallbackRange);
       }
+    }
+
+    const finalSelection = window.getSelection();
+    if (finalSelection) {
+      const endRange = document.createRange();
+      endRange.selectNodeContents(target);
+      endRange.collapse(false);
+      finalSelection.removeAllRanges();
+      finalSelection.addRange(endRange);
     }
     normalizeEditableDirection(target);
 
@@ -1278,6 +1295,7 @@ export default function App() {
   useEffect(() => {
     const trackPointerOrigin = (event) => {
       pointerDownInPromptRef.current = Boolean(promptRootRef.current && promptRootRef.current.contains(event.target));
+      pointerDownInDocumentRef.current = Boolean(documentCardRef.current && documentCardRef.current.contains(event.target));
     };
 
     window.addEventListener('pointerdown', trackPointerOrigin, true);
@@ -1285,10 +1303,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!selectedEditorText) {
+      return;
+    }
+    setRightSidebarOpen(true);
+    setActiveRightTab('assistant');
+  }, [selectedEditorText]);
+
+  useEffect(() => {
     const handleSelectionChange = () => {
       const range = getEditorSelectionRange();
       if (!range) {
         if (pointerDownInPromptRef.current) {
+          pointerDownInDocumentRef.current = false;
+          return;
+        }
+        if (!pointerDownInDocumentRef.current) {
           return;
         }
         setSelectedEditorText('');
@@ -1299,6 +1329,7 @@ export default function App() {
         setIsStrikeActive(false);
         setIsListActive(false);
         wholeDocSelectionRef.current = false;
+        pointerDownInDocumentRef.current = false;
         return;
       }
 
@@ -1318,6 +1349,8 @@ export default function App() {
       } catch (_error) {
         // noop
       }
+
+      pointerDownInDocumentRef.current = false;
     };
 
     document.addEventListener('selectionchange', handleSelectionChange);
@@ -1394,6 +1427,14 @@ export default function App() {
           lastDocumentTranscriptRef.current = { text: normalizedText, source, at: Date.now() };
         } else {
           setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+          requestAnimationFrame(() => {
+            const promptEl = floatingPromptRef.current;
+            if (promptEl && typeof promptEl.setSelectionRange === 'function') {
+              const end = promptEl.value.length;
+              promptEl.focus();
+              promptEl.setSelectionRange(end, end);
+            }
+          });
         }
       };
 
@@ -1452,11 +1493,7 @@ export default function App() {
       const recoverableErrors = ['not-allowed', 'service-not-allowed', 'audio-capture', 'aborted', 'network'];
       if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && recoverableErrors.includes(errorCode) && !mockIntervalRef.current) {
         showToast('Microphone stream interrupted. Switching to fallback dictation.');
-        const phrases = [
-          'Draft a launch plan for the new beta. ',
-          'I need to make sure we cover the marketing assets, technical rollout, and timeline milestones. ',
-          'Let us schedule a team sync for next week. ',
-        ];
+        const phrases = [''];
         const fullText = phrases.join('');
         let currentIndex = 0;
         try {
@@ -1761,11 +1798,16 @@ export default function App() {
       return '<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;"></p>';
     }
 
+    const applyInlineFormatting = (text) => String(text || '')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.+?)__/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+
     return normalized
       .split(/\n{2,}/)
       .map((block) => block.trim())
       .filter(Boolean)
-      .map((block) => `<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;">${escapeHtml(block).replace(/\n/g, '<br/>')}</p>`)
+      .map((block) => `<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;">${applyInlineFormatting(escapeHtml(block).replace(/\n/g, '<br/>'))}</p>`)
       .join('');
   };
 
@@ -2184,20 +2226,20 @@ Rules:
       if (modelResponse?.parsed) {
         usedLiveModel = true;
         const result = modelResponse.parsed;
-        aiResponseText = result.aiResponseText?.trim() || 'Completed your request with live AI.';
+        aiResponseText = result.aiResponseText?.trim() || (result.docAction?.textParagraph ? String(result.docAction.textParagraph).trim() : 'Composed with live AI.');
 
         if (result.hasAction && result.docAction) {
           const rawType = String(result.docAction.type || '').toLowerCase();
           if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
             docAction = {
-              title: result.docAction.title || '🗓️ AI Timeline',
+              title: result.docAction.title || '??�?AI Timeline',
               type: 'timeline',
               content: result.docAction.timelineItems,
             };
           } else if (rawType === 'tasks' && Array.isArray(result.docAction.taskItems) && result.docAction.taskItems.length) {
             const sanitizedTasks = result.docAction.taskItems.filter(Boolean).map((item) => String(item));
             docAction = {
-              title: result.docAction.title || '📋 AI Checklist',
+              title: result.docAction.title || '?? AI Checklist',
               type: 'tasks',
               content: sanitizedTasks,
             };
@@ -2210,13 +2252,13 @@ Rules:
             setTasks((prev) => [...prev, ...syncedTasks]);
           } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
             docAction = {
-              title: result.docAction.title || '🛡️ AI Risk Matrix',
+              title: result.docAction.title || '?���?AI Risk Matrix',
               type: 'risks',
               content: result.docAction.riskItems,
             };
           } else if (rawType === 'text' && result.docAction.textParagraph) {
             docAction = {
-              title: result.docAction.title || '✨ AI Composed Section',
+              title: result.docAction.title || '??AI Composed Section',
               type: 'text',
               paragraph: result.docAction.textParagraph,
             };
@@ -2226,8 +2268,8 @@ Rules:
         if (shouldBuildDocument && !docAction) {
           docAction = {
             title: requestedFormat === 'Auto (Compose decides)'
-              ? '✨ AI Composed Section'
-              : `✨ ${requestedFormat}`,
+              ? '??AI Composed Section'
+              : `??${requestedFormat}`,
             type: 'text',
             paragraph: (result.docAction?.textParagraph || aiResponseText || '').trim(),
           };
@@ -2289,7 +2331,7 @@ Rules:
           setAppendedSections([]);
           setDocBodyHtml(composedHtml);
           if (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
-            setDocTitle(finalizedAction.title?.replace(/^✨\s*/, '') || 'Compose Draft');
+            setDocTitle(finalizedAction.title?.replace(/^[\\s\\?]+/, '') || 'Compose Draft');
           }
           if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
             setDocSubtitle(`Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`);
@@ -2323,6 +2365,16 @@ Rules:
     setChatInput('');
   };
 
+  const handleAssistantQuickPromptSend = (event) => {
+    event.preventDefault();
+    const prompt = assistantQuickPrompt.trim();
+    if (!prompt || isComposing) {
+      return;
+    }
+    handleAISubmit(prompt, { source: 'chat' });
+    setAssistantQuickPrompt('');
+  };
+
   const runSmartAssistAction = (instruction) => {
     const selectedScope = selectedEditorTextRef.current || selectedEditorText;
     const hasSelection = Boolean(selectedScope);
@@ -2344,24 +2396,6 @@ Rules:
       lengthMode: promptLengthMode,
       lengthValue: promptLengthValue,
     });
-  };
-
-  const handleAssistantCopilotSubmit = (event) => {
-    event.preventDefault();
-    if (!assistantCopilotInput.trim()) {
-      return;
-    }
-    runSmartAssistAction(assistantCopilotInput.trim());
-    setAssistantCopilotInput('');
-  };
-
-  const handleScheduleCopilotSubmit = async (event) => {
-    event.preventDefault();
-    if (!scheduleCopilotInput.trim()) {
-      return;
-    }
-    await convertMessyScheduleToPlan(scheduleCopilotInput);
-    setScheduleCopilotInput('');
   };
 
   const handleFloatingSend = (e) => {
@@ -2598,11 +2632,7 @@ Rules:
         const noRealTranscript = !interimTranscriptRef.current.trim() && !pendingInterimTranscriptRef.current.trim();
         if (isVoiceActiveRef.current && voiceTargetRef.current === 'document' && noRealTranscript && !mockIntervalRef.current) {
           showToast('No live mic input yet. Switching to fallback dictation.');
-          const phrases = [
-            'Draft a launch plan for the new beta. ',
-            'I need to cover marketing assets, technical rollout, and timeline milestones. ',
-            'Let us schedule a team sync for next week. ',
-          ];
+          const phrases = [''];
           const fullText = phrases.join('');
           let currentIndex = 0;
           mockIntervalRef.current = setInterval(() => {
@@ -2698,6 +2728,44 @@ Rules:
     }
   };
 
+  const formatMeetingElapsed = useCallback((startedAt) => {
+    if (!startedAt) {
+      return '00:00';
+    }
+    const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+    const mins = Math.floor(seconds / 60);
+    const remaining = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`;
+  }, []);
+
+  const normalizeRoomCode = useCallback((value) => {
+    const input = String(value || '').trim();
+    if (!input) {
+      return '';
+    }
+    if (/^https?:\/\//i.test(input)) {
+      try {
+        const parsed = new URL(input);
+        const roomFromQuery = parsed.searchParams.get('room');
+        if (roomFromQuery) {
+          return roomFromQuery.trim().toLowerCase();
+        }
+        const cleanPath = parsed.pathname.split('/').filter(Boolean);
+        if (cleanPath.length > 0) {
+          return cleanPath[cleanPath.length - 1].trim().toLowerCase();
+        }
+      } catch (_error) {
+        return input.toLowerCase();
+      }
+    }
+    return input.replace(/\s+/g, '-').toLowerCase();
+  }, []);
+
+  const getMeetingLink = useCallback((code) => {
+    const normalized = normalizeRoomCode(code || roomId || generateRoomCode());
+    return `${window.location.origin}${window.location.pathname}?room=${normalized}`;
+  }, [normalizeRoomCode, roomId]);
+
   const requestMediaPermissions = async () => {
     if (!navigator?.mediaDevices?.getUserMedia) {
       setMediaError(true);
@@ -2708,17 +2776,21 @@ Rules:
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
       setLocalStream(stream);
       setMediaError(false);
       setIsRoomCameraOn(true);
       setIsRoomMicOn(true);
       return true;
-    } catch (_error) {
+    } catch (err) {
+      console.warn('Media access denied or unavailable', err);
       setMediaError(true);
       setIsRoomCameraOn(false);
       setIsRoomMicOn(false);
-      showToast('Camera/Mic access denied. Please allow browser permissions.');
+      showToast('Camera/Mic access denied. Please check browser permissions.');
       return false;
     }
   };
@@ -2755,6 +2827,10 @@ Rules:
       localStream.getTracks().forEach((track) => track.stop());
       setLocalStream(null);
     }
+    if (screenShareStream) {
+      screenShareStream.getTracks().forEach((track) => track.stop());
+      setScreenShareStream(null);
+    }
     setIsScreenSharing(false);
   };
 
@@ -2764,56 +2840,31 @@ Rules:
     return `${getStr(3)}-${getStr(4)}-${getStr(3)}`;
   };
 
-  const normalizeRoomCode = (value) => {
-    const raw = String(value || '').trim();
-    if (!raw) {
-      return '';
-    }
-
-    try {
-      if (/^https?:\/\//i.test(raw)) {
-        const url = new URL(raw);
-        const roomFromQuery = url.searchParams.get('room');
-        if (roomFromQuery) {
-          return String(roomFromQuery).trim().toLowerCase();
-        }
-      }
-    } catch (_error) {
-      // Fall back to plain text normalization.
-    }
-
-    return raw.toLowerCase().replace(/[^a-z0-9-]/g, '');
-  };
-
-  const getMeetingLink = (code) => {
-    const normalizedCode = normalizeRoomCode(code) || generateRoomCode();
-    return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(normalizedCode)}`;
-  };
-
-  const formatMeetingElapsed = useCallback((startedAt) => {
-    if (!startedAt) {
-      return '00:00';
-    }
-    const elapsedMs = Math.max(0, Date.now() - startedAt);
-    const totalSeconds = Math.floor(elapsedMs / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    if (hours > 0) {
-      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    }
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  }, []);
-
   const joinRoom = async (code) => {
     await openMeetingSetup(code);
   };
 
   const leaveRoom = () => {
+    const completedDuration = formatMeetingElapsed(meetingStartedAt);
+    setMeetingSummary({
+      roomCode: roomId,
+      durationLabel: completedDuration,
+      participantsCount: 4,
+      decisions: [
+        'Beta launch officially locked for May 15th.',
+        'Marketing budget increased by 15% for initial push.',
+      ],
+      actionItems: [
+        'Sarah to upload final assets by Friday.',
+        'Alex to update Compose AI prompts.',
+      ],
+    });
+    setMeetingDurationLabel(completedDuration);
     setRoomState('summary');
     setMainView('document');
+    setRoomPanelMode('docked');
     stopMediaStream();
-    showToast('Left room. Summary is ready.');
+    showToast('Left the meeting. AI generating summary...');
   };
 
   const handleCopyLink = async () => {
@@ -2826,10 +2877,17 @@ Rules:
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = link;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
       }
-      showToast('Meeting link copied');
-    } catch (_error) {
-      showToast(link);
+      showToast(`Meeting link copied: ${link}`);
+    } catch (_err) {
+      showToast('Could not copy link automatically. Please copy from the invite bar.');
     }
   };
 
@@ -2863,64 +2921,66 @@ Rules:
     setCollaboratorInvite('');
     showToast(`Invitation prepared for ${invite}`);
   };
+
   const toggleRoomCamera = async () => {
-    if (!localStream) {
-      await requestMediaPermissions();
-      return;
+    if (localStream && !mediaError) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        const nextEnabled = !videoTrack.enabled;
+        videoTrack.enabled = nextEnabled;
+        setIsRoomCameraOn(nextEnabled);
+      }
+    } else {
+      const granted = await requestMediaPermissions();
+      if (!granted) {
+        return;
+      }
     }
-    const videoTrack = localStream.getVideoTracks()[0];
-    if (!videoTrack) {
-      return;
-    }
-    const nextEnabled = !videoTrack.enabled;
-    videoTrack.enabled = nextEnabled;
-    setIsRoomCameraOn(nextEnabled);
   };
 
   const toggleRoomMic = async () => {
-    if (!localStream) {
-      await requestMediaPermissions();
-      return;
+    if (localStream && !mediaError) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        const nextEnabled = !audioTrack.enabled;
+        audioTrack.enabled = nextEnabled;
+        setIsRoomMicOn(nextEnabled);
+      }
+    } else {
+      const granted = await requestMediaPermissions();
+      if (!granted) {
+        return;
+      }
     }
-    const audioTrack = localStream.getAudioTracks()[0];
-    if (!audioTrack) {
-      return;
-    }
-    const nextEnabled = !audioTrack.enabled;
-    audioTrack.enabled = nextEnabled;
-    setIsRoomMicOn(nextEnabled);
   };
 
   const toggleScreenShare = async () => {
-    if (isScreenSharing) {
-      if (screenShareStream) {
-        screenShareStream.getTracks().forEach((track) => track.stop());
-      }
+    if (isScreenSharing && screenShareStream) {
+      screenShareStream.getTracks().forEach((track) => track.stop());
       setScreenShareStream(null);
       setIsScreenSharing(false);
       showToast('Screen sharing stopped');
       return;
     }
 
-    if (!navigator?.mediaDevices?.getDisplayMedia) {
-      showToast('Screen sharing is not supported in this browser.');
-      return;
-    }
-
     try {
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-      const [videoTrack] = displayStream.getVideoTracks();
-      if (videoTrack) {
-        videoTrack.onended = () => {
-          setScreenShareStream(null);
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+      const [track] = stream.getVideoTracks();
+      if (track) {
+        track.onended = () => {
           setIsScreenSharing(false);
+          setScreenShareStream(null);
+          showToast('Screen sharing stopped');
         };
       }
-      setScreenShareStream(displayStream);
+      setScreenShareStream(stream);
       setIsScreenSharing(true);
       showToast('Screen sharing started');
-    } catch (_error) {
-      showToast('Screen sharing was cancelled');
+    } catch (_err) {
+      showToast('Screen share permission denied or unavailable.');
     }
   };
 
@@ -2928,11 +2988,9 @@ Rules:
     if (roomState !== 'active' || !meetingStartedAt) {
       return undefined;
     }
-
     const interval = setInterval(() => {
       setMeetingDurationLabel(formatMeetingElapsed(meetingStartedAt));
     }, 1000);
-
     return () => clearInterval(interval);
   }, [roomState, meetingStartedAt, formatMeetingElapsed]);
 
@@ -2942,7 +3000,7 @@ Rules:
     }
 
     event.preventDefault();
-    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'people'];
+    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'memory'];
     const currentIndex = tabOrder.indexOf(activeRightTab);
     const safeIndex = currentIndex >= 0 ? currentIndex : 0;
     const nextIndex = event.key === 'ArrowRight'
@@ -2952,6 +3010,19 @@ Rules:
     setActiveRightTab(tabOrder[nextIndex]);
     setRightSidebarOpen(true);
   };
+
+  useEffect(() => {
+    if (didAutoJoinRoomRef.current) {
+      return;
+    }
+    const meetingCode = new URLSearchParams(window.location.search).get('room');
+    if (!meetingCode) {
+      return;
+    }
+    didAutoJoinRoomRef.current = true;
+    setActiveRightTab('room');
+    joinRoom(meetingCode);
+  }, []);
 
   const switchDocument = (docId) => {
     const targetDoc = documents.find((doc) => doc.id === docId);
@@ -3272,6 +3343,8 @@ Rules:
     setShareFormat('Compose (.cmp)');
     setShareAccess('Viewer');
     setShareLink(`${base}?doc=${docId}&access=viewer`);
+    closeTransientMenus();
+    setRightSidebarOpen(false);
     setShareModalOpen(true);
     trackMemoryAction('share', 'Opened share modal', {
       documentId: String(docId),
@@ -3378,6 +3451,28 @@ Rules:
 
     if (!range) {
       blankBodyRef.current?.focus();
+      return;
+    }
+
+    if (command === 'fontSize') {
+      const parsedSize = Number(value);
+      const safeSize = Number.isFinite(parsedSize) ? Math.min(72, Math.max(10, parsedSize)) : editorSize;
+      document.execCommand('styleWithCSS', false, true);
+      document.execCommand('fontSize', false, '7');
+      if (blankBodyRef.current) {
+        const fontNodes = blankBodyRef.current.querySelectorAll('font[size="7"]');
+        fontNodes.forEach((node) => {
+          node.removeAttribute('size');
+          node.style.fontSize = `${safeSize}px`;
+        });
+      }
+      const selectionAfterSize = window.getSelection();
+      if (selectionAfterSize && selectionAfterSize.rangeCount) {
+        savedSelectionRef.current = selectionAfterSize.getRangeAt(0).cloneRange();
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
       return;
     }
 
@@ -3674,12 +3769,12 @@ Rules:
     const slotLabel = event.slot || formatTimeSlot(dateValue.getHours(), dateValue.getMinutes());
 
     if (isSameDay(dateValue, today)) {
-      return `Today • ${slotLabel}`;
+      return `Today ??${slotLabel}`;
     }
     if (isSameDay(dateValue, tomorrow)) {
-      return `Tomorrow • ${slotLabel}`;
+      return `Tomorrow ??${slotLabel}`;
     }
-    return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} • ${slotLabel}`;
+    return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} ??${slotLabel}`;
   };
 
   const formatUpcomingHeaderDate = (dateValue) => {
@@ -3717,9 +3812,8 @@ Rules:
     showToast('Task converted to schedule');
   };
 
-  const convertMessyScheduleToPlan = async (inputOverride = '') => {
-    const sourceInput = String(inputOverride || scheduleInput);
-    const rawItems = sourceInput
+  const convertMessyScheduleToPlan = async () => {
+    const rawItems = scheduleInput
       .split(/\n|;/)
       .map((item) => item.trim())
       .filter(Boolean);
@@ -3805,6 +3899,9 @@ Rules:
 
   const beginPanelResize = (target, event) => {
     const point = event.touches?.[0] || event;
+    if (!event.touches && event.button !== 0) {
+      return;
+    }
     dragStateRef.current = {
       startX: point.clientX,
       startY: point.clientY,
@@ -3812,6 +3909,10 @@ Rules:
       rightWidth: rightSidebarWidth,
       promptX: promptOffset.x,
       promptY: promptOffset.y,
+      miniPromptX: miniPromptOffset.x,
+      miniPromptY: miniPromptOffset.y,
+      dictationX: dictationOffset.x,
+      dictationY: dictationOffset.y,
     };
     setDragTarget(target);
   };
@@ -3835,10 +3936,24 @@ Rules:
       }
 
       if (dragTarget === 'prompt') {
+        const nextX = Math.min(620, Math.max(-620, dragStateRef.current.promptX + deltaX));
         const deltaY = event.clientY - dragStateRef.current.startY;
-        const nextY = Math.min(40, Math.max(-180, dragStateRef.current.promptY - deltaY));
-        // Keep prompt horizontally aligned to the document content area.
-        setPromptOffset({ x: 0, y: nextY });
+        const nextY = Math.min(320, Math.max(-540, dragStateRef.current.promptY - deltaY));
+        setPromptOffset({ x: nextX, y: nextY });
+      }
+
+      if (dragTarget === 'miniPrompt') {
+        const nextX = Math.min(840, Math.max(-20, dragStateRef.current.miniPromptX + deltaX));
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextY = Math.min(560, Math.max(-40, dragStateRef.current.miniPromptY + deltaY));
+        setMiniPromptOffset({ x: nextX, y: nextY });
+      }
+
+      if (dragTarget === 'dictation') {
+        const nextX = Math.min(840, Math.max(-20, dragStateRef.current.dictationX + deltaX));
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextY = Math.min(520, Math.max(-280, dragStateRef.current.dictationY + deltaY));
+        setDictationOffset({ x: nextX, y: nextY });
       }
     };
 
@@ -3846,7 +3961,7 @@ Rules:
       setDragTarget(null);
     };
 
-    document.body.style.cursor = dragTarget === 'prompt' ? 'grabbing' : 'col-resize';
+    document.body.style.cursor = ['prompt', 'miniPrompt', 'dictation'].includes(dragTarget) ? 'grabbing' : 'col-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
@@ -3919,7 +4034,6 @@ Rules:
     && lastComposeRun.documentId === activeDocId
     && getPlainText(docBodyHtml).length
   );
-  const shouldDockVoiceWidget = !isBlankDocument || getPlainText(docBodyHtml).length > 90;
   const pageNumberPositionClass = pageNumberPosition === 'left'
     ? 'left-12 text-left'
     : pageNumberPosition === 'right'
@@ -4003,7 +4117,7 @@ Rules:
       )}
 
       {shareModalOpen && (
-        <div className="absolute inset-0 z-[120] bg-slate-900/25 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="absolute inset-0 z-[520] bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-[640px] max-w-[95vw] rounded-2xl bg-white border border-slate-200 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.65)] p-6">
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
@@ -4101,7 +4215,7 @@ Rules:
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-gray-900 truncate">{previewAttachment.name}</div>
-                <div className="text-[11px] text-gray-500">{previewAttachment.type || 'Unknown type'} • {Math.round((previewAttachment.size || 0) / 1024)} KB</div>
+                <div className="text-[11px] text-gray-500">{previewAttachment.type || 'Unknown type'} ??{Math.round((previewAttachment.size || 0) / 1024)} KB</div>
               </div>
               <button
                 type="button"
@@ -4162,7 +4276,7 @@ Rules:
               placeholder="Search compositions..." 
               className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
             />
-            <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">⌘ K</span>
+            <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">??K</span>
           </div>
         </div>
 
@@ -4270,7 +4384,7 @@ Rules:
                         >
                           <div className="flex items-center gap-2 truncate">
                             <FileText size={14} className={isActive ? 'text-violet-500' : 'text-gray-400'} />
-                            <span className="truncate">{doc.pinned ? '📌 ' : ''}{label}</span>
+                            <span className="truncate">{doc.pinned ? '?? ' : ''}{label}</span>
                           </div>
                           <MoreHorizontal size={14} className={isActive ? 'text-violet-400' : 'text-gray-300'} />
                         </button>
@@ -4309,15 +4423,7 @@ Rules:
               onClick={() => setLeftSidebarOpen((prev) => !prev)}
               className="text-gray-400 hover:text-gray-600"
             >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsUnsavedDraftVisible((prev) => !prev)}
-              className="inline-flex items-center gap-1 text-gray-400 hover:text-gray-600 px-1 py-0.5 rounded"
-              title={isUnsavedDraftVisible ? 'Collapse draft indicator' : 'Expand draft indicator'}
-            >
-              <ChevronRight size={14} className={`transition-transform duration-200 ${isUnsavedDraftVisible ? 'rotate-90' : 'rotate-0'}`} />
+              {leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
             </button>
             {isUnsavedDraftVisible && (
               <>
@@ -4440,7 +4546,7 @@ Rules:
                     className="w-[160px] bg-white border border-violet-200 rounded px-1 py-0.5 text-xs outline-none"
                   />
                 ) : (
-                  <span className="max-w-[160px] truncate">{doc.pinned ? '📌 ' : ''}{label}</span>
+                  <span className="max-w-[160px] truncate">{doc.pinned ? '?? ' : ''}{label}</span>
                 )}
                 <button
                   data-doc-menu-root
@@ -4732,7 +4838,7 @@ Rules:
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
-            <span className="font-serif italic font-bold hover:text-gray-900 cursor-pointer">∑</span>
+            <span className="font-serif italic font-bold hover:text-gray-900 cursor-pointer">I</span>
           </div>
         </div>
 
@@ -4814,7 +4920,7 @@ Rules:
                 {/* 1. Objective */}
                 <div className="mb-10 group relative">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">🎯</span> 1. Objective
+                    <span className="text-2xl">?��</span> 1. Objective
                   </h2>
                   <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Launch Regaarder Compose to establish it as the most intuitive AI-native productivity workspace for modern teams and individuals.
@@ -4824,7 +4930,7 @@ Rules:
                 {/* 2. Key Initiatives Table */}
                 <div className="mb-10 group relative">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">🚀</span> 2. Key Initiatives
+                    <span className="text-2xl">??</span> 2. Key Initiatives
                     <span className="text-[10px] font-normal text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">Click Status to Cycle</span>
                   </h2>
                   
@@ -4866,7 +4972,7 @@ Rules:
                 {/* 3. Target Audience */}
                 <div className="mb-10">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">👥</span> 3. Target Audience
+                    <span className="text-2xl">?��</span> 3. Target Audience
                   </h2>
                   <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Knowledge workers, founders, creators, marketers, and teams who want a smarter, calmer, and more connected workspace.
@@ -4972,85 +5078,103 @@ Rules:
               </div>
             )}
 
-            <div className={`pointer-events-none absolute inset-0 z-40 ${shouldDockVoiceWidget ? 'flex items-end justify-end p-6 pb-32' : 'flex items-center justify-center'}`}>
-              <div className={`pointer-events-auto flex flex-col items-center gap-3 ${shouldDockVoiceWidget ? '' : '-mt-10'}`}>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await toggleVoiceRecording('document');
-                  }}
-                  className={`relative w-24 h-24 rounded-full border transition-all ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
-                  title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
-                >
-                  <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
-                  {isVoiceActive && voiceTarget === 'document' && (
-                    <>
-                      <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
-                      <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
-                    </>
-                  )}
-                </button>
-                <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
-                  {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
-                </div>
-                {isVoiceActive && voiceTarget === 'document' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      try {
-                        speechRecognitionRef.current?.stop();
-                      } catch (_error) {
-                        // noop
-                      }
-                      setIsVoiceActive(false);
-                      setLiveSpeechInterimText('');
-                    }}
-                    onPointerDown={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      try {
-                        speechRecognitionRef.current?.stop();
-                      } catch (_error) {
-                        // noop
-                      }
-                      setIsVoiceActive(false);
-                      setLiveSpeechInterimText('');
-                    }}
-                    className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
-                  >
-                    Dismiss
-                  </button>
-                )}
-              </div>
-            </div>
-
           </div>
           </div>
         </div>
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
-          <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
-          {isPromptExpanded ? (
+          <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-2xl ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-            style={{ width: `${Math.max(320, Math.min(promptWidth, 860))}px`, maxWidth: '100%' }}
+            className={`relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? 'rounded-xl' : 'rounded-2xl'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 700))}px`, maxWidth: '100%' }}
           >
+            {isPromptExpanded && (
+              <button
+                type="button"
+                onClick={() => setIsPromptMinimized(true)}
+                className="absolute right-2 top-2 p-1 rounded-md text-gray-400 hover:text-violet-700 hover:bg-violet-50"
+                title="Minimize AI prompt"
+              >
+                <X size={14} />
+              </button>
+            )}
             <button
               type="button"
               onPointerDown={(event) => beginPanelResize('prompt', event)}
-              className="p-2 text-gray-300 hover:text-gray-500 cursor-move touch-none"
+              className="p-2.5 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 cursor-move touch-none shrink-0"
               title="Move prompt bar"
             >
               <Move size={14} />
             </button>
             <div className="flex items-center gap-3 px-2 flex-1 min-w-0">
-              <Sparkles size={18} className="text-violet-500 shrink-0 self-start mt-2" />
+              <div className="relative shrink-0 self-start mt-1" ref={promptMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeTransientMenus();
+                    setIsPromptMenuOpen((prev) => !prev);
+                  }}
+                  className={`p-2 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                  title="Add files, images, audio, or open prompt library"
+                >
+                  <Plus size={16} />
+                </button>
+                {isPromptMenuOpen && (
+                  <div className="absolute left-0 bottom-full mb-1 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1 w-[210px] z-[9999]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        promptAudioInputRef.current?.click();
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <Upload size={14} />
+                      <span>Audio</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        promptFileInputRef.current?.click();
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <File size={14} />
+                      <span>Files</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        promptFileInputRef.current?.click();
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <FileText size={14} />
+                      <span>Images</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPromptLibraryOpen(true);
+                        setIsPromptMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                    >
+                      <BookOpen size={14} />
+                      <span>Prompt library</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+              {isPromptExpanded ? (
                 <div className="flex-1 min-w-0 space-y-2 py-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[11px] font-semibold text-gray-500">Compose format</span>
@@ -5143,7 +5267,7 @@ Rules:
                         </div>
                       )}
                     </div>
-                    <span className="text-[10px] text-gray-400">{promptTone} • ~{promptLengthValue} {promptLengthMode}</span>
+                    <span className="text-[10px] text-gray-400">{promptTone} ??~{promptLengthValue} {promptLengthMode}</span>
                     <div className="flex flex-wrap gap-1.5">
                       {['Timeline', 'Article', 'Checklist', 'Presentation Draft'].map((preset) => (
                         <button
@@ -5218,7 +5342,7 @@ Rules:
                     value={floatingPrompt}
                     onChange={(e) => setFloatingPrompt(e.target.value)}
                     onPaste={handleFloatingPaste}
-                    onInput={(e) => autoResizeTextarea(e.currentTarget, 160)}
+                    onInput={(e) => autoResizeTextarea(e.currentTarget, 360)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -5228,9 +5352,20 @@ Rules:
                     placeholder="Describe what you need. Compose will build it into your document."
                     rows={1}
                     style={{ textAlign: alignMode }}
-                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-1 resize-none"
+                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-1 resize-y min-h-[42px] max-h-[360px]"
                   />
                 </div>
+              ) : (
+                <textarea
+                  value={floatingPrompt}
+                  onChange={(e) => setFloatingPrompt(e.target.value)}
+                  onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                  placeholder="Ask Compose AI..."
+                  rows={1}
+                  style={{ textAlign: alignMode }}
+                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2 resize-y min-h-[38px] max-h-[120px]"
+                />
+              )}
             </div>
             <div className="flex items-center gap-2 pr-1 shrink-0">
               <input
@@ -5242,62 +5377,12 @@ Rules:
               />
               <button
                 type="button"
-                onClick={() => setIsPromptExpanded(false)}
-                className="p-2 rounded-full transition-colors bg-violet-50 text-violet-600 hover:bg-violet-100"
-                title="Minimize to floating icon"
+                onClick={() => setIsPromptExpanded((prev) => !prev)}
+                className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                title="Expand prompt input"
               >
-                <X size={16} />
+                <Expand size={16} />
               </button>
-              <div className="relative" ref={promptMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeTransientMenus();
-                    setIsPromptMenuOpen((prev) => !prev);
-                  }}
-                  className={`p-2 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                  title="Add files, images, or audio"
-                >
-                  <Plus size={16} />
-                </button>
-                {isPromptMenuOpen && (
-                  <div className="absolute right-0 bottom-full mb-1 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1 w-[170px] z-[9999]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        promptAudioInputRef.current?.click();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <Upload size={14} />
-                      <span>Audio</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        promptFileInputRef.current?.click();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <File size={14} />
-                      <span>Files</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        promptFileInputRef.current?.click();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <FileText size={14} />
-                      <span>Images</span>
-                    </button>
-                  </div>
-                )}
-              </div>
               <button
                 type="button"
                 onClick={async () => {
@@ -5314,7 +5399,7 @@ Rules:
                   </>
                 )}
               </button>
-              <div className="relative" ref={promptLibraryRef}>
+              <div className="relative hidden" ref={promptLibraryRef}>
                 <button
                   type="button"
                   onClick={() => {
@@ -5413,7 +5498,7 @@ Rules:
                                 <div className="text-[11px] text-gray-700 line-clamp-2">{entry.text}</div>
                               </button>
                               <div className="mt-1 flex items-center justify-between gap-2">
-                                <div className="text-[10px] text-gray-400">{entry.source} • {entry.tone} • ~{entry.lengthValue} {entry.lengthMode}</div>
+                                <div className="text-[10px] text-gray-400">{entry.source} ??{entry.tone} ??~{entry.lengthValue} {entry.lengthMode}</div>
                                 <button type="button" onClick={() => beginPromptEdit(entry)} className="text-[10px] text-violet-600 hover:text-violet-700">Edit</button>
                               </div>
                             </>
@@ -5451,23 +5536,90 @@ Rules:
               </button>
             </div>
           </form>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsPromptExpanded(true)}
-              className="pointer-events-auto h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_28px_-12px_rgba(124,58,237,0.9)] flex items-center justify-center hover:bg-violet-700 transition-all"
-              title="Open AI prompt"
-            >
-              <Sparkles size={20} />
-            </button>
-          )}
           </div>
         </div>
+
+        {!isComposing && (
+          <div
+            className="pointer-events-none absolute inset-0 z-[300] flex items-center justify-center"
+            style={{ transform: `translate(${dictationOffset.x}px, ${dictationOffset.y}px)` }}
+          >
+            <div className="pointer-events-auto flex flex-col items-center gap-3">
+              <button
+                type="button"
+                onPointerDown={(event) => beginPanelResize('dictation', event)}
+                onClick={async () => {
+                  await toggleVoiceRecording('document');
+                }}
+                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
+                title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
+              >
+                <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
+                {isVoiceActive && voiceTarget === 'document' && (
+                  <>
+                    <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
+                    <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
+                  </>
+                )}
+              </button>
+              <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
+                {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
+              </div>
+              {isVoiceActive && voiceTarget === 'document' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      speechRecognitionRef.current?.stop();
+                    } catch (_error) {
+                      // noop
+                    }
+                    setIsVoiceActive(false);
+                    setLiveSpeechInterimText('');
+                  }}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    try {
+                      speechRecognitionRef.current?.stop();
+                    } catch (_error) {
+                      // noop
+                    }
+                    setIsVoiceActive(false);
+                    setLiveSpeechInterimText('');
+                  }}
+                  className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
+                >
+                  Dismiss
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {isPromptMinimized && (
+          <div
+            className="pointer-events-none absolute left-6 top-20 z-[340]"
+            style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
+          >
+            <div className="pointer-events-auto flex items-center gap-2">
+              <button
+                type="button"
+                onPointerDown={(event) => beginPanelResize('miniPrompt', event)}
+                onClick={() => setIsPromptMinimized(false)}
+                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-move touch-none"
+                title="Open AI prompt"
+              >
+                <PenTool size={18} className="mx-auto" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
-            <span title="Real-time document stats">{documentStats.words} words • {documentStats.characters} characters</span>
+            <span title="Real-time document stats">{documentStats.words} words ??{documentStats.characters} characters</span>
             <div className="relative">
               <button
                 data-language-menu-root
@@ -5513,7 +5665,7 @@ Rules:
               <button onClick={() => showToast('Quality review complete: no critical formatting issues')} className="p-1 rounded hover:text-gray-600" title="Run quick quality check"><AlertTriangle size={14} /></button>
             </div>
             <div className="relative flex items-center gap-2">
-              <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom out">−</button>
+              <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom out">-</button>
               <span className="w-8 text-center cursor-default">{zoomLevel}%</span>
               <button onClick={() => setZoomLevel(Math.min(200, zoomLevel + 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom in">+</button>
               <ChevronDown size={12} className="cursor-pointer text-gray-400" />
@@ -5522,7 +5674,7 @@ Rules:
         </div>
       </div>
 
-      {rightSidebarOpen && (
+      {!shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
           className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors"
@@ -5533,9 +5685,9 @@ Rules:
       {/* 3. Right Sidebar (AI Assistant / Smart Chat / Tools) */}
       <div 
         className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 relative z-[260] ${
-          rightSidebarOpen ? '' : 'w-0 overflow-hidden border-l-0'
+          rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
-        style={{ width: rightSidebarOpen ? `${rightSidebarWidth}px` : '0px' }}
+        style={{ width: rightSidebarOpen && !shareModalOpen ? `${rightSidebarWidth}px` : '0px' }}
       >
         {/* Sidebar Header Tabs */}
         <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
@@ -5547,12 +5699,12 @@ Rules:
           >
             <div className="inline-flex min-w-max">
               {[
-                { key: 'chat', label: 'Chat' },
-                { key: 'assistant', label: 'Assist' },
-                { key: 'tasks', label: 'Tasks' },
+                { key: 'chat', label: 'AI Chat' },
+                { key: 'assistant', label: 'AI Assistant' },
+                { key: 'tasks', label: `Tasks (${tasks.filter((t) => !t.completed).length})` },
                 { key: 'calendar', label: 'Schedule' },
                 { key: 'room', label: 'Room' },
-                { key: 'people', label: 'People' },
+                { key: 'memory', label: 'Memory' },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -5784,14 +5936,14 @@ Rules:
                   <button
                     type="button"
                     onClick={() => chatFileInputRef.current?.click()}
-                    className="absolute left-1.5 p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                    className="absolute left-1.5 bottom-1.5 p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
                     title="Attach files"
                   >
                     <Upload size={14} />
                   </button>
                   <button 
                     type="submit" 
-                    className="absolute right-1.5 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
+                    className="absolute right-1.5 bottom-1.5 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
                   >
                     <Send size={14} />
                   </button>
@@ -5803,6 +5955,12 @@ Rules:
           {/* B. ACTIVE TAB: AI ASSISTANT CO-WRITER */}
           {activeRightTab === 'assistant' && (
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              {selectedEditorText && (
+                <div className="rounded-xl border border-violet-200 bg-violet-50/70 px-3 py-2">
+                  <div className="text-[11px] font-semibold text-violet-700 mb-0.5">Quick Assist Available</div>
+                  <div className="text-[11px] text-violet-700/80">Text is highlighted. Tap an action to run immediately.</div>
+                </div>
+              )}
               <div>
                 <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
                 <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
@@ -5812,7 +5970,7 @@ Rules:
               <div className="space-y-2">
                 <button 
                   onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
-                  className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
                 >
                   <PenTool size={16} className="text-violet-500" />
                   <div>
@@ -5823,7 +5981,7 @@ Rules:
 
                 <button 
                   onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
-                  className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
                 >
                   <FileText size={16} className="text-indigo-500" />
                   <div>
@@ -5834,7 +5992,7 @@ Rules:
 
                 <button 
                   onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
-                  className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
                 >
                   <Scissors size={16} className="text-violet-400" />
                   <div>
@@ -5845,7 +6003,7 @@ Rules:
 
                 <button 
                   onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
-                  className="w-full flex items-center gap-3 px-4 py-3 border border-gray-100 rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left"
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
                 >
                   <AlertTriangle size={16} className="text-amber-500" />
                   <div>
@@ -5855,22 +6013,23 @@ Rules:
                 </button>
               </div>
 
-              <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
-                <form onSubmit={handleAssistantCopilotSubmit} className="rounded-xl border border-violet-100 bg-[#FAFAFC] p-2.5">
+              <div>
+                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
+                <form onSubmit={handleAssistantQuickPromptSend} className="rounded-xl p-3 border border-violet-100/70 bg-gradient-to-br from-violet-50/60 via-white to-white space-y-2 shadow-[0_10px_25px_-20px_rgba(109,40,217,0.55)]">
                   <textarea
-                    value={assistantCopilotInput}
-                    onChange={(event) => setAssistantCopilotInput(event.target.value)}
+                    value={assistantQuickPrompt}
+                    onChange={(e) => setAssistantQuickPrompt(e.target.value)}
                     placeholder="Ask AI Assistant from here..."
-                    rows={3}
-                    className="w-full resize-none bg-transparent text-sm text-gray-700 placeholder-gray-400 border-none outline-none"
+                    rows={2}
+                    className="w-full bg-white/95 border border-violet-100 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
                   />
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-[10px] italic text-gray-400">Floating Co-Pilot</span>
+                  <div className="flex items-center justify-end">
                     <button
                       type="submit"
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-200 transition-colors"
+                      disabled={isComposing || !assistantQuickPrompt.trim()}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}
                     >
-                      <Sparkles size={12} /> Run Assist
+                      Send to AI
                     </button>
                   </div>
                 </form>
@@ -6221,7 +6380,7 @@ Rules:
                         disabled={calendarYear === 2026 && calendarMonth === 0}
                         className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        ←
+                        ??
                       </button>
                       <button
                         type="button"
@@ -6235,7 +6394,7 @@ Rules:
                         disabled={calendarYear === 2029 && calendarMonth === 11}
                         className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        →
+                        ??
                       </button>
                     </div>
                   </div>
@@ -6298,58 +6457,95 @@ Rules:
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 bg-[#FAFAFC] p-4">
-                <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
-                  <form onSubmit={handleScheduleCopilotSubmit} className="rounded-xl border border-violet-100 bg-[#FAFAFC] p-2.5">
-                    <textarea
-                      value={scheduleCopilotInput}
-                      onChange={(event) => setScheduleCopilotInput(event.target.value)}
-                      placeholder="Ask Schedule AI from here..."
-                      rows={3}
-                      className="w-full resize-none bg-transparent text-sm text-gray-700 placeholder-gray-400 border-none outline-none"
-                    />
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-[10px] italic text-gray-400">Floating Co-Pilot</span>
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-200 transition-colors"
-                      >
-                        <Sparkles size={12} /> Run Assist
-                      </button>
-                    </div>
-                  </form>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  convertMessyScheduleToPlan();
+                }}
+                className="border-t border-gray-100 bg-[#FAFAFC] p-4"
+              >
+                {scheduleAttachments.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    {scheduleAttachments.map((attachment) => (
+                      <span key={attachment.id} className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">
+                        {attachment.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
+                  <input
+                    ref={scheduleFileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={async (event) => {
+                      await ingestScheduleAttachments(event.target.files);
+                      event.target.value = '';
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => scheduleFileInputRef.current?.click()}
+                    className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                    title="Attach files or images"
+                  >
+                    <Upload size={13} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await toggleVoiceRecording('schedule');
+                    }}
+                    className={`ml-1 p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-gray-50 hover:bg-gray-100 text-gray-500'}`}
+                    title="Dictate schedule input"
+                  >
+                    <Mic size={13} />
+                  </button>
+                  <PenTool size={14} className="text-gray-400 mx-2 shrink-0" />
+                  <div className="relative flex-1">
+                  <textarea
+                    ref={scheduleInputRef}
+                    value={scheduleInput}
+                    onChange={(e) => setScheduleInput(e.target.value)}
+                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                    onPaste={handleSchedulePaste}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        convertMessyScheduleToPlan();
+                      }
+                    }}
+                    placeholder="Paste messy tasks, notes, or shorthand..."
+                    rows={1}
+                    className="w-full bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 py-1 pr-10 resize-none"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
+                    title="Process list"
+                  >
+                    <Send size={14} />
+                  </button>
+                  </div>
                 </div>
-              </div>
+              </form>
             </div>
           )}
 
+          {/* REGAARDER ROOM TAB */}
           {activeRightTab === 'room' && (
-            <div className="flex-1 flex flex-col min-h-0 bg-white animate-fade-in min-w-[340px] relative">
+            <div className="flex-1 flex flex-col min-h-0 bg-[#FAFAFC] animate-fade-in min-w-[340px] relative">
+
+              {/* STATE: LOBBY */}
               {roomState === 'lobby' && (
-                <div className="flex-1 overflow-y-auto flex flex-col p-6 items-center text-center space-y-6 animate-fade-in">
+                <div className="flex-1 flex flex-col p-6 items-center justify-center text-center space-y-6 animate-fade-in">
                   <div className="w-16 h-16 bg-violet-50 border-2 border-violet-100 rounded-2xl flex items-center justify-center text-violet-600 mb-2 shadow-sm">
                     <MonitorPlay size={32} className="ml-1" />
                   </div>
                   <div>
                     <h3 className="text-[18px] font-bold text-gray-900 tracking-tight">Regaarder Room</h3>
-                    <p className="text-xs text-gray-500 mt-2 leading-relaxed">Join a collaborative intelligence workspace to sync with your team and AI.</p>
-                  </div>
-
-                  <div className="w-full max-w-[300px] p-1 bg-slate-100 rounded-2xl flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setRoomMode('meetings')}
-                      className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${roomMode === 'meetings' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                    >
-                      Meetings
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRoomMode('calls')}
-                      className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${roomMode === 'calls' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                    >
-                      Calls (1:1)
-                    </button>
+                    <p className="text-xs text-gray-500 mt-2 leading-relaxed">Start, share, and rejoin a live collaborative call. Keep writing while your meeting stays active.</p>
                   </div>
 
                   <div className="w-full space-y-3 pt-4">
@@ -6357,21 +6553,28 @@ Rules:
                       onClick={() => openMeetingSetup(generateRoomCode())}
                       className="w-full bg-violet-600 text-white rounded-xl py-3 text-sm font-bold hover:bg-violet-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm"
                     >
-                      {roomMode === 'calls' ? <Video size={16} /> : <Plus size={16} />} {roomMode === 'calls' ? 'Start 1:1 Call' : 'Start New Room'}
+                      <Plus size={16} /> Create Meeting
+                    </button>
+
+                    <button
+                      onClick={handleShareMeeting}
+                      className="w-full bg-white border border-violet-200 text-violet-700 rounded-xl py-2.5 text-sm font-semibold hover:bg-violet-50 transition-all flex items-center justify-center gap-2"
+                    >
+                      <UserPlus size={15} /> Share Meeting Link
                     </button>
 
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <LinkIcon size={14} className="text-gray-400 group-focus-within:text-violet-500 transition-colors" />
                       </div>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         value={joinCode}
                         onChange={(e) => setJoinCode(e.target.value)}
-                        placeholder={roomMode === 'calls' ? 'Enter call link or code...' : 'Enter room code or link...'} 
-                        className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-9 pr-10 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-50 transition-all shadow-sm" 
+                        placeholder="Enter room code or link..."
+                        className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-9 pr-10 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-50 transition-all shadow-sm"
                       />
-                      <button 
+                      <button
                         onClick={() => {
                           if (joinCode.trim()) {
                             openMeetingSetup(joinCode.trim());
@@ -6383,37 +6586,8 @@ Rules:
                         <ArrowRight size={16} />
                       </button>
                     </div>
+                    <div className="text-[10px] text-gray-400 text-left">Meeting links accept direct codes or full URLs, like Meet-style joins.</div>
                   </div>
-
-                  {roomMode === 'calls' && (
-                    <div className="w-full pt-2 text-left">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Active Contacts</span>
-                      <div className="space-y-2">
-                        {platformContacts.filter((person) => person.status === 'active').slice(0, 3).map((person) => (
-                          <button
-                            key={person.id}
-                            type="button"
-                            onClick={() => joinRoom(`call-${person.name.toLowerCase().replace(/\s+/g, '-')}`)}
-                            className="w-full flex items-center justify-between gap-2 p-2.5 bg-white border border-gray-100 rounded-xl hover:border-violet-200 hover:bg-violet-50/30 transition-colors"
-                          >
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-semibold flex items-center justify-center">
-                                {person.name.split(' ').map((token) => token[0]).join('').slice(0, 2)}
-                              </div>
-                              <div className="text-left">
-                                <div className="text-xs font-semibold text-slate-800">{person.name}</div>
-                                <div className="text-[10px] text-slate-500">{person.title}</div>
-                              </div>
-                            </div>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                              Call
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
                   <div className="w-full pt-6 border-t border-gray-200/60 mt-6 text-left">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Recent Rooms</span>
@@ -6507,14 +6681,36 @@ Rules:
               {/* STATE: ACTIVE ROOM (Sidebar Panel View) */}
               {roomState === 'active' && (
                 <div className="flex-1 flex flex-col h-full animate-fade-in relative">
+
+                  {mediaError && (
+                    <div className="mx-4 mt-4 mb-1 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center justify-between gap-3">
+                      <span>Camera and microphone are blocked. Allow permissions to fully join.</span>
+                      <button onClick={requestMediaPermissions} className="shrink-0 px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold">Allow</button>
+                    </div>
+                  )}
+
+                  <div className="mx-4 mt-4 rounded-xl border border-gray-200 bg-white px-3 py-2 flex items-center gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Live</span>
+                    <span className="text-xs text-gray-600 font-mono">{meetingDurationLabel}</span>
+                    <div className="w-px h-4 bg-gray-200"></div>
+                    <input
+                      value={collaboratorInvite}
+                      onChange={(e) => setCollaboratorInvite(e.target.value)}
+                      placeholder="Invite collaborator"
+                      className="flex-1 min-w-0 text-xs text-gray-700 border-none focus:outline-none"
+                    />
+                    <button onClick={inviteCollaborator} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Invite</button>
+                    <button onClick={handleCopyLink} className="px-2 py-1 text-[11px] rounded border border-gray-200 text-gray-700 hover:bg-gray-50">Copy Link</button>
+                  </div>
+
                   {mainView === 'document' && (
                     <div className="flex flex-col border-b border-gray-100 bg-white">
                       <div className="p-3 pb-2 flex justify-between items-center">
                         <div>
-                          <div className="text-xs font-bold text-gray-900 truncate">{roomMode === 'calls' ? '1:1 Call' : 'Q2 Launch Strategy'}</div>
+                          <div className="text-xs font-bold text-gray-900 truncate">Q2 Launch Strategy</div>
                           <div className="text-[10px] text-gray-400 font-mono mt-0.5">{roomId}</div>
                         </div>
-                        <button onClick={() => setMainView('room')} className="p-1.5 bg-violet-50 text-violet-600 rounded hover:bg-violet-100 transition-colors" title="Expand to Main View">
+                        <button onClick={() => { setMainView('room'); setRoomPanelMode('expanded'); }} className="p-1.5 bg-violet-50 text-violet-600 rounded hover:bg-violet-100 transition-colors" title="Expand to Main View">
                           <Maximize2 size={14} />
                         </button>
                       </div>
@@ -6534,6 +6730,7 @@ Rules:
                   )}
 
                   <div className="flex-1 overflow-y-auto pb-24 space-y-5 px-4 pt-4 relative z-0">
+
                     {mainView === 'room' && (
                       <div className="bg-violet-50 text-violet-700 text-xs px-3 py-2 rounded-lg flex items-center justify-between border border-violet-100 mb-2">
                         <span>Room is expanded</span>
@@ -6546,9 +6743,7 @@ Rules:
                         <Sparkles size={10} /> Live Context
                       </div>
                       <div className="bg-white border border-gray-100 rounded-xl p-3 text-xs text-gray-700 leading-relaxed shadow-sm">
-                        {roomMode === 'calls'
-                          ? '1:1 call is active with your selected contact. AI captures key decisions and follow-ups in real time.'
-                          : 'Discussing the Q2 launch timelines. Sarah is presenting the new branding assets for final review before deployment.'}
+                        Discussing the Q2 launch timelines. Sarah is presenting the new branding assets for final review before deployment.
                       </div>
                     </div>
 
@@ -6583,6 +6778,9 @@ Rules:
                       <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${isRoomCameraOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
                         {isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
                       </button>
+                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100'}`}>
+                        <MonitorPlay size={16} />
+                      </button>
                       <div className="w-px h-5 bg-gray-200 mx-1"></div>
                       <button onClick={leaveRoom} className="px-2.5 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-sm flex items-center gap-1.5 font-medium text-[11px] border border-red-600 active:scale-95">
                         <PhoneOff size={14} /> Leave
@@ -6592,6 +6790,7 @@ Rules:
                 </div>
               )}
 
+              {/* STATE: MEETING SUMMARY */}
               {roomState === 'summary' && (
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white animate-fade-in relative">
                   <div className="text-center pb-6 border-b border-gray-100">
@@ -6599,7 +6798,7 @@ Rules:
                       <PhoneOff size={20} />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 tracking-tight">Room Ended</h3>
-                    <p className="text-xs text-gray-500 mt-1">Q2 Launch Strategy • 45m duration</p>
+                    <p className="text-xs text-gray-500 mt-1">{meetingSummary?.roomCode || 'q2-launch'} • {meetingSummary?.durationLabel || meetingDurationLabel} duration</p>
                   </div>
 
                   <div className="space-y-4">
@@ -6611,23 +6810,25 @@ Rules:
                       <div>
                         <h4 className="text-xs font-bold text-gray-800 mb-1">Key Decisions</h4>
                         <ul className="text-xs text-gray-600 space-y-1.5 pl-4 list-disc marker:text-emerald-500">
-                          <li>Beta launch officially locked for May 15th.</li>
-                          <li>Marketing budget increased by 15% for initial push.</li>
+                          {(meetingSummary?.decisions || ['Beta launch officially locked for May 15th.', 'Marketing budget increased by 15% for initial push.']).map((decision) => (
+                            <li key={decision}>{decision}</li>
+                          ))}
                         </ul>
                       </div>
                       <div className="h-px w-full bg-gray-200/60"></div>
                       <div>
                         <h4 className="text-xs font-bold text-gray-800 mb-1">Action Items</h4>
                         <ul className="text-xs text-gray-600 space-y-1.5 pl-4 list-disc marker:text-violet-400">
-                          <li>Sarah to upload final assets by Friday.</li>
-                          <li>Alex to update Compose AI prompts.</li>
+                          {(meetingSummary?.actionItems || ['Sarah to upload final assets by Friday.', 'Alex to update Compose AI prompts.']).map((actionItem) => (
+                            <li key={actionItem}>{actionItem}</li>
+                          ))}
                         </ul>
                       </div>
                     </div>
                   </div>
 
                   <div className="pt-4">
-                    <button 
+                    <button
                       onClick={() => setRoomState('lobby')}
                       className="w-full bg-gray-100 text-gray-700 border border-gray-200 rounded-xl py-3 text-sm font-bold hover:bg-gray-200 transition-all active:scale-[0.98]"
                     >
@@ -6636,61 +6837,7 @@ Rules:
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {activeRightTab === 'people' && (
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-white to-slate-50">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">People</h3>
-                <p className="text-xs text-slate-500">Active contacts across the platform. Start a call or invite to room instantly.</p>
-              </div>
-              {platformContacts.map((person) => (
-                <div key={person.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm hover:border-violet-200 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-full bg-violet-100 text-violet-700 text-xs font-semibold flex items-center justify-center">
-                        {person.name.split(' ').map((token) => token[0]).join('').slice(0, 2)}
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-slate-800">{person.name}</div>
-                        <div className="text-[11px] text-slate-500">{person.title}</div>
-                      </div>
-                    </div>
-                    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-1 border ${person.status === 'active' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${person.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
-                      {person.status === 'active' ? 'Active' : 'Away'}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-[11px] text-slate-400">{person.lastSeen}</div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRoomMode('calls');
-                        joinRoom(`call-${person.name.toLowerCase().replace(/\s+/g, '-')}`);
-                        setActiveRightTab('room');
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-100"
-                    >
-                      <Video size={12} /> Call
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRoomMode('meetings');
-                        setRoomState('lobby');
-                        setRightSidebarOpen(true);
-                        setActiveRightTab('room');
-                        showToast(`${person.name} is ready to be invited`);
-                      }}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:border-slate-300"
-                    >
-                      <Plus size={12} /> Invite
-                    </button>
-                  </div>
-                </div>
-              ))}
             </div>
           )}
 
@@ -6831,7 +6978,7 @@ Rules:
                       </div>
                       <div className="text-[10px] text-gray-500 mt-1">{new Date(entry.timestamp).toLocaleString()}</div>
                       {Object.keys(entry.details || {}).length > 0 && (
-                        <div className="mt-1.5 text-[10px] text-gray-600 break-all">{Object.entries(entry.details).map(([key, value]) => `${key}: ${value}`).join(' • ')}</div>
+                        <div className="mt-1.5 text-[10px] text-gray-600 break-all">{Object.entries(entry.details).map(([key, value]) => `${key}: ${value}`).join(' ??')}</div>
                       )}
                     </div>
                   ))}
@@ -6844,7 +6991,7 @@ Rules:
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none">
+      <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto no-scrollbar">
         
         <div 
           onClick={() => handleMiniSidebarClick('chat')}
@@ -6864,8 +7011,9 @@ Rules:
             activeRightTab === 'assistant' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-xl transition-all relative ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100' : ''} ${selectedEditorText ? 'ring-2 ring-violet-300 ring-offset-2 ring-offset-[#FAFAFC]' : ''}`}>
             <PenTool size={20} />
+            {selectedEditorText && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse" />}
           </div>
           <span className="text-[9px] font-semibold">Assist</span>
         </div>
@@ -6895,6 +7043,18 @@ Rules:
         </div>
 
         <div
+          onClick={() => handleMiniSidebarClick('memory')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'memory' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <Database size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">Memory</span>
+        </div>
+
+        <div
           onClick={() => handleMiniSidebarClick('room')}
           className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
             activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
@@ -6906,23 +7066,18 @@ Rules:
           <span className="text-[9px] font-semibold">Room</span>
         </div>
 
-        <div 
-          onClick={() => handleMiniSidebarClick('people')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'people' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
-        >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'people' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <Users size={20} />
-          </div>
-          <span className="text-[9px] font-semibold">People</span>
-        </div>
-
         <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
           <div className="p-2">
             <File size={20} />
           </div>
           <span className="text-[9px] font-semibold">Files</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
+          <div className="p-2">
+            <Users size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">People</span>
         </div>
 
         <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 cursor-pointer mt-auto">
@@ -6997,6 +7152,7 @@ Rules:
           <button onClick={leaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50">Leave</button>
         </div>
       )}
+
     </div>
   );
 }
