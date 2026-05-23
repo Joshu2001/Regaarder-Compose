@@ -6345,57 +6345,119 @@ Rules:
                   <div className="text-[11px] text-violet-700/80">Text is highlighted. Tap an action to run immediately.</div>
                 </div>
               )}
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
-                <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
-              </div>
+              
+              {/* COMPOSE MODE PROMPTS */}
+              {activeDocId && documents.find(d => d.id === activeDocId)?.type !== 'deck' && (
+                <div>
+                  <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
+                  <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
+                </div>
+              )}
 
-              {/* Action Buttons Grid */}
-              <div className="space-y-2">
-                <button 
-                  onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <PenTool size={16} className="text-violet-500" />
-                  <div>
-                    <div className="font-semibold text-xs">Improve writing</div>
-                    <p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p>
-                  </div>
-                </button>
+              {/* COMPOSE ACTION BUTTONS */}
+              {activeDocId && documents.find(d => d.id === activeDocId)?.type !== 'deck' && (
+                <div className="space-y-2">
+                  <button 
+                    onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                  >
+                    <PenTool size={16} className="text-violet-500" />
+                    <div>
+                      <div className="font-semibold text-xs">Improve writing</div>
+                      <p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p>
+                    </div>
+                  </button>
 
-                <button 
-                  onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <FileText size={16} className="text-indigo-500" />
-                  <div>
-                    <div className="font-semibold text-xs">Summarize document</div>
-                    <p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p>
-                  </div>
-                </button>
+                  <button 
+                    onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                  >
+                    <FileText size={16} className="text-indigo-500" />
+                    <div>
+                      <div className="font-semibold text-xs">Summarize document</div>
+                      <p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p>
+                    </div>
+                  </button>
 
-                <button 
-                  onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <Scissors size={16} className="text-violet-400" />
-                  <div>
-                    <div className="font-semibold text-xs">Make shorter</div>
-                    <p className="text-[10px] text-gray-400">Prune unnecessary wording</p>
-                  </div>
-                </button>
+                  <button 
+                    onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                  >
+                    <Scissors size={16} className="text-violet-400" />
+                    <div>
+                      <div className="font-semibold text-xs">Make shorter</div>
+                      <p className="text-[10px] text-gray-400">Prune unnecessary wording</p>
+                    </div>
+                  </button>
 
-                <button 
-                  onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <AlertTriangle size={16} className="text-amber-500" />
+                  <button 
+                    onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                  >
+                    <AlertTriangle size={16} className="text-amber-500" />
+                    <div>
+                      <div className="font-semibold text-xs">Check for gaps & risks</div>
+                      <p className="text-[10px] text-gray-400">Locate potential launch bottle necks</p>
+                    </div>
+                  </button>
+                </div>
+              )}
+
+              {/* DECK MODE PROMPTS */}
+              {activeDocId && documents.find(d => d.id === activeDocId)?.type === 'deck' && (
+                <>
                   <div>
-                    <div className="font-semibold text-xs">Check for gaps & risks</div>
-                    <p className="text-[10px] text-gray-400">Locate potential launch bottle necks</p>
+                    <h3 className="text-sm font-bold text-gray-900 mb-2">Deck AI Assistant</h3>
+                    <p className="text-xs text-gray-500">Generate slides, improve layout, or add content with AI.</p>
                   </div>
-                </button>
-              </div>
+
+                  <div className="space-y-2">
+                    <button 
+                      onClick={() => runSmartAssistAction('Generate an outline for this presentation with 5-7 main slides')}
+                      className="w-full flex items-center gap-3 px-4 py-3 border border-emerald-200 rounded-lg text-sm text-gray-700 hover:bg-emerald-50 transition-colors text-left"
+                    >
+                      <LayoutGrid size={16} className="text-emerald-600" />
+                      <div>
+                        <div className="font-semibold text-xs">Generate outline</div>
+                        <p className="text-[10px] text-gray-400">Create 5-7 main slides automatically</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => runSmartAssistAction('Create bullet points for the current slide that are concise and impactful')}
+                      className="w-full flex items-center gap-3 px-4 py-3 border border-emerald-200 rounded-lg text-sm text-gray-700 hover:bg-emerald-50 transition-colors text-left"
+                    >
+                      <ListTodo size={16} className="text-emerald-600" />
+                      <div>
+                        <div className="font-semibold text-xs">Add slide content</div>
+                        <p className="text-[10px] text-gray-400">Generate relevant bullet points</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => runSmartAssistAction('Improve the current slide title to be more compelling and memorable')}
+                      className="w-full flex items-center gap-3 px-4 py-3 border border-emerald-200 rounded-lg text-sm text-gray-700 hover:bg-emerald-50 transition-colors text-left"
+                    >
+                      <Type size={16} className="text-emerald-600" />
+                      <div>
+                        <div className="font-semibold text-xs">Enhance title</div>
+                        <p className="text-[10px] text-gray-400">Make slide titles more engaging</p>
+                      </div>
+                    </button>
+
+                    <button 
+                      onClick={() => runSmartAssistAction('Add speaker notes for the current slide')}
+                      className="w-full flex items-center gap-3 px-4 py-3 border border-emerald-200 rounded-lg text-sm text-gray-700 hover:bg-emerald-50 transition-colors text-left"
+                    >
+                      <MessageSquarePlus size={16} className="text-emerald-600" />
+                      <div>
+                        <div className="font-semibold text-xs">Add speaker notes</div>
+                        <p className="text-[10px] text-gray-400">Generate presentation talking points</p>
+                      </div>
+                    </button>
+                  </div>
+                </>
+              )}
 
               <div>
                 <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
