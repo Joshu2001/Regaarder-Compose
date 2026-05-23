@@ -11,7 +11,7 @@ import {
   LayoutGrid, BookOpen, Scissors, Expand, Check,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound,
-  Video, VideoOff, MicOff, PhoneOff, Maximize2, Link2 as LinkIcon, Clock,
+  Video, VideoOff, MicOff, PhoneOff, Maximize2, Minimize2, Link2 as LinkIcon, Clock,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 
@@ -40,6 +40,30 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
 
   return <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover transform scale-x-[-1]" />;
 };
+
+const RoomStageFeed = ({ stream, placeholder }) => {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream || null;
+    }
+  }, [stream]);
+
+  if (!stream) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 text-slate-200">
+        <div className="text-center">
+          <div className="text-sm font-semibold">{placeholder}</div>
+          <div className="text-xs text-slate-300 mt-1">Waiting for media input</div>
+        </div>
+      </div>
+    );
+  }
+
+  return <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />;
+};
+
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
   const defaultSubtitle = 'A strategic plan to successfully launch Regaarder Compose and drive adoption, engagement, and growth.';
@@ -2731,6 +2755,10 @@ Rules:
       localStream.getTracks().forEach((track) => track.stop());
       setLocalStream(null);
     }
+    if (screenShareStream) {
+      screenShareStream.getTracks().forEach((track) => track.stop());
+      setScreenShareStream(null);
+    }
     setIsScreenSharing(false);
   };
 
@@ -2740,13 +2768,62 @@ Rules:
     return `${getStr(3)}-${getStr(4)}-${getStr(3)}`;
   };
 
+  const normalizeRoomCode = (value) => {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    try {
+      if (/^https?:\/\//i.test(raw)) {
+        const url = new URL(raw);
+        const roomFromQuery = url.searchParams.get('room');
+        if (roomFromQuery) {
+          return String(roomFromQuery).trim().toLowerCase();
+        }
+      }
+    } catch (_error) {
+      // Fall back to plain text normalization.
+    }
+
+    return raw.toLowerCase().replace(/[^a-z0-9-]/g, '');
+  };
+
+  const getMeetingLink = (code) => {
+    const normalizedCode = normalizeRoomCode(code) || generateRoomCode();
+    return `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(normalizedCode)}`;
+  };
+
+  const formatMeetingElapsed = useCallback((startedAt) => {
+    if (!startedAt) {
+      return '00:00';
+    }
+    const elapsedMs = Math.max(0, Date.now() - startedAt);
+    const totalSeconds = Math.floor(elapsedMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  }, []);
+
   const joinRoom = async (code) => {
     await openMeetingSetup(code);
   };
 
   const leaveRoom = () => {
+    const completedDuration = meetingStartedAt ? formatMeetingElapsed(meetingStartedAt) : meetingDurationLabel;
+    setMeetingSummary({
+      roomCode: roomId || 'q2-launch',
+      durationLabel: completedDuration,
+    });
+    setMeetingDurationLabel(completedDuration);
+    setMeetingStartedAt(null);
     setRoomState('summary');
     setMainView('document');
+    setRoomPanelMode('docked');
     stopMediaStream();
     showToast('Left room. Summary is ready.');
   };
@@ -2826,10 +2903,50 @@ Rules:
     setIsRoomMicOn(nextEnabled);
   };
 
-  const toggleScreenShare = () => {
-    setIsScreenSharing((prev) => !prev);
-    showToast(!isScreenSharing ? 'Screen sharing started' : 'Screen sharing stopped');
+  const toggleScreenShare = async () => {
+    if (isScreenSharing) {
+      if (screenShareStream) {
+        screenShareStream.getTracks().forEach((track) => track.stop());
+      }
+      setScreenShareStream(null);
+      setIsScreenSharing(false);
+      showToast('Screen sharing stopped');
+      return;
+    }
+
+    if (!navigator?.mediaDevices?.getDisplayMedia) {
+      showToast('Screen sharing is not supported in this browser.');
+      return;
+    }
+
+    try {
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+      const [videoTrack] = displayStream.getVideoTracks();
+      if (videoTrack) {
+        videoTrack.onended = () => {
+          setScreenShareStream(null);
+          setIsScreenSharing(false);
+        };
+      }
+      setScreenShareStream(displayStream);
+      setIsScreenSharing(true);
+      showToast('Screen sharing started');
+    } catch (_error) {
+      showToast('Screen sharing was cancelled');
+    }
   };
+
+  useEffect(() => {
+    if (roomState !== 'active' || !meetingStartedAt) {
+      return undefined;
+    }
+
+    const interval = setInterval(() => {
+      setMeetingDurationLabel(formatMeetingElapsed(meetingStartedAt));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [roomState, meetingStartedAt, formatMeetingElapsed]);
 
   const handleRightSidebarTabsKeyDown = (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
@@ -6342,6 +6459,25 @@ Rules:
                     </button>
                   </div>
 
+                  <div className="rounded-2xl border border-gray-200 bg-white p-3 space-y-2">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Invite Collaborator</div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={collaboratorInvite}
+                        onChange={(event) => setCollaboratorInvite(event.target.value)}
+                        placeholder="Email or teammate name"
+                        className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-violet-400"
+                      />
+                      <button
+                        onClick={inviteCollaborator}
+                        className="px-3 py-2 rounded-xl text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700"
+                      >
+                        Invite
+                      </button>
+                    </div>
+                  </div>
+
                   {mediaError && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center justify-between gap-3">
                       <span>Camera or microphone access is blocked. Allow permissions to join with media.</span>
@@ -6494,7 +6630,7 @@ Rules:
                       <PhoneOff size={20} />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 tracking-tight">Room Ended</h3>
-                    <p className="text-xs text-gray-500 mt-1">Q2 Launch Strategy • 45m duration</p>
+                    <p className="text-xs text-gray-500 mt-1">{meetingSummary?.roomCode || 'q2-launch'} • {meetingSummary?.durationLabel || meetingDurationLabel} duration</p>
                   </div>
 
                   <div className="space-y-4">
