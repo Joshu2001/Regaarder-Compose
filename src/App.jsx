@@ -62,7 +62,7 @@ export default function App() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
-  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'people' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
@@ -73,6 +73,7 @@ export default function App() {
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
+  const [assistantCopilotInput, setAssistantCopilotInput] = useState('');
   const [floatingPrompt, setFloatingPrompt] = useState('');
   const [newTaskInput, setNewTaskInput] = useState('');
   const [newTaskOwner, setNewTaskOwner] = useState('user');
@@ -82,6 +83,7 @@ export default function App() {
   const [scheduleAttachments, setScheduleAttachments] = useState([]);
   const [voiceTarget, setVoiceTarget] = useState('compose');
   const [scheduleInput, setScheduleInput] = useState('');
+  const [scheduleCopilotInput, setScheduleCopilotInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([
     { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 • 10:00 AM' },
@@ -98,12 +100,19 @@ export default function App() {
   const [mainView, setMainView] = useState('document');
   const [roomState, setRoomState] = useState('lobby');
   const [roomId, setRoomId] = useState('');
+  const [roomMode, setRoomMode] = useState('meetings');
   const [joinCode, setJoinCode] = useState('');
   const [isRoomMicOn, setIsRoomMicOn] = useState(true);
   const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [mediaError, setMediaError] = useState(false);
+  const [platformContacts, setPlatformContacts] = useState([
+    { id: 1, name: 'Sarah Lang', title: 'Product Lead', status: 'active', lastSeen: 'In call now' },
+    { id: 2, name: 'Mike Cohen', title: 'Growth Lead', status: 'active', lastSeen: 'Online' },
+    { id: 3, name: 'Maya Patel', title: 'Design Director', status: 'active', lastSeen: 'Online' },
+    { id: 4, name: 'Jordan Kim', title: 'Operations', status: 'away', lastSeen: '5m ago' },
+  ]);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [workspaces, setWorkspaces] = useState(defaultWorkspaces);
@@ -2302,6 +2311,24 @@ Rules:
     });
   };
 
+  const handleAssistantCopilotSubmit = (event) => {
+    event.preventDefault();
+    if (!assistantCopilotInput.trim()) {
+      return;
+    }
+    runSmartAssistAction(assistantCopilotInput.trim());
+    setAssistantCopilotInput('');
+  };
+
+  const handleScheduleCopilotSubmit = async (event) => {
+    event.preventDefault();
+    if (!scheduleCopilotInput.trim()) {
+      return;
+    }
+    await convertMessyScheduleToPlan(scheduleCopilotInput);
+    setScheduleCopilotInput('');
+  };
+
   const handleFloatingSend = (e) => {
     e.preventDefault();
     if (isComposing) return;
@@ -2734,7 +2761,7 @@ Rules:
     }
 
     event.preventDefault();
-    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'memory'];
+    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'people'];
     const currentIndex = tabOrder.indexOf(activeRightTab);
     const safeIndex = currentIndex >= 0 ? currentIndex : 0;
     const nextIndex = event.key === 'ArrowRight'
@@ -3509,8 +3536,9 @@ Rules:
     showToast('Task converted to schedule');
   };
 
-  const convertMessyScheduleToPlan = async () => {
-    const rawItems = scheduleInput
+  const convertMessyScheduleToPlan = async (inputOverride = '') => {
+    const sourceInput = String(inputOverride || scheduleInput);
+    const rawItems = sourceInput
       .split(/\n|;/)
       .map((item) => item.trim())
       .filter(Boolean);
@@ -5343,6 +5371,7 @@ Rules:
                 { key: 'tasks', label: 'Tasks' },
                 { key: 'calendar', label: 'Schedule' },
                 { key: 'room', label: 'Room' },
+                { key: 'people', label: 'People' },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -5645,12 +5674,27 @@ Rules:
                 </button>
               </div>
 
-              <div>
-                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Workspace Quicklinks</h4>
-                <div className="bg-[#FAFAFC] rounded-lg p-3 cursor-pointer hover:bg-gray-100 transition-all border border-gray-100">
-                  <div className="text-xs font-semibold text-gray-800">PRD - Compose v1.0</div>
-                  <p className="text-[10px] text-gray-400 mt-0.5">Linked project scope files</p>
-                </div>
+              <div className="rounded-2xl border border-violet-100/70 bg-gradient-to-br from-violet-50/80 via-white to-sky-50/70 p-4 shadow-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">Superior Value</p>
+                <p className="mt-1 text-xs text-slate-600 leading-relaxed">AI-native, frictionless workflows. We reduce effort so deeply that switching away feels costly in time and momentum.</p>
+                <form onSubmit={handleAssistantCopilotSubmit} className="mt-3 rounded-xl border border-violet-100 bg-white p-2.5">
+                  <textarea
+                    value={assistantCopilotInput}
+                    onChange={(event) => setAssistantCopilotInput(event.target.value)}
+                    placeholder="Ask AI Assistant from here..."
+                    rows={3}
+                    className="w-full resize-none bg-transparent text-sm text-slate-700 placeholder-slate-400 border-none outline-none"
+                  />
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-[10px] italic text-slate-400">Floating Co-Pilot</span>
+                    <button
+                      type="submit"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-200 transition-colors"
+                    >
+                      <Sparkles size={12} /> Run Assist
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
@@ -6075,79 +6119,30 @@ Rules:
                 </div>
               </div>
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  convertMessyScheduleToPlan();
-                }}
-                className="border-t border-gray-100 bg-[#FAFAFC] p-4"
-              >
-                {scheduleAttachments.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    {scheduleAttachments.map((attachment) => (
-                      <span key={attachment.id} className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">
-                        {attachment.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
-                  <input
-                    ref={scheduleFileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={async (event) => {
-                      await ingestScheduleAttachments(event.target.files);
-                      event.target.value = '';
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => scheduleFileInputRef.current?.click()}
-                    className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
-                    title="Attach files or images"
-                  >
-                    <Upload size={13} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await toggleVoiceRecording('schedule');
-                    }}
-                    className={`ml-1 p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-gray-50 hover:bg-gray-100 text-gray-500'}`}
-                    title="Dictate schedule input"
-                  >
-                    <Mic size={13} />
-                  </button>
-                  <PenTool size={14} className="text-gray-400 mx-2 shrink-0" />
-                  <div className="relative flex-1">
-                  <textarea
-                    ref={scheduleInputRef}
-                    value={scheduleInput}
-                    onChange={(e) => setScheduleInput(e.target.value)}
-                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                    onPaste={handleSchedulePaste}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        convertMessyScheduleToPlan();
-                      }
-                    }}
-                    placeholder="Paste messy tasks, notes, or shorthand..."
-                    rows={1}
-                    className="w-full bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 py-1 pr-10 resize-none"
-                  />
-                  <button
-                    type="submit"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
-                    title="Process list"
-                  >
-                    <Send size={14} />
-                  </button>
-                  </div>
+              <div className="border-t border-gray-100 bg-[#FAFAFC] p-4">
+                <div className="rounded-2xl border border-violet-100/70 bg-gradient-to-br from-violet-50/80 via-white to-sky-50/70 p-4 shadow-sm">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">AI-Native Scheduler</p>
+                  <p className="mt-1 text-xs text-slate-600 leading-relaxed">Drop rough notes and we convert them into clean, low-friction meeting timelines.</p>
+                  <form onSubmit={handleScheduleCopilotSubmit} className="mt-3 rounded-xl border border-violet-100 bg-white p-2.5">
+                    <textarea
+                      value={scheduleCopilotInput}
+                      onChange={(event) => setScheduleCopilotInput(event.target.value)}
+                      placeholder="Ask Schedule AI from here..."
+                      rows={3}
+                      className="w-full resize-none bg-transparent text-sm text-slate-700 placeholder-slate-400 border-none outline-none"
+                    />
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-[10px] italic text-slate-400">Floating Co-Pilot</span>
+                      <button
+                        type="submit"
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-200 transition-colors"
+                      >
+                        <Sparkles size={12} /> Run Assist
+                      </button>
+                    </div>
+                  </form>
                 </div>
-              </form>
+              </div>
             </div>
           )}
 
@@ -6163,12 +6158,29 @@ Rules:
                     <p className="text-xs text-gray-500 mt-2 leading-relaxed">Join a collaborative intelligence workspace to sync with your team and AI.</p>
                   </div>
 
+                  <div className="w-full max-w-[300px] p-1 bg-slate-100 rounded-2xl flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setRoomMode('meetings')}
+                      className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${roomMode === 'meetings' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                    >
+                      Meetings
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRoomMode('calls')}
+                      className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${roomMode === 'calls' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                    >
+                      Calls (1:1)
+                    </button>
+                  </div>
+
                   <div className="w-full space-y-3 pt-4">
                     <button 
                       onClick={() => joinRoom(generateRoomCode())}
                       className="w-full bg-violet-600 text-white rounded-xl py-3 text-sm font-bold hover:bg-violet-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm"
                     >
-                      <Plus size={16} /> Start New Room
+                      {roomMode === 'calls' ? <Video size={16} /> : <Plus size={16} />} {roomMode === 'calls' ? 'Start 1:1 Call' : 'Start New Room'}
                     </button>
 
                     <div className="relative group">
@@ -6179,7 +6191,7 @@ Rules:
                         type="text" 
                         value={joinCode}
                         onChange={(e) => setJoinCode(e.target.value)}
-                        placeholder="Enter room code or link..." 
+                        placeholder={roomMode === 'calls' ? 'Enter call link or code...' : 'Enter room code or link...'} 
                         className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-9 pr-10 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-50 transition-all shadow-sm" 
                       />
                       <button 
@@ -6193,6 +6205,36 @@ Rules:
                       </button>
                     </div>
                   </div>
+
+                  {roomMode === 'calls' && (
+                    <div className="w-full pt-2 text-left">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Active Contacts</span>
+                      <div className="space-y-2">
+                        {platformContacts.filter((person) => person.status === 'active').slice(0, 3).map((person) => (
+                          <button
+                            key={person.id}
+                            type="button"
+                            onClick={() => joinRoom(`call-${person.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                            className="w-full flex items-center justify-between gap-2 p-2.5 bg-white border border-gray-100 rounded-xl hover:border-violet-200 hover:bg-violet-50/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-semibold flex items-center justify-center">
+                                {person.name.split(' ').map((token) => token[0]).join('').slice(0, 2)}
+                              </div>
+                              <div className="text-left">
+                                <div className="text-xs font-semibold text-slate-800">{person.name}</div>
+                                <div className="text-[10px] text-slate-500">{person.title}</div>
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              Call
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="w-full pt-6 border-t border-gray-200/60 mt-6 text-left">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Recent Rooms</span>
@@ -6217,7 +6259,7 @@ Rules:
                     <div className="flex flex-col border-b border-gray-100 bg-white">
                       <div className="p-3 pb-2 flex justify-between items-center">
                         <div>
-                          <div className="text-xs font-bold text-gray-900 truncate">Q2 Launch Strategy</div>
+                          <div className="text-xs font-bold text-gray-900 truncate">{roomMode === 'calls' ? '1:1 Call' : 'Q2 Launch Strategy'}</div>
                           <div className="text-[10px] text-gray-400 font-mono mt-0.5">{roomId}</div>
                         </div>
                         <button onClick={() => setMainView('room')} className="p-1.5 bg-violet-50 text-violet-600 rounded hover:bg-violet-100 transition-colors" title="Expand to Main View">
@@ -6252,7 +6294,9 @@ Rules:
                         <Sparkles size={10} /> Live Context
                       </div>
                       <div className="bg-white border border-gray-100 rounded-xl p-3 text-xs text-gray-700 leading-relaxed shadow-sm">
-                        Discussing the Q2 launch timelines. Sarah is presenting the new branding assets for final review before deployment.
+                        {roomMode === 'calls'
+                          ? '1:1 call is active with your selected contact. AI captures key decisions and follow-ups in real time.'
+                          : 'Discussing the Q2 launch timelines. Sarah is presenting the new branding assets for final review before deployment.'}
                       </div>
                     </div>
 
@@ -6340,6 +6384,61 @@ Rules:
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeRightTab === 'people' && (
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gradient-to-b from-white to-slate-50">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">People</h3>
+                <p className="text-xs text-slate-500">Active contacts across the platform. Start a call or invite to room instantly.</p>
+              </div>
+              {platformContacts.map((person) => (
+                <div key={person.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm hover:border-violet-200 transition-colors">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-full bg-violet-100 text-violet-700 text-xs font-semibold flex items-center justify-center">
+                        {person.name.split(' ').map((token) => token[0]).join('').slice(0, 2)}
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold text-slate-800">{person.name}</div>
+                        <div className="text-[11px] text-slate-500">{person.title}</div>
+                      </div>
+                    </div>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold rounded-full px-2 py-1 border ${person.status === 'active' ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-amber-700 bg-amber-50 border-amber-200'}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${person.status === 'active' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                      {person.status === 'active' ? 'Active' : 'Away'}
+                    </span>
+                  </div>
+                  <div className="mt-2 text-[11px] text-slate-400">{person.lastSeen}</div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRoomMode('calls');
+                        joinRoom(`call-${person.name.toLowerCase().replace(/\s+/g, '-')}`);
+                        setActiveRightTab('room');
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-100"
+                    >
+                      <Video size={12} /> Call
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRoomMode('meetings');
+                        setRoomState('lobby');
+                        setRightSidebarOpen(true);
+                        setActiveRightTab('room');
+                        showToast(`${person.name} is ready to be invited`);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 hover:border-slate-300"
+                    >
+                      <Plus size={12} /> Invite
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -6544,18 +6643,6 @@ Rules:
         </div>
 
         <div
-          onClick={() => handleMiniSidebarClick('memory')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
-        >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'memory' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <Database size={20} />
-          </div>
-          <span className="text-[9px] font-semibold">Memory</span>
-        </div>
-
-        <div
           onClick={() => handleMiniSidebarClick('room')}
           className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
             activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
@@ -6567,18 +6654,23 @@ Rules:
           <span className="text-[9px] font-semibold">Room</span>
         </div>
 
+        <div 
+          onClick={() => handleMiniSidebarClick('people')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'people' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'people' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <Users size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">People</span>
+        </div>
+
         <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
           <div className="p-2">
             <File size={20} />
           </div>
           <span className="text-[9px] font-semibold">Files</span>
-        </div>
-
-        <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
-          <div className="p-2">
-            <Users size={20} />
-          </div>
-          <span className="text-[9px] font-semibold">People</span>
         </div>
 
         <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 cursor-pointer mt-auto">
