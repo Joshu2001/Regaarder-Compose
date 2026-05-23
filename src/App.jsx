@@ -2755,10 +2755,6 @@ Rules:
       localStream.getTracks().forEach((track) => track.stop());
       setLocalStream(null);
     }
-    if (screenShareStream) {
-      screenShareStream.getTracks().forEach((track) => track.stop());
-      setScreenShareStream(null);
-    }
     setIsScreenSharing(false);
   };
 
@@ -2814,16 +2810,8 @@ Rules:
   };
 
   const leaveRoom = () => {
-    const completedDuration = meetingStartedAt ? formatMeetingElapsed(meetingStartedAt) : meetingDurationLabel;
-    setMeetingSummary({
-      roomCode: roomId || 'q2-launch',
-      durationLabel: completedDuration,
-    });
-    setMeetingDurationLabel(completedDuration);
-    setMeetingStartedAt(null);
     setRoomState('summary');
     setMainView('document');
-    setRoomPanelMode('docked');
     stopMediaStream();
     showToast('Left room. Summary is ready.');
   };
@@ -6459,25 +6447,6 @@ Rules:
                     </button>
                   </div>
 
-                  <div className="rounded-2xl border border-gray-200 bg-white p-3 space-y-2">
-                    <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Invite Collaborator</div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={collaboratorInvite}
-                        onChange={(event) => setCollaboratorInvite(event.target.value)}
-                        placeholder="Email or teammate name"
-                        className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-violet-400"
-                      />
-                      <button
-                        onClick={inviteCollaborator}
-                        className="px-3 py-2 rounded-xl text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700"
-                      >
-                        Invite
-                      </button>
-                    </div>
-                  </div>
-
                   {mediaError && (
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center justify-between gap-3">
                       <span>Camera or microphone access is blocked. Allow permissions to join with media.</span>
@@ -6630,7 +6599,7 @@ Rules:
                       <PhoneOff size={20} />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 tracking-tight">Room Ended</h3>
-                    <p className="text-xs text-gray-500 mt-1">{meetingSummary?.roomCode || 'q2-launch'} • {meetingSummary?.durationLabel || meetingDurationLabel} duration</p>
+                    <p className="text-xs text-gray-500 mt-1">Q2 Launch Strategy • 45m duration</p>
                   </div>
 
                   <div className="space-y-4">
