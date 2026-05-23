@@ -98,6 +98,9 @@ export default function App() {
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
+  const [productMode, setProductMode] = useState('compose');
+  const [creationPickerOpen, setCreationPickerOpen] = useState(false);
+  const [activeDeckSlideId, setActiveDeckSlideId] = useState(1);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
@@ -279,7 +282,6 @@ export default function App() {
       appendedSections: [],
       isBlank: true,
       bodyHtml: '',
-      type: 'compose', // 'compose' or 'deck'
     },
   ]);
   const [activeDocId, setActiveDocId] = useState(null);
@@ -305,15 +307,6 @@ export default function App() {
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
   const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
-
-  // Composition Type Modal & Deck States
-  const [compositionTypeModalOpen, setCompositionTypeModalOpen] = useState(false);
-  const [selectedCompositionType, setSelectedCompositionType] = useState('compose');
-  const [deckSlides, setDeckSlides] = useState([]);
-  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-  const [deckTitle, setDeckTitle] = useState('');
-  const [deckSubtitle, setDeckSubtitle] = useState('');
-  const [deckTheme, setDeckTheme] = useState('minimal'); // 'minimal', 'colorful', 'professional'
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Inter');
@@ -3073,7 +3066,7 @@ Rules:
     setDocBodyHtml(targetDoc.bodyHtml || '');
   };
 
-  const createNewComposition = ({ type = 'compose', silent = false } = {}) => {
+  const createNewComposition = ({ silent = false } = {}) => {
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
       title: '',
@@ -3083,30 +3076,7 @@ Rules:
       isBlank: true,
       bodyHtml: '',
       pinned: false,
-      type: type, // 'compose' or 'deck'
     };
-
-    // Initialize deck slides if it's a deck
-    if (type === 'deck') {
-      const initialSlides = [
-        {
-          id: 1,
-          type: 'title',
-          title: 'Untitled Deck',
-          subtitle: 'Your presentation starts here',
-        },
-        {
-          id: 2,
-          type: 'content',
-          title: 'Your Title',
-          content: ['• Bullet point 1', '• Bullet point 2', '• Bullet point 3'],
-        },
-      ];
-      setDeckSlides(initialSlides);
-      setDeckTitle('Untitled Deck');
-      setActiveSlideIndex(0);
-      setDeckTheme('minimal');
-    }
 
     setDocuments((prev) => [...prev, newDoc]);
     setActiveDocId(newDoc.id);
@@ -3118,62 +3088,32 @@ Rules:
     setDocBodyHtml('');
     setLastComposeRun(null);
     setLeftSidebarOpen(false);
-    setCompositionTypeModalOpen(false);
-    trackMemoryAction('document', silent ? `Created new blank ${type} (auto)` : `Created new blank ${type}`, {
+    trackMemoryAction('document', silent ? 'Created new blank composition (auto)' : 'Created new blank composition', {
       documentId: String(newDoc.id),
     });
     if (!silent) {
-      showToast(`Blank ${type} created`);
+      showToast('Blank composition created');
     }
     return newDoc.id;
   };
 
-  // Deck Slide Management Functions
-  const addDeckSlide = (position = 'after') => {
-    const newSlideId = Math.max(...deckSlides.map(s => s.id), 0) + 1;
-    const newSlide = {
-      id: newSlideId,
-      type: 'content',
-      title: 'New Slide',
-      content: ['• Point 1', '• Point 2', '• Point 3'],
-    };
-    
-    if (position === 'after' && activeSlideIndex !== undefined) {
-      const newSlides = [...deckSlides];
-      newSlides.splice(activeSlideIndex + 1, 0, newSlide);
-      setDeckSlides(newSlides);
-      setActiveSlideIndex(activeSlideIndex + 1);
-    } else {
-      setDeckSlides([...deckSlides, newSlide]);
-      setActiveSlideIndex(deckSlides.length);
-    }
-    showToast('New slide added');
+  const openCreationPicker = () => {
+    setCreationPickerOpen(true);
   };
 
-  const deleteDeckSlide = (index) => {
-    if (deckSlides.length <= 1) {
-      showToast('Cannot delete the last slide');
-      return;
-    }
-    const newSlides = deckSlides.filter((_, i) => i !== index);
-    setDeckSlides(newSlides);
-    setActiveSlideIndex(Math.min(index, newSlides.length - 1));
-    showToast('Slide deleted');
+  const createComposeExperience = () => {
+    setCreationPickerOpen(false);
+    setProductMode('compose');
+    createNewComposition();
   };
 
-  const updateDeckSlide = (index, field, value) => {
-    const newSlides = [...deckSlides];
-    newSlides[index] = { ...newSlides[index], [field]: value };
-    setDeckSlides(newSlides);
-  };
-
-  const moveDeckSlide = (fromIndex, toIndex) => {
-    if (toIndex < 0 || toIndex >= deckSlides.length) return;
-    const newSlides = [...deckSlides];
-    const [slide] = newSlides.splice(fromIndex, 1);
-    newSlides.splice(toIndex, 0, slide);
-    setDeckSlides(newSlides);
-    setActiveSlideIndex(toIndex);
+  const createDeckExperience = () => {
+    setCreationPickerOpen(false);
+    setProductMode('deck');
+    setActiveDeckSlideId(1);
+    setRightSidebarOpen(true);
+    setActiveRightTab('assistant');
+    showToast('Deck workspace ready');
   };
 
   const requestCloseDocument = (docId) => {
@@ -4140,11 +4080,227 @@ Rules:
     && lastComposeRun.documentId === activeDocId
     && getPlainText(docBodyHtml).length
   );
+  const deckSlides = [
+    { id: 1, title: 'Opening', subtitle: 'Problem worth solving', accent: 'from-indigo-500 to-violet-500' },
+    { id: 2, title: 'Opportunity', subtitle: 'The market shift', accent: 'from-sky-500 to-indigo-500' },
+    { id: 3, title: 'Solution', subtitle: 'Our approach', accent: 'from-cyan-500 to-blue-500' },
+    { id: 4, title: 'Product', subtitle: 'How it works', accent: 'from-amber-500 to-orange-500' },
+    { id: 5, title: 'Market Size', subtitle: 'Huge and growing', accent: 'from-violet-500 to-fuchsia-500' },
+    { id: 6, title: 'Business Model', subtitle: 'Sustainable and scalable', accent: 'from-emerald-500 to-teal-500' },
+    { id: 7, title: 'Traction', subtitle: 'Real progress', accent: 'from-blue-500 to-violet-500' },
+    { id: 8, title: 'Financials', subtitle: 'Unit economics', accent: 'from-fuchsia-500 to-pink-500' },
+    { id: 9, title: 'Team', subtitle: 'Built to win', accent: 'from-indigo-600 to-slate-600' },
+    { id: 10, title: 'Closing', subtitle: "Let's build the future", accent: 'from-violet-600 to-indigo-700' },
+  ];
+  const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
   const pageNumberPositionClass = pageNumberPosition === 'left'
     ? 'left-12 text-left'
     : pageNumberPosition === 'right'
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
+
+  if (productMode === 'deck') {
+    return (
+      <div className="flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative">
+        {toastMessage && (
+          <div className="absolute top-16 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
+            <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+            <span>{toastMessage}</span>
+          </div>
+        )}
+
+        {creationPickerOpen && (
+          <div className="absolute inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-[680px] max-w-[95vw] rounded-2xl bg-white border border-gray-200 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.8)] p-6">
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Create New Project</h3>
+                  <p className="text-sm text-gray-500 mt-1">Choose your workspace type to start with the right canvas.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreationPickerOpen(false)}
+                  className="p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                  title="Close"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={createComposeExperience}
+                  className="group text-left rounded-xl border border-gray-200 p-4 hover:border-violet-300 hover:bg-violet-50/40 transition-colors"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center mb-3">
+                    <FileText size={18} />
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 mb-1">Compose</div>
+                  <p className="text-xs text-gray-600">Our document workspace for writing, planning, and AI-assisted editing.</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={createDeckExperience}
+                  className="group text-left rounded-xl border border-violet-300 bg-violet-50/50 p-4 hover:bg-violet-50 transition-colors"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center mb-3">
+                    <LayoutGrid size={18} />
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 mb-1">Deck</div>
+                  <p className="text-xs text-gray-600">Our presentation workspace for slide-first storytelling and AI deck intelligence.</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <aside className="w-[72px] border-r border-gray-200 bg-white flex flex-col items-center py-4 gap-4">
+          <div className="w-8 h-8 rounded-md bg-violet-600 text-white flex items-center justify-center font-semibold text-sm">R</div>
+          <button
+            onClick={openCreationPicker}
+            className="w-11 h-11 rounded-xl bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700 transition-colors"
+            title="New composition"
+          >
+            <Plus size={17} />
+          </button>
+          <div className="flex flex-col items-center gap-3 mt-1 text-gray-400">
+            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Compose"><PenTool size={16} /></button>
+            <button className="w-10 h-10 rounded-lg bg-violet-50 text-violet-700 flex items-center justify-center" title="Deck"><LayoutGrid size={16} /></button>
+            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Tasks"><CheckSquare size={16} /></button>
+            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Schedule"><Calendar size={16} /></button>
+            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="People"><Users size={16} /></button>
+            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Memory"><Database size={16} /></button>
+            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Room"><MonitorPlay size={16} /></button>
+          </div>
+        </aside>
+
+        <aside className="w-[220px] border-r border-gray-200 bg-[#f8f9fd] flex flex-col">
+          <div className="px-4 py-4 border-b border-gray-200">
+            <div className="text-sm font-semibold text-gray-800">Narrative</div>
+            <div className="text-[11px] text-gray-500 mt-1">Investor Pitch</div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {deckSlides.map((slide) => {
+              const isActive = slide.id === activeDeckSlideId;
+              return (
+                <button
+                  key={slide.id}
+                  type="button"
+                  onClick={() => setActiveDeckSlideId(slide.id)}
+                  className={`w-full rounded-xl border p-2 text-left transition-colors ${isActive ? 'border-violet-300 bg-violet-50/70' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className={`w-14 h-10 rounded-md bg-gradient-to-br ${slide.accent} shrink-0`} />
+                    <div className="min-w-0">
+                      <div className="text-[10px] text-gray-400">{String(slide.id).padStart(2, '0')}</div>
+                      <div className="text-xs font-semibold text-gray-800 truncate">{slide.title}</div>
+                      <div className="text-[11px] text-gray-500 truncate">{slide.subtitle}</div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+            <button className="w-full rounded-xl border border-dashed border-gray-300 py-2 text-xs font-medium text-gray-500 hover:border-violet-300 hover:text-violet-700">+ Add slide</button>
+          </div>
+        </aside>
+
+        <main className="flex-1 min-w-0 flex flex-col bg-[#f5f7fc]">
+          <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="text-sm font-semibold text-gray-900 truncate">Regaarder Deck</div>
+              <div className="text-sm text-gray-500 truncate">Untitled deck</div>
+              <div className="text-xs text-gray-400">Saved just now</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-2">
+                <Users size={14} /> Share
+              </button>
+              <div className="flex -space-x-2">
+                <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80" alt="Sarah" />
+                <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" alt="Mike" />
+                <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" alt="Maya" />
+              </div>
+              <button className="text-gray-400 hover:text-gray-600 relative">
+                <Bell size={18} />
+                <span className="absolute -top-1.5 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+              </button>
+            </div>
+          </header>
+
+          <div className="flex-1 min-h-0 p-4 flex gap-4">
+            <section className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col">
+              <div className="mx-auto w-full max-w-[860px]">
+                <div className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
+                  <div className="p-8 md:p-12 bg-[radial-gradient(circle_at_78%_75%,rgba(255,146,126,0.38)_0%,rgba(31,35,74,0)_38%),radial-gradient(circle_at_24%_22%,rgba(120,119,198,0.55)_0%,rgba(14,17,42,0)_44%),linear-gradient(150deg,#090d2f_0%,#11163f_52%,#1d123a_100%)] min-h-[430px] flex flex-col justify-between">
+                    <div className="flex items-center justify-between text-[13px] text-indigo-100/90">
+                      <span className="font-medium">Regaarder</span>
+                      <span>Investor Pitch</span>
+                    </div>
+                    <div>
+                      <h1 className="text-5xl leading-[1.1] font-medium text-white max-w-[620px]">A new standard for intelligent productivity</h1>
+                      <p className="mt-5 text-indigo-100/85 text-2xl max-w-[540px]">Regaarder unifies thinking, creating, and teamwork in one adaptive workspace.</p>
+                    </div>
+                    <div className="text-sm text-indigo-100/80">May 15, 2026 · Slide {activeDeckSlide.id}: {activeDeckSlide.title}</div>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
+                  <div className="text-sm text-gray-500 mb-2">Describe your presentation, audience, or goal...</div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {['Investor Pitch', 'Product Launch', 'Lecture', 'Research Summary', 'Sales Narrative'].map((chip) => (
+                      <button key={chip} className="px-2.5 py-1.5 rounded-full text-xs border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-700">{chip}</button>
+                    ))}
+                    <button className="ml-auto w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700">
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <aside className="w-[330px] shrink-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col gap-4">
+              <div>
+                <div className="text-xs font-semibold text-violet-600">AI Assistant</div>
+                <div className="mt-3 rounded-xl border border-gray-200 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-semibold text-gray-800">Deck Intelligence</span>
+                    <ChevronDown size={14} className="text-gray-400" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-20 h-20 rounded-full border-[6px] border-violet-500 text-gray-900 flex items-center justify-center text-2xl font-semibold">86</div>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      <div>Great narrative flow</div>
+                      <div>Strong problem framing</div>
+                      <div>Good market positioning</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 p-3">
+                <div className="text-sm font-semibold text-gray-800 mb-2">AI Suggestions</div>
+                <div className="space-y-2 text-xs text-gray-600">
+                  <div>Slide 4 could show more product value.</div>
+                  <div>Add a customer proof point in Slide 7.</div>
+                  <div>Consider a stronger closing statement.</div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 p-3">
+                <div className="text-sm font-semibold text-gray-800 mb-2">Related Resources</div>
+                <div className="space-y-2 text-xs text-violet-700">
+                  <div>Market Research 2026</div>
+                  <div>Competitor Analysis</div>
+                  <div>Q2 Traction Update</div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#FDFDFD] font-sans text-gray-800 overflow-hidden relative">
@@ -4154,6 +4310,53 @@ Rules:
         <div className="absolute top-16 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
           <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {creationPickerOpen && (
+        <div className="absolute inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-[680px] max-w-[95vw] rounded-2xl bg-white border border-gray-200 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.8)] p-6">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Create New Project</h3>
+                <p className="text-sm text-gray-500 mt-1">Choose your workspace type to start with the right canvas.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCreationPickerOpen(false)}
+                className="p-2 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                title="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={createComposeExperience}
+                className="group text-left rounded-xl border border-violet-300 bg-violet-50/50 p-4 hover:bg-violet-50 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-lg bg-violet-600 text-white flex items-center justify-center mb-3">
+                  <FileText size={18} />
+                </div>
+                <div className="text-sm font-semibold text-gray-900 mb-1">Compose</div>
+                <p className="text-xs text-gray-600">Our document workspace for writing, planning, and AI-assisted editing.</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={createDeckExperience}
+                className="group text-left rounded-xl border border-gray-200 p-4 hover:border-violet-300 hover:bg-violet-50/40 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center mb-3">
+                  <LayoutGrid size={18} />
+                </div>
+                <div className="text-sm font-semibold text-gray-900 mb-1">Deck</div>
+                <p className="text-xs text-gray-600">Our presentation workspace for slide-first storytelling and AI deck intelligence.</p>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -4344,85 +4547,6 @@ Rules:
         </div>
       )}
 
-      {/* Composition Type Selector Modal */}
-      {compositionTypeModalOpen && (
-        <div className="absolute inset-0 z-[500] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-[640px] max-w-[95vw] rounded-2xl bg-white border border-slate-200 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.65)] p-8">
-            <div className="mb-6">
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Create New Composition</h3>
-              <p className="text-sm text-slate-600">Choose how you want to create: word-style document or presentation slides</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {/* Compose Option */}
-              <button
-                onClick={() => createNewComposition({ type: 'compose' })}
-                className={`rounded-xl border-2 p-6 text-left transition-all ${selectedCompositionType === 'compose' ? 'border-violet-600 bg-violet-50' : 'border-slate-200 bg-white hover:border-violet-200'}`}
-                onMouseEnter={() => setSelectedCompositionType('compose')}
-              >
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
-                    <FileText size={20} className="text-violet-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-slate-900">Regaarder Compose</div>
-                    <div className="text-xs text-slate-500 mt-1">Word-style document editor</div>
-                  </div>
-                </div>
-                <ul className="text-xs text-slate-600 space-y-1.5">
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-violet-600" /> Voice dictation & AI
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-violet-600" /> Smart formatting
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-violet-600" /> Document structure
-                  </li>
-                </ul>
-              </button>
-
-              {/* Deck Option */}
-              <button
-                onClick={() => createNewComposition({ type: 'deck' })}
-                className={`rounded-xl border-2 p-6 text-left transition-all ${selectedCompositionType === 'deck' ? 'border-emerald-600 bg-emerald-50' : 'border-slate-200 bg-white hover:border-emerald-200'}`}
-                onMouseEnter={() => setSelectedCompositionType('deck')}
-              >
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                    <LayoutGrid size={20} className="text-emerald-600" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold text-slate-900">Regaarder Deck</div>
-                    <div className="text-xs text-slate-500 mt-1">PowerPoint-style presentations</div>
-                  </div>
-                </div>
-                <ul className="text-xs text-slate-600 space-y-1.5">
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Slide-based design
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> AI-powered layouts
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check size={14} className="text-emerald-600" /> Voice narration
-                  </li>
-                </ul>
-              </button>
-            </div>
-
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-200">
-              <button
-                onClick={() => setCompositionTypeModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-sm border border-slate-200 text-slate-600 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 1. Left Navigation Sidebar */}
       <div
         className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
@@ -4441,7 +4565,7 @@ Rules:
 
         <div className="px-4 py-3">
           <button 
-            onClick={() => setCompositionTypeModalOpen(true)}
+            onClick={openCreationPicker}
             className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 font-medium text-sm transition-colors active:scale-95"
           >
             <Plus size={16} />
@@ -4826,7 +4950,7 @@ Rules:
             )}
           </div>
           <button
-            onClick={createNewComposition}
+            onClick={openCreationPicker}
             className="h-7 w-7 rounded-full border border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-600 hover:text-violet-700 flex items-center justify-center"
             title="Create new composition"
             aria-label="Create new composition"
@@ -5027,198 +5151,8 @@ Rules:
           </div>
         </div>
 
-        {/* Document Editor Content - DECK or COMPOSE */}
-        {activeDocId && documents.find(d => d.id === activeDocId)?.type === 'deck' ? (
-          // DECK EDITOR
-          <div className="flex-1 flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
-            {/* Deck Header */}
-            <div className="border-b border-slate-700 bg-slate-800/50 px-6 py-4 flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <input
-                  type="text"
-                  value={deckTitle}
-                  onChange={(e) => setDeckTitle(e.target.value)}
-                  placeholder="Presentation Title"
-                  className="text-lg font-bold text-white bg-transparent border-none outline-none w-full"
-                />
-                <input
-                  type="text"
-                  value={deckSubtitle}
-                  onChange={(e) => setDeckSubtitle(e.target.value)}
-                  placeholder="Your subtitle..."
-                  className="text-xs text-slate-300 bg-transparent border-none outline-none w-full mt-1"
-                />
-              </div>
-              <div className="flex items-center gap-3 ml-4">
-                <div className="text-xs text-slate-400">Slide {activeSlideIndex + 1} of {deckSlides.length}</div>
-                <button
-                  onClick={() => addDeckSlide('after')}
-                  className="px-3 py-1.5 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
-                >
-                  <Plus size={14} /> Add Slide
-                </button>
-              </div>
-            </div>
-
-            {/* Main Deck View */}
-            <div className="flex flex-1 min-h-0 gap-4 p-6 overflow-hidden">
-              {/* Slide Thumbnail Panel */}
-              <div className="w-48 bg-slate-800/50 rounded-lg border border-slate-700 flex flex-col overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-700 text-xs font-semibold text-slate-300 uppercase tracking-wide">Slides</div>
-                <div className="flex-1 overflow-y-auto space-y-2 p-2">
-                  {deckSlides.map((slide, idx) => (
-                    <button
-                      key={slide.id}
-                      onClick={() => setActiveSlideIndex(idx)}
-                      className={`w-full rounded-lg border-2 p-2 text-left transition-all ${activeSlideIndex === idx ? 'border-emerald-500 bg-emerald-500/10' : 'border-slate-600 bg-slate-700 hover:border-slate-500'}`}
-                    >
-                      <div className="aspect-video bg-slate-900 rounded mb-2 flex items-center justify-center border border-slate-600">
-                        <span className="text-[10px] text-slate-400 font-mono">{idx + 1}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-200 font-medium truncate">{slide.title || `Slide ${idx + 1}`}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Main Slide Editor */}
-              <div className="flex-1 flex flex-col">
-                {deckSlides[activeSlideIndex] && (
-                  <div className="flex-1 bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col relative">
-                    {/* Slide Content */}
-                    {deckSlides[activeSlideIndex].type === 'title' ? (
-                      <div className="flex-1 flex flex-col items-center justify-center px-12 py-16 text-center bg-gradient-to-br from-violet-50 via-white to-slate-50">
-                        <input
-                          type="text"
-                          value={deckSlides[activeSlideIndex].title || ''}
-                          onChange={(e) => updateDeckSlide(activeSlideIndex, 'title', e.target.value)}
-                          placeholder="Slide Title"
-                          className="text-4xl font-bold text-gray-900 text-center border-none outline-none bg-transparent mb-4 w-full"
-                        />
-                        <input
-                          type="text"
-                          value={deckSlides[activeSlideIndex].subtitle || ''}
-                          onChange={(e) => updateDeckSlide(activeSlideIndex, 'subtitle', e.target.value)}
-                          placeholder="Subtitle or tagline"
-                          className="text-lg text-gray-600 text-center border-none outline-none bg-transparent w-full"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex-1 flex flex-col px-12 py-8 overflow-y-auto">
-                        <input
-                          type="text"
-                          value={deckSlides[activeSlideIndex].title || ''}
-                          onChange={(e) => updateDeckSlide(activeSlideIndex, 'title', e.target.value)}
-                          placeholder="Slide Title"
-                          className="text-2xl font-bold text-gray-900 border-none outline-none bg-transparent mb-6 w-full"
-                        />
-                        <div className="flex-1 space-y-3">
-                          {(deckSlides[activeSlideIndex].content || []).map((point, idx) => (
-                            <div key={idx} className="flex items-start gap-3 group">
-                              <input
-                                type="text"
-                                value={point}
-                                onChange={(e) => {
-                                  const newContent = [...(deckSlides[activeSlideIndex].content || [])];
-                                  newContent[idx] = e.target.value;
-                                  updateDeckSlide(activeSlideIndex, 'content', newContent);
-                                }}
-                                className="flex-1 text-gray-700 border-none outline-none bg-transparent py-1"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const newContent = deckSlides[activeSlideIndex].content.filter((_, i) => i !== idx);
-                                  updateDeckSlide(activeSlideIndex, 'content', newContent);
-                                }}
-                                className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:bg-red-50 rounded transition-opacity"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          ))}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newContent = [...(deckSlides[activeSlideIndex].content || []), '• New point'];
-                              updateDeckSlide(activeSlideIndex, 'content', newContent);
-                            }}
-                            className="text-xs text-violet-600 hover:text-violet-700 mt-3 flex items-center gap-1.5"
-                          >
-                            <Plus size={14} /> Add Point
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Slide Actions */}
-                    <div className="border-t border-gray-200 px-6 py-3 flex items-center justify-between bg-gray-50">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => moveDeckSlide(activeSlideIndex, activeSlideIndex - 1)}
-                          disabled={activeSlideIndex === 0}
-                          className="p-2 rounded-lg text-gray-600 hover:bg-white disabled:opacity-30"
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moveDeckSlide(activeSlideIndex, activeSlideIndex + 1)}
-                          disabled={activeSlideIndex === deckSlides.length - 1}
-                          className="p-2 rounded-lg text-gray-600 hover:bg-white disabled:opacity-30"
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => deleteDeckSlide(activeSlideIndex)}
-                        className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                      >
-                        Delete Slide
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Deck AI Prompt Box */}
-            <div className="border-t border-slate-700 bg-slate-800/50 px-6 py-4">
-              <form onSubmit={(e) => { e.preventDefault(); handleAssistantQuickPromptSend(e); }} className="max-w-2xl mx-auto space-y-2">
-                <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide mb-2">AI Slide Assistant</div>
-                <textarea
-                  value={assistantQuickPrompt}
-                  onChange={(e) => setAssistantQuickPrompt(e.target.value)}
-                  placeholder="Ask AI to generate slides, create content, or improve layout..."
-                  rows={2}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 resize-none"
-                />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setVoiceTarget('deck')}
-                      className={`p-2 rounded-lg text-sm transition-colors ${voiceTarget === 'deck' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-                    >
-                      <Mic size={14} />
-                    </button>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={isComposing || !assistantQuickPrompt.trim()}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-emerald-700/50 text-white cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
-                  >
-                    {isComposing ? 'Generating...' : 'Generate'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        ) : (
-          // COMPOSE EDITOR
-          <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
+        {/* Document Editor Content (Beautifully separated page area) */}
+        <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
           <div
             className="mx-auto"
             style={{
@@ -5456,7 +5390,6 @@ Rules:
           </div>
           </div>
         </div>
-        )}
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
@@ -6345,119 +6278,57 @@ Rules:
                   <div className="text-[11px] text-violet-700/80">Text is highlighted. Tap an action to run immediately.</div>
                 </div>
               )}
-              
-              {/* COMPOSE MODE PROMPTS */}
-              {activeDocId && documents.find(d => d.id === activeDocId)?.type !== 'deck' && (
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
-                  <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
-                </div>
-              )}
+              <div>
+                <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
+                <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
+              </div>
 
-              {/* COMPOSE ACTION BUTTONS */}
-              {activeDocId && documents.find(d => d.id === activeDocId)?.type !== 'deck' && (
-                <div className="space-y-2">
-                  <button 
-                    onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                  >
-                    <PenTool size={16} className="text-violet-500" />
-                    <div>
-                      <div className="font-semibold text-xs">Improve writing</div>
-                      <p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p>
-                    </div>
-                  </button>
-
-                  <button 
-                    onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                  >
-                    <FileText size={16} className="text-indigo-500" />
-                    <div>
-                      <div className="font-semibold text-xs">Summarize document</div>
-                      <p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p>
-                    </div>
-                  </button>
-
-                  <button 
-                    onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                  >
-                    <Scissors size={16} className="text-violet-400" />
-                    <div>
-                      <div className="font-semibold text-xs">Make shorter</div>
-                      <p className="text-[10px] text-gray-400">Prune unnecessary wording</p>
-                    </div>
-                  </button>
-
-                  <button 
-                    onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
-                    className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                  >
-                    <AlertTriangle size={16} className="text-amber-500" />
-                    <div>
-                      <div className="font-semibold text-xs">Check for gaps & risks</div>
-                      <p className="text-[10px] text-gray-400">Locate potential launch bottle necks</p>
-                    </div>
-                  </button>
-                </div>
-              )}
-
-              {/* DECK MODE PROMPTS */}
-              {activeDocId && documents.find(d => d.id === activeDocId)?.type === 'deck' && (
-                <>
+              {/* Action Buttons Grid */}
+              <div className="space-y-2">
+                <button 
+                  onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                >
+                  <PenTool size={16} className="text-violet-500" />
                   <div>
-                    <h3 className="text-sm font-bold text-gray-900 mb-2">Deck AI Assistant</h3>
-                    <p className="text-xs text-gray-500">Generate slides, improve layout, or add content with AI.</p>
+                    <div className="font-semibold text-xs">Improve writing</div>
+                    <p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p>
                   </div>
+                </button>
 
-                  <div className="space-y-2">
-                    <button 
-                      onClick={() => runSmartAssistAction('Generate an outline for this presentation with 5-7 main slides')}
-                      className="w-full flex items-center gap-3 px-4 py-3 border border-emerald-200 rounded-lg text-sm text-gray-700 hover:bg-emerald-50 transition-colors text-left"
-                    >
-                      <LayoutGrid size={16} className="text-emerald-600" />
-                      <div>
-                        <div className="font-semibold text-xs">Generate outline</div>
-                        <p className="text-[10px] text-gray-400">Create 5-7 main slides automatically</p>
-                      </div>
-                    </button>
-
-                    <button 
-                      onClick={() => runSmartAssistAction('Create bullet points for the current slide that are concise and impactful')}
-                      className="w-full flex items-center gap-3 px-4 py-3 border border-emerald-200 rounded-lg text-sm text-gray-700 hover:bg-emerald-50 transition-colors text-left"
-                    >
-                      <ListTodo size={16} className="text-emerald-600" />
-                      <div>
-                        <div className="font-semibold text-xs">Add slide content</div>
-                        <p className="text-[10px] text-gray-400">Generate relevant bullet points</p>
-                      </div>
-                    </button>
-
-                    <button 
-                      onClick={() => runSmartAssistAction('Improve the current slide title to be more compelling and memorable')}
-                      className="w-full flex items-center gap-3 px-4 py-3 border border-emerald-200 rounded-lg text-sm text-gray-700 hover:bg-emerald-50 transition-colors text-left"
-                    >
-                      <Type size={16} className="text-emerald-600" />
-                      <div>
-                        <div className="font-semibold text-xs">Enhance title</div>
-                        <p className="text-[10px] text-gray-400">Make slide titles more engaging</p>
-                      </div>
-                    </button>
-
-                    <button 
-                      onClick={() => runSmartAssistAction('Add speaker notes for the current slide')}
-                      className="w-full flex items-center gap-3 px-4 py-3 border border-emerald-200 rounded-lg text-sm text-gray-700 hover:bg-emerald-50 transition-colors text-left"
-                    >
-                      <MessageSquarePlus size={16} className="text-emerald-600" />
-                      <div>
-                        <div className="font-semibold text-xs">Add speaker notes</div>
-                        <p className="text-[10px] text-gray-400">Generate presentation talking points</p>
-                      </div>
-                    </button>
+                <button 
+                  onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                >
+                  <FileText size={16} className="text-indigo-500" />
+                  <div>
+                    <div className="font-semibold text-xs">Summarize document</div>
+                    <p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p>
                   </div>
-                </>
-              )}
+                </button>
+
+                <button 
+                  onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                >
+                  <Scissors size={16} className="text-violet-400" />
+                  <div>
+                    <div className="font-semibold text-xs">Make shorter</div>
+                    <p className="text-[10px] text-gray-400">Prune unnecessary wording</p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                >
+                  <AlertTriangle size={16} className="text-amber-500" />
+                  <div>
+                    <div className="font-semibold text-xs">Check for gaps & risks</div>
+                    <p className="text-[10px] text-gray-400">Locate potential launch bottle necks</p>
+                  </div>
+                </button>
+              </div>
 
               <div>
                 <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
