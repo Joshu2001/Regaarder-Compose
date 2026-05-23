@@ -4853,11 +4853,12 @@ Rules:
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
           <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`}>
+          {isPromptExpanded ? (
           <form
             ref={promptRootRef}
             onSubmit={handleFloatingSend}
-            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all ${isPromptExpanded ? 'rounded-2xl' : 'rounded-full'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 760))}px`, maxWidth: '100%' }}
+            className={`bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-2xl ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            style={{ width: `${Math.max(320, Math.min(promptWidth, 860))}px`, maxWidth: '100%' }}
           >
             <button
               type="button"
@@ -4869,7 +4870,6 @@ Rules:
             </button>
             <div className="flex items-center gap-3 px-2 flex-1 min-w-0">
               <Sparkles size={18} className="text-violet-500 shrink-0 self-start mt-2" />
-              {isPromptExpanded ? (
                 <div className="flex-1 min-w-0 space-y-2 py-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[11px] font-semibold text-gray-500">Compose format</span>
@@ -5050,16 +5050,6 @@ Rules:
                     className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-1 resize-none"
                   />
                 </div>
-              ) : (
-                <input
-                  type="text"
-                  value={floatingPrompt}
-                  onChange={(e) => setFloatingPrompt(e.target.value)}
-                  placeholder="Ask Compose AI..."
-                  style={{ textAlign: alignMode }}
-                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2"
-                />
-              )}
             </div>
             <div className="flex items-center gap-2 pr-1 shrink-0">
               <input
@@ -5071,11 +5061,11 @@ Rules:
               />
               <button
                 type="button"
-                onClick={() => setIsPromptExpanded((prev) => !prev)}
-                className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                title="Expand prompt input"
+                onClick={() => setIsPromptExpanded(false)}
+                className="p-2 rounded-full transition-colors bg-violet-50 text-violet-600 hover:bg-violet-100"
+                title="Minimize to floating icon"
               >
-                <Expand size={16} />
+                <X size={16} />
               </button>
               <div className="relative" ref={promptMenuRef}>
                 <button
@@ -5280,6 +5270,16 @@ Rules:
               </button>
             </div>
           </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsPromptExpanded(true)}
+              className="pointer-events-auto h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_28px_-12px_rgba(124,58,237,0.9)] flex items-center justify-center hover:bg-violet-700 transition-all"
+              title="Open AI prompt"
+            >
+              <Sparkles size={20} />
+            </button>
+          )}
           </div>
         </div>
 
@@ -5674,19 +5674,17 @@ Rules:
                 </button>
               </div>
 
-              <div className="rounded-2xl border border-violet-100/70 bg-gradient-to-br from-violet-50/80 via-white to-sky-50/70 p-4 shadow-sm">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">Superior Value</p>
-                <p className="mt-1 text-xs text-slate-600 leading-relaxed">AI-native, frictionless workflows. We reduce effort so deeply that switching away feels costly in time and momentum.</p>
-                <form onSubmit={handleAssistantCopilotSubmit} className="mt-3 rounded-xl border border-violet-100 bg-white p-2.5">
+              <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+                <form onSubmit={handleAssistantCopilotSubmit} className="rounded-xl border border-violet-100 bg-[#FAFAFC] p-2.5">
                   <textarea
                     value={assistantCopilotInput}
                     onChange={(event) => setAssistantCopilotInput(event.target.value)}
                     placeholder="Ask AI Assistant from here..."
                     rows={3}
-                    className="w-full resize-none bg-transparent text-sm text-slate-700 placeholder-slate-400 border-none outline-none"
+                    className="w-full resize-none bg-transparent text-sm text-gray-700 placeholder-gray-400 border-none outline-none"
                   />
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="text-[10px] italic text-slate-400">Floating Co-Pilot</span>
+                    <span className="text-[10px] italic text-gray-400">Floating Co-Pilot</span>
                     <button
                       type="submit"
                       className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-200 transition-colors"
@@ -6120,19 +6118,17 @@ Rules:
               </div>
 
               <div className="border-t border-gray-100 bg-[#FAFAFC] p-4">
-                <div className="rounded-2xl border border-violet-100/70 bg-gradient-to-br from-violet-50/80 via-white to-sky-50/70 p-4 shadow-sm">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">AI-Native Scheduler</p>
-                  <p className="mt-1 text-xs text-slate-600 leading-relaxed">Drop rough notes and we convert them into clean, low-friction meeting timelines.</p>
-                  <form onSubmit={handleScheduleCopilotSubmit} className="mt-3 rounded-xl border border-violet-100 bg-white p-2.5">
+                <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+                  <form onSubmit={handleScheduleCopilotSubmit} className="rounded-xl border border-violet-100 bg-[#FAFAFC] p-2.5">
                     <textarea
                       value={scheduleCopilotInput}
                       onChange={(event) => setScheduleCopilotInput(event.target.value)}
                       placeholder="Ask Schedule AI from here..."
                       rows={3}
-                      className="w-full resize-none bg-transparent text-sm text-slate-700 placeholder-slate-400 border-none outline-none"
+                      className="w-full resize-none bg-transparent text-sm text-gray-700 placeholder-gray-400 border-none outline-none"
                     />
                     <div className="mt-2 flex items-center justify-between">
-                      <span className="text-[10px] italic text-slate-400">Floating Co-Pilot</span>
+                      <span className="text-[10px] italic text-gray-400">Floating Co-Pilot</span>
                       <button
                         type="submit"
                         className="inline-flex items-center gap-1.5 rounded-xl bg-violet-100 px-3 py-1.5 text-xs font-semibold text-violet-700 hover:bg-violet-200 transition-colors"
@@ -6147,9 +6143,9 @@ Rules:
           )}
 
           {activeRightTab === 'room' && (
-            <div className="flex-1 flex flex-col min-h-0 bg-[#FAFAFC] animate-fade-in min-w-[340px] relative">
+            <div className="flex-1 flex flex-col min-h-0 bg-white animate-fade-in min-w-[340px] relative">
               {roomState === 'lobby' && (
-                <div className="flex-1 flex flex-col p-6 items-center justify-center text-center space-y-6 animate-fade-in">
+                <div className="flex-1 overflow-y-auto flex flex-col p-6 items-center text-center space-y-6 animate-fade-in">
                   <div className="w-16 h-16 bg-violet-50 border-2 border-violet-100 rounded-2xl flex items-center justify-center text-violet-600 mb-2 shadow-sm">
                     <MonitorPlay size={32} className="ml-1" />
                   </div>
