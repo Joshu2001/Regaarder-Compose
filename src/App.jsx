@@ -101,6 +101,23 @@ export default function App() {
   const [productMode, setProductMode] = useState('compose');
   const [creationPickerOpen, setCreationPickerOpen] = useState(false);
   const [activeDeckSlideId, setActiveDeckSlideId] = useState(1);
+  const [deckTitle, setDeckTitle] = useState('Untitled deck');
+  const [deckPromptInput, setDeckPromptInput] = useState('');
+  const [deckPromptMinimized, setDeckPromptMinimized] = useState(false);
+  const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
+  const [deckUtilityTab, setDeckUtilityTab] = useState('assistant');
+  const [deckSlidesData, setDeckSlidesData] = useState([
+    { id: 1, title: 'Opening', subtitle: 'Problem worth solving', accent: 'from-indigo-500 to-violet-500' },
+    { id: 2, title: 'Opportunity', subtitle: 'The market shift', accent: 'from-sky-500 to-indigo-500' },
+    { id: 3, title: 'Solution', subtitle: 'Our approach', accent: 'from-cyan-500 to-blue-500' },
+    { id: 4, title: 'Product', subtitle: 'How it works', accent: 'from-amber-500 to-orange-500' },
+    { id: 5, title: 'Market Size', subtitle: 'Huge and growing', accent: 'from-violet-500 to-fuchsia-500' },
+    { id: 6, title: 'Business Model', subtitle: 'Sustainable and scalable', accent: 'from-emerald-500 to-teal-500' },
+    { id: 7, title: 'Traction', subtitle: 'Real progress', accent: 'from-blue-500 to-violet-500' },
+    { id: 8, title: 'Financials', subtitle: 'Unit economics', accent: 'from-fuchsia-500 to-pink-500' },
+    { id: 9, title: 'Team', subtitle: 'Built to win', accent: 'from-indigo-600 to-slate-600' },
+    { id: 10, title: 'Closing', subtitle: "Let's build the future", accent: 'from-violet-600 to-indigo-700' },
+  ]);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
@@ -3110,7 +3127,12 @@ Rules:
   const createDeckExperience = () => {
     setCreationPickerOpen(false);
     setProductMode('deck');
+    setDeckTitle('Untitled deck');
     setActiveDeckSlideId(1);
+    setDeckPromptInput('');
+    setDeckPromptMinimized(false);
+    setDeckSlidesPanelOpen(true);
+    setDeckUtilityTab('assistant');
     setRightSidebarOpen(true);
     setActiveRightTab('assistant');
     showToast('Deck workspace ready');
@@ -4080,19 +4102,20 @@ Rules:
     && lastComposeRun.documentId === activeDocId
     && getPlainText(docBodyHtml).length
   );
-  const deckSlides = [
-    { id: 1, title: 'Opening', subtitle: 'Problem worth solving', accent: 'from-indigo-500 to-violet-500' },
-    { id: 2, title: 'Opportunity', subtitle: 'The market shift', accent: 'from-sky-500 to-indigo-500' },
-    { id: 3, title: 'Solution', subtitle: 'Our approach', accent: 'from-cyan-500 to-blue-500' },
-    { id: 4, title: 'Product', subtitle: 'How it works', accent: 'from-amber-500 to-orange-500' },
-    { id: 5, title: 'Market Size', subtitle: 'Huge and growing', accent: 'from-violet-500 to-fuchsia-500' },
-    { id: 6, title: 'Business Model', subtitle: 'Sustainable and scalable', accent: 'from-emerald-500 to-teal-500' },
-    { id: 7, title: 'Traction', subtitle: 'Real progress', accent: 'from-blue-500 to-violet-500' },
-    { id: 8, title: 'Financials', subtitle: 'Unit economics', accent: 'from-fuchsia-500 to-pink-500' },
-    { id: 9, title: 'Team', subtitle: 'Built to win', accent: 'from-indigo-600 to-slate-600' },
-    { id: 10, title: 'Closing', subtitle: "Let's build the future", accent: 'from-violet-600 to-indigo-700' },
-  ];
+  const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
+  const addDeckSlide = () => {
+    const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
+    const newSlide = {
+      id: nextId,
+      title: `Slide ${nextId}`,
+      subtitle: 'New talking point',
+      accent: 'from-violet-500 to-indigo-600',
+    };
+    setDeckSlidesData((prev) => [...prev, newSlide]);
+    setActiveDeckSlideId(nextId);
+    showToast(`Slide ${nextId} created`);
+  };
   const pageNumberPositionClass = pageNumberPosition === 'left'
     ? 'left-12 text-left'
     : pageNumberPosition === 'right'
@@ -4156,6 +4179,99 @@ Rules:
           </div>
         )}
 
+        {shareModalOpen && (
+          <div className="absolute inset-0 z-[520] bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-[640px] max-w-[95vw] rounded-2xl bg-white border border-slate-200 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.65)] p-6">
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Share from Compose</h3>
+                  <p className="text-xs text-slate-500 mt-1">{shareTargetDocTitle}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShareModalOpen(false)}
+                  className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                  title="Close"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-5">
+                {[
+                  { key: 'friends', label: 'Copy link', sub: 'Share instantly' },
+                  { key: 'apps', label: 'Native apps', sub: 'Use system sheet' },
+                  { key: 'downloads', label: 'Download', sub: 'Export file' },
+                ].map((destination) => (
+                  <button
+                    key={destination.key}
+                    type="button"
+                    onClick={() => setShareDestination(destination.key)}
+                    className={`text-left rounded-xl border px-3 py-2.5 transition-colors ${shareDestination === destination.key ? 'border-violet-300 bg-violet-50/70 text-violet-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    <div className="text-sm font-semibold">{destination.label}</div>
+                    <div className="text-[11px] text-slate-500">{destination.sub}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mb-4">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-2">Access level</label>
+                <div className="flex flex-wrap items-center gap-2">
+                  {['Viewer', 'Commenter', 'Editor'].map((level) => (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setShareAccess(level)}
+                      className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${shareAccess === level ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-5">
+                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-2">File format</label>
+                <div className="flex flex-wrap gap-2">
+                  {['Compose (.cmp)', 'PDF', 'DOC (Word-compatible)', 'Markdown', 'Plain Text', 'HTML'].map((format) => (
+                    <button
+                      key={format}
+                      type="button"
+                      onClick={() => setShareFormat(format)}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs border transition-colors ${shareFormat === format ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                    >
+                      {format}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {shareDestination === 'friends' && (
+                <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide mb-1">Share link</div>
+                  <div className="text-xs text-slate-600 break-all">{shareLink}</div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setShareModalOpen(false)}
+                  className="px-3 py-2 rounded-lg text-xs border border-slate-200 text-slate-600 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleShareModalConfirm}
+                  className="px-4 py-2 rounded-lg text-xs font-semibold bg-violet-600 text-white hover:bg-violet-700"
+                >
+                  {shareDestination === 'downloads' ? `Export ${shareFormat}` : shareDestination === 'apps' ? 'Share to Apps' : 'Copy Link'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <aside className="w-[72px] border-r border-gray-200 bg-white flex flex-col items-center py-4 gap-4">
           <div className="w-8 h-8 rounded-md bg-violet-600 text-white flex items-center justify-center font-semibold text-sm">R</div>
           <button
@@ -4176,6 +4292,7 @@ Rules:
           </div>
         </aside>
 
+        {deckSlidesPanelOpen && (
         <aside className="w-[220px] border-r border-gray-200 bg-[#f8f9fd] flex flex-col">
           <div className="px-4 py-4 border-b border-gray-200">
             <div className="text-sm font-semibold text-gray-800">Narrative</div>
@@ -4202,19 +4319,44 @@ Rules:
                 </button>
               );
             })}
-            <button className="w-full rounded-xl border border-dashed border-gray-300 py-2 text-xs font-medium text-gray-500 hover:border-violet-300 hover:text-violet-700">+ Add slide</button>
+            <button
+              type="button"
+              onClick={addDeckSlide}
+              className="w-full rounded-xl border border-dashed border-gray-300 py-2 text-xs font-medium text-gray-500 hover:border-violet-300 hover:text-violet-700"
+            >
+              + New slide
+            </button>
           </div>
         </aside>
+        )}
 
         <main className="flex-1 min-w-0 flex flex-col bg-[#f5f7fc]">
           <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between">
             <div className="flex items-center gap-4 min-w-0">
+              <button
+                type="button"
+                onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
+                className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                title={deckSlidesPanelOpen ? 'Hide slides panel' : 'Show slides panel'}
+              >
+                {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+              </button>
               <div className="text-sm font-semibold text-gray-900 truncate">Regaarder Deck</div>
-              <div className="text-sm text-gray-500 truncate">Untitled deck</div>
+              <input
+                type="text"
+                value={deckTitle}
+                onChange={(event) => setDeckTitle(event.target.value)}
+                className="text-sm text-gray-500 truncate bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-300 rounded px-2 py-0.5 outline-none"
+                placeholder="Untitled deck"
+              />
               <div className="text-xs text-gray-400">Saved just now</div>
             </div>
             <div className="flex items-center gap-3">
-              <button className="bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => openShareModal(activeDocId || documents[0]?.id)}
+                className="bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-2"
+              >
                 <Users size={14} /> Share
               </button>
               <div className="flex -space-x-2">
@@ -4233,7 +4375,7 @@ Rules:
             <section className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col">
               <div className="mx-auto w-full max-w-[860px]">
                 <div className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
-                  <div className="p-8 md:p-12 bg-[radial-gradient(circle_at_78%_75%,rgba(255,146,126,0.38)_0%,rgba(31,35,74,0)_38%),radial-gradient(circle_at_24%_22%,rgba(120,119,198,0.55)_0%,rgba(14,17,42,0)_44%),linear-gradient(150deg,#090d2f_0%,#11163f_52%,#1d123a_100%)] min-h-[430px] flex flex-col justify-between">
+                  <div className="relative p-8 md:p-12 bg-[radial-gradient(circle_at_78%_75%,rgba(255,146,126,0.38)_0%,rgba(31,35,74,0)_38%),radial-gradient(circle_at_24%_22%,rgba(120,119,198,0.55)_0%,rgba(14,17,42,0)_44%),linear-gradient(150deg,#090d2f_0%,#11163f_52%,#1d123a_100%)] min-h-[430px] flex flex-col justify-between">
                     <div className="flex items-center justify-between text-[13px] text-indigo-100/90">
                       <span className="font-medium">Regaarder</span>
                       <span>Investor Pitch</span>
@@ -4242,31 +4384,109 @@ Rules:
                       <h1 className="text-5xl leading-[1.1] font-medium text-white max-w-[620px]">A new standard for intelligent productivity</h1>
                       <p className="mt-5 text-indigo-100/85 text-2xl max-w-[540px]">Regaarder unifies thinking, creating, and teamwork in one adaptive workspace.</p>
                     </div>
+                    <div className="absolute top-6 right-6 w-14 h-14 rounded-xl border border-dashed border-white/40 bg-white/5 flex items-center justify-center text-[10px] text-white/70">
+                      Logo
+                    </div>
                     <div className="text-sm text-indigo-100/80">May 15, 2026 · Slide {activeDeckSlide.id}: {activeDeckSlide.title}</div>
                   </div>
                 </div>
-                <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4">
-                  <div className="text-sm text-gray-500 mb-2">Describe your presentation, audience, or goal...</div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {['Investor Pitch', 'Product Launch', 'Lecture', 'Research Summary', 'Sales Narrative'].map((chip) => (
-                      <button key={chip} className="px-2.5 py-1.5 rounded-full text-xs border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-700">{chip}</button>
-                    ))}
-                    <button className="ml-auto w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700">
-                      <ArrowRight size={14} />
-                    </button>
+                {!deckPromptMinimized && (
+                  <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-[11px] uppercase tracking-wide text-violet-600 font-semibold">AI Prompt Box</div>
+                      <button
+                        type="button"
+                        onClick={() => setDeckPromptMinimized(true)}
+                        className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                        title="Minimize prompt"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <textarea
+                      value={deckPromptInput}
+                      onChange={(event) => setDeckPromptInput(event.target.value)}
+                      rows={3}
+                      placeholder="Ask AI Assistant from here..."
+                      className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-violet-300"
+                    />
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      {['Investor Pitch', 'Product Launch', 'Lecture', 'Research Summary', 'Sales Narrative'].map((chip) => (
+                        <button
+                          key={chip}
+                          type="button"
+                          onClick={() => setDeckPromptInput((prev) => (prev ? `${prev} ${chip}` : chip))}
+                          className="px-2.5 py-1.5 rounded-full text-xs border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-700"
+                        >
+                          {chip}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveRightTab('assistant');
+                          setDeckUtilityTab('assistant');
+                          setRightSidebarOpen(true);
+                          if (deckPromptInput.trim()) {
+                            setAssistantQuickPrompt(deckPromptInput.trim());
+                            setDeckPromptInput('');
+                            showToast('Prompt sent to AI Assistant');
+                          }
+                        }}
+                        className="ml-auto px-3 h-8 rounded-lg bg-violet-600 text-white text-xs font-medium hover:bg-violet-700"
+                      >
+                        Send to AI
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </section>
 
+            <aside className="w-[56px] shrink-0 rounded-2xl border border-gray-200 bg-white p-2 flex flex-col items-center gap-2">
+              {[
+                { key: 'chat', icon: MessageCircle, label: 'Chat' },
+                { key: 'assistant', icon: Sparkles, label: 'AI Assistant' },
+                { key: 'tasks', icon:CheckSquare, label: 'Tasks' },
+                { key: 'calendar', icon: Calendar, label: 'Schedule' },
+                { key: 'people', icon: Users, label: 'People' },
+                { key: 'room', icon: MonitorPlay, label: 'Room' },
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = deckUtilityTab === item.key;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setDeckUtilityTab(item.key)}
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-violet-50 text-violet-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'}`}
+                    title={item.label}
+                  >
+                    <Icon size={16} />
+                  </button>
+                );
+              })}
+              {deckPromptMinimized && (
+                <button
+                  type="button"
+                  onClick={() => setDeckPromptMinimized(false)}
+                  className="mt-auto w-10 h-10 rounded-lg bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700"
+                  title="Open prompt box"
+                >
+                  <Sparkles size={16} />
+                </button>
+              )}
+            </aside>
+
             <aside className="w-[330px] shrink-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col gap-4">
               <div>
-                <div className="text-xs font-semibold text-violet-600">AI Assistant</div>
+                <div className="text-xs font-semibold text-violet-600">{deckUtilityTab === 'assistant' ? 'AI Assistant' : deckUtilityTab.charAt(0).toUpperCase() + deckUtilityTab.slice(1)}</div>
                 <div className="mt-3 rounded-xl border border-gray-200 p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-800">Deck Intelligence</span>
+                    <span className="text-sm font-semibold text-gray-800">{deckUtilityTab === 'assistant' ? 'Deck Intelligence' : 'Workspace Panel'}</span>
                     <ChevronDown size={14} className="text-gray-400" />
                   </div>
+                  {deckUtilityTab === 'assistant' ? (
                   <div className="flex items-center gap-3">
                     <div className="w-20 h-20 rounded-full border-[6px] border-violet-500 text-gray-900 flex items-center justify-center text-2xl font-semibold">86</div>
                     <div className="text-xs text-gray-600 space-y-1">
@@ -4275,6 +4495,9 @@ Rules:
                       <div>Good market positioning</div>
                     </div>
                   </div>
+                  ) : (
+                    <div className="text-xs text-gray-600">{deckUtilityTab === 'chat' ? 'Chat history and quick asks will appear here.' : deckUtilityTab === 'room' ? 'Room controls and live call details appear here.' : deckUtilityTab === 'people' ? 'Team presence and active collaborators appear here.' : deckUtilityTab === 'tasks' ? 'Your deck tasks and owners appear here.' : 'Schedule events linked to your deck appear here.'}</div>
+                  )}
                 </div>
               </div>
 
