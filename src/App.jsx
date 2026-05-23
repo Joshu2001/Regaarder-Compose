@@ -133,6 +133,7 @@ export default function App() {
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
   const [roomState, setRoomState] = useState('lobby');
+  const [roomMode, setRoomMode] = useState('meetings');
   const [roomId, setRoomId] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [isRoomMicOn, setIsRoomMicOn] = useState(true);
@@ -151,6 +152,12 @@ export default function App() {
     { name: 'Ana', img: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=320&q=80' },
   ]);
   const [mediaError, setMediaError] = useState(false);
+  const [platformContacts, setPlatformContacts] = useState([
+    { id: 1, name: 'Sarah Lang', title: 'Product Lead', status: 'active', lastSeen: 'In call now' },
+    { id: 2, name: 'Mike Cohen', title: 'Growth Lead', status: 'active', lastSeen: 'Online' },
+    { id: 3, name: 'Maya Patel', title: 'Design Director', status: 'active', lastSeen: 'Online' },
+    { id: 4, name: 'Jordan Kim', title: 'Operations', status: 'away', lastSeen: '5m ago' },
+  ]);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [workspaces, setWorkspaces] = useState(defaultWorkspaces);
@@ -3000,7 +3007,7 @@ Rules:
     }
 
     event.preventDefault();
-    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'memory'];
+    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'people', 'memory'];
     const currentIndex = tabOrder.indexOf(activeRightTab);
     const safeIndex = currentIndex >= 0 ? currentIndex : 0;
     const nextIndex = event.key === 'ArrowRight'
@@ -6535,12 +6542,12 @@ Rules:
 
           {/* REGAARDER ROOM TAB */}
           {activeRightTab === 'room' && (
-            <div className="flex-1 flex flex-col min-h-0 bg-[#FAFAFC] animate-fade-in min-w-[340px] relative">
+            <div className="flex-1 flex flex-col min-h-0 bg-white animate-fade-in min-w-[340px] relative">
 
               {/* STATE: LOBBY */}
               {roomState === 'lobby' && (
-                <div className="flex-1 flex flex-col p-6 items-center justify-center text-center space-y-6 animate-fade-in">
-                  <div className="w-16 h-16 bg-violet-50 border-2 border-violet-100 rounded-2xl flex items-center justify-center text-violet-600 mb-2 shadow-sm">
+                <div className="flex-1 overflow-y-auto p-6 text-center space-y-6 animate-fade-in">
+                  <div className="w-16 h-16 bg-violet-50 border-2 border-violet-100 rounded-2xl flex items-center justify-center text-violet-600 mb-2 shadow-sm mx-auto">
                     <MonitorPlay size={32} className="ml-1" />
                   </div>
                   <div>
@@ -6548,12 +6555,29 @@ Rules:
                     <p className="text-xs text-gray-500 mt-2 leading-relaxed">Start, share, and rejoin a live collaborative call. Keep writing while your meeting stays active.</p>
                   </div>
 
+                  <div className="w-full max-w-[300px] p-1 bg-slate-100 rounded-2xl flex items-center gap-1 mx-auto">
+                    <button
+                      type="button"
+                      onClick={() => setRoomMode('meetings')}
+                      className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${roomMode === 'meetings' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                    >
+                      Meetings
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRoomMode('calls')}
+                      className={`flex-1 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${roomMode === 'calls' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
+                    >
+                      Calls (1:1)
+                    </button>
+                  </div>
+
                   <div className="w-full space-y-3 pt-4">
                     <button
                       onClick={() => openMeetingSetup(generateRoomCode())}
                       className="w-full bg-violet-600 text-white rounded-xl py-3 text-sm font-bold hover:bg-violet-700 transition-all flex items-center justify-center gap-2 active:scale-[0.98] shadow-sm"
                     >
-                      <Plus size={16} /> Create Meeting
+                      {roomMode === 'calls' ? <Video size={16} /> : <Plus size={16} />} {roomMode === 'calls' ? 'Start 1:1 Call' : 'Create Meeting'}
                     </button>
 
                     <button
@@ -6571,7 +6595,7 @@ Rules:
                         type="text"
                         value={joinCode}
                         onChange={(e) => setJoinCode(e.target.value)}
-                        placeholder="Enter room code or link..."
+                        placeholder={roomMode === 'calls' ? 'Enter call link or code...' : 'Enter room code or link...'}
                         className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-9 pr-10 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-50 transition-all shadow-sm"
                       />
                       <button
@@ -6588,6 +6612,36 @@ Rules:
                     </div>
                     <div className="text-[10px] text-gray-400 text-left">Meeting links accept direct codes or full URLs, like Meet-style joins.</div>
                   </div>
+
+                  {roomMode === 'calls' && (
+                    <div className="w-full pt-2 text-left">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Active Contacts</span>
+                      <div className="space-y-2">
+                        {platformContacts.filter((person) => person.status === 'active').slice(0, 3).map((person) => (
+                          <button
+                            key={person.id}
+                            type="button"
+                            onClick={() => openMeetingSetup(`call-${person.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                            className="w-full flex items-center justify-between gap-2 p-2.5 bg-white border border-gray-100 rounded-xl hover:border-violet-200 hover:bg-violet-50/30 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-700 text-xs font-semibold flex items-center justify-center">
+                                {person.name.split(' ').map((token) => token[0]).join('').slice(0, 2)}
+                              </div>
+                              <div className="text-left">
+                                <div className="text-xs font-semibold text-slate-800">{person.name}</div>
+                                <div className="text-[10px] text-slate-500">{person.title}</div>
+                              </div>
+                            </div>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-1">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                              Call
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="w-full pt-6 border-t border-gray-200/60 mt-6 text-left">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-3">Recent Rooms</span>
@@ -6841,6 +6895,56 @@ Rules:
             </div>
           )}
 
+          {activeRightTab === 'people' && (
+            <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-white animate-fade-in">
+              <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 to-white p-4">
+                <h3 className="text-sm font-bold text-gray-900">Platform Contacts</h3>
+                <p className="text-xs text-gray-500 mt-1">Everyone currently available to collaborate in Regaarder Compose.</p>
+              </div>
+
+              <div className="space-y-3">
+                {platformContacts.map((person) => (
+                  <div key={person.id} className="rounded-xl border border-gray-100 bg-white p-3 flex items-center justify-between gap-3 hover:border-violet-200 hover:shadow-sm transition-all">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center shrink-0">
+                        {person.name.split(' ').map((token) => token[0]).join('').slice(0, 2)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold text-gray-800 truncate">{person.name}</div>
+                        <div className="text-xs text-gray-500 truncate">{person.title}</div>
+                        <div className={`inline-flex items-center gap-1 mt-1 text-[10px] font-semibold rounded-full px-2 py-0.5 ${person.status === 'active' ? 'text-emerald-700 bg-emerald-50 border border-emerald-200' : 'text-amber-700 bg-amber-50 border border-amber-200'}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${person.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                          {person.status === 'active' ? 'Active' : 'Away'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => {
+                          setRoomMode('calls');
+                          openMeetingSetup(`call-${person.name.toLowerCase().replace(/\s+/g, '-')}`);
+                          setActiveRightTab('room');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg bg-violet-600 text-white text-[11px] font-semibold hover:bg-violet-700 transition-colors"
+                      >
+                        Call
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRoomMode('meetings');
+                          setActiveRightTab('room');
+                        }}
+                        className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-[11px] font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Invite
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {activeRightTab === 'memory' && (
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               <div>
@@ -7043,6 +7147,18 @@ Rules:
         </div>
 
         <div
+          onClick={() => handleMiniSidebarClick('people')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'people' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'people' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <Users size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">People</span>
+        </div>
+
+        <div
           onClick={() => handleMiniSidebarClick('memory')}
           className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
             activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
@@ -7071,13 +7187,6 @@ Rules:
             <File size={20} />
           </div>
           <span className="text-[9px] font-semibold">Files</span>
-        </div>
-
-        <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
-          <div className="p-2">
-            <Users size={20} />
-          </div>
-          <span className="text-[9px] font-semibold">People</span>
         </div>
 
         <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 cursor-pointer mt-auto">
