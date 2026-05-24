@@ -1973,6 +1973,59 @@ export default function App() {
       .join('');
   };
 
+  const buildDeckSlidesFallback = ({ promptText, aiText, sourceSlides = [] }) => {
+    const cleanedPrompt = String(promptText || '')
+      .replace(/attached files?:[\s\S]*$/i, '')
+      .replace(/^format:\s*/i, '')
+      .trim();
+    const cleanedAiText = String(aiText || '').trim();
+    const basis = cleanedAiText || cleanedPrompt || 'Presentation direction';
+    const lines = basis.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+    const headlineSeed = lines[0] || 'Presentation direction';
+    const detailSeed = lines.slice(1).join(' ') || 'Designed from your prompt and source files.';
+
+    if (Array.isArray(sourceSlides) && sourceSlides.length) {
+      return sourceSlides
+        .slice(0, 20)
+        .map((slide, index) => {
+          const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
+          return {
+            id: index + 1,
+            title: String(slide.title || `Slide ${index + 1}`),
+            subtitle: String(slide.subtitle || ''),
+            accent: 'from-violet-500 to-indigo-600',
+            designPresetKey: preset.key,
+            headline: String(slide.headline || slide.title || `Slide ${index + 1}`),
+            blurb: String(slide.blurb || slide.subtitle || detailSeed),
+            visualType: String(slide.visualType || 'hero statement'),
+            layoutStyle: String(slide.layoutStyle || 'cinematic split'),
+            motionCue: String(slide.motionCue || 'Soft fade and stagger reveal'),
+            keyMetric: String(slide.keyMetric || ''),
+            speakerNotes: String(slide.speakerNotes || ''),
+            section: String(slide.section || inferDeckStorySection(slide, index, sourceSlides.length)),
+            footer: 'Original design · Editable',
+          };
+        });
+    }
+
+    return [{
+      id: 1,
+      title: 'Slide 1',
+      subtitle: cleanedPrompt || 'AI-generated concept',
+      accent: 'from-violet-500 to-indigo-600',
+      designPresetKey: DECK_DESIGN_PRESETS[0].key,
+      headline: headlineSeed,
+      blurb: detailSeed,
+      visualType: 'hero statement',
+      layoutStyle: 'cinematic split',
+      motionCue: 'Soft fade and stagger reveal',
+      keyMetric: '',
+      speakerNotes: 'Open with the key objective, then transition to proof and outcomes.',
+      section: 'Opening',
+      footer: 'Original design · Editable',
+    }];
+  };
+
   const renderDocActionHtml = (action) => {
     if (!action) {
       return '';
@@ -2276,6 +2329,7 @@ export default function App() {
     let docAction = null;
     let usedLiveModel = false;
     let liveModelError = '';
+    let didGenerateDeckSlides = false;
 
     const actionSchema = {
       type: 'OBJECT',
@@ -2382,7 +2436,7 @@ Rules:
       if (modelResponse?.parsed) {
         usedLiveModel = true;
         const result = modelResponse.parsed;
-        aiResponseText = result.aiResponseText?.trim() || (result.docAction?.textParagraph ? String(result.docAction.textParagraph).trim() : 'Composed with live AI.');
+        aiResponseText = result.aiResponseText?.trim() || (result.docAction?.textParagraph ? String(result.docAction.textParagraph).trim() : (isDeckGeneration ? 'Deck AI is designing your slides.' : 'Composed with live AI.'));
 
         if (result.hasAction && result.docAction) {
           const rawType = String(result.docAction.type || '').toLowerCase();
@@ -2413,6 +2467,7 @@ Rules:
             if (generatedSlides.length) {
               setDeckSlidesData(generatedSlides);
               setActiveDeckSlideId(generatedSlides[0].id);
+              didGenerateDeckSlides = true;
               aiResponseText = result.aiResponseText?.trim() || `Created ${generatedSlides.length} slides from your request.`;
               showToast(`Generated ${generatedSlides.length} slides`);
             }
@@ -2448,6 +2503,21 @@ Rules:
               type: 'text',
               paragraph: result.docAction.textParagraph,
             };
+          }
+        }
+
+        if (isDeckGeneration && !didGenerateDeckSlides) {
+          const fallbackSlides = buildDeckSlidesFallback({
+            promptText,
+            aiText: result.aiResponseText || result.docAction?.textParagraph || modelResponse?.text,
+            sourceSlides: Array.isArray(result?.docAction?.deckSlides) ? result.docAction.deckSlides : [],
+          });
+          if (fallbackSlides.length) {
+            setDeckSlidesData(fallbackSlides);
+            setActiveDeckSlideId(fallbackSlides[0].id);
+            didGenerateDeckSlides = true;
+            aiResponseText = `Deck AI designed ${fallbackSlides.length} slide${fallbackSlides.length > 1 ? 's' : ''} from your request.`;
+            showToast(`Designed ${fallbackSlides.length} slide${fallbackSlides.length > 1 ? 's' : ''}`);
           }
         }
 
@@ -2544,10 +2614,7 @@ Rules:
   const handleSidebarSend = (e) => {
     e.preventDefault();
     if (!chatInput.trim() && !chatAttachments.length) return;
-    const attachmentSummary = chatAttachments.length
-      ? `\nAttached files: ${chatAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
-      : '';
-    const prompt = `${chatInput.trim() || 'Use attached files as context and answer the request.'}${attachmentSummary}`;
+    const prompt = chatInput.trim() || 'Use attached files as context and answer the request.';
     handleAISubmit(prompt, { source: 'chat', attachments: chatAttachments });
     setChatInput('');
     setChatAttachments([]);
@@ -5442,11 +5509,8 @@ Rules:
                           type="button"
                           onClick={() => {
                             const basePrompt = deckPromptInput.trim() || 'Analyze this sheet and propose insights.';
-                            const attachmentSummary = promptAttachments.length
-                              ? `\nAttached files: ${promptAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
-                              : '';
-                            handleAISubmit(`${basePrompt}${attachmentSummary}`, { source: 'chat', attachments: promptAttachments });
-                            setActiveRightTab('chat');
+                            handleAISubmit(basePrompt, { source: 'chat', attachments: promptAttachments });
+                            setActiveRightTab(productMode === 'deck' ? 'assistant' : 'chat');
                             setRightSidebarOpen(true);
                           }}
                           className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center"
@@ -5661,11 +5725,8 @@ Rules:
                       if ((!prompt && !promptAttachments.length) || isComposing) {
                         return;
                       }
-                      const attachmentSummary = promptAttachments.length
-                        ? `\nAttached files: ${promptAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
-                        : '';
-                      const finalPrompt = `${prompt || (isSheetsMode ? 'Analyze this sheet and produce insights.' : 'Generate content for this deck slide.')} ${attachmentSummary}`;
-                      setActiveRightTab('chat');
+                      const finalPrompt = prompt || (isSheetsMode ? 'Analyze this sheet and produce insights.' : 'Generate content for this deck slide.');
+                      setActiveRightTab(productMode === 'deck' ? 'assistant' : 'chat');
                       setRightSidebarOpen(true);
                       handleAISubmit(finalPrompt, { source: 'chat', attachments: promptAttachments });
                       setDeckPromptInput('');
@@ -5774,8 +5835,12 @@ Rules:
                           key={chip}
                           type="button"
                           onClick={() => {
-                            const formatPrompt = `Format: ${chip}.\n\n${deckPromptInput.trim() || (isSheetsMode ? 'Analyze this sheet and produce insights.' : 'Generate content for this deck slide.')}`;
-                            setDeckPromptInput(formatPrompt);
+                            if (isSheetsMode) {
+                              const formatPrompt = `Format: ${chip}.\n\n${deckPromptInput.trim() || 'Analyze this sheet and produce insights.'}`;
+                              setDeckPromptInput(formatPrompt);
+                              return;
+                            }
+                            setDeckPromptInput(chip);
                           }}
                           className="px-2.5 py-1.5 rounded-full text-xs border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-700"
                         >
@@ -5906,7 +5971,7 @@ Rules:
                           <div className={`p-3 rounded-2xl text-sm leading-relaxed ${msg.sender === 'user' ? 'bg-violet-600 text-white rounded-tr-xs shadow-sm' : 'bg-[#FAFAFC] text-gray-700 border border-gray-100 rounded-tl-xs shadow-xs'}`}>{msg.text}</div>
                         </div>
                       ))}
-                      {isComposing && <div className="flex items-center gap-2 text-xs text-gray-400 p-2 animate-pulse"><Loader2 className="animate-spin text-violet-500" size={14} /><span>Compose AI is writing...</span></div>}
+                      {isComposing && <div className="flex items-center gap-2 text-xs text-gray-400 p-2 animate-pulse"><Loader2 className="animate-spin text-violet-500" size={14} /><span>{productMode === 'deck' ? 'Deck AI is designing your slides...' : 'Compose AI is writing...'}</span></div>}
                       <div ref={chatEndRef} />
                     </div>
                     <form onSubmit={handleSidebarSend} className="p-3 border-t border-gray-100 bg-[#FAFAFC]">
@@ -8100,7 +8165,7 @@ Rules:
                 {isComposing && (
                   <div className="flex items-center gap-2 text-xs text-gray-400 p-2 animate-pulse">
                     <Loader2 className="animate-spin text-violet-500" size={14} />
-                    <span>Compose AI is writing...</span>
+                    <span>{productMode === 'deck' ? 'Deck AI is designing your slides...' : 'Compose AI is writing...'}</span>
                   </div>
                 )}
                 <div ref={chatEndRef} />
