@@ -36,6 +36,17 @@ const DECK_DESIGN_PRESETS = [
   },
 ];
 
+const createBlankDeckSlide = (id = 1) => ({
+  id,
+  title: `Slide ${id}`,
+  subtitle: '',
+  accent: 'from-indigo-500 to-violet-500',
+  designPresetKey: DECK_DESIGN_PRESETS[(Math.max(0, id - 1)) % DECK_DESIGN_PRESETS.length]?.key || DECK_DESIGN_PRESETS[0].key,
+  headline: '',
+  blurb: '',
+  footer: 'Original design · Editable',
+});
+
 // Sub-component to cleanly handle the local video stream without cluttering the main render
 const LocalVideoFeed = ({ stream, isCameraOn }) => {
   const videoRef = useRef(null);
@@ -138,18 +149,7 @@ export default function App() {
   const [deckToolbarFont, setDeckToolbarFont] = useState('Inter');
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
-  const [deckSlidesData, setDeckSlidesData] = useState([
-    { id: 1, title: 'Opening', subtitle: 'Problem worth solving', accent: 'from-indigo-500 to-violet-500' },
-    { id: 2, title: 'Opportunity', subtitle: 'The market shift', accent: 'from-sky-500 to-indigo-500' },
-    { id: 3, title: 'Solution', subtitle: 'Our approach', accent: 'from-cyan-500 to-blue-500' },
-    { id: 4, title: 'Product', subtitle: 'How it works', accent: 'from-amber-500 to-orange-500' },
-    { id: 5, title: 'Market Size', subtitle: 'Huge and growing', accent: 'from-violet-500 to-fuchsia-500' },
-    { id: 6, title: 'Business Model', subtitle: 'Sustainable and scalable', accent: 'from-emerald-500 to-teal-500' },
-    { id: 7, title: 'Traction', subtitle: 'Real progress', accent: 'from-blue-500 to-violet-500' },
-    { id: 8, title: 'Financials', subtitle: 'Unit economics', accent: 'from-fuchsia-500 to-pink-500' },
-    { id: 9, title: 'Team', subtitle: 'Built to win', accent: 'from-indigo-600 to-slate-600' },
-    { id: 10, title: 'Closing', subtitle: "Let's build the future", accent: 'from-violet-600 to-indigo-700' },
-  ]);
+  const [deckSlidesData, setDeckSlidesData] = useState([createBlankDeckSlide(1)]);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
@@ -2153,6 +2153,7 @@ export default function App() {
     const requestedLengthMode = String(options.lengthMode || 'words');
     const requestedLengthValue = Number(options.lengthValue || 220);
     const requestAttachments = Array.isArray(options.attachments) ? options.attachments : [];
+    const isDeckGeneration = productMode === 'deck' && source === 'chat';
 
     registerPromptHistory({
       text: promptText,
@@ -2198,6 +2199,18 @@ export default function App() {
           properties: {
             title: { type: 'STRING' },
             type: { type: 'STRING' },
+            deckSlides: {
+              type: 'ARRAY',
+              items: {
+                type: 'OBJECT',
+                properties: {
+                  title: { type: 'STRING' },
+                  subtitle: { type: 'STRING' },
+                  headline: { type: 'STRING' },
+                  blurb: { type: 'STRING' },
+                },
+              },
+            },
             timelineItems: {
               type: 'ARRAY',
               items: {
@@ -2230,10 +2243,20 @@ export default function App() {
       },
     };
 
-    try {
-      const modelResponse = await callGemini({
-        userPrompt: promptText,
-        systemPrompt: `You are Compose AI. Return JSON only.
+    const systemPrompt = isDeckGeneration
+      ? `You are Compose AI generating a full presentation deck. Return JSON only.
+Context title: ${deckTitle || 'Untitled deck'}.
+Requested output format: ${requestedFormat}.
+Tone style: ${requestedTone}.
+Length target: around ${requestedLengthValue} ${requestedLengthMode}.
+Rules:
+- Always set hasAction=true.
+- Set docAction.type="deck".
+- Provide docAction.title and docAction.deckSlides with 6-12 slides.
+- Each slide must include: title, subtitle, headline, blurb.
+- Headline should be punchy and brief. Blurb should be 1-3 concise sentences.
+- If attachments contain source material, summarize and transform it into slide content.`
+      : `You are Compose AI. Return JSON only.
 Context title: ${docTitle || 'Untitled'}.
 Context subtitle: ${docSubtitle || 'No subtitle'}.
 Requested output format: ${requestedFormat}.
@@ -2247,7 +2270,12 @@ Rules:
 - For chat-only questions, hasAction can be false and provide aiResponseText only.
 - Preserve paragraph structure for text outputs using meaningful line breaks.
 - Keep aiResponseText concise, actionable, and specific.
-- Do not simulate placeholders. Produce useful output.` ,
+- Do not simulate placeholders. Produce useful output.`;
+
+    try {
+      const modelResponse = await callGemini({
+        userPrompt: promptText,
+        systemPrompt,
         schema: actionSchema,
         attachments: requestAttachments,
       });
@@ -2261,7 +2289,31 @@ Rules:
 
         if (result.hasAction && result.docAction) {
           const rawType = String(result.docAction.type || '').toLowerCase();
-          if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
+          if (rawType === 'deck' && Array.isArray(result.docAction.deckSlides) && result.docAction.deckSlides.length) {
+            const generatedSlides = result.docAction.deckSlides
+              .map((slide, index) => {
+                const nextId = index + 1;
+                const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
+                return {
+                  id: nextId,
+                  title: String(slide?.title || `Slide ${nextId}`),
+                  subtitle: String(slide?.subtitle || ''),
+                  accent: 'from-violet-500 to-indigo-600',
+                  designPresetKey: preset.key,
+                  headline: String(slide?.headline || slide?.title || `Slide ${nextId}`),
+                  blurb: String(slide?.blurb || slide?.subtitle || ''),
+                  footer: 'Original design · Editable',
+                };
+              })
+              .slice(0, 20);
+
+            if (generatedSlides.length) {
+              setDeckSlidesData(generatedSlides);
+              setActiveDeckSlideId(generatedSlides[0].id);
+              aiResponseText = result.aiResponseText?.trim() || `Created ${generatedSlides.length} slides from your request.`;
+              showToast(`Generated ${generatedSlides.length} slides`);
+            }
+          } else if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
             docAction = {
               title: result.docAction.title || '??�?AI Timeline',
               type: 'timeline',
@@ -3133,6 +3185,7 @@ Rules:
     setCreationPickerOpen(false);
     setProductMode('deck');
     setDeckTitle('Untitled deck');
+    setDeckSlidesData([createBlankDeckSlide(1)]);
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
