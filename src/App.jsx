@@ -42,7 +42,6 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
 
   return (
     <video
-
       ref={videoRef}
       autoPlay
       muted
@@ -104,7 +103,7 @@ export default function App() {
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
   const [sheetsTitle, setSheetsTitle] = useState('Q2 Financial Overview');
   const [activeSheetId, setActiveSheetId] = useState(1);
-  const [sheetsData] = useState([
+  const [sheetsData, setSheetsData] = useState([
     { id: 1, title: 'Q2 Financial Overview', subtitle: 'Finance' },
     { id: 2, title: 'Revenue Breakdown', subtitle: 'Finance' },
     { id: 3, title: 'Profit & Loss', subtitle: 'Finance' },
@@ -4158,6 +4157,18 @@ Rules:
     setActiveDeckSlideId(nextId);
     showToast(`Slide ${nextId} created`);
   };
+  const addWorksheet = () => {
+    const nextId = (sheetsData[sheetsData.length - 1]?.id || 0) + 1;
+    const worksheet = {
+      id: nextId,
+      title: `Worksheet ${nextId}`,
+      subtitle: 'Custom',
+    };
+    setSheetsData((prev) => [...prev, worksheet]);
+    setActiveSheetId(nextId);
+    setSheetsTitle(worksheet.title);
+    showToast(`${worksheet.title} created`);
+  };
   const pageNumberPositionClass = pageNumberPosition === 'left'
     ? 'left-12 text-left'
     : pageNumberPosition === 'right'
@@ -4437,7 +4448,7 @@ Rules:
             })}
             <button
               type="button"
-              onClick={isSheetsMode ? () => showToast('Use + Add worksheet for new tabs.') : addDeckSlide}
+              onClick={isSheetsMode ? addWorksheet : addDeckSlide}
               className="w-full rounded-xl border border-dashed border-gray-300 py-2 text-xs font-medium text-gray-500 hover:border-violet-300 hover:text-violet-700"
             >
               {isSheetsMode ? '+ Add worksheet' : '+ New slide'}
@@ -4488,45 +4499,93 @@ Rules:
           </header>
 
           <div className="flex-1 min-h-0 p-4 flex gap-4">
-            <section className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col">
-              <div className="mx-auto w-full max-w-[860px]">
+            <section className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col overflow-y-auto thin-scrollbar">
+              <div className="mx-auto w-full max-w-[980px] pb-4">
                 {isSheetsMode ? (
                   <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)]">
                     <div className="px-4 py-3 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
                       <button className="px-2 py-1 rounded bg-white border border-gray-200">Data</button>
                       <button className="px-2 py-1 rounded bg-white border border-gray-200">Insert</button>
                       <button className="px-2 py-1 rounded bg-white border border-gray-200">Analyze</button>
+                      <button className="px-2 py-1 rounded bg-white border border-gray-200">Automate</button>
                       <button className="px-2 py-1 rounded bg-violet-50 border border-violet-200 text-violet-700">AI</button>
                     </div>
-                    <div className="p-4">
-                      <h2 className="text-3xl font-semibold text-gray-900 mb-1">{sheetsTitle}</h2>
-                      <p className="text-xs text-gray-500 mb-3">All numbers in USD</p>
-                      <div className="rounded-xl border border-gray-200 overflow-hidden">
-                        <table className="w-full text-xs">
-                          <thead className="bg-[#10162f] text-white">
-                            <tr>
-                              <th className="px-3 py-2 text-left">Category</th>
-                              <th className="px-3 py-2 text-left">Apr 2026</th>
-                              <th className="px-3 py-2 text-left">May 2026</th>
-                              <th className="px-3 py-2 text-left">Jun 2026</th>
-                              <th className="px-3 py-2 text-left">Q2 Total</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {[
-                              ['Revenue', '$1,250,000', '$1,480,000', '$1,720,000', '$4,450,000'],
-                              ['Cost of Goods Sold', '$420,000', '$470,000', '$520,000', '$1,410,000'],
-                              ['Gross Profit', '$830,000', '$1,010,000', '$1,200,000', '$3,040,000'],
-                              ['Operating Expenses', '$310,000', '$330,000', '$350,000', '$990,000'],
-                              ['Net Profit', '$520,000', '$680,000', '$850,000', '$2,050,000'],
-                            ].map((row) => (
-                              <tr key={row[0]} className="border-t border-gray-100">
-                                {row.map((cell) => <td key={`${row[0]}-${cell}`} className="px-3 py-2 text-gray-700">{cell}</td>)}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[11px] text-gray-500">
+                      <Search size={12} />
+                      <Undo2 size={12} />
+                      <Redo2 size={12} />
+                      <span className="mx-1">Inter</span>
+                      <span>10</span>
+                      <span className="font-semibold text-gray-700">B</span>
+                      <span>I</span>
+                      <span>U</span>
+                      <span className="ml-auto">More</span>
+                    </div>
+                    <div className="px-4 py-1.5 border-b border-gray-100 bg-white flex items-center gap-3 text-[11px] text-gray-600">
+                      <div className="w-10 text-center border border-gray-200 rounded bg-[#FAFAFC]">B2</div>
+                      <span className="text-gray-400">fx</span>
+                      <div className="flex-1 border border-gray-200 rounded bg-[#FAFAFC] px-2 py-1">=SUM(B2:F2)</div>
+                    </div>
+                    <div className="grid grid-cols-[48px_repeat(7,minmax(100px,1fr))] border-b border-gray-100 bg-[#FAFAFC] text-[11px] text-gray-500">
+                      <div className="h-8 border-r border-gray-100" />
+                      {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((col) => (
+                        <div key={col} className="h-8 flex items-center justify-center border-r border-gray-100 last:border-r-0">{col}</div>
+                      ))}
+                    </div>
+                    <div className="max-h-[440px] overflow-y-auto thin-scrollbar">
+                      <div className="grid grid-cols-[48px_1fr]">
+                        <div className="border-r border-gray-100 bg-[#FAFAFC]">
+                          {Array.from({ length: 22 }, (_, idx) => idx + 1).map((num) => (
+                            <div key={num} className="h-9 border-b border-gray-100 text-[11px] text-gray-500 flex items-center justify-center">{num}</div>
+                          ))}
+                        </div>
+                        <div>
+                          <div className="px-4 py-3 border-b border-gray-100">
+                            <h2 className="text-3xl font-semibold text-gray-900 mb-1">{sheetsTitle}</h2>
+                            <p className="text-xs text-gray-500">All numbers in USD</p>
+                          </div>
+                          <div className="rounded-xl border border-gray-200 overflow-hidden m-3">
+                            <table className="w-full text-xs">
+                              <thead className="bg-[#10162f] text-white">
+                                <tr>
+                                  <th className="px-3 py-2 text-left">Category</th>
+                                  <th className="px-3 py-2 text-left">Apr 2026</th>
+                                  <th className="px-3 py-2 text-left">May 2026</th>
+                                  <th className="px-3 py-2 text-left">Jun 2026</th>
+                                  <th className="px-3 py-2 text-left">Q2 Total</th>
+                                  <th className="px-3 py-2 text-left">% Change</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {[
+                                  ['Revenue', '$1,250,000', '$1,480,000', '$1,720,000', '$4,450,000', '+18.6%'],
+                                  ['Cost of Goods Sold', '$420,000', '$470,000', '$520,000', '$1,410,000', '+12.4%'],
+                                  ['Gross Profit', '$830,000', '$1,010,000', '$1,200,000', '$3,040,000', '+22.1%'],
+                                  ['Operating Expenses', '$310,000', '$330,000', '$350,000', '$990,000', '+8.7%'],
+                                  ['Net Profit', '$520,000', '$680,000', '$850,000', '$2,050,000', '+34.5%'],
+                                ].map((row) => (
+                                  <tr key={row[0]} className="border-t border-gray-100">
+                                    {row.map((cell) => <td key={`${row[0]}-${cell}`} className="px-3 py-2 text-gray-700">{cell}</td>)}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div className="m-3 grid grid-cols-3 gap-3">
+                            <div className="rounded-xl border border-gray-200 p-3"><div className="text-[11px] text-gray-500">Revenue Trend</div><div className="mt-3 h-20 bg-gradient-to-t from-violet-50 to-white border border-violet-100 rounded" /></div>
+                            <div className="rounded-xl border border-gray-200 p-3"><div className="text-[11px] text-gray-500">Expense Breakdown</div><div className="mt-3 h-20 rounded-full border-8 border-violet-200 w-20 mx-auto" /></div>
+                            <div className="rounded-xl border border-gray-200 p-3"><div className="text-[11px] text-gray-500">Net Profit Margin</div><div className="mt-3 h-20 bg-gradient-to-t from-emerald-50 to-white border border-emerald-100 rounded" /></div>
+                          </div>
+                        </div>
                       </div>
+                    </div>
+                    <div className="px-4 py-2 border-t border-gray-100 bg-white flex items-center gap-2 text-[11px]">
+                      {['Summary', 'Revenue', 'Expenses', 'Profit & Loss', 'Cash Flow', '+'].map((tab) => (
+                        <button key={tab} className={`px-2.5 py-1 rounded ${tab === 'Summary' ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'text-gray-500 hover:bg-gray-50'}`}>{tab}</button>
+                      ))}
+                    </div>
+                    <div className="px-4 py-3 border-t border-gray-100 bg-[#FAFAFC]">
+                      <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Ask anything about your data or tell Sheets what to do...</div>
                     </div>
                   </div>
                 ) : (
@@ -6389,7 +6448,7 @@ Rules:
 
         {!isComposing && (
           <div
-            className="pointer-events-none absolute inset-0 z-[300] flex items-center justify-center"
+            className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center"
             style={{ transform: `translate(${dictationOffset.x}px, ${dictationOffset.y}px)` }}
           >
             <div className="pointer-events-auto flex flex-col items-center gap-3">
