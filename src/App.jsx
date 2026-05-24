@@ -4169,6 +4169,73 @@ Rules:
     setSheetsTitle(worksheet.title);
     showToast(`${worksheet.title} created`);
   };
+  const escapeSvgText = (value) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const buildDeckPreviewDataUri = (slide) => {
+    const title = escapeSvgText(slide?.title || 'Untitled Slide');
+    const subtitle = escapeSvgText(slide?.subtitle || '');
+    const gradientMap = {
+      'from-indigo-500 to-violet-500': ['#6366f1', '#8b5cf6'],
+      'from-sky-500 to-indigo-500': ['#0ea5e9', '#6366f1'],
+      'from-cyan-500 to-blue-500': ['#06b6d4', '#3b82f6'],
+      'from-amber-500 to-orange-500': ['#f59e0b', '#f97316'],
+      'from-violet-500 to-fuchsia-500': ['#8b5cf6', '#d946ef'],
+      'from-emerald-500 to-teal-500': ['#10b981', '#14b8a6'],
+      'from-blue-500 to-violet-500': ['#3b82f6', '#8b5cf6'],
+      'from-fuchsia-500 to-pink-500': ['#d946ef', '#ec4899'],
+      'from-indigo-600 to-slate-600': ['#4f46e5', '#475569'],
+      'from-violet-600 to-indigo-700': ['#7c3aed', '#4338ca'],
+    };
+    const [c1, c2] = gradientMap[slide?.accent] || ['#6366f1', '#8b5cf6'];
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+      <rect width="320" height="192" rx="14" fill="url(#g)"/>
+      <rect x="10" y="10" width="64" height="10" rx="5" fill="rgba(255,255,255,0.35)"/>
+      <rect x="10" y="31" width="220" height="12" rx="6" fill="rgba(255,255,255,0.28)"/>
+      <rect x="10" y="49" width="180" height="10" rx="5" fill="rgba(255,255,255,0.22)"/>
+      <text x="12" y="110" font-size="20" font-family="Inter, Arial, sans-serif" fill="white" font-weight="600">${title}</text>
+      <text x="12" y="134" font-size="11" font-family="Inter, Arial, sans-serif" fill="rgba(255,255,255,0.85)">${subtitle}</text>
+      <rect x="12" y="154" width="170" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+      <rect x="12" y="166" width="136" height="6" rx="3" fill="rgba(255,255,255,0.38)"/>
+    </svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  };
+
+  const buildSheetPreviewDataUri = (sheet) => {
+    const title = escapeSvgText(sheet?.title || 'Untitled Sheet');
+    const subtitle = escapeSvgText(sheet?.subtitle || '');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+      <rect width="320" height="192" rx="14" fill="#ffffff"/>
+      <rect x="0" y="0" width="320" height="24" fill="#f8f9fd"/>
+      <rect x="0" y="24" width="320" height="1" fill="#e5e7eb"/>
+      <rect x="0" y="24" width="34" height="168" fill="#f8f9fd"/>
+      <rect x="34" y="24" width="1" height="168" fill="#e5e7eb"/>
+      <text x="42" y="16" font-size="10" font-family="Inter, Arial, sans-serif" fill="#6b7280">${title}</text>
+      <text x="260" y="16" font-size="9" font-family="Inter, Arial, sans-serif" fill="#9ca3af">${subtitle}</text>
+      <g stroke="#e5e7eb" stroke-width="1">
+        <line x1="34" y1="48" x2="320" y2="48"/>
+        <line x1="34" y1="72" x2="320" y2="72"/>
+        <line x1="34" y1="96" x2="320" y2="96"/>
+        <line x1="34" y1="120" x2="320" y2="120"/>
+        <line x1="34" y1="144" x2="320" y2="144"/>
+        <line x1="34" y1="168" x2="320" y2="168"/>
+        <line x1="75" y1="24" x2="75" y2="192"/>
+        <line x1="116" y1="24" x2="116" y2="192"/>
+        <line x1="157" y1="24" x2="157" y2="192"/>
+        <line x1="198" y1="24" x2="198" y2="192"/>
+        <line x1="239" y1="24" x2="239" y2="192"/>
+        <line x1="280" y1="24" x2="280" y2="192"/>
+      </g>
+      <rect x="75" y="48" width="41" height="24" fill="#ede9fe"/>
+      <rect x="116" y="72" width="41" height="24" fill="#f5f3ff"/>
+    </svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  };
   const handleGenerateSheetFilePrompt = () => {
     if (!isSheetsMode) {
       return;
@@ -4439,23 +4506,13 @@ Rules:
                   className={`w-full rounded-xl border p-2 text-left transition-colors ${isActive ? 'border-violet-300 bg-violet-50/70' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
                 >
                   <div className="flex items-start gap-2">
-                    <div className={`w-20 h-12 rounded-md shrink-0 relative overflow-hidden ${isSheetsMode ? 'bg-white border border-gray-200' : `bg-gradient-to-br ${item.accent} border border-white/30`}`}>
-                      {isSheetsMode ? (
-                        <>
-                          <div className="absolute inset-x-0 top-0 h-3 bg-[#f8f9fd] border-b border-gray-200" />
-                          <div className="absolute inset-0 top-3" style={{ backgroundImage: 'linear-gradient(to right, rgba(229,231,235,0.9) 1px, transparent 1px), linear-gradient(to bottom, rgba(229,231,235,0.9) 1px, transparent 1px)', backgroundSize: '12px 100%, 100% 8px' }} />
-                        </>
-                      ) : (
-                        <>
-                          <div className="absolute inset-0 bg-black/15" />
-                          <div className="absolute left-1.5 top-1.5 right-1.5 text-[7px] text-white/85 font-medium truncate">{item.title}</div>
-                          <div className="absolute left-1.5 top-4 right-1.5 space-y-1">
-                            <div className="h-[2px] rounded bg-white/80 w-10" />
-                            <div className="h-[2px] rounded bg-white/60 w-8" />
-                            <div className="h-[2px] rounded bg-white/45 w-11" />
-                          </div>
-                        </>
-                      )}
+                    <div className="w-20 h-12 rounded-md shrink-0 relative overflow-hidden border border-gray-200 bg-white">
+                      <img
+                        src={isSheetsMode ? buildSheetPreviewDataUri(item) : buildDeckPreviewDataUri(item)}
+                        alt={isSheetsMode ? `Sheet preview ${item.title}` : `Slide preview ${item.title}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
                     </div>
                     <div className="min-w-0">
                       <div className="text-[10px] text-gray-400">{String(item.id).padStart(2, '0')}</div>
