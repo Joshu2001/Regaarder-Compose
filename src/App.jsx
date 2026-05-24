@@ -118,6 +118,10 @@ export default function App() {
   const [deckPromptChips, setDeckPromptChips] = useState(['Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft']);
   const [deckCustomChip, setDeckCustomChip] = useState('');
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
+  const [deckZoomLevel, setDeckZoomLevel] = useState(100);
+  const [deckToolbarFont, setDeckToolbarFont] = useState('Inter');
+  const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
+  const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
   const [deckSlidesData, setDeckSlidesData] = useState([
     { id: 1, title: 'Opening', subtitle: 'Problem worth solving', accent: 'from-indigo-500 to-violet-500' },
     { id: 2, title: 'Opportunity', subtitle: 'The market shift', accent: 'from-sky-500 to-indigo-500' },
@@ -323,6 +327,7 @@ export default function App() {
   const sheetCanvasPreviewRef = useRef(null);
   const pageContextMenuRef = useRef(null);
   const sheetToolbarMenuRef = useRef(null);
+  const deckToolbarMenuRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -987,6 +992,9 @@ export default function App() {
       }
       if (sheetToolbarMenuRef.current && !sheetToolbarMenuRef.current.contains(event.target)) {
         setSheetToolbarMenuOpen(null);
+      }
+      if (deckToolbarMenuRef.current && !deckToolbarMenuRef.current.contains(event.target)) {
+        setDeckToolbarMenuOpen(false);
       }
     };
 
@@ -3171,6 +3179,10 @@ Rules:
     setProductMode('deck');
     setDeckTitle('Untitled deck');
     setActiveDeckSlideId(1);
+    setDeckZoomLevel(100);
+    setDeckToolbarFont('Inter');
+    setDeckToolbarMenuOpen(false);
+    setDeckContextRailTab('Design');
     setDeckPromptInput('');
     setDeckPromptMinimized(false);
     setDeckPromptChips(['Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft']);
@@ -5140,18 +5152,101 @@ Rules:
                     </div>
                   </div>
                 ) : (
-                  <div ref={deckCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
-                    <div className="relative p-8 md:p-12 bg-[radial-gradient(circle_at_78%_75%,rgba(255,146,126,0.38)_0%,rgba(31,35,74,0)_38%),radial-gradient(circle_at_24%_22%,rgba(120,119,198,0.55)_0%,rgba(14,17,42,0)_44%),linear-gradient(150deg,#090d2f_0%,#11163f_52%,#1d123a_100%)] min-h-[430px] flex flex-col justify-between">
-                      <div className="flex items-center justify-between text-[13px] text-indigo-100/90">
-                        <span className="font-medium">Regaarder</span>
-                        <span>Investor Pitch</span>
+                  <div className="space-y-3">
+                    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                      <div className="h-10 px-3 border-b border-gray-100 flex items-center gap-2 text-xs text-gray-600">
+                        <button className="p-1 rounded hover:bg-gray-100"><Home size={12} /></button>
+                        <ChevronRight size={11} className="text-gray-400" />
+                        <button className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 inline-flex items-center gap-1">
+                          <span>Untitled presentation</span>
+                          <ChevronDown size={11} />
+                        </button>
+                        <button type="button" onClick={addDeckSlide} className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 inline-flex items-center justify-center">
+                          <Plus size={12} />
+                        </button>
+                        <div className="ml-auto flex items-center gap-2">
+                          <button type="button" onClick={() => showToast('Undo not available in demo')} className="p-1 rounded hover:bg-gray-100"><Undo2 size={12} /></button>
+                          <button type="button" onClick={() => showToast('Redo not available in demo')} className="p-1 rounded hover:bg-gray-100"><Redo2 size={12} /></button>
+                          <button type="button" onClick={() => showToast('Present mode coming soon')} className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 inline-flex items-center gap-1">
+                            <MonitorPlay size={12} />
+                            <span>Present</span>
+                            <ChevronDown size={11} />
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <h1 className="text-5xl leading-[1.1] font-medium text-white max-w-[620px]">A new standard for intelligent productivity</h1>
-                        <p className="mt-5 text-indigo-100/85 text-2xl max-w-[540px]">Regaarder unifies thinking, creating, and teamwork in one adaptive workspace.</p>
+                      <div className="h-10 px-3 flex items-center gap-2 text-[11px] text-gray-600">
+                        {['Theme', 'Layout', 'Background'].map((option) => (
+                          <button key={option} type="button" onClick={() => showToast(`${option} panel opened`)} className="px-2 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50">{option}</button>
+                        ))}
+                        <div className="relative" ref={deckToolbarMenuRef}>
+                          <button
+                            type="button"
+                            onClick={() => setDeckToolbarMenuOpen((prev) => !prev)}
+                            className="inline-flex items-center gap-1 border border-gray-200 rounded px-2 py-1 bg-white hover:bg-gray-50"
+                          >
+                            <span>{deckToolbarFont}</span>
+                            <ChevronDown size={11} />
+                          </button>
+                          {deckToolbarMenuOpen && (
+                            <div className="absolute z-[420] top-full mt-1 left-0 w-28 rounded-lg border border-gray-200 bg-white shadow-lg p-1">
+                              {['Inter', 'Arial', 'Roboto', 'Lato', 'Georgia'].map((font) => (
+                                <button
+                                  key={font}
+                                  type="button"
+                                  onClick={() => {
+                                    setDeckToolbarFont(font);
+                                    setDeckToolbarMenuOpen(false);
+                                  }}
+                                  className={`w-full text-left px-2 py-1 rounded text-[11px] ${deckToolbarFont === font ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                  {font}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <button type="button" className="px-1.5 font-semibold">B</button>
+                        <button type="button" className="px-1.5 italic">I</button>
+                        <button type="button" className="px-1.5 underline">U</button>
+                        <button type="button" className="px-1.5">S</button>
+                        <span className="mx-1">|</span>
+                        <button type="button" onClick={() => showToast('Animate panel opened')} className="px-2 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50">Animate</button>
+                        <button type="button" onClick={() => showToast('More tools opened')} className="px-2 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50">More</button>
                       </div>
-                      <div className="absolute top-6 right-6 w-14 h-14 rounded-xl border border-dashed border-white/40 bg-white/5 flex items-center justify-center text-[10px] text-white/70">Logo</div>
-                      <div className="text-sm text-indigo-100/80">May 15, 2026 · Slide {activeDeckSlide.id}: {activeDeckSlide.title}</div>
+                    </div>
+
+                    <div ref={deckCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
+                      <div className="relative p-8 md:p-12 bg-[radial-gradient(circle_at_78%_75%,rgba(255,146,126,0.38)_0%,rgba(31,35,74,0)_38%),radial-gradient(circle_at_24%_22%,rgba(120,119,198,0.55)_0%,rgba(14,17,42,0)_44%),linear-gradient(150deg,#090d2f_0%,#11163f_52%,#1d123a_100%)] min-h-[430px] flex flex-col justify-between" style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
+                        <div className="flex items-center justify-between text-[13px] text-indigo-100/90" style={{ fontFamily: deckToolbarFont }}>
+                          <span className="font-medium">Regaarder</span>
+                          <span>Investor Pitch</span>
+                        </div>
+                        <div>
+                          <h1 className="text-5xl leading-[1.1] font-medium text-white max-w-[620px]" style={{ fontFamily: deckToolbarFont }}>The future of work is human + AI.</h1>
+                          <p className="mt-5 text-indigo-100/85 text-2xl max-w-[540px]" style={{ fontFamily: deckToolbarFont }}>An adaptive workspace that thinks with you, so you can create without limits.</p>
+                        </div>
+                        <div className="absolute top-6 right-6 w-14 h-14 rounded-xl border border-dashed border-white/40 bg-white/5 flex items-center justify-center text-[10px] text-white/70">Logo</div>
+                        <div className="text-sm text-indigo-100/80">May 15, 2026 · Slide {activeDeckSlide.id}: {activeDeckSlide.title}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-center">
+                      <div className="h-10 rounded-full border border-gray-200 bg-white px-3 flex items-center gap-2 text-xs text-gray-600">
+                        <button type="button" onClick={() => {
+                          const currentIndex = deckSlides.findIndex((slide) => slide.id === activeDeckSlide.id);
+                          if (currentIndex > 0) setActiveDeckSlideId(deckSlides[currentIndex - 1].id);
+                        }} className="p-1 rounded hover:bg-gray-100" title="Previous slide"><ChevronLeft size={14} /></button>
+                        <button type="button" onClick={() => showToast('Presentation mode coming soon')} className="p-1 rounded hover:bg-gray-100" title="Play"><MonitorPlay size={14} /></button>
+                        <button type="button" onClick={() => {
+                          const currentIndex = deckSlides.findIndex((slide) => slide.id === activeDeckSlide.id);
+                          if (currentIndex < deckSlides.length - 1) setActiveDeckSlideId(deckSlides[currentIndex + 1].id);
+                        }} className="p-1 rounded hover:bg-gray-100" title="Next slide"><ChevronRight size={14} /></button>
+                        <span className="mx-1 text-gray-300">|</span>
+                        <button type="button" onClick={() => setDeckZoomLevel((prev) => Math.max(50, prev - 10))} className="p-1 rounded hover:bg-gray-100" title="Zoom out">-</button>
+                        <span className="min-w-[42px] text-center">{deckZoomLevel}%</span>
+                        <button type="button" onClick={() => setDeckZoomLevel((prev) => Math.min(160, prev + 10))} className="p-1 rounded hover:bg-gray-100" title="Zoom in">+</button>
+                        <button type="button" onClick={() => setDeckZoomLevel(100)} className="p-1 rounded hover:bg-gray-100" title="Reset zoom"><Expand size={13} /></button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -5308,6 +5403,35 @@ Rules:
                 )}
               </div>
             </section>
+
+            {!isSheetsMode && (
+              <aside className="w-14 rounded-2xl border border-gray-200 bg-white py-3 px-1.5 flex flex-col items-center gap-3">
+                {[
+                  { label: 'Design', icon: PenTool },
+                  { label: 'Template', icon: LayoutGrid },
+                  { label: 'Elements', icon: ListTodo },
+                  { label: 'Media', icon: MonitorPlay },
+                  { label: 'Brand', icon: Sparkles },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isActive = deckContextRailTab === item.label;
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => {
+                        setDeckContextRailTab(item.label);
+                        showToast(`${item.label} panel opened`);
+                      }}
+                      className={`w-full rounded-xl py-2 flex flex-col items-center gap-1 text-[9px] transition-colors ${isActive ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'text-gray-500 hover:bg-gray-50 border border-transparent'}`}
+                    >
+                      <Icon size={14} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </aside>
+            )}
 
             <aside
               className={`shrink-0 rounded-2xl border border-gray-200 bg-white flex flex-col min-h-0 relative transition-[width] duration-300 ${rightSidebarOpen ? '' : 'w-0 overflow-hidden border-0'}`}
