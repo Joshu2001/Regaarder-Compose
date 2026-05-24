@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import './thin-scrollbar.css';
 
-const DEMO_GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_DEMO_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || '').trim();
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
 
@@ -232,15 +231,13 @@ export default function App() {
   const [previewAttachment, setPreviewAttachment] = useState(null);
   const [lastComposeRun, setLastComposeRun] = useState(null);
   const [liveSpeechInterimText, setLiveSpeechInterimText] = useState('');
-  const [apiMode, setApiMode] = useState('demo');
-  const [userApiKey, setUserApiKey] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
   const [memoryCaptureEnabled, setMemoryCaptureEnabled] = useState(true);
   const [memoryRetentionDays, setMemoryRetentionDays] = useState(90);
   const [memoryEntries, setMemoryEntries] = useState([]);
   const [memoryFilter, setMemoryFilter] = useState('all');
   const [memorySearch, setMemorySearch] = useState('');
   const [lastAiError, setLastAiError] = useState('');
+  const [aiBackendStatus, setAiBackendStatus] = useState({ state: 'idle', message: 'Not checked yet' });
   const [chatFeedbackDrafts, setChatFeedbackDrafts] = useState({});
   const [deckSnapshotPreviews, setDeckSnapshotPreviews] = useState({});
   const [sheetSnapshotPreviews, setSheetSnapshotPreviews] = useState({});
@@ -298,8 +295,6 @@ export default function App() {
   const calendarMenuRef = useRef(null);
   const formattingDropdownCloseTimerRef = useRef(null);
   const textStyleMenuCloseTimerRef = useRef(null);
-  const modelCandidatesCacheRef = useRef(null);
-  const modelCandidatesCacheKeyRef = useRef('');
   const didAutoJoinRoomRef = useRef(false);
   const dragStateRef = useRef({
     startX: 0,
@@ -508,8 +503,6 @@ export default function App() {
 
   useEffect(() => {
     try {
-      const storedApiMode = localStorage.getItem('rc.apiMode');
-      const storedApiKey = localStorage.getItem('rc.userApiKey');
       const storedCapture = localStorage.getItem('rc.memoryCapture');
       const storedRetention = localStorage.getItem('rc.memoryRetentionDays');
       const storedEntries = localStorage.getItem('rc.memoryEntries');
@@ -518,13 +511,6 @@ export default function App() {
       const storedPromptLengthMode = localStorage.getItem('rc.promptLengthMode');
       const storedPromptLengthValue = localStorage.getItem('rc.promptLengthValue');
       const storedEditorPrefs = localStorage.getItem('rc.editorPrefs');
-
-      if (storedApiMode === 'demo' || storedApiMode === 'byok') {
-        setApiMode(storedApiMode);
-      }
-      if (storedApiKey) {
-        setUserApiKey(storedApiKey);
-      }
       if (storedCapture === 'true' || storedCapture === 'false') {
         setMemoryCaptureEnabled(storedCapture === 'true');
       }
@@ -597,14 +583,6 @@ export default function App() {
       // noop
     }
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem('rc.apiMode', apiMode);
-  }, [apiMode]);
-
-  useEffect(() => {
-    localStorage.setItem('rc.userApiKey', userApiKey);
-  }, [userApiKey]);
 
   useEffect(() => {
     localStorage.setItem('rc.memoryCapture', String(memoryCaptureEnabled));
@@ -1926,13 +1904,6 @@ export default function App() {
     return `<h2 style="font-size:28px;line-height:1.2;margin-bottom:16px;">${title}</h2>${toParagraphHtml(action.paragraph || '')}`;
   };
 
-  const getActiveGeminiApiKey = () => {
-    if (apiMode === 'byok') {
-      return userApiKey.trim();
-    }
-    return DEMO_GEMINI_API_KEY.trim();
-  };
-
   const parseJsonSafely = (rawText) => {
     if (!rawText) {
       return null;
@@ -1954,162 +1925,77 @@ export default function App() {
     }
   };
 
-  const getGemini25ModelCandidates = async (apiKey) => {
-    const fallbackModels = ['gemini-2.5-flash', 'gemini-2.5-pro'];
-    if (!apiKey) {
-      return fallbackModels;
-    }
-
-    if (modelCandidatesCacheRef.current && modelCandidatesCacheKeyRef.current === apiKey) {
-      return modelCandidatesCacheRef.current;
-    }
-
+  const callGemini = async ({ userPrompt, systemPrompt, schema }) => {
     try {
-      const modelsResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
-      if (!modelsResponse.ok) {
-        modelCandidatesCacheRef.current = fallbackModels;
-        modelCandidatesCacheKeyRef.current = apiKey;
-        return fallbackModels;
+      setLastAiError('');
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userPrompt,
+          systemPrompt,
+          schema,
+        }),
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload?.ok) {
+        const reason = payload?.error || `HTTP ${response.status}`;
+        setLastAiError(reason);
+        return { error: reason };
       }
 
-      const modelsPayload = await modelsResponse.json();
-      const models = Array.isArray(modelsPayload?.models) ? modelsPayload.models : [];
-      const candidates = models
-        .filter((model) => {
-          const name = model?.name || '';
-          const methods = Array.isArray(model?.supportedGenerationMethods) ? model.supportedGenerationMethods : [];
-          return name.includes('models/gemini-2.5') && methods.includes('generateContent');
-        })
-        .map((model) => (model.name || '').replace('models/', ''))
-        .filter(Boolean);
+      const text = String(payload?.text || '').trim();
+      if (!text) {
+        const reason = 'Gemini returned an empty response.';
+        setLastAiError(reason);
+        return { error: reason };
+      }
 
-      const ranked = candidates
-        .sort((a, b) => {
-          const score = (model) => {
-            if (model.includes('flash')) return 0;
-            if (model.includes('pro')) return 1;
-            return 2;
-          };
-          return score(a) - score(b);
-        })
-        .filter((model, index, arr) => arr.indexOf(model) === index);
+      if (!schema) {
+        return { text, modelName: payload?.modelName || 'server-proxy' };
+      }
 
-      const resolvedModels = ranked.length ? ranked : [];
-      modelCandidatesCacheRef.current = resolvedModels;
-      modelCandidatesCacheKeyRef.current = apiKey;
-      return resolvedModels;
+      const parsed = payload?.parsed || parseJsonSafely(text);
+      if (!parsed) {
+        const reason = 'Gemini returned invalid JSON for the requested schema.';
+        setLastAiError(reason);
+        return { error: reason };
+      }
+
+      return {
+        text,
+        parsed,
+        modelName: payload?.modelName || 'server-proxy',
+      };
     } catch (_error) {
-      modelCandidatesCacheRef.current = fallbackModels;
-      modelCandidatesCacheKeyRef.current = apiKey;
-      return fallbackModels;
+      const reason = 'Failed to reach /api/gemini. In local development, run via `vercel dev` or deploy to Vercel.';
+      setLastAiError(reason);
+      return { error: reason };
     }
   };
 
-  const callGemini = async ({ userPrompt, systemPrompt, schema, overrideApiKey }) => {
-    const apiKey = (overrideApiKey || getActiveGeminiApiKey()).trim();
-    if (!apiKey) {
-      setLastAiError('Missing API key. Set VITE_GEMINI_DEMO_API_KEY or VITE_GEMINI_API_KEY in Vercel.');
-      return null;
-    }
-
-    const modelCandidates = await getGemini25ModelCandidates(apiKey);
-    let lastErrorMessage = '';
-
-    if (!modelCandidates.length) {
-      setLastAiError('No Gemini 2.5 generateContent model is enabled for this API key/project.');
-      return null;
-    }
-
-    setLastAiError('');
-
-    for (const modelName of modelCandidates) {
-      try {
-        const body = {
-          contents: [{ parts: [{ text: userPrompt }] }],
-          generationConfig: {
-            temperature: 0.5,
-            maxOutputTokens: 1200,
-          },
-        };
-
-        if (systemPrompt) {
-          body.systemInstruction = { parts: [{ text: systemPrompt }] };
-        }
-
-        if (schema) {
-          body.generationConfig.responseMimeType = 'application/json';
-          body.generationConfig.responseSchema = schema;
-        }
-
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(body),
-        });
-
-        if (!response.ok) {
-          try {
-            const errorBody = await response.json();
-            const providerMessage = errorBody?.error?.message || `HTTP ${response.status}`;
-            lastErrorMessage = `${modelName}: ${providerMessage}`;
-          } catch (_error) {
-            lastErrorMessage = `${modelName}: HTTP ${response.status}`;
-          }
-          continue;
-        }
-
-        const data = await response.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-
-        if (!text) {
-          continue;
-        }
-
-        if (!schema) {
-          return { text, modelName };
-        }
-
-        const parsed = parseJsonSafely(text);
-        if (parsed) {
-          return { text, parsed, modelName };
-        }
-      } catch (_error) {
-        lastErrorMessage = `${modelName}: network or CORS error`;
-        // try next model candidate
+  const checkAiBackendStatus = async () => {
+    try {
+      setAiBackendStatus({ state: 'checking', message: 'Checking backend status...' });
+      const response = await fetch('/api/ai-status');
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload?.ok) {
+        const reason = payload?.error || `HTTP ${response.status}`;
+        setAiBackendStatus({ state: 'error', message: reason });
+        return;
       }
+
+      if (payload.configured) {
+        setAiBackendStatus({ state: 'ok', message: 'Backend is configured. GEMINI_API_KEY is present.' });
+      } else {
+        setAiBackendStatus({ state: 'error', message: 'Backend is running, but GEMINI_API_KEY is missing.' });
+      }
+    } catch (_error) {
+      setAiBackendStatus({ state: 'error', message: 'Could not reach /api/ai-status. Use `vercel dev` locally or deploy to Vercel.' });
     }
-
-    if (lastErrorMessage) {
-      setLastAiError(lastErrorMessage);
-    }
-
-    return null;
-  };
-
-  const applyUserApiKey = async () => {
-    const trimmed = userApiKey.trim();
-    if (!trimmed) {
-      showToast('Paste an API key first');
-      return;
-    }
-
-    setUserApiKey(trimmed);
-    setApiMode('byok');
-
-    const probe = await callGemini({
-      userPrompt: 'Reply with exactly: API connected',
-      overrideApiKey: trimmed,
-    });
-    if (probe?.text) {
-      showToast('API key connected successfully');
-      trackMemoryAction('ai', 'Updated API key', { mode: 'byok', verified: true });
-      return;
-    }
-
-    showToast('API key saved. Verification failed, check key restrictions.');
-    trackMemoryAction('ai', 'Updated API key', { mode: 'byok', verified: false });
   };
 
   const memoryStats = useMemo(() => {
@@ -2218,7 +2104,7 @@ export default function App() {
     setIsComposing(true);
     trackMemoryAction('ai', 'Prompt sent to AI', {
       length: promptText.trim().length,
-      mode: apiMode,
+      mode: 'server',
       source,
       requestedFormat,
       tone: requestedTone,
@@ -2238,6 +2124,7 @@ export default function App() {
     let aiResponseText = '';
     let docAction = null;
     let usedLiveModel = false;
+    let liveModelError = '';
 
     const actionSchema = {
       type: 'OBJECT',
@@ -2302,6 +2189,8 @@ Rules:
         schema: actionSchema,
       });
 
+      liveModelError = String(modelResponse?.error || '');
+
       if (modelResponse?.parsed) {
         usedLiveModel = true;
         const result = modelResponse.parsed;
@@ -2359,13 +2248,10 @@ Rules:
     }
 
     if (!usedLiveModel) {
-      if (!getActiveGeminiApiKey()) {
-        aiResponseText = 'Live AI is not configured. Add a key in Memory tab or set VITE_GEMINI_DEMO_API_KEY or VITE_GEMINI_API_KEY in Vercel.';
-      } else {
-        aiResponseText = `Live AI request failed. ${lastAiError || 'Check API key restrictions, billing, and model access.'}`;
-      }
+      const failureReason = liveModelError || lastAiError || 'Check Vercel server env GEMINI_API_KEY, billing, and model access.';
+      aiResponseText = `Live AI request failed. ${failureReason}`;
       trackMemoryAction('ai', 'Live AI request failed', {
-        reason: lastAiError || 'Unknown provider error',
+        reason: failureReason,
       });
     }
 
@@ -3818,10 +3704,6 @@ Rules:
   };
 
   const enrichScheduleItemsWithAI = async (rawItems, fallbackItems) => {
-    if (!getActiveGeminiApiKey()) {
-      return fallbackItems;
-    }
-
     const schema = {
       type: 'OBJECT',
       properties: {
@@ -8620,58 +8502,29 @@ Rules:
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               <div>
                 <h3 className="text-sm font-bold text-gray-900 mb-1">AI Access + Memory</h3>
-                <p className="text-xs text-gray-500">Hybrid mode: demo API for instant use, plus your own API key option.</p>
+                <p className="text-xs text-gray-500">Secure mode: AI calls run through your Vercel server function.</p>
               </div>
 
               <div className="rounded-xl border border-gray-100 bg-[#FAFAFC] p-3 space-y-3">
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">API Mode</div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => setApiMode('demo')}
-                    className={`px-3 py-1.5 rounded-full text-xs border ${apiMode === 'demo' ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-white border-gray-200 text-gray-600'}`}
-                  >
-                    Demo API
-                  </button>
-                  <button
-                    onClick={() => setApiMode('byok')}
-                    className={`px-3 py-1.5 rounded-full text-xs border ${apiMode === 'byok' ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-white border-gray-200 text-gray-600'}`}
-                  >
-                    Use My API Key
-                  </button>
-                </div>
+                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">API Security</div>
                 <div className="text-[11px] text-gray-500 flex items-center gap-2">
                   <KeyRound size={12} />
-                  {apiMode === 'demo'
-                    ? (DEMO_GEMINI_API_KEY ? 'Demo API is configured.' : 'Demo API is missing (set VITE_GEMINI_DEMO_API_KEY or VITE_GEMINI_API_KEY).')
-                    : (userApiKey.trim() ? 'Your API key is stored locally in this browser.' : 'Paste your API key to enable live responses.')}
+                  Server-managed key expected: set `GEMINI_API_KEY` in Vercel project env.
                 </div>
-
-                <div className="flex items-center gap-2 min-w-0">
-                  <input
-                    type={showApiKey ? 'text' : 'password'}
-                    value={userApiKey}
-                    onChange={(e) => setUserApiKey(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        applyUserApiKey();
-                      }
-                    }}
-                    placeholder="Paste your Gemini API key"
-                    className="flex-1 min-w-0 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
-                  />
+                <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 leading-relaxed">
+                  Keep API keys out of client code. This app now sends prompts to `/api/gemini`, and only that server route reads `GEMINI_API_KEY`.
+                </div>
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setShowApiKey((prev) => !prev)}
-                    className="shrink-0 px-2 py-2 rounded-lg text-xs border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    onClick={checkAiBackendStatus}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
                   >
-                    {showApiKey ? 'Hide' : 'Show'}
+                    <RefreshCcw size={12} className={aiBackendStatus.state === 'checking' ? 'animate-spin' : ''} />
+                    Check AI Backend
                   </button>
-                  <button
-                    onClick={applyUserApiKey}
-                    className="shrink-0 px-2.5 py-2 rounded-lg text-xs bg-violet-600 text-white hover:bg-violet-700"
-                  >
-                    Apply
-                  </button>
+                  <div className={`text-[11px] ${aiBackendStatus.state === 'ok' ? 'text-emerald-600' : aiBackendStatus.state === 'error' ? 'text-rose-600' : 'text-gray-500'}`}>
+                    {aiBackendStatus.message}
+                  </div>
                 </div>
               </div>
 
