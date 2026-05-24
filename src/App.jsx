@@ -4167,7 +4167,7 @@ Rules:
   const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
   const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
-  const activeSheetGrid = getActiveSheetGrid();
+  const activeSheetGrid = sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
   const isSheetsMode = productMode === 'sheets';
   const addDeckSlide = () => {
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
@@ -4197,7 +4197,6 @@ Rules:
     setSheetsTitle(worksheet.title);
     showToast(`${worksheet.title} created`);
   };
-  const getActiveSheetGrid = () => sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
   const toColumnLabel = (index) => {
     let current = index + 1;
     let label = '';
