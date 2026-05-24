@@ -4169,6 +4169,14 @@ Rules:
     setSheetsTitle(worksheet.title);
     showToast(`${worksheet.title} created`);
   };
+  const handleGenerateSheetFilePrompt = () => {
+    if (!isSheetsMode) {
+      return;
+    }
+    addWorksheet();
+    setDeckPromptInput('Generate a new Sheets file with starter tabs: Summary, Revenue, Expenses, and Forecast. Fill each tab with clean table headers and starter formulas.');
+    setDeckPromptMinimized(false);
+  };
   const pageNumberPositionClass = pageNumberPosition === 'left'
     ? 'left-12 text-left'
     : pageNumberPosition === 'right'
@@ -4409,6 +4417,11 @@ Rules:
             <div className="text-[11px] text-gray-500 mt-1">{isSheetsMode ? 'Financial models' : 'Investor Pitch'}</div>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            {(isSheetsMode ? sheetsData : deckSlides).length === 0 && (
+              <div className="rounded-xl border border-dashed border-gray-300 bg-white p-3 text-xs text-gray-500">
+                {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet. Create one to see a live preview.'}
+              </div>
+            )}
             {(isSheetsMode ? sheetsData : deckSlides).map((item) => {
               const isActive = isSheetsMode ? item.id === activeSheetId : item.id === activeDeckSlideId;
               return (
@@ -4426,15 +4439,22 @@ Rules:
                   className={`w-full rounded-xl border p-2 text-left transition-colors ${isActive ? 'border-violet-300 bg-violet-50/70' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
                 >
                   <div className="flex items-start gap-2">
-                    <div className={`w-20 h-12 rounded-md ${isSheetsMode ? 'bg-white border border-gray-200' : `bg-gradient-to-br ${item.accent} border border-white/30`} shrink-0 relative overflow-hidden`}>
-                      <div className="absolute inset-0 bg-black/15" />
-                      <div className="absolute left-1.5 top-1.5 right-1.5">
-                        <div className={`h-1 w-8 rounded mb-1 ${isSheetsMode ? 'bg-violet-200' : 'bg-white/80'}`} />
-                        <div className={`h-1 w-10 rounded ${isSheetsMode ? 'bg-violet-100' : 'bg-white/55'}`} />
-                      </div>
-                      <div className={`absolute left-1.5 bottom-1.5 h-1 w-12 rounded ${isSheetsMode ? 'bg-gray-200' : 'bg-white/40'}`} />
-                      {isSheetsMode && (
-                        <div className="absolute inset-x-1.5 top-6 h-[1px] bg-gray-200" />
+                    <div className={`w-20 h-12 rounded-md shrink-0 relative overflow-hidden ${isSheetsMode ? 'bg-white border border-gray-200' : `bg-gradient-to-br ${item.accent} border border-white/30`}`}>
+                      {isSheetsMode ? (
+                        <>
+                          <div className="absolute inset-x-0 top-0 h-3 bg-[#f8f9fd] border-b border-gray-200" />
+                          <div className="absolute inset-0 top-3" style={{ backgroundImage: 'linear-gradient(to right, rgba(229,231,235,0.9) 1px, transparent 1px), linear-gradient(to bottom, rgba(229,231,235,0.9) 1px, transparent 1px)', backgroundSize: '12px 100%, 100% 8px' }} />
+                        </>
+                      ) : (
+                        <>
+                          <div className="absolute inset-0 bg-black/15" />
+                          <div className="absolute left-1.5 top-1.5 right-1.5 text-[7px] text-white/85 font-medium truncate">{item.title}</div>
+                          <div className="absolute left-1.5 top-4 right-1.5 space-y-1">
+                            <div className="h-[2px] rounded bg-white/80 w-10" />
+                            <div className="h-[2px] rounded bg-white/60 w-8" />
+                            <div className="h-[2px] rounded bg-white/45 w-11" />
+                          </div>
+                        </>
                       )}
                     </div>
                     <div className="min-w-0">
@@ -4564,17 +4584,52 @@ Rules:
                     </div>
                     <div className="px-4 py-3 border-t border-gray-100 bg-[#FAFAFC]">
                       <div className="rounded-2xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-gray-500 flex items-center gap-2">
-                        <button className="w-5 h-5 rounded-full text-gray-400 hover:bg-gray-100 flex items-center justify-center">+</button>
+                        <button
+                          type="button"
+                          onClick={() => promptFileInputRef.current?.click()}
+                          className="w-5 h-5 rounded-full text-gray-400 hover:bg-gray-100 flex items-center justify-center"
+                          title="Attach files"
+                        >
+                          +
+                        </button>
                         <span className="truncate flex-1">Ask anything about your data or tell Sheets what to do...</span>
                         {['Analyze this data', 'Create plot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year'].map((chip) => (
-                          <button key={chip} className="hidden md:inline-flex px-2 py-1 rounded-full border border-gray-200 text-[10px] text-gray-500 hover:border-violet-300 hover:text-violet-700">
+                          <button
+                            key={chip}
+                            type="button"
+                            onClick={() => {
+                              setDeckPromptInput(chip);
+                              setDeckPromptMinimized(false);
+                            }}
+                            className="hidden md:inline-flex px-2 py-1 rounded-full border border-gray-200 text-[10px] text-gray-500 hover:border-violet-300 hover:text-violet-700"
+                          >
                             {chip}
                           </button>
                         ))}
-                        <button className="w-5 h-5 rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await toggleVoiceRecording('chat');
+                          }}
+                          className="w-5 h-5 rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center"
+                          title="Voice prompt"
+                        >
                           <Mic size={12} />
                         </button>
-                        <button className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const basePrompt = deckPromptInput.trim() || 'Analyze this sheet and propose insights.';
+                            const attachmentSummary = promptAttachments.length
+                              ? `\nAttached files: ${promptAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
+                              : '';
+                            handleAISubmit(`${basePrompt}${attachmentSummary}`, { source: 'chat' });
+                            setActiveRightTab('chat');
+                            setRightSidebarOpen(true);
+                          }}
+                          className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center"
+                          title="Send to AI"
+                        >
                           <ArrowUp size={12} />
                         </button>
                       </div>
@@ -4598,23 +4653,26 @@ Rules:
                 )}
                 {!deckPromptMinimized && (
                   <form
-                    className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm cursor-grab active:cursor-grabbing"
+                    className="mt-4 rounded-[24px] border border-gray-200 bg-white/95 p-3 shadow-[0_16px_35px_-25px_rgba(15,23,42,0.6)] cursor-grab active:cursor-grabbing"
                     style={{ transform: `translate(${deckPromptOffset.x}px, ${deckPromptOffset.y}px)` }}
                     onPointerDown={(event) => beginPanelResize('deckPrompt', event)}
                     onSubmit={(event) => {
                       event.preventDefault();
                       const prompt = deckPromptInput.trim();
-                      if (!prompt || isComposing) {
+                      if ((!prompt && !promptAttachments.length) || isComposing) {
                         return;
                       }
+                      const attachmentSummary = promptAttachments.length
+                        ? `\nAttached files: ${promptAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
+                        : '';
+                      const finalPrompt = `${prompt || (isSheetsMode ? 'Analyze this sheet and produce insights.' : 'Generate content for this deck slide.')} ${attachmentSummary}`;
                       setActiveRightTab('chat');
                       setRightSidebarOpen(true);
-                      handleAISubmit(prompt, { source: 'chat' });
+                      handleAISubmit(finalPrompt, { source: 'chat' });
                       setDeckPromptInput('');
                     }}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-[11px] uppercase tracking-wide text-violet-600 font-semibold">AI Prompt Box</div>
+                    <div className="flex items-center justify-end mb-1.5">
                       <button
                         type="button"
                         onClick={() => setDeckPromptMinimized(true)}
@@ -4624,14 +4682,72 @@ Rules:
                         <X size={14} />
                       </button>
                     </div>
-                    <textarea
-                      value={deckPromptInput}
-                      onChange={(event) => setDeckPromptInput(event.target.value)}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      rows={3}
-                      placeholder={isSheetsMode ? 'Ask Sheets AI to analyze, model, or forecast...' : 'Ask AI Assistant from here...'}
-                      className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-violet-300"
-                    />
+                    <div className="rounded-full border border-gray-200 bg-[#fcfcfe] px-2 py-1.5 flex items-center gap-2">
+                      <input
+                        ref={promptFileInputRef}
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={(event) => {
+                          attachFilesToPrompt(event.target.files);
+                          event.target.value = '';
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={() => promptFileInputRef.current?.click()}
+                        className="w-7 h-7 rounded-full text-gray-500 hover:bg-gray-100 flex items-center justify-center"
+                        title="Attach images, docs, audio, or files"
+                      >
+                        <Plus size={14} />
+                      </button>
+                      <textarea
+                        value={deckPromptInput}
+                        onChange={(event) => setDeckPromptInput(event.target.value)}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        rows={1}
+                        placeholder={isSheetsMode ? 'Ask Sheets AI to analyze, model, or forecast...' : 'Ask AI to generate or refine this slide...'}
+                        className="flex-1 resize-none bg-transparent border-none text-sm outline-none px-1 py-1.5 min-h-[26px] max-h-[110px]"
+                      />
+                      <button
+                        type="button"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={async () => {
+                          await toggleVoiceRecording('chat');
+                        }}
+                        className="w-7 h-7 rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center"
+                        title="Voice prompt"
+                      >
+                        <Mic size={13} />
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isComposing || (!deckPromptInput.trim() && !promptAttachments.length)}
+                        className={`w-7 h-7 rounded-full text-white flex items-center justify-center ${isComposing || (!deckPromptInput.trim() && !promptAttachments.length) ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}`}
+                        title="Send to AI"
+                      >
+                        {isComposing ? <Loader2 size={13} className="animate-spin" /> : <ArrowUp size={13} />}
+                      </button>
+                    </div>
+                    {promptAttachments.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {promptAttachments.slice(0, 8).map((attachment) => (
+                          <button
+                            key={attachment.id}
+                            type="button"
+                            onPointerDown={(event) => event.stopPropagation()}
+                            onClick={() => removePromptAttachment(attachment.id)}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-600"
+                            title="Click to remove"
+                          >
+                            <File size={11} />
+                            <span className="truncate max-w-[130px]">{attachment.name}</span>
+                            <X size={11} className="text-gray-400" />
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
                       {deckPromptChips.map((chip) => (
                         <button
@@ -4646,6 +4762,18 @@ Rules:
                           {chip}
                         </button>
                       ))}
+                      {isSheetsMode && (
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleGenerateSheetFilePrompt();
+                          }}
+                          className="px-2.5 py-1.5 rounded-full text-xs border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                        >
+                          Generate new sheet file
+                        </button>
+                      )}
                       <div className="ml-auto flex items-center gap-1.5">
                         <input
                           type="text"
@@ -4671,15 +4799,6 @@ Rules:
                           Add
                         </button>
                       </div>
-                    </div>
-                    <div className="mt-2 flex items-center justify-end">
-                      <button
-                        type="submit"
-                        disabled={isComposing || !deckPromptInput.trim()}
-                        className={`px-3 h-8 rounded-lg text-xs font-medium ${isComposing || !deckPromptInput.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
-                      >
-                        Send to AI
-                      </button>
                     </div>
                   </form>
                 )}
