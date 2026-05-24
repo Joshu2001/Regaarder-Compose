@@ -240,6 +240,24 @@ export default function App() {
   const [chatFeedbackDrafts, setChatFeedbackDrafts] = useState({});
   const [deckSnapshotPreviews, setDeckSnapshotPreviews] = useState({});
   const [sheetSnapshotPreviews, setSheetSnapshotPreviews] = useState({});
+  const [sheetToolbarFont, setSheetToolbarFont] = useState('Inter');
+  const [sheetToolbarSize, setSheetToolbarSize] = useState(10);
+  const [sheetToolbarBold, setSheetToolbarBold] = useState(false);
+  const [sheetToolbarItalic, setSheetToolbarItalic] = useState(false);
+  const [sheetToolbarUnderline, setSheetToolbarUnderline] = useState(false);
+  const [sheetToolbarTab, setSheetToolbarTab] = useState('AI');
+  const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
+  const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
+  const [sheetGrids, setSheetGrids] = useState(() => {
+    const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
+    const result = {};
+    [
+      { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 },
+    ].forEach((item) => {
+      result[item.id] = { rows: 22, cols: 7, cells: makeCells(22, 7) };
+    });
+    return result;
+  });
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
@@ -302,6 +320,7 @@ export default function App() {
   const promptRevealTimerRef = useRef(null);
   const deckCanvasPreviewRef = useRef(null);
   const sheetCanvasPreviewRef = useRef(null);
+  const pageContextMenuRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -4148,6 +4167,7 @@ Rules:
   const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
   const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
+  const activeSheetGrid = getActiveSheetGrid();
   const isSheetsMode = productMode === 'sheets';
   const addDeckSlide = () => {
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
@@ -4169,9 +4189,204 @@ Rules:
       subtitle: 'Custom',
     };
     setSheetsData((prev) => [...prev, worksheet]);
+    setSheetGrids((prev) => ({
+      ...prev,
+      [nextId]: { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) },
+    }));
     setActiveSheetId(nextId);
     setSheetsTitle(worksheet.title);
     showToast(`${worksheet.title} created`);
+  };
+  const getActiveSheetGrid = () => sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+  const toColumnLabel = (index) => {
+    let current = index + 1;
+    let label = '';
+    while (current > 0) {
+      const rem = (current - 1) % 26;
+      label = String.fromCharCode(65 + rem) + label;
+      current = Math.floor((current - 1) / 26);
+    }
+    return label;
+  };
+  const updateSheetCell = (sheetId, rowIndex, colIndex, value) => {
+    setSheetGrids((prev) => {
+      const target = prev[sheetId];
+      if (!target) return prev;
+      const nextCells = target.cells.map((row) => [...row]);
+      if (!nextCells[rowIndex]) return prev;
+      nextCells[rowIndex][colIndex] = value;
+      return {
+        ...prev,
+        [sheetId]: {
+          ...target,
+          cells: nextCells,
+        },
+      };
+    });
+  };
+  const addSheetRow = () => {
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target) return prev;
+      const nextCols = target.cols;
+      return {
+        ...prev,
+        [activeSheetId]: {
+          ...target,
+          rows: target.rows + 1,
+          cells: [...target.cells.map((row) => [...row]), Array.from({ length: nextCols }, () => '')],
+        },
+      };
+    });
+  };
+  const removeSheetRow = () => {
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target || target.rows <= 1) return prev;
+      const nextCells = target.cells.slice(0, -1).map((row) => [...row]);
+      return {
+        ...prev,
+        [activeSheetId]: {
+          ...target,
+          rows: target.rows - 1,
+          cells: nextCells,
+        },
+      };
+    });
+    showToast('Last row removed');
+  };
+  const addSheetColumn = () => {
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target) return prev;
+      const nextCells = target.cells.map((row) => [...row, '']);
+      return {
+        ...prev,
+        [activeSheetId]: {
+          ...target,
+          cols: target.cols + 1,
+          cells: nextCells,
+        },
+      };
+    });
+  };
+  const removeSheetColumn = () => {
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target || target.cols <= 1) return prev;
+      const nextCells = target.cells.map((row) => row.slice(0, -1));
+      return {
+        ...prev,
+        [activeSheetId]: {
+          ...target,
+          cols: target.cols - 1,
+          cells: nextCells,
+        },
+      };
+    });
+    showToast('Last column removed');
+  };
+  const handlePageContextAction = (action) => {
+    const targetId = pageContextMenu.itemId;
+    const isTargetSheets = pageContextMenu.isSheets;
+    if (!targetId) {
+      setPageContextMenu((prev) => ({ ...prev, open: false }));
+      return;
+    }
+
+    if (action === 'add') {
+      if (isTargetSheets) {
+        addWorksheet();
+      } else {
+        addDeckSlide();
+      }
+    }
+
+    if (action === 'duplicate') {
+      if (isTargetSheets) {
+        const source = sheetsData.find((item) => item.id === targetId);
+        if (source) {
+          const nextId = (sheetsData[sheetsData.length - 1]?.id || 0) + 1;
+          const clone = { ...source, id: nextId, title: `${source.title} Copy` };
+          setSheetsData((prev) => [...prev, clone]);
+          const sourceGrid = sheetGrids[targetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+          setSheetGrids((prev) => ({
+            ...prev,
+            [nextId]: {
+              rows: sourceGrid.rows,
+              cols: sourceGrid.cols,
+              cells: sourceGrid.cells.map((row) => [...row]),
+            },
+          }));
+          setActiveSheetId(nextId);
+          setSheetsTitle(clone.title);
+          showToast('Worksheet duplicated');
+        }
+      } else {
+        const source = deckSlides.find((item) => item.id === targetId);
+        if (source) {
+          const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
+          const clone = { ...source, id: nextId, title: `${source.title} Copy` };
+          setDeckSlidesData((prev) => [...prev, clone]);
+          setActiveDeckSlideId(nextId);
+          showToast('Slide duplicated');
+        }
+      }
+    }
+
+    if (action === 'delete') {
+      if (isTargetSheets) {
+        setSheetsData((prev) => {
+          if (prev.length <= 1) {
+            showToast('At least one worksheet is required');
+            return prev;
+          }
+          const next = prev.filter((item) => item.id !== targetId);
+          if (activeSheetId === targetId && next[0]) {
+            setActiveSheetId(next[0].id);
+            setSheetsTitle(next[0].title);
+          }
+          return next;
+        });
+        setSheetGrids((prev) => {
+          const next = { ...prev };
+          delete next[targetId];
+          return next;
+        });
+      } else {
+        setDeckSlidesData((prev) => {
+          if (prev.length <= 1) {
+            showToast('At least one slide is required');
+            return prev;
+          }
+          const next = prev.filter((item) => item.id !== targetId);
+          if (activeDeckSlideId === targetId && next[0]) {
+            setActiveDeckSlideId(next[0].id);
+          }
+          return next;
+        });
+      }
+      showToast('Page deleted');
+    }
+
+    if (['copy', 'copyStyle', 'paste', 'hide', 'transition', 'lock', 'download', 'copyLink', 'notes', 'resize', 'editVideo'].includes(action)) {
+      const actionLabels = {
+        copy: 'Copied',
+        copyStyle: 'Style copied',
+        paste: 'Pasted',
+        hide: 'Page hidden',
+        transition: 'Transition added',
+        lock: 'Page locked',
+        download: 'Page download started',
+        copyLink: 'Page link copied',
+        notes: 'Notes opened',
+        resize: 'Resize options opened',
+        editVideo: 'Video editor opened',
+      };
+      showToast(actionLabels[action] || 'Done');
+    }
+
+    setPageContextMenu((prev) => ({ ...prev, open: false }));
   };
   const escapeSvgText = (value) => String(value || '')
     .replace(/&/g, '&amp;')
@@ -4253,6 +4468,37 @@ Rules:
     : pageNumberPosition === 'right'
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
+
+  useEffect(() => {
+    setSheetGrids((prev) => {
+      const next = { ...prev };
+      sheetsData.forEach((sheet) => {
+        if (!next[sheet.id]) {
+          next[sheet.id] = { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+        }
+      });
+      Object.keys(next).forEach((key) => {
+        const id = Number(key);
+        if (!sheetsData.some((sheet) => sheet.id === id)) {
+          delete next[id];
+        }
+      });
+      return next;
+    });
+  }, [sheetsData]);
+
+  useEffect(() => {
+    if (!pageContextMenu.open) {
+      return undefined;
+    }
+    const onPointerDown = (event) => {
+      if (pageContextMenuRef.current && !pageContextMenuRef.current.contains(event.target)) {
+        setPageContextMenu((prev) => ({ ...prev, open: false }));
+      }
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, [pageContextMenu.open]);
 
   useEffect(() => {
     let cancelled = false;
@@ -4560,6 +4806,16 @@ Rules:
                 <button
                   key={item.id}
                   type="button"
+                  onContextMenu={(event) => {
+                    event.preventDefault();
+                    setPageContextMenu({
+                      open: true,
+                      x: event.clientX,
+                      y: event.clientY,
+                      itemId: item.id,
+                      isSheets: isSheetsMode,
+                    });
+                  }}
                   onClick={() => {
                     if (isSheetsMode) {
                       setActiveSheetId(item.id);
@@ -4648,55 +4904,108 @@ Rules:
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)]">
                     <div className="px-4 py-3 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
-                      <button className="px-2 py-1 rounded bg-white border border-gray-200">Data</button>
-                      <button className="px-2 py-1 rounded bg-white border border-gray-200">Insert</button>
-                      <button className="px-2 py-1 rounded bg-white border border-gray-200">Analyze</button>
-                      <button className="px-2 py-1 rounded bg-white border border-gray-200">Automate</button>
-                      <button className="px-2 py-1 rounded bg-violet-50 border border-violet-200 text-violet-700">AI</button>
+                      {['Data', 'Insert', 'Analyze', 'Automate', 'AI'].map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => {
+                            setSheetToolbarTab(tab);
+                            showToast(`${tab} tools ready`);
+                          }}
+                          className={`px-2 py-1 rounded border ${sheetToolbarTab === tab ? 'bg-violet-50 border-violet-200 text-violet-700' : 'bg-white border-gray-200'}`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
                     </div>
                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[11px] text-gray-500">
                       <Search size={12} />
-                      <Undo2 size={12} />
-                      <Redo2 size={12} />
-                      <span className="mx-1">Inter</span>
-                      <span>10</span>
-                      <span className="font-semibold text-gray-700">B</span>
-                      <span>I</span>
-                      <span>U</span>
+                      <button type="button" onClick={() => showToast('Undo not available in demo')}><Undo2 size={12} /></button>
+                      <button type="button" onClick={() => showToast('Redo not available in demo')}><Redo2 size={12} /></button>
+                      <select
+                        value={sheetToolbarFont}
+                        onChange={(event) => setSheetToolbarFont(event.target.value)}
+                        className="border border-gray-200 rounded px-1.5 py-0.5 bg-white text-[11px]"
+                      >
+                        {['Inter', 'Arial', 'Roboto', 'Lato', 'Georgia'].map((font) => (
+                          <option key={font} value={font}>{font}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={sheetToolbarSize}
+                        onChange={(event) => setSheetToolbarSize(Number(event.target.value) || 10)}
+                        className="border border-gray-200 rounded px-1 py-0.5 bg-white text-[11px]"
+                      >
+                        {[8, 9, 10, 11, 12, 14, 16, 18].map((size) => (
+                          <option key={size} value={size}>{size}</option>
+                        ))}
+                      </select>
+                      <button type="button" onClick={() => setSheetToolbarBold((prev) => !prev)} className={`px-1 ${sheetToolbarBold ? 'font-bold text-gray-800' : ''}`}>B</button>
+                      <button type="button" onClick={() => setSheetToolbarItalic((prev) => !prev)} className={`px-1 ${sheetToolbarItalic ? 'italic text-gray-800' : ''}`}>I</button>
+                      <button type="button" onClick={() => setSheetToolbarUnderline((prev) => !prev)} className={`px-1 ${sheetToolbarUnderline ? 'underline text-gray-800' : ''}`}>U</button>
                       <span className="mx-1">-</span>
                       <span className="mx-1">=</span>
                       <span className="mx-1">...</span>
                       <span className="mx-1">$</span>
                       <span className="mx-1">%</span>
                       <span className="mx-1">.0</span>
+                      <button type="button" onClick={addSheetRow} className="px-1.5 py-0.5 border border-gray-200 rounded bg-gray-50">+ Row</button>
+                      <button type="button" onClick={removeSheetRow} className="px-1.5 py-0.5 border border-gray-200 rounded bg-gray-50">- Row</button>
+                      <button type="button" onClick={addSheetColumn} className="px-1.5 py-0.5 border border-gray-200 rounded bg-gray-50">+ Col</button>
+                      <button type="button" onClick={removeSheetColumn} className="px-1.5 py-0.5 border border-gray-200 rounded bg-gray-50">- Col</button>
                       <span className="ml-auto">More</span>
                     </div>
                     <div className="px-4 py-1.5 border-b border-gray-100 bg-white flex items-center gap-3 text-[11px] text-gray-600">
-                      <div className="w-10 text-center border border-gray-200 rounded bg-[#FAFAFC]">B2</div>
+                      <div className="w-12 text-center border border-gray-200 rounded bg-[#FAFAFC]">{toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}{selectedSheetCell.row}</div>
                       <span className="text-gray-400">fx</span>
-                      <div className="flex-1 border border-gray-200 rounded bg-[#FAFAFC] px-2 py-1">=SUM(B2:F2)</div>
+                      <input
+                        type="text"
+                        value={activeSheetGrid.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || ''}
+                        onChange={(event) => updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, event.target.value)}
+                        className="flex-1 border border-gray-200 rounded bg-[#FAFAFC] px-2 py-1"
+                        placeholder="Enter value or formula"
+                      />
                     </div>
-                    <div className="grid grid-cols-[48px_repeat(7,minmax(100px,1fr))] border-b border-gray-100 bg-[#FAFAFC] text-[11px] text-gray-500">
+                    <div
+                      className="grid border-b border-gray-100 bg-[#FAFAFC] text-[11px] text-gray-500"
+                      style={{ gridTemplateColumns: `48px repeat(${activeSheetGrid.cols}, minmax(100px, 1fr))` }}
+                    >
                       <div className="h-8 border-r border-gray-100" />
-                      {['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((col) => (
+                      {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col) => (
                         <div key={col} className="h-8 flex items-center justify-center border-r border-gray-100 last:border-r-0">{col}</div>
                       ))}
                     </div>
                     <div className="max-h-[440px] overflow-y-auto thin-scrollbar">
                       <div className="grid grid-cols-[48px_1fr]">
                         <div className="border-r border-gray-100 bg-[#FAFAFC]">
-                          {Array.from({ length: 22 }, (_, idx) => idx + 1).map((num) => (
+                          {Array.from({ length: activeSheetGrid.rows }, (_, idx) => idx + 1).map((num) => (
                             <div key={num} className="h-9 border-b border-gray-100 text-[11px] text-gray-500 flex items-center justify-center">{num}</div>
                           ))}
                         </div>
-                        <div className="grid grid-cols-7">
-                          {Array.from({ length: 22 }).map((_, rowIndex) => (
-                            Array.from({ length: 7 }).map((__, colIndex) => (
-                              <div
-                                key={`${rowIndex + 1}-${colIndex + 1}`}
-                                className="h-9 border-b border-r border-gray-100 last:border-r-0 bg-white"
-                              />
-                            ))
+                        <div
+                          className="grid"
+                          style={{ gridTemplateColumns: `repeat(${activeSheetGrid.cols}, minmax(100px, 1fr))` }}
+                        >
+                          {Array.from({ length: activeSheetGrid.rows }).flatMap((_, rowIndex) => (
+                            Array.from({ length: activeSheetGrid.cols }).map((__, colIndex) => {
+                              const isSelected = selectedSheetCell.row === rowIndex + 1 && selectedSheetCell.col === colIndex + 1;
+                              return (
+                                <input
+                                  key={`${rowIndex + 1}-${colIndex + 1}`}
+                                  value={activeSheetGrid.cells?.[rowIndex]?.[colIndex] || ''}
+                                  onFocus={() => setSelectedSheetCell({ row: rowIndex + 1, col: colIndex + 1 })}
+                                  onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
+                                  className={`h-9 border-b border-r border-gray-100 px-2 text-xs bg-white focus:outline-none ${isSelected ? 'ring-1 ring-violet-300' : ''}`}
+                                  style={{
+                                    fontFamily: sheetToolbarFont,
+                                    fontSize: `${sheetToolbarSize}px`,
+                                    fontWeight: sheetToolbarBold ? 700 : 400,
+                                    fontStyle: sheetToolbarItalic ? 'italic' : 'normal',
+                                    textDecoration: sheetToolbarUnderline ? 'underline' : 'none',
+                                  }}
+                                />
+                              );
+                            }),
                           ))}
                         </div>
                       </div>
@@ -5051,6 +5360,44 @@ Rules:
             </aside>
           </div>
         </main>
+
+        {pageContextMenu.open && (
+          <div
+            ref={pageContextMenuRef}
+            className="fixed z-[700] w-[260px] rounded-xl border border-gray-200 bg-white shadow-[0_18px_45px_-24px_rgba(15,23,42,0.65)] p-2"
+            style={{ left: Math.max(12, pageContextMenu.x - 20), top: Math.max(12, pageContextMenu.y - 12) }}
+          >
+            <div className="px-2 py-2 border-b border-gray-100">
+              <div className="text-[13px] font-semibold text-gray-900">{pageContextMenu.isSheets ? 'Add worksheet title' : 'Add page title'}</div>
+            </div>
+            {[
+              { key: 'copy', label: 'Copy', shortcut: 'Ctrl+C' },
+              { key: 'copyStyle', label: 'Copy page style', shortcut: '' },
+              { key: 'paste', label: 'Paste', shortcut: 'Ctrl+V' },
+              { key: 'duplicate', label: 'Duplicate page', shortcut: 'Ctrl+D' },
+              { key: 'delete', label: 'Delete page', shortcut: 'Delete' },
+              { key: 'add', label: 'Add page', shortcut: 'Ctrl+Enter' },
+              { key: 'hide', label: 'Hide page', shortcut: '' },
+              { key: 'transition', label: 'Add transition', shortcut: '' },
+              { key: 'lock', label: 'Lock page', shortcut: 'Alt+Shift+L' },
+              { key: 'download', label: 'Download page', shortcut: '' },
+              { key: 'copyLink', label: 'Copy link to this page', shortcut: '' },
+              { key: 'notes', label: 'Notes', shortcut: '' },
+              { key: 'resize', label: 'Resize page', shortcut: '' },
+              { key: 'editVideo', label: 'Edit as video', shortcut: '' },
+            ].map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => handlePageContextAction(item.key)}
+                className="w-full flex items-center justify-between px-2 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
+              >
+                <span>{item.label}</span>
+                {item.shortcut ? <span className="text-[11px] text-gray-400">{item.shortcut}</span> : <span />}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto thin-scrollbar">
           <div
