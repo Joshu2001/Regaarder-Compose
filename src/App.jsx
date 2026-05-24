@@ -4519,6 +4519,12 @@ Rules:
                       <span className="font-semibold text-gray-700">B</span>
                       <span>I</span>
                       <span>U</span>
+                      <span className="mx-1">-</span>
+                      <span className="mx-1">=</span>
+                      <span className="mx-1">...</span>
+                      <span className="mx-1">$</span>
+                      <span className="mx-1">%</span>
+                      <span className="mx-1">.0</span>
                       <span className="ml-auto">More</span>
                     </div>
                     <div className="px-4 py-1.5 border-b border-gray-100 bg-white flex items-center gap-3 text-[11px] text-gray-600">
@@ -4539,43 +4545,15 @@ Rules:
                             <div key={num} className="h-9 border-b border-gray-100 text-[11px] text-gray-500 flex items-center justify-center">{num}</div>
                           ))}
                         </div>
-                        <div>
-                          <div className="px-4 py-3 border-b border-gray-100">
-                            <h2 className="text-3xl font-semibold text-gray-900 mb-1">{sheetsTitle}</h2>
-                            <p className="text-xs text-gray-500">All numbers in USD</p>
-                          </div>
-                          <div className="rounded-xl border border-gray-200 overflow-hidden m-3">
-                            <table className="w-full text-xs">
-                              <thead className="bg-[#10162f] text-white">
-                                <tr>
-                                  <th className="px-3 py-2 text-left">Category</th>
-                                  <th className="px-3 py-2 text-left">Apr 2026</th>
-                                  <th className="px-3 py-2 text-left">May 2026</th>
-                                  <th className="px-3 py-2 text-left">Jun 2026</th>
-                                  <th className="px-3 py-2 text-left">Q2 Total</th>
-                                  <th className="px-3 py-2 text-left">% Change</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {[
-                                  ['Revenue', '$1,250,000', '$1,480,000', '$1,720,000', '$4,450,000', '+18.6%'],
-                                  ['Cost of Goods Sold', '$420,000', '$470,000', '$520,000', '$1,410,000', '+12.4%'],
-                                  ['Gross Profit', '$830,000', '$1,010,000', '$1,200,000', '$3,040,000', '+22.1%'],
-                                  ['Operating Expenses', '$310,000', '$330,000', '$350,000', '$990,000', '+8.7%'],
-                                  ['Net Profit', '$520,000', '$680,000', '$850,000', '$2,050,000', '+34.5%'],
-                                ].map((row) => (
-                                  <tr key={row[0]} className="border-t border-gray-100">
-                                    {row.map((cell) => <td key={`${row[0]}-${cell}`} className="px-3 py-2 text-gray-700">{cell}</td>)}
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                          <div className="m-3 grid grid-cols-3 gap-3">
-                            <div className="rounded-xl border border-gray-200 p-3"><div className="text-[11px] text-gray-500">Revenue Trend</div><div className="mt-3 h-20 bg-gradient-to-t from-violet-50 to-white border border-violet-100 rounded" /></div>
-                            <div className="rounded-xl border border-gray-200 p-3"><div className="text-[11px] text-gray-500">Expense Breakdown</div><div className="mt-3 h-20 rounded-full border-8 border-violet-200 w-20 mx-auto" /></div>
-                            <div className="rounded-xl border border-gray-200 p-3"><div className="text-[11px] text-gray-500">Net Profit Margin</div><div className="mt-3 h-20 bg-gradient-to-t from-emerald-50 to-white border border-emerald-100 rounded" /></div>
-                          </div>
+                        <div className="grid grid-cols-7">
+                          {Array.from({ length: 22 }).map((_, rowIndex) => (
+                            Array.from({ length: 7 }).map((__, colIndex) => (
+                              <div
+                                key={`${rowIndex + 1}-${colIndex + 1}`}
+                                className="h-9 border-b border-r border-gray-100 last:border-r-0 bg-white"
+                              />
+                            ))
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -4585,7 +4563,21 @@ Rules:
                       ))}
                     </div>
                     <div className="px-4 py-3 border-t border-gray-100 bg-[#FAFAFC]">
-                      <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-500">Ask anything about your data or tell Sheets what to do...</div>
+                      <div className="rounded-2xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-gray-500 flex items-center gap-2">
+                        <button className="w-5 h-5 rounded-full text-gray-400 hover:bg-gray-100 flex items-center justify-center">+</button>
+                        <span className="truncate flex-1">Ask anything about your data or tell Sheets what to do...</span>
+                        {['Analyze this data', 'Create plot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year'].map((chip) => (
+                          <button key={chip} className="hidden md:inline-flex px-2 py-1 rounded-full border border-gray-200 text-[10px] text-gray-500 hover:border-violet-300 hover:text-violet-700">
+                            {chip}
+                          </button>
+                        ))}
+                        <button className="w-5 h-5 rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center">
+                          <Mic size={12} />
+                        </button>
+                        <button className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center">
+                          <ArrowUp size={12} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ) : (
