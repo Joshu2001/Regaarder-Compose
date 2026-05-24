@@ -1680,7 +1680,6 @@ export default function App() {
       type: 'welcome',
     },
   ]);
-  const [activeChatThreadId, setActiveChatThreadId] = useState('thread-main');
 
   // Handle status cycle on initiatives
   const toggleStatus = (id) => {
@@ -1943,9 +1942,50 @@ export default function App() {
     }
   };
 
-  const callGemini = async ({ userPrompt, systemPrompt, schema }) => {
+  const toBase64 = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const value = String(reader.result || '');
+      const marker = 'base64,';
+      const index = value.indexOf(marker);
+      resolve(index >= 0 ? value.slice(index + marker.length) : value);
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+
+  const encodePromptAttachments = async (attachments = []) => {
+    const maxAttachmentBytes = 12 * 1024 * 1024;
+    const encoded = [];
+    for (const item of attachments) {
+      const file = item?.file;
+      if (!file) {
+        continue;
+      }
+      if ((file.size || 0) > maxAttachmentBytes) {
+        continue;
+      }
+      try {
+        const data = await toBase64(file);
+        if (!data) {
+          continue;
+        }
+        encoded.push({
+          name: item?.name || file.name || 'attachment',
+          mimeType: item?.type || file.type || 'application/octet-stream',
+          data,
+        });
+      } catch (_error) {
+        // Skip unreadable files.
+      }
+    }
+    return encoded.slice(0, 8);
+  };
+
+  const callGemini = async ({ userPrompt, systemPrompt, schema, attachments = [] }) => {
     try {
       setLastAiError('');
+      const encodedAttachments = await encodePromptAttachments(attachments);
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
@@ -1955,6 +1995,7 @@ export default function App() {
           userPrompt,
           systemPrompt,
           schema,
+          attachments: encodedAttachments,
         }),
       });
 
@@ -2111,6 +2152,7 @@ export default function App() {
     const requestedTone = String(options.tone || 'normal');
     const requestedLengthMode = String(options.lengthMode || 'words');
     const requestedLengthValue = Number(options.lengthValue || 220);
+    const requestAttachments = Array.isArray(options.attachments) ? options.attachments : [];
 
     registerPromptHistory({
       text: promptText,
@@ -2207,6 +2249,7 @@ Rules:
 - Keep aiResponseText concise, actionable, and specific.
 - Do not simulate placeholders. Produce useful output.` ,
         schema: actionSchema,
+        attachments: requestAttachments,
       });
 
       liveModelError = String(modelResponse?.error || '');
@@ -2345,21 +2388,14 @@ Rules:
 
   const handleSidebarSend = (e) => {
     e.preventDefault();
-    if (!chatInput.trim()) return;
-    handleAISubmit(chatInput, { source: 'chat' });
-    setActiveChatThreadId(`thread-${Date.now()}`);
+    if (!chatInput.trim() && !chatAttachments.length) return;
+    const attachmentSummary = chatAttachments.length
+      ? `\nAttached files: ${chatAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
+      : '';
+    const prompt = `${chatInput.trim() || 'Use attached files as context and answer the request.'}${attachmentSummary}`;
+    handleAISubmit(prompt, { source: 'chat', attachments: chatAttachments });
     setChatInput('');
-  };
-
-  const handleMainChatWorkspaceSend = (event) => {
-    event.preventDefault();
-    const prompt = floatingPrompt.trim();
-    if (!prompt || isComposing) {
-      return;
-    }
-    handleAISubmit(prompt, { source: 'chat' });
-    setActiveChatThreadId(`thread-${Date.now()}`);
-    setFloatingPrompt('');
+    setChatAttachments([]);
   };
 
   const handleAssistantQuickPromptSend = (event) => {
@@ -2422,6 +2458,7 @@ Rules:
       lengthMode: promptLengthMode,
       lengthValue: promptLengthValue,
       selectionScoped: Boolean(selectedScope),
+      attachments: promptAttachments,
     };
     handleAISubmit(finalPrompt, composeOptions);
     setLastComposeRun({
@@ -3763,6 +3800,7 @@ Rules:
         userPrompt: rawItems.join('\n'),
         systemPrompt: `Convert the schedule lines into structured JSON.\nRules:\n- Extract title, date/time, duration in minutes.\n- slot must be HH:MM 24-hour.\n- dueDateISO must be valid ISO datetime.\n- infer category as Meeting/Work/Personal/General.\n- urgency must be high/medium/low.\n- Keep summary concise.\n- Add useful step checklist when obvious.`,
         schema,
+        attachments: scheduleAttachments,
       });
 
       const aiItems = response?.parsed?.items;
@@ -4095,22 +4133,6 @@ Rules:
     && lastComposeRun.documentId === activeDocId
     && getPlainText(docBodyHtml).length
   );
-  const composeChatThreads = useMemo(() => {
-    const userMessages = chatMessages.filter((msg) => msg.sender === 'user');
-    if (!userMessages.length) {
-      return [{ id: 'thread-main', title: 'New chat', subtitle: 'Start a fresh conversation' }];
-    }
-    return userMessages
-      .slice(-10)
-      .reverse()
-      .map((msg, index) => ({
-        id: `thread-${msg.id}`,
-        title: truncateText(msg.text, 42) || `Chat ${index + 1}`,
-        subtitle: new Date(typeof msg.id === 'number' ? msg.id : Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      }));
-  }, [chatMessages]);
-  const isComposeChatWorkspace = productMode === 'compose' && activeRightTab === 'chat' && rightSidebarOpen;
-
   const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
   const resolvedDeckSlideDesign = useMemo(() => {
@@ -5124,7 +5146,7 @@ Rules:
                             const attachmentSummary = promptAttachments.length
                               ? `\nAttached files: ${promptAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
                               : '';
-                            handleAISubmit(`${basePrompt}${attachmentSummary}`, { source: 'chat' });
+                            handleAISubmit(`${basePrompt}${attachmentSummary}`, { source: 'chat', attachments: promptAttachments });
                             setActiveRightTab('chat');
                             setRightSidebarOpen(true);
                           }}
@@ -5282,7 +5304,7 @@ Rules:
                       const finalPrompt = `${prompt || (isSheetsMode ? 'Analyze this sheet and produce insights.' : 'Generate content for this deck slide.')} ${attachmentSummary}`;
                       setActiveRightTab('chat');
                       setRightSidebarOpen(true);
-                      handleAISubmit(finalPrompt, { source: 'chat' });
+                      handleAISubmit(finalPrompt, { source: 'chat', attachments: promptAttachments });
                       setDeckPromptInput('');
                     }}
                   >
@@ -6554,66 +6576,8 @@ Rules:
           </div>
         </div>
 
-        {isComposeChatWorkspace && (
-          <div className="flex-1 min-h-0 bg-[#f5f6fb] p-4 md:p-6">
-            <div className="h-full rounded-2xl border border-gray-200 bg-white overflow-hidden grid grid-cols-[240px_minmax(0,1fr)]">
-              <aside className="border-r border-gray-100 bg-[#f7f7fd] p-3 overflow-y-auto thin-scrollbar">
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Chats</div>
-                <div className="space-y-1.5">
-                  {composeChatThreads.map((thread) => {
-                    const isActive = activeChatThreadId === thread.id;
-                    return (
-                      <button
-                        key={thread.id}
-                        type="button"
-                        onClick={() => setActiveChatThreadId(thread.id)}
-                        className={`w-full rounded-xl border px-2.5 py-2 text-left ${isActive ? 'border-violet-200 bg-violet-50' : 'border-transparent hover:border-gray-200 hover:bg-white'}`}
-                      >
-                        <div className="text-xs font-semibold text-gray-800 truncate">{thread.title}</div>
-                        <div className="text-[10px] text-gray-500 truncate mt-0.5">{thread.subtitle}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </aside>
-
-              <section className="min-w-0 flex flex-col bg-white">
-                <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-4">
-                  {chatMessages.map((msg) => (
-                    <div key={msg.id} className={`max-w-[85%] ${msg.sender === 'user' ? 'ml-auto' : ''}`}>
-                      <div className="text-[10px] text-gray-400 mb-1">{msg.sender === 'user' ? 'You' : 'Compose AI'}</div>
-                      <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.sender === 'user' ? 'bg-violet-600 text-white' : 'bg-[#F7F8FD] border border-gray-100 text-gray-700'}`}>
-                        {msg.text}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <form onSubmit={handleMainChatWorkspaceSend} className="border-t border-gray-100 bg-white p-4 md:p-5">
-                  <div className="mx-auto max-w-[900px] rounded-[28px] border border-gray-200 bg-[#fcfcff] px-4 py-3 flex items-end gap-3 shadow-[0_16px_45px_-30px_rgba(76,29,149,0.55)]">
-                    <button type="button" onClick={() => promptFileInputRef.current?.click()} className="p-2 rounded-full text-gray-500 hover:bg-gray-100" title="Attach file">
-                      <Plus size={16} />
-                    </button>
-                    <textarea
-                      value={floatingPrompt}
-                      onChange={(event) => setFloatingPrompt(event.target.value)}
-                      onInput={(event) => autoResizeTextarea(event.currentTarget, 160)}
-                      rows={1}
-                      placeholder="Ask anything about your document, deck, or data..."
-                      className="flex-1 bg-transparent border-none outline-none resize-none text-sm min-h-[34px] max-h-[160px]"
-                    />
-                    <button type="submit" disabled={isComposing || !floatingPrompt.trim()} className={`h-9 w-9 rounded-full flex items-center justify-center text-white ${isComposing || !floatingPrompt.trim() ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}`}>
-                      {isComposing ? <Loader2 size={15} className="animate-spin" /> : <ArrowUp size={15} />}
-                    </button>
-                  </div>
-                </form>
-              </section>
-            </div>
-          </div>
-        )}
-
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className={`flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100 ${isComposeChatWorkspace ? 'hidden' : ''}`}>
+        <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
           <div
             className="mx-auto"
             style={{
@@ -6854,7 +6818,7 @@ Rules:
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || (isVoiceActive && voiceTarget === 'document') || isComposeChatWorkspace) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
           <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
@@ -7310,14 +7274,10 @@ Rules:
         </div>
 
         {!isComposing && (
-          <div
-            className="pointer-events-none fixed inset-0 z-[300] flex items-center justify-center"
-            style={{ transform: `translate(${dictationOffset.x}px, ${dictationOffset.y}px)` }}
-          >
+          <div className="pointer-events-none absolute inset-0 z-[300] flex items-center justify-center">
             <div className="pointer-events-auto flex flex-col items-center gap-3">
               <button
                 type="button"
-                onPointerDown={(event) => beginPanelResize('dictation', event)}
                 onClick={async () => {
                   await toggleVoiceRecording('document');
                 }}

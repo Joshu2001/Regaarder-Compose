@@ -69,6 +69,21 @@ const readBody = (req) => {
   return {};
 };
 
+const normalizeAttachments = (attachments) => {
+  if (!Array.isArray(attachments)) {
+    return [];
+  }
+
+  return attachments
+    .map((item) => ({
+      name: String(item?.name || 'attachment'),
+      mimeType: String(item?.mimeType || 'application/octet-stream'),
+      data: String(item?.data || ''),
+    }))
+    .filter((item) => item.data)
+    .slice(0, 8);
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -87,6 +102,7 @@ export default async function handler(req, res) {
   const userPrompt = String(body?.userPrompt || '').trim();
   const systemPrompt = String(body?.systemPrompt || '').trim();
   const schema = body?.schema;
+  const attachments = normalizeAttachments(body?.attachments);
 
   if (!userPrompt) {
     return res.status(400).json({ ok: false, error: 'Missing userPrompt' });
@@ -97,8 +113,21 @@ export default async function handler(req, res) {
 
   for (const modelName of modelCandidates) {
     try {
+      const parts = [{ text: userPrompt }];
+      attachments.forEach((attachment) => {
+        parts.push({
+          text: `Attachment: ${attachment.name} (${attachment.mimeType}). Use this as source context.`,
+        });
+        parts.push({
+          inlineData: {
+            mimeType: attachment.mimeType,
+            data: attachment.data,
+          },
+        });
+      });
+
       const payload = {
-        contents: [{ parts: [{ text: userPrompt }] }],
+        contents: [{ parts }],
         generationConfig: {
           temperature: 0.5,
           maxOutputTokens: 1200,
