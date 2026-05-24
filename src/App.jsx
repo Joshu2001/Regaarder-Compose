@@ -246,6 +246,7 @@ export default function App() {
   const [sheetToolbarItalic, setSheetToolbarItalic] = useState(false);
   const [sheetToolbarUnderline, setSheetToolbarUnderline] = useState(false);
   const [sheetToolbarTab, setSheetToolbarTab] = useState('AI');
+  const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
   const [sheetGrids, setSheetGrids] = useState(() => {
@@ -321,6 +322,7 @@ export default function App() {
   const deckCanvasPreviewRef = useRef(null);
   const sheetCanvasPreviewRef = useRef(null);
   const pageContextMenuRef = useRef(null);
+  const sheetToolbarMenuRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -982,6 +984,9 @@ export default function App() {
       }
       if (!event.target.closest('[data-language-menu-root]')) {
         setLanguageMenuOpen(false);
+      }
+      if (sheetToolbarMenuRef.current && !sheetToolbarMenuRef.current.contains(event.target)) {
+        setSheetToolbarMenuOpen(null);
       }
     };
 
@@ -4468,6 +4473,35 @@ Rules:
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
 
+  const smartAssistMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
+  const smartAssistIntro = smartAssistMode === 'sheets'
+    ? 'Use AI to transform data quickly: clean, model, summarize, and detect issues.'
+    : smartAssistMode === 'deck'
+      ? 'Use AI to improve slide clarity, structure, and storytelling flow.'
+      : 'Use AI to shape writing structure, tone, and section hierarchy.';
+  const smartAssistOptions = smartAssistMode === 'sheets'
+    ? [
+      { key: 'fill-pattern', label: 'Fill down this pattern', detail: 'Auto-detect and extend sequences', icon: RefreshCcw, color: 'text-violet-500', prompt: 'Fill down this pattern across adjacent rows and keep sequence logic consistent.' },
+      { key: 'clean-data', label: 'Clean this data', detail: 'Remove duplicates and standardize formats', icon: ShieldAlert, color: 'text-indigo-500', prompt: 'Clean this data by removing duplicates, fixing inconsistent formats, and normalizing values.' },
+      { key: 'suggest-formula', label: 'Suggest a formula', detail: 'Natural language to formula', icon: Type, color: 'text-emerald-500', prompt: 'Suggest the best spreadsheet formula for the selected cells and explain assumptions briefly.' },
+      { key: 'anomalies', label: 'Find anomalies', detail: 'Flag unusual values or outliers', icon: AlertTriangle, color: 'text-amber-500', prompt: 'Find anomalies and outliers in this sheet and suggest likely reasons.' },
+      { key: 'pivot-summary', label: 'Create a pivot summary', detail: 'Aggregate by key dimensions', icon: Database, color: 'text-cyan-500', prompt: 'Create a pivot-style summary grouped by key dimensions with totals and highlights.' },
+      { key: 'split-column', label: 'Split this column', detail: 'Parse mixed text into separate columns', icon: Scissors, color: 'text-fuchsia-500', prompt: 'Split this mixed column into clean separate columns based on detected delimiters and patterns.' },
+    ]
+    : smartAssistMode === 'deck'
+      ? [
+        { key: 'suggest-layouts', label: 'Suggest layouts', detail: 'Better arrangement for this content', icon: LayoutGrid, color: 'text-violet-500', prompt: 'Suggest stronger slide layouts for this content with clearer visual hierarchy.' },
+        { key: 'speaker-notes', label: 'Create speaker notes', detail: 'Turn bullets into talking points', icon: FileText, color: 'text-indigo-500', prompt: 'Create concise speaker notes for each point on this slide.' },
+        { key: 'suggest-visuals', label: 'Suggest visuals', detail: 'Recommend charts and diagrams', icon: Sparkles, color: 'text-emerald-500', prompt: 'Suggest visuals, charts, or diagrams that would improve this slide and why.' },
+        { key: 'redesign-slide', label: 'Redesign this slide', detail: 'Improve spacing, emphasis, and hierarchy', icon: PenTool, color: 'text-fuchsia-500', prompt: 'Redesign this slide with improved visual hierarchy, spacing, and emphasis.' },
+        { key: 'expand-outline', label: 'Expand this outline', detail: 'Develop thin content with examples', icon: ListTodo, color: 'text-cyan-500', prompt: 'Expand this outline with stronger points, examples, and supporting narrative.' },
+      ]
+      : [
+        { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content to be more professional while preserving meaning.' },
+        { key: 'create-outline', label: 'Create outline', detail: 'Structure messy notes into sections', icon: ListTodo, color: 'text-indigo-500', prompt: 'Create a clear outline from this content with logical section flow.' },
+        { key: 'title-headers', label: 'Generate title/headers', detail: 'Auto-structure with strong headings', icon: Type, color: 'text-emerald-500', prompt: 'Generate a strong title and section headers for this document.' },
+      ];
+
   useEffect(() => {
     setSheetGrids((prev) => {
       const next = { ...prev };
@@ -4921,24 +4955,62 @@ Rules:
                       <Search size={12} />
                       <button type="button" onClick={() => showToast('Undo not available in demo')}><Undo2 size={12} /></button>
                       <button type="button" onClick={() => showToast('Redo not available in demo')}><Redo2 size={12} /></button>
-                      <select
-                        value={sheetToolbarFont}
-                        onChange={(event) => setSheetToolbarFont(event.target.value)}
-                        className="border border-gray-200 rounded px-1.5 py-0.5 bg-white text-[11px]"
-                      >
-                        {['Inter', 'Arial', 'Roboto', 'Lato', 'Georgia'].map((font) => (
-                          <option key={font} value={font}>{font}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={sheetToolbarSize}
-                        onChange={(event) => setSheetToolbarSize(Number(event.target.value) || 10)}
-                        className="border border-gray-200 rounded px-1 py-0.5 bg-white text-[11px]"
-                      >
-                        {[8, 9, 10, 11, 12, 14, 16, 18].map((size) => (
-                          <option key={size} value={size}>{size}</option>
-                        ))}
-                      </select>
+                      <div className="relative flex items-center gap-1" ref={sheetToolbarMenuRef}>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font')}
+                            className="inline-flex items-center gap-1 border border-gray-200 rounded px-1.5 py-0.5 bg-white text-[11px] hover:bg-gray-50"
+                          >
+                            <span>{sheetToolbarFont}</span>
+                            <ChevronDown size={11} />
+                          </button>
+                          {sheetToolbarMenuOpen === 'font' && (
+                            <div className="absolute z-[420] top-full mt-1 left-0 w-32 rounded-lg border border-gray-200 bg-white shadow-lg p-1">
+                              {['Inter', 'Arial', 'Roboto', 'Lato', 'Georgia'].map((font) => (
+                                <button
+                                  key={font}
+                                  type="button"
+                                  onClick={() => {
+                                    setSheetToolbarFont(font);
+                                    setSheetToolbarMenuOpen(null);
+                                  }}
+                                  className={`w-full text-left px-2 py-1 rounded text-[11px] ${sheetToolbarFont === font ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                  {font}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size')}
+                            className="inline-flex items-center gap-1 border border-gray-200 rounded px-1 py-0.5 bg-white text-[11px] hover:bg-gray-50"
+                          >
+                            <span>{sheetToolbarSize}</span>
+                            <ChevronDown size={11} />
+                          </button>
+                          {sheetToolbarMenuOpen === 'size' && (
+                            <div className="absolute z-[420] top-full mt-1 left-0 w-16 rounded-lg border border-gray-200 bg-white shadow-lg p-1">
+                              {[8, 9, 10, 11, 12, 14, 16, 18].map((size) => (
+                                <button
+                                  key={size}
+                                  type="button"
+                                  onClick={() => {
+                                    setSheetToolbarSize(size);
+                                    setSheetToolbarMenuOpen(null);
+                                  }}
+                                  className={`w-full text-left px-2 py-1 rounded text-[11px] ${sheetToolbarSize === size ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                  {size}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       <button type="button" onClick={() => setSheetToolbarBold((prev) => !prev)} className={`px-1 ${sheetToolbarBold ? 'font-bold text-gray-800' : ''}`}>B</button>
                       <button type="button" onClick={() => setSheetToolbarItalic((prev) => !prev)} className={`px-1 ${sheetToolbarItalic ? 'italic text-gray-800' : ''}`}>I</button>
                       <button type="button" onClick={() => setSheetToolbarUnderline((prev) => !prev)} className={`px-1 ${sheetToolbarUnderline ? 'underline text-gray-800' : ''}`}>U</button>
@@ -5305,12 +5377,25 @@ Rules:
                   <div className="flex-1 overflow-y-auto p-5 space-y-6">
                     <div>
                       <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
-                      <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
+                      <p className="text-xs text-gray-500">{smartAssistIntro}</p>
                     </div>
                     <div className="space-y-2">
-                      <button onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')} className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"><PenTool size={16} className="text-violet-500" /><div><div className="font-semibold text-xs">Improve writing</div><p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p></div></button>
-                      <button onClick={() => runSmartAssistAction('Summarize the launch plan concisely')} className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"><FileText size={16} className="text-indigo-500" /><div><div className="font-semibold text-xs">Summarize document</div><p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p></div></button>
-                      <button onClick={() => runSmartAssistAction('Make the plan shorter and more direct')} className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"><Scissors size={16} className="text-violet-400" /><div><div className="font-semibold text-xs">Make shorter</div><p className="text-[10px] text-gray-400">Prune unnecessary wording</p></div></button>
+                      {smartAssistOptions.map((option) => {
+                        const Icon = option.icon;
+                        return (
+                          <button
+                            key={option.key}
+                            onClick={() => runSmartAssistAction(option.prompt)}
+                            className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"
+                          >
+                            <Icon size={16} className={option.color} />
+                            <div>
+                              <div className="font-semibold text-xs">{option.label}</div>
+                              <p className="text-[10px] text-gray-400">{option.detail}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                     <div>
                       <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
@@ -7459,54 +7544,27 @@ Rules:
               )}
               <div>
                 <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
-                <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
+                <p className="text-xs text-gray-500">{smartAssistIntro}</p>
               </div>
 
               {/* Action Buttons Grid */}
               <div className="space-y-2">
-                <button 
-                  onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <PenTool size={16} className="text-violet-500" />
-                  <div>
-                    <div className="font-semibold text-xs">Improve writing</div>
-                    <p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => runSmartAssistAction('Summarize the launch plan concisely')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <FileText size={16} className="text-indigo-500" />
-                  <div>
-                    <div className="font-semibold text-xs">Summarize document</div>
-                    <p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => runSmartAssistAction('Make the plan shorter and more direct')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <Scissors size={16} className="text-violet-400" />
-                  <div>
-                    <div className="font-semibold text-xs">Make shorter</div>
-                    <p className="text-[10px] text-gray-400">Prune unnecessary wording</p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => runSmartAssistAction('Analyze risks and mitigation strategies')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                >
-                  <AlertTriangle size={16} className="text-amber-500" />
-                  <div>
-                    <div className="font-semibold text-xs">Check for gaps & risks</div>
-                    <p className="text-[10px] text-gray-400">Locate potential launch bottle necks</p>
-                  </div>
-                </button>
+                {smartAssistOptions.map((option) => {
+                  const Icon = option.icon;
+                  return (
+                    <button
+                      key={option.key}
+                      onClick={() => runSmartAssistAction(option.prompt)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                    >
+                      <Icon size={16} className={option.color} />
+                      <div>
+                        <div className="font-semibold text-xs">{option.label}</div>
+                        <p className="text-[10px] text-gray-400">{option.detail}</p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
 
               <div>
