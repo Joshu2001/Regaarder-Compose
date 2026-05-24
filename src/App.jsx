@@ -1974,18 +1974,55 @@ export default function App() {
   };
 
   const buildDeckSlidesFallback = ({ promptText, aiText, sourceSlides = [] }) => {
+    const slideCountMatch = String(promptText || '').match(/(\d{1,2})\s*[- ]?\s*(?:slide|slides|page|pages)\b/i);
+    const requestedSlideCount = Math.max(1, Math.min(20, Number(slideCountMatch?.[1] || 10)));
     const cleanedPrompt = String(promptText || '')
       .replace(/attached files?:[\s\S]*$/i, '')
       .replace(/^format:\s*/i, '')
       .trim();
-    const cleanedAiText = String(aiText || '').trim();
-    const basis = cleanedAiText || cleanedPrompt || 'Presentation direction';
+    const cleanedAiText = String(aiText || '')
+      .replace(/```json|```/gi, '')
+      .trim();
+    const looksLikeStructuredPayload = /^\{[\s\S]*\}$/.test(cleanedAiText)
+      && /hasAction|docAction|deckSlides|aiResponseText/i.test(cleanedAiText);
+    const basis = (looksLikeStructuredPayload ? '' : cleanedAiText) || cleanedPrompt || 'Presentation direction';
     const lines = basis.split(/\n+/).map((line) => line.trim()).filter(Boolean);
     const headlineSeed = lines[0] || 'Presentation direction';
     const detailSeed = lines.slice(1).join(' ') || 'Designed from your prompt and source files.';
+    const sectionTitles = {
+      Opening: 'Opening: Core Narrative',
+      Problem: 'Problem: Current Friction',
+      Opportunity: 'Opportunity: Why Now',
+      Product: 'Product: Solution Overview',
+      Market: 'Market: Landscape and Demand',
+      Strategy: 'Strategy: Go-To-Market',
+      Financials: 'Financials: Metrics and Forecast',
+      Closing: 'Closing: Ask and Next Steps',
+    };
+
+    const makeGeneratedSlide = (index, total) => {
+      const section = inferDeckStorySection({ title: '', subtitle: '', headline: '' }, index, total);
+      const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
+      return {
+        id: index + 1,
+        title: sectionTitles[section] || `Slide ${index + 1}`,
+        subtitle: cleanedPrompt || 'AI-generated deck structure',
+        accent: 'from-violet-500 to-indigo-600',
+        designPresetKey: preset.key,
+        headline: index === 0 ? headlineSeed : `${section} focus`,
+        blurb: index === 0 ? detailSeed : `Advance the ${section.toLowerCase()} narrative with clear hierarchy and visual evidence.`,
+        visualType: index % 3 === 0 ? 'hero statement' : index % 3 === 1 ? 'data-backed narrative' : 'comparison visual',
+        layoutStyle: index % 2 === 0 ? 'cinematic split' : 'modular canvas',
+        motionCue: index % 2 === 0 ? 'Soft fade and stagger reveal' : 'Progressive reveal sequence',
+        keyMetric: '',
+        speakerNotes: `Frame this ${section.toLowerCase()} point clearly, then transition to the next narrative beat.`,
+        section,
+        footer: 'Original design · Editable',
+      };
+    };
 
     if (Array.isArray(sourceSlides) && sourceSlides.length) {
-      return sourceSlides
+      const mapped = sourceSlides
         .slice(0, 20)
         .map((slide, index) => {
           const preset = DECK_DESIGN_PRESETS[index % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
@@ -2006,24 +2043,19 @@ export default function App() {
             footer: 'Original design · Editable',
           };
         });
+
+      if (mapped.length >= requestedSlideCount) {
+        return mapped.slice(0, requestedSlideCount);
+      }
+
+      const completed = [...mapped];
+      for (let i = mapped.length; i < requestedSlideCount; i += 1) {
+        completed.push(makeGeneratedSlide(i, requestedSlideCount));
+      }
+      return completed;
     }
 
-    return [{
-      id: 1,
-      title: 'Slide 1',
-      subtitle: cleanedPrompt || 'AI-generated concept',
-      accent: 'from-violet-500 to-indigo-600',
-      designPresetKey: DECK_DESIGN_PRESETS[0].key,
-      headline: headlineSeed,
-      blurb: detailSeed,
-      visualType: 'hero statement',
-      layoutStyle: 'cinematic split',
-      motionCue: 'Soft fade and stagger reveal',
-      keyMetric: '',
-      speakerNotes: 'Open with the key objective, then transition to proof and outcomes.',
-      section: 'Opening',
-      footer: 'Original design · Editable',
-    }];
+    return Array.from({ length: requestedSlideCount }, (_, index) => makeGeneratedSlide(index, requestedSlideCount));
   };
 
   const renderDocActionHtml = (action) => {
@@ -2295,6 +2327,10 @@ export default function App() {
     const requestedLengthValue = Number(options.lengthValue || 220);
     const requestAttachments = Array.isArray(options.attachments) ? options.attachments : [];
     const isDeckGeneration = productMode === 'deck' && source === 'chat';
+    const requestedDeckSlideCount = (() => {
+      const match = String(promptText || '').match(/(\d{1,2})\s*[- ]?\s*(?:slide|slides|page|pages)\b/i);
+      return Math.max(1, Math.min(20, Number(match?.[1] || 10)));
+    })();
 
     registerPromptHistory({
       text: promptText,
@@ -2397,16 +2433,24 @@ Context title: ${deckTitle || 'Untitled deck'}.
 Requested output format: ${requestedFormat}.
 Tone style: ${requestedTone}.
 Length target: around ${requestedLengthValue} ${requestedLengthMode}.
+Required slide count: ${requestedDeckSlideCount}.
 Rules:
 - Always set hasAction=true.
 - Set docAction.type="deck".
-- Provide docAction.title and docAction.deckSlides with 6-12 slides.
+- Provide docAction.title and docAction.deckSlides with exactly ${requestedDeckSlideCount} slides.
 - Each slide must include: title, subtitle, headline, blurb, visualType, layoutStyle, motionCue.
 - Add keyMetric when data exists and speakerNotes when persuasion context is needed.
 - Include section labels aligned to this narrative flow: Opening, Problem, Opportunity, Product, Market, Strategy, Financials, Closing.
 - Headline should be punchy and brief. Blurb should be 1-3 concise sentences.
 - If attachments contain source material, summarize and transform it into slide content.
-- Prioritize visual outputs over dense text. Do not return plain paragraphs as the primary output.`
+- Prioritize visual outputs over dense text. Do not return plain paragraphs as the primary output.
+Process you MUST follow before creating slides:
+1) Ingest uploaded materials and user prompt.
+2) Extract goals, themes, hierarchy, key metrics, key arguments, and audience context.
+3) Create presentation strategy with slide sequence, pacing, narrative arc, and information hierarchy.
+4) Generate slides with titles, summaries, layouts, charts/timelines/diagrams/visuals.
+5) Apply adaptive design system (typography, spacing, branding, colors, visual hierarchy).
+6) Assign motion/animation cues (fade/reveal/stagger/progressive/cinematic transitions).`
       : `You are Compose AI. Return JSON only.
 Context title: ${docTitle || 'Untitled'}.
 Context subtitle: ${docSubtitle || 'No subtitle'}.
@@ -2463,13 +2507,18 @@ Rules:
                 };
               })
               .slice(0, 20);
+            const normalizedSlides = buildDeckSlidesFallback({
+              promptText,
+              aiText: result.aiResponseText || '',
+              sourceSlides: generatedSlides,
+            });
 
-            if (generatedSlides.length) {
-              setDeckSlidesData(generatedSlides);
-              setActiveDeckSlideId(generatedSlides[0].id);
+            if (normalizedSlides.length) {
+              setDeckSlidesData(normalizedSlides);
+              setActiveDeckSlideId(normalizedSlides[0].id);
               didGenerateDeckSlides = true;
-              aiResponseText = result.aiResponseText?.trim() || `Created ${generatedSlides.length} slides from your request.`;
-              showToast(`Generated ${generatedSlides.length} slides`);
+              aiResponseText = result.aiResponseText?.trim() || `Created ${normalizedSlides.length} slides from your request.`;
+              showToast(`Generated ${normalizedSlides.length} slides`);
             }
           } else if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
             docAction = {
@@ -2507,10 +2556,16 @@ Rules:
         }
 
         if (isDeckGeneration && !didGenerateDeckSlides) {
+          const parsedFromAiResponse = parseJsonSafely(result.aiResponseText || '');
+          const recoveredSlides = Array.isArray(parsedFromAiResponse?.docAction?.deckSlides)
+            ? parsedFromAiResponse.docAction.deckSlides
+            : [];
           const fallbackSlides = buildDeckSlidesFallback({
             promptText,
             aiText: result.aiResponseText || result.docAction?.textParagraph || modelResponse?.text,
-            sourceSlides: Array.isArray(result?.docAction?.deckSlides) ? result.docAction.deckSlides : [],
+            sourceSlides: Array.isArray(result?.docAction?.deckSlides) && result.docAction.deckSlides.length
+              ? result.docAction.deckSlides
+              : recoveredSlides,
           });
           if (fallbackSlides.length) {
             setDeckSlidesData(fallbackSlides);
