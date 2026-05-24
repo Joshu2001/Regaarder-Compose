@@ -36,6 +36,88 @@ const DECK_DESIGN_PRESETS = [
   },
 ];
 
+const DECK_TEMPLATE_LIBRARY = [
+  {
+    key: 'investor-clarity',
+    label: 'Investor Clarity',
+    detail: 'For fundraising and strategic persuasion',
+    presetKey: 'aurora-split',
+    visualType: 'data-backed narrative',
+    layoutStyle: 'cinematic split',
+    motionCue: 'Progressive metric reveal',
+  },
+  {
+    key: 'keynote-cinematic',
+    label: 'Keynote Cinematic',
+    detail: 'Hero storytelling with atmospheric transitions',
+    presetKey: 'sunset-grid',
+    visualType: 'hero statement',
+    layoutStyle: 'full-bleed visual stage',
+    motionCue: 'Slow fade and scale-in',
+  },
+  {
+    key: 'arc-calm',
+    label: 'Arc Calm',
+    detail: 'Calm and focused narrative with soft rhythm',
+    presetKey: 'mint-depth',
+    visualType: 'minimal signal',
+    layoutStyle: 'calm left narrative',
+    motionCue: 'Gentle crossfade',
+  },
+  {
+    key: 'linear-briefing',
+    label: 'Linear Briefing',
+    detail: 'Fast, structured, executive communication',
+    presetKey: 'aurora-split',
+    visualType: 'operator briefing',
+    layoutStyle: 'grid briefing',
+    motionCue: 'Sequential block reveal',
+  },
+  {
+    key: 'figma-fluid',
+    label: 'Figma Fluid',
+    detail: 'Fluid composition for product and design reviews',
+    presetKey: 'sunset-grid',
+    visualType: 'product walkthrough',
+    layoutStyle: 'modular canvas',
+    motionCue: 'Staggered component entry',
+  },
+  {
+    key: 'minimal-luxury',
+    label: 'Minimal Luxury',
+    detail: 'Sparse text and premium visual hierarchy',
+    presetKey: 'mint-depth',
+    visualType: 'premium minimal',
+    layoutStyle: 'high whitespace emphasis',
+    motionCue: 'Elegant dissolve',
+  },
+];
+
+const DECK_STORY_SECTIONS = ['Opening', 'Problem', 'Opportunity', 'Product', 'Market', 'Strategy', 'Financials', 'Closing'];
+
+const inferDeckStorySection = (slide, index, totalSlides) => {
+  const signal = `${slide?.title || ''} ${slide?.subtitle || ''} ${slide?.headline || ''}`.toLowerCase();
+  const keywordMap = [
+    { key: 'Problem', patterns: ['problem', 'pain', 'challenge', 'friction', 'gap'] },
+    { key: 'Opportunity', patterns: ['opportunity', 'timing', 'why now', 'trend'] },
+    { key: 'Product', patterns: ['product', 'solution', 'platform', 'workflow', 'demo'] },
+    { key: 'Market', patterns: ['market', 'tam', 'sam', 'som', 'segment', 'customer'] },
+    { key: 'Strategy', patterns: ['strategy', 'go to market', 'distribution', 'growth', 'roadmap'] },
+    { key: 'Financials', patterns: ['financial', 'revenue', 'cac', 'ltv', 'unit economics', 'forecast'] },
+    { key: 'Closing', patterns: ['close', 'closing', 'ask', 'next step', 'thank you'] },
+  ];
+  const matched = keywordMap.find((item) => item.patterns.some((pattern) => signal.includes(pattern)));
+  if (matched) {
+    return matched.key;
+  }
+  if (totalSlides <= 1) {
+    return 'Opening';
+  }
+  const normalized = index / Math.max(1, totalSlides - 1);
+  const bucket = Math.min(DECK_STORY_SECTIONS.length - 1, Math.floor(normalized * DECK_STORY_SECTIONS.length));
+  return DECK_STORY_SECTIONS[bucket];
+};
+
 const createBlankDeckSlide = (id = 1) => ({
   id,
   title: `Slide ${id}`,
@@ -44,6 +126,12 @@ const createBlankDeckSlide = (id = 1) => ({
   designPresetKey: DECK_DESIGN_PRESETS[(Math.max(0, id - 1)) % DECK_DESIGN_PRESETS.length]?.key || DECK_DESIGN_PRESETS[0].key,
   headline: '',
   blurb: '',
+  visualType: 'hero statement',
+  layoutStyle: 'cinematic split',
+  motionCue: 'Soft fade and stagger reveal',
+  keyMetric: '',
+  speakerNotes: '',
+  section: '',
   footer: 'Original design · Editable',
 });
 
@@ -2208,6 +2296,12 @@ export default function App() {
                   subtitle: { type: 'STRING' },
                   headline: { type: 'STRING' },
                   blurb: { type: 'STRING' },
+                  visualType: { type: 'STRING' },
+                  layoutStyle: { type: 'STRING' },
+                  motionCue: { type: 'STRING' },
+                  keyMetric: { type: 'STRING' },
+                  speakerNotes: { type: 'STRING' },
+                  section: { type: 'STRING' },
                 },
               },
             },
@@ -2253,9 +2347,12 @@ Rules:
 - Always set hasAction=true.
 - Set docAction.type="deck".
 - Provide docAction.title and docAction.deckSlides with 6-12 slides.
-- Each slide must include: title, subtitle, headline, blurb.
+- Each slide must include: title, subtitle, headline, blurb, visualType, layoutStyle, motionCue.
+- Add keyMetric when data exists and speakerNotes when persuasion context is needed.
+- Include section labels aligned to this narrative flow: Opening, Problem, Opportunity, Product, Market, Strategy, Financials, Closing.
 - Headline should be punchy and brief. Blurb should be 1-3 concise sentences.
-- If attachments contain source material, summarize and transform it into slide content.`
+- If attachments contain source material, summarize and transform it into slide content.
+- Prioritize visual outputs over dense text. Do not return plain paragraphs as the primary output.`
       : `You are Compose AI. Return JSON only.
 Context title: ${docTitle || 'Untitled'}.
 Context subtitle: ${docSubtitle || 'No subtitle'}.
@@ -2302,6 +2399,12 @@ Rules:
                   designPresetKey: preset.key,
                   headline: String(slide?.headline || slide?.title || `Slide ${nextId}`),
                   blurb: String(slide?.blurb || slide?.subtitle || ''),
+                  visualType: String(slide?.visualType || 'hero statement'),
+                  layoutStyle: String(slide?.layoutStyle || 'cinematic split'),
+                  motionCue: String(slide?.motionCue || 'Soft fade and stagger reveal'),
+                  keyMetric: String(slide?.keyMetric || ''),
+                  speakerNotes: String(slide?.speakerNotes || ''),
+                  section: String(slide?.section || ''),
                   footer: 'Original design · Editable',
                 };
               })
@@ -2456,11 +2559,39 @@ Rules:
     if (!prompt || isComposing) {
       return;
     }
-    handleAISubmit(prompt, { source: 'chat' });
+    if (productMode === 'deck') {
+      const deckPrompt = `${prompt}\n\nDeck Assistant mode: produce visual-first slide output with narrative pacing, clear hierarchy, and speaker notes where useful.`;
+      handleAISubmit(deckPrompt, {
+        source: 'chat',
+        tone: promptTone,
+        lengthMode: promptLengthMode,
+        lengthValue: promptLengthValue,
+        attachments: promptAttachments,
+      });
+      setRightSidebarOpen(true);
+      setActiveRightTab('assistant');
+    } else {
+      handleAISubmit(prompt, { source: 'chat' });
+    }
     setAssistantQuickPrompt('');
   };
 
   const runSmartAssistAction = (instruction) => {
+    if (productMode === 'deck') {
+      const deckPrompt = `${instruction}\n\nCreate or refine a cinematic deck structure with stronger visual hierarchy, audience fit, and pacing. Include clear visual direction per slide.`;
+      setRightSidebarOpen(true);
+      setActiveRightTab('assistant');
+      showToast('Deck Assistant is generating visual output...');
+      handleAISubmit(deckPrompt, {
+        source: 'chat',
+        tone: promptTone,
+        lengthMode: promptLengthMode,
+        lengthValue: promptLengthValue,
+        attachments: promptAttachments,
+      });
+      return;
+    }
+
     const selectedScope = selectedEditorTextRef.current || selectedEditorText;
     const hasSelection = Boolean(selectedScope);
     const scopedPrompt = hasSelection
@@ -3193,7 +3324,7 @@ Rules:
     setDeckContextRailTab('Design');
     setDeckPromptInput('');
     setDeckPromptMinimized(false);
-    setDeckPromptChips(['Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft']);
+    setDeckPromptChips(['Turn this into investor tone', 'Generate competitor comparison slide', 'Make this more visual', 'Reduce to 8 slides', 'Simplify for students']);
     setDeckCustomChip('');
     setDeckSlidesPanelOpen(true);
     setRightSidebarOpen(true);
@@ -4195,6 +4326,12 @@ Rules:
         preset: fallback,
         headline: 'The future of work is human + AI.',
         blurb: 'An adaptive workspace that thinks with you, so you can create without limits.',
+        visualType: 'hero statement',
+        layoutStyle: 'cinematic split',
+        motionCue: 'Soft fade and stagger reveal',
+        keyMetric: '',
+        speakerNotes: '',
+        section: 'Opening',
         footer: 'May 15, 2026',
       };
     }
@@ -4206,9 +4343,69 @@ Rules:
       preset,
       headline: activeDeckSlide.headline || `${activeDeckSlide.title || 'Original concept'} that earns attention`,
       blurb: activeDeckSlide.blurb || `${activeDeckSlide.subtitle || 'Built for modern teams'} and crafted to be edited live.`,
+      visualType: activeDeckSlide.visualType || 'hero statement',
+      layoutStyle: activeDeckSlide.layoutStyle || 'cinematic split',
+      motionCue: activeDeckSlide.motionCue || 'Soft fade and stagger reveal',
+      keyMetric: activeDeckSlide.keyMetric || '',
+      speakerNotes: activeDeckSlide.speakerNotes || '',
+      section: activeDeckSlide.section || inferDeckStorySection(activeDeckSlide, Math.max(0, activeDeckSlide.id - 1), Math.max(1, deckSlides.length)),
       footer: activeDeckSlide.footer || 'Original design · Editable',
     };
-  }, [activeDeckSlide]);
+  }, [activeDeckSlide, deckSlides.length]);
+
+  const deckIntelligence = useMemo(() => {
+    if (!deckSlides.length) {
+      return {
+        narrativeQuality: 'No slides yet',
+        pacingQuality: 'No pacing yet',
+        weakSlides: [],
+        audienceFit: 'Audience fit not available',
+        presentationSummary: 'Generate slides to see AI narrative diagnostics.',
+        suggestions: ['Generate a deck from your goal and source materials.'],
+        suggestedAdditions: ['Add market signal slide', 'Add proof/traction slide'],
+        relatedSources: [],
+        speakerNotes: 'Speaker notes will appear after deck generation.',
+      };
+    }
+
+    const withSections = deckSlides.map((slide, index) => ({
+      ...slide,
+      section: slide.section || inferDeckStorySection(slide, index, deckSlides.length),
+    }));
+    const uniqueSections = [...new Set(withSections.map((slide) => slide.section))];
+    const avgWords = withSections.reduce((acc, slide) => acc + String(slide.blurb || '').split(/\s+/).filter(Boolean).length, 0) / Math.max(1, withSections.length);
+    const weakSlides = withSections
+      .filter((slide) => String(slide.blurb || '').trim().length < 55 || String(slide.headline || '').trim().length < 12)
+      .slice(0, 4)
+      .map((slide) => `${slide.title}: strengthen emotional hook and proof.`);
+
+    const hasFinancialSignal = withSections.some((slide) => /revenue|cac|ltv|forecast|unit/i.test(`${slide.title} ${slide.headline} ${slide.blurb}`));
+    const narrativeQuality = `${Math.min(99, Math.round((uniqueSections.length / DECK_STORY_SECTIONS.length) * 100 + 15))}% coherent narrative flow`;
+    const pacingQuality = `${Math.max(62, 100 - Math.abs(withSections.length - 10) * 6)}% pacing balance`;
+    const suggestions = [];
+    if (weakSlides.length) suggestions.push('Strengthen weak slides with stronger hooks and concrete proof points.');
+    if (withSections.length > 12) suggestions.push('Compress to 8-10 slides for tighter executive pacing.');
+    if (!hasFinancialSignal) suggestions.push('Add one concise financial confidence slide for investor readiness.');
+    if (!suggestions.length) suggestions.push('Narrative quality is strong. Add a differentiator visual to increase memorability.');
+
+    const relatedSources = [...new Map([...promptAttachments, ...chatAttachments].map((item) => [item.id || item.name, item])).values()]
+      .slice(0, 5)
+      .map((item) => `${item.name} (${item.type || 'file'})`);
+
+    const activeNotes = activeDeckSlide?.speakerNotes?.trim();
+
+    return {
+      narrativeQuality,
+      pacingQuality,
+      weakSlides,
+      audienceFit: hasFinancialSignal ? 'Strong investor-fit narrative with quant signals.' : 'General audience fit detected. Add financial proof for investors.',
+      presentationSummary: `${deckSlides.length} slides across ${uniqueSections.length} narrative sections: ${uniqueSections.join(', ')}.`,
+      suggestions,
+      suggestedAdditions: ['Competitor comparison visual', 'Go-to-market timeline', 'Risk and mitigation slide'],
+      relatedSources,
+      speakerNotes: activeNotes || 'No speaker notes yet on this slide. Ask AI Assistant to create presenter notes.',
+    };
+  }, [activeDeckSlide?.speakerNotes, chatAttachments, deckSlides, promptAttachments]);
 
   const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
   const activeSheetGrid = sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
@@ -4241,6 +4438,36 @@ Rules:
     showToast('Generated original slide design. You can edit headline and body directly.');
   };
 
+  const applyDeckTemplate = (template, scope = 'slide') => {
+    if (!template) {
+      return;
+    }
+
+    const applyToSlide = (slide, index = 0, total = 1) => ({
+      ...slide,
+      designPresetKey: template.presetKey,
+      visualType: template.visualType,
+      layoutStyle: template.layoutStyle,
+      motionCue: template.motionCue,
+      section: slide.section || inferDeckStorySection(slide, index, total),
+      footer: `${template.label} · Editable`,
+    });
+
+    if (scope === 'deck') {
+      setDeckSlidesData((prev) => prev.map((slide, index) => applyToSlide(slide, index, prev.length)));
+      showToast(`Applied ${template.label} to full deck`);
+      return;
+    }
+
+    if (!activeDeckSlide?.id) {
+      return;
+    }
+    setDeckSlidesData((prev) => prev.map((slide, index) => (
+      slide.id === activeDeckSlide.id ? applyToSlide(slide, index, prev.length) : slide
+    )));
+    showToast(`Applied ${template.label} to current slide`);
+  };
+
   const addDeckSlide = () => {
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
     const preset = DECK_DESIGN_PRESETS[(nextId - 1) % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
@@ -4252,6 +4479,12 @@ Rules:
       designPresetKey: preset.key,
       headline: `Original concept for Slide ${nextId}`,
       blurb: 'Click and edit this text to shape your message.',
+      visualType: 'hero statement',
+      layoutStyle: 'cinematic split',
+      motionCue: 'Soft fade and stagger reveal',
+      keyMetric: '',
+      speakerNotes: '',
+      section: inferDeckStorySection({ title: `Slide ${nextId}` }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
       footer: 'Original design · Editable',
     };
     setDeckSlidesData((prev) => [...prev, newSlide]);
@@ -4562,11 +4795,11 @@ Rules:
     ]
     : smartAssistMode === 'deck'
       ? [
-        { key: 'suggest-layouts', label: 'Suggest layouts', detail: 'Better arrangement for this content', icon: LayoutGrid, color: 'text-violet-500', prompt: 'Suggest stronger slide layouts for this content with clearer visual hierarchy.' },
-        { key: 'speaker-notes', label: 'Create speaker notes', detail: 'Turn bullets into talking points', icon: FileText, color: 'text-indigo-500', prompt: 'Create concise speaker notes for each point on this slide.' },
-        { key: 'suggest-visuals', label: 'Suggest visuals', detail: 'Recommend charts and diagrams', icon: Sparkles, color: 'text-emerald-500', prompt: 'Suggest visuals, charts, or diagrams that would improve this slide and why.' },
-        { key: 'redesign-slide', label: 'Redesign this slide', detail: 'Improve spacing, emphasis, and hierarchy', icon: PenTool, color: 'text-fuchsia-500', prompt: 'Redesign this slide with improved visual hierarchy, spacing, and emphasis.' },
-        { key: 'expand-outline', label: 'Expand this outline', detail: 'Develop thin content with examples', icon: ListTodo, color: 'text-cyan-500', prompt: 'Expand this outline with stronger points, examples, and supporting narrative.' },
+        { key: 'investor-tone', label: 'Investor Tone', detail: 'Sharper fundraise narrative', icon: LayoutGrid, color: 'text-violet-500', prompt: 'Turn this deck into investor tone with stronger proof points, risks, and ask clarity.' },
+        { key: 'comparison-slide', label: 'Comparison Slide', detail: 'Add competitive framing visual', icon: Sparkles, color: 'text-indigo-500', prompt: 'Generate a competitor comparison slide with clear positioning and defensibility.' },
+        { key: 'visual-first', label: 'Make More Visual', detail: 'Less text, stronger visuals', icon: PenTool, color: 'text-emerald-500', prompt: 'Make the deck more visual by reducing text density and introducing chart/diagram-ready layouts.' },
+        { key: 'compress-flow', label: 'Reduce To 8 Slides', detail: 'Tighter executive pacing', icon: ListTodo, color: 'text-fuchsia-500', prompt: 'Reduce this presentation to 8 slides while preserving the strongest narrative arc.' },
+        { key: 'speaker-notes', label: 'Speaker Notes', detail: 'Create persuasive talking tracks', icon: FileText, color: 'text-cyan-500', prompt: 'Generate speaker notes for each slide with transitions and anticipated audience questions.' },
       ]
       : [
         { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content to be more professional while preserving meaning.' },
@@ -4905,50 +5138,63 @@ Rules:
                 {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet. Create one to see a live preview.'}
               </div>
             )}
-            {(isSheetsMode ? sheetsData : deckSlides).map((item) => {
+            {(isSheetsMode ? sheetsData : deckSlides).map((item, index, collection) => {
               const isActive = isSheetsMode ? item.id === activeSheetId : item.id === activeDeckSlideId;
+              const currentSection = !isSheetsMode ? (item.section || inferDeckStorySection(item, index, collection.length)) : '';
+              const previousSection = !isSheetsMode && index > 0
+                ? (collection[index - 1].section || inferDeckStorySection(collection[index - 1], index - 1, collection.length))
+                : '';
+              const shouldShowSectionHeader = !isSheetsMode && (index === 0 || currentSection !== previousSection);
               return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    setPageContextMenu({
-                      open: true,
-                      x: event.clientX,
-                      y: event.clientY,
-                      itemId: item.id,
-                      isSheets: isSheetsMode,
-                    });
-                  }}
-                  onClick={() => {
-                    if (isSheetsMode) {
-                      setActiveSheetId(item.id);
-                      setSheetsTitle(item.title);
-                    } else {
-                      setActiveDeckSlideId(item.id);
-                    }
-                  }}
-                  className={`w-full rounded-xl border p-2 text-left transition-colors ${isActive ? 'border-violet-300 bg-violet-50/70' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
-                >
-                  <div className="flex items-start gap-2">
-                    <div className="w-20 h-12 rounded-md shrink-0 relative overflow-hidden border border-gray-200 bg-white">
-                      <img
-                        src={isSheetsMode
-                          ? (sheetSnapshotPreviews[item.id] || buildSheetPreviewDataUri(item))
-                          : (deckSnapshotPreviews[item.id] || buildDeckPreviewDataUri(item))}
-                        alt={isSheetsMode ? `Sheet preview ${item.title}` : `Slide preview ${item.title}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+                <React.Fragment key={item.id}>
+                  {shouldShowSectionHeader && (
+                    <div className="pt-1 pb-0.5 px-1">
+                      <div className="inline-flex items-center rounded-full border border-violet-100 bg-violet-50/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-violet-700">
+                        {currentSection}
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-[10px] text-gray-400">{String(item.id).padStart(2, '0')}</div>
-                      <div className="text-xs font-semibold text-gray-800 truncate">{item.title}</div>
-                      <div className="text-[11px] text-gray-500 truncate">{item.subtitle}</div>
+                  )}
+                  <button
+                    type="button"
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      setPageContextMenu({
+                        open: true,
+                        x: event.clientX,
+                        y: event.clientY,
+                        itemId: item.id,
+                        isSheets: isSheetsMode,
+                      });
+                    }}
+                    onClick={() => {
+                      if (isSheetsMode) {
+                        setActiveSheetId(item.id);
+                        setSheetsTitle(item.title);
+                      } else {
+                        setActiveDeckSlideId(item.id);
+                      }
+                    }}
+                    className={`w-full rounded-xl border p-2 text-left transition-colors ${isActive ? 'border-violet-300 bg-violet-50/70' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div className="w-20 h-12 rounded-md shrink-0 relative overflow-hidden border border-gray-200 bg-white">
+                        <img
+                          src={isSheetsMode
+                            ? (sheetSnapshotPreviews[item.id] || buildSheetPreviewDataUri(item))
+                            : (deckSnapshotPreviews[item.id] || buildDeckPreviewDataUri(item))}
+                          alt={isSheetsMode ? `Sheet preview ${item.title}` : `Slide preview ${item.title}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[10px] text-gray-400">{String(item.id).padStart(2, '0')}</div>
+                        <div className="text-xs font-semibold text-gray-800 truncate">{item.title}</div>
+                        <div className="text-[11px] text-gray-500 truncate">{item.subtitle}</div>
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                </React.Fragment>
               );
             })}
             <button
@@ -5282,6 +5528,55 @@ Rules:
                       </div>
                     </div>
 
+                    {deckContextRailTab === 'Template' && (
+                      <div className="mt-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/40 to-white p-3 shadow-[0_16px_30px_-24px_rgba(109,40,217,0.45)]">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <div className="text-xs font-semibold text-gray-900">Available Templates</div>
+                            <div className="text-[11px] text-gray-500">Apply to current slide or the whole deck.</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setDeckContextRailTab('Design')}
+                            className="text-[11px] px-2 py-1 rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-violet-300 hover:text-violet-700"
+                          >
+                            Back to Design
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {DECK_TEMPLATE_LIBRARY.map((template) => {
+                            const preset = DECK_DESIGN_PRESETS.find((item) => item.key === template.presetKey) || DECK_DESIGN_PRESETS[0];
+                            const selected = activeDeckSlide?.designPresetKey === template.presetKey
+                              && activeDeckSlide?.layoutStyle === template.layoutStyle;
+                            return (
+                              <div key={template.key} className={`rounded-xl border p-2.5 ${selected ? 'border-violet-300 bg-violet-50/60' : 'border-gray-200 bg-white'}`}>
+                                <div className={`h-16 rounded-lg ${preset.background} border border-white/20`} />
+                                <div className="mt-2 text-xs font-semibold text-gray-900">{template.label}</div>
+                                <div className="text-[11px] text-gray-500">{template.detail}</div>
+                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} · {template.motionCue}</div>
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => applyDeckTemplate(template, 'slide')}
+                                    className="px-2 py-1 rounded-lg text-[11px] border border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
+                                  >
+                                    Apply Slide
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => applyDeckTemplate(template, 'deck')}
+                                    className="px-2 py-1 rounded-lg text-[11px] border border-gray-200 bg-white text-gray-700 hover:border-violet-300 hover:text-violet-700"
+                                  >
+                                    Apply Deck
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
                     <div ref={deckCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
                       <div className={`relative p-8 md:p-12 ${resolvedDeckSlideDesign.preset.background} min-h-[430px] flex flex-col justify-between`} style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
                         <div className="flex items-center justify-between text-[13px] text-indigo-100/90" style={{ fontFamily: deckToolbarFont }}>
@@ -5309,6 +5604,21 @@ Rules:
                           </p>
                         </div>
                         <div className="absolute top-6 right-6 w-14 h-14 rounded-xl border border-dashed border-white/40 bg-white/5 flex items-center justify-center text-[10px] text-white/70">Logo</div>
+                        <div className="absolute right-6 top-24 w-[210px] rounded-2xl border border-white/20 bg-white/10 backdrop-blur px-3 py-2.5 text-white/90">
+                          <div className="text-[10px] uppercase tracking-wide text-indigo-100/80">Visual Direction</div>
+                          <div className="mt-1 text-xs font-semibold">{resolvedDeckSlideDesign.visualType}</div>
+                          <div className="mt-1 text-[11px] text-indigo-100/80">{resolvedDeckSlideDesign.layoutStyle}</div>
+                          <div className="mt-2 text-[10px] uppercase tracking-wide text-indigo-100/75">Motion</div>
+                          <div className="text-[11px]">{resolvedDeckSlideDesign.motionCue}</div>
+                          {resolvedDeckSlideDesign.keyMetric && (
+                            <div className="mt-2 rounded-lg bg-white/10 px-2 py-1 text-[11px]">
+                              Key metric: {resolvedDeckSlideDesign.keyMetric}
+                            </div>
+                          )}
+                        </div>
+                        <div className="absolute left-6 top-6 inline-flex items-center rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[10px] uppercase tracking-wide text-indigo-50">
+                          {resolvedDeckSlideDesign.section}
+                        </div>
                         <div
                           contentEditable
                           suppressContentEditableWarning
@@ -5340,9 +5650,9 @@ Rules:
                     </div>
                   </div>
                 )}
-                {!deckPromptMinimized && (
+                {!deckPromptMinimized && !isComposing && (
                   <form
-                    className="mt-4 rounded-[24px] border border-gray-200 bg-white/95 p-3 shadow-[0_16px_35px_-25px_rgba(15,23,42,0.6)] cursor-grab active:cursor-grabbing"
+                    className="mt-4 rounded-[24px] border border-violet-100 bg-gradient-to-br from-white via-violet-50/30 to-white p-3 shadow-[0_18px_40px_-28px_rgba(76,29,149,0.45)] cursor-grab active:cursor-grabbing"
                     style={{ transform: `translate(${deckPromptOffset.x}px, ${deckPromptOffset.y}px)` }}
                     onPointerDown={(event) => beginPanelResize('deckPrompt', event)}
                     onSubmit={(event) => {
@@ -5370,6 +5680,27 @@ Rules:
                       >
                         <X size={14} />
                       </button>
+                    </div>
+                    <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                      {[
+                        'Turn this into investor tone',
+                        'Generate competitor comparison slide',
+                        'Make more visual',
+                        'Reduce to 8 slides',
+                        'Simplify for students',
+                      ].map((command) => (
+                        <button
+                          key={command}
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDeckPromptInput(command);
+                          }}
+                          className="px-2.5 py-1 rounded-full text-[10px] border border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
+                        >
+                          {command}
+                        </button>
+                      ))}
                     </div>
                     <div className="rounded-full border border-gray-200 bg-[#fcfcfe] px-2 py-1.5 flex items-center gap-2">
                       <input
@@ -5589,37 +5920,126 @@ Rules:
 
                 {activeRightTab === 'assistant' && (
                   <div className="flex-1 overflow-y-auto p-5 space-y-6">
-                    <div>
-                      <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
-                      <p className="text-xs text-gray-500">{smartAssistIntro}</p>
-                    </div>
-                    <div className="space-y-2">
-                      {smartAssistOptions.map((option) => {
-                        const Icon = option.icon;
-                        return (
-                          <button
-                            key={option.key}
-                            onClick={() => runSmartAssistAction(option.prompt)}
-                            className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"
-                          >
-                            <Icon size={16} className={option.color} />
-                            <div>
-                              <div className="font-semibold text-xs">{option.label}</div>
-                              <p className="text-[10px] text-gray-400">{option.detail}</p>
+                    {productMode === 'deck' ? (
+                      <>
+                        <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-violet-50 via-white to-white p-4 shadow-[0_18px_35px_-25px_rgba(124,58,237,0.45)]">
+                          <h3 className="text-sm font-bold text-gray-900">Deck Intelligence</h3>
+                          <p className="text-xs text-gray-500 mt-1">Strategic analysis across narrative quality, pacing, and audience fit.</p>
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            <div className="rounded-xl border border-gray-200 bg-white px-3 py-2">
+                              <div className="text-[10px] uppercase tracking-wide text-gray-400">Narrative Quality</div>
+                              <div className="text-xs font-semibold text-gray-800 mt-1">{deckIntelligence.narrativeQuality}</div>
                             </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <div>
-                      <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
-                      <form onSubmit={handleAssistantQuickPromptSend} className="rounded-xl p-3 border border-violet-100/70 bg-gradient-to-br from-violet-50/60 via-white to-white space-y-2 shadow-[0_10px_25px_-20px_rgba(109,40,217,0.55)]">
-                        <textarea value={assistantQuickPrompt} onChange={(e) => setAssistantQuickPrompt(e.target.value)} placeholder="Ask AI Assistant from here..." rows={2} className="w-full bg-white/95 border border-violet-100 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]" />
-                        <div className="flex items-center justify-end">
-                          <button type="submit" disabled={isComposing || !assistantQuickPrompt.trim()} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}>Send to AI</button>
+                            <div className="rounded-xl border border-gray-200 bg-white px-3 py-2">
+                              <div className="text-[10px] uppercase tracking-wide text-gray-400">Pacing</div>
+                              <div className="text-xs font-semibold text-gray-800 mt-1">{deckIntelligence.pacingQuality}</div>
+                            </div>
+                          </div>
                         </div>
-                      </form>
-                    </div>
+
+                        <div className="space-y-2">
+                          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">AI Suggestions</div>
+                          {deckIntelligence.suggestions.map((suggestion) => (
+                            <div key={suggestion} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700">
+                              {suggestion}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Weak Slides</div>
+                          {deckIntelligence.weakSlides.length ? deckIntelligence.weakSlides.map((item) => (
+                            <div key={item} className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 text-xs text-amber-900">
+                              {item}
+                            </div>
+                          )) : (
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-800">No weak slides detected in current narrative.</div>
+                          )}
+                        </div>
+
+                        <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700">
+                          <div className="text-[10px] uppercase tracking-wide text-gray-400 mb-1">Audience Fit</div>
+                          {deckIntelligence.audienceFit}
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Related Sources</div>
+                          {deckIntelligence.relatedSources.length ? deckIntelligence.relatedSources.map((source) => (
+                            <div key={source} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700">{source}</div>
+                          )) : (
+                            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-3 py-2 text-xs text-gray-500">Attach docs, PDFs, sheets, images, or transcripts to strengthen source grounding.</div>
+                          )}
+                        </div>
+
+                        <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700">
+                          <div className="text-[10px] uppercase tracking-wide text-gray-400 mb-1">Speaker Notes</div>
+                          {deckIntelligence.speakerNotes}
+                        </div>
+
+                        <div className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700">
+                          <div className="text-[10px] uppercase tracking-wide text-gray-400 mb-1">Presentation Summary</div>
+                          {deckIntelligence.presentationSummary}
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Suggested Additions</div>
+                          {deckIntelligence.suggestedAdditions.map((item) => (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => runSmartAssistAction(`Add a new slide for: ${item}. Keep it visual, concise, and presentation-ready.`)}
+                              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-left text-xs text-gray-700 hover:border-violet-200 hover:bg-violet-50"
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div>
+                          <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Universal AI Command</h4>
+                          <form onSubmit={handleAssistantQuickPromptSend} className="rounded-xl p-3 border border-violet-100/70 bg-gradient-to-br from-violet-50/60 via-white to-white space-y-2 shadow-[0_10px_25px_-20px_rgba(109,40,217,0.55)]">
+                            <textarea value={assistantQuickPrompt} onChange={(e) => setAssistantQuickPrompt(e.target.value)} placeholder="E.g. Make this deck more visual and investor-ready" rows={2} className="w-full bg-white/95 border border-violet-100 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]" />
+                            <div className="flex items-center justify-end">
+                              <button type="submit" disabled={isComposing || !assistantQuickPrompt.trim()} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}>Run AI Command</button>
+                            </div>
+                          </form>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
+                          <p className="text-xs text-gray-500">{smartAssistIntro}</p>
+                        </div>
+                        <div className="space-y-2">
+                          {smartAssistOptions.map((option) => {
+                            const Icon = option.icon;
+                            return (
+                              <button
+                                key={option.key}
+                                onClick={() => runSmartAssistAction(option.prompt)}
+                                className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"
+                              >
+                                <Icon size={16} className={option.color} />
+                                <div>
+                                  <div className="font-semibold text-xs">{option.label}</div>
+                                  <p className="text-[10px] text-gray-400">{option.detail}</p>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div>
+                          <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
+                          <form onSubmit={handleAssistantQuickPromptSend} className="rounded-xl p-3 border border-violet-100/70 bg-gradient-to-br from-violet-50/60 via-white to-white space-y-2 shadow-[0_10px_25px_-20px_rgba(109,40,217,0.55)]">
+                            <textarea value={assistantQuickPrompt} onChange={(e) => setAssistantQuickPrompt(e.target.value)} placeholder="Ask AI Assistant from here..." rows={2} className="w-full bg-white/95 border border-violet-100 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]" />
+                            <div className="flex items-center justify-end">
+                              <button type="submit" disabled={isComposing || !assistantQuickPrompt.trim()} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}>Send to AI</button>
+                            </div>
+                          </form>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
