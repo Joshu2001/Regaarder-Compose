@@ -102,11 +102,23 @@ export default function App() {
   const [creationPickerOpen, setCreationPickerOpen] = useState(false);
   const [activeDeckSlideId, setActiveDeckSlideId] = useState(1);
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
+  const [sheetsTitle, setSheetsTitle] = useState('Q2 Financial Overview');
+  const [activeSheetId, setActiveSheetId] = useState(1);
+  const [sheetsData] = useState([
+    { id: 1, title: 'Q2 Financial Overview', subtitle: 'Finance' },
+    { id: 2, title: 'Revenue Breakdown', subtitle: 'Finance' },
+    { id: 3, title: 'Profit & Loss', subtitle: 'Finance' },
+    { id: 4, title: 'Cash Flow Statement', subtitle: 'Finance' },
+    { id: 5, title: 'Product Metrics', subtitle: 'Operations' },
+    { id: 6, title: 'Team OKRs', subtitle: 'Operations' },
+    { id: 7, title: 'Market Research', subtitle: 'Analysis' },
+  ]);
   const [deckPromptInput, setDeckPromptInput] = useState('');
   const [deckPromptMinimized, setDeckPromptMinimized] = useState(false);
   const [deckPromptOffset, setDeckPromptOffset] = useState({ x: 0, y: 0 });
+  const [deckPromptChips, setDeckPromptChips] = useState(['Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft']);
+  const [deckCustomChip, setDeckCustomChip] = useState('');
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
-  const [deckUtilityTab, setDeckUtilityTab] = useState('assistant');
   const [deckSlidesData, setDeckSlidesData] = useState([
     { id: 1, title: 'Opening', subtitle: 'Problem worth solving', accent: 'from-indigo-500 to-violet-500' },
     { id: 2, title: 'Opportunity', subtitle: 'The market shift', accent: 'from-sky-500 to-indigo-500' },
@@ -3134,11 +3146,27 @@ Rules:
     setActiveDeckSlideId(1);
     setDeckPromptInput('');
     setDeckPromptMinimized(false);
+    setDeckPromptChips(['Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft']);
+    setDeckCustomChip('');
     setDeckSlidesPanelOpen(true);
-    setDeckUtilityTab('assistant');
     setRightSidebarOpen(true);
     setActiveRightTab('assistant');
     showToast('Deck workspace ready');
+  };
+
+  const createSheetsExperience = () => {
+    setCreationPickerOpen(false);
+    setProductMode('sheets');
+    setSheetsTitle('Q2 Financial Overview');
+    setActiveSheetId(1);
+    setDeckPromptInput('');
+    setDeckPromptMinimized(false);
+    setDeckPromptChips(['Analyze this data', 'Create pivot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year']);
+    setDeckCustomChip('');
+    setDeckSlidesPanelOpen(true);
+    setRightSidebarOpen(true);
+    setActiveRightTab('assistant');
+    showToast('Sheets workspace ready');
   };
 
   const requestCloseDocument = (docId) => {
@@ -4116,6 +4144,8 @@ Rules:
   );
   const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
+  const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
+  const isSheetsMode = productMode === 'sheets';
   const addDeckSlide = () => {
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
     const newSlide = {
@@ -4134,7 +4164,7 @@ Rules:
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
 
-  if (productMode === 'deck') {
+  if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div className="flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative">
         {toastMessage && (
@@ -4162,7 +4192,7 @@ Rules:
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={createComposeExperience}
@@ -4185,6 +4215,18 @@ Rules:
                   </div>
                   <div className="text-sm font-semibold text-gray-900 mb-1">Deck</div>
                   <p className="text-xs text-gray-600">Our presentation workspace for slide-first storytelling and AI deck intelligence.</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={createSheetsExperience}
+                  className="group text-left rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 hover:bg-emerald-50 transition-colors"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center mb-3">
+                    <Database size={18} />
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 mb-1">Sheets</div>
+                  <p className="text-xs text-gray-600">Our spreadsheet workspace for AI-native analysis, modeling, and planning.</p>
                 </button>
               </div>
             </div>
@@ -4352,25 +4394,42 @@ Rules:
         {deckSlidesPanelOpen && (
         <aside className="w-[220px] border-r border-gray-200 bg-[#f8f9fd] flex flex-col">
           <div className="px-4 py-4 border-b border-gray-200">
-            <div className="text-sm font-semibold text-gray-800">Narrative</div>
-            <div className="text-[11px] text-gray-500 mt-1">Investor Pitch</div>
+            <div className="text-sm font-semibold text-gray-800">{isSheetsMode ? 'Sheets' : 'Narrative'}</div>
+            <div className="text-[11px] text-gray-500 mt-1">{isSheetsMode ? 'Financial models' : 'Investor Pitch'}</div>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {deckSlides.map((slide) => {
-              const isActive = slide.id === activeDeckSlideId;
+            {(isSheetsMode ? sheetsData : deckSlides).map((item) => {
+              const isActive = isSheetsMode ? item.id === activeSheetId : item.id === activeDeckSlideId;
               return (
                 <button
-                  key={slide.id}
+                  key={item.id}
                   type="button"
-                  onClick={() => setActiveDeckSlideId(slide.id)}
+                  onClick={() => {
+                    if (isSheetsMode) {
+                      setActiveSheetId(item.id);
+                      setSheetsTitle(item.title);
+                    } else {
+                      setActiveDeckSlideId(item.id);
+                    }
+                  }}
                   className={`w-full rounded-xl border p-2 text-left transition-colors ${isActive ? 'border-violet-300 bg-violet-50/70' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
                 >
                   <div className="flex items-start gap-2">
-                    <div className={`w-14 h-10 rounded-md bg-gradient-to-br ${slide.accent} shrink-0`} />
+                    <div className={`w-20 h-12 rounded-md ${isSheetsMode ? 'bg-white border border-gray-200' : `bg-gradient-to-br ${item.accent} border border-white/30`} shrink-0 relative overflow-hidden`}>
+                      <div className="absolute inset-0 bg-black/15" />
+                      <div className="absolute left-1.5 top-1.5 right-1.5">
+                        <div className={`h-1 w-8 rounded mb-1 ${isSheetsMode ? 'bg-violet-200' : 'bg-white/80'}`} />
+                        <div className={`h-1 w-10 rounded ${isSheetsMode ? 'bg-violet-100' : 'bg-white/55'}`} />
+                      </div>
+                      <div className={`absolute left-1.5 bottom-1.5 h-1 w-12 rounded ${isSheetsMode ? 'bg-gray-200' : 'bg-white/40'}`} />
+                      {isSheetsMode && (
+                        <div className="absolute inset-x-1.5 top-6 h-[1px] bg-gray-200" />
+                      )}
+                    </div>
                     <div className="min-w-0">
-                      <div className="text-[10px] text-gray-400">{String(slide.id).padStart(2, '0')}</div>
-                      <div className="text-xs font-semibold text-gray-800 truncate">{slide.title}</div>
-                      <div className="text-[11px] text-gray-500 truncate">{slide.subtitle}</div>
+                      <div className="text-[10px] text-gray-400">{String(item.id).padStart(2, '0')}</div>
+                      <div className="text-xs font-semibold text-gray-800 truncate">{item.title}</div>
+                      <div className="text-[11px] text-gray-500 truncate">{item.subtitle}</div>
                     </div>
                   </div>
                 </button>
@@ -4378,10 +4437,10 @@ Rules:
             })}
             <button
               type="button"
-              onClick={addDeckSlide}
+              onClick={isSheetsMode ? () => showToast('Use + Add worksheet for new tabs.') : addDeckSlide}
               className="w-full rounded-xl border border-dashed border-gray-300 py-2 text-xs font-medium text-gray-500 hover:border-violet-300 hover:text-violet-700"
             >
-              + New slide
+              {isSheetsMode ? '+ Add worksheet' : '+ New slide'}
             </button>
           </div>
         </aside>
@@ -4398,13 +4457,13 @@ Rules:
               >
                 {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
               </button>
-              <div className="text-sm font-semibold text-gray-900 truncate">Regaarder Deck</div>
+              <div className="text-sm font-semibold text-gray-900 truncate">{isSheetsMode ? 'Regaarder Sheets' : 'Regaarder Deck'}</div>
               <input
                 type="text"
-                value={deckTitle}
-                onChange={(event) => setDeckTitle(event.target.value)}
+                value={isSheetsMode ? sheetsTitle : deckTitle}
+                onChange={(event) => isSheetsMode ? setSheetsTitle(event.target.value) : setDeckTitle(event.target.value)}
                 className="text-sm text-gray-500 truncate bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-300 rounded px-2 py-0.5 outline-none"
-                placeholder="Untitled deck"
+                placeholder={isSheetsMode ? 'Untitled sheetbook' : 'Untitled deck'}
               />
               <div className="text-xs text-gray-400">Saved just now</div>
             </div>
@@ -4431,27 +4490,77 @@ Rules:
           <div className="flex-1 min-h-0 p-4 flex gap-4">
             <section className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col">
               <div className="mx-auto w-full max-w-[860px]">
-                <div className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
-                  <div className="relative p-8 md:p-12 bg-[radial-gradient(circle_at_78%_75%,rgba(255,146,126,0.38)_0%,rgba(31,35,74,0)_38%),radial-gradient(circle_at_24%_22%,rgba(120,119,198,0.55)_0%,rgba(14,17,42,0)_44%),linear-gradient(150deg,#090d2f_0%,#11163f_52%,#1d123a_100%)] min-h-[430px] flex flex-col justify-between">
-                    <div className="flex items-center justify-between text-[13px] text-indigo-100/90">
-                      <span className="font-medium">Regaarder</span>
-                      <span>Investor Pitch</span>
+                {isSheetsMode ? (
+                  <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)]">
+                    <div className="px-4 py-3 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
+                      <button className="px-2 py-1 rounded bg-white border border-gray-200">Data</button>
+                      <button className="px-2 py-1 rounded bg-white border border-gray-200">Insert</button>
+                      <button className="px-2 py-1 rounded bg-white border border-gray-200">Analyze</button>
+                      <button className="px-2 py-1 rounded bg-violet-50 border border-violet-200 text-violet-700">AI</button>
                     </div>
-                    <div>
-                      <h1 className="text-5xl leading-[1.1] font-medium text-white max-w-[620px]">A new standard for intelligent productivity</h1>
-                      <p className="mt-5 text-indigo-100/85 text-2xl max-w-[540px]">Regaarder unifies thinking, creating, and teamwork in one adaptive workspace.</p>
+                    <div className="p-4">
+                      <h2 className="text-3xl font-semibold text-gray-900 mb-1">{sheetsTitle}</h2>
+                      <p className="text-xs text-gray-500 mb-3">All numbers in USD</p>
+                      <div className="rounded-xl border border-gray-200 overflow-hidden">
+                        <table className="w-full text-xs">
+                          <thead className="bg-[#10162f] text-white">
+                            <tr>
+                              <th className="px-3 py-2 text-left">Category</th>
+                              <th className="px-3 py-2 text-left">Apr 2026</th>
+                              <th className="px-3 py-2 text-left">May 2026</th>
+                              <th className="px-3 py-2 text-left">Jun 2026</th>
+                              <th className="px-3 py-2 text-left">Q2 Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {[
+                              ['Revenue', '$1,250,000', '$1,480,000', '$1,720,000', '$4,450,000'],
+                              ['Cost of Goods Sold', '$420,000', '$470,000', '$520,000', '$1,410,000'],
+                              ['Gross Profit', '$830,000', '$1,010,000', '$1,200,000', '$3,040,000'],
+                              ['Operating Expenses', '$310,000', '$330,000', '$350,000', '$990,000'],
+                              ['Net Profit', '$520,000', '$680,000', '$850,000', '$2,050,000'],
+                            ].map((row) => (
+                              <tr key={row[0]} className="border-t border-gray-100">
+                                {row.map((cell) => <td key={`${row[0]}-${cell}`} className="px-3 py-2 text-gray-700">{cell}</td>)}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                    <div className="absolute top-6 right-6 w-14 h-14 rounded-xl border border-dashed border-white/40 bg-white/5 flex items-center justify-center text-[10px] text-white/70">
-                      Logo
-                    </div>
-                    <div className="text-sm text-indigo-100/80">May 15, 2026 · Slide {activeDeckSlide.id}: {activeDeckSlide.title}</div>
                   </div>
-                </div>
+                ) : (
+                  <div className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
+                    <div className="relative p-8 md:p-12 bg-[radial-gradient(circle_at_78%_75%,rgba(255,146,126,0.38)_0%,rgba(31,35,74,0)_38%),radial-gradient(circle_at_24%_22%,rgba(120,119,198,0.55)_0%,rgba(14,17,42,0)_44%),linear-gradient(150deg,#090d2f_0%,#11163f_52%,#1d123a_100%)] min-h-[430px] flex flex-col justify-between">
+                      <div className="flex items-center justify-between text-[13px] text-indigo-100/90">
+                        <span className="font-medium">Regaarder</span>
+                        <span>Investor Pitch</span>
+                      </div>
+                      <div>
+                        <h1 className="text-5xl leading-[1.1] font-medium text-white max-w-[620px]">A new standard for intelligent productivity</h1>
+                        <p className="mt-5 text-indigo-100/85 text-2xl max-w-[540px]">Regaarder unifies thinking, creating, and teamwork in one adaptive workspace.</p>
+                      </div>
+                      <div className="absolute top-6 right-6 w-14 h-14 rounded-xl border border-dashed border-white/40 bg-white/5 flex items-center justify-center text-[10px] text-white/70">Logo</div>
+                      <div className="text-sm text-indigo-100/80">May 15, 2026 · Slide {activeDeckSlide.id}: {activeDeckSlide.title}</div>
+                    </div>
+                  </div>
+                )}
                 {!deckPromptMinimized && (
-                  <div
+                  <form
                     className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm cursor-grab active:cursor-grabbing"
                     style={{ transform: `translate(${deckPromptOffset.x}px, ${deckPromptOffset.y}px)` }}
                     onPointerDown={(event) => beginPanelResize('deckPrompt', event)}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      const prompt = deckPromptInput.trim();
+                      if (!prompt || isComposing) {
+                        return;
+                      }
+                      setActiveRightTab('chat');
+                      setRightSidebarOpen(true);
+                      handleAISubmit(prompt, { source: 'chat' });
+                      setDeckPromptInput('');
+                    }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-[11px] uppercase tracking-wide text-violet-600 font-semibold">AI Prompt Box</div>
@@ -4469,43 +4578,67 @@ Rules:
                       onChange={(event) => setDeckPromptInput(event.target.value)}
                       onPointerDown={(event) => event.stopPropagation()}
                       rows={3}
-                      placeholder="Ask AI Assistant from here..."
+                      placeholder={isSheetsMode ? 'Ask Sheets AI to analyze, model, or forecast...' : 'Ask AI Assistant from here...'}
                       className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-violet-300"
                     />
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
-                      {['Investor Pitch', 'Product Launch', 'Lecture', 'Research Summary', 'Sales Narrative'].map((chip) => (
+                      {deckPromptChips.map((chip) => (
                         <button
                           key={chip}
                           type="button"
-                          onClick={() => setDeckPromptInput((prev) => (prev ? `${prev} ${chip}` : chip))}
+                          onClick={() => {
+                            const formatPrompt = `Format: ${chip}.\n\n${deckPromptInput.trim() || (isSheetsMode ? 'Analyze this sheet and produce insights.' : 'Generate content for this deck slide.')}`;
+                            setDeckPromptInput(formatPrompt);
+                          }}
                           className="px-2.5 py-1.5 rounded-full text-xs border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-700"
                         >
                           {chip}
                         </button>
                       ))}
+                      <div className="ml-auto flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          value={deckCustomChip}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          onChange={(event) => setDeckCustomChip(event.target.value)}
+                          placeholder="Custom chip"
+                          className="h-8 w-28 px-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-violet-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            const chip = deckCustomChip.trim();
+                            if (!chip) return;
+                            if (!deckPromptChips.includes(chip)) {
+                              setDeckPromptChips((prev) => [...prev, chip]);
+                            }
+                            setDeckCustomChip('');
+                          }}
+                          className="h-8 px-2 rounded-lg text-xs border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-700"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center justify-end">
                       <button
-                        type="button"
-                        onClick={() => {
-                          setActiveRightTab('assistant');
-                          setDeckUtilityTab('assistant');
-                          setRightSidebarOpen(true);
-                          if (deckPromptInput.trim()) {
-                            setAssistantQuickPrompt(deckPromptInput.trim());
-                            setDeckPromptInput('');
-                            showToast('Prompt sent to AI Assistant');
-                          }
-                        }}
-                        className="ml-auto px-3 h-8 rounded-lg bg-violet-600 text-white text-xs font-medium hover:bg-violet-700"
+                        type="submit"
+                        disabled={isComposing || !deckPromptInput.trim()}
+                        className={`px-3 h-8 rounded-lg text-xs font-medium ${isComposing || !deckPromptInput.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700'}`}
                       >
                         Send to AI
                       </button>
                     </div>
-                  </div>
+                  </form>
                 )}
               </div>
             </section>
 
-            <aside className="w-[340px] shrink-0 rounded-2xl border border-gray-200 bg-white flex flex-col min-h-0 relative">
+            <aside
+              className={`shrink-0 rounded-2xl border border-gray-200 bg-white flex flex-col min-h-0 relative transition-[width] duration-300 ${rightSidebarOpen ? '' : 'w-0 overflow-hidden border-0'}`}
+              style={rightSidebarOpen ? { width: `${rightSidebarWidth}px` } : { width: '0px' }}
+            >
               <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC] rounded-t-2xl">
                 <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
                   <div className="inline-flex min-w-max">
@@ -4528,56 +4661,87 @@ Rules:
                     ))}
                   </div>
                 </div>
+                <div className="w-10 shrink-0 flex items-center justify-center border-l border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setRightSidebarOpen(false)}
+                    className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                    title="Close panel"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {activeRightTab === 'assistant' && (
-                  <>
-                    <div className="text-xs font-semibold text-violet-600">AI Assistant</div>
-                    <div className="rounded-xl border border-gray-200 p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-800">Deck Intelligence</span>
-                        <ChevronDown size={14} className="text-gray-400" />
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-20 h-20 rounded-full border-[6px] border-violet-500 text-gray-900 flex items-center justify-center text-2xl font-semibold">86</div>
-                        <div className="text-xs text-gray-600 space-y-1">
-                          <div>Great narrative flow</div>
-                          <div>Strong problem framing</div>
-                          <div>Good market positioning</div>
+              <div className="flex-1 flex flex-col min-h-0 bg-white">
+                {activeRightTab === 'chat' && (
+                  <div className="flex-1 flex flex-col min-h-0">
+                    <div className="px-4 py-2 bg-violet-50/40 border-b border-violet-100/30 flex items-center gap-2 text-xs text-violet-700">
+                      <FileText size={12} />
+                      <span className="font-medium truncate">Context Linked: {isSheetsMode ? (sheetsTitle || activeSheet?.title || docTitle) : (deckTitle || docTitle)}</span>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      {chatMessages.map((msg) => (
+                        <div key={msg.id} className={`group flex flex-col max-w-[85%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
+                          <span className="text-[10px] text-gray-400 mb-1 px-1">{msg.sender === 'user' ? 'Alex R.' : 'Compose AI'}</span>
+                          <div className={`p-3 rounded-2xl text-sm leading-relaxed ${msg.sender === 'user' ? 'bg-violet-600 text-white rounded-tr-xs shadow-sm' : 'bg-[#FAFAFC] text-gray-700 border border-gray-100 rounded-tl-xs shadow-xs'}`}>{msg.text}</div>
                         </div>
-                      </div>
+                      ))}
+                      {isComposing && <div className="flex items-center gap-2 text-xs text-gray-400 p-2 animate-pulse"><Loader2 className="animate-spin text-violet-500" size={14} /><span>Compose AI is writing...</span></div>}
+                      <div ref={chatEndRef} />
                     </div>
-                    <div className="rounded-xl border border-gray-200 p-3">
-                      <div className="text-sm font-semibold text-gray-800 mb-2">AI Suggestions</div>
-                      <div className="space-y-2 text-xs text-gray-600">
-                        <div>Slide 4 could show more product value.</div>
-                        <div>Add a customer proof point in Slide 7.</div>
-                        <div>Consider a stronger closing statement.</div>
+                    <form onSubmit={handleSidebarSend} className="p-3 border-t border-gray-100 bg-[#FAFAFC]">
+                      <div className="relative flex items-end bg-white border border-gray-200 rounded-xl focus-within:border-violet-400 transition-colors">
+                        <textarea value={chatInput} onChange={(e) => setChatInput(e.target.value)} onInput={(e) => autoResizeTextarea(e.currentTarget, 120)} placeholder="Ask, summarize, or instruct..." rows={1} className="w-full bg-transparent border-none focus:outline-none text-sm py-2.5 pl-3 pr-10 text-gray-700 placeholder-gray-400 resize-none" />
+                        <button type="submit" className="absolute right-1.5 bottom-1.5 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"><Send size={14} /></button>
                       </div>
-                    </div>
-                  </>
-                )}
-
-                {activeRightTab !== 'assistant' && (
-                  <div className="rounded-xl border border-gray-200 p-3 text-xs text-gray-600">
-                    {activeRightTab === 'chat' && 'Chat stream mirrors Compose behavior and is available here in Deck mode.'}
-                    {activeRightTab === 'tasks' && 'Task management panel mirrors Compose and can be used while editing slides.'}
-                    {activeRightTab === 'calendar' && 'Schedule planner mirrors Compose and stays docked in the same right position.'}
-                    {activeRightTab === 'room' && 'Room controls and calling tools mirror Compose in the same panel.'}
-                    {activeRightTab === 'people' && 'People panel mirrors Compose with active collaborators and contact details.'}
-                    {activeRightTab === 'memory' && 'Memory panel mirrors Compose for saved context and recent AI history.'}
+                    </form>
                   </div>
                 )}
 
-                <div className="rounded-xl border border-gray-200 p-3">
-                  <div className="text-sm font-semibold text-gray-800 mb-2">Related Resources</div>
-                  <div className="space-y-2 text-xs text-violet-700">
-                    <div>Market Research 2026</div>
-                    <div>Competitor Analysis</div>
-                    <div>Q2 Traction Update</div>
+                {activeRightTab === 'assistant' && (
+                  <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
+                      <p className="text-xs text-gray-500">Highlight text in the page or use these global actions to refine current paragraphs.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <button onClick={() => runSmartAssistAction('Improve the writing tone and professional clarity')} className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"><PenTool size={16} className="text-violet-500" /><div><div className="font-semibold text-xs">Improve writing</div><p className="text-[10px] text-gray-400">Enhance vocabulary and structure</p></div></button>
+                      <button onClick={() => runSmartAssistAction('Summarize the launch plan concisely')} className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"><FileText size={16} className="text-indigo-500" /><div><div className="font-semibold text-xs">Summarize document</div><p className="text-[10px] text-gray-400">Condense overall strategy into bullets</p></div></button>
+                      <button onClick={() => runSmartAssistAction('Make the plan shorter and more direct')} className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"><Scissors size={16} className="text-violet-400" /><div><div className="font-semibold text-xs">Make shorter</div><p className="text-[10px] text-gray-400">Prune unnecessary wording</p></div></button>
+                    </div>
+                    <div>
+                      <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
+                      <form onSubmit={handleAssistantQuickPromptSend} className="rounded-xl p-3 border border-violet-100/70 bg-gradient-to-br from-violet-50/60 via-white to-white space-y-2 shadow-[0_10px_25px_-20px_rgba(109,40,217,0.55)]">
+                        <textarea value={assistantQuickPrompt} onChange={(e) => setAssistantQuickPrompt(e.target.value)} placeholder="Ask AI Assistant from here..." rows={2} className="w-full bg-white/95 border border-violet-100 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]" />
+                        <div className="flex items-center justify-end">
+                          <button type="submit" disabled={isComposing || !assistantQuickPrompt.trim()} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}>Send to AI</button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {activeRightTab === 'calendar' && (
+                  <div className="flex-1 min-h-0 flex flex-col">
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                      <h3 className="text-sm font-bold text-gray-900">Launch Timeline</h3>
+                      <p className="text-xs text-gray-500">Consolidated product rollouts aligned with team calendar events.</p>
+                      {upcomingEvents.map((event) => (
+                        <div key={event.id} className="p-3 rounded-xl border border-gray-200 bg-white">
+                          <div className="text-xs font-semibold text-gray-800">{event.title}</div>
+                          <div className="text-[11px] text-gray-500 mt-1">{event.slotLabel}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activeRightTab !== 'chat' && activeRightTab !== 'assistant' && activeRightTab !== 'calendar' && (
+                  <div className="flex-1 overflow-y-auto p-4">
+                    <div className="rounded-xl border border-gray-200 p-3 text-xs text-gray-600">This panel follows the same tab position and controls as Compose. Select AI Chat, AI Assistant, or Schedule for full parity content.</div>
+                  </div>
+                )}
               </div>
 
               {deckPromptMinimized && (
@@ -4587,12 +4751,80 @@ Rules:
                   className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700 shadow-lg"
                   title="Open prompt box"
                 >
-                  <Sparkles size={16} />
+                  <PenTool size={16} />
                 </button>
               )}
             </aside>
           </div>
         </main>
+
+        <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto thin-scrollbar">
+          <div
+            onClick={() => handleMiniSidebarClick('chat')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'chat' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'chat' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><MessageCircle size={20} /></div>
+            <span className="text-[9px] font-semibold">Chat</span>
+          </div>
+
+          <div
+            onClick={() => handleMiniSidebarClick('assistant')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'assistant' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><PenTool size={20} /></div>
+            <span className="text-[9px] font-semibold">Assist</span>
+          </div>
+
+          <div
+            onClick={() => handleMiniSidebarClick('tasks')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'tasks' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'tasks' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><CheckSquare size={20} /></div>
+            <span className="text-[9px] font-semibold">Tasks</span>
+          </div>
+
+          <div
+            onClick={() => handleMiniSidebarClick('calendar')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'calendar' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'calendar' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Calendar size={20} /></div>
+            <span className="text-[9px] font-semibold">Schedule</span>
+          </div>
+
+          <div
+            onClick={() => handleMiniSidebarClick('people')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'people' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'people' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Users size={20} /></div>
+            <span className="text-[9px] font-semibold">People</span>
+          </div>
+
+          <div
+            onClick={() => handleMiniSidebarClick('memory')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'memory' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Database size={20} /></div>
+            <span className="text-[9px] font-semibold">Memory</span>
+          </div>
+
+          <div
+            onClick={() => handleMiniSidebarClick('room')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><MonitorPlay size={20} /></div>
+            <span className="text-[9px] font-semibold">Room</span>
+          </div>
+
+          <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
+            <div className="p-2"><File size={20} /></div>
+            <span className="text-[9px] font-semibold">Files</span>
+          </div>
+
+          <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 cursor-pointer mt-auto">
+            <div className="p-2"><MoreHorizontal size={20} /></div>
+            <span className="text-[9px] font-semibold">More</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -4626,7 +4858,7 @@ Rules:
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <button
                 type="button"
                 onClick={createComposeExperience}
@@ -4649,6 +4881,18 @@ Rules:
                 </div>
                 <div className="text-sm font-semibold text-gray-900 mb-1">Deck</div>
                 <p className="text-xs text-gray-600">Our presentation workspace for slide-first storytelling and AI deck intelligence.</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={createSheetsExperience}
+                className="group text-left rounded-xl border border-gray-200 p-4 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+                  <Database size={18} />
+                </div>
+                <div className="text-sm font-semibold text-gray-900 mb-1">Sheets</div>
+                <p className="text-xs text-gray-600">Our spreadsheet workspace for AI-native analysis, modeling, and planning.</p>
               </button>
             </div>
           </div>
