@@ -238,6 +238,8 @@ export default function App() {
   const [memorySearch, setMemorySearch] = useState('');
   const [lastAiError, setLastAiError] = useState('');
   const [chatFeedbackDrafts, setChatFeedbackDrafts] = useState({});
+  const [deckSnapshotPreviews, setDeckSnapshotPreviews] = useState({});
+  const [sheetSnapshotPreviews, setSheetSnapshotPreviews] = useState({});
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
@@ -298,6 +300,8 @@ export default function App() {
   const lastDocumentTranscriptRef = useRef({ text: '', source: '', at: 0 });
   const toastTimerRef = useRef(null);
   const promptRevealTimerRef = useRef(null);
+  const deckCanvasPreviewRef = useRef(null);
+  const sheetCanvasPreviewRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -4250,6 +4254,67 @@ Rules:
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const capturePreview = async () => {
+      try {
+        if (isSheetsMode) {
+          const target = sheetCanvasPreviewRef.current;
+          if (!target || !activeSheet?.id) {
+            return;
+          }
+          const canvas = await html2canvas(target, {
+            scale: 0.45,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            logging: false,
+          });
+          if (cancelled) {
+            return;
+          }
+          const dataUrl = canvas.toDataURL('image/png', 0.82);
+          setSheetSnapshotPreviews((prev) => ({ ...prev, [activeSheet.id]: dataUrl }));
+          return;
+        }
+
+        const target = deckCanvasPreviewRef.current;
+        if (!target || !activeDeckSlide?.id) {
+          return;
+        }
+        const canvas = await html2canvas(target, {
+          scale: 0.45,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false,
+        });
+        if (cancelled) {
+          return;
+        }
+        const dataUrl = canvas.toDataURL('image/png', 0.82);
+        setDeckSnapshotPreviews((prev) => ({ ...prev, [activeDeckSlide.id]: dataUrl }));
+      } catch (_error) {
+        // Ignore preview capture failures and keep SVG fallback thumbnails.
+      }
+    };
+
+    const timer = setTimeout(capturePreview, 220);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    isSheetsMode,
+    productMode,
+    activeDeckSlide?.id,
+    activeDeckSlide?.title,
+    activeDeckSlide?.subtitle,
+    activeSheet?.id,
+    activeSheet?.title,
+    activeSheet?.subtitle,
+    sheetsTitle,
+  ]);
+
   if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div className="flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative">
@@ -4508,7 +4573,9 @@ Rules:
                   <div className="flex items-start gap-2">
                     <div className="w-20 h-12 rounded-md shrink-0 relative overflow-hidden border border-gray-200 bg-white">
                       <img
-                        src={isSheetsMode ? buildSheetPreviewDataUri(item) : buildDeckPreviewDataUri(item)}
+                        src={isSheetsMode
+                          ? (sheetSnapshotPreviews[item.id] || buildSheetPreviewDataUri(item))
+                          : (deckSnapshotPreviews[item.id] || buildDeckPreviewDataUri(item))}
                         alt={isSheetsMode ? `Sheet preview ${item.title}` : `Slide preview ${item.title}`}
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -4579,7 +4646,7 @@ Rules:
             <section className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col overflow-y-auto thin-scrollbar">
               <div className="mx-auto w-full max-w-[980px] pb-4">
                 {isSheetsMode ? (
-                  <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)]">
+                  <div ref={sheetCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)]">
                     <div className="px-4 py-3 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
                       <button className="px-2 py-1 rounded bg-white border border-gray-200">Data</button>
                       <button className="px-2 py-1 rounded bg-white border border-gray-200">Insert</button>
@@ -4693,7 +4760,7 @@ Rules:
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
+                  <div ref={deckCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
                     <div className="relative p-8 md:p-12 bg-[radial-gradient(circle_at_78%_75%,rgba(255,146,126,0.38)_0%,rgba(31,35,74,0)_38%),radial-gradient(circle_at_24%_22%,rgba(120,119,198,0.55)_0%,rgba(14,17,42,0)_44%),linear-gradient(150deg,#090d2f_0%,#11163f_52%,#1d123a_100%)] min-h-[430px] flex flex-col justify-between">
                       <div className="flex items-center justify-between text-[13px] text-indigo-100/90">
                         <span className="font-medium">Regaarder</span>
