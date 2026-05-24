@@ -18,6 +18,23 @@ import './thin-scrollbar.css';
 
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
+const DECK_DESIGN_PRESETS = [
+  {
+    key: 'aurora-split',
+    background: 'bg-[radial-gradient(circle_at_85%_80%,rgba(56,189,248,0.34)_0%,rgba(17,24,39,0)_38%),radial-gradient(circle_at_15%_20%,rgba(139,92,246,0.42)_0%,rgba(30,41,59,0)_42%),linear-gradient(140deg,#090d2f_0%,#101a45_52%,#1f245f_100%)]',
+    badge: 'Aurora Storyline',
+  },
+  {
+    key: 'sunset-grid',
+    background: 'bg-[radial-gradient(circle_at_80%_20%,rgba(251,146,60,0.34)_0%,rgba(31,41,55,0)_35%),radial-gradient(circle_at_22%_78%,rgba(236,72,153,0.30)_0%,rgba(30,41,59,0)_40%),linear-gradient(145deg,#111827_0%,#1e1b4b_50%,#312e81_100%)]',
+    badge: 'Sunset Grid',
+  },
+  {
+    key: 'mint-depth',
+    background: 'bg-[radial-gradient(circle_at_75%_75%,rgba(20,184,166,0.30)_0%,rgba(15,23,42,0)_38%),radial-gradient(circle_at_25%_20%,rgba(16,185,129,0.28)_0%,rgba(2,6,23,0)_44%),linear-gradient(150deg,#020617_0%,#0f172a_50%,#134e4a_100%)]',
+    badge: 'Mint Depth',
+  },
+];
 
 // Sub-component to cleanly handle the local video stream without cluttering the main render
 const LocalVideoFeed = ({ stream, isCameraOn }) => {
@@ -1663,6 +1680,7 @@ export default function App() {
       type: 'welcome',
     },
   ]);
+  const [activeChatThreadId, setActiveChatThreadId] = useState('thread-main');
 
   // Handle status cycle on initiatives
   const toggleStatus = (id) => {
@@ -1988,10 +2006,12 @@ export default function App() {
         return;
       }
 
-      if (payload.configured) {
-        setAiBackendStatus({ state: 'ok', message: 'Backend is configured. GEMINI_API_KEY is present.' });
+      if (payload.configured && payload.usable) {
+        setAiBackendStatus({ state: 'ok', message: payload.reason || 'Backend key is configured and usable.' });
+      } else if (payload.configured) {
+        setAiBackendStatus({ state: 'error', message: payload.reason || 'Backend key is present but not usable.' });
       } else {
-        setAiBackendStatus({ state: 'error', message: 'Backend is running, but GEMINI_API_KEY is missing.' });
+        setAiBackendStatus({ state: 'error', message: payload.reason || 'Backend is running, but GEMINI_API_KEY is missing.' });
       }
     } catch (_error) {
       setAiBackendStatus({ state: 'error', message: 'Could not reach /api/ai-status. Use `vercel dev` locally or deploy to Vercel.' });
@@ -2327,7 +2347,19 @@ Rules:
     e.preventDefault();
     if (!chatInput.trim()) return;
     handleAISubmit(chatInput, { source: 'chat' });
+    setActiveChatThreadId(`thread-${Date.now()}`);
     setChatInput('');
+  };
+
+  const handleMainChatWorkspaceSend = (event) => {
+    event.preventDefault();
+    const prompt = floatingPrompt.trim();
+    if (!prompt || isComposing) {
+      return;
+    }
+    handleAISubmit(prompt, { source: 'chat' });
+    setActiveChatThreadId(`thread-${Date.now()}`);
+    setFloatingPrompt('');
   };
 
   const handleAssistantQuickPromptSend = (event) => {
@@ -4063,18 +4095,89 @@ Rules:
     && lastComposeRun.documentId === activeDocId
     && getPlainText(docBodyHtml).length
   );
+  const composeChatThreads = useMemo(() => {
+    const userMessages = chatMessages.filter((msg) => msg.sender === 'user');
+    if (!userMessages.length) {
+      return [{ id: 'thread-main', title: 'New chat', subtitle: 'Start a fresh conversation' }];
+    }
+    return userMessages
+      .slice(-10)
+      .reverse()
+      .map((msg, index) => ({
+        id: `thread-${msg.id}`,
+        title: truncateText(msg.text, 42) || `Chat ${index + 1}`,
+        subtitle: new Date(typeof msg.id === 'number' ? msg.id : Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      }));
+  }, [chatMessages]);
+  const isComposeChatWorkspace = productMode === 'compose' && activeRightTab === 'chat' && rightSidebarOpen;
+
   const deckSlides = deckSlidesData;
   const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
+  const resolvedDeckSlideDesign = useMemo(() => {
+    const fallback = DECK_DESIGN_PRESETS[0];
+    if (!activeDeckSlide) {
+      return {
+        preset: fallback,
+        headline: 'The future of work is human + AI.',
+        blurb: 'An adaptive workspace that thinks with you, so you can create without limits.',
+        footer: 'May 15, 2026',
+      };
+    }
+    const preset = DECK_DESIGN_PRESETS.find((item) => item.key === activeDeckSlide.designPresetKey)
+      || DECK_DESIGN_PRESETS[(Math.max(0, activeDeckSlide.id - 1)) % DECK_DESIGN_PRESETS.length]
+      || fallback;
+
+    return {
+      preset,
+      headline: activeDeckSlide.headline || `${activeDeckSlide.title || 'Original concept'} that earns attention`,
+      blurb: activeDeckSlide.blurb || `${activeDeckSlide.subtitle || 'Built for modern teams'} and crafted to be edited live.`,
+      footer: activeDeckSlide.footer || 'Original design · Editable',
+    };
+  }, [activeDeckSlide]);
+
   const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
   const activeSheetGrid = sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
   const isSheetsMode = productMode === 'sheets';
+  const updateDeckSlideField = (slideId, field, value) => {
+    setDeckSlidesData((prev) => prev.map((slide) => (slide.id === slideId ? { ...slide, [field]: value } : slide)));
+  };
+
+  const generateOriginalDeckDesign = () => {
+    if (!activeDeckSlide?.id) {
+      return;
+    }
+    const randomPreset = DECK_DESIGN_PRESETS[Math.floor(Math.random() * DECK_DESIGN_PRESETS.length)] || DECK_DESIGN_PRESETS[0];
+    const conceptSeed = deckPromptInput.trim() || activeDeckSlide.title || 'New original concept';
+    const headline = `${conceptSeed.replace(/\.$/, '')}: a bold narrative direction`;
+    const blurb = `${activeDeckSlide.subtitle || 'Story-first slide'} with original visuals and editable layers for your team.`;
+
+    setDeckSlidesData((prev) => prev.map((slide) => {
+      if (slide.id !== activeDeckSlide.id) {
+        return slide;
+      }
+      return {
+        ...slide,
+        designPresetKey: randomPreset.key,
+        headline,
+        blurb,
+        footer: `Original concept · ${new Date().toLocaleDateString()}`,
+      };
+    }));
+    showToast('Generated original slide design. You can edit headline and body directly.');
+  };
+
   const addDeckSlide = () => {
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
+    const preset = DECK_DESIGN_PRESETS[(nextId - 1) % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
     const newSlide = {
       id: nextId,
       title: `Slide ${nextId}`,
       subtitle: 'New talking point',
       accent: 'from-violet-500 to-indigo-600',
+      designPresetKey: preset.key,
+      headline: `Original concept for Slide ${nextId}`,
+      blurb: 'Click and edit this text to shape your message.',
+      footer: 'Original design · Editable',
     };
     setDeckSlidesData((prev) => [...prev, newSlide]);
     setActiveDeckSlideId(nextId);
@@ -5047,6 +5150,13 @@ Rules:
                           <Plus size={12} />
                         </button>
                         <div className="ml-auto flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={generateOriginalDeckDesign}
+                            className="px-2.5 py-1 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
+                          >
+                            Original Design
+                          </button>
                           <button type="button" onClick={() => showToast('Undo not available in demo')} className="p-1 rounded hover:bg-gray-100"><Undo2 size={12} /></button>
                           <button type="button" onClick={() => showToast('Redo not available in demo')} className="p-1 rounded hover:bg-gray-100"><Redo2 size={12} /></button>
                           <button type="button" onClick={() => showToast('Present mode coming soon')} className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 inline-flex items-center gap-1">
@@ -5098,17 +5208,40 @@ Rules:
                     </div>
 
                     <div ref={deckCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
-                      <div className="relative p-8 md:p-12 bg-[radial-gradient(circle_at_78%_75%,rgba(255,146,126,0.38)_0%,rgba(31,35,74,0)_38%),radial-gradient(circle_at_24%_22%,rgba(120,119,198,0.55)_0%,rgba(14,17,42,0)_44%),linear-gradient(150deg,#090d2f_0%,#11163f_52%,#1d123a_100%)] min-h-[430px] flex flex-col justify-between" style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
+                      <div className={`relative p-8 md:p-12 ${resolvedDeckSlideDesign.preset.background} min-h-[430px] flex flex-col justify-between`} style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
                         <div className="flex items-center justify-between text-[13px] text-indigo-100/90" style={{ fontFamily: deckToolbarFont }}>
                           <span className="font-medium">Regaarder</span>
-                          <span>Investor Pitch</span>
+                          <span>{resolvedDeckSlideDesign.preset.badge}</span>
                         </div>
                         <div>
-                          <h1 className="text-5xl leading-[1.1] font-medium text-white max-w-[620px]" style={{ fontFamily: deckToolbarFont }}>The future of work is human + AI.</h1>
-                          <p className="mt-5 text-indigo-100/85 text-2xl max-w-[540px]" style={{ fontFamily: deckToolbarFont }}>An adaptive workspace that thinks with you, so you can create without limits.</p>
+                          <h1
+                            contentEditable
+                            suppressContentEditableWarning
+                            onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
+                            className="text-5xl leading-[1.1] font-medium text-white max-w-[620px] outline-none rounded-md focus:ring-2 focus:ring-white/40"
+                            style={{ fontFamily: deckToolbarFont }}
+                          >
+                            {resolvedDeckSlideDesign.headline}
+                          </h1>
+                          <p
+                            contentEditable
+                            suppressContentEditableWarning
+                            onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
+                            className="mt-5 text-indigo-100/85 text-2xl max-w-[540px] outline-none rounded-md focus:ring-2 focus:ring-white/30"
+                            style={{ fontFamily: deckToolbarFont }}
+                          >
+                            {resolvedDeckSlideDesign.blurb}
+                          </p>
                         </div>
                         <div className="absolute top-6 right-6 w-14 h-14 rounded-xl border border-dashed border-white/40 bg-white/5 flex items-center justify-center text-[10px] text-white/70">Logo</div>
-                        <div className="text-sm text-indigo-100/80">May 15, 2026 · Slide {activeDeckSlide.id}: {activeDeckSlide.title}</div>
+                        <div
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
+                          className="text-sm text-indigo-100/80 outline-none rounded-md focus:ring-2 focus:ring-white/20"
+                        >
+                          {resolvedDeckSlideDesign.footer} · Slide {activeDeckSlide.id}: {activeDeckSlide.title}
+                        </div>
                       </div>
                     </div>
 
@@ -6421,8 +6554,66 @@ Rules:
           </div>
         </div>
 
+        {isComposeChatWorkspace && (
+          <div className="flex-1 min-h-0 bg-[#f5f6fb] p-4 md:p-6">
+            <div className="h-full rounded-2xl border border-gray-200 bg-white overflow-hidden grid grid-cols-[240px_minmax(0,1fr)]">
+              <aside className="border-r border-gray-100 bg-[#f7f7fd] p-3 overflow-y-auto thin-scrollbar">
+                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-2">Chats</div>
+                <div className="space-y-1.5">
+                  {composeChatThreads.map((thread) => {
+                    const isActive = activeChatThreadId === thread.id;
+                    return (
+                      <button
+                        key={thread.id}
+                        type="button"
+                        onClick={() => setActiveChatThreadId(thread.id)}
+                        className={`w-full rounded-xl border px-2.5 py-2 text-left ${isActive ? 'border-violet-200 bg-violet-50' : 'border-transparent hover:border-gray-200 hover:bg-white'}`}
+                      >
+                        <div className="text-xs font-semibold text-gray-800 truncate">{thread.title}</div>
+                        <div className="text-[10px] text-gray-500 truncate mt-0.5">{thread.subtitle}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </aside>
+
+              <section className="min-w-0 flex flex-col bg-white">
+                <div className="flex-1 overflow-y-auto p-5 md:p-8 space-y-4">
+                  {chatMessages.map((msg) => (
+                    <div key={msg.id} className={`max-w-[85%] ${msg.sender === 'user' ? 'ml-auto' : ''}`}>
+                      <div className="text-[10px] text-gray-400 mb-1">{msg.sender === 'user' ? 'You' : 'Compose AI'}</div>
+                      <div className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.sender === 'user' ? 'bg-violet-600 text-white' : 'bg-[#F7F8FD] border border-gray-100 text-gray-700'}`}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <form onSubmit={handleMainChatWorkspaceSend} className="border-t border-gray-100 bg-white p-4 md:p-5">
+                  <div className="mx-auto max-w-[900px] rounded-[28px] border border-gray-200 bg-[#fcfcff] px-4 py-3 flex items-end gap-3 shadow-[0_16px_45px_-30px_rgba(76,29,149,0.55)]">
+                    <button type="button" onClick={() => promptFileInputRef.current?.click()} className="p-2 rounded-full text-gray-500 hover:bg-gray-100" title="Attach file">
+                      <Plus size={16} />
+                    </button>
+                    <textarea
+                      value={floatingPrompt}
+                      onChange={(event) => setFloatingPrompt(event.target.value)}
+                      onInput={(event) => autoResizeTextarea(event.currentTarget, 160)}
+                      rows={1}
+                      placeholder="Ask anything about your document, deck, or data..."
+                      className="flex-1 bg-transparent border-none outline-none resize-none text-sm min-h-[34px] max-h-[160px]"
+                    />
+                    <button type="submit" disabled={isComposing || !floatingPrompt.trim()} className={`h-9 w-9 rounded-full flex items-center justify-center text-white ${isComposing || !floatingPrompt.trim() ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}`}>
+                      {isComposing ? <Loader2 size={15} className="animate-spin" /> : <ArrowUp size={15} />}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            </div>
+          </div>
+        )}
+
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
+        <div className={`flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100 ${isComposeChatWorkspace ? 'hidden' : ''}`}>
           <div
             className="mx-auto"
             style={{
@@ -6663,7 +6854,7 @@ Rules:
 
         {/* Persistent Floating AI Prompt Bar */}
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || (isVoiceActive && voiceTarget === 'document') || isComposeChatWorkspace) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
           <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
@@ -8512,7 +8703,7 @@ Rules:
                   Server-managed key expected: set `GEMINI_API_KEY` in Vercel project env.
                 </div>
                 <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 leading-relaxed">
-                  Keep API keys out of client code. This app now sends prompts to `/api/gemini`, and only that server route reads `GEMINI_API_KEY`.
+                  Keep API keys out of client code. This app now sends prompts to `/api/gemini`, and only that server route reads `GEMINI_API_KEY`. The checker validates both presence and provider usability.
                 </div>
                 <div className="flex items-center gap-2">
                   <button
