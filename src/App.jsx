@@ -5945,35 +5945,6 @@ Rules:
               </div>
             </section>
 
-            {!isSheetsMode && (
-              <aside className="w-14 rounded-2xl border border-gray-200 bg-white py-3 px-1.5 flex flex-col items-center gap-3">
-                {[
-                  { label: 'Design', icon: PenTool },
-                  { label: 'Template', icon: LayoutGrid },
-                  { label: 'Elements', icon: ListTodo },
-                  { label: 'Media', icon: MonitorPlay },
-                  { label: 'Brand', icon: Sparkles },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isActive = deckContextRailTab === item.label;
-                  return (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => {
-                        setDeckContextRailTab(item.label);
-                        showToast(`${item.label} panel opened`);
-                      }}
-                      className={`w-full rounded-xl py-2 flex flex-col items-center gap-1 text-[9px] transition-colors ${isActive ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'text-gray-500 hover:bg-gray-50 border border-transparent'}`}
-                    >
-                      <Icon size={14} />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </aside>
-            )}
-
             <aside
               className={`shrink-0 rounded-2xl border border-gray-200 bg-white flex flex-col min-h-0 relative transition-[width] duration-300 ${rightSidebarOpen ? '' : 'w-0 overflow-hidden border-0'}`}
               style={rightSidebarOpen ? { width: `${rightSidebarWidth}px` } : { width: '0px' }}
