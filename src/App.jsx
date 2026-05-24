@@ -104,6 +104,7 @@ export default function App() {
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
   const [deckPromptInput, setDeckPromptInput] = useState('');
   const [deckPromptMinimized, setDeckPromptMinimized] = useState(false);
+  const [deckPromptOffset, setDeckPromptOffset] = useState({ x: 0, y: 0 });
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
   const [deckUtilityTab, setDeckUtilityTab] = useState('assistant');
   const [deckSlidesData, setDeckSlidesData] = useState([
@@ -275,6 +276,8 @@ export default function App() {
     miniPromptY: 0,
     dictationX: 0,
     dictationY: 0,
+    deckPromptX: 0,
+    deckPromptY: 0,
   });
   const wholeDocSelectionRef = useRef(false);
   const micPermissionGrantedRef = useRef(false);
@@ -3981,6 +3984,8 @@ Rules:
       miniPromptY: miniPromptOffset.y,
       dictationX: dictationOffset.x,
       dictationY: dictationOffset.y,
+      deckPromptX: deckPromptOffset.x,
+      deckPromptY: deckPromptOffset.y,
     };
     setDragTarget(target);
   };
@@ -4023,13 +4028,20 @@ Rules:
         const nextY = Math.min(520, Math.max(-280, dragStateRef.current.dictationY + deltaY));
         setDictationOffset({ x: nextX, y: nextY });
       }
+
+      if (dragTarget === 'deckPrompt') {
+        const nextX = Math.min(220, Math.max(-220, dragStateRef.current.deckPromptX + deltaX));
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextY = Math.min(200, Math.max(-220, dragStateRef.current.deckPromptY + deltaY));
+        setDeckPromptOffset({ x: nextX, y: nextY });
+      }
     };
 
     const handlePointerUp = () => {
       setDragTarget(null);
     };
 
-    document.body.style.cursor = ['prompt', 'miniPrompt', 'dictation'].includes(dragTarget) ? 'grabbing' : 'col-resize';
+    document.body.style.cursor = ['prompt', 'miniPrompt', 'dictation', 'deckPrompt'].includes(dragTarget) ? 'grabbing' : 'col-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
@@ -4040,7 +4052,7 @@ Rules:
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
     };
-  }, [dragTarget]);
+  }, [dragTarget, deckPromptOffset.x, deckPromptOffset.y, dictationOffset.x, dictationOffset.y, leftSidebarWidth, miniPromptOffset.x, miniPromptOffset.y, promptOffset.x, promptOffset.y, rightSidebarWidth]);
 
   // Helper function to generate calendar days
   const generateCalendarDays = (month, year) => {
@@ -4272,23 +4284,68 @@ Rules:
           </div>
         )}
 
-        <aside className="w-[72px] border-r border-gray-200 bg-white flex flex-col items-center py-4 gap-4">
-          <div className="w-8 h-8 rounded-md bg-violet-600 text-white flex items-center justify-center font-semibold text-sm">R</div>
-          <button
-            onClick={openCreationPicker}
-            className="w-11 h-11 rounded-xl bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700 transition-colors"
-            title="New composition"
-          >
-            <Plus size={17} />
-          </button>
-          <div className="flex flex-col items-center gap-3 mt-1 text-gray-400">
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Compose"><PenTool size={16} /></button>
-            <button className="w-10 h-10 rounded-lg bg-violet-50 text-violet-700 flex items-center justify-center" title="Deck"><LayoutGrid size={16} /></button>
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Tasks"><CheckSquare size={16} /></button>
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Schedule"><Calendar size={16} /></button>
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="People"><Users size={16} /></button>
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Memory"><Database size={16} /></button>
-            <button className="w-10 h-10 rounded-lg flex items-center justify-center hover:bg-gray-100" title="Room"><MonitorPlay size={16} /></button>
+        <aside
+          className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
+          style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
+        >
+          <div className="h-14 flex items-center justify-between px-4">
+            <div className="flex items-center gap-2 font-bold text-gray-900 text-lg">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-violet-600">
+                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 12 10c3.1 0 5.89-1.41 1.77-5.5L12 13.5L8.5 17H6.5L12 11.5L17.5 17H15.5L12 13.5L15.5 10H19.5C21.1 12 22 14.4 22 12c0-5.523-4.477-10-10-10z" fill="currentColor" />
+              </svg>
+              <span className="tracking-tight text-gray-900">Regaarder Compose</span>
+            </div>
+          </div>
+
+          <div className="px-4 py-3">
+            <button
+              onClick={openCreationPicker}
+              className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 font-medium text-sm transition-colors active:scale-95"
+            >
+              <Plus size={16} />
+              New Composition
+            </button>
+          </div>
+
+          <div className="px-4 pb-2">
+            <div className="relative">
+              <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search compositions..."
+                className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
+              />
+              <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">K</span>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Home size={16} /> Home</button>
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><BookOpen size={16} /> Library</button>
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm bg-violet-50 text-violet-700 rounded-md transition-colors"><LayoutGrid size={16} /> Deck</button>
+            <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><div className="flex items-center gap-3"><Inbox size={16} /> Inbox</div><span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full font-medium">12</span></button>
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Star size={16} /> Starred</button>
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Users size={16} /> Shared</button>
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Database size={16} /> Memory</button>
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors mb-4"><Trash size={16} /> Trash</button>
+
+            <div className="flex items-center justify-between px-2 py-2 mt-4">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspaces</span>
+              <button onClick={openCreateWorkspaceModal} className="text-gray-400 hover:text-gray-600"><Plus size={14} /></button>
+            </div>
+
+            <div className="space-y-1 pb-3">
+              {workspaces.map((workspace) => (
+                <button key={workspace.id} className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md font-medium transition-colors">
+                  <div className="flex items-center gap-3"><WorkspaceIcon letter={workspace.letter} colorClass={workspace.colorClass} /> {workspace.name}</div>
+                  <MoreHorizontal size={14} className="text-gray-400" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-4 border-t border-gray-100 bg-[#FAFAFC]">
+            <button className="flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 w-full transition-colors"><Settings size={16} /> Settings</button>
           </div>
         </aside>
 
@@ -4391,7 +4448,11 @@ Rules:
                   </div>
                 </div>
                 {!deckPromptMinimized && (
-                  <div className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                  <div
+                    className="mt-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm cursor-grab active:cursor-grabbing"
+                    style={{ transform: `translate(${deckPromptOffset.x}px, ${deckPromptOffset.y}px)` }}
+                    onPointerDown={(event) => beginPanelResize('deckPrompt', event)}
+                  >
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-[11px] uppercase tracking-wide text-violet-600 font-semibold">AI Prompt Box</div>
                       <button
@@ -4406,6 +4467,7 @@ Rules:
                     <textarea
                       value={deckPromptInput}
                       onChange={(event) => setDeckPromptInput(event.target.value)}
+                      onPointerDown={(event) => event.stopPropagation()}
                       rows={3}
                       placeholder="Ask AI Assistant from here..."
                       className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-violet-300"
@@ -4443,81 +4505,91 @@ Rules:
               </div>
             </section>
 
-            <aside className="w-[56px] shrink-0 rounded-2xl border border-gray-200 bg-white p-2 flex flex-col items-center gap-2">
-              {[
-                { key: 'chat', icon: MessageCircle, label: 'Chat' },
-                { key: 'assistant', icon: Sparkles, label: 'AI Assistant' },
-                { key: 'tasks', icon:CheckSquare, label: 'Tasks' },
-                { key: 'calendar', icon: Calendar, label: 'Schedule' },
-                { key: 'people', icon: Users, label: 'People' },
-                { key: 'room', icon: MonitorPlay, label: 'Room' },
-              ].map((item) => {
-                const Icon = item.icon;
-                const isActive = deckUtilityTab === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => setDeckUtilityTab(item.key)}
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isActive ? 'bg-violet-50 text-violet-700' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-700'}`}
-                    title={item.label}
-                  >
-                    <Icon size={16} />
-                  </button>
-                );
-              })}
+            <aside className="w-[340px] shrink-0 rounded-2xl border border-gray-200 bg-white flex flex-col min-h-0 relative">
+              <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC] rounded-t-2xl">
+                <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar">
+                  <div className="inline-flex min-w-max">
+                    {[
+                      { key: 'chat', label: 'AI Chat' },
+                      { key: 'assistant', label: 'AI Assistant' },
+                      { key: 'tasks', label: `Tasks (${tasks.filter((t) => !t.completed).length})` },
+                      { key: 'calendar', label: 'Schedule' },
+                      { key: 'room', label: 'Room' },
+                      { key: 'people', label: 'People' },
+                      { key: 'memory', label: 'Memory' },
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        className={`shrink-0 px-3 py-3 transition-all border-b-2 ${activeRightTab === tab.key ? 'text-violet-600 border-violet-600 bg-white' : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'}`}
+                        onClick={() => setActiveRightTab(tab.key)}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {activeRightTab === 'assistant' && (
+                  <>
+                    <div className="text-xs font-semibold text-violet-600">AI Assistant</div>
+                    <div className="rounded-xl border border-gray-200 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-800">Deck Intelligence</span>
+                        <ChevronDown size={14} className="text-gray-400" />
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="w-20 h-20 rounded-full border-[6px] border-violet-500 text-gray-900 flex items-center justify-center text-2xl font-semibold">86</div>
+                        <div className="text-xs text-gray-600 space-y-1">
+                          <div>Great narrative flow</div>
+                          <div>Strong problem framing</div>
+                          <div>Good market positioning</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 p-3">
+                      <div className="text-sm font-semibold text-gray-800 mb-2">AI Suggestions</div>
+                      <div className="space-y-2 text-xs text-gray-600">
+                        <div>Slide 4 could show more product value.</div>
+                        <div>Add a customer proof point in Slide 7.</div>
+                        <div>Consider a stronger closing statement.</div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {activeRightTab !== 'assistant' && (
+                  <div className="rounded-xl border border-gray-200 p-3 text-xs text-gray-600">
+                    {activeRightTab === 'chat' && 'Chat stream mirrors Compose behavior and is available here in Deck mode.'}
+                    {activeRightTab === 'tasks' && 'Task management panel mirrors Compose and can be used while editing slides.'}
+                    {activeRightTab === 'calendar' && 'Schedule planner mirrors Compose and stays docked in the same right position.'}
+                    {activeRightTab === 'room' && 'Room controls and calling tools mirror Compose in the same panel.'}
+                    {activeRightTab === 'people' && 'People panel mirrors Compose with active collaborators and contact details.'}
+                    {activeRightTab === 'memory' && 'Memory panel mirrors Compose for saved context and recent AI history.'}
+                  </div>
+                )}
+
+                <div className="rounded-xl border border-gray-200 p-3">
+                  <div className="text-sm font-semibold text-gray-800 mb-2">Related Resources</div>
+                  <div className="space-y-2 text-xs text-violet-700">
+                    <div>Market Research 2026</div>
+                    <div>Competitor Analysis</div>
+                    <div>Q2 Traction Update</div>
+                  </div>
+                </div>
+              </div>
+
               {deckPromptMinimized && (
                 <button
                   type="button"
                   onClick={() => setDeckPromptMinimized(false)}
-                  className="mt-auto w-10 h-10 rounded-lg bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700"
+                  className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700 shadow-lg"
                   title="Open prompt box"
                 >
                   <Sparkles size={16} />
                 </button>
               )}
-            </aside>
-
-            <aside className="w-[330px] shrink-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col gap-4">
-              <div>
-                <div className="text-xs font-semibold text-violet-600">{deckUtilityTab === 'assistant' ? 'AI Assistant' : deckUtilityTab.charAt(0).toUpperCase() + deckUtilityTab.slice(1)}</div>
-                <div className="mt-3 rounded-xl border border-gray-200 p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-gray-800">{deckUtilityTab === 'assistant' ? 'Deck Intelligence' : 'Workspace Panel'}</span>
-                    <ChevronDown size={14} className="text-gray-400" />
-                  </div>
-                  {deckUtilityTab === 'assistant' ? (
-                  <div className="flex items-center gap-3">
-                    <div className="w-20 h-20 rounded-full border-[6px] border-violet-500 text-gray-900 flex items-center justify-center text-2xl font-semibold">86</div>
-                    <div className="text-xs text-gray-600 space-y-1">
-                      <div>Great narrative flow</div>
-                      <div>Strong problem framing</div>
-                      <div>Good market positioning</div>
-                    </div>
-                  </div>
-                  ) : (
-                    <div className="text-xs text-gray-600">{deckUtilityTab === 'chat' ? 'Chat history and quick asks will appear here.' : deckUtilityTab === 'room' ? 'Room controls and live call details appear here.' : deckUtilityTab === 'people' ? 'Team presence and active collaborators appear here.' : deckUtilityTab === 'tasks' ? 'Your deck tasks and owners appear here.' : 'Schedule events linked to your deck appear here.'}</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 p-3">
-                <div className="text-sm font-semibold text-gray-800 mb-2">AI Suggestions</div>
-                <div className="space-y-2 text-xs text-gray-600">
-                  <div>Slide 4 could show more product value.</div>
-                  <div>Add a customer proof point in Slide 7.</div>
-                  <div>Consider a stronger closing statement.</div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-gray-200 p-3">
-                <div className="text-sm font-semibold text-gray-800 mb-2">Related Resources</div>
-                <div className="space-y-2 text-xs text-violet-700">
-                  <div>Market Research 2026</div>
-                  <div>Competitor Analysis</div>
-                  <div>Q2 Traction Update</div>
-                </div>
-              </div>
             </aside>
           </div>
         </main>
