@@ -16,3 +16,13 @@
 	background-size: 100% 100%, 200% 100%;
 	animation: assistSnake 2.2s linear infinite;
 }
+
+.compose-editor-surface ::selection {
+	background: #d5dae3;
+	color: #0f172a;
+}
+
+.compose-editor-surface ::-moz-selection {
+	background: #d5dae3;
+	color: #0f172a;
+}

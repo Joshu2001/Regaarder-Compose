@@ -332,6 +332,8 @@ export default function App() {
   const [assistantQuickPrompt, setAssistantQuickPrompt] = useState('');
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
+  const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
+  const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
   const [lastComposeRun, setLastComposeRun] = useState(null);
@@ -428,6 +430,7 @@ export default function App() {
   const pageContextMenuRef = useRef(null);
   const sheetToolbarMenuRef = useRef(null);
   const deckToolbarMenuRef = useRef(null);
+  const selectionActionMenuRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -554,6 +557,60 @@ export default function App() {
     const characters = rawText.length;
     setDocumentStats({ words, characters });
   }, []);
+
+  const computeDocumentOutline = useCallback(() => {
+    if (!documentCardRef.current) {
+      setDocumentOutlineItems([]);
+      return;
+    }
+
+    const headingNodes = Array.from(documentCardRef.current.querySelectorAll('h1, h2, h3'));
+    const outline = [];
+    const titleText = String(docTitle || '').trim();
+    if (titleText) {
+      outline.push({ id: 'doc-title-anchor', level: 1, label: titleText, isTitle: true });
+    }
+
+    headingNodes.forEach((node, index) => {
+      const label = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!label) {
+        return;
+      }
+
+      if (!node.dataset.outlineId) {
+        node.dataset.outlineId = `outline-${index + 1}-${Math.floor(Math.random() * 100000)}`;
+      }
+      if (!node.id) {
+        node.id = node.dataset.outlineId;
+      }
+
+      const level = Number.parseInt(node.tagName.replace('H', ''), 10);
+      outline.push({
+        id: node.id,
+        level: Number.isNaN(level) ? 2 : level,
+        label,
+        isTitle: false,
+      });
+    });
+
+    setDocumentOutlineItems(outline);
+  }, [docTitle]);
+
+  const jumpToOutlineItem = (item) => {
+    if (!item) {
+      return;
+    }
+
+    if (item.isTitle) {
+      titleEditableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    const target = document.getElementById(item.id);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
 
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
@@ -1005,12 +1062,14 @@ export default function App() {
 
   useEffect(() => {
     computeDocumentStats();
+    computeDocumentOutline();
     if (!documentCardRef.current || typeof MutationObserver === 'undefined') {
       return;
     }
 
     const observer = new MutationObserver(() => {
       computeDocumentStats();
+      computeDocumentOutline();
     });
 
     observer.observe(documentCardRef.current, {
@@ -1022,6 +1081,7 @@ export default function App() {
     return () => observer.disconnect();
   }, [
     computeDocumentStats,
+    computeDocumentOutline,
     activeDocId,
     isBlankDocument,
     docBodyHtml,
@@ -1079,6 +1139,9 @@ export default function App() {
       if (deckToolbarMenuRef.current && !deckToolbarMenuRef.current.contains(event.target)) {
         setDeckToolbarMenuOpen(false);
       }
+      if (selectionActionMenuRef.current && !selectionActionMenuRef.current.contains(event.target)) {
+        setSelectionActionMenu((prev) => ({ ...prev, open: false }));
+      }
     };
 
     window.addEventListener('pointerdown', handleClickOutside);
@@ -1105,9 +1168,96 @@ export default function App() {
     return isRangeInsideEditor(range) ? range : null;
   };
 
+  const toOutlineHtml = (value) => {
+    const normalized = String(value || '').replace(/\r/g, '').trim();
+    if (!normalized) {
+      return toParagraphHtml(value);
+    }
+
+    const lines = normalized
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (!lines.length) {
+      return toParagraphHtml(value);
+    }
+
+    const html = [];
+    let listOpen = false;
+    const closeList = () => {
+      if (listOpen) {
+        html.push('</ul>');
+        listOpen = false;
+      }
+    };
+
+    lines.forEach((line, index) => {
+      const bulletMatch = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+      if (bulletMatch) {
+        if (!listOpen) {
+          html.push('<ul style="margin:0 0 10px 18px;padding:0;list-style:disc;color:#334155;line-height:1.7;">');
+          listOpen = true;
+        }
+        html.push(`<li style="margin-bottom:6px;">${escapeHtml(bulletMatch[1])}</li>`);
+        return;
+      }
+
+      const headingMatch = line.match(/^(?:[IVXLC]+[.)]\s+|\d+[.)]\s+)?(.+?)(?::)?$/i);
+      const headingText = headingMatch ? headingMatch[1].trim() : line;
+      const shouldRenderHeading = index === 0 || /:\s*$/.test(line) || /^[A-Z][\w\s&'/-]{8,}$/.test(headingText);
+
+      closeList();
+
+      if (shouldRenderHeading) {
+        html.push(`<h3 style="font-size:22px;line-height:1.35;font-weight:700;color:#0f172a;margin:16px 0 8px;">${escapeHtml(headingText)}</h3>`);
+      } else {
+        html.push(`<p style="font-size:16px;color:#334155;line-height:1.75;margin:0 0 10px;">${escapeHtml(line)}</p>`);
+      }
+    });
+
+    closeList();
+    return html.join('');
+  };
+
+  const updateSelectionActionMenuPosition = (range) => {
+    if (!range || !documentCardRef.current) {
+      setSelectionActionMenu({ open: false, left: 0, top: 0 });
+      return;
+    }
+
+    const selectedText = range.toString().trim();
+    if (!selectedText) {
+      setSelectionActionMenu({ open: false, left: 0, top: 0 });
+      return;
+    }
+
+    const rangeRect = range.getBoundingClientRect();
+    const cardRect = documentCardRef.current.getBoundingClientRect();
+    const zoomScale = Math.max(0.5, Number(zoomLevel || 100) / 100);
+    const menuWidth = 264;
+    const menuHeight = 356;
+    const viewportRightSpace = cardRect.right - rangeRect.right;
+    const shouldPlaceLeft = viewportRightSpace < menuWidth + 24;
+    const horizontalGap = 14;
+    const rawLeft = shouldPlaceLeft
+      ? (rangeRect.left - cardRect.left - menuWidth - horizontalGap) / zoomScale
+      : (rangeRect.right - cardRect.left + horizontalGap) / zoomScale;
+    const rawTop = (rangeRect.top - cardRect.top - 6) / zoomScale;
+    const maxLeft = Math.max(10, documentCardRef.current.clientWidth - menuWidth - 10);
+    const maxTop = Math.max(10, documentCardRef.current.clientHeight - menuHeight - 10);
+
+    setSelectionActionMenu({
+      open: true,
+      left: Math.min(maxLeft, Math.max(10, rawLeft)),
+      top: Math.min(maxTop, Math.max(10, rawTop)),
+    });
+  };
+
   const syncEditorSelection = () => {
     const range = getEditorSelectionRange();
     if (!range) {
+      setSelectionActionMenu({ open: false, left: 0, top: 0 });
       return false;
     }
 
@@ -1117,6 +1267,11 @@ export default function App() {
     setSelectedEditorText(next);
     selectedEditorTextRef.current = selectedText;
     wholeDocSelectionRef.current = isWholeDocumentSelection(range);
+    if (selectedText) {
+      updateSelectionActionMenuPosition(range);
+    } else {
+      setSelectionActionMenu({ open: false, left: 0, top: 0 });
+    }
 
     try {
       setIsBoldActive(Boolean(document.queryCommandState('bold')));
@@ -1146,11 +1301,13 @@ export default function App() {
     return true;
   };
 
-  const injectIntoSavedSelection = (text) => {
+  const injectIntoSavedSelection = (text, options = {}) => {
     const nextText = String(text || '').trim();
     if (!nextText) {
       return false;
     }
+
+    const injectAsHtml = Boolean(options.injectAsHtml);
 
     const restored = restoreSavedSelection();
     if (!restored) {
@@ -1168,7 +1325,18 @@ export default function App() {
     }
 
     range.deleteContents();
-    range.insertNode(document.createTextNode(nextText));
+    if (injectAsHtml) {
+      const template = document.createElement('template');
+      template.innerHTML = nextText;
+      const fragment = template.content.cloneNode(true);
+      const lastNode = fragment.lastChild;
+      range.insertNode(fragment);
+      if (lastNode) {
+        range.setStartAfter(lastNode);
+      }
+    } else {
+      range.insertNode(document.createTextNode(nextText));
+    }
     range.collapse(false);
     selection.removeAllRanges();
     selection.addRange(range);
@@ -1491,14 +1659,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!selectedEditorText) {
-      return;
-    }
-    setRightSidebarOpen(true);
-    setActiveRightTab('assistant');
-  }, [selectedEditorText]);
-
-  useEffect(() => {
     const handleSelectionChange = () => {
       const range = getEditorSelectionRange();
       if (!range) {
@@ -1517,6 +1677,7 @@ export default function App() {
         setIsStrikeActive(false);
         setIsListActive(false);
         wholeDocSelectionRef.current = false;
+        setSelectionActionMenu({ open: false, left: 0, top: 0 });
         pointerDownInDocumentRef.current = false;
         return;
       }
@@ -1941,22 +2102,32 @@ export default function App() {
   const docTitleDisplay = truncateText(docTitle || 'Untitled document', 20);
 
   const selectedTextActionOptions = [
-    { key: 'summary', label: 'Summarize', prompt: 'Summarize the selected text.' },
-    { key: 'rewrite', label: 'Rewrite', prompt: 'Rewrite the selected text with better clarity and flow.' },
-    { key: 'outline', label: 'Outline', prompt: 'Turn the selected text into a concise outline.' },
-    { key: 'keypoints', label: 'Key points', prompt: 'Extract the key points from the selected text.' },
-    { key: 'commentary', label: 'Commentary', prompt: 'Add brief commentary on the selected text and its implications.' },
+    { key: 'ask', label: 'Ask AI about this selection', detail: 'Ctrl+J', icon: Sparkles, prompt: 'Analyze this selected text and explain what it means, including the strongest insight.', keepOpen: false },
+    { key: 'rewrite', label: 'Rewrite', detail: 'Improve clarity and tone', icon: PenTool, prompt: 'Rewrite the selected text to be clearer, tighter, and more readable.' },
+    { key: 'summary', label: 'Summarize', detail: 'Shorten this text', icon: Scissors, prompt: 'Summarize the selected text in fewer words while preserving core meaning.' },
+    { key: 'expand', label: 'Expand', detail: 'Add more detail', icon: Expand, prompt: 'Expand the selected text with more detail and useful context.' },
+    { key: 'tone', label: 'Change tone', detail: 'Make it more formal', icon: Type, prompt: 'Rewrite the selected text in a more formal and professional tone.' },
+    { key: 'slide', label: 'Create slide', detail: 'Turn into presentation', icon: MonitorPlay, prompt: 'Turn the selected text into one presentation slide with title, headline, and concise bullets.' },
+    { key: 'keypoints', label: 'Extract key points', detail: 'Create a bullet list', icon: ListTodo, prompt: 'Extract key points from the selected text as a concise bullet list.' },
+    { key: 'outline', label: 'Create outline', detail: 'Structure into sections', icon: MessageSquarePlus, prompt: 'Turn the selected text into a structured outline with clear section headings and bullets.' },
   ];
 
-  const runSelectedTextAction = (prompt) => {
+  const runSelectedTextAction = (action) => {
     if (!selectedEditorTextRef.current) {
       return;
     }
 
-    setAssistantQuickPrompt(prompt);
-    setRightSidebarOpen(true);
-    setActiveRightTab('assistant');
-    runSmartAssistAction(prompt);
+    const instruction = action?.prompt || '';
+    if (!instruction.trim()) {
+      return;
+    }
+
+    setAssistantQuickPrompt(instruction);
+    setSelectionActionMenu({ open: false, left: 0, top: 0 });
+    runSmartAssistAction(instruction, {
+      actionKey: action?.key || '',
+      selectionScoped: true,
+    });
   };
 
   const closeTransientMenus = () => {
@@ -2869,6 +3040,7 @@ export default function App() {
     const requestedFormat = options.composeFormat || 'Auto (Compose decides)';
     const shouldBuildDocument = forceDocBuild || source === 'compose';
     const selectionScoped = Boolean(options.selectionScoped);
+    const smartActionKey = String(options.smartActionKey || '').toLowerCase();
     const preferredDocType = resolveDocTypeFromComposeFormat(requestedFormat);
     const requestedTone = String(options.tone || 'normal');
     const requestedLengthMode = String(options.lengthMode || 'words');
@@ -3238,7 +3410,22 @@ Rules:
         const targetedText = finalizedAction.type === 'text'
           ? String(finalizedAction.paragraph || '').replace(/\n{2,}/g, '\n\n')
           : aiResponseText;
-        const injectedToSelection = selectionScoped && injectIntoSavedSelection(targetedText);
+        const shouldRenderOutlineHtml = finalizedAction.type === 'text'
+          && (smartActionKey === 'outline' || /\boutline\b/i.test(promptText));
+        const shouldInjectOutlineHtml = selectionScoped && shouldRenderOutlineHtml;
+        const selectionPayload = shouldInjectOutlineHtml
+          ? toOutlineHtml(targetedText)
+          : targetedText;
+        const injectedToSelection = selectionScoped && injectIntoSavedSelection(selectionPayload, {
+          injectAsHtml: shouldInjectOutlineHtml,
+        });
+
+        if (injectedToSelection && shouldInjectOutlineHtml) {
+          setLeftSidebarOpen(true);
+          setTimeout(() => {
+            computeDocumentOutline();
+          }, 0);
+        }
 
         if (!injectedToSelection) {
           const spawnNewComposition = shouldStartNewComposition({
@@ -3252,9 +3439,11 @@ Rules:
           }
 
           const shouldReplaceDocumentChrome = source === 'compose' && !selectionScoped && finalizedAction.type === 'text';
-          const composedHtml = shouldReplaceDocumentChrome
-            ? toParagraphHtml(finalizedAction.paragraph || '')
-            : renderDocActionHtml(finalizedAction);
+          const composedHtml = shouldRenderOutlineHtml
+            ? toOutlineHtml(targetedText)
+            : shouldReplaceDocumentChrome
+              ? toParagraphHtml(finalizedAction.paragraph || '')
+              : renderDocActionHtml(finalizedAction);
           setIsBlankDocument(true);
           setAppendedSections([]);
           setDocBodyHtml(composedHtml);
@@ -3269,6 +3458,12 @@ Rules:
           }
           if (spawnNewComposition) {
             showToast(`Opened a new composition for ${finalizedAction.type} output`);
+          }
+          if (shouldRenderOutlineHtml) {
+            setLeftSidebarOpen(true);
+            setTimeout(() => {
+              computeDocumentOutline();
+            }, 0);
           }
         }
       } else {
@@ -3321,7 +3516,12 @@ Rules:
     setAssistantQuickPrompt('');
   };
 
-  const runSmartAssistAction = (instruction) => {
+  const runSmartAssistAction = (instruction, actionMeta = {}) => {
+    const requestedSelectionScope = actionMeta.selectionScoped !== undefined
+      ? Boolean(actionMeta.selectionScoped)
+      : undefined;
+    const actionKey = String(actionMeta.actionKey || '').toLowerCase();
+
     if (productMode === 'deck') {
       const deckPrompt = `${instruction}\n\nCreate or refine a cinematic deck structure with stronger visual hierarchy, audience fit, and pacing. Include clear visual direction per slide.`;
       setRightSidebarOpen(true);
@@ -3338,13 +3538,13 @@ Rules:
     }
 
     const selectedScope = selectedEditorTextRef.current || selectedEditorText;
-    const hasSelection = Boolean(selectedScope);
+    const hasSelection = requestedSelectionScope !== undefined ? requestedSelectionScope : Boolean(selectedScope);
     const scopedPrompt = hasSelection
-      ? `${instruction}\n\nRefine ONLY this selected excerpt and preserve intent:\n"""${selectedScope}"""`
+      ? `${instruction}\n\nRefine ONLY this selected excerpt and preserve intent:\n"""${selectedScope}"""\n\nIf you are producing an outline, return clear section headings with bullets under each heading.`
       : `${instruction}\n\nUse the current document context and provide a directly usable rewrite.`;
 
-    setRightSidebarOpen(true);
-    setActiveRightTab('chat');
+    setRightSidebarOpen(false);
+    setActiveRightTab('assistant');
     showToast('Smart Assist is running...');
 
     handleAISubmit(scopedPrompt, {
@@ -3353,6 +3553,7 @@ Rules:
       suppressChatEcho: false,
       composeFormat: hasSelection ? 'Plain Text' : 'Auto (Compose decides)',
       selectionScoped: hasSelection,
+      smartActionKey: actionKey,
       tone: promptTone,
       lengthMode: promptLengthMode,
       lengthValue: promptLengthValue,
@@ -5840,6 +6041,33 @@ Rules:
             </div>
           </div>
 
+          <div className="px-3 pb-2">
+            <div className="rounded-xl border border-violet-100 bg-white/80 p-2.5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
+                <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5">{Math.max(0, documentOutlineItems.length - 1)} Sections</span>
+              </div>
+              {documentOutlineItems.length > 1 ? (
+                <div className="max-h-40 overflow-y-auto pr-1 space-y-0.5 thin-scrollbar">
+                  {documentOutlineItems.map((item, index) => (
+                    <button
+                      key={`${item.id}-${index}`}
+                      type="button"
+                      onClick={() => jumpToOutlineItem(item)}
+                      className={`w-full text-left rounded-md py-1 text-xs transition-colors ${item.isTitle ? 'font-semibold text-gray-800 hover:bg-violet-50 px-2' : 'text-gray-600 hover:bg-gray-100'}`}
+                      style={item.isTitle ? undefined : { paddingLeft: `${10 + Math.max(0, item.level - 1) * 12}px`, paddingRight: '6px' }}
+                      title={item.label}
+                    >
+                      <span className="block truncate">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[11px] text-gray-500 px-1.5 py-2">Generate or format headings to populate the outline.</div>
+              )}
+            </div>
+          </div>
+
           <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
             <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Home size={16} /> Home</button>
             <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><BookOpen size={16} /> Library</button>
@@ -7778,7 +8006,7 @@ Rules:
               transition: 'transform 180ms ease-out',
             }}
           >
-          <div ref={documentCardRef} className="max-w-[850px] mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 min-h-[calc(100vh-13rem)] relative">
+          <div ref={documentCardRef} className="compose-editor-surface max-w-[850px] mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 min-h-[calc(100vh-13rem)] relative">
             
             {/* Title & Subtitle */}
             <div
@@ -7976,6 +8204,54 @@ Rules:
                 )}
               </div>
             ))}
+
+            {selectionActionMenu.open && selectedEditorText && !isComposing && (
+              <div
+                ref={selectionActionMenuRef}
+                className="absolute z-[36] w-[264px] rounded-2xl border border-[#dad9ee] bg-[#f8f8ff] shadow-[0_20px_44px_-24px_rgba(76,29,149,0.35)] p-2"
+                style={{ left: `${selectionActionMenu.left}px`, top: `${selectionActionMenu.top}px` }}
+              >
+                {selectedTextActionOptions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.key}
+                      type="button"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                      }}
+                      onClick={() => runSelectedTextAction(action)}
+                      className="w-full flex items-start gap-2 rounded-xl border border-transparent bg-white/80 px-2.5 py-2 text-left hover:border-[#d6d2ff] hover:bg-white transition-colors"
+                    >
+                      <Icon size={14} className="text-[#8b5cf6] mt-[1px] shrink-0" />
+                      <span className="min-w-0">
+                        <span className="block text-[12px] font-medium text-[#3b2f63] leading-tight">{action.label}</span>
+                        {action.detail && <span className="block text-[10px] text-[#8f86b8] mt-0.5">{action.detail}</span>}
+                      </span>
+                    </button>
+                  );
+                })}
+                <div className="border-t border-[#e5e2f6] mt-1 pt-1">
+                  <button
+                    type="button"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onClick={() => {
+                      setRightSidebarOpen(true);
+                      setActiveRightTab('assistant');
+                      setSelectionActionMenu({ open: false, left: 0, top: 0 });
+                    }}
+                    className="w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-[12px] text-[#5b4a86] hover:bg-white transition-colors"
+                  >
+                    <span>More actions</span>
+                    <ChevronRight size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {showPageNumbers && showPageNumberOnFirstPage && (
               <div className={`absolute bottom-10 ${pageNumberPositionClass} text-[11px] font-medium text-gray-400`}>
@@ -8921,38 +9197,6 @@ Rules:
           {/* B. ACTIVE TAB: AI ASSISTANT CO-WRITER */}
           {activeRightTab === 'assistant' && (
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              {selectedEditorText && (
-                <div className="rounded-2xl border border-violet-200 bg-violet-50/80 px-3 py-3 shadow-[0_12px_28px_-20px_rgba(109,40,217,0.55)]">
-                  <div className="flex items-center justify-between gap-3 mb-2">
-                    <div>
-                      <div className="text-[11px] font-semibold text-violet-700">Selection detected</div>
-                      <div className="text-[11px] text-violet-700/80">Use one of these actions on the highlighted text.</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedEditorText('');
-                        selectedEditorTextRef.current = '';
-                      }}
-                      className="text-[10px] font-semibold text-violet-700 hover:text-violet-800"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {selectedTextActionOptions.map((option) => (
-                      <button
-                        key={option.key}
-                        type="button"
-                        onClick={() => runSelectedTextAction(option.prompt)}
-                        className="w-full text-left rounded-xl border border-violet-100 bg-white/90 px-3 py-2.5 text-xs font-medium text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors"
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
               <div>
                 <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
                 <p className="text-xs text-gray-500">{smartAssistIntro}</p>
