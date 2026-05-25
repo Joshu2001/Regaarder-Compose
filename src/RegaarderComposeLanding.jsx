@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   FileText,
   Mic,
@@ -73,6 +73,13 @@ const suggestions = [
   },
 ];
 
+const promptModeOptions = [
+  { key: 'compose', label: 'Compose', detail: 'Document workspace' },
+  { key: 'deck', label: 'Deck', detail: 'Presentation workspace' },
+  { key: 'sheets', label: 'Sheets', detail: 'Spreadsheet workspace' },
+  { key: 'room', label: 'Room', detail: 'Live collaboration' },
+];
+
 function AttachmentIcon({ type }) {
   if (type === "pdf") {
     return (
@@ -98,6 +105,16 @@ function AttachmentIcon({ type }) {
 }
 
 export default function RegaarderComposeLanding({ onExit, onLaunch }) {
+  const [promptMode, setPromptMode] = useState('compose');
+  const [promptMenuOpen, setPromptMenuOpen] = useState(false);
+
+  const launchPromptWorkspace = (mode = promptMode) => {
+    setPromptMenuOpen(false);
+    onLaunch?.(mode);
+  };
+
+  const activePromptModeLabel = promptModeOptions.find((option) => option.key === promptMode)?.label || 'Compose';
+
   return (
     <div className="w-full h-screen bg-white flex overflow-hidden text-gray-800">
       
@@ -233,7 +250,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                   </p>
                 </div>
 
-                <button type="button" className="flex items-center gap-2 text-[11px] md:text-[12px] text-violet-500 font-medium whitespace-nowrap">
+                <button type="button" onClick={() => launchPromptWorkspace('compose')} className="flex items-center gap-2 text-[11px] md:text-[12px] text-violet-500 font-medium whitespace-nowrap">
                   <Mic size={13} />
                   Speak instead
                 </button>
@@ -268,7 +285,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                 ))}
 
                 {/* Add More */}
-                <button type="button" className="h-[56px] px-5 rounded-2xl border border-dashed border-gray-300 text-slate-500 hover:bg-slate-50 flex items-center gap-2.5">
+                <button type="button" onClick={() => launchPromptWorkspace()} className="h-[56px] px-5 rounded-2xl border border-dashed border-gray-300 text-slate-500 hover:bg-slate-50 flex items-center gap-2.5">
                   <Plus size={16} />
                   Add more
                 </button>
@@ -278,30 +295,57 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
               <div className="mt-6 flex items-end justify-between gap-4 flex-col md:flex-row">
                 
                 {/* Mode */}
-                <button type="button" className="h-10 px-4 rounded-2xl bg-violet-50 text-violet-700 text-[12px] font-medium flex items-center gap-2.5 hover:bg-violet-100 transition-colors">
-                  <Sparkles size={14} />
-                  Auto (Compose decides)
-                  <ChevronDown size={13} />
-                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setPromptMenuOpen((open) => !open)}
+                    className="h-10 px-4 rounded-2xl bg-violet-50 text-violet-700 text-[12px] font-medium flex items-center gap-2.5 hover:bg-violet-100 transition-colors"
+                    aria-haspopup="menu"
+                    aria-expanded={promptMenuOpen}
+                  >
+                    <Sparkles size={14} />
+                    Auto ({activePromptModeLabel})
+                    <ChevronDown size={13} />
+                  </button>
+
+                  {promptMenuOpen && (
+                    <div className="absolute left-0 bottom-[calc(100%+8px)] z-20 w-[220px] rounded-2xl border border-gray-200 bg-white shadow-[0_18px_40px_-26px_rgba(15,23,42,0.25)] p-2">
+                      {promptModeOptions.map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() => {
+                            setPromptMode(option.key);
+                            setPromptMenuOpen(false);
+                          }}
+                          className={`w-full text-left rounded-xl px-3 py-2.5 transition-colors ${promptMode === option.key ? 'bg-violet-50 text-violet-700' : 'hover:bg-slate-50 text-slate-700'}`}
+                        >
+                          <div className="text-sm font-semibold">{option.label}</div>
+                          <div className="text-[11px] text-slate-500">{option.detail}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Controls */}
                 <div className="flex items-center gap-3 md:gap-4">
                   
-                  <button type="button" className="w-10 h-10 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
+                  <button type="button" onClick={() => launchPromptWorkspace()} className="w-10 h-10 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
                     <Paperclip
                       size={16}
                       className="text-slate-500"
                     />
                   </button>
 
-                  <button type="button" className="w-10 h-10 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
+                  <button type="button" onClick={() => launchPromptWorkspace('compose')} className="w-10 h-10 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
                     <Mic
                       size={16}
                       className="text-slate-500"
                     />
                   </button>
 
-                  <button type="button" className="w-10 h-10 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-200/40">
+                  <button type="button" onClick={() => launchPromptWorkspace()} className="w-10 h-10 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-200/40">
                     <ArrowUpRight size={17} />
                   </button>
                 </div>
