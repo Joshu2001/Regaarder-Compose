@@ -212,7 +212,7 @@ export default function App() {
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
-  const [productMode, setProductMode] = useState('compose');
+  const [productMode, setProductMode] = useState('landing');
   const [creationPickerOpen, setCreationPickerOpen] = useState(false);
   const [activeDeckSlideId, setActiveDeckSlideId] = useState(1);
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
@@ -330,6 +330,7 @@ export default function App() {
   const [editingPromptId, setEditingPromptId] = useState(null);
   const [editingPromptValue, setEditingPromptValue] = useState('');
   const [assistantQuickPrompt, setAssistantQuickPrompt] = useState('');
+  const [selectionMenuPrompt, setSelectionMenuPrompt] = useState('');
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
@@ -431,6 +432,8 @@ export default function App() {
   const sheetToolbarMenuRef = useRef(null);
   const deckToolbarMenuRef = useRef(null);
   const selectionActionMenuRef = useRef(null);
+  const selectionMenuInputRef = useRef(null);
+  const pointerDownInSelectionMenuRef = useRef(false);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -463,7 +466,7 @@ export default function App() {
   const [isUnsavedDraftVisible, setIsUnsavedDraftVisible] = useState(true);
   const [isEditingUnsavedDraftName, setIsEditingUnsavedDraftName] = useState(false);
   const [unsavedDraftNameInput, setUnsavedDraftNameInput] = useState('');
-  const [activePrimaryNav, setActivePrimaryNav] = useState('drafts');
+  const [activePrimaryNav, setActivePrimaryNav] = useState('home');
   const [documentStats, setDocumentStats] = useState({ words: 0, characters: 0 });
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isFocusMode, setIsFocusMode] = useState(false);
@@ -1649,6 +1652,15 @@ export default function App() {
   }, [floatingPrompt, isPromptExpanded]);
 
   useEffect(() => {
+    if (selectionActionMenu.open) {
+      setSelectionMenuPrompt('');
+      window.requestAnimationFrame(() => {
+        selectionMenuInputRef.current?.focus();
+      });
+    }
+  }, [selectionActionMenu.open]);
+
+  useEffect(() => {
     const trackPointerOrigin = (event) => {
       pointerDownInPromptRef.current = Boolean(promptRootRef.current && promptRootRef.current.contains(event.target));
       pointerDownInDocumentRef.current = Boolean(documentCardRef.current && documentCardRef.current.contains(event.target));
@@ -1664,6 +1676,9 @@ export default function App() {
       if (!range) {
         if (pointerDownInPromptRef.current) {
           pointerDownInDocumentRef.current = false;
+          return;
+        }
+        if (pointerDownInSelectionMenuRef.current) {
           return;
         }
         if (!pointerDownInDocumentRef.current) {
@@ -2102,7 +2117,7 @@ export default function App() {
   const docTitleDisplay = truncateText(docTitle || 'Untitled document', 20);
 
   const selectedTextActionOptions = [
-    { key: 'ask', label: 'Ask AI about this selection', detail: 'Ctrl+J', icon: Sparkles, prompt: 'Analyze this selected text and explain what it means, including the strongest insight.', keepOpen: false, hintStyle: true },
+    { key: 'ask', label: 'Ask AI about this selection', detail: 'Ctrl+J', icon: Sparkles, prompt: 'Analyze this selected text and explain what it means, including the strongest insight.', keepOpen: true, hintStyle: true },
     { key: 'rewrite', label: 'Rewrite', detail: 'Improve clarity and tone', icon: PenTool, prompt: 'Rewrite the selected text to be clearer, tighter, and more readable.' },
     { key: 'summary', label: 'Summarize', detail: 'Shorten this text', icon: Scissors, prompt: 'Summarize the selected text in fewer words while preserving core meaning.' },
     { key: 'expand', label: 'Expand', detail: 'Add more detail', icon: Expand, prompt: 'Expand the selected text with more detail and useful context.' },
@@ -2116,12 +2131,16 @@ export default function App() {
       return;
     }
 
-    const instruction = action?.prompt || '';
+    const instruction = String(action?.prompt || selectionMenuPrompt || '').trim();
     if (!instruction.trim()) {
       return;
     }
 
-    setAssistantQuickPrompt(instruction);
+    if (action?.key === 'ask') {
+      setSelectionMenuPrompt(instruction);
+    } else {
+      setAssistantQuickPrompt(instruction);
+    }
     setSelectionActionMenu({ open: false, left: 0, top: 0 });
     runSmartAssistAction(instruction, {
       actionKey: action?.key || '',
@@ -4343,6 +4362,67 @@ Rules:
     setRightSidebarOpen(true);
     setActiveRightTab('assistant');
     showToast('Sheets workspace ready');
+  };
+
+  const openLandingWorkspace = (destination) => {
+    setCreationPickerOpen(false);
+
+    if (destination === 'compose') {
+      setActivePrimaryNav('drafts');
+      createComposeExperience();
+      return;
+    }
+
+    if (destination === 'deck') {
+      setActivePrimaryNav('library');
+      createDeckExperience();
+      return;
+    }
+
+    if (destination === 'sheets') {
+      setActivePrimaryNav('home');
+      createSheetsExperience();
+      return;
+    }
+
+    setProductMode('compose');
+    setRightSidebarOpen(true);
+
+    switch (destination) {
+      case 'room':
+        setActivePrimaryNav('home');
+        setRoomState('lobby');
+        setActiveRightTab('room');
+        break;
+      case 'tasks':
+        setActivePrimaryNav('home');
+        setActiveRightTab('tasks');
+        break;
+      case 'calendar':
+        setActivePrimaryNav('home');
+        setActiveRightTab('calendar');
+        break;
+      case 'people':
+        setActivePrimaryNav('home');
+        setActiveRightTab('people');
+        break;
+      case 'memory':
+        setActivePrimaryNav('home');
+        setActiveRightTab('memory');
+        break;
+      case 'chat':
+        setActivePrimaryNav('inbox');
+        setActiveRightTab('chat');
+        break;
+      case 'assistant':
+      case 'more':
+        setActivePrimaryNav('inbox');
+        setActiveRightTab('assistant');
+        break;
+      default:
+        setActiveRightTab('chat');
+        break;
+    }
   };
 
   const requestCloseDocument = (docId) => {
@@ -8310,6 +8390,12 @@ Rules:
             {selectionActionMenu.open && selectedEditorText && !isComposing && (
               <div
                 ref={selectionActionMenuRef}
+                onPointerDownCapture={() => {
+                  pointerDownInSelectionMenuRef.current = true;
+                }}
+                onPointerUpCapture={() => {
+                  pointerDownInSelectionMenuRef.current = false;
+                }}
                 className="absolute z-[36] w-[320px] rounded-2xl border border-[#e7e7ee] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden"
                 style={{ left: `${selectionActionMenu.left}px`, top: `${selectionActionMenu.top}px` }}
               >
@@ -8317,15 +8403,16 @@ Rules:
                   <div className="flex items-center gap-2 px-3 h-11 rounded-xl bg-[#f7f7fb] border border-[#ececf2]">
                     <Sparkles size={16} className="text-violet-500" />
                     <input
+                      ref={selectionMenuInputRef}
                       type="text"
                       placeholder="Ask AI about this selection..."
                       className="bg-transparent outline-none text-sm w-full placeholder:text-[#9a9aac]"
-                      value={assistantQuickPrompt}
-                      onChange={(event) => setAssistantQuickPrompt(event.target.value)}
+                      value={selectionMenuPrompt}
+                      onChange={(event) => setSelectionMenuPrompt(event.target.value)}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') {
                           event.preventDefault();
-                          const prompt = assistantQuickPrompt.trim() || 'Analyze this selected text and explain what it means, including the strongest insight.';
+                          const prompt = selectionMenuPrompt.trim() || 'Analyze this selected text and explain what it means, including the strongest insight.';
                           runSelectedTextAction({ key: 'ask', prompt });
                         }
                       }}
