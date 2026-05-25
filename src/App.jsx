@@ -1105,6 +1105,32 @@ export default function App() {
     return isRangeInsideEditor(range) ? range : null;
   };
 
+  const syncEditorSelection = () => {
+    const range = getEditorSelectionRange();
+    if (!range) {
+      return false;
+    }
+
+    savedSelectionRef.current = range.cloneRange();
+    const selectedText = range.toString().trim();
+    const next = truncateText(selectedText, 180);
+    setSelectedEditorText(next);
+    selectedEditorTextRef.current = selectedText;
+    wholeDocSelectionRef.current = isWholeDocumentSelection(range);
+
+    try {
+      setIsBoldActive(Boolean(document.queryCommandState('bold')));
+      setIsItalicActive(Boolean(document.queryCommandState('italic')));
+      setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
+      setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
+      setIsListActive(Boolean(document.queryCommandState('insertUnorderedList')));
+    } catch (_error) {
+      // noop
+    }
+
+    return true;
+  };
+
   const restoreSavedSelection = () => {
     if (!savedSelectionRef.current) {
       return false;
@@ -1495,28 +1521,18 @@ export default function App() {
         return;
       }
 
-      savedSelectionRef.current = range.cloneRange();
-      const selectedText = range.toString().trim();
-      const next = truncateText(selectedText, 180);
-      setSelectedEditorText(next);
-      selectedEditorTextRef.current = selectedText;
-      wholeDocSelectionRef.current = isWholeDocumentSelection(range);
-
-      try {
-        setIsBoldActive(Boolean(document.queryCommandState('bold')));
-        setIsItalicActive(Boolean(document.queryCommandState('italic')));
-        setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
-        setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
-        setIsListActive(Boolean(document.queryCommandState('insertUnorderedList')));
-      } catch (_error) {
-        // noop
-      }
-
+      syncEditorSelection();
       pointerDownInDocumentRef.current = false;
     };
 
     document.addEventListener('selectionchange', handleSelectionChange);
-    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+    document.addEventListener('pointerup', syncEditorSelection, true);
+    document.addEventListener('mouseup', syncEditorSelection, true);
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      document.removeEventListener('pointerup', syncEditorSelection, true);
+      document.removeEventListener('mouseup', syncEditorSelection, true);
+    };
   }, []);
 
   useEffect(() => {
@@ -1808,6 +1824,14 @@ export default function App() {
     return `${raw.slice(0, max)}...`;
   };
 
+  const truncateUiTitle = (value, max = 20) => {
+    const raw = String(value || '').trim();
+    if (raw.length <= max) {
+      return raw;
+    }
+    return `${raw.slice(0, Math.max(1, max - 3)).trimEnd()}...`;
+  };
+
   const removePromptAttachment = (attachmentId) => {
     setPromptAttachments((prev) => {
       const target = prev.find((attachment) => attachment.id === attachmentId);
@@ -1912,6 +1936,27 @@ export default function App() {
   const handleComposeAccept = () => {
     setLastComposeRun(null);
     showToast('Changes accepted');
+  };
+
+  const docTitleDisplay = truncateText(docTitle || 'Untitled document', 20);
+
+  const selectedTextActionOptions = [
+    { key: 'summary', label: 'Summarize', prompt: 'Summarize the selected text.' },
+    { key: 'rewrite', label: 'Rewrite', prompt: 'Rewrite the selected text with better clarity and flow.' },
+    { key: 'outline', label: 'Outline', prompt: 'Turn the selected text into a concise outline.' },
+    { key: 'keypoints', label: 'Key points', prompt: 'Extract the key points from the selected text.' },
+    { key: 'commentary', label: 'Commentary', prompt: 'Add brief commentary on the selected text and its implications.' },
+  ];
+
+  const runSelectedTextAction = (prompt) => {
+    if (!selectedEditorTextRef.current) {
+      return;
+    }
+
+    setAssistantQuickPrompt(prompt);
+    setRightSidebarOpen(true);
+    setActiveRightTab('assistant');
+    runSmartAssistAction(prompt);
   };
 
   const closeTransientMenus = () => {
@@ -2437,6 +2482,24 @@ export default function App() {
     .replace(/\b\w/g, (match) => match.toUpperCase())
     .trim();
 
+  const compactDisplayTitle = (value, maxChars = 20) => {
+    const text = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!text || text.length <= maxChars) {
+      return text;
+    }
+    if (maxChars <= 3) {
+      return text.slice(0, maxChars);
+    }
+    return `${text.slice(0, maxChars - 3).trimEnd()}...`;
+  };
+
+  const cleanSourceLabel = (value) => String(value || '')
+    .replace(/\.[a-z0-9]+$/i, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b(?:final|draft|copy|version|v\d+|scan|scanned|uploaded|attachment|document|file)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
   const extractPromptSubject = (promptText = '') => {
     const normalized = String(promptText || '')
       .replace(/\s+/g, ' ')
@@ -2458,6 +2521,26 @@ export default function App() {
       .trim();
 
     return subject.slice(0, 90);
+  };
+
+  const deriveCompactPromptTopic = (promptText = '') => {
+    const subject = extractPromptSubject(promptText);
+    if (!subject) {
+      return '';
+    }
+
+    const cleaned = subject
+      .replace(/\b(like you were writing|as if you were writing|like a|as a)\b.*$/i, '')
+      .replace(/[,;:】【。]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const words = cleaned.split(' ').filter(Boolean);
+    if (!words.length) {
+      return '';
+    }
+
+    return toTitleCase(words.slice(0, 6).join(' '));
   };
 
   const detectRequestedAction = ({ promptText = '', requestedFormat = '' }) => {
@@ -2497,22 +2580,53 @@ export default function App() {
 
   const isGenericGeneratedTitle = (value) => /^(compose draft|compose article|compose proposal|compose checklist|compose timeline|compose risk review|ai composed section|compose article)$/i.test(String(value || '').trim());
 
+  const getDisplayDocTitle = (value) => compactDisplayTitle(value, 20) || 'Untitled draft';
+
   const deriveGeneratedDocumentTitle = ({ actionTitle = '', promptText = '', requestedFormat = '', attachmentContext = '' }) => {
     const currentTitle = String(actionTitle || '').trim();
-    if (currentTitle && !isGenericGeneratedTitle(currentTitle)) {
+    if (currentTitle && !isGenericGeneratedTitle(currentTitle) && currentTitle.length <= 28) {
       return currentTitle;
     }
 
     const sourceSummary = summarizeAttachmentContext(attachmentContext, promptText);
     const subject = extractPromptSubject(promptText);
+  const compactTopic = deriveCompactPromptTopic(promptText);
     const sourceName = stripFileExtension(sourceSummary.fileNames[0] || '');
+    const sourceTitle = toTitleCase(cleanSourceLabel(sourceName) || '');
     const requestedAction = detectRequestedAction({ promptText, requestedFormat });
 
-    if (/findings?/i.test(subject) && /implications?/i.test(subject)) {
-      return `Key Findings and Implications ${requestedAction}`.trim();
+    if (sourceTitle) {
+      if (/summary/i.test(requestedAction)) {
+        return `${sourceTitle} Summary`;
+      }
+      if (/outline/i.test(requestedAction)) {
+        return `${sourceTitle} Outline`;
+      }
+      if (/checklist/i.test(requestedAction)) {
+        return `${sourceTitle} Checklist`;
+      }
+      if (/timeline/i.test(requestedAction)) {
+        return `${sourceTitle} Timeline`;
+      }
+      if (/proposal/i.test(requestedAction)) {
+        return `${sourceTitle} Proposal`;
+      }
+      if (/findings?/i.test(subject)) {
+        return `${sourceTitle} Findings`;
+      }
+      if (/implications?/i.test(subject)) {
+        return `${sourceTitle} Implications`;
+      }
+      if (/analysis/i.test(subject)) {
+        return `${sourceTitle} Analysis`;
+      }
+      if (/article/i.test(requestedAction)) {
+        return `${sourceTitle} Article`;
+      }
+      return `${sourceTitle} ${requestedAction}`.trim();
     }
 
-    const baseSubject = toTitleCase(subject || sourceName || 'Document');
+    const baseSubject = compactTopic || toTitleCase(subject || sourceName || 'Document');
     const baseTitle = `${baseSubject} ${requestedAction}`.trim();
 
     if (/summary/i.test(requestedAction) && sourceName) {
@@ -2541,7 +2655,8 @@ export default function App() {
   const deriveGeneratedDocumentSubtitle = ({ promptText = '', requestedTone = 'normal', requestedLengthValue = 220, requestedLengthMode = 'words', attachmentContext = '' }) => {
     const sourceSummary = summarizeAttachmentContext(attachmentContext, promptText);
     if (sourceSummary.fileNames.length) {
-      return `Based on ${sourceSummary.fileNames.join(', ')} in a ${requestedTone} tone.`;
+      const sourceLabel = cleanSourceLabel(sourceSummary.fileNames[0] || sourceSummary.fileNames.join(', '));
+      return `Based on ${sourceLabel || sourceSummary.fileNames.join(', ')} in a ${requestedTone} tone.`;
     }
     if (promptText.trim()) {
       return `Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`;
@@ -6495,7 +6610,7 @@ Rules:
                   <div className="flex-1 flex flex-col min-h-0">
                     <div className="px-4 py-2 bg-violet-50/40 border-b border-violet-100/30 flex items-center gap-2 text-xs text-violet-700">
                       <FileText size={12} />
-                      <span className="font-medium truncate">Context Linked: {isSheetsMode ? (sheetsTitle || activeSheet?.title || docTitle) : (deckTitle || docTitle)}</span>
+                      <span className="font-medium truncate" title={isSheetsMode ? (sheetsTitle || activeSheet?.title || docTitle) : (deckTitle || docTitle)}>Context Linked: {isSheetsMode ? (truncateText(sheetsTitle || activeSheet?.title || docTitle, 20)) : (truncateText(deckTitle || docTitle, 20))}</span>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                       {chatMessages.map((msg) => (
@@ -7712,11 +7827,11 @@ Rules:
                 />
                 {canShowComposeActions && (
                   <div className="mb-8 flex items-center justify-end gap-2 relative z-20 pointer-events-auto">
-                    <button type="button" onClick={handleComposeAccept} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50">Accept</button>
-                    <button type="button" onClick={handleComposeRetry} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Retry</button>
-                    <button type="button" onClick={handleComposeUndo} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Undo</button>
-                    <button type="button" onClick={handleComposeDelete} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50">Delete</button>
-                    <button type="button" onClick={() => setLastComposeRun(null)} className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="Dismiss actions">
+                    <button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={handleComposeAccept} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50">Accept</button>
+                    <button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={handleComposeRetry} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Retry</button>
+                    <button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={handleComposeUndo} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Undo</button>
+                    <button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={handleComposeDelete} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50">Delete</button>
+                    <button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={() => setLastComposeRun(null)} className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100" title="Dismiss actions">
                       <X size={12} />
                     </button>
                   </div>
@@ -8585,7 +8700,7 @@ Rules:
               {/* Context Indicator */}
               <div className="px-4 py-2 bg-violet-50/40 border-b border-violet-100/30 flex items-center gap-2 text-xs text-violet-700">
                 <FileText size={12} />
-                <span className="font-medium truncate">Context Linked: {docTitle}</span>
+                <span className="font-medium truncate" title={docTitle}>Context Linked: {docTitleDisplay}</span>
               </div>
 
               {/* Chat Stream */}
@@ -8807,9 +8922,35 @@ Rules:
           {activeRightTab === 'assistant' && (
             <div className="flex-1 overflow-y-auto p-5 space-y-6">
               {selectedEditorText && (
-                <div className="rounded-xl border border-violet-200 bg-violet-50/70 px-3 py-2">
-                  <div className="text-[11px] font-semibold text-violet-700 mb-0.5">Quick Assist Available</div>
-                  <div className="text-[11px] text-violet-700/80">Text is highlighted. Tap an action to run immediately.</div>
+                <div className="rounded-2xl border border-violet-200 bg-violet-50/80 px-3 py-3 shadow-[0_12px_28px_-20px_rgba(109,40,217,0.55)]">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div>
+                      <div className="text-[11px] font-semibold text-violet-700">Selection detected</div>
+                      <div className="text-[11px] text-violet-700/80">Use one of these actions on the highlighted text.</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedEditorText('');
+                        selectedEditorTextRef.current = '';
+                      }}
+                      className="text-[10px] font-semibold text-violet-700 hover:text-violet-800"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {selectedTextActionOptions.map((option) => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onClick={() => runSelectedTextAction(option.prompt)}
+                        className="w-full text-left rounded-xl border border-violet-100 bg-white/90 px-3 py-2.5 text-xs font-medium text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               <div>
