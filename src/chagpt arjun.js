@@ -21,6 +21,7 @@ import {
   Bell,
   Paperclip,
   PenTool,
+  Cloud,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -150,7 +151,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
               +
             </button>
 
-            <div>
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <h1 className="text-[14px] md:text-[15px] font-semibold tracking-tight text-slate-900">
                   Untitled composition
@@ -160,6 +161,10 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                   size={16}
                   className="text-slate-400"
                 />
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                <Cloud size={13} />
+                <span>Saved just now</span>
               </div>
             </div>
           </div>
@@ -216,15 +221,23 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
 
             {/* Main AI Box */}
             <div className="mt-6 md:mt-8 bg-white border border-gray-200 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.05)] p-6 md:p-7 text-left max-w-[940px] mx-auto">
-              
-              <h3 className="text-[17px] md:text-[18px] font-medium tracking-tight text-slate-400">
-                What are you trying to create?
-              </h3>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-[17px] md:text-[18px] font-medium tracking-tight text-slate-400">
+                    What are you trying to create?
+                  </h3>
 
-              <p className="mt-2 text-[12px] md:text-[13px] text-slate-400">
-                Notes, presentations, schedules, reports,
-                research...
-              </p>
+                  <p className="mt-2 text-[12px] md:text-[13px] text-slate-400">
+                    Notes, presentations, schedules, reports,
+                    research...
+                  </p>
+                </div>
+
+                <button type="button" className="flex items-center gap-2 text-[11px] md:text-[12px] text-violet-500 font-medium whitespace-nowrap">
+                  <Mic size={13} />
+                  Speak instead
+                </button>
+              </div>
 
               {/* Attachments */}
               <div className="mt-5 flex flex-wrap gap-3">
