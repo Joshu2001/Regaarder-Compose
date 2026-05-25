@@ -8,7 +8,7 @@ import {
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
   List, Bold, Italic, Underline, Type, X, ChevronDown,
-  LayoutGrid, BookOpen, Scissors, Expand, Check,
+  LayoutGrid, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   UserPlus, Link2 as LinkIcon, Clock, Maximize2, Minimize2, Sidebar,
@@ -8310,32 +8310,102 @@ Rules:
             {selectionActionMenu.open && selectedEditorText && !isComposing && (
               <div
                 ref={selectionActionMenuRef}
-                className="absolute z-[36] w-[264px] rounded-2xl border border-[#dad9ee] bg-[#f8f8ff] shadow-[0_20px_44px_-24px_rgba(76,29,149,0.35)] p-2"
+                className="absolute z-[36] w-[320px] rounded-2xl border border-[#e7e7ee] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden"
                 style={{ left: `${selectionActionMenu.left}px`, top: `${selectionActionMenu.top}px` }}
               >
-                {selectedTextActionOptions.map((action) => {
-                  const Icon = action.icon;
-                  const isHintAction = action.key === 'ask';
-                  return (
+                <div className="p-3 border-b border-[#f1f1f5]">
+                  <div className="flex items-center gap-2 px-3 h-11 rounded-xl bg-[#f7f7fb] border border-[#ececf2]">
+                    <Sparkles size={16} className="text-violet-500" />
+                    <input
+                      type="text"
+                      placeholder="Ask AI about this selection..."
+                      className="bg-transparent outline-none text-sm w-full placeholder:text-[#9a9aac]"
+                      value={assistantQuickPrompt}
+                      onChange={(event) => setAssistantQuickPrompt(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          const prompt = assistantQuickPrompt.trim() || 'Analyze this selected text and explain what it means, including the strongest insight.';
+                          runSelectedTextAction({ key: 'ask', prompt });
+                        }
+                      }}
+                    />
+                    <span className="text-xs text-[#a0a0b2]">Ctrl+J</span>
+                  </div>
+                </div>
+
+                <div className="py-2">
+                  {[
+                    {
+                      key: 'rewrite',
+                      icon: <Wand2 size={18} />,
+                      title: 'Rewrite',
+                      subtitle: 'Improve clarity and tone',
+                      prompt: 'Rewrite the selected text to be clearer, tighter, and more readable.',
+                    },
+                    {
+                      key: 'summary',
+                      icon: <FileText size={18} />,
+                      title: 'Summarize',
+                      subtitle: 'Shorten this text',
+                      prompt: 'Summarize the selected text in fewer words while preserving core meaning.',
+                    },
+                    {
+                      key: 'expand',
+                      icon: <Expand size={18} />,
+                      title: 'Expand',
+                      subtitle: 'Add more detail',
+                      prompt: 'Expand the selected text with more detail and useful context.',
+                    },
+                    {
+                      key: 'tone',
+                      icon: <Sparkles size={18} />,
+                      title: 'Change tone',
+                      subtitle: 'Make it more formal',
+                      prompt: 'Rewrite the selected text in a more formal and professional tone.',
+                    },
+                    {
+                      key: 'slide',
+                      icon: <Presentation size={18} />,
+                      title: 'Create slide',
+                      subtitle: 'Turn into presentation',
+                      prompt: 'Turn the selected text into one presentation slide with title, headline, and concise bullets.',
+                    },
+                    {
+                      key: 'keypoints',
+                      icon: <ListTodo size={18} />,
+                      title: 'Extract key points',
+                      subtitle: 'Create a bullet list',
+                      prompt: 'Extract key points from the selected text as a concise bullet list.',
+                    },
+                  ].map((item, index) => (
                     <button
-                      key={action.key}
+                      key={item.key}
                       type="button"
                       onMouseDown={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
                       }}
-                      onClick={() => runSelectedTextAction(action)}
-                      className={`w-full flex items-start gap-2 text-left transition-colors ${isHintAction ? 'px-2.5 pt-1.5 pb-2.5 rounded-xl border-b border-[#dcd7f2] bg-white/60 hover:bg-white' : 'rounded-xl border border-transparent bg-white/80 px-2.5 py-2 hover:border-[#d6d2ff] hover:bg-white'}`}
+                      onClick={() => runSelectedTextAction({ key: item.key, prompt: item.prompt })}
+                      className="w-full px-4 py-3 flex items-start gap-3 hover:bg-[#f7f5ff] transition-colors duration-200 text-left"
                     >
-                      <Icon size={14} className={`mt-[1px] shrink-0 ${isHintAction ? 'text-[#b1a8d8]' : 'text-[#8b5cf6]'}`} />
-                      <span className="min-w-0">
-                        <span className={`block leading-tight ${isHintAction ? 'text-[11px] font-normal text-[#6d6881]' : 'text-[12px] font-medium text-[#3b2f63]'}`}>{action.label}</span>
-                        {action.detail && <span className={`block mt-0.5 ${isHintAction ? 'text-[10px] text-[#b3adc8]' : 'text-[10px] text-[#8f86b8]'}`}>{action.detail}</span>}
-                      </span>
+                      <div className="mt-[2px] text-violet-500">
+                        {item.icon}
+                      </div>
+
+                      <div className="flex-1">
+                        <p className="text-[14px] font-medium text-[#1d1d2e]">
+                          {item.title}
+                        </p>
+                        <p className="text-[12px] text-[#8b8b9d]">
+                          {item.subtitle}
+                        </p>
+                      </div>
                     </button>
-                  );
-                })}
-                <div className="border-t border-[#e5e2f6] mt-1 pt-1">
+                  ))}
+
+                  <div className="my-2 border-t border-[#f1f1f5]" />
+
                   <button
                     type="button"
                     onMouseDown={(event) => {
@@ -8347,10 +8417,24 @@ Rules:
                       setActiveRightTab('assistant');
                       setSelectionActionMenu({ open: false, left: 0, top: 0 });
                     }}
-                    className="w-full flex items-center justify-between rounded-xl px-2.5 py-2 text-[12px] text-[#5b4a86] hover:bg-white transition-colors"
+                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#f7f5ff] transition-colors duration-200"
                   >
-                    <span>More actions</span>
-                    <ChevronRight size={12} />
+                    <div className="flex items-center gap-3">
+                      <div className="text-violet-500">
+                        <Sparkles size={18} />
+                      </div>
+
+                      <div className="text-left">
+                        <p className="text-[14px] font-medium text-[#1d1d2e]">
+                          More actions
+                        </p>
+                      </div>
+                    </div>
+
+                    <ChevronRight
+                      size={16}
+                      className="text-[#9b9bad]"
+                    />
                   </button>
                 </div>
               </div>
