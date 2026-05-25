@@ -97,18 +97,18 @@ function AttachmentIcon({ type }) {
 
 export default function RegaarderComposeLanding({ onExit, onLaunch }) {
   return (
-    <div className="w-full h-screen bg-[#fafafa] flex overflow-hidden text-[#161616]">
+    <div className="w-full h-screen bg-[#f3f5fb] flex overflow-hidden text-gray-800">
       
       {/* Sidebar */}
-      <aside className="w-[108px] bg-white border-r border-[#ededf3] flex flex-col items-center py-8">
+      <aside className="w-[92px] bg-white/95 border-r border-gray-200 flex flex-col items-center py-6">
         
         {/* Logo */}
-        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-600 to-violet-500 flex items-center justify-center text-white font-semibold text-lg shadow-md">
+        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-violet-500 flex items-center justify-center text-white font-semibold text-base shadow-md shadow-violet-200/50">
           R
         </div>
 
         {/* Nav */}
-        <div className="mt-10 flex flex-col gap-4">
+        <div className="mt-8 flex flex-col gap-3">
           {sidebarItems.map((item, index) => {
             const Icon = item.icon;
 
@@ -117,14 +117,14 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                 key={index}
                 type="button"
                 onClick={() => onLaunch?.(item.key)}
-                className={`w-[76px] h-[76px] rounded-2xl flex flex-col items-center justify-center transition-all duration-200 ${
+                className={`w-[64px] h-[64px] rounded-2xl flex flex-col items-center justify-center transition-all duration-200 ${
                   item.active
                     ? "bg-violet-50 text-violet-600"
-                    : "hover:bg-[#f5f5f8] text-[#707080]"
+                    : "hover:bg-slate-50 text-slate-500"
                 }`}
               >
-                <Icon size={21} strokeWidth={1.9} />
-                <span className="text-[13px] mt-2 font-medium">
+                <Icon size={17} strokeWidth={1.9} />
+                <span className="text-[11px] mt-1.5 font-medium leading-none">
                   {item.label}
                 </span>
               </button>
@@ -134,7 +134,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
 
         {/* User */}
         <div className="mt-auto">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#d8d8e5] to-[#bfbfd0]" />
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300" />
         </div>
       </aside>
 
@@ -142,55 +142,55 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
       <main className="flex-1 flex flex-col">
         
         {/* Topbar */}
-        <header className="h-[88px] px-10 border-b border-[#efeff3] flex items-center justify-between bg-white">
+        <header className="h-16 px-6 md:px-8 border-b border-gray-200 flex items-center justify-between bg-white/95 backdrop-blur-xl">
           
-          <div className="flex items-center gap-4">
-            <button className="text-[34px] font-light text-[#b5b5c2] leading-none">
+          <div className="flex items-center gap-3">
+            <button type="button" className="text-3xl font-light text-slate-400 leading-none hover:text-slate-600">
               +
             </button>
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-[32px] font-semibold tracking-tight">
+                <h1 className="text-[18px] md:text-[20px] font-semibold tracking-tight text-slate-900">
                   Untitled composition
                 </h1>
 
                 <ChevronDown
-                  size={18}
-                  className="text-[#8f8f9d]"
+                  size={16}
+                  className="text-slate-400"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3 md:gap-4">
             
             {/* Avatars */}
-            <div className="flex -space-x-3">
+            <div className="flex -space-x-2.5">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="w-11 h-11 rounded-full border-2 border-white bg-gradient-to-br from-[#d7d7e4] to-[#bcbccd]"
+                  className="w-9 h-9 rounded-full border-2 border-white bg-gradient-to-br from-slate-200 to-slate-300"
                 />
               ))}
 
-              <div className="w-11 h-11 rounded-full border-2 border-white bg-[#f5f5fa] flex items-center justify-center text-sm text-[#707080] font-medium">
+              <div className="w-9 h-9 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[11px] text-slate-500 font-medium">
                 +2
               </div>
             </div>
 
-            <button className="h-12 px-7 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white font-medium shadow-lg shadow-violet-200 flex items-center gap-2">
-              <Users size={17} />
+            <button type="button" className="h-10 px-4 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-medium shadow-lg shadow-violet-200/40 flex items-center gap-2">
+              <Users size={15} />
               Share
             </button>
 
-            <button className="w-11 h-11 rounded-2xl hover:bg-[#f5f5f8] flex items-center justify-center">
-              <Bell size={19} className="text-[#7f7f8f]" />
+            <button type="button" className="w-10 h-10 rounded-2xl hover:bg-slate-50 flex items-center justify-center">
+              <Bell size={17} className="text-slate-500" />
             </button>
 
-            <button className="w-11 h-11 rounded-2xl bg-violet-50 flex items-center justify-center">
+            <button type="button" className="w-10 h-10 rounded-2xl bg-violet-50 flex items-center justify-center">
               <Sparkles
-                size={18}
+                size={16}
                 className="text-violet-600"
               />
             </button>
@@ -198,57 +198,57 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
             <button
               type="button"
               onClick={onExit}
-              className="w-11 h-11 rounded-2xl border border-[#ececf3] hover:bg-[#f5f5f8] flex items-center justify-center"
+              className="w-10 h-10 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center"
               aria-label="Exit to Compose"
               title="Exit to Compose"
             >
-              <X size={18} className="text-[#7f7f8f]" />
+              <X size={16} className="text-slate-500" />
             </button>
           </div>
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto px-10 py-14">
+        <div className="flex-1 overflow-auto px-5 py-6 md:px-8 md:py-8">
           
           {/* Hero */}
-          <div className="max-w-[980px] mx-auto text-center">
+          <div className="max-w-6xl mx-auto text-center">
             
-            <h2 className="text-[56px] leading-[1.1] tracking-tight font-semibold text-[#17172a]">
+            <h2 className="text-[28px] sm:text-[32px] md:text-[38px] leading-[1.08] tracking-tight font-semibold text-slate-950">
               Good morning, Arjun
               <span className="text-violet-500 ml-1">✦</span>
             </h2>
 
-            <p className="mt-5 text-[24px] text-[#7c7c8f] font-light">
+            <p className="mt-3 text-[15px] sm:text-[16px] text-slate-500 font-normal">
               What would you like to create today?
             </p>
 
             {/* Main AI Box */}
-            <div className="mt-14 bg-white border border-[#ededf3] rounded-[36px] shadow-[0_20px_60px_rgba(0,0,0,0.04)] p-12 text-left">
+            <div className="mt-8 md:mt-10 bg-white border border-gray-200 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.05)] p-6 md:p-8 text-left">
               
-              <h3 className="text-[42px] font-medium tracking-tight text-[#4a4a5d]">
+              <h3 className="text-[22px] md:text-[24px] font-semibold tracking-tight text-slate-800">
                 What are you trying to create?
               </h3>
 
-              <p className="mt-3 text-[22px] text-[#9494a4]">
+              <p className="mt-2 text-[14px] md:text-[15px] text-slate-500">
                 Notes, presentations, schedules, reports,
                 research...
               </p>
 
               {/* Attachments */}
-              <div className="mt-10 flex flex-wrap gap-4">
+              <div className="mt-6 flex flex-wrap gap-3">
                 {attachments.map((item, index) => (
                   <div
                     key={index}
-                    className="h-[76px] px-5 rounded-2xl border border-[#ececf3] bg-[#fcfcfd] flex items-center gap-4"
+                    className="h-[62px] px-4 rounded-2xl border border-gray-200 bg-slate-50 flex items-center gap-3"
                   >
                     <AttachmentIcon type={item.icon} />
 
                     <div>
-                      <p className="text-[15px] font-medium text-[#252538]">
+                      <p className="text-[13px] font-medium text-slate-800">
                         {item.title}
                       </p>
 
-                      <p className="text-[13px] text-[#8d8d9d]">
+                      <p className="text-[11px] text-slate-500">
                         {item.subtitle}
                       </p>
                     </div>
@@ -263,50 +263,50 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                 ))}
 
                 {/* Add More */}
-                <button type="button" className="h-[76px] px-7 rounded-2xl border border-dashed border-[#d9d9e6] text-[#707080] hover:bg-[#fafafd] flex items-center gap-3">
-                  <Plus size={18} />
+                <button type="button" className="h-[62px] px-5 rounded-2xl border border-dashed border-gray-300 text-slate-500 hover:bg-slate-50 flex items-center gap-2.5">
+                  <Plus size={16} />
                   Add more
                 </button>
               </div>
 
               {/* Bottom Row */}
-              <div className="mt-14 flex items-end justify-between">
+              <div className="mt-8 flex items-end justify-between gap-4 flex-col md:flex-row">
                 
                 {/* Mode */}
-                <button type="button" className="h-[54px] px-6 rounded-2xl bg-violet-50 text-violet-600 font-medium flex items-center gap-3 hover:bg-violet-100 transition-colors">
-                  <Sparkles size={17} />
+                <button type="button" className="h-11 px-4 rounded-2xl bg-violet-50 text-violet-700 text-sm font-medium flex items-center gap-2.5 hover:bg-violet-100 transition-colors">
+                  <Sparkles size={15} />
                   Auto (Compose decides)
-                  <ChevronDown size={16} />
+                  <ChevronDown size={14} />
                 </button>
 
                 {/* Controls */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 md:gap-4">
                   
-                  <button type="button" className="w-14 h-14 rounded-2xl border border-[#ececf2] hover:bg-[#f8f8fc] flex items-center justify-center">
+                  <button type="button" className="w-11 h-11 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
                     <Paperclip
-                      size={20}
-                      className="text-[#6f6f80]"
+                      size={17}
+                      className="text-slate-500"
                     />
                   </button>
 
-                  <button type="button" className="w-14 h-14 rounded-2xl border border-[#ececf2] hover:bg-[#f8f8fc] flex items-center justify-center">
+                  <button type="button" className="w-11 h-11 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
                     <Mic
-                      size={20}
-                      className="text-[#6f6f80]"
+                      size={17}
+                      className="text-slate-500"
                     />
                   </button>
 
-                  <button type="button" className="w-14 h-14 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-200">
-                    <ArrowUpRight size={21} />
+                  <button type="button" className="w-11 h-11 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-200/40">
+                    <ArrowUpRight size={18} />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Suggestions */}
-            <div className="mt-14">
+            <div className="mt-8 md:mt-10">
               
-              <p className="text-[18px] text-[#8c8c9b] mb-6">
+              <p className="text-[13px] md:text-[14px] text-slate-500 mb-4">
                 Try something
               </p>
 
@@ -319,11 +319,11 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                       type="button"
                       onClick={() => onLaunch?.('more')}
                       key={index}
-                      className="h-[60px] px-7 rounded-2xl border border-[#ececf3] bg-white hover:bg-[#fafafd] flex items-center gap-3 text-[#2a2a3d] font-medium transition-all"
+                      className="h-11 px-4 md:px-5 rounded-2xl border border-gray-200 bg-white hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 text-sm font-medium transition-all"
                     >
                       <Icon
-                        size={18}
-                        className="text-[#707080]"
+                        size={16}
+                        className="text-slate-500"
                       />
 
                       {item.text}
@@ -331,17 +331,17 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                   );
                 })}
 
-                <button type="button" onClick={() => onLaunch?.('more')} className="w-[60px] h-[60px] rounded-2xl border border-[#ececf3] bg-white hover:bg-[#fafafd] flex items-center justify-center">
+                <button type="button" onClick={() => onLaunch?.('more')} className="w-11 h-11 rounded-2xl border border-gray-200 bg-white hover:bg-slate-50 flex items-center justify-center">
                   <RefreshCcw
-                    size={18}
-                    className="text-[#707080]"
+                    size={16}
+                    className="text-slate-500"
                   />
                 </button>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="mt-12 flex items-center justify-center gap-2 text-[15px] text-[#9a9aac]">
+            <div className="mt-8 flex items-center justify-center gap-2 text-[12px] md:text-[13px] text-slate-500">
               <span>🔒</span>
               Compose uses your content to generate results.
               <button type="button" className="text-violet-500 hover:underline">
