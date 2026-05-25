@@ -2744,16 +2744,13 @@ Rules:
       ? (customComposeFormat.trim() || 'Custom Document')
       : composeOutputFormat;
     const selectedScope = selectedEditorTextRef.current || selectedEditorText;
-    const attachmentSummary = promptAttachments.length
-      ? `\nAttached files: ${promptAttachments.map((item) => `${item.name} (${item.type})`).join(', ')}`
-      : '';
     const fallbackPrompt = promptAttachments.length
       ? `Use attached files as source context and generate the requested output.`
       : '';
     const scopedInstruction = selectedScope
       ? `Modify ONLY the selected excerpt below. Do not rewrite unrelated sections.\nSelected excerpt:\n"""${selectedScope}"""\n\nUser request: ${floatingPrompt.trim() || fallbackPrompt}`
       : (floatingPrompt.trim() || fallbackPrompt);
-    const finalPrompt = `${scopedInstruction}${attachmentSummary}`;
+    const finalPrompt = scopedInstruction;
     const composeOptions = {
       source: 'compose',
       forceDocBuild: true,
@@ -7838,10 +7835,18 @@ Rules:
         </div>
 
         {!isComposing && (
-          <div className="pointer-events-none absolute inset-0 z-[300] flex items-center justify-center">
+          <div 
+            className="pointer-events-none absolute z-[300] flex items-center justify-center"
+            style={{
+              left: '50%',
+              top: '50%',
+              transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
+            }}
+          >
             <div className="pointer-events-auto flex flex-col items-center gap-3">
               <button
                 type="button"
+                onPointerDown={(event) => beginPanelResize('dictation', event)}
                 onClick={async () => {
                   await toggleVoiceRecording('document');
                 }}
