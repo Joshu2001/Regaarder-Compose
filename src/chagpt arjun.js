@@ -120,7 +120,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                 onClick={() => onLaunch?.(item.key)}
                 className={`w-[64px] h-[64px] rounded-2xl flex flex-col items-center justify-center transition-all duration-200 ${
                   item.active
-                    ? "bg-violet-100 text-violet-700 shadow-[0_10px_24px_-14px_rgba(124,58,237,0.45)]"
+                    ? "bg-violet-200 text-violet-800 ring-1 ring-violet-300 shadow-[0_10px_24px_-14px_rgba(124,58,237,0.45)]"
                     : "hover:bg-white text-slate-600"
                 }`}
               >

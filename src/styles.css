@@ -1,4 +1,9 @@
-﻿body { margin: 0; }
+﻿html, body, #root {
+	height: 100%;
+	overflow: hidden;
+}
+
+body { margin: 0; background: #ffffff; }
 * { box-sizing: border-box; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
