@@ -2155,6 +2155,56 @@ export default function App() {
     return encoded.slice(0, 8);
   };
 
+  const isTextLikeAttachment = (attachment) => {
+    const mimeType = String(attachment?.mimeType || attachment?.type || '').toLowerCase();
+    const name = String(attachment?.name || '').toLowerCase();
+    return (
+      mimeType.startsWith('text/')
+      || mimeType.includes('json')
+      || mimeType.includes('xml')
+      || mimeType.includes('csv')
+      || mimeType.includes('markdown')
+      || name.endsWith('.txt')
+      || name.endsWith('.md')
+      || name.endsWith('.csv')
+      || name.endsWith('.json')
+      || name.endsWith('.html')
+      || name.endsWith('.htm')
+    );
+  };
+
+  const buildAttachmentContext = async (attachments = []) => {
+    const limit = 6000;
+    const blocks = [];
+
+    for (const attachment of attachments.slice(0, 8)) {
+      const name = String(attachment?.name || 'attachment');
+      const mimeType = String(attachment?.mimeType || attachment?.type || 'application/octet-stream');
+      const file = attachment?.file;
+
+      let snippet = '';
+      if (file && isTextLikeAttachment(attachment)) {
+        try {
+          snippet = String(await file.text()).trim().replace(/\u0000/g, '');
+        } catch (_error) {
+          snippet = '';
+        }
+      }
+
+      if (snippet) {
+        blocks.push(`File: ${name} (${mimeType})\nExcerpt:\n${snippet.slice(0, limit)}`);
+      } else {
+        blocks.push(`File: ${name} (${mimeType})`);
+      }
+    }
+
+    if (!blocks.length) {
+      return '';
+    }
+
+    return `Source materials to ground the response in:\n${blocks.join('\n\n')}`;
+  };
+
   const callGemini = async ({ userPrompt, systemPrompt, schema, attachments = [] }) => {
     try {
       setLastAiError('');
@@ -2427,6 +2477,13 @@ export default function App() {
       },
     };
 
+    const attachmentContext = requestAttachments.length
+      ? await buildAttachmentContext(requestAttachments)
+      : '';
+    const groundedPrompt = attachmentContext
+      ? `${promptText}\n\n${attachmentContext}`
+      : promptText;
+
     const systemPrompt = isDeckGeneration
       ? `You are Compose AI generating a full presentation deck. Return JSON only.
 Context title: ${deckTitle || 'Untitled deck'}.
@@ -2442,7 +2499,8 @@ Rules:
 - Add keyMetric when data exists and speakerNotes when persuasion context is needed.
 - Include section labels aligned to this narrative flow: Opening, Problem, Opportunity, Product, Market, Strategy, Financials, Closing.
 - Headline should be punchy and brief. Blurb should be 1-3 concise sentences.
-- If attachments contain source material, summarize and transform it into slide content.
+- If attachments contain source material, inspect them first and transform their specific details into slide content.
+- Never respond with generic filler when source material exists.
 - Prioritize visual outputs over dense text. Do not return plain paragraphs as the primary output.
 Process you MUST follow before creating slides:
 1) Ingest uploaded materials and user prompt.
@@ -2462,6 +2520,9 @@ Rules:
 - If the input comes from Compose canvas prompt, always set hasAction=true and provide docAction that can be inserted into the main document immediately.
 - docAction.type must be one of: timeline, tasks, risks, text.
 - Prefer using the requested output format and preferred doc action type.
+- If attachments are present, ground the document in the attachment details and do not ignore them.
+- Use the attachment context to write a real document, not a placeholder or generic acknowledgment.
+- Never return "Composed with live AI" or any other filler when source material exists.
 - For chat-only questions, hasAction can be false and provide aiResponseText only.
 - Preserve paragraph structure for text outputs using meaningful line breaks.
 - Keep aiResponseText concise, actionable, and specific.
@@ -2469,7 +2530,7 @@ Rules:
 
     try {
       const modelResponse = await callGemini({
-        userPrompt: promptText,
+        userPrompt: groundedPrompt,
         systemPrompt,
         schema: actionSchema,
         attachments: requestAttachments,
@@ -2750,7 +2811,6 @@ Rules:
     const scopedInstruction = selectedScope
       ? `Modify ONLY the selected excerpt below. Do not rewrite unrelated sections.\nSelected excerpt:\n"""${selectedScope}"""\n\nUser request: ${floatingPrompt.trim() || fallbackPrompt}`
       : (floatingPrompt.trim() || fallbackPrompt);
-    const finalPrompt = scopedInstruction;
     const composeOptions = {
       source: 'compose',
       forceDocBuild: true,
@@ -2762,9 +2822,9 @@ Rules:
       selectionScoped: Boolean(selectedScope),
       attachments: promptAttachments,
     };
-    handleAISubmit(finalPrompt, composeOptions);
+    handleAISubmit(scopedInstruction, composeOptions);
     setLastComposeRun({
-      prompt: finalPrompt,
+      prompt: scopedInstruction,
       options: composeOptions,
       documentId: activeDocId,
       createdAt: Date.now(),
@@ -7843,10 +7903,18 @@ Rules:
               transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
             }}
           >
-            <div className="pointer-events-auto flex flex-col items-center gap-3">
+            <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/70 backdrop-blur-sm px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.35)] border border-white/70">
               <button
                 type="button"
                 onPointerDown={(event) => beginPanelResize('dictation', event)}
+                className="inline-flex items-center gap-2 text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1 cursor-move touch-none hover:border-violet-300 hover:text-violet-700"
+                title="Drag dictation"
+              >
+                <Move size={12} />
+                Drag dictation
+              </button>
+              <button
+                type="button"
                 onClick={async () => {
                   await toggleVoiceRecording('document');
                 }}
