@@ -2449,6 +2449,11 @@ export default function App() {
     const subject = (match?.[1] || normalized)
       .replace(/\b(attached|this|these)\s+(paper|document|file|files|screenshots?|images?)\b/gi, '')
       .replace(/\b(article|poem|summary|proposal|timeline|checklist|draft|document)\b/gi, '')
+      .replace(/\bit'?s\b/gi, 'its')
+      .replace(/\bof\s+and\b/gi, 'and')
+      .replace(/\s+/g, ' ')
+      .replace(/^(the|a|an)\s+/i, '')
+      .replace(/\b(of|on|for|to|about|from|and)\s*$/i, '')
       .replace(/\s+/g, ' ')
       .trim();
 
@@ -2464,6 +2469,9 @@ export default function App() {
     }
     if (/poem|haiku|sonnet|verse/.test(normalizedPrompt)) {
       return 'Poem';
+    }
+    if (/article|essay|write up|writeup/.test(normalizedPrompt)) {
+      return 'Article';
     }
     if (/outline|key points|bullet/.test(normalizedPrompt)) {
       return 'Outline';
@@ -2499,6 +2507,10 @@ export default function App() {
     const subject = extractPromptSubject(promptText);
     const sourceName = stripFileExtension(sourceSummary.fileNames[0] || '');
     const requestedAction = detectRequestedAction({ promptText, requestedFormat });
+
+    if (/findings?/i.test(subject) && /implications?/i.test(subject)) {
+      return `Key Findings and Implications ${requestedAction}`.trim();
+    }
 
     const baseSubject = toTitleCase(subject || sourceName || 'Document');
     const baseTitle = `${baseSubject} ${requestedAction}`.trim();
@@ -3028,6 +3040,38 @@ Rules:
       }
     } catch (_error) {
       usedLiveModel = false;
+    }
+
+    const needsAttachmentRescue = shouldBuildDocument
+      && requestAttachments.length > 0
+      && (
+        looksGenericResponse(aiResponseText)
+        || !docAction
+        || (docAction?.type === 'text' && looksGenericResponse(docAction?.paragraph || ''))
+      );
+
+    if (needsAttachmentRescue) {
+      const rescueResponse = await callGemini({
+        userPrompt: `${promptText}\n\nUse attached files as the primary source. Write the final document content only.`,
+        systemPrompt: `You are Compose AI in fallback mode.\n- Read uploaded files first.\n- Produce plain text only (no JSON, no markdown fences).\n- Be specific to the source material.\n- Avoid generic placeholders.\n- Target ${requestedTone} tone and around ${requestedLengthValue} ${requestedLengthMode}.`,
+        attachments: requestAttachments,
+      });
+
+      const rescueText = String(rescueResponse?.text || '').trim();
+      if (rescueText && !looksGenericResponse(rescueText)) {
+        aiResponseText = rescueText;
+        docAction = {
+          title: deriveGeneratedDocumentTitle({
+            actionTitle: '',
+            promptText,
+            requestedFormat,
+            attachmentContext,
+          }),
+          type: 'text',
+          paragraph: rescueText,
+        };
+        usedLiveModel = true;
+      }
     }
 
     if (!usedLiveModel) {
