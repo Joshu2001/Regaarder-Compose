@@ -262,8 +262,8 @@ export default function App() {
   const [scheduleInput, setScheduleInput] = useState('');
   const [scheduleOutput, setScheduleOutput] = useState([]);
   const [upcomingEvents, setUpcomingEvents] = useState([
-    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 ??10:00 AM' },
-    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 ??2:30 PM' },
+    { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 - 10:00 AM' },
+    { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 - 2:30 PM' },
   ]);
   const [calendarMonth, setCalendarMonth] = useState(4); // 0=Jan, 4=May
   const [calendarYear, setCalendarYear] = useState(2026);
@@ -2064,6 +2064,7 @@ export default function App() {
       .trim()
       .replace(/^user request:\s*/i, '')
       .slice(0, 180);
+    const sourceSummary = summarizeAttachmentContext(attachmentContext, promptText);
     const titleBase = preferredDocType === 'timeline'
       ? 'Compose Timeline'
       : preferredDocType === 'tasks'
@@ -2076,8 +2077,10 @@ export default function App() {
               ? 'Compose Proposal'
               : 'Compose Draft';
 
-    const sourceSentence = attachmentContext
-      ? `The document is grounded in the uploaded source materials, including ${attachmentContext.replace(/^Source materials to ground the response in:\n/i, '').split(/\n\n/).slice(0, 2).join(' and ')}.`
+    const sourceSentence = sourceSummary.sentences.length
+      ? `The uploaded material shows that ${sourceSummary.sentences.join(' ')}`
+      : attachmentContext
+      ? `The document is grounded in the uploaded source materials${sourceSummary.fileNames.length ? `, including ${sourceSummary.fileNames.join(', ')}` : ''}.`
       : 'The document is grounded in the user request and current document context.';
 
     if (preferredDocType === 'timeline') {
@@ -2147,8 +2150,13 @@ export default function App() {
     }
 
     const body = [
-      `This ${requestedFormat === 'Article' ? 'article' : 'document'} is written for ${topic}.`,
+      requestedFormat === 'Article'
+        ? `This article examines ${topic}.`
+        : `This document is written for ${topic}.`,
       sourceSentence,
+      ...(sourceSummary.sentences.length > 1
+        ? [`Key takeaways from the attached material include ${sourceSummary.sentences.slice(0, 2).join(' ')}`]
+        : []),
       `It is drafted in a ${requestedTone} tone and targeted to about ${requestedLengthValue} ${requestedLengthMode}.`,
     ].join('\n\n');
 
@@ -2256,6 +2264,12 @@ export default function App() {
     return encoded.slice(0, 8);
   };
 
+  const isPdfAttachment = (attachment) => {
+    const mimeType = String(attachment?.mimeType || attachment?.type || '').toLowerCase();
+    const name = String(attachment?.name || '').toLowerCase();
+    return mimeType.includes('pdf') || name.endsWith('.pdf');
+  };
+
   const isTextLikeAttachment = (attachment) => {
     const mimeType = String(attachment?.mimeType || attachment?.type || '').toLowerCase();
     const name = String(attachment?.name || '').toLowerCase();
@@ -2274,6 +2288,105 @@ export default function App() {
     );
   };
 
+  const normalizeSourceText = (value) => String(value || '')
+    .replace(/\u0000/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const extractPdfText = async (file) => {
+    if (!file) {
+      return '';
+    }
+
+    try {
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      const buffer = await file.arrayBuffer();
+      const loadingTask = pdfjs.getDocument({ data: buffer, disableWorker: true });
+      const pdf = await loadingTask.promise;
+      const pages = [];
+      const maxPages = Math.min(pdf.numPages || 0, 6);
+
+      for (let pageNumber = 1; pageNumber <= maxPages; pageNumber += 1) {
+        const page = await pdf.getPage(pageNumber);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item) => ('str' in item ? item.str : ''))
+          .join(' ');
+        const normalizedPageText = normalizeSourceText(pageText);
+        if (normalizedPageText) {
+          pages.push(normalizedPageText);
+        }
+      }
+
+      return pages.join('\n\n');
+    } catch (_error) {
+      return '';
+    }
+  };
+
+  const pickRelevantSentences = (text, promptText = '', limit = 3) => {
+    const normalized = normalizeSourceText(text);
+    if (!normalized) {
+      return [];
+    }
+
+    const sentences = normalized
+      .split(/(?<=[.!?])\s+/)
+      .map((sentence) => sentence.trim())
+      .filter((sentence) => sentence.length > 40);
+
+    if (!sentences.length) {
+      return normalized ? [normalized.slice(0, 320)] : [];
+    }
+
+    const requestedFindings = /finding|result|conclusion|discover|insight|research/i.test(promptText);
+    const scoreSentence = (sentence) => {
+      let score = 0;
+      if (requestedFindings && /(finding|result|conclusion|conclude|show|demonstrate|suggest|evidence|abstract)/i.test(sentence)) {
+        score += 3;
+      }
+      if (/(abstract|introduction|method|result|discussion|conclusion)/i.test(sentence)) {
+        score += 1;
+      }
+      return score;
+    };
+
+    return [...sentences]
+      .sort((left, right) => scoreSentence(right) - scoreSentence(left))
+      .slice(0, limit);
+  };
+
+  const summarizeAttachmentContext = (attachmentContext = '', promptText = '') => {
+    const blocks = String(attachmentContext || '')
+      .replace(/^Source materials to ground the response in:\n/i, '')
+      .split(/\n\n(?=File: )/)
+      .map((block) => block.trim())
+      .filter(Boolean);
+
+    const fileNames = [];
+    const summarySentences = [];
+
+    for (const block of blocks) {
+      const lines = block.split('\n');
+      const fileLine = lines[0] || '';
+      const fileMatch = fileLine.match(/^File:\s+(.+?)\s+\(/i);
+      if (fileMatch?.[1]) {
+        fileNames.push(fileMatch[1]);
+      }
+
+      const excerptIndex = lines.findIndex((line) => /^Excerpt:/i.test(line));
+      if (excerptIndex >= 0) {
+        const excerpt = lines.slice(excerptIndex + 1).join(' ');
+        summarySentences.push(...pickRelevantSentences(excerpt, promptText, 2));
+      }
+    }
+
+    return {
+      fileNames: [...new Set(fileNames)].slice(0, 3),
+      sentences: [...new Set(summarySentences)].slice(0, 3),
+    };
+  };
+
   const buildAttachmentContext = async (attachments = []) => {
     const limit = 6000;
     const blocks = [];
@@ -2286,7 +2399,13 @@ export default function App() {
       let snippet = '';
       if (file && isTextLikeAttachment(attachment)) {
         try {
-          snippet = String(await file.text()).trim().replace(/\u0000/g, '');
+          snippet = normalizeSourceText(await file.text());
+        } catch (_error) {
+          snippet = '';
+        }
+      } else if (file && isPdfAttachment(attachment)) {
+        try {
+          snippet = normalizeSourceText(await extractPdfText(file));
         } catch (_error) {
           snippet = '';
         }
@@ -2585,7 +2704,7 @@ export default function App() {
       ? `${promptText}\n\n${attachmentContext}`
       : promptText;
     const composeFallbackAction = buildComposeFallbackAction({
-      promptText: groundedPrompt,
+      promptText,
       requestedFormat,
       preferredDocType,
       attachmentContext,
@@ -2698,14 +2817,14 @@ Rules:
             }
           } else if (rawType === 'timeline' && Array.isArray(result.docAction.timelineItems) && result.docAction.timelineItems.length) {
             docAction = {
-              title: result.docAction.title || '??�?AI Timeline',
+              title: result.docAction.title || 'AI Timeline',
               type: 'timeline',
               content: result.docAction.timelineItems,
             };
           } else if (rawType === 'tasks' && Array.isArray(result.docAction.taskItems) && result.docAction.taskItems.length) {
             const sanitizedTasks = result.docAction.taskItems.filter(Boolean).map((item) => String(item));
             docAction = {
-              title: result.docAction.title || '?? AI Checklist',
+              title: result.docAction.title || 'AI Checklist',
               type: 'tasks',
               content: sanitizedTasks,
             };
@@ -2718,13 +2837,13 @@ Rules:
             setTasks((prev) => [...prev, ...syncedTasks]);
           } else if (rawType === 'risks' && Array.isArray(result.docAction.riskItems) && result.docAction.riskItems.length) {
             docAction = {
-              title: result.docAction.title || '?���?AI Risk Matrix',
+              title: result.docAction.title || 'AI Risk Matrix',
               type: 'risks',
               content: result.docAction.riskItems,
             };
           } else if (rawType === 'text' && result.docAction.textParagraph) {
             docAction = {
-              title: result.docAction.title || '??AI Composed Section',
+              title: result.docAction.title || 'AI Composed Section',
               type: 'text',
               paragraph: result.docAction.textParagraph,
             };
@@ -2813,6 +2932,7 @@ Rules:
           setIsBlankDocument(true);
           setAppendedSections([]);
           setDocBodyHtml(composedHtml);
+          setDictationOffset({ x: 320, y: 10 });
           if (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
             setDocTitle(finalizedAction.title?.replace(/^[\\s\\?]+/, '') || 'Compose Draft');
           }
@@ -4336,12 +4456,12 @@ Rules:
     const slotLabel = event.slot || formatTimeSlot(dateValue.getHours(), dateValue.getMinutes());
 
     if (isSameDay(dateValue, today)) {
-      return `Today ??${slotLabel}`;
+      return `Today - ${slotLabel}`;
     }
     if (isSameDay(dateValue, tomorrow)) {
-      return `Tomorrow ??${slotLabel}`;
+      return `Tomorrow - ${slotLabel}`;
     }
-    return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} ??${slotLabel}`;
+    return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} - ${slotLabel}`;
   };
 
   const formatUpcomingHeaderDate = (dateValue) => {
@@ -6684,7 +6804,7 @@ Rules:
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-gray-900 truncate">{previewAttachment.name}</div>
-                <div className="text-[11px] text-gray-500">{previewAttachment.type || 'Unknown type'} ??{Math.round((previewAttachment.size || 0) / 1024)} KB</div>
+                <div className="text-[11px] text-gray-500">{previewAttachment.type || 'Unknown type'} - {Math.round((previewAttachment.size || 0) / 1024)} KB</div>
               </div>
               <button
                 type="button"
@@ -6745,7 +6865,7 @@ Rules:
               placeholder="Search compositions..." 
               className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
             />
-            <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">??K</span>
+            <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
           </div>
         </div>
 
@@ -6853,7 +6973,7 @@ Rules:
                         >
                           <div className="flex items-center gap-2 truncate">
                             <FileText size={14} className={isActive ? 'text-violet-500' : 'text-gray-400'} />
-                            <span className="truncate">{doc.pinned ? '?? ' : ''}{label}</span>
+                            <span className="truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
                           </div>
                           <MoreHorizontal size={14} className={isActive ? 'text-violet-400' : 'text-gray-300'} />
                         </button>
@@ -7015,7 +7135,7 @@ Rules:
                     className="w-[160px] bg-white border border-violet-200 rounded px-1 py-0.5 text-xs outline-none"
                   />
                 ) : (
-                  <span className="max-w-[160px] truncate">{doc.pinned ? '?? ' : ''}{label}</span>
+                  <span className="max-w-[160px] truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
                 )}
                 <button
                   data-doc-menu-root
@@ -7389,7 +7509,7 @@ Rules:
                 {/* 1. Objective */}
                 <div className="mb-10 group relative">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">?��</span> 1. Objective
+                    <span className="text-2xl">1.</span> Objective
                   </h2>
                   <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Launch Regaarder Compose to establish it as the most intuitive AI-native productivity workspace for modern teams and individuals.
@@ -7399,7 +7519,7 @@ Rules:
                 {/* 2. Key Initiatives Table */}
                 <div className="mb-10 group relative">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">??</span> 2. Key Initiatives
+                    <span className="text-2xl">2.</span> Key Initiatives
                     <span className="text-[10px] font-normal text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">Click Status to Cycle</span>
                   </h2>
                   
@@ -7441,7 +7561,7 @@ Rules:
                 {/* 3. Target Audience */}
                 <div className="mb-10">
                   <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
-                    <span className="text-2xl">?��</span> 3. Target Audience
+                    <span className="text-2xl">3.</span> Target Audience
                   </h2>
                   <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Knowledge workers, founders, creators, marketers, and teams who want a smarter, calmer, and more connected workspace.
@@ -7745,7 +7865,7 @@ Rules:
                         </div>
                       )}
                     </div>
-                    <span className="text-[10px] text-gray-400">{promptTone} ??~{promptLengthValue} {promptLengthMode}</span>
+                    <span className="text-[10px] text-gray-400">{promptTone} - ~{promptLengthValue} {promptLengthMode}</span>
                     <div className="flex flex-wrap gap-1.5">
                       {['Timeline', 'Article', 'Checklist', 'Presentation Draft'].map((preset) => (
                         <button
@@ -7976,7 +8096,7 @@ Rules:
                                 <div className="text-[11px] text-gray-700 line-clamp-2">{entry.text}</div>
                               </button>
                               <div className="mt-1 flex items-center justify-between gap-2">
-                                <div className="text-[10px] text-gray-400">{entry.source} ??{entry.tone} ??~{entry.lengthValue} {entry.lengthMode}</div>
+                                <div className="text-[10px] text-gray-400">{entry.source} - {entry.tone} - ~{entry.lengthValue} {entry.lengthMode}</div>
                                 <button type="button" onClick={() => beginPromptEdit(entry)} className="text-[10px] text-violet-600 hover:text-violet-700">Edit</button>
                               </div>
                             </>
@@ -8109,7 +8229,7 @@ Rules:
         {/* Bottom Status Bar */}
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
-            <span title="Real-time document stats">{documentStats.words} words ??{documentStats.characters} characters</span>
+            <span title="Real-time document stats">{documentStats.words} words - {documentStats.characters} characters</span>
             <div className="relative">
               <button
                 data-language-menu-root
@@ -8851,7 +8971,7 @@ Rules:
                         disabled={calendarYear === 2026 && calendarMonth === 0}
                         className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        ??
+                        <ChevronLeft size={14} />
                       </button>
                       <button
                         type="button"
@@ -8865,7 +8985,7 @@ Rules:
                         disabled={calendarYear === 2029 && calendarMonth === 11}
                         className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        ??
+                        <ChevronRight size={14} />
                       </button>
                     </div>
                   </div>
@@ -9517,7 +9637,7 @@ Rules:
                       </div>
                       <div className="text-[10px] text-gray-500 mt-1">{new Date(entry.timestamp).toLocaleString()}</div>
                       {Object.keys(entry.details || {}).length > 0 && (
-                        <div className="mt-1.5 text-[10px] text-gray-600 break-all">{Object.entries(entry.details).map(([key, value]) => `${key}: ${value}`).join(' ??')}</div>
+                        <div className="mt-1.5 text-[10px] text-gray-600 break-all">{Object.entries(entry.details).map(([key, value]) => `${key}: ${value}`).join(' | ')}</div>
                       )}
                     </div>
                   ))}
