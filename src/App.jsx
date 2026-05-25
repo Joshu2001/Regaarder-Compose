@@ -2102,12 +2102,11 @@ export default function App() {
   const docTitleDisplay = truncateText(docTitle || 'Untitled document', 20);
 
   const selectedTextActionOptions = [
-    { key: 'ask', label: 'Ask AI about this selection', detail: 'Ctrl+J', icon: Sparkles, prompt: 'Analyze this selected text and explain what it means, including the strongest insight.', keepOpen: false },
+    { key: 'ask', label: 'Ask AI about this selection', detail: 'Ctrl+J', icon: Sparkles, prompt: 'Analyze this selected text and explain what it means, including the strongest insight.', keepOpen: false, hintStyle: true },
     { key: 'rewrite', label: 'Rewrite', detail: 'Improve clarity and tone', icon: PenTool, prompt: 'Rewrite the selected text to be clearer, tighter, and more readable.' },
     { key: 'summary', label: 'Summarize', detail: 'Shorten this text', icon: Scissors, prompt: 'Summarize the selected text in fewer words while preserving core meaning.' },
     { key: 'expand', label: 'Expand', detail: 'Add more detail', icon: Expand, prompt: 'Expand the selected text with more detail and useful context.' },
     { key: 'tone', label: 'Change tone', detail: 'Make it more formal', icon: Type, prompt: 'Rewrite the selected text in a more formal and professional tone.' },
-    { key: 'slide', label: 'Create slide', detail: 'Turn into presentation', icon: MonitorPlay, prompt: 'Turn the selected text into one presentation slide with title, headline, and concise bullets.' },
     { key: 'keypoints', label: 'Extract key points', detail: 'Create a bullet list', icon: ListTodo, prompt: 'Extract key points from the selected text as a concise bullet list.' },
     { key: 'outline', label: 'Create outline', detail: 'Structure into sections', icon: MessageSquarePlus, prompt: 'Turn the selected text into a structured outline with clear section headings and bullets.' },
   ];
@@ -2201,6 +2200,55 @@ export default function App() {
       .filter(Boolean)
       .map((block) => `<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;">${applyInlineFormatting(escapeHtml(block).replace(/\n/g, '<br/>'))}</p>`)
       .join('');
+  };
+
+  const paginateGeneratedHtml = (html, { targetWordsPerPage = 260 } = {}) => {
+    const normalized = String(html || '').trim();
+    if (!normalized || typeof document === 'undefined') {
+      return normalized;
+    }
+
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = normalized;
+    const nodes = Array.from(wrapper.children);
+    if (nodes.length <= 1) {
+      return normalized;
+    }
+
+    const pages = [];
+    let currentNodes = [];
+    let currentWordCount = 0;
+
+    const flushPage = () => {
+      if (!currentNodes.length) {
+        return;
+      }
+      pages.push(currentNodes.map((node) => node.outerHTML).join(''));
+      currentNodes = [];
+      currentWordCount = 0;
+    };
+
+    nodes.forEach((node) => {
+      const nodeHtml = node.outerHTML;
+      const nodeWords = Math.max(1, getPlainText(nodeHtml).split(/\s+/).filter(Boolean).length);
+      if (currentNodes.length && currentWordCount + nodeWords > targetWordsPerPage) {
+        flushPage();
+      }
+      currentNodes.push(node);
+      currentWordCount += nodeWords;
+    });
+
+    flushPage();
+
+    if (pages.length <= 1) {
+      return normalized;
+    }
+
+    return pages.map((pageHtml, index) => `
+      <div class="compose-generated-page" style="${index > 0 ? 'margin-top:36px;' : ''}padding-bottom:36px;${index < pages.length - 1 ? 'border-bottom:1px dashed #e5e7eb;' : ''}">
+        ${pageHtml}
+      </div>
+    `).join('');
   };
 
   const buildDeckSlidesFallback = ({ promptText, aiText, sourceSlides = [] }) => {
@@ -3045,6 +3093,10 @@ export default function App() {
     const requestedTone = String(options.tone || 'normal');
     const requestedLengthMode = String(options.lengthMode || 'words');
     const requestedLengthValue = Number(options.lengthValue || 220);
+    const explicitLengthRequested = /(\b\d+\s*(?:words?|characters?|pages?|slides?)\b|\blimit\b|\blength\b|\bshort\b|\blong\b|\bconcise\b|\bbrief\b|\bexpand\b|\btune\b|\babout\b|\bapproximately\b|\broughly\b|\btarget\b)/i.test(String(promptText || ''));
+    const lengthGuidance = explicitLengthRequested
+      ? `Target ${requestedTone} tone and around ${requestedLengthValue} ${requestedLengthMode}.`
+      : 'No explicit length limit was requested. Choose the natural length needed to complete the idea fully, and continue onto additional pages if necessary.';
     const requestAttachments = Array.isArray(options.attachments) ? options.attachments : [];
     const isDeckGeneration = productMode === 'deck' && source === 'chat';
     const requestedDeckSlideCount = (() => {
@@ -3199,7 +3251,7 @@ Context subtitle: ${docSubtitle || 'No subtitle'}.
 Requested output format: ${requestedFormat}.
 Preferred doc action type: ${preferredDocType}.
 Tone style: ${requestedTone}.
-Length target: around ${requestedLengthValue} ${requestedLengthMode}.
+    Length guidance: ${lengthGuidance}
 Rules:
 - If the input comes from Compose canvas prompt, always set hasAction=true and provide docAction that can be inserted into the main document immediately.
 - docAction.type must be one of: timeline, tasks, risks, text.
@@ -3340,7 +3392,7 @@ Rules:
     if (needsAttachmentRescue) {
       const rescueResponse = await callGemini({
         userPrompt: `${promptText}\n\nUse attached files as the primary source. Write the final document content only.`,
-        systemPrompt: `You are Compose AI in fallback mode.\n- Read uploaded files first.\n- Produce plain text only (no JSON, no markdown fences).\n- Be specific to the source material.\n- Avoid generic placeholders.\n- Target ${requestedTone} tone and around ${requestedLengthValue} ${requestedLengthMode}.`,
+        systemPrompt: `You are Compose AI in fallback mode.\n- Read uploaded files first.\n- Produce plain text only (no JSON, no markdown fences).\n- Be specific to the source material.\n- Avoid generic placeholders.\n- ${lengthGuidance}`,
         attachments: requestAttachments,
       });
 
@@ -3444,10 +3496,13 @@ Rules:
             : shouldReplaceDocumentChrome
               ? toParagraphHtml(finalizedAction.paragraph || '')
               : renderDocActionHtml(finalizedAction);
+          const renderedHtml = !selectionScoped && finalizedAction.type === 'text'
+            ? paginateGeneratedHtml(composedHtml)
+            : composedHtml;
           setIsBlankDocument(true);
           setAppendedSections([]);
-          setDocBodyHtml(composedHtml);
-          setDictationOffset({ x: 320, y: 10 });
+          setDocBodyHtml(renderedHtml);
+          setDictationOffset({ x: 0, y: 0 });
           if (shouldReplaceDocumentChrome || !docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
             setDocTitle(finalizedAction.title?.replace(/^[\\s\\?]+/, '') || 'Compose Draft');
           }
@@ -5723,6 +5778,8 @@ Rules:
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
 
+  const showDocumentOutlineView = isFocusMode || activeDocView === 'document';
+
   const smartAssistMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
   const smartAssistIntro = smartAssistMode === 'sheets'
     ? 'Use AI to transform data quickly: clean, model, summarize, and detect issues.'
@@ -7395,159 +7452,204 @@ Rules:
         className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
         style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
       >
-        {/* Logo Area */}
-        <div className="h-14 flex items-center justify-between px-4">
-          <div className="flex items-center gap-2 font-bold text-gray-900 text-lg">
-            {/* Custom Logo SVG - Elegant, minimalist "C" and "R" intersection */}
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-violet-600">
-              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 12 10c3.1 0 5.89-1.41 1.77-5.5L12 13.5L8.5 17H6.5L12 11.5L17.5 17H15.5L12 13.5L15.5 10H19.5C21.1 12 22 14.4 22 12c0-5.523-4.477-10-10-10z" fill="currentColor" />
-            </svg>
-            <span className="tracking-tight text-gray-900">Regaarder Compose</span>
+        {showDocumentOutlineView ? (
+          <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
+            <div className="flex items-center gap-2 text-gray-900 font-semibold">
+              <FileText size={16} className="text-violet-600" />
+              <span>Document Outline</span>
+            </div>
+            <div className="mt-2 text-[11px] text-gray-500 truncate" title={docTitle}>{docTitleDisplay}</div>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* Logo Area */}
+            <div className="h-14 flex items-center justify-between px-4">
+              <div className="flex items-center gap-2 font-bold text-gray-900 text-lg">
+                {/* Custom Logo SVG - Elegant, minimalist "C" and "R" intersection */}
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-violet-600">
+                  <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 12 10c3.1 0 5.89-1.41 1.77-5.5L12 13.5L8.5 17H6.5L12 11.5L17.5 17H15.5L12 13.5L15.5 10H19.5C21.1 12 22 14.4 22 12c0-5.523-4.477-10-10-10z" fill="currentColor" />
+                </svg>
+                <span className="tracking-tight text-gray-900">Regaarder Compose</span>
+              </div>
+            </div>
 
-        <div className="px-4 py-3">
-          <button 
-            onClick={openCreationPicker}
-            className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 font-medium text-sm transition-colors active:scale-95"
-          >
-            <Plus size={16} />
-            New Composition
-          </button>
-        </div>
+            <div className="px-4 py-3">
+              <button 
+                onClick={openCreationPicker}
+                className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 font-medium text-sm transition-colors active:scale-95"
+              >
+                <Plus size={16} />
+                New Composition
+              </button>
+            </div>
 
-        <div className="px-4 pb-2">
-          <div
-            className="relative"
-            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
-            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
-          >
-            <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search compositions..." 
-              className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
-            />
-            <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
-          </div>
-        </div>
+            <div className="px-4 pb-2">
+              <div
+                className="relative"
+                onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+                onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+              >
+                <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search compositions..." 
+                  className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
+                />
+                <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Main Nav Links */}
-        <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
-          <button
-            onClick={() => setActivePrimaryNav('home')}
-            className={`w-full flex items-center gap-3 px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'home' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            <Home size={16} /> Home
-          </button>
-          <button
-            onClick={() => setActivePrimaryNav('library')}
-            className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'library' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            <div className="flex items-center gap-3">
-              <BookOpen size={16} className={activePrimaryNav === 'library' ? 'text-violet-600' : ''} /> Library
-            </div>
-          </button>
-          <button
-            onClick={() => setActivePrimaryNav('drafts')}
-            className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'drafts' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            <div className="flex items-center gap-3">
-              <FileText size={16} className={activePrimaryNav === 'drafts' ? 'text-violet-600' : ''} /> Drafts
-            </div>
-          </button>
-          <button
-            onClick={() => setActivePrimaryNav('inbox')}
-            className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'inbox' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-          >
-            <div className="flex items-center gap-3">
-              <Inbox size={16} /> Inbox
-            </div>
-            <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full font-medium">12</span>
-          </button>
-          <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
-            <Star size={16} /> Starred
-          </button>
-          <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
-            <Users size={16} /> Shared
-          </button>
-          <button
-            onClick={() => {
-              setActiveRightTab('memory');
-              setRightSidebarOpen(true);
-            }}
-            className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-          >
-            <Database size={16} /> Memory
-          </button>
-          <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors mb-4">
-            <Trash size={16} /> Trash
-          </button>
-
-          {/* Workspaces Section */}
-          <div className="flex items-center justify-between px-2 py-2 mt-4">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspaces</span>
-            <button onClick={openCreateWorkspaceModal} className="text-gray-400 hover:text-gray-600">
-              <Plus size={14} className="cursor-pointer" />
-            </button>
-          </div>
-          
-          <div className="space-y-1">
-            {workspaces.map((workspace) => (
-              <div key={workspace.id} className="relative">
-                <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md font-medium transition-colors">
-                  <div className="flex items-center gap-3">
-                    <WorkspaceIcon letter={workspace.letter} colorClass={workspace.colorClass} /> {workspace.name}
-                  </div>
-                  <MoreHorizontal
-                    size={14}
-                    data-workspace-menu-root
-                    className="text-gray-400"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      closeTransientMenus();
-                      setOpenWorkspaceMenuId((prev) => (prev === workspace.id ? null : workspace.id));
-                    }}
-                  />
-                </button>
-
-                {openWorkspaceMenuId === workspace.id && (
-                  <div className="absolute right-2 top-9 z-30 w-28 bg-white border border-gray-200 rounded-lg shadow-lg p-1" data-workspace-menu-root>
-                    <button
-                      onClick={() => openRenameWorkspaceModal(workspace)}
-                      className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50"
-                    >
-                      Rename
-                    </button>
-                  </div>
-                )}
-
-                {workspace.hasDocuments && (
-                  <div className="ml-7 mt-1 space-y-0.5 border-l border-gray-200 pl-1">
-                    {orderedDocuments.map((doc) => {
-                      const label = doc.title?.trim() ? doc.title : UNTITLED_COMPOSITION_LABEL;
-                      const isActive = activeDocId === doc.id;
-
-                      return (
-                        <button
-                          key={doc.id}
-                          onClick={() => switchDocument(doc.id)}
-                          className={`w-full flex items-center justify-between pl-3 pr-2 py-1 text-sm rounded-r-md transition-colors ${isActive ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <FileText size={14} className={isActive ? 'text-violet-500' : 'text-gray-400'} />
-                            <span className="truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
-                          </div>
-                          <MoreHorizontal size={14} className={isActive ? 'text-violet-400' : 'text-gray-300'} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+        {showDocumentOutlineView ? (
+          <div className="flex-1 overflow-y-auto px-3 py-3">
+            <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
+                <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5">{Math.max(0, documentOutlineItems.length - 1)} Sections</span>
               </div>
-            ))}
+              <div className="mb-3 rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
+                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Focused document</div>
+                <div className="text-sm font-semibold text-gray-900 truncate mt-1" title={docTitle}>{docTitleDisplay}</div>
+              </div>
+              {documentOutlineItems.length > 1 ? (
+                <div className="max-h-[52vh] overflow-y-auto pr-1 space-y-0.5 thin-scrollbar">
+                  {documentOutlineItems.map((item, index) => (
+                    <button
+                      key={`${item.id}-${index}`}
+                      type="button"
+                      onClick={() => jumpToOutlineItem(item)}
+                      className={`w-full text-left rounded-lg py-1.5 text-xs transition-colors ${item.isTitle ? 'font-semibold text-gray-900 hover:bg-violet-50 px-2' : 'text-gray-600 hover:bg-gray-100'}`}
+                      style={item.isTitle ? undefined : { paddingLeft: `${10 + Math.max(0, item.level - 1) * 12}px`, paddingRight: '6px' }}
+                      title={item.label}
+                    >
+                      <span className="block truncate">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-[11px] text-gray-500 px-1.5 py-2">Generate or format headings to populate the outline.</div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
+            <button
+              onClick={() => setActivePrimaryNav('home')}
+              className={`w-full flex items-center gap-3 px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'home' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              <Home size={16} /> Home
+            </button>
+            <button
+              onClick={() => setActivePrimaryNav('library')}
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'library' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen size={16} className={activePrimaryNav === 'library' ? 'text-violet-600' : ''} /> Library
+              </div>
+            </button>
+            <button
+              onClick={() => setActivePrimaryNav('drafts')}
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'drafts' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              <div className="flex items-center gap-3">
+                <FileText size={16} className={activePrimaryNav === 'drafts' ? 'text-violet-600' : ''} /> Drafts
+              </div>
+            </button>
+            <button
+              onClick={() => setActivePrimaryNav('inbox')}
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'inbox' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+              <div className="flex items-center gap-3">
+                <Inbox size={16} /> Inbox
+              </div>
+              <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full font-medium">12</span>
+            </button>
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+              <Star size={16} /> Starred
+            </button>
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
+              <Users size={16} /> Shared
+            </button>
+            <button
+              onClick={() => {
+                setActiveRightTab('memory');
+                setRightSidebarOpen(true);
+              }}
+              className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <Database size={16} /> Memory
+            </button>
+            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors mb-4">
+              <Trash size={16} /> Trash
+            </button>
+
+            {/* Workspaces Section */}
+            <div className="flex items-center justify-between px-2 py-2 mt-4">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspaces</span>
+              <button onClick={openCreateWorkspaceModal} className="text-gray-400 hover:text-gray-600">
+                <Plus size={14} className="cursor-pointer" />
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              {workspaces.map((workspace) => (
+                <div key={workspace.id} className="relative">
+                  <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md font-medium transition-colors">
+                    <div className="flex items-center gap-3">
+                      <WorkspaceIcon letter={workspace.letter} colorClass={workspace.colorClass} /> {workspace.name}
+                    </div>
+                    <MoreHorizontal
+                      size={14}
+                      data-workspace-menu-root
+                      className="text-gray-400"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        closeTransientMenus();
+                        setOpenWorkspaceMenuId((prev) => (prev === workspace.id ? null : workspace.id));
+                      }}
+                    />
+                  </button>
+
+                  {openWorkspaceMenuId === workspace.id && (
+                    <div className="absolute right-2 top-9 z-30 w-28 bg-white border border-gray-200 rounded-lg shadow-lg p-1" data-workspace-menu-root>
+                      <button
+                        onClick={() => openRenameWorkspaceModal(workspace)}
+                        className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50"
+                      >
+                        Rename
+                      </button>
+                    </div>
+                  )}
+
+                  {workspace.hasDocuments && (
+                    <div className="ml-7 mt-1 space-y-0.5 border-l border-gray-200 pl-1">
+                      {orderedDocuments.map((doc) => {
+                        const label = doc.title?.trim() ? doc.title : UNTITLED_COMPOSITION_LABEL;
+                        const isActive = activeDocId === doc.id;
+
+                        return (
+                          <button
+                            key={doc.id}
+                            onClick={() => switchDocument(doc.id)}
+                            className={`w-full flex items-center justify-between pl-3 pr-2 py-1 text-sm rounded-r-md transition-colors ${isActive ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <FileText size={14} className={isActive ? 'text-violet-500' : 'text-gray-400'} />
+                              <span className="truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
+                            </div>
+                            <MoreHorizontal size={14} className={isActive ? 'text-violet-400' : 'text-gray-300'} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Footer Settings */}
         <div className="p-4 border-t border-gray-100 bg-[#FAFAFC]">
@@ -8213,6 +8315,7 @@ Rules:
               >
                 {selectedTextActionOptions.map((action) => {
                   const Icon = action.icon;
+                  const isHintAction = action.key === 'ask';
                   return (
                     <button
                       key={action.key}
@@ -8222,12 +8325,12 @@ Rules:
                         event.stopPropagation();
                       }}
                       onClick={() => runSelectedTextAction(action)}
-                      className="w-full flex items-start gap-2 rounded-xl border border-transparent bg-white/80 px-2.5 py-2 text-left hover:border-[#d6d2ff] hover:bg-white transition-colors"
+                      className={`w-full flex items-start gap-2 text-left transition-colors ${isHintAction ? 'px-2.5 pt-1.5 pb-2.5 rounded-xl border-b border-[#dcd7f2] bg-white/60 hover:bg-white' : 'rounded-xl border border-transparent bg-white/80 px-2.5 py-2 hover:border-[#d6d2ff] hover:bg-white'}`}
                     >
-                      <Icon size={14} className="text-[#8b5cf6] mt-[1px] shrink-0" />
+                      <Icon size={14} className={`mt-[1px] shrink-0 ${isHintAction ? 'text-[#b1a8d8]' : 'text-[#8b5cf6]'}`} />
                       <span className="min-w-0">
-                        <span className="block text-[12px] font-medium text-[#3b2f63] leading-tight">{action.label}</span>
-                        {action.detail && <span className="block text-[10px] text-[#8f86b8] mt-0.5">{action.detail}</span>}
+                        <span className={`block leading-tight ${isHintAction ? 'text-[11px] font-normal text-[#6d6881]' : 'text-[12px] font-medium text-[#3b2f63]'}`}>{action.label}</span>
+                        {action.detail && <span className={`block mt-0.5 ${isHintAction ? 'text-[10px] text-[#b3adc8]' : 'text-[10px] text-[#8f86b8]'}`}>{action.detail}</span>}
                       </span>
                     </button>
                   );
