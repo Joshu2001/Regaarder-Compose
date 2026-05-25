@@ -1877,7 +1877,12 @@ export default function App() {
   };
 
   const handleComposeUndo = () => {
-    undoDocumentChange();
+    if (lastComposeRun?.preSnapshot) {
+      applySnapshot(lastComposeRun.preSnapshot);
+      showToast('Reverted generated changes');
+    } else {
+      undoDocumentChange();
+    }
     setLastComposeRun(null);
   };
 
@@ -2450,6 +2455,38 @@ export default function App() {
     return subject.slice(0, 90);
   };
 
+  const detectRequestedAction = ({ promptText = '', requestedFormat = '' }) => {
+    const normalizedPrompt = String(promptText || '').toLowerCase();
+    const normalizedFormat = String(requestedFormat || '').toLowerCase();
+
+    if (/summari[sz]e|summary|condense|tl;dr/.test(normalizedPrompt)) {
+      return 'Summary';
+    }
+    if (/poem|haiku|sonnet|verse/.test(normalizedPrompt)) {
+      return 'Poem';
+    }
+    if (/outline|key points|bullet/.test(normalizedPrompt)) {
+      return 'Outline';
+    }
+    if (/article/.test(normalizedFormat)) {
+      return 'Article';
+    }
+    if (/proposal/.test(normalizedFormat)) {
+      return 'Proposal';
+    }
+    if (/timeline/.test(normalizedFormat)) {
+      return 'Timeline';
+    }
+    if (/checklist/.test(normalizedFormat)) {
+      return 'Checklist';
+    }
+    if (/risk/.test(normalizedFormat)) {
+      return 'Risk Review';
+    }
+
+    return 'Draft';
+  };
+
   const isGenericGeneratedTitle = (value) => /^(compose draft|compose article|compose proposal|compose checklist|compose timeline|compose risk review|ai composed section|compose article)$/i.test(String(value || '').trim());
 
   const deriveGeneratedDocumentTitle = ({ actionTitle = '', promptText = '', requestedFormat = '', attachmentContext = '' }) => {
@@ -2461,24 +2498,32 @@ export default function App() {
     const sourceSummary = summarizeAttachmentContext(attachmentContext, promptText);
     const subject = extractPromptSubject(promptText);
     const sourceName = stripFileExtension(sourceSummary.fileNames[0] || '');
+    const requestedAction = detectRequestedAction({ promptText, requestedFormat });
+
+    const baseSubject = toTitleCase(subject || sourceName || 'Document');
+    const baseTitle = `${baseSubject} ${requestedAction}`.trim();
+
+    if (/summary/i.test(requestedAction) && sourceName) {
+      return `${toTitleCase(stripFileExtension(sourceName))} Paper Summary`;
+    }
 
     if (/article/i.test(requestedFormat)) {
-      return toTitleCase(subject || `${sourceName || 'Research'} Article`);
+      return baseTitle;
     }
     if (/proposal/i.test(requestedFormat)) {
-      return toTitleCase(subject || `${sourceName || 'Project'} Proposal`);
+      return baseTitle;
     }
     if (/timeline/i.test(requestedFormat)) {
-      return toTitleCase(subject || `${sourceName || 'Project'} Timeline`);
+      return baseTitle;
     }
     if (/checklist/i.test(requestedFormat)) {
-      return toTitleCase(subject || `${sourceName || 'Project'} Checklist`);
+      return baseTitle;
     }
     if (/risk/i.test(requestedFormat)) {
-      return toTitleCase(subject || `${sourceName || 'Project'} Risk Review`);
+      return baseTitle;
     }
 
-    return toTitleCase(subject || sourceName || 'Compose Draft');
+    return baseTitle;
   };
 
   const deriveGeneratedDocumentSubtitle = ({ promptText = '', requestedTone = 'normal', requestedLengthValue = 220, requestedLengthMode = 'words', attachmentContext = '' }) => {
@@ -3185,6 +3230,7 @@ Rules:
       prompt: scopedInstruction,
       options: composeOptions,
       documentId: activeDocId,
+      preSnapshot: buildSnapshot(),
       createdAt: Date.now(),
     });
     setFloatingPrompt('');
@@ -4709,6 +4755,8 @@ Rules:
   };
 
   const beginPanelResize = (target, event) => {
+    event.preventDefault();
+    event.stopPropagation();
     const point = event.touches?.[0] || event;
     if (!event.touches && event.button !== 0) {
       return;
@@ -7619,7 +7667,7 @@ Rules:
                   dangerouslySetInnerHTML={{ __html: docBodyHtml }}
                 />
                 {canShowComposeActions && (
-                  <div className="mb-8 flex items-center justify-end gap-2">
+                  <div className="mb-8 flex items-center justify-end gap-2 relative z-20 pointer-events-auto">
                     <button type="button" onClick={handleComposeAccept} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50">Accept</button>
                     <button type="button" onClick={handleComposeRetry} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Retry</button>
                     <button type="button" onClick={handleComposeUndo} className="px-2.5 py-1.5 text-[11px] rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Undo</button>
@@ -8286,7 +8334,11 @@ Rules:
             <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/70 backdrop-blur-sm px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.35)] border border-white/70">
               <button
                 type="button"
-                onPointerDown={(event) => beginPanelResize('dictation', event)}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  beginPanelResize('dictation', event);
+                }}
                 className="inline-flex items-center gap-2 text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1 cursor-move touch-none hover:border-violet-300 hover:text-violet-700"
                 title="Drag dictation"
               >
