@@ -1823,19 +1823,28 @@ export default function App() {
     });
   };
 
-  const attachFilesToPrompt = (files) => {
+  const attachFilesToPrompt = async (files) => {
     if (!files || !files.length) {
       return;
     }
 
-    const attachments = Array.from(files).map((file, index) => ({
-      id: Date.now() + index + Math.floor(Math.random() * 1000),
-      name: file.name,
-      type: file.type || 'application/octet-stream',
-      size: file.size || 0,
-      file,
-      url: URL.createObjectURL(file),
-      isImage: (file.type || '').startsWith('image/'),
+    const attachments = await Promise.all(Array.from(files).map(async (file, index) => {
+      const baseAttachment = {
+        id: Date.now() + index + Math.floor(Math.random() * 1000),
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size || 0,
+        file,
+        url: URL.createObjectURL(file),
+        isImage: (file.type || '').startsWith('image/'),
+      };
+
+      const extractedText = await extractAttachmentText(baseAttachment);
+      return {
+        ...baseAttachment,
+        extractedText,
+        previewText: extractedText ? truncateText(extractedText, 180) : '',
+      };
     }));
 
     setPromptAttachments((prev) => [...attachments, ...prev].slice(0, 24));
@@ -2387,6 +2396,118 @@ export default function App() {
     };
   };
 
+  const extractAttachmentText = async (attachment) => {
+    const file = attachment?.file;
+    if (!file) {
+      return '';
+    }
+
+    if (attachment?.extractedText) {
+      return normalizeSourceText(attachment.extractedText);
+    }
+
+    if (isTextLikeAttachment(attachment)) {
+      try {
+        return normalizeSourceText(await file.text());
+      } catch (_error) {
+        return '';
+      }
+    }
+
+    if (isPdfAttachment(attachment)) {
+      try {
+        return normalizeSourceText(await extractPdfText(file));
+      } catch (_error) {
+        return '';
+      }
+    }
+
+    return '';
+  };
+
+  const stripFileExtension = (value) => String(value || '').replace(/\.[a-z0-9]+$/i, '').trim();
+
+  const toTitleCase = (value) => String(value || '')
+    .toLowerCase()
+    .replace(/\b\w/g, (match) => match.toUpperCase())
+    .trim();
+
+  const extractPromptSubject = (promptText = '') => {
+    const normalized = String(promptText || '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^user request:\s*/i, '')
+      .replace(/^(write|create|generate|draft|compose|make|summarize|turn)\s+/i, '')
+      .replace(/^(an?|the)\s+/i, '');
+
+    const match = normalized.match(/\b(?:about|on|from|for|based on)\s+(.+)/i);
+    const subject = (match?.[1] || normalized)
+      .replace(/\b(attached|this|these)\s+(paper|document|file|files|screenshots?|images?)\b/gi, '')
+      .replace(/\b(article|poem|summary|proposal|timeline|checklist|draft|document)\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return subject.slice(0, 90);
+  };
+
+  const isGenericGeneratedTitle = (value) => /^(compose draft|compose article|compose proposal|compose checklist|compose timeline|compose risk review|ai composed section|compose article)$/i.test(String(value || '').trim());
+
+  const deriveGeneratedDocumentTitle = ({ actionTitle = '', promptText = '', requestedFormat = '', attachmentContext = '' }) => {
+    const currentTitle = String(actionTitle || '').trim();
+    if (currentTitle && !isGenericGeneratedTitle(currentTitle)) {
+      return currentTitle;
+    }
+
+    const sourceSummary = summarizeAttachmentContext(attachmentContext, promptText);
+    const subject = extractPromptSubject(promptText);
+    const sourceName = stripFileExtension(sourceSummary.fileNames[0] || '');
+
+    if (/article/i.test(requestedFormat)) {
+      return toTitleCase(subject || `${sourceName || 'Research'} Article`);
+    }
+    if (/proposal/i.test(requestedFormat)) {
+      return toTitleCase(subject || `${sourceName || 'Project'} Proposal`);
+    }
+    if (/timeline/i.test(requestedFormat)) {
+      return toTitleCase(subject || `${sourceName || 'Project'} Timeline`);
+    }
+    if (/checklist/i.test(requestedFormat)) {
+      return toTitleCase(subject || `${sourceName || 'Project'} Checklist`);
+    }
+    if (/risk/i.test(requestedFormat)) {
+      return toTitleCase(subject || `${sourceName || 'Project'} Risk Review`);
+    }
+
+    return toTitleCase(subject || sourceName || 'Compose Draft');
+  };
+
+  const deriveGeneratedDocumentSubtitle = ({ promptText = '', requestedTone = 'normal', requestedLengthValue = 220, requestedLengthMode = 'words', attachmentContext = '' }) => {
+    const sourceSummary = summarizeAttachmentContext(attachmentContext, promptText);
+    if (sourceSummary.fileNames.length) {
+      return `Based on ${sourceSummary.fileNames.join(', ')} in a ${requestedTone} tone.`;
+    }
+    if (promptText.trim()) {
+      return `Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`;
+    }
+    return '';
+  };
+
+  const getPromptAttachmentBadge = (attachment) => {
+    if (attachment?.isImage) {
+      return 'IMG';
+    }
+    if ((attachment?.type || '').startsWith('audio/')) {
+      return 'AUDIO';
+    }
+    if (isPdfAttachment(attachment)) {
+      return 'PDF';
+    }
+    if (isTextLikeAttachment(attachment)) {
+      return 'DOC';
+    }
+    return 'FILE';
+  };
+
   const buildAttachmentContext = async (attachments = []) => {
     const limit = 6000;
     const blocks = [];
@@ -2394,22 +2515,7 @@ export default function App() {
     for (const attachment of attachments.slice(0, 8)) {
       const name = String(attachment?.name || 'attachment');
       const mimeType = String(attachment?.mimeType || attachment?.type || 'application/octet-stream');
-      const file = attachment?.file;
-
-      let snippet = '';
-      if (file && isTextLikeAttachment(attachment)) {
-        try {
-          snippet = normalizeSourceText(await file.text());
-        } catch (_error) {
-          snippet = '';
-        }
-      } else if (file && isPdfAttachment(attachment)) {
-        try {
-          snippet = normalizeSourceText(await extractPdfText(file));
-        } catch (_error) {
-          snippet = '';
-        }
-      }
+      const snippet = await extractAttachmentText(attachment);
 
       if (snippet) {
         blocks.push(`File: ${name} (${mimeType})\nExcerpt:\n${snippet.slice(0, limit)}`);
@@ -2910,7 +3016,20 @@ Rules:
     }
 
     if (docAction) {
-      const finalizedAction = { ...docAction, sectionId: actionSectionId };
+      const derivedTitle = deriveGeneratedDocumentTitle({
+        actionTitle: docAction.title,
+        promptText,
+        requestedFormat,
+        attachmentContext,
+      });
+      const derivedSubtitle = deriveGeneratedDocumentSubtitle({
+        promptText,
+        requestedTone,
+        requestedLengthValue,
+        requestedLengthMode,
+        attachmentContext,
+      });
+      const finalizedAction = { ...docAction, title: derivedTitle, sectionId: actionSectionId };
       if (shouldBuildDocument) {
         const targetedText = finalizedAction.type === 'text'
           ? String(finalizedAction.paragraph || '').replace(/\n{2,}/g, '\n\n')
@@ -2928,16 +3047,21 @@ Rules:
             createNewComposition({ silent: true });
           }
 
-          const composedHtml = renderDocActionHtml(finalizedAction);
+          const shouldReplaceDocumentChrome = source === 'compose' && !selectionScoped && finalizedAction.type === 'text';
+          const composedHtml = shouldReplaceDocumentChrome
+            ? toParagraphHtml(finalizedAction.paragraph || '')
+            : renderDocActionHtml(finalizedAction);
           setIsBlankDocument(true);
           setAppendedSections([]);
           setDocBodyHtml(composedHtml);
           setDictationOffset({ x: 320, y: 10 });
-          if (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
+          if (shouldReplaceDocumentChrome || !docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
             setDocTitle(finalizedAction.title?.replace(/^[\\s\\?]+/, '') || 'Compose Draft');
           }
-          if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
-            setDocSubtitle(`Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`);
+          if (shouldReplaceDocumentChrome) {
+            setDocSubtitle(derivedSubtitle || '');
+          } else if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
+            setDocSubtitle(derivedSubtitle || `Generated in ${requestedTone} tone with ~${requestedLengthValue} ${requestedLengthMode}.`);
           }
           if (spawnNewComposition) {
             showToast(`Opened a new composition for ${finalizedAction.type} output`);
@@ -6818,6 +6942,10 @@ Rules:
               <img src={previewAttachment.url} alt={previewAttachment.name} className="w-full h-auto rounded-xl border border-gray-200" />
             ) : previewAttachment.type?.startsWith('audio/') ? (
               <audio controls src={previewAttachment.url} className="w-full" />
+            ) : previewAttachment.previewText ? (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700 leading-5 whitespace-pre-wrap">
+                {previewAttachment.previewText}
+              </div>
             ) : (
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-600">
                 Preview is not available for this file type. It is still attached to your prompt context.
@@ -7906,31 +8034,40 @@ Rules:
                     </div>
                   )}
                   {promptAttachments.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
+                    <div className="flex flex-wrap gap-2">
                       {promptAttachments.map((attachment) => (
                         <button
                           key={attachment.id}
                           type="button"
                           onClick={() => setPreviewAttachment(attachment)}
-                          className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-full px-2 py-1 text-[11px] text-gray-600 max-w-[210px]"
+                          className="relative w-[112px] h-[92px] rounded-2xl border border-gray-200 bg-gray-50/90 hover:border-violet-300 hover:bg-violet-50/70 transition-colors p-2 text-left overflow-hidden"
                           title="Click to preview"
                         >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-500">
+                              {getPromptAttachmentBadge(attachment)}
+                            </span>
+                            <span
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                removePromptAttachment(attachment.id);
+                              }}
+                              className="text-gray-400 hover:text-gray-700"
+                              title="Remove"
+                            >
+                              <X size={12} />
+                            </span>
+                          </div>
                           {attachment.isImage ? (
-                            <img src={attachment.url} alt={attachment.name} className="w-4 h-4 rounded object-cover" />
+                            <img src={attachment.url} alt={attachment.name} className="mt-2 h-10 w-full rounded-lg object-cover border border-gray-200" />
                           ) : (
-                            <File size={12} className="text-gray-400" />
+                            <div className="mt-2 text-[10px] leading-4 text-gray-500">
+                              {truncateText(attachment.previewText || 'Attached file ready for Compose grounding.', 84)}
+                            </div>
                           )}
-                          <span className="truncate">{attachment.name}</span>
-                          <span
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              removePromptAttachment(attachment.id);
-                            }}
-                            className="text-gray-400 hover:text-gray-700"
-                            title="Remove"
-                          >
-                            <X size={12} />
-                          </span>
+                          <div className="absolute bottom-2 left-2 right-2 text-[10px] font-medium text-gray-700 truncate">
+                            {attachment.name}
+                          </div>
                         </button>
                       ))}
                     </div>
