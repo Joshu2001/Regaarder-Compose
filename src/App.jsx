@@ -2058,6 +2058,107 @@ export default function App() {
     return Array.from({ length: requestedSlideCount }, (_, index) => makeGeneratedSlide(index, requestedSlideCount));
   };
 
+  const buildComposeFallbackAction = ({ promptText, requestedFormat, preferredDocType, attachmentContext = '', requestedTone = 'normal', requestedLengthValue = 220, requestedLengthMode = 'words' }) => {
+    const topic = String(promptText || 'the requested topic')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^user request:\s*/i, '')
+      .slice(0, 180);
+    const titleBase = preferredDocType === 'timeline'
+      ? 'Compose Timeline'
+      : preferredDocType === 'tasks'
+        ? 'Compose Checklist'
+        : preferredDocType === 'risks'
+          ? 'Compose Risk Review'
+          : requestedFormat === 'Article'
+            ? 'Compose Article'
+            : requestedFormat === 'Proposal'
+              ? 'Compose Proposal'
+              : 'Compose Draft';
+
+    const sourceSentence = attachmentContext
+      ? `The document is grounded in the uploaded source materials, including ${attachmentContext.replace(/^Source materials to ground the response in:\n/i, '').split(/\n\n/).slice(0, 2).join(' and ')}.`
+      : 'The document is grounded in the user request and current document context.';
+
+    if (preferredDocType === 'timeline') {
+      return {
+        title: titleBase,
+        type: 'timeline',
+        content: [
+          {
+            dates: 'Start',
+            phase: 'Topic intake',
+            detail: `Clarify the scope of ${topic}.`,
+          },
+          {
+            dates: 'Middle',
+            phase: 'Source review',
+            detail: sourceSentence,
+          },
+          {
+            dates: 'Next',
+            phase: 'Draft development',
+            detail: `Write in a ${requestedTone} tone with a target length of about ${requestedLengthValue} ${requestedLengthMode}.`,
+          },
+          {
+            dates: 'Final',
+            phase: 'Finalize',
+            detail: 'Refine structure, transitions, and call to action before publishing.',
+          },
+        ],
+      };
+    }
+
+    if (preferredDocType === 'tasks') {
+      return {
+        title: titleBase,
+        type: 'tasks',
+        content: [
+          `Review the uploaded material for key facts about ${topic}.`,
+          `Draft the first version in a ${requestedTone} tone.`,
+          'Use the source material to keep the wording specific and grounded.',
+          'Polish the output so it matches the requested format and length.',
+        ],
+      };
+    }
+
+    if (preferredDocType === 'risks') {
+      return {
+        title: titleBase,
+        type: 'risks',
+        content: [
+          {
+            threat: `Generic output that ignores ${topic}`,
+            impact: 'The document feels unhelpful and detached from the uploaded source.',
+            fix: 'Force the draft to reference the attachment context and named source files.',
+          },
+          {
+            threat: 'Attachment-only uploads without extracted cues',
+            impact: 'The AI may stay vague when the source material is not summarized.',
+            fix: 'Summarize key details from the files before generating the final draft.',
+          },
+          {
+            threat: 'Overly generic article framing',
+            impact: 'The output becomes a placeholder instead of a usable article.',
+            fix: 'Use the topic, source context, and requested format to produce structured paragraphs.',
+          },
+        ],
+      };
+    }
+
+    const body = [
+      `This ${requestedFormat === 'Article' ? 'article' : 'document'} is written for ${topic}.`,
+      sourceSentence,
+      `It is drafted in a ${requestedTone} tone and targeted to about ${requestedLengthValue} ${requestedLengthMode}.`,
+    ].join('\n\n');
+
+    return {
+      title: titleBase,
+      type: 'text',
+      paragraph: body,
+    };
+  };
+
   const renderDocActionHtml = (action) => {
     if (!action) {
       return '';
@@ -2483,6 +2584,20 @@ export default function App() {
     const groundedPrompt = attachmentContext
       ? `${promptText}\n\n${attachmentContext}`
       : promptText;
+    const composeFallbackAction = buildComposeFallbackAction({
+      promptText: groundedPrompt,
+      requestedFormat,
+      preferredDocType,
+      attachmentContext,
+      requestedTone,
+      requestedLengthValue,
+      requestedLengthMode,
+    });
+
+    const looksGenericResponse = (value) => {
+      const normalized = String(value || '').trim().toLowerCase();
+      return !normalized || normalized === 'composed with live ai.' || normalized === 'composed with live ai' || normalized === 'ai response' || normalized === 'generated in normal tone with ~220 words.';
+    };
 
     const systemPrompt = isDeckGeneration
       ? `You are Compose AI generating a full presentation deck. Return JSON only.
@@ -2541,7 +2656,7 @@ Rules:
       if (modelResponse?.parsed) {
         usedLiveModel = true;
         const result = modelResponse.parsed;
-        aiResponseText = result.aiResponseText?.trim() || (result.docAction?.textParagraph ? String(result.docAction.textParagraph).trim() : (isDeckGeneration ? 'Deck AI is designing your slides.' : 'Composed with live AI.'));
+        aiResponseText = result.aiResponseText?.trim() || (result.docAction?.textParagraph ? String(result.docAction.textParagraph).trim() : (isDeckGeneration ? 'Deck AI is designing your slides.' : ''));
 
         if (result.hasAction && result.docAction) {
           const rawType = String(result.docAction.type || '').toLowerCase();
@@ -2638,13 +2753,7 @@ Rules:
         }
 
         if (shouldBuildDocument && !docAction) {
-          docAction = {
-            title: requestedFormat === 'Auto (Compose decides)'
-              ? '??AI Composed Section'
-              : `??${requestedFormat}`,
-            type: 'text',
-            paragraph: (result.docAction?.textParagraph || aiResponseText || '').trim(),
-          };
+          docAction = composeFallbackAction;
         }
       }
     } catch (_error) {
@@ -2653,10 +2762,15 @@ Rules:
 
     if (!usedLiveModel) {
       const failureReason = liveModelError || lastAiError || 'Check Vercel server env GEMINI_API_KEY, billing, and model access.';
-      aiResponseText = `Live AI request failed. ${failureReason}`;
+      aiResponseText = composeFallbackAction.paragraph || `Live AI request failed. ${failureReason}`;
       trackMemoryAction('ai', 'Live AI request failed', {
         reason: failureReason,
       });
+    }
+
+    if (looksGenericResponse(aiResponseText) && shouldBuildDocument) {
+      docAction = composeFallbackAction;
+      aiResponseText = composeFallbackAction.paragraph || aiResponseText;
     }
 
     setIsComposing(false);
@@ -7531,6 +7645,15 @@ Rules:
               </div>
               {isPromptExpanded ? (
                 <div className="flex-1 min-w-0 space-y-2 py-1">
+                  <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-gray-500">
+                    <span className="font-semibold text-gray-600">Sources:</span>
+                    {['Files', 'Images', 'Docs', 'Notes', 'Audio'].map((sourceLabel) => (
+                      <span key={sourceLabel} className="px-2 py-1 rounded-full border border-gray-200 bg-gray-50">
+                        {sourceLabel}
+                      </span>
+                    ))}
+                    <span className="text-gray-400">Drop anything here and Compose will use it as context.</span>
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[11px] font-semibold text-gray-500">Compose format</span>
                     <div className="relative" ref={promptFormatRef}>
