@@ -20,10 +20,11 @@ import {
   ChevronDown,
   Bell,
   Paperclip,
+  PenTool,
 } from "lucide-react";
 
 const sidebarItems = [
-  { icon: LayoutDashboard, label: "Compose", key: "compose", active: true },
+  { icon: PenTool, label: "Compose", key: "compose", active: true },
   { icon: Sparkles, label: "Deck", key: "deck" },
   { icon: Database, label: "Sheets", key: "sheets" },
   { icon: CalendarDays, label: "Schedule", key: "calendar" },
@@ -100,7 +101,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
     <div className="w-full h-screen bg-[#f3f5fb] flex overflow-hidden text-gray-800">
       
       {/* Sidebar */}
-      <aside className="w-[92px] bg-white/95 border-r border-gray-200 flex flex-col items-center py-6">
+      <aside className="w-[92px] bg-[#f4f5f9] border-r border-gray-200 flex flex-col items-center py-6">
         
         {/* Logo */}
         <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-violet-500 flex items-center justify-center text-white font-semibold text-base shadow-md shadow-violet-200/50">
@@ -134,7 +135,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
 
         {/* User */}
         <div className="mt-auto">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300" />
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-300 to-slate-400" />
         </div>
       </aside>
 
@@ -211,7 +212,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
         <div className="flex-1 overflow-auto px-5 py-6 md:px-8 md:py-8">
           
           {/* Hero */}
-          <div className="max-w-6xl mx-auto text-center">
+          <div className="max-w-[980px] mx-auto text-center">
             
             <h2 className="text-[28px] sm:text-[32px] md:text-[38px] leading-[1.08] tracking-tight font-semibold text-slate-950">
               Good morning, Arjun
@@ -223,13 +224,13 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
             </p>
 
             {/* Main AI Box */}
-            <div className="mt-8 md:mt-10 bg-white border border-gray-200 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.05)] p-6 md:p-8 text-left">
+            <div className="mt-8 md:mt-10 bg-white border border-gray-200 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.05)] p-6 md:p-8 text-left max-w-[960px] mx-auto">
               
-              <h3 className="text-[22px] md:text-[24px] font-semibold tracking-tight text-slate-800">
+              <h3 className="text-[21px] md:text-[23px] font-medium tracking-tight text-slate-500">
                 What are you trying to create?
               </h3>
 
-              <p className="mt-2 text-[14px] md:text-[15px] text-slate-500">
+              <p className="mt-2 text-[14px] md:text-[15px] text-slate-400">
                 Notes, presentations, schedules, reports,
                 research...
               </p>
