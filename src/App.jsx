@@ -15,6 +15,7 @@ import {
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
 } from 'lucide-react';
 import './thin-scrollbar.css';
+import RegaarderComposeLanding from './RegaarderComposeLanding';
 
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
@@ -5980,6 +5981,15 @@ Rules:
     activeSheet?.subtitle,
     sheetsTitle,
   ]);
+
+  if (productMode === 'landing') {
+    return (
+      <RegaarderComposeLanding
+        onExit={createComposeExperience}
+        onLaunch={openLandingWorkspace}
+      />
+    );
+  }
 
   if (productMode === 'deck' || productMode === 'sheets') {
     return (
