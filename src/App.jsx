@@ -6248,8 +6248,21 @@ Rules:
         {deckSlidesPanelOpen && (
         <aside className="w-[220px] border-r border-gray-200 bg-[#f8f9fd] flex flex-col">
           <div className="px-4 py-4 border-b border-gray-200">
-            <div className="text-sm font-semibold text-gray-800">{isSheetsMode ? 'Sheets' : 'Narrative'}</div>
-            <div className="text-[11px] text-gray-500 mt-1">{isSheetsMode ? 'Financial models' : 'Investor Pitch'}</div>
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-sm font-semibold text-gray-800">{isSheetsMode ? 'Sheets' : 'Narrative'}</div>
+                <div className="text-[11px] text-gray-500 mt-1">{isSheetsMode ? 'Financial models' : 'Investor Pitch'}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeckSlidesPanelOpen(false)}
+                className="w-6 h-6 rounded-md border border-gray-200 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center"
+                title="Close panel"
+                aria-label="Close panel"
+              >
+                <X size={12} />
+              </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
             {(isSheetsMode ? sheetsData : deckSlides).length === 0 && (
@@ -6330,6 +6343,15 @@ Rules:
         <main className="flex-1 min-w-0 flex flex-col bg-[#f5f7fc]">
           <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between">
             <div className="flex items-center gap-4 min-w-0">
+              <button
+                type="button"
+                onClick={() => setLeftSidebarOpen((prev) => !prev)}
+                className={`p-1.5 rounded-md border transition-colors ${leftSidebarOpen ? 'text-violet-700 border-violet-200 bg-violet-50 hover:bg-violet-100' : 'text-gray-400 border-gray-200 hover:text-gray-700 hover:bg-gray-100'}`}
+                title={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
+                aria-label={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
+              >
+                <Sidebar size={16} />
+              </button>
               <button
                 type="button"
                 onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}

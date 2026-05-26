@@ -74,7 +74,9 @@ function AttachmentIcon({ type }) {
 
 export default function RegaarderComposeLanding({ onLaunch }) {
   const [attachments, setAttachments] = useState(initialAttachments);
+  const [composePrompt, setComposePrompt] = useState("");
   const fileInputRef = useRef(null);
+  const promptInputRef = useRef(null);
 
   const triggerAttachmentPicker = () => {
     fileInputRef.current?.click();
@@ -105,6 +107,13 @@ export default function RegaarderComposeLanding({ onLaunch }) {
 
   const removeAttachment = (id) => {
     setAttachments((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const focusPromptInput = (event) => {
+    const clickedInteractive = event.target.closest("button") || event.target.closest("input") || event.target.closest("textarea");
+    if (!clickedInteractive) {
+      promptInputRef.current?.focus();
+    }
   };
 
   return (
@@ -188,7 +197,10 @@ export default function RegaarderComposeLanding({ onLaunch }) {
 
             <p className="mt-1.5 text-[12px] sm:text-[13px] text-slate-500 font-normal">What would you like to create today?</p>
 
-            <div className="mt-5 md:mt-6 bg-white border border-gray-200 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.05)] p-5 md:p-6 text-left max-w-[940px] mx-auto">
+            <div
+              className="mt-5 md:mt-6 bg-white border border-gray-200 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.05)] p-5 md:p-6 text-left max-w-[940px] mx-auto"
+              onClick={focusPromptInput}
+            >
               <div className="flex items-start justify-between gap-3">
                 <h3 className="text-[16px] md:text-[17px] font-medium tracking-tight text-slate-400">What are you trying to create?</h3>
                 <button
@@ -201,9 +213,16 @@ export default function RegaarderComposeLanding({ onLaunch }) {
                 </button>
               </div>
 
-              <p className="mt-1.5 text-[11px] md:text-[12px] text-slate-400">Notes, presentations, schedules, reports, research...</p>
+              <textarea
+                ref={promptInputRef}
+                value={composePrompt}
+                onChange={(event) => setComposePrompt(event.target.value)}
+                rows={2}
+                placeholder="Notes, presentations, schedules, reports, research..."
+                className="mt-1.5 w-full resize-none bg-transparent text-[11px] md:text-[12px] text-slate-600 placeholder:text-slate-400 border-0 outline-none"
+              />
 
-              <div className="mt-4 flex flex-wrap gap-2.5">
+              <div className="mt-4 min-h-[52px] flex flex-wrap gap-2.5 content-start">
                 {attachments.map((item) => (
                   <div key={item.id} className="h-[52px] px-4 rounded-2xl border border-gray-200 bg-white flex items-center gap-3">
                     <AttachmentIcon type={item.icon} />
@@ -217,10 +236,12 @@ export default function RegaarderComposeLanding({ onLaunch }) {
                   </div>
                 ))}
 
-                <button type="button" onClick={triggerAttachmentPicker} className="h-[52px] px-4 rounded-2xl border border-dashed border-gray-300 text-slate-500 hover:bg-slate-50 flex items-center gap-2">
-                  <Plus size={15} />
-                  Add more
-                </button>
+                {attachments.length > 0 && (
+                  <button type="button" onClick={triggerAttachmentPicker} className="h-[52px] px-4 rounded-2xl border border-dashed border-gray-300 text-slate-500 hover:bg-slate-50 flex items-center gap-2">
+                    <Plus size={15} />
+                    Add more
+                  </button>
+                )}
               </div>
 
               <div className="mt-4 flex items-end justify-between gap-4 flex-col md:flex-row">
