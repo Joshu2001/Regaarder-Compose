@@ -249,6 +249,7 @@ export default function App() {
   const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
   const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
   const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
+  const [dictationAnchor, setDictationAnchor] = useState({ left: 0, top: 0 });
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -4310,7 +4311,7 @@ Rules:
     setInitiatives([]);
     setDocBodyHtml('');
     setLastComposeRun(null);
-    setLeftSidebarOpen(false);
+    setLeftSidebarOpen(true);
     trackMemoryAction('document', silent ? 'Created new blank composition (auto)' : 'Created new blank composition', {
       documentId: String(newDoc.id),
     });
@@ -4327,6 +4328,8 @@ Rules:
   const createComposeExperience = () => {
     setCreationPickerOpen(false);
     setProductMode('compose');
+    setLeftSidebarOpen(true);
+    setActiveDocView('document');
     createNewComposition();
   };
 
@@ -5860,6 +5863,51 @@ Rules:
       : 'left-1/2 -translate-x-1/2 text-center';
 
   const showDocumentOutlineView = isFocusMode || activeDocView === 'document';
+
+  useEffect(() => {
+    if (productMode !== 'compose') {
+      return undefined;
+    }
+
+    const updateDictationAnchor = () => {
+      const card = documentCardRef.current;
+      if (!card) {
+        setDictationAnchor({ left: window.innerWidth / 2, top: window.innerHeight / 2 });
+        return;
+      }
+
+      const rect = card.getBoundingClientRect();
+      const visibleLeft = Math.max(rect.left, 0);
+      const visibleRight = Math.min(rect.right, window.innerWidth);
+      const visibleTop = Math.max(rect.top, 0);
+      const visibleBottom = Math.min(rect.bottom, window.innerHeight);
+
+      const hasVisibleWidth = visibleRight > visibleLeft;
+      const hasVisibleHeight = visibleBottom > visibleTop;
+
+      const centerX = hasVisibleWidth ? visibleLeft + (visibleRight - visibleLeft) / 2 : window.innerWidth / 2;
+      const centerY = hasVisibleHeight ? visibleTop + (visibleBottom - visibleTop) / 2 : window.innerHeight / 2;
+
+      setDictationAnchor({ left: centerX, top: centerY });
+    };
+
+    updateDictationAnchor();
+    window.addEventListener('resize', updateDictationAnchor);
+    window.addEventListener('scroll', updateDictationAnchor, true);
+
+    return () => {
+      window.removeEventListener('resize', updateDictationAnchor);
+      window.removeEventListener('scroll', updateDictationAnchor, true);
+    };
+  }, [
+    productMode,
+    activeDocId,
+    zoomLevel,
+    leftSidebarOpen,
+    rightSidebarOpen,
+    leftSidebarWidth,
+    rightSidebarWidth,
+  ]);
 
   const smartAssistMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
   const smartAssistIntro = smartAssistMode === 'sheets'
@@ -8233,7 +8281,7 @@ Rules:
               onBlur={(e) => setDocTitle(e.currentTarget.textContent || '')}
               dir="ltr"
               style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
+              className={`w-full leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent ${docTitle?.trim() ? 'text-gray-900 font-semibold' : 'text-gray-300 font-medium'}`}
             >
               {docTitle || AI_NATIVE_PLACEHOLDER}
             </div>
@@ -8248,7 +8296,7 @@ Rules:
               onBlur={(e) => setDocSubtitle(e.currentTarget.textContent || '')}
               dir="ltr"
               style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
+              className={`w-full text-[17px] mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14 ${docSubtitle?.trim() ? 'text-gray-500' : 'text-gray-300'}`}
             >
               {docSubtitle || AI_NATIVE_PLACEHOLDER}
             </div>
@@ -9065,10 +9113,10 @@ Rules:
 
         {!isComposing && (
           <div 
-            className="pointer-events-none absolute z-[300] flex items-center justify-center"
+            className="pointer-events-none fixed z-[300] flex items-center justify-center"
             style={{
-              left: '50%',
-              top: '50%',
+              left: `${dictationAnchor.left}px`,
+              top: `${dictationAnchor.top}px`,
               transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
             }}
           >
