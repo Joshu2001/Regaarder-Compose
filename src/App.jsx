@@ -1360,24 +1360,22 @@ export default function App() {
     }
 
     const rangeRect = range.getBoundingClientRect();
-    const cardRect = documentCardRef.current.getBoundingClientRect();
-    const zoomScale = Math.max(0.5, Number(zoomLevel || 100) / 100);
-    const menuWidth = 264;
-    const menuHeight = 356;
-    const viewportRightSpace = cardRect.right - rangeRect.right;
-    const shouldPlaceLeft = viewportRightSpace < menuWidth + 24;
-    const horizontalGap = 14;
-    const rawLeft = shouldPlaceLeft
-      ? (rangeRect.left - cardRect.left - menuWidth - horizontalGap) / zoomScale
-      : (rangeRect.right - cardRect.left + horizontalGap) / zoomScale;
-    const rawTop = (rangeRect.top - cardRect.top - 6) / zoomScale;
-    const maxLeft = Math.max(10, documentCardRef.current.clientWidth - menuWidth - 10);
-    const maxTop = Math.max(10, documentCardRef.current.clientHeight - menuHeight - 10);
+    const menuWidth = 344;
+    const menuHeight = 318;
+    const horizontalPadding = 16;
+    const verticalGap = 14;
+    const centeredLeft = rangeRect.left + (rangeRect.width / 2) - (menuWidth / 2);
+    const maxLeft = Math.max(horizontalPadding, window.innerWidth - menuWidth - horizontalPadding);
+    const preferredBelow = rangeRect.bottom + verticalGap;
+    const fallbackAbove = rangeRect.top - menuHeight - verticalGap;
+    const rawTop = preferredBelow + menuHeight <= window.innerHeight - 12
+      ? preferredBelow
+      : Math.max(12, fallbackAbove);
 
     setSelectionActionMenu({
       open: true,
-      left: Math.min(maxLeft, Math.max(10, rawLeft)),
-      top: Math.min(maxTop, Math.max(10, rawTop)),
+      left: Math.min(maxLeft, Math.max(horizontalPadding, centeredLeft)),
+      top: rawTop,
     });
   };
 
@@ -1778,11 +1776,27 @@ export default function App() {
   useEffect(() => {
     if (selectionActionMenu.open) {
       setSelectionMenuPrompt('');
-      window.requestAnimationFrame(() => {
-        selectionMenuInputRef.current?.focus();
-      });
     }
   }, [selectionActionMenu.open]);
+
+  useEffect(() => {
+    if (!selectionActionMenu.open) {
+      return undefined;
+    }
+
+    const syncSelectionOverlay = () => {
+      if (savedSelectionRef.current) {
+        updateSelectionActionMenuPosition(savedSelectionRef.current);
+      }
+    };
+
+    window.addEventListener('resize', syncSelectionOverlay);
+    window.addEventListener('scroll', syncSelectionOverlay, true);
+    return () => {
+      window.removeEventListener('resize', syncSelectionOverlay);
+      window.removeEventListener('scroll', syncSelectionOverlay, true);
+    };
+  }, [selectionActionMenu.open, zoomLevel]);
 
   useEffect(() => {
     const trackPointerOrigin = (event) => {
@@ -8062,11 +8076,11 @@ Rules:
         </div>
 
         {replayPanelOpen && (
-          <div className="absolute right-6 top-16 z-[260] w-[360px] rounded-2xl border border-gray-200 bg-white shadow-[0_20px_60px_-25px_rgba(15,23,42,0.35)] overflow-hidden">
-            <div className="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
+          <div className="absolute right-6 top-16 z-[260] w-[366px] overflow-hidden rounded-[22px] border border-[#e8e6f2] bg-white shadow-[0_30px_70px_-34px_rgba(15,23,42,0.42)]">
+            <div className="flex items-start justify-between gap-3 border-b border-[#efedf6] px-5 py-4">
               <div>
-                <div className="text-sm font-semibold text-gray-900">Edit replay</div>
-                <div className="mt-0.5 text-[11px] text-gray-500">
+                <div className="text-[13px] font-semibold text-slate-900">Edit replay</div>
+                <div className="mt-1 text-[12px] text-slate-500">
                   {replayTimeline.length
                     ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps · ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
                     : 'Start typing or editing to build a replay history'}
@@ -8078,14 +8092,14 @@ Rules:
                   setReplayPanelOpen(false);
                   setIsReplayPlaying(false);
                 }}
-                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 title="Close replay"
               >
                 <X size={14} />
               </button>
             </div>
 
-            <div className="px-4 py-3 space-y-3">
+            <div className="space-y-4 px-5 py-4">
               <input
                 type="range"
                 min="0"
@@ -8096,7 +8110,7 @@ Rules:
                 className="w-full accent-violet-600"
               />
 
-              <div className="flex items-center justify-between text-[11px] text-gray-500">
+              <div className="flex items-center justify-between text-[12px] text-slate-500">
                 <span>
                   {replayTimeline.length && replayTimeline[0]?.timestamp && replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp
                     ? formatReplayDuration(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)].timestamp - replayTimeline[0].timestamp)
@@ -8110,7 +8124,7 @@ Rules:
                   type="button"
                   onClick={() => applyReplayIndex((replayIndex ?? replayTimeline.length - 1) - 1)}
                   disabled={!replayTimeline.length || (replayIndex ?? replayTimeline.length - 1) <= 0}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-3 py-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Undo2 size={13} />
                   Step back
@@ -8119,7 +8133,7 @@ Rules:
                   type="button"
                   onClick={() => toggleReplayPlayback(-1)}
                   disabled={!replayTimeline.length}
-                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === -1 ? 'bg-gray-900 hover:bg-gray-800' : 'bg-violet-600 hover:bg-violet-700'}`}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === -1 ? 'bg-[#5b21b6] hover:bg-[#4c1d95]' : 'bg-violet-600 hover:bg-violet-700'}`}
                 >
                   {isReplayPlaying && replayDirection === -1 ? <Pause size={13} /> : <Play size={13} />}
                   Rewind
@@ -8128,7 +8142,7 @@ Rules:
                   type="button"
                   onClick={() => toggleReplayPlayback(1)}
                   disabled={!replayTimeline.length}
-                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === 1 ? 'bg-gray-900 hover:bg-gray-800' : 'bg-slate-700 hover:bg-slate-800'}`}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === 1 ? 'bg-slate-900 hover:bg-slate-800' : 'bg-slate-700 hover:bg-slate-800'}`}
                 >
                   {isReplayPlaying && replayDirection === 1 ? <Pause size={13} /> : <Play size={13} />}
                   Play
@@ -8137,20 +8151,20 @@ Rules:
                   type="button"
                   onClick={() => applyReplayIndex((replayIndex ?? 0) + 1)}
                   disabled={!replayTimeline.length || (replayIndex ?? 0) >= replayTimeline.length - 1}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-3 py-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Redo2 size={13} />
                   Step forward
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-2">
-                <label className="text-[11px] font-medium text-gray-500" htmlFor="replay-speed-select">Speed</label>
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <label className="text-[12px] font-medium text-slate-500" htmlFor="replay-speed-select">Speed</label>
                 <select
                   id="replay-speed-select"
                   value={replaySpeed}
                   onChange={(event) => setReplaySpeed(Number(event.target.value))}
-                  className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none focus:border-violet-300"
+                  className="rounded-xl border border-[#e5e7eb] bg-white px-3 py-2 text-[12px] text-slate-700 outline-none focus:border-violet-300"
                 >
                   <option value={0.5}>0.5x</option>
                   <option value={1}>1x</option>
@@ -8158,6 +8172,136 @@ Rules:
                   <option value={2}>2x</option>
                 </select>
               </div>
+            </div>
+          </div>
+        )}
+
+        {selectionActionMenu.open && selectedEditorText && !isComposing && (
+          <div
+            ref={selectionActionMenuRef}
+            onPointerDownCapture={() => {
+              pointerDownInSelectionMenuRef.current = true;
+            }}
+            onPointerUpCapture={() => {
+              pointerDownInSelectionMenuRef.current = false;
+            }}
+            className="fixed z-[280] w-[344px] overflow-hidden rounded-[24px] border border-[#e6e3fb] bg-white shadow-[0_24px_80px_-32px_rgba(76,29,149,0.45)] backdrop-blur-sm"
+            style={{ left: `${selectionActionMenu.left}px`, top: `${selectionActionMenu.top}px` }}
+          >
+            <div className="border-b border-[#f0eefc] bg-[linear-gradient(180deg,#fbfaff_0%,#ffffff_100%)] px-4 py-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-500">Selection tools</div>
+                <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm ring-1 ring-slate-200">Ctrl+J</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-2xl border border-[#e9e6f8] bg-white px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                <Sparkles size={16} className="shrink-0 text-violet-500" />
+                <input
+                  ref={selectionMenuInputRef}
+                  type="text"
+                  placeholder="Ask AI about this selection"
+                  className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+                  value={selectionMenuPrompt}
+                  onChange={(event) => setSelectionMenuPrompt(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      const prompt = selectionMenuPrompt.trim() || 'Analyze this selected text and explain what it means, including the strongest insight.';
+                      runSelectedTextAction({ key: 'ask', prompt });
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 p-3">
+              {[
+                {
+                  key: 'rewrite',
+                  icon: <Wand2 size={16} />,
+                  title: 'Rewrite',
+                  subtitle: 'Clearer wording',
+                  prompt: 'Rewrite the selected text to be clearer, tighter, and more readable.',
+                },
+                {
+                  key: 'summary',
+                  icon: <FileText size={16} />,
+                  title: 'Summarize',
+                  subtitle: 'Shorten it',
+                  prompt: 'Summarize the selected text in fewer words while preserving core meaning.',
+                },
+                {
+                  key: 'expand',
+                  icon: <Expand size={16} />,
+                  title: 'Expand',
+                  subtitle: 'Add detail',
+                  prompt: 'Expand the selected text with more detail and useful context.',
+                },
+                {
+                  key: 'tone',
+                  icon: <Sparkles size={16} />,
+                  title: 'Change tone',
+                  subtitle: 'More formal',
+                  prompt: 'Rewrite the selected text in a more formal and professional tone.',
+                },
+                {
+                  key: 'slide',
+                  icon: <Presentation size={16} />,
+                  title: 'Create slide',
+                  subtitle: 'Presentation format',
+                  prompt: 'Turn the selected text into one presentation slide with title, headline, and concise bullets.',
+                },
+                {
+                  key: 'keypoints',
+                  icon: <ListTodo size={16} />,
+                  title: 'Key points',
+                  subtitle: 'Bullet list',
+                  prompt: 'Extract key points from the selected text as a concise bullet list.',
+                },
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={() => runSelectedTextAction({ key: item.key, prompt: item.prompt })}
+                  className="rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left transition-all duration-150 hover:-translate-y-[1px] hover:border-violet-200 hover:bg-violet-50/50 hover:shadow-[0_10px_24px_-18px_rgba(109,40,217,0.7)]"
+                >
+                  <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-violet-50 text-violet-600">
+                    {item.icon}
+                  </div>
+                  <div className="text-[13px] font-semibold text-slate-800">{item.title}</div>
+                  <div className="mt-0.5 text-[11px] text-slate-500">{item.subtitle}</div>
+                </button>
+              ))}
+            </div>
+
+            <div className="border-t border-[#f0eefc] px-3 py-3">
+              <button
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onClick={() => {
+                  setRightSidebarOpen(true);
+                  setActiveRightTab('assistant');
+                  setSelectionActionMenu({ open: false, left: 0, top: 0 });
+                }}
+                className="flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left transition-colors hover:border-violet-200 hover:bg-violet-50/70"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white text-violet-600 ring-1 ring-slate-200">
+                    <Sparkles size={16} />
+                  </div>
+                  <div>
+                    <div className="text-[13px] font-semibold text-slate-800">More actions</div>
+                    <div className="text-[11px] text-slate-500">Open the full assistant panel</div>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-slate-400" />
+              </button>
             </div>
           </div>
         )}
@@ -8230,6 +8374,15 @@ Rules:
               </div>
             );
           })}
+          <button
+            type="button"
+            onClick={() => createNewComposition()}
+            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-violet-600 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+            title="Create new composition"
+            aria-label="Create new composition"
+          >
+            <Plus size={18} strokeWidth={2.4} />
+          </button>
         </div>
 
         {/* Formatting Ribbon */}
@@ -8701,146 +8854,6 @@ Rules:
               </div>
             ))}
 
-            {selectionActionMenu.open && selectedEditorText && !isComposing && (
-              <div
-                ref={selectionActionMenuRef}
-                onPointerDownCapture={() => {
-                  pointerDownInSelectionMenuRef.current = true;
-                }}
-                onPointerUpCapture={() => {
-                  pointerDownInSelectionMenuRef.current = false;
-                }}
-                className="absolute z-[36] w-[320px] rounded-2xl border border-[#e7e7ee] bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden"
-                style={{ left: `${selectionActionMenu.left}px`, top: `${selectionActionMenu.top}px` }}
-              >
-                <div className="p-3 border-b border-[#f1f1f5]">
-                  <div className="flex items-center gap-2 px-3 h-11 rounded-xl bg-[#f7f7fb] border border-[#ececf2]">
-                    <Sparkles size={16} className="text-violet-500" />
-                    <input
-                      ref={selectionMenuInputRef}
-                      type="text"
-                      placeholder="Ask AI about this selection..."
-                      className="bg-transparent outline-none text-sm w-full placeholder:text-[#9a9aac]"
-                      value={selectionMenuPrompt}
-                      onChange={(event) => setSelectionMenuPrompt(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault();
-                          const prompt = selectionMenuPrompt.trim() || 'Analyze this selected text and explain what it means, including the strongest insight.';
-                          runSelectedTextAction({ key: 'ask', prompt });
-                        }
-                      }}
-                    />
-                    <span className="text-xs text-[#a0a0b2]">Ctrl+J</span>
-                  </div>
-                </div>
-
-                <div className="py-2">
-                  {[
-                    {
-                      key: 'rewrite',
-                      icon: <Wand2 size={18} />,
-                      title: 'Rewrite',
-                      subtitle: 'Improve clarity and tone',
-                      prompt: 'Rewrite the selected text to be clearer, tighter, and more readable.',
-                    },
-                    {
-                      key: 'summary',
-                      icon: <FileText size={18} />,
-                      title: 'Summarize',
-                      subtitle: 'Shorten this text',
-                      prompt: 'Summarize the selected text in fewer words while preserving core meaning.',
-                    },
-                    {
-                      key: 'expand',
-                      icon: <Expand size={18} />,
-                      title: 'Expand',
-                      subtitle: 'Add more detail',
-                      prompt: 'Expand the selected text with more detail and useful context.',
-                    },
-                    {
-                      key: 'tone',
-                      icon: <Sparkles size={18} />,
-                      title: 'Change tone',
-                      subtitle: 'Make it more formal',
-                      prompt: 'Rewrite the selected text in a more formal and professional tone.',
-                    },
-                    {
-                      key: 'slide',
-                      icon: <Presentation size={18} />,
-                      title: 'Create slide',
-                      subtitle: 'Turn into presentation',
-                      prompt: 'Turn the selected text into one presentation slide with title, headline, and concise bullets.',
-                    },
-                    {
-                      key: 'keypoints',
-                      icon: <ListTodo size={18} />,
-                      title: 'Extract key points',
-                      subtitle: 'Create a bullet list',
-                      prompt: 'Extract key points from the selected text as a concise bullet list.',
-                    },
-                  ].map((item, index) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onMouseDown={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                      }}
-                      onClick={() => runSelectedTextAction({ key: item.key, prompt: item.prompt })}
-                      className="w-full px-4 py-3 flex items-start gap-3 hover:bg-[#f7f5ff] transition-colors duration-200 text-left"
-                    >
-                      <div className="mt-[2px] text-violet-500">
-                        {item.icon}
-                      </div>
-
-                      <div className="flex-1">
-                        <p className="text-[14px] font-medium text-[#1d1d2e]">
-                          {item.title}
-                        </p>
-                        <p className="text-[12px] text-[#8b8b9d]">
-                          {item.subtitle}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-
-                  <div className="my-2 border-t border-[#f1f1f5]" />
-
-                  <button
-                    type="button"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                    }}
-                    onClick={() => {
-                      setRightSidebarOpen(true);
-                      setActiveRightTab('assistant');
-                      setSelectionActionMenu({ open: false, left: 0, top: 0 });
-                    }}
-                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#f7f5ff] transition-colors duration-200"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-violet-500">
-                        <Sparkles size={18} />
-                      </div>
-
-                      <div className="text-left">
-                        <p className="text-[14px] font-medium text-[#1d1d2e]">
-                          More actions
-                        </p>
-                      </div>
-                    </div>
-
-                    <ChevronRight
-                      size={16}
-                      className="text-[#9b9bad]"
-                    />
-                  </button>
-                </div>
-              </div>
-            )}
-
             {showPageNumbers && showPageNumberOnFirstPage && (
               <div className={`absolute bottom-10 ${pageNumberPositionClass} text-[11px] font-medium text-gray-400`}>
                 1
@@ -9087,6 +9100,26 @@ Rules:
                       className="w-full bg-white border border-gray-200 rounded-full px-3 py-2 text-xs text-gray-700 outline-none focus:border-violet-400"
                     />
                   )}
+                  <div className="rounded-[28px] border border-violet-100/80 bg-[linear-gradient(180deg,#ffffff_0%,#faf8ff_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                    <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-400">Prompt</div>
+                    <textarea
+                      ref={floatingPromptRef}
+                      value={floatingPrompt}
+                      onChange={(e) => setFloatingPrompt(e.target.value)}
+                      onPaste={handleFloatingPaste}
+                      onInput={(e) => autoResizeTextarea(e.currentTarget, 360)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleFloatingSend(e);
+                        }
+                      }}
+                      placeholder="Describe what you need. Compose will build it into your document."
+                      rows={3}
+                      style={{ textAlign: alignMode }}
+                      className="w-full bg-transparent border-none focus:outline-none text-sm leading-6 text-gray-700 placeholder:text-[#b0b0c0] resize-none overflow-hidden min-h-[92px]"
+                    />
+                  </div>
                   {selectedEditorText && (
                     <div className="flex items-center gap-2 text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
                       <span className="font-semibold text-violet-600">Selected text</span>
@@ -9143,23 +9176,6 @@ Rules:
                       ))}
                     </div>
                   )}
-                  <textarea
-                    ref={floatingPromptRef}
-                    value={floatingPrompt}
-                    onChange={(e) => setFloatingPrompt(e.target.value)}
-                    onPaste={handleFloatingPaste}
-                    onInput={(e) => autoResizeTextarea(e.currentTarget, 360)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleFloatingSend(e);
-                      }
-                    }}
-                    placeholder="Describe what you need. Compose will build it into your document."
-                    rows={1}
-                    style={{ textAlign: alignMode }}
-                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-1 resize-none overflow-hidden min-h-[42px]"
-                  />
                 </div>
               ) : (
                 <textarea
@@ -9363,38 +9379,42 @@ Rules:
             }}
           >
             <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/70 backdrop-blur-sm px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.35)] border border-white/70">
-              <button
-                type="button"
+              <div
                 onPointerDown={(event) => {
+                  if (event.target !== event.currentTarget) {
+                    return;
+                  }
                   event.preventDefault();
                   event.stopPropagation();
                   beginPanelResize('dictation', event);
                 }}
-                className="inline-flex items-center gap-2 text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1 cursor-move touch-none hover:border-violet-300 hover:text-violet-700"
-                title="Drag dictation"
+                className="relative flex h-[116px] w-[116px] items-center justify-center rounded-full border border-dashed border-violet-200/80 bg-white/35 cursor-move touch-none hover:border-violet-300"
+                title="Drag dictation by the outer ring"
               >
-                <Move size={12} />
-                Drag dictation
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await toggleVoiceRecording('document');
-                }}
-                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
-                title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
-              >
-                <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
-                {isVoiceActive && voiceTarget === 'document' && (
-                  <>
-                    <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
-                    <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
-                  </>
-                )}
-              </button>
+                <button
+                  type="button"
+                  onPointerDown={(event) => {
+                    event.stopPropagation();
+                  }}
+                  onClick={async () => {
+                    await toggleVoiceRecording('document');
+                  }}
+                  className={`relative h-24 w-24 rounded-full border transition-all cursor-pointer touch-auto ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
+                  title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
+                >
+                  <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
+                  {isVoiceActive && voiceTarget === 'document' && (
+                    <>
+                      <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
+                      <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
+                    </>
+                  )}
+                </button>
+              </div>
               <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
                 {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
               </div>
+              <div className="text-[10px] text-gray-400">Tap the mic to record. Drag using the ring around it.</div>
               {isVoiceActive && voiceTarget === 'document' && (
                 <button
                   type="button"
