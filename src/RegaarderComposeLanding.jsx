@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   FileText,
   Mic,
@@ -21,7 +21,6 @@ import {
   Bell,
   Paperclip,
   PenTool,
-  Cloud,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -73,13 +72,6 @@ const suggestions = [
   },
 ];
 
-const promptModeOptions = [
-  { key: 'compose', label: 'Compose', detail: 'Document workspace' },
-  { key: 'deck', label: 'Deck', detail: 'Presentation workspace' },
-  { key: 'sheets', label: 'Sheets', detail: 'Spreadsheet workspace' },
-  { key: 'room', label: 'Room', detail: 'Live collaboration' },
-];
-
 function AttachmentIcon({ type }) {
   if (type === "pdf") {
     return (
@@ -105,16 +97,6 @@ function AttachmentIcon({ type }) {
 }
 
 export default function RegaarderComposeLanding({ onExit, onLaunch }) {
-  const [promptMode, setPromptMode] = useState('compose');
-  const [promptMenuOpen, setPromptMenuOpen] = useState(false);
-
-  const launchPromptWorkspace = (mode = promptMode) => {
-    setPromptMenuOpen(false);
-    onLaunch?.(mode);
-  };
-
-  const activePromptModeLabel = promptModeOptions.find((option) => option.key === promptMode)?.label || 'Compose';
-
   return (
     <div className="w-full h-screen bg-white flex overflow-hidden text-gray-800">
       
@@ -138,7 +120,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                 onClick={() => onLaunch?.(item.key)}
                 className={`w-[64px] h-[64px] rounded-2xl flex flex-col items-center justify-center transition-all duration-200 ${
                   item.active
-                    ? "bg-violet-200 text-violet-800 ring-1 ring-violet-300 shadow-[0_10px_24px_-14px_rgba(124,58,237,0.45)]"
+                    ? "bg-violet-100 text-violet-700 shadow-[0_10px_24px_-14px_rgba(124,58,237,0.45)]"
                     : "hover:bg-white text-slate-600"
                 }`}
               >
@@ -168,7 +150,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
               +
             </button>
 
-            <div className="flex items-center gap-3">
+            <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-[14px] md:text-[15px] font-semibold tracking-tight text-slate-900">
                   Untitled composition
@@ -178,10 +160,6 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                   size={16}
                   className="text-slate-400"
                 />
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                <Cloud size={13} />
-                <span>Saved just now</span>
               </div>
             </div>
           </div>
@@ -222,55 +200,47 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
         </header>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden px-5 py-4 md:px-8 md:py-5">
+        <div className="flex-1 overflow-hidden px-5 py-2 md:px-8 md:py-3">
           
           {/* Hero */}
-          <div className="max-w-[980px] mx-auto text-center h-full flex flex-col justify-center">
+          <div className="max-w-[980px] mx-auto text-center h-full flex flex-col justify-center -translate-y-1">
             
-            <h2 className="text-[24px] sm:text-[28px] md:text-[32px] leading-[1.08] tracking-tight font-semibold text-slate-950">
+            <h2 className="text-[22px] sm:text-[26px] md:text-[30px] leading-[1.05] tracking-tight font-semibold text-slate-950">
               Good morning, Arjun
               <span className="text-violet-500 ml-1">✦</span>
             </h2>
 
-            <p className="mt-2 text-[13px] sm:text-[14px] text-slate-500 font-normal">
+            <p className="mt-1.5 text-[12px] sm:text-[13px] text-slate-500 font-normal">
               What would you like to create today?
             </p>
 
             {/* Main AI Box */}
-            <div className="mt-6 md:mt-8 bg-white border border-gray-200 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.05)] p-6 md:p-7 text-left max-w-[940px] mx-auto">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h3 className="text-[17px] md:text-[18px] font-medium tracking-tight text-slate-400">
-                    What are you trying to create?
-                  </h3>
+            <div className="mt-5 md:mt-6 bg-white border border-gray-200 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.05)] p-5 md:p-6 text-left max-w-[940px] mx-auto">
+              
+              <h3 className="text-[16px] md:text-[17px] font-medium tracking-tight text-slate-400">
+                What are you trying to create?
+              </h3>
 
-                  <p className="mt-2 text-[12px] md:text-[13px] text-slate-400">
-                    Notes, presentations, schedules, reports,
-                    research...
-                  </p>
-                </div>
-
-                <button type="button" onClick={() => launchPromptWorkspace('compose')} className="flex items-center gap-2 text-[11px] md:text-[12px] text-violet-500 font-medium whitespace-nowrap">
-                  <Mic size={13} />
-                  Speak instead
-                </button>
-              </div>
+              <p className="mt-1.5 text-[11px] md:text-[12px] text-slate-400">
+                Notes, presentations, schedules, reports,
+                research...
+              </p>
 
               {/* Attachments */}
-              <div className="mt-5 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-2.5">
                 {attachments.map((item, index) => (
                   <div
                     key={index}
-                    className="h-[56px] px-4 rounded-2xl border border-gray-200 bg-white flex items-center gap-3"
+                    className="h-[52px] px-4 rounded-2xl border border-gray-200 bg-white flex items-center gap-3"
                   >
                     <AttachmentIcon type={item.icon} />
 
                     <div>
-                      <p className="text-[12px] font-medium text-slate-800">
+                      <p className="text-[11px] font-medium text-slate-800">
                         {item.title}
                       </p>
 
-                      <p className="text-[10px] text-slate-500">
+                      <p className="text-[9px] text-slate-500">
                         {item.subtitle}
                       </p>
                     </div>
@@ -285,81 +255,54 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                 ))}
 
                 {/* Add More */}
-                <button type="button" onClick={() => launchPromptWorkspace()} className="h-[56px] px-5 rounded-2xl border border-dashed border-gray-300 text-slate-500 hover:bg-slate-50 flex items-center gap-2.5">
-                  <Plus size={16} />
+                <button type="button" className="h-[52px] px-4 rounded-2xl border border-dashed border-gray-300 text-slate-500 hover:bg-slate-50 flex items-center gap-2">
+                  <Plus size={15} />
                   Add more
                 </button>
               </div>
 
               {/* Bottom Row */}
-              <div className="mt-6 flex items-end justify-between gap-4 flex-col md:flex-row">
+              <div className="mt-4 flex items-end justify-between gap-4 flex-col md:flex-row">
                 
                 {/* Mode */}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setPromptMenuOpen((open) => !open)}
-                    className="h-10 px-4 rounded-2xl bg-violet-50 text-violet-700 text-[12px] font-medium flex items-center gap-2.5 hover:bg-violet-100 transition-colors"
-                    aria-haspopup="menu"
-                    aria-expanded={promptMenuOpen}
-                  >
-                    <Sparkles size={14} />
-                    Auto ({activePromptModeLabel})
-                    <ChevronDown size={13} />
-                  </button>
-
-                  {promptMenuOpen && (
-                    <div className="absolute left-0 bottom-[calc(100%+8px)] z-20 w-[220px] rounded-2xl border border-gray-200 bg-white shadow-[0_18px_40px_-26px_rgba(15,23,42,0.25)] p-2">
-                      {promptModeOptions.map((option) => (
-                        <button
-                          key={option.key}
-                          type="button"
-                          onClick={() => {
-                            setPromptMode(option.key);
-                            setPromptMenuOpen(false);
-                          }}
-                          className={`w-full text-left rounded-xl px-3 py-2.5 transition-colors ${promptMode === option.key ? 'bg-violet-50 text-violet-700' : 'hover:bg-slate-50 text-slate-700'}`}
-                        >
-                          <div className="text-sm font-semibold">{option.label}</div>
-                          <div className="text-[11px] text-slate-500">{option.detail}</div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <button type="button" className="h-9 px-4 rounded-2xl bg-violet-50 text-violet-700 text-[11px] font-medium flex items-center gap-2.5 hover:bg-violet-100 transition-colors">
+                  <Sparkles size={13} />
+                  Auto (Compose decides)
+                  <ChevronDown size={12} />
+                </button>
 
                 {/* Controls */}
                 <div className="flex items-center gap-3 md:gap-4">
                   
-                  <button type="button" onClick={() => launchPromptWorkspace()} className="w-10 h-10 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
+                  <button type="button" className="w-9 h-9 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
                     <Paperclip
-                      size={16}
+                      size={15}
                       className="text-slate-500"
                     />
                   </button>
 
-                  <button type="button" onClick={() => launchPromptWorkspace('compose')} className="w-10 h-10 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
+                  <button type="button" className="w-9 h-9 rounded-2xl border border-gray-200 hover:bg-slate-50 flex items-center justify-center">
                     <Mic
-                      size={16}
+                      size={15}
                       className="text-slate-500"
                     />
                   </button>
 
-                  <button type="button" onClick={() => launchPromptWorkspace()} className="w-10 h-10 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-200/40">
-                    <ArrowUpRight size={17} />
+                  <button type="button" className="w-9 h-9 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white flex items-center justify-center shadow-lg shadow-violet-200/40">
+                    <ArrowUpRight size={16} />
                   </button>
                 </div>
               </div>
             </div>
 
             {/* Suggestions */}
-            <div className="mt-7 md:mt-8">
+            <div className="mt-5 md:mt-6">
               
-              <p className="text-[12px] md:text-[13px] text-slate-500 mb-3">
+              <p className="text-[11px] md:text-[12px] text-slate-500 mb-2.5">
                 Try something
               </p>
 
-              <div className="flex items-center justify-center gap-3 flex-wrap">
+              <div className="flex items-center justify-center gap-2.5 flex-wrap">
                 {suggestions.map((item, index) => {
                   const Icon = item.icon;
 
@@ -368,10 +311,10 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                       type="button"
                       onClick={() => onLaunch?.('more')}
                       key={index}
-                      className="h-10 px-4 md:px-5 rounded-2xl border border-gray-200 bg-white hover:bg-slate-50 flex items-center gap-2 text-slate-700 text-[12px] md:text-[13px] font-medium transition-all"
+                      className="h-9 px-4 md:px-5 rounded-2xl border border-gray-200 bg-white hover:bg-slate-50 flex items-center gap-2 text-slate-700 text-[11px] md:text-[12px] font-medium transition-all"
                     >
                       <Icon
-                        size={15}
+                        size={14}
                         className="text-slate-500"
                       />
 
@@ -380,9 +323,9 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
                   );
                 })}
 
-                <button type="button" onClick={() => onLaunch?.('more')} className="w-10 h-10 rounded-2xl border border-gray-200 bg-white hover:bg-slate-50 flex items-center justify-center">
+                <button type="button" onClick={() => onLaunch?.('more')} className="w-9 h-9 rounded-2xl border border-gray-200 bg-white hover:bg-slate-50 flex items-center justify-center">
                   <RefreshCcw
-                    size={15}
+                    size={14}
                     className="text-slate-500"
                   />
                 </button>
@@ -390,7 +333,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
             </div>
 
             {/* Footer */}
-            <div className="mt-6 flex items-center justify-center gap-2 text-[11px] md:text-[12px] text-slate-500">
+            <div className="mt-4 flex items-center justify-center gap-2 text-[10px] md:text-[11px] text-slate-500">
               <span>🔒</span>
               Compose uses your content to generate results.
               <button type="button" className="text-violet-500 hover:underline">
