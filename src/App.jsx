@@ -8729,18 +8729,16 @@ Rules:
                 )}
               </div>
               {isPromptExpanded ? (
-                <div className="flex-1 min-w-0 space-y-2 py-1">
+                <div className="flex-1 min-w-0 space-y-2.5 py-1">
                   <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-gray-500">
-                    <span className="font-semibold text-gray-600">Sources:</span>
                     {['Files', 'Images', 'Docs', 'Notes', 'Audio'].map((sourceLabel) => (
-                      <span key={sourceLabel} className="px-2 py-1 rounded-full border border-gray-200 bg-gray-50">
+                      <span key={sourceLabel} className="px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 text-gray-500">
                         {sourceLabel}
                       </span>
                     ))}
-                    <span className="text-gray-400">Drop anything here and Compose will use it as context.</span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[11px] font-semibold text-gray-500">Compose format</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Compose format</span>
                     <div className="relative" ref={promptFormatRef}>
                       <button
                         type="button"
@@ -8748,7 +8746,7 @@ Rules:
                           closeTransientMenus();
                           setPromptFormatMenuOpen((prev) => !prev);
                         }}
-                        className="inline-flex items-center gap-2 bg-violet-50/70 border border-violet-200 rounded-lg px-2.5 py-1.5 text-xs text-violet-700 hover:bg-violet-100"
+                        className="inline-flex items-center gap-2 bg-violet-50/80 border border-violet-200 rounded-full px-3 py-1.5 text-xs text-violet-700 hover:bg-violet-100"
                       >
                         <span>{composeOutputFormat}</span>
                         <ChevronDown size={12} />
@@ -8778,7 +8776,7 @@ Rules:
                           closeTransientMenus();
                           setPromptTuneMenuOpen((prev) => !prev);
                         }}
-                        className="inline-flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-600 hover:bg-gray-100"
+                        className="inline-flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
                       >
                         <Settings size={12} />
                         <span>Tune</span>
@@ -8830,14 +8828,13 @@ Rules:
                         </div>
                       )}
                     </div>
-                    <span className="text-[10px] text-gray-400">{promptTone} - ~{promptLengthValue} {promptLengthMode}</span>
                     <div className="flex flex-wrap gap-1.5">
                       {['Timeline', 'Article', 'Checklist', 'Presentation Draft'].map((preset) => (
                         <button
                           key={preset}
                           type="button"
                           onClick={() => setComposeOutputFormat(preset)}
-                          className={`px-2 py-1 rounded-full text-[10px] border ${composeOutputFormat === preset ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
+                          className={`px-2.5 py-1 rounded-full text-[10px] border ${composeOutputFormat === preset ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
                         >
                           {preset}
                         </button>
@@ -8850,7 +8847,7 @@ Rules:
                       value={customComposeFormat}
                       onChange={(e) => setCustomComposeFormat(e.target.value)}
                       placeholder="Enter custom format (e.g. investor memo, press release)"
-                      className="w-full bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
+                      className="w-full bg-white border border-gray-200 rounded-full px-3 py-2 text-xs text-gray-700 outline-none focus:border-violet-400"
                     />
                   )}
                   {selectedEditorText && (
@@ -8877,7 +8874,7 @@ Rules:
                           key={attachment.id}
                           type="button"
                           onClick={() => setPreviewAttachment(attachment)}
-                          className="relative w-[112px] h-[92px] rounded-2xl border border-gray-200 bg-gray-50/90 hover:border-violet-300 hover:bg-violet-50/70 transition-colors p-2 text-left overflow-hidden"
+                          className="relative w-[112px] h-[84px] rounded-2xl border border-gray-200 bg-gray-50/90 hover:border-violet-300 hover:bg-violet-50/70 transition-colors p-2 text-left overflow-hidden"
                           title="Click to preview"
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -8924,7 +8921,7 @@ Rules:
                     placeholder="Describe what you need. Compose will build it into your document."
                     rows={1}
                     style={{ textAlign: alignMode }}
-                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-1 resize-y min-h-[42px] max-h-[360px]"
+                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-1 resize-y min-h-[42px] max-h-[360px]"
                   />
                 </div>
               ) : (
@@ -8935,7 +8932,7 @@ Rules:
                   placeholder="Ask Compose AI..."
                   rows={1}
                   style={{ textAlign: alignMode }}
-                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-400 py-2 resize-y min-h-[38px] max-h-[120px]"
+                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-2 resize-y min-h-[38px] max-h-[120px]"
                 />
               )}
             </div>
