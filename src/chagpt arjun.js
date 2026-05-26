@@ -21,6 +21,7 @@ import {
   Bell,
   Paperclip,
   PenTool,
+  Lock,
 } from "lucide-react";
 
 const sidebarItems = [
@@ -98,13 +99,13 @@ function AttachmentIcon({ type }) {
 
 export default function RegaarderComposeLanding({ onExit, onLaunch }) {
   return (
-    <div className="w-full h-screen bg-white flex overflow-hidden text-gray-800">
+    <div className="w-full h-screen bg-white flex overflow-hidden text-gray-800" style={{ fontFamily: "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}>
       
       {/* Sidebar */}
-      <aside className="w-[92px] bg-[#f4f5f9] border-r border-gray-200 flex flex-col items-center py-5">
+      <aside className="w-[92px] bg-[#FAFAFC] border-r border-gray-200 flex flex-col items-center py-5">
         
         {/* Logo */}
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-violet-500 flex items-center justify-center text-white font-semibold text-base shadow-md shadow-violet-200/50">
+        <div className="mt-1 w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-violet-500 flex items-center justify-center text-white font-semibold text-base shadow-md shadow-violet-200/50">
           R
         </div>
 
@@ -146,10 +147,6 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
         <header className="h-16 px-6 md:px-8 border-b border-gray-200 flex items-center justify-between bg-white">
           
           <div className="flex items-center gap-3">
-            <button type="button" className="text-3xl font-light text-slate-400 leading-none hover:text-slate-600">
-              +
-            </button>
-
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-[14px] md:text-[15px] font-semibold tracking-tight text-slate-900">
@@ -164,7 +161,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-4 md:gap-5">
             
             {/* Avatars */}
             <div className="flex -space-x-2.5">
@@ -180,8 +177,8 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
               </div>
             </div>
 
-            <button type="button" className="h-10 px-4 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-medium shadow-lg shadow-violet-200/40 flex items-center gap-2">
-              <Users size={15} />
+            <button type="button" className="h-11 px-6 rounded-2xl bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-semibold shadow-lg shadow-violet-200/40 flex items-center gap-2">
+              <Users size={16} />
               Share
             </button>
 
@@ -216,10 +213,19 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
 
             {/* Main AI Box */}
             <div className="mt-5 md:mt-6 bg-white border border-gray-200 rounded-[28px] shadow-[0_20px_60px_rgba(15,23,42,0.05)] p-5 md:p-6 text-left max-w-[940px] mx-auto">
-              
-              <h3 className="text-[16px] md:text-[17px] font-medium tracking-tight text-slate-400">
-                What are you trying to create?
-              </h3>
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="text-[16px] md:text-[17px] font-medium tracking-tight text-slate-400">
+                  What are you trying to create?
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => onLaunch?.('assistant')}
+                  className="inline-flex items-center gap-1.5 text-[12px] font-medium text-violet-500 hover:text-violet-600"
+                >
+                  <Mic size={13} />
+                  <span>Speak instead</span>
+                </button>
+              </div>
 
               <p className="mt-1.5 text-[11px] md:text-[12px] text-slate-400">
                 Notes, presentations, schedules, reports,
@@ -334,7 +340,7 @@ export default function RegaarderComposeLanding({ onExit, onLaunch }) {
 
             {/* Footer */}
             <div className="mt-4 flex items-center justify-center gap-2 text-[10px] md:text-[11px] text-slate-500">
-              <span>🔒</span>
+              <Lock size={12} className="text-slate-400" />
               Compose uses your content to generate results.
               <button type="button" className="text-violet-500 hover:underline">
                 Learn more
