@@ -12,7 +12,7 @@ import {
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   UserPlus, Link2 as LinkIcon, Clock, Maximize2, Minimize2, Sidebar,
-  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus
+  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -250,6 +250,7 @@ export default function App() {
   const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
   const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
   const [dictationAnchor, setDictationAnchor] = useState({ left: 0, top: 0 });
+  const [promptCollapsed, setPromptCollapsed] = useState(false);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -357,6 +358,12 @@ export default function App() {
   const [sheetToolbarItalic, setSheetToolbarItalic] = useState(false);
   const [sheetToolbarUnderline, setSheetToolbarUnderline] = useState(false);
   const [sheetToolbarTab, setSheetToolbarTab] = useState('AI');
+  const [replayPanelOpen, setReplayPanelOpen] = useState(false);
+  const [isReplayPlaying, setIsReplayPlaying] = useState(false);
+  const [replayIndex, setReplayIndex] = useState(null);
+  const [replayDirection, setReplayDirection] = useState(-1);
+  const [replaySpeed, setReplaySpeed] = useState(1);
+  const [replayTimeline, setReplayTimeline] = useState([]);
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
@@ -623,6 +630,25 @@ export default function App() {
   const historyPastRef = useRef([]);
   const historyFutureRef = useRef([]);
   const lastSnapshotHashRef = useRef('');
+  const replayTimerRef = useRef(null);
+
+  const syncReplayTimeline = () => {
+    setReplayTimeline([...historyPastRef.current]);
+  };
+
+  const formatReplayDuration = (durationMs) => {
+    const safeDuration = Math.max(0, Math.floor(durationMs || 0));
+    const totalSeconds = Math.floor(safeDuration / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     voiceTargetRef.current = voiceTarget;
@@ -852,9 +878,51 @@ export default function App() {
     }
 
     lastSnapshotHashRef.current = nextHash;
-    historyPastRef.current = [...historyPastRef.current.slice(-79), snapshot];
+    const record = {
+      snapshot,
+      timestamp: Date.now(),
+    };
+    historyPastRef.current = [...historyPastRef.current.slice(-79), record];
     historyFutureRef.current = [];
+    syncReplayTimeline();
+    if (replayIndex === null) {
+      setReplayIndex(historyPastRef.current.length - 1);
+    }
   }, [docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
+
+  useEffect(() => {
+    if (!isReplayPlaying || replayIndex === null || !replayTimeline.length) {
+      return undefined;
+    }
+
+    replayTimerRef.current = setTimeout(() => {
+      setReplayIndex((currentIndex) => {
+        if (currentIndex === null) {
+          return currentIndex;
+        }
+
+        const nextIndex = currentIndex + replayDirection;
+        if (nextIndex < 0 || nextIndex >= replayTimeline.length) {
+          setIsReplayPlaying(false);
+          return currentIndex;
+        }
+
+        const nextEntry = replayTimeline[nextIndex];
+        if (nextEntry?.snapshot) {
+          applySnapshot(nextEntry.snapshot);
+        }
+
+        return nextIndex;
+      });
+    }, Math.max(160, Math.round(650 / Math.max(0.5, replaySpeed))));
+
+    return () => {
+      if (replayTimerRef.current) {
+        clearTimeout(replayTimerRef.current);
+        replayTimerRef.current = null;
+      }
+    };
+  }, [isReplayPlaying, replayIndex, replayTimeline, replayDirection, replaySpeed]);
 
   const saveDocumentLocally = () => {
     if (!activeDocId) {
@@ -882,7 +950,9 @@ export default function App() {
     const previous = historyPastRef.current[historyPastRef.current.length - 2];
     historyPastRef.current = historyPastRef.current.slice(0, -1);
     historyFutureRef.current = [current, ...historyFutureRef.current].slice(0, 80);
-    applySnapshot(previous);
+    syncReplayTimeline();
+    setReplayIndex(historyPastRef.current.length - 1);
+    applySnapshot(previous.snapshot);
     trackMemoryAction('document', 'Undo document change');
     showToast('Undid last change');
   };
@@ -896,9 +966,61 @@ export default function App() {
     const next = historyFutureRef.current[0];
     historyFutureRef.current = historyFutureRef.current.slice(1);
     historyPastRef.current = [...historyPastRef.current, next].slice(-80);
-    applySnapshot(next);
+    syncReplayTimeline();
+    setReplayIndex(historyPastRef.current.length - 1);
+    applySnapshot(next.snapshot);
     trackMemoryAction('document', 'Redo document change');
     showToast('Redid change');
+  };
+
+  const openReplayPanel = () => {
+    syncReplayTimeline();
+    setReplayIndex(Math.max(0, historyPastRef.current.length - 1));
+    setReplayPanelOpen(true);
+    setIsReplayPlaying(false);
+  };
+
+  const applyReplayIndex = (nextIndex) => {
+    if (!replayTimeline.length) {
+      showToast('No edit history yet');
+      return;
+    }
+
+    const clampedIndex = Math.max(0, Math.min(nextIndex, replayTimeline.length - 1));
+    const entry = replayTimeline[clampedIndex];
+    setIsReplayPlaying(false);
+    setReplayIndex(clampedIndex);
+    if (entry?.snapshot) {
+      applySnapshot(entry.snapshot);
+    }
+  };
+
+  const startReplayPlayback = (direction) => {
+    if (!replayTimeline.length) {
+      showToast('No edit history yet');
+      return;
+    }
+
+    setReplayDirection(direction);
+    setReplayPanelOpen(true);
+    setIsReplayPlaying(true);
+    if (replayIndex === null) {
+      const startIndex = direction < 0 ? replayTimeline.length - 1 : 0;
+      setReplayIndex(startIndex);
+      const entry = replayTimeline[startIndex];
+      if (entry?.snapshot) {
+        applySnapshot(entry.snapshot);
+      }
+    }
+  };
+
+  const toggleReplayPlayback = (direction) => {
+    if (isReplayPlaying && replayDirection === direction) {
+      setIsReplayPlaying(false);
+      return;
+    }
+
+    startReplayPlayback(direction);
   };
 
   useEffect(() => {
@@ -1676,6 +1798,9 @@ export default function App() {
     const handleSelectionChange = () => {
       const range = getEditorSelectionRange();
       if (!range) {
+        if (selectionActionMenuRef.current && selectionActionMenuRef.current.contains(document.activeElement)) {
+          return;
+        }
         if (pointerDownInPromptRef.current) {
           pointerDownInDocumentRef.current = false;
           return;
@@ -7895,6 +8020,13 @@ Rules:
                 <Redo2 size={15} />
               </button>
               <button
+                onClick={openReplayPanel}
+                className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-700 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                title="Open edit replay"
+              >
+                <Clock size={15} />
+              </button>
+              <button
                 onClick={saveDocumentLocally}
                 className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                 title="Save locally (Ctrl+S)"
@@ -7928,6 +8060,107 @@ Rules:
             </button>
           </div>
         </div>
+
+        {replayPanelOpen && (
+          <div className="absolute right-6 top-16 z-[260] w-[360px] rounded-2xl border border-gray-200 bg-white shadow-[0_20px_60px_-25px_rgba(15,23,42,0.35)] overflow-hidden">
+            <div className="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
+              <div>
+                <div className="text-sm font-semibold text-gray-900">Edit replay</div>
+                <div className="mt-0.5 text-[11px] text-gray-500">
+                  {replayTimeline.length
+                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps · ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
+                    : 'Start typing or editing to build a replay history'}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setReplayPanelOpen(false);
+                  setIsReplayPlaying(false);
+                }}
+                className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                title="Close replay"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className="px-4 py-3 space-y-3">
+              <input
+                type="range"
+                min="0"
+                max={Math.max(0, replayTimeline.length - 1)}
+                value={Math.max(0, replayIndex ?? Math.max(0, replayTimeline.length - 1))}
+                onChange={(event) => applyReplayIndex(Number(event.target.value))}
+                disabled={!replayTimeline.length}
+                className="w-full accent-violet-600"
+              />
+
+              <div className="flex items-center justify-between text-[11px] text-gray-500">
+                <span>
+                  {replayTimeline.length && replayTimeline[0]?.timestamp && replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp
+                    ? formatReplayDuration(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)].timestamp - replayTimeline[0].timestamp)
+                    : '0:00'}
+                </span>
+                <span>{replayTimeline.length ? `Step ${Math.max(0, replayIndex ?? replayTimeline.length - 1) + 1}` : 'No steps yet'}</span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyReplayIndex((replayIndex ?? replayTimeline.length - 1) - 1)}
+                  disabled={!replayTimeline.length || (replayIndex ?? replayTimeline.length - 1) <= 0}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Undo2 size={13} />
+                  Step back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleReplayPlayback(-1)}
+                  disabled={!replayTimeline.length}
+                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === -1 ? 'bg-gray-900 hover:bg-gray-800' : 'bg-violet-600 hover:bg-violet-700'}`}
+                >
+                  {isReplayPlaying && replayDirection === -1 ? <Pause size={13} /> : <Play size={13} />}
+                  Rewind
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleReplayPlayback(1)}
+                  disabled={!replayTimeline.length}
+                  className={`inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === 1 ? 'bg-gray-900 hover:bg-gray-800' : 'bg-slate-700 hover:bg-slate-800'}`}
+                >
+                  {isReplayPlaying && replayDirection === 1 ? <Pause size={13} /> : <Play size={13} />}
+                  Play
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyReplayIndex((replayIndex ?? 0) + 1)}
+                  disabled={!replayTimeline.length || (replayIndex ?? 0) >= replayTimeline.length - 1}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Redo2 size={13} />
+                  Step forward
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-[11px] font-medium text-gray-500" htmlFor="replay-speed-select">Speed</label>
+                <select
+                  id="replay-speed-select"
+                  value={replaySpeed}
+                  onChange={(event) => setReplaySpeed(Number(event.target.value))}
+                  className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none focus:border-violet-300"
+                >
+                  <option value={0.5}>0.5x</option>
+                  <option value={1}>1x</option>
+                  <option value={1.5}>1.5x</option>
+                  <option value={2}>2x</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-[140]">
           {orderedDocuments.map((doc) => {
@@ -8280,8 +8513,9 @@ Rules:
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocTitle(target.textContent || ''))}
               onBlur={(e) => setDocTitle(e.currentTarget.textContent || '')}
               dir="ltr"
-              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              className={`w-full leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent ${docTitle?.trim() ? 'text-gray-900 font-semibold' : 'text-gray-300 font-medium'}`}
+              className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
+              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docTitle?.trim() ? 1 : 0.28 }}
+              data-placeholder={AI_NATIVE_PLACEHOLDER}
             >
               {docTitle || AI_NATIVE_PLACEHOLDER}
             </div>
@@ -8295,8 +8529,8 @@ Rules:
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocSubtitle(target.textContent || ''))}
               onBlur={(e) => setDocSubtitle(e.currentTarget.textContent || '')}
               dir="ltr"
-              style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              className={`w-full text-[17px] mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14 ${docSubtitle?.trim() ? 'text-gray-500' : 'text-gray-300'}`}
+              className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
+              style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docSubtitle?.trim() ? 1 : 0.32 }}
             >
               {docSubtitle || AI_NATIVE_PLACEHOLDER}
             </div>
@@ -8651,7 +8885,10 @@ Rules:
             {isPromptExpanded && (
               <button
                 type="button"
-                onClick={() => setIsPromptMinimized(true)}
+                onClick={() => {
+                  setIsPromptExpanded(false);
+                  setIsPromptMinimized(true);
+                }}
                 className="absolute right-2 top-2 p-1 rounded-md text-gray-400 hover:text-violet-700 hover:bg-violet-50"
                 title="Minimize AI prompt"
               >
@@ -8921,7 +9158,7 @@ Rules:
                     placeholder="Describe what you need. Compose will build it into your document."
                     rows={1}
                     style={{ textAlign: alignMode }}
-                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-1 resize-y min-h-[42px] max-h-[360px]"
+                    className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-1 resize-none overflow-hidden min-h-[42px]"
                   />
                 </div>
               ) : (
@@ -8932,7 +9169,7 @@ Rules:
                   placeholder="Ask Compose AI..."
                   rows={1}
                   style={{ textAlign: alignMode }}
-                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-2 resize-y min-h-[38px] max-h-[120px]"
+                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-2 resize-none overflow-hidden min-h-[38px]"
                 />
               )}
             </div>
@@ -8946,9 +9183,17 @@ Rules:
               />
               <button
                 type="button"
-                onClick={() => setIsPromptExpanded((prev) => !prev)}
+                onClick={() => {
+                  if (isPromptExpanded && !isPromptMinimized) {
+                    setIsPromptExpanded(false);
+                    setIsPromptMinimized(true);
+                    return;
+                  }
+                  setIsPromptExpanded(true);
+                  setIsPromptMinimized(false);
+                }}
                 className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                title="Expand prompt input"
+                title={isPromptExpanded && !isPromptMinimized ? 'Collapse prompt input' : 'Expand prompt input'}
               >
                 <Expand size={16} />
               </button>
