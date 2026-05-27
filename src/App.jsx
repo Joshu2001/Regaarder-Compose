@@ -288,6 +288,32 @@ export default function App() {
     }, 60000);
     return () => clearInterval(exampleRotationTimer);
   }, [EXAMPLE_SETS.length]);
+
+  // Blur box state for spotlight-like blur inside the prompt area
+  const [promptBlurBox, setPromptBlurBox] = useState(null);
+  const updatePromptBlurBox = useCallback(() => {
+    const el = promptRootRef?.current;
+    if (!el) {
+      setPromptBlurBox(null);
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    setPromptBlurBox({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+  }, []);
+
+  useEffect(() => {
+    if (!isPromptExpanded) {
+      setPromptBlurBox(null);
+      return undefined;
+    }
+    updatePromptBlurBox();
+    window.addEventListener('resize', updatePromptBlurBox);
+    window.addEventListener('scroll', updatePromptBlurBox, true);
+    return () => {
+      window.removeEventListener('resize', updatePromptBlurBox);
+      window.removeEventListener('scroll', updatePromptBlurBox, true);
+    };
+  }, [isPromptExpanded, updatePromptBlurBox, rotatingExampleSetIndex, promptWidth, promptOffset]);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -8925,8 +8951,22 @@ Rules:
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
-          {isPromptExpanded && (
-            <div className="pointer-events-none absolute -inset-x-6 -top-[420px] h-[560px] bg-white/35 backdrop-blur-[6px]" />
+          {isPromptExpanded && promptBlurBox && (
+            <div
+              className="pointer-events-none"
+              style={{
+                position: 'fixed',
+                left: `${promptBlurBox.left}px`,
+                top: `${promptBlurBox.top}px`,
+                width: `${promptBlurBox.width}px`,
+                height: `${promptBlurBox.height}px`,
+                pointerEvents: 'none',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                zIndex: 315,
+                backgroundColor: 'rgba(255,255,255,0.02)'
+              }}
+            />
           )}
           <div className={`max-w-[1600px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
             <form
