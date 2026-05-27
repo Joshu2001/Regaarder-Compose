@@ -8921,18 +8921,19 @@ Rules:
         </div>
 
         {/* Persistent Floating AI Prompt Bar */}
-          {/* Center blur overlay (blurs only the center rectangle between side rails) */}
+          {/* Center blur overlay: covers the middle area between left and right rails */}
           <div
             aria-hidden
-            className="fixed pointer-events-none z-[300]"
             style={{
               left: `${leftSidebarWidth}px`,
               right: `${rightSidebarWidth}px`,
-              top: '56px',
-              bottom: 0,
             }}
+            className="pointer-events-none fixed top-0 bottom-0 z-[300] hidden md:block"
           >
-            <div className="w-full h-full bg-white/30 backdrop-blur-[6px] rounded-lg" />
+            <div
+              style={{ width: '100%', height: '100%' }}
+              className="backdrop-blur-[6px] bg-white/10 w-full h-full"
+            />
           </div>
         <div
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
