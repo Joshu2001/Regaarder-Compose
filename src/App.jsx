@@ -6039,6 +6039,15 @@ Rules:
       : 'left-1/2 -translate-x-1/2 text-center';
 
   const showDocumentOutlineView = isFocusMode || activeDocView === 'document';
+  const rightMiniRailWidth = 64;
+  const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
+  const blurRightInset = (rightSidebarOpen ? rightSidebarWidth : 0) + rightMiniRailWidth;
+  const shouldShowPromptBackdrop =
+    isPromptExpanded &&
+    isPromptAutoVisible &&
+    !isPromptMinimized &&
+    !isComposing &&
+    !(isVoiceActive && voiceTarget === 'document');
 
   useEffect(() => {
     if (productMode !== 'compose') {
@@ -6083,6 +6092,23 @@ Rules:
     rightSidebarOpen,
     leftSidebarWidth,
     rightSidebarWidth,
+  ]);
+
+  useEffect(() => {
+    if (productMode !== 'compose') {
+      return;
+    }
+    // Keep dictation centered when layout panels change.
+    setDictationOffset({ x: 0, y: 0 });
+  }, [
+    productMode,
+    activeDocId,
+    leftSidebarOpen,
+    rightSidebarOpen,
+    leftSidebarWidth,
+    rightSidebarWidth,
+    showDocumentOutlineView,
+    isPromptExpanded,
   ]);
 
   const smartAssistMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
@@ -8921,12 +8947,13 @@ Rules:
         </div>
 
         {/* Persistent Floating AI Prompt Bar */}
-          {/* Center blur overlay: covers the middle area between left and right rails */}
+        {/* Center blur overlay: only while prompt is open and only across workspace center */}
+        {shouldShowPromptBackdrop && (
           <div
             aria-hidden
             style={{
-              left: `${leftSidebarWidth}px`,
-              right: `${rightSidebarWidth}px`,
+              left: `${blurLeftInset}px`,
+              right: `${blurRightInset}px`,
             }}
             className="pointer-events-none fixed top-0 bottom-0 z-[300] hidden md:block"
           >
@@ -8935,6 +8962,7 @@ Rules:
               className="backdrop-blur-[6px] bg-white/10 w-full h-full"
             />
           </div>
+        )}
         <div
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
