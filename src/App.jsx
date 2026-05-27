@@ -246,6 +246,7 @@ export default function App() {
   const [promptWidth, setPromptWidth] = useState(620);
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
+  const [isPromptDismissed, setIsPromptDismissed] = useState(false);
   const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
   const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
   const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
@@ -466,6 +467,7 @@ export default function App() {
     deckPromptY: 0,
   });
   const wholeDocSelectionRef = useRef(false);
+  const replayLoadedFromUrlRef = useRef(false);
   const micPermissionGrantedRef = useRef(false);
   const mockDictationTimeoutRef = useRef(null);
   const mockIntervalRef = useRef(null);
@@ -751,7 +753,7 @@ export default function App() {
   }, [voiceTarget]);
 
   useEffect(() => {
-    if (productMode !== 'compose') {
+    if (replayLoadedFromUrlRef.current) {
       return;
     }
 
@@ -770,6 +772,26 @@ export default function App() {
       return;
     }
 
+    replayLoadedFromUrlRef.current = true;
+
+    const sharedMode = ['compose', 'deck', 'sheets'].includes(String(parsed?.productMode || ''))
+      ? String(parsed.productMode)
+      : null;
+    if (sharedMode) {
+      setProductMode(sharedMode);
+    }
+
+    if (parsed?.activeDocView && ['document', 'deck', 'sheet'].includes(parsed.activeDocView)) {
+      setActiveDocView(parsed.activeDocView);
+    }
+
+    if (parsed?.activeDocId) {
+      const sharedDoc = documents.find((doc) => doc.id === parsed.activeDocId);
+      if (sharedDoc) {
+        switchDocument(sharedDoc.id);
+      }
+    }
+
     historyPastRef.current = importedTimeline.slice(-80);
     historyFutureRef.current = [];
     setReplayTimeline([...historyPastRef.current]);
@@ -779,7 +801,7 @@ export default function App() {
     setIsReplayPlaying(false);
     applySnapshot(historyPastRef.current[startIndex].snapshot);
     showToast('Shared replay loaded');
-  }, [productMode]);
+  }, [documents]);
 
   useEffect(() => {
     isMicMutedRef.current = isMicMuted;
@@ -790,6 +812,15 @@ export default function App() {
   }, [isVoiceActive]);
 
   useEffect(() => {
+    if (isPromptDismissed) {
+      if (promptRevealTimerRef.current) {
+        clearTimeout(promptRevealTimerRef.current);
+        promptRevealTimerRef.current = null;
+      }
+      setIsPromptAutoVisible(false);
+      return;
+    }
+
     if (hasVoiceInteraction) {
       setIsPromptAutoVisible(true);
       if (promptRevealTimerRef.current) {
@@ -813,7 +844,7 @@ export default function App() {
         promptRevealTimerRef.current = null;
       }
     };
-  }, [hasVoiceInteraction]);
+  }, [hasVoiceInteraction, isPromptDismissed]);
 
   useEffect(() => {
     if (!activeDocId && documents.length) {
@@ -1141,7 +1172,19 @@ export default function App() {
     }
   };
 
-  const toggleReplayPlayback = (direction) => {
+  const getSmartReplayDirection = () => {
+    if (!replayTimeline.length) {
+      return -1;
+    }
+    const current = Math.max(0, Math.min(replayIndex ?? replayTimeline.length - 1, replayTimeline.length - 1));
+    const last = replayTimeline.length - 1;
+    const distanceToStart = current;
+    const distanceToEnd = Math.max(0, last - current);
+    return distanceToEnd <= distanceToStart ? -1 : 1;
+  };
+
+  const toggleSmartReplayPlayback = () => {
+    const direction = getSmartReplayDirection();
     if (isReplayPlaying && replayDirection === direction) {
       setIsReplayPlaying(false);
       return;
@@ -1158,6 +1201,9 @@ export default function App() {
 
     const payload = {
       version: 1,
+      productMode,
+      activeDocId,
+      activeDocView,
       startIndex: Math.max(0, replayIndex ?? replayTimeline.length - 1),
       timeline: replayTimeline,
     };
@@ -4087,6 +4133,7 @@ Rules:
     voiceTargetRef.current = nextTarget;
     setHasVoiceInteraction(true);
     if (nextTarget === 'compose') {
+      setIsPromptDismissed(false);
       setIsPromptExpanded(true);
       setIsPromptAutoVisible(true);
     }
@@ -6161,13 +6208,14 @@ Rules:
       : 'left-1/2 -translate-x-1/2 text-center';
 
   const showDocumentOutlineView = isFocusMode || activeDocView === 'document';
-  const rightMiniRailWidth = 64;
-  const blurEdgeGuard = 10;
+  const rightMiniRailWidth = 92;
+  const blurEdgeGuard = 22;
   const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
   const blurRightInset = (rightSidebarOpen ? rightSidebarWidth : 0) + rightMiniRailWidth + blurEdgeGuard;
   const shouldShowPromptBackdrop =
     isPromptExpanded &&
     isPromptAutoVisible &&
+    !isPromptDismissed &&
     !isPromptMinimized &&
     !isComposing &&
     !(isVoiceActive && voiceTarget === 'document');
@@ -8319,23 +8367,13 @@ Rules:
                 </button>
                 <button
                   type="button"
-                  onClick={() => toggleReplayPlayback(-1)}
+                  onClick={toggleSmartReplayPlayback}
                   disabled={!replayTimeline.length}
-                  className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === -1 ? 'bg-[#5b21b6] hover:bg-[#4c1d95]' : 'bg-violet-600 hover:bg-violet-700'}`}
-                  title={isReplayPlaying && replayDirection === -1 ? 'Pause rewind playback' : 'Play backward'}
+                  className={`flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying ? 'bg-[#5b21b6] hover:bg-[#4c1d95]' : 'bg-violet-600 hover:bg-violet-700'}`}
+                  title={isReplayPlaying ? 'Pause replay' : (getSmartReplayDirection() < 0 ? 'Play backward toward earlier edits' : 'Play forward toward latest edits')}
                 >
-                  {isReplayPlaying && replayDirection === -1 ? <Pause size={13} /> : <Play size={13} />}
+                  {isReplayPlaying ? <Pause size={13} /> : <Play size={13} />}
                   Rewind
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggleReplayPlayback(1)}
-                  disabled={!replayTimeline.length}
-                  className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === 1 ? 'bg-slate-900 hover:bg-slate-800' : 'bg-slate-700 hover:bg-slate-800'}`}
-                  title={isReplayPlaying && replayDirection === 1 ? 'Pause forward playback' : 'Play forward'}
-                >
-                  {isReplayPlaying && replayDirection === 1 ? <Pause size={13} /> : <Play size={13} />}
-                  Play
                 </button>
                 <button
                   type="button"
@@ -8351,19 +8389,22 @@ Rules:
 
               <div className="flex items-center justify-between gap-2 pt-1">
                 <label className="text-[12px] font-medium text-slate-500" htmlFor="replay-speed-select">Speed</label>
-                <select
-                  id="replay-speed-select"
-                  value={replaySpeed}
-                  onChange={(event) => setReplaySpeed(Number(event.target.value))}
-                  className="rounded-xl border border-[#e5e7eb] bg-white px-3 py-2 text-[12px] text-slate-700 outline-none focus:border-violet-300"
-                  title="Playback speed"
-                >
-                  <option value={0.25}>0.25x</option>
-                  <option value={0.5}>0.5x</option>
-                  <option value={1}>1x</option>
-                  <option value={1.5}>1.5x</option>
-                  <option value={2}>2x</option>
-                </select>
+                <div className="relative">
+                  <select
+                    id="replay-speed-select"
+                    value={replaySpeed}
+                    onChange={(event) => setReplaySpeed(Number(event.target.value))}
+                    className="appearance-none rounded-xl border border-violet-200 bg-violet-50 px-3 pr-8 py-2 text-[12px] font-medium text-violet-700 outline-none transition-colors hover:bg-violet-100 focus:border-violet-300"
+                    title="Playback speed"
+                  >
+                    <option value={0.25}>0.25x</option>
+                    <option value={0.5}>0.5x</option>
+                    <option value={1}>1x</option>
+                    <option value={1.5}>1.5x</option>
+                    <option value={2}>2x</option>
+                  </select>
+                  <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-violet-600" />
+                </div>
               </div>
 
               <button
@@ -9105,7 +9146,7 @@ Rules:
           </div>
         )}
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
+          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
           <div className={`max-w-[1600px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
@@ -9147,6 +9188,8 @@ Rules:
                     onClick={() => {
                       setIsPromptExpanded(false);
                       setIsPromptMinimized(true);
+                      setIsPromptDismissed(true);
+                      setIsPromptAutoVisible(false);
                     }}
                     className="absolute right-4 top-4 p-1.5 rounded-full text-gray-400 hover:text-violet-700 hover:bg-violet-50"
                     title="Close intent capture"
@@ -9324,6 +9367,7 @@ Rules:
                   <button
                     type="button"
                     onClick={() => {
+                      setIsPromptDismissed(false);
                       setIsPromptExpanded(true);
                       setIsPromptMinimized(false);
                     }}
@@ -9421,7 +9465,10 @@ Rules:
               <button
                 type="button"
                 onPointerDown={(event) => beginPanelResize('miniPrompt', event)}
-                onClick={() => setIsPromptMinimized(false)}
+                onClick={() => {
+                  setIsPromptDismissed(false);
+                  setIsPromptMinimized(false);
+                }}
                 className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-move touch-none"
                 title="Open AI prompt"
               >
