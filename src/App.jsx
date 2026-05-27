@@ -8956,9 +8956,9 @@ Rules:
                         key={exampleText}
                         type="button"
                         onClick={() => setFloatingPrompt(exampleText)}
-                        className="flex items-start gap-3 text-left rounded-2xl border border-[#e8e6f1] px-3.5 py-3 text-[13px] text-slate-600 hover:border-violet-200 hover:bg-violet-50/40 transition-all"
+                        className="flex items-center gap-3 text-left rounded-2xl border border-[#e8e6f1] px-4 py-3 text-[13px] text-slate-600 hover:border-violet-200 hover:bg-violet-50/40 transition-all"
                       >
-                        <Icon size={18} className="mt-0.5 text-violet-500" />
+                        <Icon size={20} className="flex-shrink-0 text-violet-500" />
                         <span className="leading-[1.1]">{exampleText}</span>
                       </button>
                     ))}
