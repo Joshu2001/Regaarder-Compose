@@ -288,38 +288,6 @@ export default function App() {
     }, 60000);
     return () => clearInterval(exampleRotationTimer);
   }, [EXAMPLE_SETS.length]);
-
-  // Blur holes state: compute rectangular regions that should NOT be blurred
-  const [blurHoles, setBlurHoles] = useState([]);
-  const updateBlurHoles = useCallback(() => {
-    try {
-      const nodes = [promptRootRef?.current, rightSidebarRef?.current, mainHeaderRef?.current];
-      const rects = [];
-      nodes.forEach((el) => {
-        if (!el) return;
-        const r = el.getBoundingClientRect();
-        if (!r || r.width <= 0 || r.height <= 0) return;
-        rects.push({ left: Math.max(0, r.left), top: Math.max(0, r.top), width: r.width, height: r.height });
-      });
-      setBlurHoles(rects);
-    } catch (err) {
-      setBlurHoles([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isPromptExpanded) {
-      setBlurHoles([]);
-      return undefined;
-    }
-    updateBlurHoles();
-    window.addEventListener('resize', updateBlurHoles);
-    window.addEventListener('scroll', updateBlurHoles, true);
-    return () => {
-      window.removeEventListener('resize', updateBlurHoles);
-      window.removeEventListener('scroll', updateBlurHoles, true);
-    };
-  }, [isPromptExpanded, updateBlurHoles, rotatingExampleSetIndex, promptWidth, promptOffset]);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -458,8 +426,6 @@ export default function App() {
   const speechRecognitionRef = useRef(null);
   const promptAudioInputRef = useRef(null);
   const floatingPromptRef = useRef(null);
-  const rightSidebarRef = useRef(null);
-  const mainHeaderRef = useRef(null);
   const chatInputRef = useRef(null);
   const scheduleInputRef = useRef(null);
   const promptMenuRef = useRef(null);
@@ -6599,7 +6565,7 @@ Rules:
         )}
 
         <main className="flex-1 min-w-0 flex flex-col bg-[#f5f7fc]">
-          <header ref={mainHeaderRef} className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between">
+          <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between">
             <div className="flex items-center gap-4 min-w-0">
               <button
                 type="button"
@@ -8955,27 +8921,25 @@ Rules:
         </div>
 
         {/* Persistent Floating AI Prompt Bar */}
+          {/* Center blur overlay (blurs only the center rectangle between side rails) */}
+          <div
+            aria-hidden
+            className="fixed pointer-events-none z-[300]"
+            style={{
+              left: `${leftSidebarWidth}px`,
+              right: `${rightSidebarWidth}px`,
+              top: '56px',
+              bottom: 0,
+            }}
+          >
+            <div className="w-full h-full bg-white/30 backdrop-blur-[6px] rounded-lg" />
+          </div>
         <div
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
-          {isPromptExpanded && blurHoles.length > 0 && (
-            <div className="pointer-events-none" aria-hidden>
-              {blurHoles.map((hole, idx) => {
-                const left = hole.left;
-                const top = hole.top;
-                const right = left + hole.width;
-                const bottom = top + hole.height;
-                return (
-                  <React.Fragment key={`blur-hole-${idx}`}>
-                    <div style={{ position: 'fixed', left: 0, top: 0, width: '100vw', height: `${top}px`, pointerEvents: 'none', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 315, backgroundColor: 'rgba(255,255,255,0.02)' }} />
-                    <div style={{ position: 'fixed', left: 0, top: `${bottom}px`, width: '100vw', height: `calc(100vh - ${bottom}px)`, pointerEvents: 'none', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 315, backgroundColor: 'rgba(255,255,255,0.02)' }} />
-                    <div style={{ position: 'fixed', left: 0, top: `${top}px`, width: `${left}px`, height: `${hole.height}px`, pointerEvents: 'none', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 315, backgroundColor: 'rgba(255,255,255,0.02)' }} />
-                    <div style={{ position: 'fixed', left: `${right}px`, top: `${top}px`, width: `calc(100vw - ${right}px)`, height: `${hole.height}px`, pointerEvents: 'none', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 315, backgroundColor: 'rgba(255,255,255,0.02)' }} />
-                  </React.Fragment>
-                );
-              })}
-            </div>
+          {isPromptExpanded && (
+            <div className="pointer-events-none absolute -inset-x-6 -top-[420px] h-[560px] bg-white/35 backdrop-blur-[6px]" />
           )}
           <div className={`max-w-[1600px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
             <form
@@ -9368,7 +9332,6 @@ Rules:
 
       {/* 3. Right Sidebar (AI Assistant / Smart Chat / Tools) */}
       <div 
-        ref={rightSidebarRef}
         className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 relative z-[260] ${
           rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
