@@ -1738,6 +1738,9 @@ export default function App() {
   const syncEditorSelection = () => {
     const range = getEditorSelectionRange();
     if (!range) {
+      if (selectionActionMenuRef.current && selectionActionMenuRef.current.contains(document.activeElement)) {
+        return true;
+      }
       setSelectionActionMenu({ open: false, left: 0, top: 0 });
       return false;
     }
@@ -2168,6 +2171,9 @@ export default function App() {
     const handleSelectionChange = () => {
       const range = getEditorSelectionRange();
       if (!range) {
+        if (selectionMenuInputRef.current && document.activeElement === selectionMenuInputRef.current) {
+          return;
+        }
         if (selectionActionMenuRef.current && selectionActionMenuRef.current.contains(document.activeElement)) {
           return;
         }
@@ -2191,6 +2197,10 @@ export default function App() {
         wholeDocSelectionRef.current = false;
         setSelectionActionMenu({ open: false, left: 0, top: 0 });
         pointerDownInDocumentRef.current = false;
+        return;
+      }
+
+      if (pointerDownInDocumentRef.current) {
         return;
       }
 
@@ -2614,7 +2624,7 @@ export default function App() {
   const docTitleDisplay = truncateText(docTitle || 'Untitled document', 20);
 
   const selectedTextActionOptions = [
-    { key: 'ask', label: 'Ask AI about this selection', detail: 'Ctrl+J', icon: Sparkles, prompt: 'Analyze this selected text and explain what it means, including the strongest insight.', keepOpen: true, hintStyle: true },
+    { key: 'ask', label: 'Ask AI about this selection', detail: 'Selection-aware assistant', icon: Sparkles, prompt: 'Analyze this selected text and explain what it means, including the strongest insight.', keepOpen: true, hintStyle: true },
     { key: 'rewrite', label: 'Rewrite', detail: 'Improve clarity and tone', icon: PenTool, prompt: 'Rewrite the selected text to be clearer, tighter, and more readable.' },
     { key: 'summary', label: 'Summarize', detail: 'Shorten this text', icon: Scissors, prompt: 'Summarize the selected text in fewer words while preserving core meaning.' },
     { key: 'expand', label: 'Expand', detail: 'Add more detail', icon: Expand, prompt: 'Expand the selected text with more detail and useful context.' },
@@ -2624,9 +2634,11 @@ export default function App() {
   ];
 
   const runSelectedTextAction = (action) => {
-    if (!selectedEditorTextRef.current) {
+    const selectedScope = selectedEditorTextRef.current || String(savedSelectionRef.current?.toString?.() || '').trim();
+    if (!selectedScope) {
       return;
     }
+    selectedEditorTextRef.current = selectedScope;
 
     const instruction = String(action?.prompt || selectionMenuPrompt || '').trim();
     if (!instruction.trim()) {
@@ -6370,6 +6382,26 @@ Rules:
     !isPromptMinimized &&
     !isComposing &&
     !(isVoiceActive && voiceTarget === 'document');
+  const shouldHideDictationOverlay =
+    openDropdown !== null
+    || textStyleMenuOpen
+    || languageMenuOpen
+    || Boolean(openDocMenuId)
+    || Boolean(openWorkspaceMenuId)
+    || isPromptMenuOpen
+    || promptTuneMenuOpen
+    || promptFormatMenuOpen
+    || promptLibraryOpen
+    || promptHistoryFilterMenuOpen
+    || Boolean(sheetToolbarMenuOpen)
+    || deckToolbarMenuOpen
+    || notificationsOpen
+    || replaySpeedMenuOpen
+    || selectionActionMenu.open
+    || pageContextMenu.open
+    || creationPickerOpen
+    || workspaceModalOpen
+    || shareModalOpen;
   const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
   const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
 
@@ -6978,7 +7010,7 @@ Rules:
                 >
                   <Bell size={18} />
                   {notifications.length > 0 && (
-                    <span className="absolute top-[7px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                    <span className="absolute top-[4px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                   )}
                 </button>
                 {notificationsOpen && (
@@ -8508,7 +8540,7 @@ Rules:
               >
                 <Bell size={18} />
                 {notifications.length > 0 && (
-                  <span className="absolute top-[7px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                  <span className="absolute top-[4px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                 )}
               </button>
               {notificationsOpen && (
@@ -8665,7 +8697,7 @@ Rules:
           </div>
         )}
 
-        {selectionActionMenu.open && selectedEditorText && !isComposing && (
+        {selectionActionMenu.open && !isComposing && (
           <div
             ref={selectionActionMenuRef}
             onPointerDownCapture={() => {
@@ -8680,7 +8712,6 @@ Rules:
             <div className="border-b border-[#f0eefc] bg-[linear-gradient(180deg,#fbfaff_0%,#ffffff_100%)] px-4 py-3">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-500">Selection tools</div>
-                <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-medium text-slate-400 shadow-sm ring-1 ring-slate-200">Ctrl+J</span>
               </div>
               <div className="flex items-center gap-2 rounded-2xl border border-[#e9e6f8] bg-white px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
                 <Sparkles size={16} className="shrink-0 text-violet-500" />
@@ -9635,7 +9666,7 @@ Rules:
           </div>
         </div>
 
-        {!isComposing && (
+        {!isComposing && !shouldHideDictationOverlay && (
           <div 
             className="pointer-events-none fixed z-[300] flex items-center justify-center"
             style={{
