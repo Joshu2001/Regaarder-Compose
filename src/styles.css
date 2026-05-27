@@ -43,6 +43,15 @@ body { margin: 0; background: #ffffff; }
 	height: 0;
 }
 
+.hide-side-scrollbar .overflow-y-auto {
+	scrollbar-width: none;
+}
+
+.hide-side-scrollbar .overflow-y-auto::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+}
+
 .app-dark {
 	background: #0b1220 !important;
 	color: #dbe7ff;

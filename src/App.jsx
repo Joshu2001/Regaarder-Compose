@@ -12,7 +12,7 @@ import {
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   UserPlus, Link2 as LinkIcon, Clock, Maximize2, Minimize2, Sidebar,
-  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun
+  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -6969,6 +6969,7 @@ Rules:
                 <button
                   type="button"
                   onClick={() => {
+                    setReplaySpeedMenuOpen(false);
                     setNotificationsOpen((prev) => !prev);
                     setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
                   }}
@@ -6977,7 +6978,7 @@ Rules:
                 >
                   <Bell size={18} />
                   {notifications.length > 0 && (
-                    <span className="absolute -top-1.5 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                    <span className="absolute top-[7px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                   )}
                 </button>
                 {notificationsOpen && (
@@ -8498,6 +8499,7 @@ Rules:
               <button
                 type="button"
                 onClick={() => {
+                    setReplaySpeedMenuOpen(false);
                   setNotificationsOpen((prev) => !prev);
                   setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
                 }}
@@ -8506,7 +8508,7 @@ Rules:
               >
                 <Bell size={18} />
                 {notifications.length > 0 && (
-                  <span className="absolute -top-2 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                  <span className="absolute top-[7px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                 )}
               </button>
               {notificationsOpen && (
@@ -8536,7 +8538,7 @@ Rules:
         </div>
 
         {replayPanelOpen && (
-          <div className="absolute right-6 top-16 z-[260] w-[430px] overflow-hidden rounded-[22px] border border-[#e8e6f2] bg-white shadow-[0_30px_70px_-34px_rgba(15,23,42,0.42)]">
+          <div className="absolute right-6 top-16 z-[260] w-[430px] overflow-visible rounded-[22px] border border-[#e8e6f2] bg-white shadow-[0_30px_70px_-34px_rgba(15,23,42,0.42)]">
             <div className="flex items-start justify-between gap-3 border-b border-[#efedf6] px-5 py-4">
               <div>
                 <div className="text-[13px] font-semibold text-slate-900">Edit replay</div>
@@ -8618,7 +8620,10 @@ Rules:
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setReplaySpeedMenuOpen((prev) => !prev)}
+                    onClick={() => {
+                      setNotificationsOpen(false);
+                      setReplaySpeedMenuOpen((prev) => !prev);
+                    }}
                     className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[12px] font-semibold text-violet-700 hover:bg-violet-100"
                     title="Playback speed"
                   >
@@ -9445,6 +9450,27 @@ Rules:
                   </div>
 
                   <div className="my-4 border-t border-[#efedf7]" />
+
+                  <div className="mt-4 flex items-center justify-between px-1">
+                    <button
+                      type="button"
+                      onClick={() => setRotatingExampleSetIndex((prevIndex) => (prevIndex - 1 + EXAMPLE_SETS.length) % EXAMPLE_SETS.length)}
+                      className="inline-flex items-center gap-1 rounded-full border border-[#e8e6f1] bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:border-violet-200 hover:text-violet-700"
+                      title="Previous suggestions"
+                    >
+                      <MoveLeft size={12} />
+                      More
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRotatingExampleSetIndex((prevIndex) => (prevIndex + 1) % EXAMPLE_SETS.length)}
+                      className="inline-flex items-center gap-1 rounded-full border border-[#e8e6f1] bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:border-violet-200 hover:text-violet-700"
+                      title="Next suggestions"
+                    >
+                      More
+                      <MoveRight size={12} />
+                    </button>
+                  </div>
 
                   <div className="flex flex-wrap items-center gap-2">
                     {promptAttachments.map((attachment) => (
