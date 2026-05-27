@@ -96,6 +96,38 @@ const DECK_TEMPLATE_LIBRARY = [
 
 const DECK_STORY_SECTIONS = ['Opening', 'Problem', 'Opportunity', 'Product', 'Market', 'Strategy', 'Financials', 'Closing'];
 
+const FONT_FAMILY_MAP = {
+  Manrope: "Manrope, 'Plus Jakarta Sans', 'DM Sans', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+  Satoshi: "Satoshi, 'General Sans', Manrope, 'DM Sans', Inter, system-ui, sans-serif",
+  'General Sans': "'General Sans', Satoshi, Manrope, Inter, system-ui, sans-serif",
+  'Plus Jakarta Sans': "'Plus Jakarta Sans', Manrope, 'DM Sans', Inter, system-ui, sans-serif",
+  'IBM Plex Sans': "'IBM Plex Sans', 'Public Sans', Inter, system-ui, sans-serif",
+  'DM Sans': "'DM Sans', Manrope, 'Plus Jakarta Sans', Inter, system-ui, sans-serif",
+  'Public Sans': "'Public Sans', 'IBM Plex Sans', Inter, system-ui, sans-serif",
+  'SF Pro Display': "'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  'Helvetica Now': "'Helvetica Now', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+  Aptos: "Aptos, 'Segoe UI', Calibri, sans-serif",
+  Merriweather: "Merriweather, 'Source Serif 4', Georgia, serif",
+  'Libre Baskerville': "'Libre Baskerville', Merriweather, Georgia, serif",
+  'Playfair Display': "'Playfair Display', 'Libre Baskerville', Georgia, serif",
+  'Source Serif 4': "'Source Serif 4', Merriweather, Georgia, serif",
+  Charter: "Charter, 'Source Serif 4', Georgia, serif",
+  Lora: "Lora, 'Source Serif 4', Georgia, serif",
+  Spectral: "Spectral, 'Source Serif 4', Georgia, serif",
+  Poppins: "Poppins, Manrope, 'Plus Jakarta Sans', sans-serif",
+  Montserrat: "Montserrat, Poppins, Manrope, sans-serif",
+  Outfit: "Outfit, 'Space Grotesk', Manrope, sans-serif",
+  'Space Grotesk': "'Space Grotesk', Outfit, Manrope, sans-serif",
+  'Clash Display': "'Clash Display', 'Neue Haas Grotesk', Montserrat, sans-serif",
+  'Neue Haas Grotesk': "'Neue Haas Grotesk', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+  'Circular Std': "'Circular Std', 'Avenir Next', 'Helvetica Neue', Arial, sans-serif",
+  'Avenir Next': "'Avenir Next', 'Helvetica Neue', Helvetica, Arial, sans-serif",
+  'JetBrains Mono': "'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', 'Source Code Pro', monospace",
+  'IBM Plex Mono': "'IBM Plex Mono', 'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace",
+  'Fira Code': "'Fira Code', 'JetBrains Mono', 'IBM Plex Mono', 'Source Code Pro', monospace",
+  'Source Code Pro': "'Source Code Pro', 'JetBrains Mono', 'IBM Plex Mono', 'Fira Code', monospace",
+};
+
 const inferDeckStorySection = (slide, index, totalSlides) => {
   const signal = `${slide?.title || ''} ${slide?.subtitle || ''} ${slide?.headline || ''}`.toLowerCase();
   const keywordMap = [
@@ -401,8 +433,15 @@ export default function App() {
   const [replayIndex, setReplayIndex] = useState(null);
   const [replayDirection, setReplayDirection] = useState(-1);
   const [replaySpeed, setReplaySpeed] = useState(1);
+  const [replaySpeedMenuOpen, setReplaySpeedMenuOpen] = useState(false);
   const [replayTimeline, setReplayTimeline] = useState([]);
   const [replaySharing, setReplaySharing] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: 'Replay link ready to share', detail: 'Copy and send to collaborators', unread: true },
+    { id: 2, title: 'Document saved locally', detail: 'Your latest draft is persisted', unread: false },
+    { id: 3, title: 'AI assistant is active', detail: 'Ask about selected text anytime', unread: false },
+  ]);
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
@@ -436,6 +475,8 @@ export default function App() {
   const promptFormatRef = useRef(null);
   const promptLibraryRef = useRef(null);
   const promptHistoryFilterRef = useRef(null);
+  const replaySpeedMenuRef = useRef(null);
+  const notificationsPanelRef = useRef(null);
   const promptFileInputRef = useRef(null);
   const chatFileInputRef = useRef(null);
   const scheduleFileInputRef = useRef(null);
@@ -726,6 +767,8 @@ export default function App() {
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
   };
 
+  const resolveFontFamily = (fontName) => FONT_FAMILY_MAP[fontName] || `${fontName}, Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`;
+
   const encodeReplayPayload = (payload) => {
     try {
       return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
@@ -845,6 +888,20 @@ export default function App() {
       }
     };
   }, [hasVoiceInteraction, isPromptDismissed]);
+
+  useEffect(() => {
+    const onPointerDown = (event) => {
+      if (replaySpeedMenuRef.current && !replaySpeedMenuRef.current.contains(event.target)) {
+        setReplaySpeedMenuOpen(false);
+      }
+      if (notificationsPanelRef.current && !notificationsPanelRef.current.contains(event.target)) {
+        setNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, []);
 
   useEffect(() => {
     if (!activeDocId && documents.length) {
@@ -1072,7 +1129,7 @@ export default function App() {
 
         return nextIndex;
       });
-    }, Math.max(160, Math.round(650 / Math.max(0.5, replaySpeed))));
+    }, Math.max(160, Math.round(650 / Math.max(0.25, replaySpeed))));
 
     return () => {
       if (replayTimerRef.current) {
@@ -6208,8 +6265,8 @@ Rules:
       : 'left-1/2 -translate-x-1/2 text-center';
 
   const showDocumentOutlineView = isFocusMode || activeDocView === 'document';
-  const rightMiniRailWidth = 92;
-  const blurEdgeGuard = 22;
+  const rightMiniRailWidth = 0;
+  const blurEdgeGuard = 0;
   const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
   const blurRightInset = (rightSidebarOpen ? rightSidebarWidth : 0) + rightMiniRailWidth + blurEdgeGuard;
   const shouldShowPromptBackdrop =
@@ -6414,7 +6471,7 @@ Rules:
 
   if (productMode === 'deck' || productMode === 'sheets') {
     return (
-      <div className="flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative">
+      <div className="flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative" style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
           <div className="absolute top-16 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
             <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
@@ -6804,10 +6861,38 @@ Rules:
                 <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" alt="Mike" />
                 <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" alt="Maya" />
               </div>
-              <button className="text-gray-400 hover:text-gray-600 relative">
-                <Bell size={18} />
-                <span className="absolute -top-1.5 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
-              </button>
+              <div className="relative" ref={notificationsPanelRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotificationsOpen((prev) => !prev);
+                    setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
+                  }}
+                  className="text-gray-400 hover:text-gray-600 relative"
+                  title="Notifications"
+                >
+                  <Bell size={18} />
+                  {notifications.some((item) => item.unread) && (
+                    <span className="absolute -top-1.5 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                  )}
+                </button>
+                {notificationsOpen && (
+                  <div className="absolute right-0 top-8 z-[450] w-[300px] rounded-2xl border border-violet-100 bg-white shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] p-2">
+                    <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600">Notifications</div>
+                    <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
+                      {notifications.map((item) => (
+                        <div key={item.id} className="rounded-xl border border-slate-100 px-3 py-2.5 hover:bg-violet-50/50">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="text-[12px] font-medium text-slate-800">{item.title}</div>
+                            {item.unread && <span className="mt-1 h-2 w-2 rounded-full bg-violet-500" />}
+                          </div>
+                          <div className="mt-0.5 text-[11px] text-slate-500">{item.detail}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </header>
 
@@ -7720,7 +7805,7 @@ Rules:
   }
 
   return (
-    <div className="flex h-screen bg-[#FDFDFD] font-sans text-gray-800 overflow-hidden relative">
+    <div className="flex h-screen bg-[#FDFDFD] text-gray-800 overflow-hidden relative" style={{ fontFamily: resolveFontFamily(editorFont) }}>
       
       {/* Dynamic Toast System */}
       {toastMessage && (
@@ -8296,10 +8381,38 @@ Rules:
               <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80" alt="Maya" />
             </div>
 
-            <button className="text-gray-400 hover:text-gray-600 relative">
-              <Bell size={18} />
-              <span className="absolute -top-2 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
-            </button>
+            <div className="relative" ref={notificationsPanelRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setNotificationsOpen((prev) => !prev);
+                  setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
+                }}
+                className="text-gray-400 hover:text-gray-600 relative"
+                title="Notifications"
+              >
+                <Bell size={18} />
+                {notifications.some((item) => item.unread) && (
+                  <span className="absolute -top-2 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                )}
+              </button>
+              {notificationsOpen && (
+                <div className="absolute right-0 top-8 z-[450] w-[300px] rounded-2xl border border-violet-100 bg-white shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] p-2">
+                  <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600">Notifications</div>
+                  <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
+                    {notifications.map((item) => (
+                      <div key={item.id} className="rounded-xl border border-slate-100 px-3 py-2.5 hover:bg-violet-50/50">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-[12px] font-medium text-slate-800">{item.title}</div>
+                          {item.unread && <span className="mt-1 h-2 w-2 rounded-full bg-violet-500" />}
+                        </div>
+                        <div className="mt-0.5 text-[11px] text-slate-500">{item.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
             <button 
               onClick={() => handleMiniSidebarClick('assistant')}
               className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100 text-violet-700' : 'bg-violet-50 text-violet-600 hover:bg-violet-100'}`}
@@ -8387,23 +8500,36 @@ Rules:
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-1">
-                <label className="text-[12px] font-medium text-slate-500" htmlFor="replay-speed-select">Speed</label>
+              <div className="flex items-center justify-between gap-2 pt-1" ref={replaySpeedMenuRef}>
+                <label className="text-[12px] font-medium text-slate-500">Speed</label>
                 <div className="relative">
-                  <select
-                    id="replay-speed-select"
-                    value={replaySpeed}
-                    onChange={(event) => setReplaySpeed(Number(event.target.value))}
-                    className="appearance-none rounded-xl border border-violet-200 bg-violet-50 px-3 pr-8 py-2 text-[12px] font-medium text-violet-700 outline-none transition-colors hover:bg-violet-100 focus:border-violet-300"
+                  <button
+                    type="button"
+                    onClick={() => setReplaySpeedMenuOpen((prev) => !prev)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[12px] font-semibold text-violet-700 hover:bg-violet-100"
                     title="Playback speed"
                   >
-                    <option value={0.25}>0.25x</option>
-                    <option value={0.5}>0.5x</option>
-                    <option value={1}>1x</option>
-                    <option value={1.5}>1.5x</option>
-                    <option value={2}>2x</option>
-                  </select>
-                  <ChevronDown size={13} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-violet-600" />
+                    <span>{replaySpeed}x</span>
+                    <ChevronDown size={13} className={`transition-transform ${replaySpeedMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {replaySpeedMenuOpen && (
+                    <div className="absolute right-0 top-[42px] z-[320] w-[110px] rounded-xl border border-violet-100 bg-white shadow-[0_18px_40px_-22px_rgba(76,29,149,0.45)] p-1">
+                      {[0.25, 0.5, 1, 1.5, 2].map((speedOption) => (
+                        <button
+                          key={speedOption}
+                          type="button"
+                          onClick={() => {
+                            setReplaySpeed(speedOption);
+                            setReplaySpeedMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[12px] ${replaySpeed === speedOption ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                          <span>{speedOption}x</span>
+                          {replaySpeed === speedOption && <Check size={12} className="text-violet-600" />}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -8778,6 +8904,7 @@ Rules:
                           setOpenDropdown(null);
                         }}
                         className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
+                        style={{ fontFamily: resolveFontFamily(option) }}
                       >
                         {option}
                       </button>
