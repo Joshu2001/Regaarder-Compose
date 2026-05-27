@@ -12,7 +12,7 @@ import {
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   UserPlus, Link2 as LinkIcon, Clock, Maximize2, Minimize2, Sidebar,
-  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause
+  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -279,6 +279,7 @@ export default function App() {
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
   const [isPromptDismissed, setIsPromptDismissed] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
   const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
   const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
@@ -436,6 +437,8 @@ export default function App() {
   const [replaySpeedMenuOpen, setReplaySpeedMenuOpen] = useState(false);
   const [replayTimeline, setReplayTimeline] = useState([]);
   const [replaySharing, setReplaySharing] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [relativeNow, setRelativeNow] = useState(Date.now());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([
     { id: 1, title: 'Replay link ready to share', detail: 'Copy and send to collaborators', unread: true },
@@ -767,6 +770,27 @@ export default function App() {
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
   };
 
+  const formatRelativeSavedLabel = (savedAt) => {
+    if (!savedAt) {
+      return 'Not saved yet';
+    }
+
+    const diffMs = Math.max(0, relativeNow - savedAt);
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) {
+      return 'Saved just now';
+    }
+    if (minutes < 60) {
+      return `Saved ${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    }
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return `Saved ${hours} hour${hours === 1 ? '' : 's'} ago`;
+    }
+    const days = Math.floor(hours / 24);
+    return `Saved ${days} day${days === 1 ? '' : 's'} ago`;
+  };
+
   const resolveFontFamily = (fontName) => FONT_FAMILY_MAP[fontName] || `${fontName}, Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif`;
 
   const encodeReplayPayload = (payload) => {
@@ -897,11 +921,23 @@ export default function App() {
       if (notificationsPanelRef.current && !notificationsPanelRef.current.contains(event.target)) {
         setNotificationsOpen(false);
       }
+      if (
+        isPromptExpanded
+        && isPromptAutoVisible
+        && !isPromptDismissed
+        && promptRootRef.current
+        && !promptRootRef.current.contains(event.target)
+      ) {
+        setIsPromptExpanded(false);
+        setIsPromptMinimized(true);
+        setIsPromptDismissed(true);
+        setIsPromptAutoVisible(false);
+      }
     };
 
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, []);
+  }, [isPromptExpanded, isPromptAutoVisible, isPromptDismissed]);
 
   useEffect(() => {
     if (!activeDocId && documents.length) {
@@ -919,8 +955,12 @@ export default function App() {
       const storedPromptLengthMode = localStorage.getItem('rc.promptLengthMode');
       const storedPromptLengthValue = localStorage.getItem('rc.promptLengthValue');
       const storedEditorPrefs = localStorage.getItem('rc.editorPrefs');
+      const storedDarkMode = localStorage.getItem('rc.darkMode');
       if (storedCapture === 'true' || storedCapture === 'false') {
         setMemoryCaptureEnabled(storedCapture === 'true');
+      }
+      if (storedDarkMode === 'true' || storedDarkMode === 'false') {
+        setIsDarkMode(storedDarkMode === 'true');
       }
       if (storedRetention) {
         const parsedRetention = Number(storedRetention);
@@ -991,6 +1031,42 @@ export default function App() {
       // noop
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem('rc.darkMode', String(isDarkMode));
+  }, [isDarkMode]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setRelativeNow(Date.now());
+    }, 60000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    setRelativeNow(Date.now());
+  }, [lastSavedAt]);
+
+  useEffect(() => {
+    if (!activeDocId) {
+      setLastSavedAt(null);
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem(`rc.savedDoc.${activeDocId}`);
+      if (!raw) {
+        setLastSavedAt(null);
+        return;
+      }
+
+      const parsed = JSON.parse(raw);
+      const savedAt = Number(parsed?.savedAt);
+      setLastSavedAt(Number.isFinite(savedAt) ? savedAt : null);
+    } catch (_error) {
+      setLastSavedAt(null);
+    }
+  }, [activeDocId]);
 
   useEffect(() => {
     localStorage.setItem('rc.memoryCapture', String(memoryCaptureEnabled));
@@ -1139,21 +1215,39 @@ export default function App() {
     };
   }, [isReplayPlaying, replayIndex, replayTimeline, replayDirection, replaySpeed]);
 
-  const saveDocumentLocally = () => {
+  const saveDocumentLocally = ({ silent = false, trackAction = true } = {}) => {
     if (!activeDocId) {
       return;
     }
 
     const payload = getDocumentPayload(activeDocId);
+    const savedAt = Date.now();
     localStorage.setItem(`rc.savedDoc.${activeDocId}`, JSON.stringify({
       ...payload,
-      savedAt: Date.now(),
+      savedAt,
     }));
-    trackMemoryAction('document', 'Saved document locally', {
-      documentId: String(activeDocId),
-    });
-    showToast('Document saved locally');
+    setLastSavedAt(savedAt);
+    if (trackAction) {
+      trackMemoryAction('document', 'Saved document locally', {
+        documentId: String(activeDocId),
+      });
+    }
+    if (!silent) {
+      showToast('Document saved locally');
+    }
   };
+
+  useEffect(() => {
+    if (!activeDocId || !docTitle.trim()) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      saveDocumentLocally({ silent: true, trackAction: false });
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
+  }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
 
   const undoDocumentChange = () => {
     if (historyPastRef.current.length < 2) {
@@ -6276,6 +6370,8 @@ Rules:
     !isPromptMinimized &&
     !isComposing &&
     !(isVoiceActive && voiceTarget === 'document');
+  const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
+  const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
 
   useEffect(() => {
     if (productMode !== 'compose') {
@@ -6471,7 +6567,7 @@ Rules:
 
   if (productMode === 'deck' || productMode === 'sheets') {
     return (
-      <div className="flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative" style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
           <div className="absolute top-16 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
             <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
@@ -6846,9 +6942,17 @@ Rules:
                 className="text-sm text-gray-500 truncate bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-300 rounded px-2 py-0.5 outline-none"
                 placeholder={isSheetsMode ? 'Untitled sheetbook' : 'Untitled deck'}
               />
-              <div className="text-xs text-gray-400">Saved just now</div>
+              <div className="text-xs text-gray-400">{savedStatusLabel}</div>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsDarkMode((prev) => !prev)}
+                className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
+              </button>
               <button
                 type="button"
                 onClick={() => openShareModal(activeDocId || documents[0]?.id)}
@@ -6872,7 +6976,7 @@ Rules:
                   title="Notifications"
                 >
                   <Bell size={18} />
-                  {notifications.some((item) => item.unread) && (
+                  {notifications.length > 0 && (
                     <span className="absolute -top-1.5 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                   )}
                 </button>
@@ -7805,7 +7909,7 @@ Rules:
   }
 
   return (
-    <div className="flex h-screen bg-[#FDFDFD] text-gray-800 overflow-hidden relative" style={{ fontFamily: resolveFontFamily(editorFont) }}>
+    <div className={`flex h-screen bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
       
       {/* Dynamic Toast System */}
       {toastMessage && (
@@ -8330,7 +8434,7 @@ Rules:
                   </button>
                 )}
                 <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2">
-                  <Cloud size={14} /> Saved Just now
+                  <Cloud size={14} /> {savedStatusLabel}
                 </div>
               </>
             )}
@@ -8381,6 +8485,15 @@ Rules:
               <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80" alt="Maya" />
             </div>
 
+            <button
+              type="button"
+              onClick={() => setIsDarkMode((prev) => !prev)}
+              className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+
             <div className="relative" ref={notificationsPanelRef}>
               <button
                 type="button"
@@ -8388,11 +8501,11 @@ Rules:
                   setNotificationsOpen((prev) => !prev);
                   setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
                 }}
-                className="text-gray-400 hover:text-gray-600 relative"
+                className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 relative transition-colors"
                 title="Notifications"
               >
                 <Bell size={18} />
-                {notifications.some((item) => item.unread) && (
+                {notifications.length > 0 && (
                   <span className="absolute -top-2 -right-0.5 w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                 )}
               </button>
@@ -8895,6 +9008,7 @@ Rules:
                 <div className="max-h-40 overflow-y-auto">
                   {fontOptions
                     .filter((option) => option.toLowerCase().includes(fontSearch.toLowerCase()))
+                    .sort((a, b) => a.localeCompare(b))
                     .map((option) => (
                       <button
                         key={option}
@@ -9310,20 +9424,6 @@ Rules:
 
               {isPromptExpanded ? (
                 <div className="rounded-[34px] border border-[#ebe7f8] bg-white/95 shadow-[0_30px_80px_-34px_rgba(91,33,182,0.45)] px-6 py-6 md:px-7 md:py-7">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsPromptExpanded(false);
-                      setIsPromptMinimized(true);
-                      setIsPromptDismissed(true);
-                      setIsPromptAutoVisible(false);
-                    }}
-                    className="absolute right-4 top-4 p-1.5 rounded-full text-gray-400 hover:text-violet-700 hover:bg-violet-50"
-                    title="Close intent capture"
-                  >
-                    <X size={16} />
-                  </button>
-
                   <div className="text-center px-2">
                     <Sparkles size={18} className="mx-auto text-violet-500" />
                     <h3 className="mt-3 text-[38px] leading-[1.06] font-semibold text-slate-900">What would you like to create?</h3>
@@ -9406,7 +9506,7 @@ Rules:
                         className={`relative p-2.5 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
                         title="Attach files or audio"
                       >
-                        <Upload size={16} />
+                        <Paperclip size={16} />
                       </button>
                       {isPromptMenuOpen && (
                         <div className="absolute right-0 bottom-[54px] bg-white isolate border border-gray-200 rounded-xl shadow-2xl ring-1 ring-black/5 p-1 w-[210px] z-[9999]">
@@ -9467,7 +9567,7 @@ Rules:
                       disabled={isComposing}
                       className={`text-white rounded-full transition-colors flex items-center justify-center h-11 w-11 active:scale-90 ${isComposing ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}`}
                     >
-                      {isComposing ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+                      {isComposing ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={18} />}
                     </button>
                   </div>
 
@@ -9594,7 +9694,9 @@ Rules:
                 onPointerDown={(event) => beginPanelResize('miniPrompt', event)}
                 onClick={() => {
                   setIsPromptDismissed(false);
+                  setIsPromptExpanded(true);
                   setIsPromptMinimized(false);
+                  setIsPromptAutoVisible(true);
                 }}
                 className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-move touch-none"
                 title="Open AI prompt"

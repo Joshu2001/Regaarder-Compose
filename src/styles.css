@@ -33,3 +33,49 @@ body { margin: 0; background: #ffffff; }
 	background: #d5dae3;
 	color: #0f172a;
 }
+
+.hide-side-scrollbar .thin-scrollbar {
+	scrollbar-width: none;
+}
+
+.hide-side-scrollbar .thin-scrollbar::-webkit-scrollbar {
+	width: 0;
+	height: 0;
+}
+
+.app-dark {
+	background: #0b1220 !important;
+	color: #dbe7ff;
+}
+
+.app-dark .bg-white,
+.app-dark .bg-white\/95,
+.app-dark .bg-\[\#FAFAFC\],
+.app-dark .bg-\[\#FDFDFD\],
+.app-dark .bg-\[\#f5f7fc\],
+.app-dark .bg-\[\#f3f5fb\] {
+	background-color: #111b2f !important;
+}
+
+.app-dark .text-gray-900,
+.app-dark .text-gray-800,
+.app-dark .text-slate-900,
+.app-dark .text-slate-800 {
+	color: #e6eeff !important;
+}
+
+.app-dark .text-gray-700,
+.app-dark .text-gray-600,
+.app-dark .text-gray-500,
+.app-dark .text-gray-400,
+.app-dark .text-slate-600,
+.app-dark .text-slate-500 {
+	color: #9fb3d9 !important;
+}
+
+.app-dark .border-gray-100,
+.app-dark .border-gray-200,
+.app-dark .border-slate-100,
+.app-dark .border-violet-100 {
+	border-color: #253451 !important;
+}
