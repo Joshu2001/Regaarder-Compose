@@ -1544,6 +1544,26 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!documentCardRef.current) {
+      return;
+    }
+
+    const handleDocumentInput = () => {
+      if (activeDocView !== 'document') {
+        setActiveDocView('document');
+      }
+      if (deckSlidesPanelOpen) {
+        setDeckSlidesPanelOpen(false);
+      }
+    };
+
+    documentCardRef.current.addEventListener('input', handleDocumentInput, true);
+    return () => {
+      documentCardRef.current?.removeEventListener('input', handleDocumentInput, true);
+    };
+  }, [activeDocView, deckSlidesPanelOpen]);
+
+  useEffect(() => {
     computeDocumentStats();
     computeDocumentOutline();
     if (!documentCardRef.current || typeof MutationObserver === 'undefined') {
@@ -6413,7 +6433,7 @@ Rules:
     const updateDictationAnchor = () => {
       const card = documentCardRef.current;
       if (!card) {
-        setDictationAnchor({ left: window.innerWidth / 2, top: window.innerHeight / 2 });
+        setDictationAnchor({ left: window.innerWidth - 100, top: window.innerHeight / 2 });
         return;
       }
 
@@ -6426,10 +6446,10 @@ Rules:
       const hasVisibleWidth = visibleRight > visibleLeft;
       const hasVisibleHeight = visibleBottom > visibleTop;
 
-      const centerX = hasVisibleWidth ? visibleLeft + (visibleRight - visibleLeft) / 2 : window.innerWidth / 2;
+      const rightX = hasVisibleWidth ? visibleRight - 80 : window.innerWidth - 100;
       const centerY = hasVisibleHeight ? visibleTop + (visibleBottom - visibleTop) / 2 : window.innerHeight / 2;
 
-      setDictationAnchor({ left: centerX, top: centerY });
+      setDictationAnchor({ left: rightX, top: centerY });
     };
 
     updateDictationAnchor();
@@ -7010,7 +7030,7 @@ Rules:
                 >
                   <Bell size={18} />
                   {notifications.length > 0 && (
-                    <span className="absolute top-[4px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                    <span className="absolute top-[2px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                   )}
                 </button>
                 {notificationsOpen && (
@@ -8540,7 +8560,7 @@ Rules:
               >
                 <Bell size={18} />
                 {notifications.length > 0 && (
-                  <span className="absolute top-[4px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                  <span className="absolute top-[2px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                 )}
               </button>
               {notificationsOpen && (
