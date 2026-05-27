@@ -401,6 +401,7 @@ export default function App() {
   const [replayDirection, setReplayDirection] = useState(-1);
   const [replaySpeed, setReplaySpeed] = useState(1);
   const [replayTimeline, setReplayTimeline] = useState([]);
+  const [replaySharing, setReplaySharing] = useState(false);
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
@@ -723,9 +724,62 @@ export default function App() {
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
   };
 
+  const encodeReplayPayload = (payload) => {
+    try {
+      return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    } catch (_error) {
+      return '';
+    }
+  };
+
+  const decodeReplayPayload = (encodedPayload) => {
+    try {
+      const decoded = decodeURIComponent(escape(atob(encodedPayload)));
+      return JSON.parse(decoded);
+    } catch (_error) {
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // Ensure document outline rail starts closed on first load.
+    setLeftSidebarOpen(false);
+  }, []);
+
   useEffect(() => {
     voiceTargetRef.current = voiceTarget;
   }, [voiceTarget]);
+
+  useEffect(() => {
+    if (productMode !== 'compose') {
+      return;
+    }
+
+    const query = new URLSearchParams(window.location.search);
+    const replayParam = query.get('replay');
+    if (!replayParam) {
+      return;
+    }
+
+    const parsed = decodeReplayPayload(replayParam);
+    const importedTimeline = Array.isArray(parsed?.timeline)
+      ? parsed.timeline.filter((entry) => entry && entry.snapshot && typeof entry.timestamp === 'number')
+      : [];
+
+    if (!importedTimeline.length) {
+      return;
+    }
+
+    historyPastRef.current = importedTimeline.slice(-80);
+    historyFutureRef.current = [];
+    setReplayTimeline([...historyPastRef.current]);
+    const startIndex = Math.max(0, Math.min(Number(parsed?.startIndex ?? historyPastRef.current.length - 1), historyPastRef.current.length - 1));
+    setReplayIndex(startIndex);
+    setReplayPanelOpen(true);
+    setIsReplayPlaying(false);
+    applySnapshot(historyPastRef.current[startIndex].snapshot);
+    showToast('Shared replay loaded');
+  }, [productMode]);
 
   useEffect(() => {
     isMicMutedRef.current = isMicMuted;
@@ -1094,6 +1148,38 @@ export default function App() {
     }
 
     startReplayPlayback(direction);
+  };
+
+  const shareReplayTimeline = async () => {
+    if (!replayTimeline.length) {
+      showToast('No replay history to share yet');
+      return;
+    }
+
+    const payload = {
+      version: 1,
+      startIndex: Math.max(0, replayIndex ?? replayTimeline.length - 1),
+      timeline: replayTimeline,
+    };
+
+    const encoded = encodeReplayPayload(payload);
+    if (!encoded) {
+      showToast('Could not prepare replay link');
+      return;
+    }
+
+    const shareUrl = new URL(window.location.href);
+    shareUrl.searchParams.set('replay', encoded);
+
+    setReplaySharing(true);
+    try {
+      await navigator.clipboard.writeText(shareUrl.toString());
+      showToast('Replay link copied');
+    } catch (_error) {
+      window.prompt('Copy replay link', shareUrl.toString());
+    } finally {
+      setReplaySharing(false);
+    }
   };
 
   useEffect(() => {
@@ -6076,8 +6162,9 @@ Rules:
 
   const showDocumentOutlineView = isFocusMode || activeDocView === 'document';
   const rightMiniRailWidth = 64;
+  const blurEdgeGuard = 10;
   const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
-  const blurRightInset = (rightSidebarOpen ? rightSidebarWidth : 0) + rightMiniRailWidth;
+  const blurRightInset = (rightSidebarOpen ? rightSidebarWidth : 0) + rightMiniRailWidth + blurEdgeGuard;
   const shouldShowPromptBackdrop =
     isPromptExpanded &&
     isPromptAutoVisible &&
@@ -8175,7 +8262,7 @@ Rules:
         </div>
 
         {replayPanelOpen && (
-          <div className="absolute right-6 top-16 z-[260] w-[366px] overflow-hidden rounded-[22px] border border-[#e8e6f2] bg-white shadow-[0_30px_70px_-34px_rgba(15,23,42,0.42)]">
+          <div className="absolute right-6 top-16 z-[260] w-[430px] overflow-hidden rounded-[22px] border border-[#e8e6f2] bg-white shadow-[0_30px_70px_-34px_rgba(15,23,42,0.42)]">
             <div className="flex items-start justify-between gap-3 border-b border-[#efedf6] px-5 py-4">
               <div>
                 <div className="text-[13px] font-semibold text-slate-900">Edit replay</div>
@@ -8207,6 +8294,7 @@ Rules:
                 onChange={(event) => applyReplayIndex(Number(event.target.value))}
                 disabled={!replayTimeline.length}
                 className="w-full accent-violet-600"
+                title="Scrub through edit steps"
               />
 
               <div className="flex items-center justify-between text-[12px] text-slate-500">
@@ -8223,16 +8311,18 @@ Rules:
                   type="button"
                   onClick={() => applyReplayIndex((replayIndex ?? replayTimeline.length - 1) - 1)}
                   disabled={!replayTimeline.length || (replayIndex ?? replayTimeline.length - 1) <= 0}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-3 py-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#e5e7eb] bg-white px-3 py-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Move one step backward"
                 >
                   <Undo2 size={13} />
-                  Step back
+                  Step Back
                 </button>
                 <button
                   type="button"
                   onClick={() => toggleReplayPlayback(-1)}
                   disabled={!replayTimeline.length}
-                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === -1 ? 'bg-[#5b21b6] hover:bg-[#4c1d95]' : 'bg-violet-600 hover:bg-violet-700'}`}
+                  className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === -1 ? 'bg-[#5b21b6] hover:bg-[#4c1d95]' : 'bg-violet-600 hover:bg-violet-700'}`}
+                  title={isReplayPlaying && replayDirection === -1 ? 'Pause rewind playback' : 'Play backward'}
                 >
                   {isReplayPlaying && replayDirection === -1 ? <Pause size={13} /> : <Play size={13} />}
                   Rewind
@@ -8241,7 +8331,8 @@ Rules:
                   type="button"
                   onClick={() => toggleReplayPlayback(1)}
                   disabled={!replayTimeline.length}
-                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === 1 ? 'bg-slate-900 hover:bg-slate-800' : 'bg-slate-700 hover:bg-slate-800'}`}
+                  className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying && replayDirection === 1 ? 'bg-slate-900 hover:bg-slate-800' : 'bg-slate-700 hover:bg-slate-800'}`}
+                  title={isReplayPlaying && replayDirection === 1 ? 'Pause forward playback' : 'Play forward'}
                 >
                   {isReplayPlaying && replayDirection === 1 ? <Pause size={13} /> : <Play size={13} />}
                   Play
@@ -8250,10 +8341,11 @@ Rules:
                   type="button"
                   onClick={() => applyReplayIndex((replayIndex ?? 0) + 1)}
                   disabled={!replayTimeline.length || (replayIndex ?? 0) >= replayTimeline.length - 1}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-[#e5e7eb] bg-white px-3 py-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#e5e7eb] bg-white px-3 py-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  title="Move one step forward"
                 >
                   <Redo2 size={13} />
-                  Step forward
+                  Step Forward
                 </button>
               </div>
 
@@ -8264,13 +8356,26 @@ Rules:
                   value={replaySpeed}
                   onChange={(event) => setReplaySpeed(Number(event.target.value))}
                   className="rounded-xl border border-[#e5e7eb] bg-white px-3 py-2 text-[12px] text-slate-700 outline-none focus:border-violet-300"
+                  title="Playback speed"
                 >
+                  <option value={0.25}>0.25x</option>
                   <option value={0.5}>0.5x</option>
                   <option value={1}>1x</option>
                   <option value={1.5}>1.5x</option>
                   <option value={2}>2x</option>
                 </select>
               </div>
+
+              <button
+                type="button"
+                onClick={shareReplayTimeline}
+                disabled={!replayTimeline.length || replaySharing}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-[13px] font-medium text-violet-700 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                title="Copy a replay link that other users can open and play"
+              >
+                <LinkIcon size={14} />
+                {replaySharing ? 'Preparing Link...' : 'Share Replay'}
+              </button>
             </div>
           </div>
         )}
