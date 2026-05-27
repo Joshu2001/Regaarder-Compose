@@ -595,6 +595,8 @@ export default function App() {
   const [docSearchMatchCount, setDocSearchMatchCount] = useState(0);
   const [docSearchAutoPlay, setDocSearchAutoPlay] = useState(false);
   const [docSearchSummary, setDocSearchSummary] = useState('');
+  const [outlineLevelMenuOpen, setOutlineLevelMenuOpen] = useState(false);
+  const [outlineLevels, setOutlineLevels] = useState(3);
 
   const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
   const headingMeta = {
@@ -960,20 +962,179 @@ export default function App() {
     setDocSearchSummary(`Moved to page ${requested}.`);
   }, [docGoToValue]);
 
-  const insertEnterprisePageBreak = useCallback(() => {
-    const pageBreakHtml = '<div data-page-break-marker="true" contenteditable="false" style="height:26px;margin:18px 0;border-top:2px dashed #d1d5db;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">Page Break</div><p><br></p>';
-    document.execCommand('insertHTML', false, pageBreakHtml);
+  const shouldInsertNewPageOnEnter = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) {
+      return false;
+    }
+
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const anchorNode = selection.anchorNode;
+    const anchorElement = anchorNode?.nodeType === Node.TEXT_NODE ? anchorNode.parentElement : anchorNode;
+    const pageHost = anchorElement?.closest?.('[data-enterprise-page="true"]');
+
+    if (pageHost) {
+      const pageRect = pageHost.getBoundingClientRect();
+      return rect.bottom >= pageRect.bottom - 100;
+    }
+
+    if (!documentCardRef.current) {
+      return false;
+    }
+    const cardRect = documentCardRef.current.getBoundingClientRect();
+    const firstPageBottom = cardRect.top + ENTERPRISE_PAGE_HEIGHT_PX;
+    return rect.bottom >= firstPageBottom - 100;
+  }, []);
+
+  const insertEnterprisePage = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount || !blankBodyRef.current) {
+      return;
+    }
+
+    const existingPages = blankBodyRef.current.querySelectorAll('[data-enterprise-page="true"]').length;
+    const pageNumber = existingPages + 2;
+    const range = selection.getRangeAt(0);
+    const pageWrapper = document.createElement('div');
+    pageWrapper.setAttribute('data-enterprise-page', 'true');
+    pageWrapper.style.position = 'relative';
+    pageWrapper.style.minHeight = `${ENTERPRISE_PAGE_HEIGHT_PX}px`;
+    pageWrapper.style.marginTop = '24px';
+    pageWrapper.style.padding = '64px 0 78px';
+    pageWrapper.style.background = '#ffffff';
+    pageWrapper.style.border = '1px solid rgba(148,163,184,0.22)';
+    pageWrapper.style.borderRadius = '20px';
+    pageWrapper.style.boxShadow = '0 10px 22px -18px rgba(15,23,42,0.22)';
+
+    const paragraph = document.createElement('p');
+    paragraph.innerHTML = '<br/>';
+    pageWrapper.appendChild(paragraph);
+
+    const pageNumberEl = document.createElement('div');
+    pageNumberEl.setAttribute('contenteditable', 'false');
+    pageNumberEl.style.position = 'absolute';
+    pageNumberEl.style.left = '50%';
+    pageNumberEl.style.bottom = '38px';
+    pageNumberEl.style.transform = 'translateX(-50%)';
+    pageNumberEl.style.fontSize = '11px';
+    pageNumberEl.style.fontWeight = '500';
+    pageNumberEl.style.color = '#94a3b8';
+    pageNumberEl.textContent = String(pageNumber);
+    pageWrapper.appendChild(pageNumberEl);
+
+    range.insertNode(pageWrapper);
+
+    const nextRange = document.createRange();
+    nextRange.selectNodeContents(paragraph);
+    nextRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(nextRange);
+
     requestAnimationFrame(() => {
-      const markers = documentCardRef.current?.querySelectorAll('[data-page-break-marker="true"]');
-      const latest = markers?.[markers.length - 1];
-      latest?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      if (blankBodyRef.current) {
-        setDocBodyHtml(blankBodyRef.current.innerHTML);
-      }
+      pageWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setDocBodyHtml(blankBodyRef.current?.innerHTML || '');
       computeDocumentStats();
       computeDocumentOutline();
     });
   }, [computeDocumentOutline, computeDocumentStats]);
+
+  const buildHeadingPlanFromText = useCallback((sourceText, maxLevels = 3) => {
+    const normalized = String(sourceText || '').replace(/\r/g, '').trim();
+    if (!normalized) {
+      return { title: 'Untitled document', sections: [] };
+    }
+
+    const lines = normalized
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const chunks = lines.length > 2 ? lines : normalized.split(/(?<=[.!?])\s+(?=[A-Z])/).map((line) => line.trim()).filter(Boolean);
+    const titleSeed = (chunks[0] || 'Untitled document').replace(/^[-*\d.\s]+/, '').slice(0, 96);
+
+    const sections = chunks.slice(0, 8).map((chunk, index) => {
+      const cleaned = chunk.replace(/^[-*\d.\s]+/, '').trim();
+      const words = cleaned.split(/\s+/).filter(Boolean);
+      const heading = words.slice(0, Math.min(7, words.length)).join(' ').replace(/[,:;]+$/, '');
+      const level = maxLevels <= 2 ? 2 : (index % maxLevels) + 2 > 4 ? 4 : (index % maxLevels) + 2;
+      return {
+        heading: heading || `Section ${index + 1}`,
+        text: cleaned,
+        level,
+      };
+    });
+
+    return {
+      title: titleSeed || 'Untitled document',
+      sections,
+    };
+  }, []);
+
+  const applyGeneratedTitleAndHeadings = useCallback(() => {
+    const selectedScope = selectedEditorTextRef.current || selectedEditorText;
+    const sourceText = selectedScope || String(documentCardRef.current?.innerText || '').trim();
+    const plan = buildHeadingPlanFromText(sourceText, 3);
+    if (!plan.sections.length) {
+      showToast('Add some text first, then generate headings.');
+      return;
+    }
+
+    const html = plan.sections.map((section, index) => `
+      <h2 style="font-size:30px;line-height:1.25;font-weight:700;color:#0f172a;margin:22px 0 10px;">${escapeHtml(section.heading || `Section ${index + 1}`)}</h2>
+      <p style="font-size:17px;line-height:1.75;color:#334155;margin:0 0 14px;">${escapeHtml(section.text)}</p>
+    `).join('');
+
+    setDocTitle(plan.title);
+    if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
+      setDocSubtitle('Auto-structured from your current document content.');
+    }
+    setIsBlankDocument(true);
+    setAppendedSections([]);
+    setDocBodyHtml(html);
+    setLeftSidebarOpen(true);
+    setTimeout(() => computeDocumentOutline(), 0);
+    showToast('Generated clean title and section headings');
+  }, [buildHeadingPlanFromText, computeDocumentOutline, defaultSubtitle, docSubtitle, selectedEditorText]);
+
+  const applyGeneratedOutline = useCallback((levels = 3) => {
+    const selectedScope = selectedEditorTextRef.current || selectedEditorText;
+    const sourceText = selectedScope || String(documentCardRef.current?.innerText || '').trim();
+    const plan = buildHeadingPlanFromText(sourceText, Math.max(2, Math.min(4, Number(levels) || 3)));
+    if (!plan.sections.length) {
+      showToast('Add some text first, then generate an outline.');
+      return;
+    }
+
+    const tocItems = plan.sections.map((section, index) => {
+      const indent = section.level === 2 ? 0 : section.level === 3 ? 18 : 34;
+      return `<li style="margin:0 0 6px ${indent}px;color:#475569;">${escapeHtml(section.heading || `Section ${index + 1}`)}</li>`;
+    }).join('');
+
+    const bodySections = plan.sections.map((section, index) => {
+      const tag = section.level === 2 ? 'h2' : section.level === 3 ? 'h3' : 'h4';
+      const headingSize = section.level === 2 ? 30 : section.level === 3 ? 24 : 20;
+      return `
+        <${tag} style="font-size:${headingSize}px;line-height:1.3;font-weight:700;color:#0f172a;margin:20px 0 8px;">${escapeHtml(section.heading || `Section ${index + 1}`)}</${tag}>
+        <p style="font-size:16px;line-height:1.75;color:#334155;margin:0 0 12px;">${escapeHtml(section.text)}</p>
+      `;
+    }).join('');
+
+    const html = `
+      <div data-generated-outline="true" style="border:1px solid #e2e8f0;background:#f8fafc;border-radius:14px;padding:14px 16px;margin:4px 0 16px;">
+        <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-bottom:8px;">Table of Contents</div>
+        <ol style="margin:0;padding-left:16px;line-height:1.6;">${tocItems}</ol>
+      </div>
+      ${bodySections}
+    `;
+
+    setDocTitle(plan.title);
+    setIsBlankDocument(true);
+    setAppendedSections([]);
+    setDocBodyHtml(html);
+    setLeftSidebarOpen(true);
+    setTimeout(() => computeDocumentOutline(), 0);
+    showToast(`Generated outline with ${Math.max(2, Math.min(4, Number(levels) || 3))} heading levels`);
+  }, [buildHeadingPlanFromText, computeDocumentOutline, selectedEditorText]);
 
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
@@ -2964,6 +3125,7 @@ export default function App() {
     setOpenWorkspaceMenuId(null);
     setLanguageMenuOpen(false);
     setDocSearchPanelOpen(false);
+    setOutlineLevelMenuOpen(false);
   };
 
   const trackMemoryAction = (type, summary, details = {}) => {
@@ -4400,6 +4562,7 @@ Rules:
       ? Boolean(actionMeta.selectionScoped)
       : undefined;
     const actionKey = String(actionMeta.actionKey || '').toLowerCase();
+    const requestedOutlineLevels = Math.max(2, Math.min(4, Number(actionMeta.outlineLevels || outlineLevels || 3) || 3));
 
     if (productMode === 'deck') {
       const deckPrompt = `${instruction}\n\nCreate or refine a cinematic deck structure with stronger visual hierarchy, audience fit, and pacing. Include clear visual direction per slide.`;
@@ -4413,6 +4576,16 @@ Rules:
         lengthValue: promptLengthValue,
         attachments: promptAttachments,
       });
+      return;
+    }
+
+    if (productMode === 'compose' && actionKey === 'title-headers') {
+      applyGeneratedTitleAndHeadings();
+      return;
+    }
+
+    if (productMode === 'compose' && actionKey === 'create-outline') {
+      applyGeneratedOutline(requestedOutlineLevels);
       return;
     }
 
@@ -8066,17 +8239,45 @@ Rules:
                           {smartAssistOptions.map((option) => {
                             const Icon = option.icon;
                             return (
-                              <button
-                                key={option.key}
-                                onClick={() => runSmartAssistAction(option.prompt)}
-                                className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"
-                              >
-                                <Icon size={16} className={option.color} />
-                                <div>
-                                  <div className="font-semibold text-xs">{option.label}</div>
-                                  <p className="text-[10px] text-gray-400">{option.detail}</p>
-                                </div>
-                              </button>
+                              <div key={option.key} className="space-y-1">
+                                <button
+                                  onClick={() => {
+                                    if (option.key === 'create-outline') {
+                                      setOutlineLevelMenuOpen((prev) => !prev);
+                                      return;
+                                    }
+                                    runSmartAssistAction(option.prompt, { actionKey: option.key });
+                                  }}
+                                  className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"
+                                >
+                                  <Icon size={16} className={option.color} />
+                                  <div>
+                                    <div className="font-semibold text-xs">{option.label}</div>
+                                    <p className="text-[10px] text-gray-400">{option.detail}</p>
+                                  </div>
+                                </button>
+                                {option.key === 'create-outline' && outlineLevelMenuOpen && (
+                                  <div className="ml-7 rounded-lg border border-violet-100 bg-violet-50/40 p-2">
+                                    <div className="text-[10px] font-semibold text-violet-700 mb-1">Choose depth</div>
+                                    <div className="flex items-center gap-1.5">
+                                      {[2, 3, 4].map((level) => (
+                                        <button
+                                          key={level}
+                                          type="button"
+                                          onClick={() => {
+                                            setOutlineLevels(level);
+                                            setOutlineLevelMenuOpen(false);
+                                            runSmartAssistAction(option.prompt, { actionKey: option.key, outlineLevels: level });
+                                          }}
+                                          className={`px-2 py-1 rounded text-[10px] border ${outlineLevels === level ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-gray-600 border-gray-200 hover:border-violet-300'}`}
+                                        >
+                                          {level} levels
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             );
                           })}
                         </div>
@@ -9616,8 +9817,11 @@ Rules:
               if (!isBodyTarget) {
                 return;
               }
+              if (!shouldInsertNewPageOnEnter()) {
+                return;
+              }
               event.preventDefault();
-              insertEnterprisePageBreak();
+              insertEnterprisePage();
             }}
             className="compose-editor-surface mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 relative"
             style={{ width: `${ENTERPRISE_PAGE_WIDTH_PX}px`, minHeight: `${ENTERPRISE_PAGE_HEIGHT_PX}px` }}
@@ -10577,17 +10781,45 @@ Rules:
                 {smartAssistOptions.map((option) => {
                   const Icon = option.icon;
                   return (
-                    <button
-                      key={option.key}
-                      onClick={() => runSmartAssistAction(option.prompt)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
-                    >
-                      <Icon size={16} className={option.color} />
-                      <div>
-                        <div className="font-semibold text-xs">{option.label}</div>
-                        <p className="text-[10px] text-gray-400">{option.detail}</p>
-                      </div>
-                    </button>
+                    <div key={option.key} className="space-y-1">
+                      <button
+                        onClick={() => {
+                          if (option.key === 'create-outline') {
+                            setOutlineLevelMenuOpen((prev) => !prev);
+                            return;
+                          }
+                          runSmartAssistAction(option.prompt, { actionKey: option.key });
+                        }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                      >
+                        <Icon size={16} className={option.color} />
+                        <div>
+                          <div className="font-semibold text-xs">{option.label}</div>
+                          <p className="text-[10px] text-gray-400">{option.detail}</p>
+                        </div>
+                      </button>
+                      {option.key === 'create-outline' && outlineLevelMenuOpen && (
+                        <div className="ml-7 rounded-lg border border-violet-100 bg-violet-50/40 p-2">
+                          <div className="text-[10px] font-semibold text-violet-700 mb-1">Choose depth</div>
+                          <div className="flex items-center gap-1.5">
+                            {[2, 3, 4].map((level) => (
+                              <button
+                                key={level}
+                                type="button"
+                                onClick={() => {
+                                  setOutlineLevels(level);
+                                  setOutlineLevelMenuOpen(false);
+                                  runSmartAssistAction(option.prompt, { actionKey: option.key, outlineLevels: level });
+                                }}
+                                className={`px-2 py-1 rounded text-[10px] border ${outlineLevels === level ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-gray-600 border-gray-200 hover:border-violet-300'}`}
+                              >
+                                {level} levels
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
