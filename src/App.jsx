@@ -8891,7 +8891,7 @@ Rules:
           {isPromptExpanded && (
             <div className="pointer-events-none absolute -inset-x-6 -top-[420px] h-[560px] bg-white/35 backdrop-blur-[6px]" />
           )}
-          <div className={`max-w-[920px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
+          <div className={`max-w-[1100px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
             <form
               ref={promptRootRef}
               onSubmit={handleFloatingSend}
@@ -8903,7 +8903,7 @@ Rules:
                 attachFilesToPrompt(event.dataTransfer?.files);
               }}
               className={`relative transition-all duration-500 ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-              style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 820 : 700))}px`, maxWidth: '100%' }}
+              style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 980 : 820))}px`, maxWidth: '100%' }}
             >
               <input
                 ref={promptAudioInputRef}
@@ -8943,7 +8943,7 @@ Rules:
                     <p className="mt-2 text-[14px] text-slate-500">Drop files, notes, recordings, or describe your goal.</p>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
                     {[
                       { text: 'Write an article based on my notes and audio files', Icon: PenTool },
                       { text: 'Transform this document into a presentation deck', Icon: Presentation },
