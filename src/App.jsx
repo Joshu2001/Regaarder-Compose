@@ -251,6 +251,43 @@ export default function App() {
   const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
   const [dictationAnchor, setDictationAnchor] = useState({ left: 0, top: 0 });
   const [promptCollapsed, setPromptCollapsed] = useState(false);
+  const [rotatingExampleSetIndex, setRotatingExampleSetIndex] = useState(0);
+
+  // Example sets that rotate every minute
+  const EXAMPLE_SETS = [
+    [
+      { text: 'Write an article based on my notes and audio files', Icon: PenTool },
+      { text: 'Transform this document into a presentation deck', Icon: Presentation },
+      { text: 'Create a project timeline from these documents', Icon: Calendar },
+      { text: 'Summarize this document into key takeaways', Icon: FileText },
+      { text: 'Extract action items from this meeting recording', Icon: ListTodo },
+      { text: 'Build a report using data from these files', Icon: Database },
+    ],
+    [
+      { text: 'Generate a summary from my research notes', Icon: FileText },
+      { text: 'Create meeting minutes from this recording', Icon: ListTodo },
+      { text: 'Build a marketing strategy from these insights', Icon: Presentation },
+      { text: 'Extract key metrics from this dataset', Icon: Database },
+      { text: 'Write a proposal based on these requirements', Icon: PenTool },
+      { text: 'Organize notes into a structured outline', Icon: Calendar },
+    ],
+    [
+      { text: 'Design a project plan from these goals', Icon: Calendar },
+      { text: 'Create a presentation from my findings', Icon: Presentation },
+      { text: 'Write documentation from these files', Icon: FileText },
+      { text: 'Extract tasks from this project brief', Icon: ListTodo },
+      { text: 'Analyze data and create visualizations', Icon: Database },
+      { text: 'Compose a technical article from notes', Icon: PenTool },
+    ],
+  ];
+
+  // Rotate example sets every 60 seconds
+  useEffect(() => {
+    const exampleRotationTimer = setInterval(() => {
+      setRotatingExampleSetIndex((prevIndex) => (prevIndex + 1) % EXAMPLE_SETS.length);
+    }, 60000);
+    return () => clearInterval(exampleRotationTimer);
+  }, [EXAMPLE_SETS.length]);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
