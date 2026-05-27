@@ -8945,20 +8945,21 @@ Rules:
 
                   <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-2.5">
                     {[
-                      'Write an article based on my notes and audio files',
-                      'Transform this document into a presentation deck',
-                      'Create a project timeline from these documents',
-                      'Summarize this document into key takeaways',
-                      'Extract action items from this meeting recording',
-                      'Build a report using data from these files',
-                    ].map((exampleText) => (
+                      { text: 'Write an article based on my notes and audio files', Icon: PenTool },
+                      { text: 'Transform this document into a presentation deck', Icon: Presentation },
+                      { text: 'Create a project timeline from these documents', Icon: Calendar },
+                      { text: 'Summarize this document into key takeaways', Icon: FileText },
+                      { text: 'Extract action items from this meeting recording', Icon: ListTodo },
+                      { text: 'Build a report using data from these files', Icon: Database },
+                    ].map(({ text: exampleText, Icon }) => (
                       <button
                         key={exampleText}
                         type="button"
                         onClick={() => setFloatingPrompt(exampleText)}
-                        className="text-left rounded-2xl border border-[#e8e6f1] px-3.5 py-3 text-[13px] text-slate-600 hover:border-violet-200 hover:bg-violet-50/40 transition-all"
+                        className="flex items-start gap-3 text-left rounded-2xl border border-[#e8e6f1] px-3.5 py-3 text-[13px] text-slate-600 hover:border-violet-200 hover:bg-violet-50/40 transition-all"
                       >
-                        {exampleText}
+                        <Icon size={18} className="mt-0.5 text-violet-500" />
+                        <span className="leading-[1.1]">{exampleText}</span>
                       </button>
                     ))}
                   </div>
