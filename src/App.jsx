@@ -8888,308 +8888,23 @@ Rules:
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
-          <div className={`max-w-[850px] mx-auto px-12 md:px-16 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
-          <form
-            ref={promptRootRef}
-            onSubmit={handleFloatingSend}
-            className={`relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] flex items-end px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all duration-500 ${isPromptExpanded ? 'rounded-xl' : 'rounded-2xl'} ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-            style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 860 : 700))}px`, maxWidth: '100%' }}
-          >
-            {isPromptExpanded && (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsPromptExpanded(false);
-                  setIsPromptMinimized(true);
-                }}
-                className="absolute right-2 top-2 p-1 rounded-md text-gray-400 hover:text-violet-700 hover:bg-violet-50"
-                title="Minimize AI prompt"
-              >
-                <X size={14} />
-              </button>
-            )}
-            <button
-              type="button"
-              onPointerDown={(event) => beginPanelResize('prompt', event)}
-              className="p-2.5 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 cursor-move touch-none shrink-0"
-              title="Move prompt bar"
+          {isPromptExpanded && (
+            <div className="pointer-events-none absolute -inset-x-6 -top-[420px] h-[560px] bg-white/35 backdrop-blur-[6px]" />
+          )}
+          <div className={`max-w-[920px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
+            <form
+              ref={promptRootRef}
+              onSubmit={handleFloatingSend}
+              onDragOver={(event) => {
+                event.preventDefault();
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                attachFilesToPrompt(event.dataTransfer?.files);
+              }}
+              className={`relative transition-all duration-500 ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+              style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 820 : 700))}px`, maxWidth: '100%' }}
             >
-              <Move size={14} />
-            </button>
-            <div className="flex items-center gap-3 px-2 flex-1 min-w-0">
-              <div className="relative shrink-0 self-start mt-1" ref={promptMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeTransientMenus();
-                    setIsPromptMenuOpen((prev) => !prev);
-                  }}
-                  className={`p-2 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                  title="Add files, images, audio, or open prompt library"
-                >
-                  <Plus size={16} />
-                </button>
-                {isPromptMenuOpen && (
-                  <div className="absolute left-0 bottom-full mb-1 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1 w-[210px] z-[9999]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        promptAudioInputRef.current?.click();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <Upload size={14} />
-                      <span>Audio</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        promptFileInputRef.current?.click();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <File size={14} />
-                      <span>Files</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        promptFileInputRef.current?.click();
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <FileText size={14} />
-                      <span>Images</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setPromptLibraryOpen(true);
-                        setIsPromptMenuOpen(false);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                    >
-                      <BookOpen size={14} />
-                      <span>Prompt library</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-              {isPromptExpanded ? (
-                <div className="flex-1 min-w-0 space-y-2.5 py-1">
-                  <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-gray-500">
-                    {['Files', 'Images', 'Docs', 'Notes', 'Audio'].map((sourceLabel) => (
-                      <span key={sourceLabel} className="px-2.5 py-1 rounded-full border border-gray-200 bg-gray-50 text-gray-500">
-                        {sourceLabel}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Compose format</span>
-                    <div className="relative" ref={promptFormatRef}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          closeTransientMenus();
-                          setPromptFormatMenuOpen((prev) => !prev);
-                        }}
-                        className="inline-flex items-center gap-2 bg-violet-50/80 border border-violet-200 rounded-full px-3 py-1.5 text-xs text-violet-700 hover:bg-violet-100"
-                      >
-                        <span>{composeOutputFormat}</span>
-                        <ChevronDown size={12} />
-                      </button>
-                      {promptFormatMenuOpen && (
-                        <div className="absolute left-0 bottom-full mb-1 w-56 bg-white border border-gray-200 rounded-xl shadow-xl p-1 z-[9999]">
-                          {composeFormatOptions.map((option) => (
-                            <button
-                              key={option}
-                              type="button"
-                              onClick={() => {
-                                setComposeOutputFormat(option);
-                                setPromptFormatMenuOpen(false);
-                              }}
-                              className={`w-full text-left px-2.5 py-2 rounded-lg text-xs ${composeOutputFormat === option ? 'bg-violet-50 text-violet-700' : 'text-gray-700 hover:bg-gray-50'}`}
-                            >
-                              {option}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="relative" ref={promptTuneRef}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          closeTransientMenus();
-                          setPromptTuneMenuOpen((prev) => !prev);
-                        }}
-                        className="inline-flex items-center gap-1.5 bg-white border border-gray-200 rounded-full px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50"
-                      >
-                        <Settings size={12} />
-                        <span>Tune</span>
-                      </button>
-                      {promptTuneMenuOpen && (
-                        <div className="absolute left-0 bottom-full mb-1 w-64 bg-white border border-gray-200 rounded-xl shadow-xl p-3 z-[9999] space-y-3">
-                          <div>
-                            <div className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Style</div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {promptToneOptions.map((toneOption) => (
-                                <button
-                                  key={toneOption.key}
-                                  type="button"
-                                  onClick={() => setPromptTone(toneOption.key)}
-                                  className={`px-2 py-1 rounded-full text-[10px] border ${promptTone === toneOption.key ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                                >
-                                  {toneOption.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          <div>
-                            <div className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Length target</div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <button
-                                type="button"
-                                onClick={() => setPromptLengthMode('words')}
-                                className={`px-2 py-1 rounded text-[10px] border ${promptLengthMode === 'words' ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-gray-200 text-gray-600'}`}
-                              >
-                                Words
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setPromptLengthMode('characters')}
-                                className={`px-2 py-1 rounded text-[10px] border ${promptLengthMode === 'characters' ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-gray-200 text-gray-600'}`}
-                              >
-                                Characters
-                              </button>
-                            </div>
-                            <input
-                              type="number"
-                              min={40}
-                              max={3000}
-                              value={promptLengthValue}
-                              onChange={(e) => setPromptLengthValue(Math.max(40, Math.min(3000, Number(e.target.value) || 220)))}
-                              className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {['Timeline', 'Article', 'Checklist', 'Presentation Draft'].map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => setComposeOutputFormat(preset)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] border ${composeOutputFormat === preset ? 'bg-violet-50 border-violet-300 text-violet-700' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}`}
-                        >
-                          {preset}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {composeOutputFormat === 'Custom...' && (
-                    <input
-                      type="text"
-                      value={customComposeFormat}
-                      onChange={(e) => setCustomComposeFormat(e.target.value)}
-                      placeholder="Enter custom format (e.g. investor memo, press release)"
-                      className="w-full bg-white border border-gray-200 rounded-full px-3 py-2 text-xs text-gray-700 outline-none focus:border-violet-400"
-                    />
-                  )}
-                  <div className="rounded-[28px] border border-violet-100/80 bg-[linear-gradient(180deg,#ffffff_0%,#faf8ff_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-                    <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-400">Prompt</div>
-                    <textarea
-                      ref={floatingPromptRef}
-                      value={floatingPrompt}
-                      onChange={(e) => setFloatingPrompt(e.target.value)}
-                      onPaste={handleFloatingPaste}
-                      onInput={(e) => autoResizeTextarea(e.currentTarget, 360)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleFloatingSend(e);
-                        }
-                      }}
-                      placeholder="Describe what you need. Compose will build it into your document."
-                      rows={3}
-                      style={{ textAlign: alignMode }}
-                      className="w-full bg-transparent border-none focus:outline-none text-sm leading-6 text-gray-700 placeholder:text-[#b0b0c0] resize-none overflow-hidden min-h-[92px]"
-                    />
-                  </div>
-                  {selectedEditorText && (
-                    <div className="flex items-center gap-2 text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
-                      <span className="font-semibold text-violet-600">Selected text</span>
-                      <span className="truncate">{selectedEditorText}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedEditorText('');
-                          selectedEditorTextRef.current = '';
-                        }}
-                        className="ml-auto text-gray-400 hover:text-gray-700"
-                        title="Detach selected text"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  )}
-                  {promptAttachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {promptAttachments.map((attachment) => (
-                        <button
-                          key={attachment.id}
-                          type="button"
-                          onClick={() => setPreviewAttachment(attachment)}
-                          className="relative w-[112px] h-[84px] rounded-2xl border border-gray-200 bg-gray-50/90 hover:border-violet-300 hover:bg-violet-50/70 transition-colors p-2 text-left overflow-hidden"
-                          title="Click to preview"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="text-[9px] font-semibold uppercase tracking-wide text-gray-500">
-                              {getPromptAttachmentBadge(attachment)}
-                            </span>
-                            <span
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                removePromptAttachment(attachment.id);
-                              }}
-                              className="text-gray-400 hover:text-gray-700"
-                              title="Remove"
-                            >
-                              <X size={12} />
-                            </span>
-                          </div>
-                          {attachment.isImage ? (
-                            <img src={attachment.url} alt={attachment.name} className="mt-2 h-10 w-full rounded-lg object-cover border border-gray-200" />
-                          ) : (
-                            <div className="mt-2 text-[10px] leading-4 text-gray-500">
-                              {truncateText(attachment.previewText || 'Attached file ready for Compose grounding.', 84)}
-                            </div>
-                          )}
-                          <div className="absolute bottom-2 left-2 right-2 text-[10px] font-medium text-gray-700 truncate">
-                            {attachment.name}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <textarea
-                  value={floatingPrompt}
-                  onChange={(e) => setFloatingPrompt(e.target.value)}
-                  onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                  placeholder="Ask Compose AI..."
-                  rows={1}
-                  style={{ textAlign: alignMode }}
-                  className="w-full bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-2 resize-none overflow-hidden min-h-[38px]"
-                />
-              )}
-            </div>
-            <div className="flex items-center gap-2 pr-1 shrink-0">
               <input
                 ref={promptAudioInputRef}
                 type="file"
@@ -9197,148 +8912,6 @@ Rules:
                 className="hidden"
                 onChange={handlePromptAudioUpload}
               />
-              <button
-                type="button"
-                onClick={() => {
-                  if (isPromptExpanded && !isPromptMinimized) {
-                    setIsPromptExpanded(false);
-                    setIsPromptMinimized(true);
-                    return;
-                  }
-                  setIsPromptExpanded(true);
-                  setIsPromptMinimized(false);
-                }}
-                className={`p-2 rounded-full transition-colors ${isPromptExpanded ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                title={isPromptExpanded && !isPromptMinimized ? 'Collapse prompt input' : 'Expand prompt input'}
-              >
-                <Expand size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await toggleVoiceRecording('compose');
-                }}
-                className={`relative p-2 rounded-full transition-all ${isVoiceActive && voiceTarget === 'compose' ? 'text-violet-600 bg-violet-50 shadow-[0_0_0_2px_rgba(139,92,246,0.22),0_0_18px_rgba(139,92,246,0.55)]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                title={isVoiceActive && voiceTarget === 'compose' ? 'Stop live transcription' : 'Start live transcription'}
-              >
-                <Mic size={16} className={isVoiceActive && voiceTarget === 'compose' ? 'animate-pulse' : ''} />
-                {isVoiceActive && voiceTarget === 'compose' && (
-                  <>
-                    <span className="absolute inset-0 rounded-full border border-violet-400/70 animate-ping"></span>
-                    <span className="absolute -inset-1 rounded-full border border-violet-300/60 animate-pulse"></span>
-                  </>
-                )}
-              </button>
-              <div className="relative hidden" ref={promptLibraryRef}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeTransientMenus();
-                    setPromptLibraryOpen((prev) => !prev);
-                  }}
-                  className={`p-2 rounded-full transition-colors ${promptLibraryOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                  title="Prompt library"
-                >
-                  <BookOpen size={16} />
-                </button>
-                {promptLibraryOpen && (
-                  <div className="absolute right-0 bottom-full mb-1 w-[320px] bg-white border border-gray-200 rounded-xl shadow-2xl p-3 z-[9999]">
-                    <div className="text-xs font-semibold text-gray-700 mb-2">Prompt Library</div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <input
-                        type="text"
-                        value={promptHistorySearch}
-                        onChange={(e) => setPromptHistorySearch(e.target.value)}
-                        placeholder="Search prompts"
-                        className="flex-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400"
-                      />
-                      <div className="relative" ref={promptHistoryFilterRef}>
-                        <button
-                          type="button"
-                          onClick={() => setPromptHistoryFilterMenuOpen((prev) => !prev)}
-                          className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700"
-                        >
-                          <span>{promptHistoryFilter === 'all' ? 'All' : promptHistoryFilter === 'compose' ? 'Compose' : 'Chat'}</span>
-                          <ChevronDown size={12} />
-                        </button>
-                        {promptHistoryFilterMenuOpen && (
-                          <div className="absolute right-0 bottom-full mb-1 bg-white border border-gray-200 rounded-xl shadow-lg p-1.5 z-[9999] min-w-[130px]">
-                            {[
-                              { key: 'all', label: 'All' },
-                              { key: 'compose', label: 'Compose' },
-                              { key: 'chat', label: 'Chat' },
-                            ].map((filterOption) => (
-                              <button
-                                key={filterOption.key}
-                                type="button"
-                                onClick={() => {
-                                  setPromptHistoryFilter(filterOption.key);
-                                  setPromptHistoryFilterMenuOpen(false);
-                                }}
-                                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs ${promptHistoryFilter === filterOption.key ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'text-gray-700 hover:bg-gray-50 border border-transparent'}`}
-                              >
-                                {filterOption.label}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="max-h-56 overflow-y-auto space-y-1.5 pr-1">
-                      {filteredPromptHistory.length === 0 && (
-                        <div className="text-[11px] text-gray-500 py-3 text-center">No saved prompts yet.</div>
-                      )}
-                      {filteredPromptHistory.map((entry) => (
-                        <div key={entry.id} className="p-2 rounded-lg border border-gray-100 hover:border-violet-200 hover:bg-violet-50/40">
-                          {editingPromptId === entry.id ? (
-                            <>
-                              <textarea
-                                value={editingPromptValue}
-                                onChange={(e) => setEditingPromptValue(e.target.value)}
-                                rows={2}
-                                className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-violet-400 resize-none"
-                              />
-                              <div className="mt-1.5 flex items-center justify-end gap-1.5">
-                                <button type="button" onClick={cancelPromptEdit} className="px-2 py-1 text-[10px] rounded border border-gray-200 text-gray-600">Cancel</button>
-                                <button type="button" onClick={() => savePromptEdit(entry.id)} className="px-2 py-1 text-[10px] rounded bg-violet-600 text-white">Save</button>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFloatingPrompt(entry.text || '');
-                                  if (entry.format) {
-                                    setComposeOutputFormat(entry.format);
-                                  }
-                                  if (entry.tone) {
-                                    setPromptTone(entry.tone);
-                                  }
-                                  if (entry.lengthMode) {
-                                    setPromptLengthMode(entry.lengthMode);
-                                  }
-                                  if (entry.lengthValue) {
-                                    setPromptLengthValue(entry.lengthValue);
-                                  }
-                                  setPromptLibraryOpen(false);
-                                }}
-                                className="w-full text-left"
-                              >
-                                <div className="text-[11px] text-gray-700 line-clamp-2">{entry.text}</div>
-                              </button>
-                              <div className="mt-1 flex items-center justify-between gap-2">
-                                <div className="text-[10px] text-gray-400">{entry.source} - {entry.tone} - ~{entry.lengthValue} {entry.lengthMode}</div>
-                                <button type="button" onClick={() => beginPromptEdit(entry)} className="text-[10px] text-violet-600 hover:text-violet-700">Edit</button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
               <input
                 ref={promptFileInputRef}
                 type="file"
@@ -9349,23 +8922,208 @@ Rules:
                   event.target.value = '';
                 }}
               />
-              <button
-                type="button"
-                onClick={() => promptFileInputRef.current?.click()}
-                className="p-2 rounded-full transition-colors text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                title="Attach files"
-              >
-                <Upload size={16} />
-              </button>
-              <button
-                type="submit"
-                disabled={isComposing}
-                className={`text-white p-2 rounded-full transition-colors flex items-center justify-center h-8 w-8 active:scale-90 ${isComposing ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}`}
-              >
-                {isComposing ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-              </button>
-            </div>
-          </form>
+
+              {isPromptExpanded ? (
+                <div className="rounded-[34px] border border-[#ebe7f8] bg-white/95 shadow-[0_30px_80px_-34px_rgba(91,33,182,0.45)] px-6 py-6 md:px-7 md:py-7">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPromptExpanded(false);
+                      setIsPromptMinimized(true);
+                    }}
+                    className="absolute right-4 top-4 p-1.5 rounded-full text-gray-400 hover:text-violet-700 hover:bg-violet-50"
+                    title="Close intent capture"
+                  >
+                    <X size={16} />
+                  </button>
+
+                  <div className="text-center px-2">
+                    <Sparkles size={18} className="mx-auto text-violet-500" />
+                    <h3 className="mt-3 text-[38px] leading-[1.06] font-semibold text-slate-900">What would you like to create?</h3>
+                    <p className="mt-2 text-[14px] text-slate-500">Drop files, notes, recordings, or describe your goal.</p>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {[
+                      'Write an article based on my notes and audio files',
+                      'Transform this document into a presentation deck',
+                      'Create a project timeline from these documents',
+                      'Summarize this document into key takeaways',
+                      'Extract action items from this meeting recording',
+                      'Build a report using data from these files',
+                    ].map((exampleText) => (
+                      <button
+                        key={exampleText}
+                        type="button"
+                        onClick={() => setFloatingPrompt(exampleText)}
+                        className="text-left rounded-2xl border border-[#e8e6f1] px-3.5 py-3 text-[13px] text-slate-600 hover:border-violet-200 hover:bg-violet-50/40 transition-all"
+                      >
+                        {exampleText}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="my-4 border-t border-[#efedf7]" />
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {promptAttachments.map((attachment) => (
+                      <button
+                        key={attachment.id}
+                        type="button"
+                        onClick={() => setPreviewAttachment(attachment)}
+                        className="max-w-[220px] inline-flex items-center gap-2 rounded-xl border border-[#e8e6f1] bg-[#faf9fd] px-3 py-2 text-left hover:border-violet-200"
+                        title="Preview attachment"
+                      >
+                        <span className="text-[9px] font-semibold uppercase tracking-wide text-violet-600">{getPromptAttachmentBadge(attachment)}</span>
+                        <span className="truncate text-[12px] text-slate-600">{attachment.name}</span>
+                        <span
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            removePromptAttachment(attachment.id);
+                          }}
+                          className="text-gray-400 hover:text-gray-700"
+                          title="Remove"
+                        >
+                          <X size={12} />
+                        </span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => promptFileInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#d8d5e8] bg-white px-3 py-2 text-[12px] text-slate-500 hover:border-violet-300 hover:text-violet-700"
+                    >
+                      <Plus size={14} />
+                      Add more
+                    </button>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[#e9e6f5] bg-white px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
+                    <textarea
+                      ref={floatingPromptRef}
+                      value={floatingPrompt}
+                      onChange={(e) => setFloatingPrompt(e.target.value)}
+                      onPaste={handleFloatingPaste}
+                      onInput={(e) => autoResizeTextarea(e.currentTarget, 180)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleFloatingSend(e);
+                        }
+                      }}
+                      placeholder="Or type your goal here..."
+                      rows={1}
+                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-slate-700 placeholder:text-slate-400 resize-none overflow-hidden min-h-[36px]"
+                    />
+                    <div className="relative" ref={promptMenuRef}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeTransientMenus();
+                          setIsPromptMenuOpen((prev) => !prev);
+                        }}
+                        className={`relative p-2.5 rounded-full transition-colors ${isPromptMenuOpen ? 'bg-violet-50 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                        title="Attach files or audio"
+                      >
+                        <Upload size={16} />
+                      </button>
+                      {isPromptMenuOpen && (
+                        <div className="absolute right-0 bottom-[54px] bg-white isolate border border-gray-200 rounded-xl shadow-2xl ring-1 ring-black/5 p-1 w-[210px] z-[9999]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              promptAudioInputRef.current?.click();
+                              setIsPromptMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                          >
+                            <Upload size={14} />
+                            <span>Audio</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              promptFileInputRef.current?.click();
+                              setIsPromptMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                          >
+                            <File size={14} />
+                            <span>Files</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              promptFileInputRef.current?.click();
+                              setIsPromptMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                          >
+                            <FileText size={14} />
+                            <span>Images</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await toggleVoiceRecording('compose');
+                      }}
+                      className={`relative p-2.5 rounded-full transition-all ${isVoiceActive && voiceTarget === 'compose' ? 'text-violet-600 bg-violet-50 shadow-[0_0_0_2px_rgba(139,92,246,0.22),0_0_18px_rgba(139,92,246,0.55)]' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                      title={isVoiceActive && voiceTarget === 'compose' ? 'Stop live transcription' : 'Start live transcription'}
+                    >
+                      <Mic size={16} className={isVoiceActive && voiceTarget === 'compose' ? 'animate-pulse' : ''} />
+                      {isVoiceActive && voiceTarget === 'compose' && (
+                        <>
+                          <span className="absolute inset-0 rounded-full border border-violet-400/70 animate-ping"></span>
+                          <span className="absolute -inset-1 rounded-full border border-violet-300/60 animate-pulse"></span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isComposing}
+                      className={`text-white rounded-full transition-colors flex items-center justify-center h-11 w-11 active:scale-90 ${isComposing ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}`}
+                    >
+                      {isComposing ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
+                    </button>
+                  </div>
+
+                </div>
+              ) : (
+                <div className="relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-end gap-2">
+                  <button
+                    type="button"
+                    onPointerDown={(event) => beginPanelResize('prompt', event)}
+                    className="p-2 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 cursor-move touch-none shrink-0"
+                    title="Move prompt bar"
+                  >
+                    <Move size={14} />
+                  </button>
+                  <textarea
+                    value={floatingPrompt}
+                    onChange={(e) => setFloatingPrompt(e.target.value)}
+                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                    placeholder="Ask Compose AI..."
+                    rows={1}
+                    style={{ textAlign: alignMode }}
+                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-2 resize-none overflow-hidden min-h-[38px]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsPromptExpanded(true);
+                      setIsPromptMinimized(false);
+                    }}
+                    className="p-2 rounded-full transition-colors text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                    title="Open intent capture"
+                  >
+                    <Expand size={16} />
+                  </button>
+                </div>
+              )}
+            </form>
           </div>
         </div>
 
@@ -9379,42 +9137,38 @@ Rules:
             }}
           >
             <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/70 backdrop-blur-sm px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.35)] border border-white/70">
-              <div
+              <button
+                type="button"
                 onPointerDown={(event) => {
-                  if (event.target !== event.currentTarget) {
-                    return;
-                  }
                   event.preventDefault();
                   event.stopPropagation();
                   beginPanelResize('dictation', event);
                 }}
-                className="relative flex h-[116px] w-[116px] items-center justify-center rounded-full border border-dashed border-violet-200/80 bg-white/35 cursor-move touch-none hover:border-violet-300"
-                title="Drag dictation by the outer ring"
+                className="inline-flex items-center gap-2 text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1 cursor-move touch-none hover:border-violet-300 hover:text-violet-700"
+                title="Drag dictation"
               >
-                <button
-                  type="button"
-                  onPointerDown={(event) => {
-                    event.stopPropagation();
-                  }}
-                  onClick={async () => {
-                    await toggleVoiceRecording('document');
-                  }}
-                  className={`relative h-24 w-24 rounded-full border transition-all cursor-pointer touch-auto ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
-                  title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
-                >
-                  <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
-                  {isVoiceActive && voiceTarget === 'document' && (
-                    <>
-                      <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
-                      <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
-                    </>
-                  )}
-                </button>
-              </div>
+                <Move size={12} />
+                Drag dictation
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await toggleVoiceRecording('document');
+                }}
+                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
+                title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
+              >
+                <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
+                {isVoiceActive && voiceTarget === 'document' && (
+                  <>
+                    <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
+                    <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
+                  </>
+                )}
+              </button>
               <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
                 {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
               </div>
-              <div className="text-[10px] text-gray-400">Tap the mic to record. Drag using the ring around it.</div>
               {isVoiceActive && voiceTarget === 'document' && (
                 <button
                   type="button"
