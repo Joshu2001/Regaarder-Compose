@@ -19,6 +19,8 @@ import RegaarderComposeLanding from './RegaarderComposeLanding';
 
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
+const ENTERPRISE_PAGE_WIDTH_PX = 794;
+const ENTERPRISE_PAGE_HEIGHT_PX = 1123;
 const DECK_DESIGN_PRESETS = [
   {
     key: 'aurora-split',
@@ -478,6 +480,7 @@ export default function App() {
   const promptFormatRef = useRef(null);
   const promptLibraryRef = useRef(null);
   const promptHistoryFilterRef = useRef(null);
+  const docSearchPanelRef = useRef(null);
   const replaySpeedMenuRef = useRef(null);
   const notificationsPanelRef = useRef(null);
   const promptFileInputRef = useRef(null);
@@ -527,6 +530,8 @@ export default function App() {
   const selectionActionMenuRef = useRef(null);
   const selectionMenuInputRef = useRef(null);
   const pointerDownInSelectionMenuRef = useRef(false);
+  const docSearchMarksRef = useRef([]);
+  const docSearchAutoPlayTimerRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -580,6 +585,16 @@ export default function App() {
   const [showPageNumbers, setShowPageNumbers] = useState(true);
   const [showPageNumberOnFirstPage, setShowPageNumberOnFirstPage] = useState(true);
   const [pageNumberPosition, setPageNumberPosition] = useState('center');
+  const [docSearchPanelOpen, setDocSearchPanelOpen] = useState(false);
+  const [docSearchMode, setDocSearchMode] = useState('find');
+  const [docSearchQuery, setDocSearchQuery] = useState('');
+  const [docReplaceValue, setDocReplaceValue] = useState('');
+  const [docGoToValue, setDocGoToValue] = useState('1');
+  const [docSearchAiEnabled, setDocSearchAiEnabled] = useState(false);
+  const [docSearchActiveIndex, setDocSearchActiveIndex] = useState(0);
+  const [docSearchMatchCount, setDocSearchMatchCount] = useState(0);
+  const [docSearchAutoPlay, setDocSearchAutoPlay] = useState(false);
+  const [docSearchSummary, setDocSearchSummary] = useState('');
 
   const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
   const headingMeta = {
@@ -743,6 +758,222 @@ export default function App() {
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   };
+
+  const clearDocumentSearchHighlights = useCallback(() => {
+    if (!documentCardRef.current) {
+      return;
+    }
+
+    const marks = Array.from(documentCardRef.current.querySelectorAll('mark[data-doc-search-hit="true"]'));
+    marks.forEach((mark) => {
+      const parent = mark.parentNode;
+      if (!parent) {
+        return;
+      }
+      while (mark.firstChild) {
+        parent.insertBefore(mark.firstChild, mark);
+      }
+      parent.removeChild(mark);
+      parent.normalize();
+    });
+
+    docSearchMarksRef.current = [];
+    setDocSearchActiveIndex(0);
+    setDocSearchMatchCount(0);
+  }, []);
+
+  const collectDocumentSearchTerms = useCallback((rawQuery, aiEnabled) => {
+    const query = String(rawQuery || '').trim();
+    if (!query) {
+      return [];
+    }
+
+    if (!aiEnabled) {
+      return query.split(',').map((item) => item.trim()).filter(Boolean);
+    }
+
+    const text = String(documentCardRef.current?.innerText || '');
+    if (/companies?|organizations?|orgs?/i.test(query)) {
+      const strictMatches = text.match(/\b([A-Z][A-Za-z0-9&.-]*(?:\s+[A-Z][A-Za-z0-9&.-]*){0,3}\s+(?:Inc|LLC|Ltd|Corporation|Corp|Company|Group|Technologies|Systems|Labs|Holdings))\b/g) || [];
+      const fallbackMatches = strictMatches.length
+        ? []
+        : (text.match(/\b[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){1,2}\b/g) || []);
+      return Array.from(new Set([...strictMatches, ...fallbackMatches].map((item) => item.trim()).filter(Boolean))).slice(0, 40);
+    }
+
+    const directChunks = query.split(',').map((item) => item.trim()).filter(Boolean);
+    return directChunks.length ? directChunks : [query];
+  }, []);
+
+  const focusSearchMatchAtIndex = useCallback((index) => {
+    const marks = docSearchMarksRef.current;
+    if (!marks.length) {
+      return;
+    }
+
+    const safeIndex = ((index % marks.length) + marks.length) % marks.length;
+    marks.forEach((mark, markIndex) => {
+      if (!mark) {
+        return;
+      }
+      mark.style.background = markIndex === safeIndex ? '#fde68a' : '#fef3c7';
+      mark.style.outline = markIndex === safeIndex ? '2px solid #f59e0b' : 'none';
+      mark.style.borderRadius = '4px';
+    });
+
+    const target = marks[safeIndex];
+    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setDocSearchActiveIndex(safeIndex);
+  }, []);
+
+  const highlightDocumentSearchTerms = useCallback((rawQuery = docSearchQuery, aiEnabled = docSearchAiEnabled) => {
+    clearDocumentSearchHighlights();
+
+    if (!documentCardRef.current) {
+      return;
+    }
+
+    const terms = collectDocumentSearchTerms(rawQuery, aiEnabled)
+      .map((term) => term.trim())
+      .filter(Boolean)
+      .sort((a, b) => b.length - a.length);
+    if (!terms.length) {
+      setDocSearchSummary('No query entered.');
+      return;
+    }
+
+    const escapedTerms = terms.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    const matcher = new RegExp(`(${escapedTerms.join('|')})`, 'gi');
+    const walker = document.createTreeWalker(documentCardRef.current, NodeFilter.SHOW_TEXT, {
+      acceptNode: (node) => {
+        if (!node?.nodeValue?.trim()) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        const parentTag = node.parentElement?.tagName;
+        if (parentTag === 'SCRIPT' || parentTag === 'STYLE' || parentTag === 'MARK') {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    const textNodes = [];
+    let currentNode = walker.nextNode();
+    while (currentNode) {
+      textNodes.push(currentNode);
+      currentNode = walker.nextNode();
+    }
+
+    const marks = [];
+    textNodes.forEach((textNode) => {
+      const source = textNode.nodeValue || '';
+      matcher.lastIndex = 0;
+      if (!matcher.test(source)) {
+        return;
+      }
+      matcher.lastIndex = 0;
+
+      const fragment = document.createDocumentFragment();
+      let cursor = 0;
+      let match = matcher.exec(source);
+      while (match) {
+        const start = match.index;
+        const end = start + match[0].length;
+        if (start > cursor) {
+          fragment.appendChild(document.createTextNode(source.slice(cursor, start)));
+        }
+        const mark = document.createElement('mark');
+        mark.setAttribute('data-doc-search-hit', 'true');
+        mark.style.background = '#fef3c7';
+        mark.style.padding = '0 1px';
+        mark.style.borderRadius = '4px';
+        mark.textContent = source.slice(start, end);
+        fragment.appendChild(mark);
+        marks.push(mark);
+        cursor = end;
+        match = matcher.exec(source);
+      }
+      if (cursor < source.length) {
+        fragment.appendChild(document.createTextNode(source.slice(cursor)));
+      }
+      textNode.parentNode?.replaceChild(fragment, textNode);
+    });
+
+    docSearchMarksRef.current = marks;
+    setDocSearchMatchCount(marks.length);
+    if (marks.length) {
+      focusSearchMatchAtIndex(0);
+      if (aiEnabled && /companies?|organizations?|orgs?/i.test(String(rawQuery || ''))) {
+        setDocSearchSummary(`AI found ${marks.length} likely company references.`);
+      } else {
+        setDocSearchSummary(`Found ${marks.length} matches.`);
+      }
+      return;
+    }
+
+    setDocSearchSummary('No matches found.');
+  }, [clearDocumentSearchHighlights, collectDocumentSearchTerms, docSearchAiEnabled, docSearchQuery, focusSearchMatchAtIndex]);
+
+  const replaceHighlightedSearchMatches = useCallback(() => {
+    const marks = docSearchMarksRef.current;
+    if (!marks.length) {
+      showToast('No highlighted matches to replace');
+      return;
+    }
+
+    const nextValue = String(docReplaceValue || '');
+    marks.forEach((mark) => {
+      const replacementNode = document.createTextNode(nextValue);
+      mark.parentNode?.replaceChild(replacementNode, mark);
+    });
+
+    if (documentCardRef.current) {
+      documentCardRef.current.normalize();
+    }
+
+    docSearchMarksRef.current = [];
+    setDocSearchMatchCount(0);
+    setDocSearchActiveIndex(0);
+    setDocSearchSummary(nextValue ? 'Replaced highlighted matches.' : 'Removed highlighted matches.');
+
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+    computeDocumentStats();
+    computeDocumentOutline();
+  }, [computeDocumentOutline, computeDocumentStats, docReplaceValue]);
+
+  const goToDocumentPage = useCallback(() => {
+    const card = documentCardRef.current;
+    if (!card) {
+      return;
+    }
+
+    const requested = Math.max(1, Number.parseInt(String(docGoToValue || '1'), 10) || 1);
+    const scroller = card.closest('.overflow-y-auto');
+    if (!scroller) {
+      return;
+    }
+
+    const pageTop = Math.max(0, (requested - 1) * ENTERPRISE_PAGE_HEIGHT_PX);
+    scroller.scrollTo({ top: pageTop, behavior: 'smooth' });
+    setDocSearchSummary(`Moved to page ${requested}.`);
+  }, [docGoToValue]);
+
+  const insertEnterprisePageBreak = useCallback(() => {
+    const pageBreakHtml = '<div data-page-break-marker="true" contenteditable="false" style="height:26px;margin:18px 0;border-top:2px dashed #d1d5db;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;">Page Break</div><p><br></p>';
+    document.execCommand('insertHTML', false, pageBreakHtml);
+    requestAnimationFrame(() => {
+      const markers = documentCardRef.current?.querySelectorAll('[data-page-break-marker="true"]');
+      const latest = markers?.[markers.length - 1];
+      latest?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+      computeDocumentStats();
+      computeDocumentOutline();
+    });
+  }, [computeDocumentOutline, computeDocumentStats]);
 
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
@@ -1448,6 +1679,47 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!docSearchAutoPlay || docSearchMatchCount <= 1) {
+      if (docSearchAutoPlayTimerRef.current) {
+        clearInterval(docSearchAutoPlayTimerRef.current);
+        docSearchAutoPlayTimerRef.current = null;
+      }
+      return;
+    }
+
+    docSearchAutoPlayTimerRef.current = setInterval(() => {
+      setDocSearchActiveIndex((prev) => {
+        const next = (prev + 1) % Math.max(1, docSearchMatchCount);
+        focusSearchMatchAtIndex(next);
+        return next;
+      });
+    }, 1400);
+
+    return () => {
+      if (docSearchAutoPlayTimerRef.current) {
+        clearInterval(docSearchAutoPlayTimerRef.current);
+        docSearchAutoPlayTimerRef.current = null;
+      }
+    };
+  }, [docSearchAutoPlay, docSearchMatchCount, focusSearchMatchAtIndex]);
+
+  useEffect(() => () => {
+    if (docSearchAutoPlayTimerRef.current) {
+      clearInterval(docSearchAutoPlayTimerRef.current);
+      docSearchAutoPlayTimerRef.current = null;
+    }
+    clearDocumentSearchHighlights();
+  }, [clearDocumentSearchHighlights]);
+
+  useEffect(() => {
+    if (docSearchPanelOpen) {
+      return;
+    }
+    setDocSearchAutoPlay(false);
+    clearDocumentSearchHighlights();
+  }, [docSearchPanelOpen, clearDocumentSearchHighlights]);
+
+  useEffect(() => {
     if (!openDropdown) {
       if (formattingDropdownCloseTimerRef.current) {
         clearTimeout(formattingDropdownCloseTimerRef.current);
@@ -1629,6 +1901,9 @@ export default function App() {
       }
       if (promptHistoryFilterRef.current && !promptHistoryFilterRef.current.contains(event.target)) {
         setPromptHistoryFilterMenuOpen(false);
+      }
+      if (docSearchPanelRef.current && !docSearchPanelRef.current.contains(event.target)) {
+        setDocSearchPanelOpen(false);
       }
       if (!event.target.closest('[data-workspace-menu-root]')) {
         setOpenWorkspaceMenuId(null);
@@ -2688,6 +2963,7 @@ export default function App() {
     setPromptHistoryFilterMenuOpen(false);
     setOpenWorkspaceMenuId(null);
     setLanguageMenuOpen(false);
+    setDocSearchPanelOpen(false);
   };
 
   const trackMemoryAction = (type, summary, details = {}) => {
@@ -6416,9 +6692,11 @@ Rules:
     || Boolean(sheetToolbarMenuOpen)
     || deckToolbarMenuOpen
     || notificationsOpen
+    || replayPanelOpen
     || replaySpeedMenuOpen
     || selectionActionMenu.open
     || pageContextMenu.open
+    || docSearchPanelOpen
     || creationPickerOpen
     || workspaceModalOpen
     || shareModalOpen;
@@ -7030,7 +7308,7 @@ Rules:
                 >
                   <Bell size={18} />
                   {notifications.length > 0 && (
-                    <span className="absolute top-[2px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                    <span className="absolute top-[1px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                   )}
                 </button>
                 {notificationsOpen && (
@@ -8560,7 +8838,7 @@ Rules:
               >
                 <Bell size={18} />
                 {notifications.length > 0 && (
-                  <span className="absolute top-[2px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                  <span className="absolute top-[1px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
                 )}
               </button>
               {notificationsOpen && (
@@ -9179,8 +9457,139 @@ Rules:
             <List onClick={() => applyFormatCommand('insertUnorderedList')} size={16} className={`${isListActive ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div className="flex items-center gap-3">
+          <div className="relative flex items-center gap-3" ref={docSearchPanelRef}>
             <span className="font-serif italic font-bold hover:text-gray-900 cursor-pointer">I</span>
+            <button
+              type="button"
+              onClick={() => {
+                closeTransientMenus();
+                setDocSearchPanelOpen((prev) => !prev);
+                setDocSearchAutoPlay(false);
+              }}
+              className={`p-1.5 rounded-md transition-colors ${docSearchPanelOpen ? 'text-violet-700 bg-violet-50' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+              title="Find, replace, and go to"
+            >
+              <Search size={15} />
+            </button>
+            {docSearchPanelOpen && (
+              <div className="absolute right-0 top-9 z-[280] w-[360px] rounded-xl border border-gray-200 bg-white p-3 shadow-2xl ring-1 ring-black/5">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 text-[11px]">
+                    {[
+                      { key: 'find', label: 'Find' },
+                      { key: 'replace', label: 'Replace' },
+                      { key: 'goTo', label: 'Go To' },
+                    ].map((item) => (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => setDocSearchMode(item.key)}
+                        className={`px-2 py-1 rounded-md transition-colors ${docSearchMode === item.key ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDocSearchAiEnabled((prev) => !prev)}
+                    className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${docSearchAiEnabled ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                    title="Enable AI-assisted search"
+                  >
+                    AI {docSearchAiEnabled ? 'On' : 'Off'}
+                  </button>
+                </div>
+
+                {(docSearchMode === 'find' || docSearchMode === 'replace') && (
+                  <>
+                    <input
+                      value={docSearchQuery}
+                      onChange={(event) => setDocSearchQuery(event.target.value)}
+                      placeholder={docSearchAiEnabled ? 'Try: find all companies mentioned in the docs' : 'Search text'}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
+                    />
+                    {docSearchMode === 'replace' && (
+                      <input
+                        value={docReplaceValue}
+                        onChange={(event) => setDocReplaceValue(event.target.value)}
+                        placeholder="Replace with (leave empty to remove)"
+                        className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
+                      />
+                    )}
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => highlightDocumentSearchTerms(docSearchQuery, docSearchAiEnabled)}
+                        className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700"
+                      >
+                        {docSearchMode === 'replace' ? 'Find Matches' : 'Find'}
+                      </button>
+                      {docSearchMode === 'replace' && (
+                        <button
+                          type="button"
+                          onClick={replaceHighlightedSearchMatches}
+                          className="px-2.5 py-1.5 text-[11px] rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50"
+                        >
+                          Replace
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDocSearchAutoPlay((prev) => !prev);
+                          if (docSearchMatchCount <= 1) {
+                            setDocSearchAutoPlay(false);
+                          }
+                        }}
+                        className={`px-2.5 py-1.5 text-[11px] rounded-md border transition-colors ${docSearchAutoPlay ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        {docSearchAutoPlay ? 'Pause' : 'Auto'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex - 1)}
+                        disabled={!docSearchMatchCount}
+                        className="px-2 py-1.5 text-[11px] rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        Prev
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex + 1)}
+                        disabled={!docSearchMatchCount}
+                        className="px-2 py-1.5 text-[11px] rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        Next
+                      </button>
+                    </div>
+                    <div className="mt-2 text-[11px] text-gray-500">
+                      {docSearchMatchCount ? `${docSearchActiveIndex + 1}/${docSearchMatchCount} selected` : '0 matches'}
+                      {docSearchSummary ? ` - ${docSearchSummary}` : ''}
+                    </div>
+                  </>
+                )}
+
+                {docSearchMode === 'goTo' && (
+                  <>
+                    <input
+                      value={docGoToValue}
+                      onChange={(event) => setDocGoToValue(event.target.value)}
+                      placeholder="Page number"
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
+                    />
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={goToDocumentPage}
+                        className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700"
+                      >
+                        Go To Page
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -9190,13 +9599,29 @@ Rules:
             className="mx-auto"
             style={{
               width: '100%',
-              maxWidth: '850px',
+              maxWidth: `${ENTERPRISE_PAGE_WIDTH_PX}px`,
               transform: `scale(${zoomLevel / 100})`,
               transformOrigin: 'top center',
               transition: 'transform 180ms ease-out',
             }}
           >
-          <div ref={documentCardRef} className="compose-editor-surface max-w-[850px] mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 min-h-[calc(100vh-13rem)] relative">
+          <div
+            ref={documentCardRef}
+            onKeyDownCapture={(event) => {
+              if (event.key !== 'Enter' || event.shiftKey) {
+                return;
+              }
+              const target = event.target;
+              const isBodyTarget = Boolean(blankBodyRef.current && (target === blankBodyRef.current || blankBodyRef.current.contains(target)));
+              if (!isBodyTarget) {
+                return;
+              }
+              event.preventDefault();
+              insertEnterprisePageBreak();
+            }}
+            className="compose-editor-surface mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 relative"
+            style={{ width: `${ENTERPRISE_PAGE_WIDTH_PX}px`, minHeight: `${ENTERPRISE_PAGE_HEIGHT_PX}px` }}
+          >
             
             {/* Title & Subtitle */}
             <div
@@ -9765,20 +10190,31 @@ Rules:
             className="pointer-events-none absolute left-6 top-20 z-[340]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
           >
-            <div className="pointer-events-auto flex items-center gap-2">
+            <div className="pointer-events-auto flex items-center gap-2 group">
               <button
                 type="button"
-                onPointerDown={(event) => beginPanelResize('miniPrompt', event)}
                 onClick={() => {
                   setIsPromptDismissed(false);
                   setIsPromptExpanded(true);
                   setIsPromptMinimized(false);
                   setIsPromptAutoVisible(true);
                 }}
-                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-move touch-none"
+                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
                 title="Open AI prompt"
               >
                 <PenTool size={18} className="mx-auto" />
+              </button>
+              <button
+                type="button"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  beginPanelResize('miniPrompt', event);
+                }}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full border border-violet-200 bg-white text-violet-600 cursor-move touch-none"
+                title="Drag prompt button"
+              >
+                <Move size={12} />
               </button>
             </div>
           </div>
