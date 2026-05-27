@@ -251,6 +251,29 @@ export default function App() {
   const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
   const [dictationAnchor, setDictationAnchor] = useState({ left: 0, top: 0 });
   const [promptCollapsed, setPromptCollapsed] = useState(false);
+
+  // Prompt examples (rotate every minute when expanded)
+  const [promptExamples, setPromptExamples] = useState([
+    { text: 'Write an article based on my notes and audio files', Icon: PenTool },
+    { text: 'Transform this document into a presentation deck', Icon: Presentation },
+    { text: 'Create a project timeline from these documents', Icon: Calendar },
+    { text: 'Summarize this document into key takeaways', Icon: FileText },
+    { text: 'Extract action items from this meeting recording', Icon: ListTodo },
+    { text: 'Build a report using data from these files', Icon: Database },
+  ]);
+
+  // Rotate examples array every 60 seconds while the prompt is expanded
+  useEffect(() => {
+    if (!isPromptExpanded) return undefined;
+    const id = setInterval(() => {
+      setPromptExamples((prev) => {
+        if (!prev || prev.length <= 1) return prev;
+        const next = prev.slice(1).concat(prev[0]);
+        return next;
+      });
+    }, 60000);
+    return () => clearInterval(id);
+  }, [isPromptExpanded]);
   
   // Interactive inputs
   const [chatInput, setChatInput] = useState('');
@@ -8891,7 +8914,7 @@ Rules:
           {isPromptExpanded && (
             <div className="pointer-events-none absolute -inset-x-6 -top-[420px] h-[560px] bg-white/35 backdrop-blur-[6px]" />
           )}
-          <div className={`max-w-[1440px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
+          <div className={`max-w-[1680px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
             <form
               ref={promptRootRef}
               onSubmit={handleFloatingSend}
@@ -8903,7 +8926,7 @@ Rules:
                 attachFilesToPrompt(event.dataTransfer?.files);
               }}
               className={`relative transition-all duration-500 ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-              style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 1360 : 980))}px`, maxWidth: '100%' }}
+              style={{ width: `${Math.max(320, Math.min(promptWidth, isPromptExpanded ? 1500 : 1040))}px`, maxWidth: '100%' }}
             >
               <input
                 ref={promptAudioInputRef}
@@ -8943,15 +8966,8 @@ Rules:
                     <p className="mt-2 text-[14px] text-slate-500">Drop files, notes, recordings, or describe your goal.</p>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3" style={{ gridTemplateColumns: 'repeat(3, minmax(360px, 1fr))' }}>
-                    {[
-                      { text: 'Write an article based on my notes and audio files', Icon: PenTool },
-                      { text: 'Transform this document into a presentation deck', Icon: Presentation },
-                      { text: 'Create a project timeline from these documents', Icon: Calendar },
-                      { text: 'Summarize this document into key takeaways', Icon: FileText },
-                      { text: 'Extract action items from this meeting recording', Icon: ListTodo },
-                      { text: 'Build a report using data from these files', Icon: Database },
-                    ].map(({ text: exampleText, Icon }) => (
+                  <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3" style={{ gridTemplateColumns: 'repeat(3, minmax(420px, 1fr))' }}>
+                    {promptExamples.map(({ text: exampleText, Icon }) => (
                       <button
                         key={exampleText}
                         type="button"
