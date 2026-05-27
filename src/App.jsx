@@ -208,7 +208,7 @@ export default function App() {
   ];
 
   // Sidebar states
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
@@ -235,7 +235,7 @@ export default function App() {
   const [deckCustomChip, setDeckCustomChip] = useState('');
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
   const [deckZoomLevel, setDeckZoomLevel] = useState(100);
-  const [deckToolbarFont, setDeckToolbarFont] = useState('Inter');
+  const [deckToolbarFont, setDeckToolbarFont] = useState('Manrope');
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
   const [deckSlidesData, setDeckSlidesData] = useState([createBlankDeckSlide(1)]);
@@ -389,7 +389,7 @@ export default function App() {
   const [chatFeedbackDrafts, setChatFeedbackDrafts] = useState({});
   const [deckSnapshotPreviews, setDeckSnapshotPreviews] = useState({});
   const [sheetSnapshotPreviews, setSheetSnapshotPreviews] = useState({});
-  const [sheetToolbarFont, setSheetToolbarFont] = useState('Inter');
+  const [sheetToolbarFont, setSheetToolbarFont] = useState('Manrope');
   const [sheetToolbarSize, setSheetToolbarSize] = useState(10);
   const [sheetToolbarBold, setSheetToolbarBold] = useState(false);
   const [sheetToolbarItalic, setSheetToolbarItalic] = useState(false);
@@ -522,7 +522,7 @@ export default function App() {
   const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
-  const [editorFont, setEditorFont] = useState('Inter');
+  const [editorFont, setEditorFont] = useState('Manrope');
   const [editorSize, setEditorSize] = useState(36);
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
@@ -541,7 +541,43 @@ export default function App() {
     'Heading 3': { tag: 'H3', size: 26, previewClass: 'text-xs font-semibold' },
     Paragraph: { tag: 'P', size: 16, previewClass: 'text-xs font-normal' },
   };
-  const fontOptions = ['Inter', 'Georgia', 'Verdana', 'Courier New', 'Times New Roman', 'Trebuchet MS'];
+  const fontOptions = [
+    'Manrope',
+    'Satoshi',
+    'General Sans',
+    'Plus Jakarta Sans',
+    'IBM Plex Sans',
+    'DM Sans',
+    'Public Sans',
+    'SF Pro Display',
+    'Helvetica Now',
+    'Aptos',
+    'Merriweather',
+    'Libre Baskerville',
+    'Playfair Display',
+    'Source Serif 4',
+    'Charter',
+    'Lora',
+    'Spectral',
+    'Poppins',
+    'Montserrat',
+    'Outfit',
+    'Space Grotesk',
+    'Clash Display',
+    'Neue Haas Grotesk',
+    'Circular Std',
+    'Avenir Next',
+    'JetBrains Mono',
+    'IBM Plex Mono',
+    'Fira Code',
+    'Source Code Pro',
+    'Inter',
+    'Georgia',
+    'Verdana',
+    'Courier New',
+    'Times New Roman',
+    'Trebuchet MS',
+  ];
   const sizeOptions = [12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64];
   const composeFormatOptions = ['Auto (Compose decides)', 'Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft', 'Proposal', 'Plain Text', 'Custom...'];
   const promptToneOptions = [
@@ -8967,9 +9003,6 @@ Rules:
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
         >
-          {isPromptExpanded && (
-            <div className="pointer-events-none absolute -inset-x-6 -top-[420px] h-[560px] bg-white/35 backdrop-blur-[6px]" />
-          )}
           <div className={`max-w-[1600px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
             <form
               ref={promptRootRef}
