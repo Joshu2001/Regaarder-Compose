@@ -344,6 +344,7 @@ export default function App() {
   const [calendarMonth, setCalendarMonth] = useState(4); // 0=Jan, 4=May
   const [calendarYear, setCalendarYear] = useState(2026);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date(2026, 4, 15));
+  const [isScheduleCalendarExpanded, setIsScheduleCalendarExpanded] = useState(false);
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
@@ -536,6 +537,7 @@ export default function App() {
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
   const [docSubtitle, setDocSubtitle] = useState('');
+  const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
   const [isBlankDocument, setIsBlankDocument] = useState(true);
   const [documents, setDocuments] = useState([
@@ -1261,6 +1263,10 @@ export default function App() {
     applySnapshot(historyPastRef.current[startIndex].snapshot);
     showToast('Shared replay loaded');
   }, [documents]);
+
+  useEffect(() => {
+    setIsTopDraftTitleExpanded(false);
+  }, [activeDocId]);
 
   useEffect(() => {
     isMicMutedRef.current = isMicMuted;
@@ -2113,10 +2119,17 @@ export default function App() {
       return toParagraphHtml(value);
     }
 
-    const lines = normalized
+    let lines = normalized
       .split(/\n+/)
       .map((line) => line.trim())
       .filter(Boolean);
+
+    if (lines.length <= 2) {
+      lines = normalized
+        .split(/(?<=[.!?])\s+(?=[A-Z])/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+    }
 
     if (!lines.length) {
       return toParagraphHtml(value);
@@ -2144,12 +2157,17 @@ export default function App() {
 
       const headingMatch = line.match(/^(?:[IVXLC]+[.)]\s+|\d+[.)]\s+)?(.+?)(?::)?$/i);
       const headingText = headingMatch ? headingMatch[1].trim() : line;
+      const compactHeading = headingText.split(/\s+/).slice(0, 7).join(' ').replace(/[,:;]+$/, '').trim();
+      const isVeryLongSentence = headingText.split(/\s+/).length > 12;
       const shouldRenderHeading = index === 0 || /:\s*$/.test(line) || /^[A-Z][\w\s&'/-]{8,}$/.test(headingText);
 
       closeList();
 
       if (shouldRenderHeading) {
-        html.push(`<h3 style="font-size:22px;line-height:1.35;font-weight:700;color:#0f172a;margin:16px 0 8px;">${escapeHtml(headingText)}</h3>`);
+        html.push(`<h3 style="font-size:22px;line-height:1.35;font-weight:700;color:#0f172a;margin:16px 0 8px;">${escapeHtml(compactHeading || `Section ${index + 1}`)}</h3>`);
+        if (isVeryLongSentence) {
+          html.push(`<p style="font-size:16px;color:#334155;line-height:1.75;margin:0 0 10px;">${escapeHtml(line)}</p>`);
+        }
       } else {
         html.push(`<p style="font-size:16px;color:#334155;line-height:1.75;margin:0 0 10px;">${escapeHtml(line)}</p>`);
       }
@@ -2173,16 +2191,14 @@ export default function App() {
 
     const rangeRect = range.getBoundingClientRect();
     const menuWidth = 344;
-    const menuHeight = 318;
+    const estimatedMenuHeight = Math.max(420, Math.floor(window.innerHeight * 0.72));
     const horizontalPadding = 16;
-    const verticalGap = 14;
+    const verticalGap = 22;
     const centeredLeft = rangeRect.left + (rangeRect.width / 2) - (menuWidth / 2);
     const maxLeft = Math.max(horizontalPadding, window.innerWidth - menuWidth - horizontalPadding);
     const preferredBelow = rangeRect.bottom + verticalGap;
-    const fallbackAbove = rangeRect.top - menuHeight - verticalGap;
-    const rawTop = preferredBelow + menuHeight <= window.innerHeight - 12
-      ? preferredBelow
-      : Math.max(12, fallbackAbove);
+    const maxTop = Math.max(12, window.innerHeight - estimatedMenuHeight - 12);
+    const rawTop = Math.min(Math.max(12, preferredBelow), maxTop);
 
     setSelectionActionMenu({
       open: true,
@@ -4584,8 +4600,27 @@ Rules:
       return;
     }
 
-    if (productMode === 'compose' && actionKey === 'create-outline') {
-      applyGeneratedOutline(requestedOutlineLevels);
+    if (productMode === 'compose' && (actionKey === 'create-outline' || actionKey === 'outline')) {
+      const selectedScope = selectedEditorTextRef.current || selectedEditorText;
+      const hasSelection = requestedSelectionScope !== undefined ? requestedSelectionScope : Boolean(selectedScope);
+      const outlinePrompt = hasSelection
+        ? `Create a structured outline from this selected text. Use concise headings and nested bullets where useful. Keep headings short and clear. Target up to ${requestedOutlineLevels} heading levels.\n\nSelected text:\n"""${selectedScope}"""`
+        : `${instruction}\n\nCreate a structured outline from the current document with concise headings and nested bullets where useful. Keep headings short and clear. Target up to ${requestedOutlineLevels} heading levels.`;
+
+      setRightSidebarOpen(false);
+      setActiveRightTab('assistant');
+      showToast('Compose AI is generating an outline...');
+      handleAISubmit(outlinePrompt, {
+        source: hasSelection ? 'compose' : 'chat',
+        forceDocBuild: true,
+        suppressChatEcho: true,
+        composeFormat: 'Plain Text',
+        selectionScoped: hasSelection,
+        smartActionKey: 'outline',
+        tone: promptTone,
+        lengthMode: promptLengthMode,
+        lengthValue: promptLengthValue,
+      });
       return;
     }
 
@@ -6116,6 +6151,99 @@ Rules:
     const month = safeDate.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
     return `${weekday} ${month} ${safeDate.getDate()}`;
   };
+
+  const scheduleAgendaItems = useMemo(() => {
+    const parseSlotMinutes = (slot) => {
+      const raw = String(slot || '').trim();
+      if (!raw) {
+        return null;
+      }
+      let match = raw.match(/^(\d{1,2}):(\d{2})$/);
+      if (match) {
+        return Number(match[1]) * 60 + Number(match[2]);
+      }
+      match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (match) {
+        const meridian = String(match[3] || '').toUpperCase();
+        let hour = Number(match[1]) % 12;
+        if (meridian === 'PM') {
+          hour += 12;
+        }
+        return hour * 60 + Number(match[2]);
+      }
+      return null;
+    };
+
+    const normalized = [...(upcomingEvents || []), ...(scheduleOutput || [])]
+      .map((event, index) => {
+        const dueDate = event?.dueDate ? new Date(event.dueDate) : null;
+        const hasDate = dueDate instanceof Date && !Number.isNaN(dueDate.getTime());
+        const slotMinutes = parseSlotMinutes(event?.slot);
+        const fallback = new Date(selectedCalendarDate || new Date());
+        if (slotMinutes !== null) {
+          fallback.setHours(Math.floor(slotMinutes / 60), slotMinutes % 60, 0, 0);
+        } else {
+          fallback.setHours(9 + index, 0, 0, 0);
+        }
+
+        return {
+          ...event,
+          _sortDate: hasDate ? dueDate : fallback,
+        };
+      })
+      .sort((a, b) => a._sortDate - b._sortDate)
+      .slice(0, 6);
+
+    return normalized;
+  }, [scheduleOutput, selectedCalendarDate, upcomingEvents]);
+
+  const scheduleAiInsights = useMemo(() => {
+    const insights = [];
+    const agenda = scheduleAgendaItems;
+    if (!agenda.length) {
+      return ['No upcoming events yet. Paste tasks below and Compose AI will build a focused schedule.'];
+    }
+
+    const todaysEvents = agenda.filter((event) => {
+      if (!event?._sortDate) {
+        return false;
+      }
+      const now = new Date();
+      return event._sortDate.getFullYear() === now.getFullYear()
+        && event._sortDate.getMonth() === now.getMonth()
+        && event._sortDate.getDate() === now.getDate();
+    });
+
+    const todayDuration = todaysEvents.reduce((sum, event) => sum + Math.max(15, Number(event.durationMinutes || 60)), 0);
+    if (todayDuration >= 300) {
+      insights.push('Today is packed. Consider a 15-minute recovery buffer between deep-work blocks.');
+    }
+
+    const adjacentHighUrgency = agenda.filter((event) => String(event.urgency || '').toLowerCase() === 'high').length;
+    if (adjacentHighUrgency >= 3) {
+      insights.push('Three high-urgency items are competing. Reorder by impact to avoid context switching.');
+    }
+
+    const titleSignal = String(docTitle || '').trim().toLowerCase();
+    if (titleSignal) {
+      const hasLinkedEvent = agenda.some((event) => String(event.title || '').toLowerCase().includes(titleSignal.split(' ')[0] || ''));
+      if (hasLinkedEvent) {
+        insights.push('A scheduled item aligns with your active document. Keep it near your writing sprint.');
+      }
+    }
+
+    if (!insights.length) {
+      insights.push('Schedule balance looks healthy. Keep one flexible slot open for AI-assisted revisions.');
+    }
+
+    return insights.slice(0, 3);
+  }, [docTitle, scheduleAgendaItems]);
+
+  useEffect(() => {
+    if (activeRightTab === 'calendar' && rightSidebarOpen && rightSidebarWidth < 400) {
+      setRightSidebarWidth(400);
+    }
+  }, [activeRightTab, rightSidebarOpen, rightSidebarWidth]);
 
   const convertTaskToSchedule = async (taskValue) => {
     const taskText = typeof taskValue === 'string' ? taskValue : String(taskValue?.text || '');
@@ -8958,11 +9086,18 @@ Rules:
                 ) : (
                   <button
                     type="button"
-                    onClick={beginUnsavedDraftRename}
+                    onClick={() => setIsTopDraftTitleExpanded((prev) => !prev)}
+                    onDoubleClick={beginUnsavedDraftRename}
                     className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left"
-                    title="Rename current draft"
+                    title={(documents.find((doc) => doc.id === activeDocId)?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft'}
                   >
-                    {(documents.find((doc) => doc.id === activeDocId)?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft'}
+                    {(() => {
+                      const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft';
+                      if (isTopDraftTitleExpanded || rawTitle.length <= 20) {
+                        return rawTitle;
+                      }
+                      return `${rawTitle.slice(0, 20)}...`;
+                    })()}
                   </button>
                 )}
                 <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2">
@@ -9205,7 +9340,7 @@ Rules:
             onPointerUpCapture={() => {
               pointerDownInSelectionMenuRef.current = false;
             }}
-            className="fixed z-[280] w-[344px] overflow-hidden rounded-[24px] border border-[#e6e3fb] bg-white shadow-[0_24px_80px_-32px_rgba(76,29,149,0.45)] backdrop-blur-sm"
+            className="fixed z-[280] w-[344px] max-h-[72vh] overflow-y-hidden hover:overflow-y-auto thin-scrollbar rounded-[24px] border border-[#e6e3fb] bg-white shadow-[0_24px_80px_-32px_rgba(76,29,149,0.45)] backdrop-blur-sm"
             style={{ left: `${selectionActionMenu.left}px`, top: `${selectionActionMenu.top}px` }}
           >
             <div className="border-b border-[#f0eefc] bg-[linear-gradient(180deg,#fbfaff_0%,#ffffff_100%)] px-4 py-3">
@@ -10087,7 +10222,7 @@ Rules:
                 attachFilesToPrompt(event.dataTransfer?.files);
               }}
               className={`relative transition-all duration-500 ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-              style={{ width: isPromptExpanded ? 'min(1360px, calc(100vw - 360px))' : `${Math.max(320, Math.min(promptWidth, 980))}px`, maxWidth: '100%' }}
+              style={{ width: isPromptExpanded ? `min(1360px, calc(100vw - ${(rightSidebarOpen ? rightSidebarWidth + 140 : 360)}px))` : `${Math.max(320, Math.min(promptWidth, 980))}px`, maxWidth: '100%' }}
             >
               <input
                 ref={promptAudioInputRef}
@@ -11007,264 +11142,190 @@ Rules:
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
             <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                <h3 className="text-sm font-bold text-gray-900">Launch Timeline</h3>
-                <p className="text-xs text-gray-500">Consolidated product rollouts aligned with team calendar events.</p>
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-[linear-gradient(180deg,#ffffff_0%,#fafbfd_100%)]">
+                <div className="rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur-sm px-4 py-3 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.35)]">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-[14px] font-semibold text-slate-900">Today</h3>
+                      <p className="text-[11px] text-slate-500">Focused agenda with AI scheduling intelligence.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsScheduleCalendarExpanded((prev) => !prev)}
+                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600 hover:border-violet-300 hover:text-violet-700"
+                    >
+                      {isScheduleCalendarExpanded ? 'Hide Calendar' : 'Show Calendar'}
+                      <ChevronDown size={12} className={`transition-transform ${isScheduleCalendarExpanded ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
 
-                {scheduleOutput.length > 0 && (
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-bold text-violet-500 uppercase tracking-wider block">Processed List</span>
-                    {scheduleOutput.map((item) => (
-                      <div key={item.id} className={`p-3 rounded-xl border bg-white space-y-2 relative overflow-hidden ${item.urgency === 'high' ? 'border-red-200' : item.urgency === 'medium' ? 'border-yellow-200' : 'border-blue-200'}`}>
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${item.urgency === 'high' ? 'bg-red-500' : item.urgency === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 text-gray-600">{item.category || 'General'}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${item.urgency === 'high' ? 'bg-red-50 text-red-700 border-red-200' : item.urgency === 'medium' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-blue-50 text-blue-700 border-blue-200'}`}>{item.urgency || 'low'}</span>
-                          </div>
-                          <div className="text-[10px] text-gray-400">{item.dueDate ? formatEventSlotLabel(item) : item.slot}</div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            value={item.title}
-                            onChange={(event) => updateScheduleItem(item.id, 'title', event.target.value)}
-                            className="flex-1 text-xs font-semibold text-gray-800 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-violet-400"
-                          />
-                          <input
-                            value={item.slot}
-                            onChange={(event) => updateScheduleItem(item.id, 'slot', event.target.value)}
-                            className="w-24 text-[10px] font-semibold text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2 py-1 focus:outline-none focus:border-violet-400"
-                          />
-                          <input
-                            type="number"
-                            min={15}
-                            max={360}
-                            value={item.durationMinutes || 60}
-                            onChange={(event) => updateScheduleItem(item.id, 'durationMinutes', Math.max(15, Number(event.target.value) || 60))}
-                            className="w-16 text-[10px] font-semibold text-gray-700 bg-white border border-gray-200 rounded-full px-2 py-1 focus:outline-none focus:border-violet-400"
-                            title="Duration in minutes"
-                          />
-                        </div>
-                        <textarea
-                          value={item.summary}
-                          onChange={(event) => updateScheduleItem(item.id, 'summary', event.target.value)}
-                          rows={2}
-                          placeholder="Add context or notes"
-                          className="w-full text-[11px] text-gray-600 border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-violet-400 resize-none"
-                        />
-                        <div className="rounded-lg border border-gray-200 p-2 space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">Steps</span>
-                            <button
-                              type="button"
-                              onClick={() => addScheduleStep(item.id)}
-                              className="text-[10px] text-violet-600 hover:text-violet-700"
-                            >
-                              + Add step
-                            </button>
-                          </div>
-                          {(item.steps || []).map((step, stepIndex) => (
-                            <div key={`${item.id}-step-${stepIndex}`} className="flex items-center gap-1.5">
-                              <input
-                                value={step}
-                                onChange={(event) => updateScheduleStep(item.id, stepIndex, event.target.value)}
-                                placeholder={`Step ${stepIndex + 1}`}
-                                className="flex-1 text-[11px] text-gray-700 border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-violet-400"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => removeScheduleStep(item.id, stepIndex)}
-                                className="p-1 rounded text-gray-400 hover:text-rose-600 hover:bg-rose-50"
-                                title="Remove step"
-                              >
-                                <Trash2 size={11} />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => undoScheduleItem(item.id)}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-full px-2.5 py-1"
-                          >
-                            <Undo2 size={12} /> Undo
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => approveScheduleItem(item.id)}
-                            className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-full px-2.5 py-1"
-                          >
-                            <Check size={12} /> Approve
-                          </button>
-                        </div>
+                  <div className="mt-3 space-y-2">
+                    {scheduleAgendaItems.slice(0, 3).map((event) => (
+                      <div key={`agenda-${event.id}`} className="rounded-xl border border-slate-200/70 bg-white px-3 py-2.5">
+                        <div className="text-[13px] font-semibold text-slate-900 leading-tight">{event.title}</div>
+                        <div className="mt-1 text-[11px] text-slate-500">{formatEventSlotLabel(event)} · {Math.max(15, Number(event.durationMinutes || 60))} min</div>
                       </div>
                     ))}
+                    {scheduleAgendaItems.length === 0 && (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-3 text-[11px] text-slate-500">
+                        No events scheduled yet.
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
-                {/* Minimalist interactive calendar widget */}
-                <div className="border border-gray-100 rounded-xl p-4 bg-[#FAFAFC]">
-                  <div className="flex items-center justify-between text-xs font-bold text-gray-700 mb-3">
-                    <div className="flex items-center gap-2" ref={calendarMenuRef}>
-                      <div className="relative">
+                <div className="rounded-2xl border border-violet-200/60 bg-violet-50/55 px-4 py-3">
+                  <div className="text-[10px] font-semibold tracking-[0.14em] uppercase text-violet-700">AI Insights</div>
+                  <div className="mt-2 space-y-2">
+                    {scheduleAiInsights.map((insight, index) => (
+                      <div key={`insight-${index}`} className="text-[12px] leading-relaxed text-slate-700">{insight}</div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRightSidebarOpen(true);
+                      setActiveRightTab('assistant');
+                      setAssistantQuickPrompt('Optimize my next three schedule blocks for focus and momentum.');
+                    }}
+                    className="mt-3 inline-flex items-center gap-1 rounded-full bg-violet-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-violet-700"
+                  >
+                    <Sparkles size={12} /> Optimize Schedule
+                  </button>
+                </div>
+
+                {isScheduleCalendarExpanded && (
+                  <div className="rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 space-y-3" ref={calendarMenuRef}>
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => {
                             closeTransientMenus();
                             setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
                           }}
-                          className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap"
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-slate-50"
                         >
-                          {monthNames[calendarMonth]} <ChevronDown size={14} className="text-gray-400" />
+                          {monthNames[calendarMonth]} <ChevronDown size={12} />
                         </button>
-                        {openDropdown === 'calendar-month' && (
-                          <div className="absolute top-9 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
-                            <div className="max-h-44 overflow-y-auto">
-                              {monthNames.map((m, i) => (
-                                <button
-                                  key={m}
-                                  type="button"
-                                  onPointerDown={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    setCalendarView(i, calendarYear);
-                                    setOpenDropdown(null);
-                                  }}
-                                  className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
-                                >
-                                  {m}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      <div className="relative">
                         <button
                           type="button"
                           onClick={() => {
                             closeTransientMenus();
                             setOpenDropdown((prev) => (prev === 'calendar-year' ? null : 'calendar-year'));
                           }}
-                          className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap"
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-slate-50"
                         >
-                          {calendarYear} <ChevronDown size={14} className="text-gray-400" />
+                          {calendarYear} <ChevronDown size={12} />
                         </button>
-                        {openDropdown === 'calendar-year' && (
-                          <div className="absolute top-9 left-0 z-[230] w-32 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
-                            <div className="max-h-44 overflow-y-auto">
-                              {[2026, 2027, 2028, 2029].map((y) => (
-                                <button
-                                  key={y}
-                                  type="button"
-                                  onPointerDown={(event) => {
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    setCalendarView(calendarMonth, y);
-                                    setOpenDropdown(null);
-                                  }}
-                                  className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
-                                >
-                                  {y}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (calendarYear === 2026 && calendarMonth === 0) return;
+                            if (calendarMonth === 0) {
+                              setCalendarView(11, calendarYear - 1);
+                            } else {
+                              setCalendarView(calendarMonth - 1, calendarYear);
+                            }
+                          }}
+                          className="rounded p-1 hover:bg-slate-100"
+                          disabled={calendarYear === 2026 && calendarMonth === 0}
+                        >
+                          <ChevronLeft size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (calendarMonth === 11) {
+                              setCalendarView(0, calendarYear + 1);
+                            } else {
+                              setCalendarView(calendarMonth + 1, calendarYear);
+                            }
+                          }}
+                          className="rounded p-1 hover:bg-slate-100"
+                          disabled={calendarYear === 2029 && calendarMonth === 11}
+                        >
+                          <ChevronRight size={13} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {openDropdown === 'calendar-month' && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-2 max-h-36 overflow-y-auto thin-scrollbar">
+                        {monthNames.map((m, i) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => {
+                              setCalendarView(i, calendarYear);
+                              setOpenDropdown(null);
+                            }}
+                            className="w-full text-left text-[11px] px-2 py-1 rounded hover:bg-violet-50"
+                          >
+                            {m}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {openDropdown === 'calendar-year' && (
+                      <div className="rounded-xl border border-slate-200 bg-white p-2 max-h-28 overflow-y-auto thin-scrollbar">
+                        {[2026, 2027, 2028, 2029].map((y) => (
+                          <button
+                            key={y}
+                            type="button"
+                            onClick={() => {
+                              setCalendarView(calendarMonth, y);
+                              setOpenDropdown(null);
+                            }}
+                            className="w-full text-left text-[11px] px-2 py-1 rounded hover:bg-violet-50"
+                          >
+                            {y}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400">
+                      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate-700">
+                      {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => {
+                            if (!dayObj.isCurrentMonth) return;
+                            setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
+                          }}
+                          className={`py-1 rounded ${dayObj.isCurrentMonth ? ((selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day) ? 'bg-violet-600 text-white' : dayObj.isToday ? 'bg-violet-100 text-violet-700 hover:bg-violet-200' : 'hover:bg-slate-100') : 'text-slate-300'}`}
+                          disabled={!dayObj.isCurrentMonth}
+                        >
+                          {dayObj.day}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[10px] font-semibold tracking-[0.14em] uppercase text-slate-500">Next Events</span>
+                    <span className="text-[10px] text-violet-600 font-semibold">{formatUpcomingHeaderDate(selectedCalendarDate)}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {scheduleAgendaItems.map((event) => (
+                      <div key={`event-${event.id}`} className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-[0_10px_24px_-22px_rgba(15,23,42,0.4)]">
+                        <div className="text-[14px] font-semibold text-slate-900 leading-snug">{event.title}</div>
+                        <div className="mt-1 text-[12px] text-slate-600">{formatEventSlotLabel(event)} · {Math.max(15, Number(event.durationMinutes || 60))} min</div>
+                        {(event.summary || '').trim() && (
+                          <div className="mt-1.5 text-[11px] text-slate-500 leading-relaxed">{String(event.summary).trim()}</div>
                         )}
                       </div>
-                    </div>
-                    <div className="flex gap-2 text-gray-400">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (calendarYear === 2026 && calendarMonth === 0) {
-                            return;
-                          }
-
-                          if (calendarMonth === 0) {
-                            setCalendarView(11, calendarYear - 1);
-                          } else {
-                            setCalendarView(calendarMonth - 1, calendarYear);
-                          }
-                        }}
-                        disabled={calendarYear === 2026 && calendarMonth === 0}
-                        className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronLeft size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (calendarMonth === 11) {
-                            setCalendarView(0, calendarYear + 1);
-                          } else {
-                            setCalendarView(calendarMonth + 1, calendarYear);
-                          }
-                        }}
-                        disabled={calendarYear === 2029 && calendarMonth === 11}
-                        className="cursor-pointer hover:text-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ChevronRight size={14} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-gray-400 mb-2">
-                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-700">
-                    {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => {
-                          if (!dayObj.isCurrentMonth) {
-                            return;
-                          }
-                          setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
-                        }}
-                        className={`py-1 rounded transition-colors ${
-                          dayObj.isCurrentMonth
-                            ? (selectedCalendarDate
-                                && selectedCalendarDate.getFullYear() === calendarYear
-                                && selectedCalendarDate.getMonth() === calendarMonth
-                                && selectedCalendarDate.getDate() === dayObj.day)
-                              ? 'bg-violet-600 text-white font-bold'
-                              : dayObj.isToday
-                                ? 'bg-violet-100 text-violet-700 font-semibold hover:bg-violet-200 cursor-pointer'
-                                : 'hover:bg-gray-200 cursor-pointer'
-                            : 'text-gray-300'
-                        }`}
-                        disabled={!dayObj.isCurrentMonth}
-                      >
-                        {dayObj.day}
-                      </button>
                     ))}
                   </div>
-                </div>
-
-                <div className="text-[11px] text-violet-700 bg-violet-50 border border-violet-100 rounded-lg px-3 py-2">
-                  Selected date: {selectedCalendarDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
-                </div>
-
-                <div className="space-y-2">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Upcoming Events</span>
-                  <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.24em] text-slate-500 uppercase">
-                    <Calendar size={13} className="text-violet-500" />
-                    <span>{formatUpcomingHeaderDate(selectedCalendarDate)}</span>
-                  </div>
-                  {upcomingEvents.map((event, index) => (
-                    <div key={event.id} className={`p-3 rounded-xl border text-xs relative overflow-hidden ${event.urgency === 'high' ? 'border-red-100 bg-red-50/20' : event.urgency === 'medium' ? 'border-yellow-100 bg-yellow-50/20' : index === 0 ? 'border-blue-100 bg-blue-50/20' : 'border-gray-100 bg-white'}`}>
-                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${event.urgency === 'high' ? 'bg-red-500' : event.urgency === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`}></div>
-                      <div className={`font-bold text-sm ${event.urgency === 'high' ? 'text-red-700' : event.urgency === 'medium' ? 'text-yellow-700' : index === 0 ? 'text-blue-700' : 'text-gray-700'}`}>{event.title}</div>
-                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700">{event.category || 'General'}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">{event.durationMinutes || 60}m</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-violet-200 bg-white text-violet-700">{event.slot || formatEventSlotLabel(event).split(/\u2022/).slice(-1)[0].trim()}</span>
-                      </div>
-                      <div className="text-gray-500 mt-1">{formatEventSlotLabel(event)}</div>
-                    </div>
-                  ))}
                 </div>
               </div>
 
@@ -11273,18 +11334,18 @@ Rules:
                   e.preventDefault();
                   convertMessyScheduleToPlan();
                 }}
-                className="border-t border-gray-100 bg-[#FAFAFC] p-4"
+                className="border-t border-slate-200 bg-white/90 backdrop-blur-sm p-4"
               >
                 {scheduleAttachments.length > 0 && (
                   <div className="mb-2 flex flex-wrap gap-1.5">
                     {scheduleAttachments.map((attachment) => (
-                      <span key={attachment.id} className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">
+                      <span key={attachment.id} className="text-[10px] px-2 py-0.5 rounded-full border border-slate-200 bg-white text-slate-600">
                         {attachment.name}
                       </span>
                     ))}
                   </div>
                 )}
-                <div className="bg-white border border-gray-100 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-full">
+                <div className="bg-white border border-slate-200 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-2xl">
                   <input
                     ref={scheduleFileInputRef}
                     type="file"
@@ -11327,9 +11388,9 @@ Rules:
                         convertMessyScheduleToPlan();
                       }
                     }}
-                    placeholder="Paste messy tasks, notes, or shorthand..."
+                    placeholder="Quick add tasks, dates, and messy notes. Compose AI will structure them."
                     rows={1}
-                    className="w-full bg-transparent border-none focus:outline-none text-xs text-gray-700 placeholder-gray-400 py-1 pr-10 resize-none"
+                    className="w-full bg-transparent border-none focus:outline-none text-xs text-slate-700 placeholder:text-slate-400 py-1 pr-10 resize-none"
                   />
                   <button
                     type="submit"
