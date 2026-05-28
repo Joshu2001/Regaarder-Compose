@@ -9931,7 +9931,7 @@ Rules:
         </div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className="flex-1 overflow-y-auto relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
+        <div className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
           <div
             className="mx-auto"
             style={{
@@ -11145,7 +11145,7 @@ Rules:
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
             <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex-1 overflow-y-auto px-4 pt-1 pb-3 space-y-3 bg-[linear-gradient(180deg,#fbfbfe_0%,#f7f8fc_100%)]">
+              <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-1 pb-3 space-y-3 bg-white">
                 <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)]">
                   <div className="flex items-center justify-between text-[12px]">
                     <div className="text-slate-800 font-medium inline-flex items-center gap-1.5">
@@ -11159,36 +11159,38 @@ Rules:
                           closeTransientMenus();
                           setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
                         }}
-                        className="text-[10px] font-medium text-violet-600 hover:text-violet-700"
+                        className="text-slate-400 hover:text-slate-600"
+                        title="Toggle calendar"
                       >
-                        See full calendar
+                        <ChevronDown size={14} />
                       </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 border-t border-[#ececf5] pt-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[11px] font-medium text-slate-600">Upcoming</div>
                       <button
                         type="button"
                         onClick={() => {
                           closeTransientMenus();
                           setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
                         }}
-                        className="text-slate-400 hover:text-slate-600"
-                        title="Toggle calendar"
+                        className="text-[10px] font-medium text-violet-600 hover:text-violet-700"
                       >
-                        <ChevronDown size={12} />
+                        See full calendar
                       </button>
                     </div>
-                  </div>
-
-                  <div className="mt-3">
-                    <div className="text-[11px] font-medium text-slate-600">Upcoming</div>
                     <div className="relative mt-2 space-y-2.5">
-                      <div className="absolute left-[59px] top-[12px] bottom-[16px] w-px bg-violet-200" />
+                      <div className="absolute left-[7px] top-[12px] bottom-[16px] w-px bg-violet-200" />
                       {scheduleAgendaItems.slice(0, 2).map((event) => (
                         <div key={`timeline-${event.id}`} className="relative grid grid-cols-[62px_1fr] gap-3">
                           <div className="text-[11.5px] leading-4 text-slate-700 pt-[1px]">
                             <div className="whitespace-nowrap">{event.slot || '10:00 AM'}</div>
                             <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
                           </div>
-                          <div className="relative rounded-lg px-2 py-1.5">
-                            <span className="absolute left-[-15px] top-2.5 h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
+                          <div className="relative rounded-lg px-2 py-1.5 border-l border-[#ececf5]">
+                            <span className="absolute left-[-58px] top-2.5 h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
                             <div className="text-[12.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
                             <div className="mt-0.5 text-[10px] text-violet-400">{event.category || 'General'}</div>
                           </div>
@@ -11273,7 +11275,7 @@ Rules:
                   </button>
                 </div>
 
-                <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3">
+                <div className="rounded-2xl border border-[#e7defe] bg-[#f7f3ff] px-3.5 py-3">
                   <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
                   <div className="relative">
                     <textarea
@@ -11303,7 +11305,7 @@ Rules:
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3">
+                <div className="rounded-2xl border border-[#e5e7ef] bg-[#f5f6fa] px-3.5 py-3">
                   <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><Link size={11} className="text-slate-400" />Related to this document</div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
