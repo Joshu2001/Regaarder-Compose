@@ -11183,15 +11183,15 @@ Rules:
                         </button>
                       </div>
                       <div className="relative mt-2 space-y-0">
-                        <div className="absolute left-[7px] top-[12px] bottom-[16px] w-px bg-[#d1d5db]" />
+                        <div className="absolute left-[6px] top-[12px] bottom-[16px] w-px bg-[#d1d5db]" />
                         {scheduleAgendaItems.slice(0, 2).map((event, index) => (
                           <div key={`timeline-${event.id}`} className={`relative grid grid-cols-[62px_1fr] gap-3 ${index > 0 ? 'border-t border-[#ececf5]' : ''}`}>
-                            <div className="text-[11.5px] leading-4 text-slate-700 pt-[8px] pb-[8px]">
+                            <div className="relative pl-3 text-[11.5px] leading-4 text-slate-700 pt-[8px] pb-[8px]">
+                              <span className="absolute left-[0px] top-[13px] h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
                               <div className="whitespace-nowrap">{event.slot || '10:00 AM'}</div>
                               <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
                             </div>
-                            <div className="relative rounded-lg px-2 py-[8px] border-l border-[#d1d5db]">
-                              <span className="absolute left-[-58px] top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
+                            <div className="relative rounded-lg px-2 py-[8px]">
                               <div className="text-[12.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
                               <span className="mt-0.5 inline-flex rounded-full border border-violet-100 bg-violet-50 px-1.5 py-[1px] text-[10px] text-violet-500">{event.category || 'General'}</span>
                             </div>
@@ -11199,7 +11199,7 @@ Rules:
                         ))}
                       </div>
                     </div>
-                    <div className="mt-3 border-t border-[#ececf5] pt-3">
+                    <div className="mt-3 rounded-2xl border border-[#e9e0ff] bg-[#f6f1ff] px-3.5 py-3">
                       <div className="text-[12px] font-medium text-slate-800 inline-flex items-center gap-1.5">
                         <Sparkles size={12} className="text-violet-500" /> AI Schedule Insight
                       </div>
@@ -11217,7 +11217,7 @@ Rules:
                       </button>
                     </div>
 
-                    <div className="mt-3 border-t border-[#ececf5] pt-3">
+                    <div className="mt-3 rounded-2xl border border-[#ede7ff] bg-[#faf7ff] px-3.5 py-3">
                       <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
                       <div className="relative">
                         <textarea
@@ -11234,7 +11234,7 @@ Rules:
                           }}
                           placeholder="What do you want to schedule?"
                           rows={1}
-                          className="w-full rounded-xl border border-slate-200 bg-[#fcfcff] pl-3 pr-9 py-2 text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-violet-300 resize-none leading-5"
+                          className="w-full rounded-xl border border-slate-200 bg-[#fcfcff] pl-3 pr-9 py-1.5 text-[12px] text-slate-700 placeholder:text-[10px] placeholder:text-slate-400 focus:outline-none focus:border-violet-300 resize-none leading-5"
                         />
                         <button
                           type="button"
@@ -11247,7 +11247,7 @@ Rules:
                       </div>
                     </div>
 
-                    <div className="mt-3 border-t border-[#ececf5] pt-3">
+                    <div className="mt-3 rounded-2xl border border-[#e9ebf2] bg-[#f8f9fc] px-3.5 py-3">
                       <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><Link size={11} className="text-slate-500" />Related to this document</div>
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
