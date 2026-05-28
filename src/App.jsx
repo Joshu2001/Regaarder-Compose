@@ -9048,7 +9048,7 @@ Rules:
       {leftSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('left', event)}
-          className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors"
+          className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors opacity-0 hover:opacity-100"
           aria-label="Resize left sidebar"
         />
       )}
@@ -10624,7 +10624,7 @@ Rules:
       {!shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
-          className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors"
+          className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors opacity-0 hover:opacity-100"
           aria-label="Resize right sidebar"
         />
       )}
@@ -11418,7 +11418,7 @@ Rules:
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+                  <div className="flex-1 overflow-y-auto thin-scrollbar px-3 py-3 space-y-3">
                     <div className="rounded-2xl border border-[#eceef7] bg-white px-4 py-5 text-center">
                       <h3 className="text-[28px] font-bold text-[#1a1f36] tracking-tight">No active sharing</h3>
                       <p className="text-[13px] text-[#6b7280] mt-2">Start a call or invite others to collaborate.</p>
@@ -11428,11 +11428,11 @@ Rules:
                         </div>
                       </div>
                       <div className="mt-4 grid grid-cols-3 gap-2 text-left">
-                        <button onClick={() => openMeetingSetup(generateRoomCode())} className="rounded-xl border border-violet-200 bg-violet-50 text-violet-700 py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-violet-100">
+                        <button onClick={() => openMeetingSetup(generateRoomCode())} className="rounded-xl border border-violet-200 bg-violet-50 text-violet-700 py-2 px-1 text-[11px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-violet-100">
                           <Plus size={13} /> Start room
                         </button>
-                        <button onClick={handleShareMeeting} className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-slate-50">
-                          <UserPlus size={13} /> Invite people
+                        <button onClick={handleShareMeeting} className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 px-1 text-[11px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-slate-50">
+                          <UserPlus size={13} /> Invite
                         </button>
                         <button
                           onClick={() => {
@@ -11442,9 +11442,9 @@ Rules:
                               showToast('Please enter a room code');
                             }
                           }}
-                          className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-slate-50"
+                          className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 px-1 text-[11px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-slate-50"
                         >
-                          <LinkIcon size={13} /> Join with code
+                          <LinkIcon size={13} /> Join
                         </button>
                       </div>
                     </div>
