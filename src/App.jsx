@@ -6240,14 +6240,14 @@ Rules:
   }, [docTitle, scheduleAgendaItems]);
 
   useEffect(() => {
-    // Expand schedule rail when full calendar is open; otherwise keep compact width.
+    // Expand schedule rail when full calendar panel is open; otherwise keep compact width.
     if (activeRightTab === 'calendar' && rightSidebarOpen) {
-      const targetWidth = openDropdown === 'calendar-month' ? 384 : 320;
+      const targetWidth = isScheduleCalendarExpanded ? 440 : 320;
       if (rightSidebarWidth !== targetWidth) {
         setRightSidebarWidth(targetWidth);
       }
     }
-  }, [activeRightTab, rightSidebarOpen, rightSidebarWidth, openDropdown]);
+  }, [activeRightTab, rightSidebarOpen, rightSidebarWidth, isScheduleCalendarExpanded]);
 
   const convertTaskToSchedule = async (taskValue) => {
     const taskText = typeof taskValue === 'string' ? taskValue : String(taskValue?.text || '');
@@ -11147,7 +11147,7 @@ Rules:
 
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
-            <div className="flex-1 min-h-0 flex flex-col">
+            <div className="flex-1 min-h-0 flex flex-col relative">
               <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-1 pb-3 bg-[linear-gradient(180deg,#f6f7fb_0%,#f4f5f9_100%)]">
                 <div className="rounded-2xl border border-[#e8eaf2] bg-[#f5f6fa] p-3 space-y-3">
                   <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)]">
@@ -11161,7 +11161,7 @@ Rules:
                           type="button"
                           onClick={() => {
                             closeTransientMenus();
-                            setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
+                            setIsScheduleCalendarExpanded(true);
                           }}
                           className="text-slate-400 hover:text-slate-600"
                           title="Toggle calendar"
@@ -11178,7 +11178,7 @@ Rules:
                           type="button"
                           onClick={() => {
                             closeTransientMenus();
-                            setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
+                            setIsScheduleCalendarExpanded(true);
                           }}
                           className="text-[10px] font-medium text-violet-600 hover:text-violet-700"
                         >
@@ -11267,8 +11267,9 @@ Rules:
                     </div>
                   </div>
 
-                {openDropdown === 'calendar-month' && (
-                  <div className="rounded-2xl border border-[#dfe3ef] bg-white p-3 shadow-[0_16px_34px_-24px_rgba(15,23,42,0.35)]" ref={calendarMenuRef}>
+                {isScheduleCalendarExpanded && (
+                  <div className="absolute inset-0 z-20 bg-[#f4f5fa] p-3" ref={calendarMenuRef}>
+                    <div className="h-full rounded-2xl border border-[#dfe3ef] bg-white p-3 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.35)] overflow-y-auto thin-scrollbar">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-[20px] font-semibold text-slate-900 leading-none">Launch Timeline</div>
@@ -11276,7 +11277,7 @@ Rules:
                       </div>
                       <button
                         type="button"
-                        onClick={() => setOpenDropdown(null)}
+                        onClick={() => setIsScheduleCalendarExpanded(false)}
                         className="rounded-md p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                         aria-label="Close full calendar"
                       >
@@ -11351,7 +11352,7 @@ Rules:
                         <span className="text-[11px] font-medium text-slate-700">{selectedCalendarDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
                         <button
                           type="button"
-                          onClick={() => setOpenDropdown(null)}
+                          onClick={() => setIsScheduleCalendarExpanded(false)}
                           className="rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-medium text-violet-700 hover:bg-violet-100"
                         >
                           View Day
@@ -11373,6 +11374,7 @@ Rules:
                           </div>
                         ))}
                       </div>
+                    </div>
                     </div>
                   </div>
                 )}
