@@ -11199,6 +11199,69 @@ Rules:
                         ))}
                       </div>
                     </div>
+                    <div className="mt-3 border-t border-[#ececf5] pt-3">
+                      <div className="text-[12px] font-medium text-slate-800 inline-flex items-center gap-1.5">
+                        <Sparkles size={12} className="text-violet-500" /> AI Schedule Insight
+                      </div>
+                      <div className="mt-2 text-[12px] text-slate-700 leading-relaxed">{scheduleAiInsights[0] || 'Schedule balance looks healthy. Keep one flexible slot open for AI-assisted revisions.'}</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRightSidebarOpen(true);
+                          setActiveRightTab('assistant');
+                          setAssistantQuickPrompt('Optimize my next three schedule blocks for focus and momentum.');
+                        }}
+                        className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-100 px-3 py-1.5 text-[12px] font-medium text-violet-700 hover:bg-violet-200/70"
+                      >
+                        Optimize Schedule
+                      </button>
+                    </div>
+
+                    <div className="mt-3 border-t border-[#ececf5] pt-3">
+                      <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
+                      <div className="relative">
+                        <textarea
+                          ref={scheduleInputRef}
+                          value={scheduleInput}
+                          onChange={(e) => setScheduleInput(e.target.value)}
+                          onInput={(e) => autoResizeTextarea(e.currentTarget, 92)}
+                          onPaste={handleSchedulePaste}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              convertMessyScheduleToPlan();
+                            }
+                          }}
+                          placeholder="What do you want to schedule?"
+                          rows={1}
+                          className="w-full rounded-xl border border-slate-200 bg-[#fcfcff] pl-3 pr-9 py-2 text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-violet-300 resize-none leading-5"
+                        />
+                        <button
+                          type="button"
+                          onClick={convertMessyScheduleToPlan}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-violet-100/90 text-violet-700 hover:bg-violet-200 flex items-center justify-center"
+                          title="Add"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 border-t border-[#ececf5] pt-3">
+                      <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><Link size={11} className="text-slate-500" />Related to this document</div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-800">
+                            <span className="inline-flex h-4.5 w-4.5 items-center justify-center rounded bg-amber-100 text-amber-600">
+                              <Calendar size={10} />
+                            </span>
+                            <span className="truncate">Product Hunt Launch Plan</span>
+                          </div>
+                          <div className="mt-1 text-[11px] text-slate-500">Milestone · Due {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">On Track</span>
+                      </div>
+                    </div>
                   </div>
 
                 {openDropdown === 'calendar-month' && (
@@ -11258,69 +11321,6 @@ Rules:
                   </div>
                 )}
 
-                <div className="rounded-2xl border border-[#e9e0ff] bg-[#f6f1ff] px-3.5 py-3">
-                  <div className="text-[12px] font-medium text-slate-800 inline-flex items-center gap-1.5">
-                    <Sparkles size={12} className="text-violet-500" /> AI Schedule Insight
-                  </div>
-                  <div className="mt-2 text-[12px] text-slate-700 leading-relaxed">{scheduleAiInsights[0] || 'Schedule balance looks healthy. Keep one flexible slot open for AI-assisted revisions.'}</div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRightSidebarOpen(true);
-                      setActiveRightTab('assistant');
-                      setAssistantQuickPrompt('Optimize my next three schedule blocks for focus and momentum.');
-                    }}
-                    className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-100 px-3 py-1.5 text-[12px] font-medium text-violet-700 hover:bg-violet-200/70"
-                  >
-                    Optimize Schedule
-                  </button>
-                </div>
-
-                <div className="rounded-2xl border border-[#ede7ff] bg-[#faf7ff] px-3.5 py-3">
-                  <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
-                  <div className="relative">
-                    <textarea
-                      ref={scheduleInputRef}
-                      value={scheduleInput}
-                      onChange={(e) => setScheduleInput(e.target.value)}
-                      onInput={(e) => autoResizeTextarea(e.currentTarget, 92)}
-                      onPaste={handleSchedulePaste}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          convertMessyScheduleToPlan();
-                        }
-                      }}
-                      placeholder="What do you want to schedule?"
-                      rows={1}
-                      className="w-full rounded-xl border border-slate-200 bg-[#fcfcff] pl-3 pr-9 py-2 text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-violet-300 resize-none leading-5"
-                    />
-                    <button
-                      type="button"
-                      onClick={convertMessyScheduleToPlan}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-violet-100/90 text-violet-700 hover:bg-violet-200 flex items-center justify-center"
-                      title="Add"
-                    >
-                      <Plus size={12} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-[#e9ebf2] bg-[#f8f9fc] px-3.5 py-3">
-                  <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><Link size={11} className="text-slate-500" />Related to this document</div>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-800">
-                        <span className="inline-flex h-4.5 w-4.5 items-center justify-center rounded bg-amber-100 text-amber-600">
-                          <Calendar size={10} />
-                        </span>
-                        <span className="truncate">Product Hunt Launch Plan</span>
-                      </div>
-                      <div className="mt-1 text-[11px] text-slate-500">Milestone · Due {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
-                    </div>
-                    <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">On Track</span>
-                  </div>
-                </div>
                 </div>
               </div>
             </div>
