@@ -11,7 +11,7 @@ import {
   LayoutGrid, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
-  UserPlus, Link2 as LinkIcon, Clock, Maximize2, Minimize2, Sidebar,
+  UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight
 } from 'lucide-react';
 import './thin-scrollbar.css';
@@ -6240,8 +6240,9 @@ Rules:
   }, [docTitle, scheduleAgendaItems]);
 
   useEffect(() => {
-    if (activeRightTab === 'calendar' && rightSidebarOpen && rightSidebarWidth < 400) {
-      setRightSidebarWidth(400);
+    // Keep schedule rail at the earlier compact width requested by the user.
+    if (activeRightTab === 'calendar' && rightSidebarOpen && rightSidebarWidth !== 340) {
+      setRightSidebarWidth(340);
     }
   }, [activeRightTab, rightSidebarOpen, rightSidebarWidth]);
 
@@ -11144,36 +11145,50 @@ Rules:
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
             <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-[linear-gradient(180deg,#fbfbfe_0%,#f7f8fc_100%)]">
+              <div className="flex-1 overflow-y-auto px-4 pt-1 pb-3 space-y-3 bg-[linear-gradient(180deg,#fbfbfe_0%,#f7f8fc_100%)]">
                 <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)]">
                   <div className="flex items-center justify-between text-[12px]">
-                    <div className="text-slate-800 font-medium">
+                    <div className="text-slate-800 font-medium inline-flex items-center gap-1.5">
+                      <Calendar size={12} className="text-violet-500" />
                       Today <span className="text-violet-600 font-semibold">· {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeTransientMenus();
-                        setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
-                      }}
-                      className="text-[10px] font-medium text-violet-600 hover:text-violet-700"
-                    >
-                      See full calendar
-                    </button>
+                    <div className="inline-flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeTransientMenus();
+                          setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
+                        }}
+                        className="text-[10px] font-medium text-violet-600 hover:text-violet-700"
+                      >
+                        See full calendar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeTransientMenus();
+                          setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
+                        }}
+                        className="text-slate-400 hover:text-slate-600"
+                        title="Toggle calendar"
+                      >
+                        <ChevronDown size={12} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-3">
                     <div className="text-[11px] font-medium text-slate-600">Upcoming</div>
                     <div className="relative mt-2 space-y-2.5">
-                      <div className="absolute left-[8px] top-[12px] bottom-[16px] w-px bg-violet-200" />
+                      <div className="absolute left-[59px] top-[12px] bottom-[16px] w-px bg-violet-200" />
                       {scheduleAgendaItems.slice(0, 2).map((event) => (
-                        <div key={`timeline-${event.id}`} className="relative grid grid-cols-[48px_1fr] gap-2.5">
+                        <div key={`timeline-${event.id}`} className="relative grid grid-cols-[62px_1fr] gap-3">
                           <div className="text-[11.5px] leading-4 text-slate-700 pt-[1px]">
-                            <div>{event.slot || '10:00 AM'}</div>
+                            <div className="whitespace-nowrap">{event.slot || '10:00 AM'}</div>
                             <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
                           </div>
                           <div className="relative rounded-lg px-2 py-1.5">
-                            <span className="absolute left-[-13px] top-2.5 h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
+                            <span className="absolute left-[-15px] top-2.5 h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
                             <div className="text-[12.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
                             <div className="mt-0.5 text-[10px] text-violet-400">{event.category || 'General'}</div>
                           </div>
@@ -11289,7 +11304,7 @@ Rules:
                 </div>
 
                 <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3">
-                  <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><LinkIcon size={11} className="text-slate-400" />Related to this document</div>
+                  <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><Link size={11} className="text-slate-400" />Related to this document</div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-800">
