@@ -10633,6 +10633,7 @@ Rules:
         style={ rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }
       >
         {/* Sidebar Header Tabs */}
+        {activeRightTab !== 'calendar' && (
         <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
           <div
             className="flex-1 min-w-0 overflow-x-auto no-scrollbar"
@@ -10675,6 +10676,7 @@ Rules:
             />
           </div>
         </div>
+        )}
 
         {/* Dynamic Sidebar Content */}
         <div className="flex-1 flex flex-col min-h-0 bg-white">
@@ -11143,7 +11145,7 @@ Rules:
           {activeRightTab === 'calendar' && (
             <div className="flex-1 min-h-0 flex flex-col">
               <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-[linear-gradient(180deg,#fbfbfe_0%,#f7f8fc_100%)]">
-                <div className="rounded-2xl border border-[#e5e7ef] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.42)]">
+                <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)]">
                   <div className="flex items-center justify-between text-[12px]">
                     <div className="text-slate-800 font-medium">
                       Today <span className="text-violet-600 font-semibold">· {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
@@ -11163,14 +11165,17 @@ Rules:
                   <div className="mt-3">
                     <div className="text-[11px] font-medium text-slate-600">Upcoming</div>
                     <div className="relative mt-2 space-y-2.5">
-                      <div className="absolute left-[7px] top-3 bottom-3 w-px bg-violet-200" />
+                      <div className="absolute left-[8px] top-[12px] bottom-[16px] w-px bg-violet-200" />
                       {scheduleAgendaItems.slice(0, 2).map((event) => (
                         <div key={`timeline-${event.id}`} className="relative grid grid-cols-[48px_1fr] gap-2.5">
-                          <div className="text-[12px] leading-4 text-slate-700 pt-[1px]">{(event.slot || formatEventSlotLabel(event)).split(' ').slice(0, 2).join(' ')}</div>
+                          <div className="text-[11.5px] leading-4 text-slate-700 pt-[1px]">
+                            <div>{event.slot || '10:00 AM'}</div>
+                            <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
+                          </div>
                           <div className="relative rounded-lg px-2 py-1.5">
                             <span className="absolute left-[-13px] top-2.5 h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
                             <div className="text-[12.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
-                            <div className="mt-0.5 text-[10px] text-violet-500">{event.category || 'General'}</div>
+                            <div className="mt-0.5 text-[10px] text-violet-400">{event.category || 'General'}</div>
                           </div>
                         </div>
                       ))}
@@ -11235,7 +11240,7 @@ Rules:
                   </div>
                 )}
 
-                <div className="rounded-2xl border border-[#e7defe] bg-[#f7f2ff] px-3.5 py-3">
+                <div className="rounded-2xl border border-[#e9e0ff] bg-[#f7f3ff] px-3.5 py-3">
                   <div className="text-[12px] font-medium text-slate-800 inline-flex items-center gap-1.5">
                     <Sparkles size={12} className="text-violet-500" /> AI Schedule Insight
                   </div>
@@ -11247,13 +11252,13 @@ Rules:
                       setActiveRightTab('assistant');
                       setAssistantQuickPrompt('Optimize my next three schedule blocks for focus and momentum.');
                     }}
-                    className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-100/55 px-3 py-1.5 text-[12px] font-medium text-violet-700 hover:bg-violet-100"
+                    className="mt-3 w-full rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-[12px] font-medium text-violet-700 hover:bg-violet-50"
                   >
                     Optimize Schedule
                   </button>
                 </div>
 
-                <div className="rounded-2xl border border-[#e5e7ef] bg-white px-3.5 py-3">
+                <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3">
                   <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
                   <div className="relative">
                     <textarea
@@ -11270,12 +11275,12 @@ Rules:
                       }}
                       placeholder="What do you want to schedule?"
                       rows={1}
-                      className="w-full rounded-xl border border-slate-200 bg-[#fbfbff] pl-3 pr-9 py-2 text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-violet-300 resize-none"
+                      className="w-full rounded-xl border border-slate-200 bg-[#fcfcff] pl-3 pr-9 py-2 text-[12px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-violet-300 resize-none leading-5"
                     />
                     <button
                       type="button"
                       onClick={convertMessyScheduleToPlan}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-violet-100 text-violet-700 hover:bg-violet-200 flex items-center justify-center"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-violet-100/90 text-violet-700 hover:bg-violet-200 flex items-center justify-center"
                       title="Add"
                     >
                       <Plus size={12} />
@@ -11283,13 +11288,13 @@ Rules:
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-[#e5e7ef] bg-white px-3.5 py-3">
-                  <div className="text-[12px] font-medium text-slate-700 mb-2">Related to this document</div>
+                <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3">
+                  <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><LinkIcon size={11} className="text-slate-400" />Related to this document</div>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-800">
                         <span className="inline-flex h-4.5 w-4.5 items-center justify-center rounded bg-amber-100 text-amber-600">
-                          <FileText size={10} />
+                          <Calendar size={10} />
                         </span>
                         <span className="truncate">Product Hunt Launch Plan</span>
                       </div>
