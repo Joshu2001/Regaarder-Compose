@@ -11173,7 +11173,7 @@ Rules:
                   </div>
 
                   <div className="mt-2 space-y-2.5">
-                    {scheduleAgendaItems.slice(0, 2).map((event) => (
+                    {scheduleAgendaItems.slice(0, isScheduleCalendarExpanded ? 4 : 2).map((event) => (
                       <div key={`timeline-${event.id}`} className="grid grid-cols-[58px_1fr] gap-2">
                         <div className="flex items-start gap-1.5 text-[11px] text-slate-700">
                           <span className="mt-[3px] inline-block h-1.5 w-1.5 rounded-full bg-violet-500" />
@@ -11188,25 +11188,78 @@ Rules:
                   </div>
 
                   {isScheduleCalendarExpanded && (
-                    <div className="mt-3 rounded-xl border border-[#ecebf5] p-2.5" ref={calendarMenuRef}>
-                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400 mb-1.5">
-                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    <div className="mt-3 rounded-2xl border border-[#e9e7f3] bg-[#fcfbff] p-3" ref={calendarMenuRef}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <div className="text-[18px] font-semibold text-slate-900 leading-none">Launch Timeline</div>
+                          <div className="mt-1 text-[11px] text-slate-500">Intelligent schedule optimized around your work</div>
+                        </div>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">AI Planning</span>
                       </div>
-                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-slate-700">
-                        {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              if (!dayObj.isCurrentMonth) return;
-                              setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
-                            }}
-                            className={`py-1 rounded ${dayObj.isCurrentMonth ? ((selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day) ? 'bg-violet-600 text-white' : 'hover:bg-slate-100') : 'text-slate-300'}`}
-                            disabled={!dayObj.isCurrentMonth}
-                          >
-                            {dayObj.day}
-                          </button>
-                        ))}
+
+                      <div className="rounded-xl border border-[#ecebf5] bg-white p-2.5 mb-3">
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
+                          <Sparkles size={12} className="text-violet-500" /> AI Planning Insight
+                        </div>
+                        <div className="mt-1 text-[11px] text-slate-600">{scheduleAiInsights[0] || 'You have 2 focus blocks today. This is ideal for deep work.'}</div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <div className="w-9 shrink-0 rounded-xl border border-[#ecebf5] bg-white p-1.5 space-y-2 text-slate-400">
+                          <div className="h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center"><Calendar size={12} /></div>
+                          <div className="h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center"><File size={12} /></div>
+                          <div className="h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center"><Sparkles size={12} /></div>
+                          <div className="h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center"><LinkIcon size={12} /></div>
+                        </div>
+
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <div className="rounded-xl border border-[#ecebf5] bg-white p-2.5">
+                            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700 mb-1.5">
+                              <span>{monthNames[calendarMonth]} {calendarYear}</span>
+                              <button type="button" className="text-[10px] text-slate-500 rounded-md bg-slate-100 px-2 py-0.5">Today</button>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400 mb-1">
+                              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                            </div>
+                            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-slate-700">
+                              {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => {
+                                    if (!dayObj.isCurrentMonth) return;
+                                    setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
+                                  }}
+                                  className={`py-1 rounded ${dayObj.isCurrentMonth ? ((selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day) ? 'bg-violet-600 text-white' : 'hover:bg-slate-100') : 'text-slate-300'}`}
+                                  disabled={!dayObj.isCurrentMonth}
+                                >
+                                  {dayObj.day}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="rounded-xl border border-[#ecebf5] bg-white p-2.5">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="text-[12px] font-semibold text-slate-800">{selectedCalendarDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                              <span className="text-[10px] text-violet-600 font-semibold">{Math.max(0, scheduleAgendaItems.length)} events</span>
+                            </div>
+
+                            <div className="space-y-2 max-h-[250px] overflow-y-auto thin-scrollbar pr-1">
+                              {scheduleAgendaItems.slice(0, 6).map((event) => (
+                                <div key={`expanded-event-${event.id}`} className="rounded-lg border border-[#efedf6] bg-[#fdfdff] p-2">
+                                  <div className="grid grid-cols-[64px_1fr] gap-2">
+                                    <div className="text-[12px] font-semibold text-slate-700">{event.slot || '10:00 AM'}</div>
+                                    <div>
+                                      <div className="text-[12px] font-semibold text-slate-800 leading-tight">{event.title}</div>
+                                      <div className="mt-0.5 text-[10px] text-slate-500">{event.category || 'General'} · {Math.max(15, Number(event.durationMinutes || 60))} min</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
