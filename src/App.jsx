@@ -6240,10 +6240,13 @@ Rules:
   }, [docTitle, scheduleAgendaItems]);
 
   useEffect(() => {
-    if (activeRightTab === 'calendar' && rightSidebarOpen && rightSidebarWidth < 400) {
-      setRightSidebarWidth(400);
+    if (activeRightTab === 'calendar' && rightSidebarOpen && !rightPanelMaximized) {
+      const targetWidth = 300;
+      if (Math.abs(rightSidebarWidth - targetWidth) > 6) {
+        setRightSidebarWidth(targetWidth);
+      }
     }
-  }, [activeRightTab, rightSidebarOpen, rightSidebarWidth]);
+  }, [activeRightTab, rightPanelMaximized, rightSidebarOpen, rightSidebarWidth]);
 
   const convertTaskToSchedule = async (taskValue) => {
     const taskText = typeof taskValue === 'string' ? taskValue : String(taskValue?.text || '');
@@ -11142,266 +11145,124 @@ Rules:
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
             <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-[linear-gradient(180deg,#ffffff_0%,#fafbfd_100%)]">
-                <div className="rounded-2xl border border-slate-200/70 bg-white/80 backdrop-blur-sm px-4 py-3 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.35)]">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <h3 className="text-[14px] font-semibold text-slate-900">Today</h3>
-                      <p className="text-[11px] text-slate-500">Focused agenda with AI scheduling intelligence.</p>
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-[#f7f7fb]">
+                <div className="rounded-2xl border border-[#ecebf5] bg-white px-3.5 py-3 shadow-[0_12px_26px_-24px_rgba(15,23,42,0.42)]">
+                  <div className="flex items-center justify-between">
+                    <div className="text-[13px] font-semibold text-slate-800">
+                      Today <span className="text-violet-600 font-medium">· {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsScheduleCalendarExpanded((prev) => !prev)}
-                      className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600 hover:border-violet-300 hover:text-violet-700"
+                      className="text-slate-400 hover:text-slate-600"
+                      title={isScheduleCalendarExpanded ? 'Collapse calendar' : 'Expand calendar'}
                     >
-                      {isScheduleCalendarExpanded ? 'Hide Calendar' : 'Show Calendar'}
-                      <ChevronDown size={12} className={`transition-transform ${isScheduleCalendarExpanded ? 'rotate-180' : ''}`} />
+                      <ChevronDown size={14} className={`transition-transform ${isScheduleCalendarExpanded ? 'rotate-180' : ''}`} />
                     </button>
                   </div>
 
-                  <div className="mt-3 space-y-2">
-                    {scheduleAgendaItems.slice(0, 3).map((event) => (
-                      <div key={`agenda-${event.id}`} className="rounded-xl border border-slate-200/70 bg-white px-3 py-2.5">
-                        <div className="text-[13px] font-semibold text-slate-900 leading-tight">{event.title}</div>
-                        <div className="mt-1 text-[11px] text-slate-500">{formatEventSlotLabel(event)} · {Math.max(15, Number(event.durationMinutes || 60))} min</div>
+                  <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
+                    <span className="font-semibold">Upcoming</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsScheduleCalendarExpanded(true)}
+                      className="text-violet-600 font-medium hover:text-violet-700"
+                    >
+                      See full calendar
+                    </button>
+                  </div>
+
+                  <div className="mt-2 space-y-2.5">
+                    {scheduleAgendaItems.slice(0, 2).map((event) => (
+                      <div key={`timeline-${event.id}`} className="grid grid-cols-[58px_1fr] gap-2">
+                        <div className="flex items-start gap-1.5 text-[11px] text-slate-700">
+                          <span className="mt-[3px] inline-block h-1.5 w-1.5 rounded-full bg-violet-500" />
+                          <span className="font-medium">{event.slot || '10:00 AM'}</span>
+                        </div>
+                        <div>
+                          <div className="text-[11px] leading-tight font-medium text-slate-800">{event.title}</div>
+                          <div className="mt-0.5 text-[10px] text-violet-600">{event.category || 'General'}</div>
+                        </div>
                       </div>
                     ))}
-                    {scheduleAgendaItems.length === 0 && (
-                      <div className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-3 text-[11px] text-slate-500">
-                        No events scheduled yet.
-                      </div>
-                    )}
                   </div>
+
+                  {isScheduleCalendarExpanded && (
+                    <div className="mt-3 rounded-xl border border-[#ecebf5] p-2.5" ref={calendarMenuRef}>
+                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400 mb-1.5">
+                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-slate-700">
+                        {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              if (!dayObj.isCurrentMonth) return;
+                              setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
+                            }}
+                            className={`py-1 rounded ${dayObj.isCurrentMonth ? ((selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day) ? 'bg-violet-600 text-white' : 'hover:bg-slate-100') : 'text-slate-300'}`}
+                            disabled={!dayObj.isCurrentMonth}
+                          >
+                            {dayObj.day}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="rounded-2xl border border-violet-200/60 bg-violet-50/55 px-4 py-3">
-                  <div className="text-[10px] font-semibold tracking-[0.14em] uppercase text-violet-700">AI Insights</div>
-                  <div className="mt-2 space-y-2">
-                    {scheduleAiInsights.map((insight, index) => (
-                      <div key={`insight-${index}`} className="text-[12px] leading-relaxed text-slate-700">{insight}</div>
-                    ))}
+                <div className="rounded-2xl border border-[#ecebf5] bg-white px-3.5 py-3">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
+                    <Sparkles size={12} className="text-violet-500" /> AI Schedule Insight
                   </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-600">{scheduleAiInsights[0] || 'Your schedule is balanced. Keep one flexible block for editing and review.'}</p>
                   <button
                     type="button"
                     onClick={() => {
                       setRightSidebarOpen(true);
                       setActiveRightTab('assistant');
-                      setAssistantQuickPrompt('Optimize my next three schedule blocks for focus and momentum.');
+                      setAssistantQuickPrompt('Optimize my schedule around document writing and deadlines.');
                     }}
-                    className="mt-3 inline-flex items-center gap-1 rounded-full bg-violet-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-violet-700"
+                    className="mt-2.5 w-full rounded-lg border border-[#e8e6f3] bg-[#f7f6fc] py-1.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-50"
                   >
-                    <Sparkles size={12} /> Optimize Schedule
+                    Optimize Schedule
                   </button>
                 </div>
 
-                {isScheduleCalendarExpanded && (
-                  <div className="rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 space-y-3" ref={calendarMenuRef}>
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            closeTransientMenus();
-                            setOpenDropdown((prev) => (prev === 'calendar-month' ? null : 'calendar-month'));
-                          }}
-                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-slate-50"
-                        >
-                          {monthNames[calendarMonth]} <ChevronDown size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            closeTransientMenus();
-                            setOpenDropdown((prev) => (prev === 'calendar-year' ? null : 'calendar-year'));
-                          }}
-                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-slate-50"
-                        >
-                          {calendarYear} <ChevronDown size={12} />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (calendarYear === 2026 && calendarMonth === 0) return;
-                            if (calendarMonth === 0) {
-                              setCalendarView(11, calendarYear - 1);
-                            } else {
-                              setCalendarView(calendarMonth - 1, calendarYear);
-                            }
-                          }}
-                          className="rounded p-1 hover:bg-slate-100"
-                          disabled={calendarYear === 2026 && calendarMonth === 0}
-                        >
-                          <ChevronLeft size={13} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (calendarMonth === 11) {
-                              setCalendarView(0, calendarYear + 1);
-                            } else {
-                              setCalendarView(calendarMonth + 1, calendarYear);
-                            }
-                          }}
-                          className="rounded p-1 hover:bg-slate-100"
-                          disabled={calendarYear === 2029 && calendarMonth === 11}
-                        >
-                          <ChevronRight size={13} />
-                        </button>
-                      </div>
+                <div className="rounded-2xl border border-[#ecebf5] bg-white px-3.5 py-3">
+                  <div className="text-[11px] font-semibold text-slate-600 mb-2">Quick Add</div>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      convertMessyScheduleToPlan();
+                    }}
+                    className="flex items-center gap-2 rounded-xl border border-[#ebeaf4] bg-[#fbfbff] px-2 py-1.5"
+                  >
+                    <input
+                      ref={scheduleInputRef}
+                      value={scheduleInput}
+                      onChange={(e) => setScheduleInput(e.target.value)}
+                      placeholder="What do you want to schedule?"
+                      className="flex-1 bg-transparent text-[11px] text-slate-700 placeholder:text-slate-400 outline-none"
+                    />
+                    <button type="submit" className="h-5 w-5 inline-flex items-center justify-center rounded-full bg-violet-100 text-violet-700 hover:bg-violet-200" title="Add to schedule">
+                      <Plus size={12} />
+                    </button>
+                  </form>
+                </div>
+
+                <div className="rounded-2xl border border-[#ecebf5] bg-white px-3.5 py-3">
+                  <div className="text-[11px] font-semibold text-slate-600 mb-2">Related to this document</div>
+                  <div className="flex items-start justify-between gap-2 text-[11px]">
+                    <div className="min-w-0">
+                      <div className="text-slate-800 font-medium truncate">{scheduleAgendaItems[1]?.title || 'Product Hunt Launch Plan'}</div>
+                      <div className="mt-0.5 text-slate-500">Milestone · Due {new Date((scheduleAgendaItems[1]?._sortDate || new Date())).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                     </div>
-
-                    {openDropdown === 'calendar-month' && (
-                      <div className="rounded-xl border border-slate-200 bg-white p-2 max-h-36 overflow-y-auto thin-scrollbar">
-                        {monthNames.map((m, i) => (
-                          <button
-                            key={m}
-                            type="button"
-                            onClick={() => {
-                              setCalendarView(i, calendarYear);
-                              setOpenDropdown(null);
-                            }}
-                            className="w-full text-left text-[11px] px-2 py-1 rounded hover:bg-violet-50"
-                          >
-                            {m}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {openDropdown === 'calendar-year' && (
-                      <div className="rounded-xl border border-slate-200 bg-white p-2 max-h-28 overflow-y-auto thin-scrollbar">
-                        {[2026, 2027, 2028, 2029].map((y) => (
-                          <button
-                            key={y}
-                            type="button"
-                            onClick={() => {
-                              setCalendarView(calendarMonth, y);
-                              setOpenDropdown(null);
-                            }}
-                            className="w-full text-left text-[11px] px-2 py-1 rounded hover:bg-violet-50"
-                          >
-                            {y}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400">
-                      <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-                    </div>
-                    <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate-700">
-                      {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => {
-                            if (!dayObj.isCurrentMonth) return;
-                            setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
-                          }}
-                          className={`py-1 rounded ${dayObj.isCurrentMonth ? ((selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day) ? 'bg-violet-600 text-white' : dayObj.isToday ? 'bg-violet-100 text-violet-700 hover:bg-violet-200' : 'hover:bg-slate-100') : 'text-slate-300'}`}
-                          disabled={!dayObj.isCurrentMonth}
-                        >
-                          {dayObj.day}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-[10px] font-semibold tracking-[0.14em] uppercase text-slate-500">Next Events</span>
-                    <span className="text-[10px] text-violet-600 font-semibold">{formatUpcomingHeaderDate(selectedCalendarDate)}</span>
-                  </div>
-                  <div className="space-y-2">
-                    {scheduleAgendaItems.map((event) => (
-                      <div key={`event-${event.id}`} className="rounded-2xl border border-slate-200/70 bg-white/90 px-4 py-3 shadow-[0_10px_24px_-22px_rgba(15,23,42,0.4)]">
-                        <div className="text-[14px] font-semibold text-slate-900 leading-snug">{event.title}</div>
-                        <div className="mt-1 text-[12px] text-slate-600">{formatEventSlotLabel(event)} · {Math.max(15, Number(event.durationMinutes || 60))} min</div>
-                        {(event.summary || '').trim() && (
-                          <div className="mt-1.5 text-[11px] text-slate-500 leading-relaxed">{String(event.summary).trim()}</div>
-                        )}
-                      </div>
-                    ))}
+                    <button type="button" className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">On Track</button>
                   </div>
                 </div>
               </div>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  convertMessyScheduleToPlan();
-                }}
-                className="border-t border-slate-200 bg-white/90 backdrop-blur-sm p-4"
-              >
-                {scheduleAttachments.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    {scheduleAttachments.map((attachment) => (
-                      <span key={attachment.id} className="text-[10px] px-2 py-0.5 rounded-full border border-slate-200 bg-white text-slate-600">
-                        {attachment.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="bg-white border border-slate-200 shadow-sm flex items-center px-2 py-1.5 hover:border-violet-200 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 transition-all rounded-2xl">
-                  <input
-                    ref={scheduleFileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={async (event) => {
-                      await ingestScheduleAttachments(event.target.files);
-                      event.target.value = '';
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => scheduleFileInputRef.current?.click()}
-                    className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
-                    title="Attach files or images"
-                  >
-                    <Upload size={13} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      await toggleVoiceRecording('schedule');
-                    }}
-                    className={`ml-1 p-1.5 rounded-lg transition-colors ${voiceTarget === 'schedule' && isVoiceActive ? 'bg-violet-100 text-violet-700' : 'bg-gray-50 hover:bg-gray-100 text-gray-500'}`}
-                    title="Dictate schedule input"
-                  >
-                    <Mic size={13} />
-                  </button>
-                  <PenTool size={14} className="text-gray-400 mx-2 shrink-0" />
-                  <div className="relative flex-1">
-                  <textarea
-                    ref={scheduleInputRef}
-                    value={scheduleInput}
-                    onChange={(e) => setScheduleInput(e.target.value)}
-                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                    onPaste={handleSchedulePaste}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        convertMessyScheduleToPlan();
-                      }
-                    }}
-                    placeholder="Quick add tasks, dates, and messy notes. Compose AI will structure them."
-                    rows={1}
-                    className="w-full bg-transparent border-none focus:outline-none text-xs text-slate-700 placeholder:text-slate-400 py-1 pr-10 resize-none"
-                  />
-                  <button
-                    type="submit"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
-                    title="Process list"
-                  >
-                    <Send size={14} />
-                  </button>
-                  </div>
-                </div>
-              </form>
             </div>
           )}
 
