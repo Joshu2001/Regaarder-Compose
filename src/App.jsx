@@ -11396,123 +11396,102 @@ Rules:
                       <span className="w-5 h-5 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center">
                         <MonitorPlay size={12} />
                       </span>
-                      <span className="text-[19px] font-semibold leading-none">Room</span>
+                      <span className="text-[20px] font-semibold leading-none">Room</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
-                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                      aria-label="Close Room panel"
-                    >
-                      <X size={14} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
+                        onClick={() => { setRightPanelMaximized((p) => !p); if (!rightSidebarOpen) setRightSidebarOpen(true); }}
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                      >
+                        {rightPanelMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
+                        className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        aria-label="Close Room panel"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto p-3">
-                    <div className="rounded-2xl border border-[#eceef7] bg-white px-4 py-4 text-center">
-                      <div className="w-14 h-14 bg-violet-50 border border-violet-200 rounded-2xl flex items-center justify-center text-violet-600 mx-auto">
-                        <MonitorPlay size={26} />
-                      </div>
-                      <h3 className="text-[34px] font-bold text-[#12132b] tracking-tight mt-3">Welcome to Room</h3>
-                      <p className="text-[17px] text-[#555d73] mt-2 leading-relaxed">Start a live session, invite collaborators, and bring ideas to life together.</p>
-
-                      <div className="mt-4 p-1 bg-[#f2f4fa] rounded-xl flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setRoomMode('meetings')}
-                          className={`flex-1 rounded-lg px-3 py-2 text-[14px] font-semibold transition-colors ${roomMode === 'meetings' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                        >
-                          Meetings
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setRoomMode('calls')}
-                          className={`flex-1 rounded-lg px-3 py-2 text-[14px] font-semibold transition-colors ${roomMode === 'calls' ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-600 hover:text-slate-800'}`}
-                        >
-                          Calls (1:1)
-                        </button>
-                      </div>
-
-                      <div className="mt-4 space-y-2.5 text-left">
-                        <button
-                          onClick={() => openMeetingSetup(generateRoomCode())}
-                          className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl py-3 text-sm font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Plus size={16} /> Create Meeting
-                        </button>
-
-                        <button
-                          onClick={handleShareMeeting}
-                          className="w-full bg-white border border-violet-200 text-violet-700 rounded-xl py-2.5 text-sm font-semibold hover:bg-violet-50 transition-all flex items-center justify-center gap-2"
-                        >
-                          <UserPlus size={15} /> Share Meeting Link
-                        </button>
-
-                        <div className="relative group">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <LinkIcon size={14} className="text-gray-400 group-focus-within:text-violet-500 transition-colors" />
-                          </div>
-                          <input
-                            type="text"
-                            value={joinCode}
-                            onChange={(e) => setJoinCode(e.target.value)}
-                            placeholder="Enter room code or link..."
-                            className="w-full bg-white border border-gray-200 rounded-xl py-2.5 pl-9 pr-10 text-sm focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-50 transition-all"
-                          />
-                          <button
-                            onClick={() => {
-                              if (joinCode.trim()) {
-                                openMeetingSetup(joinCode.trim());
-                              } else showToast('Please enter a room code');
-                            }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg transition-colors"
-                          >
-                            <ArrowRight size={16} />
-                          </button>
+                  <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+                    <div className="rounded-2xl border border-[#eceef7] bg-white px-4 py-5 text-center">
+                      <h3 className="text-[28px] font-bold text-[#1a1f36] tracking-tight">No active sharing</h3>
+                      <p className="text-[13px] text-[#6b7280] mt-2">Start a call or invite others to collaborate.</p>
+                      <div className="mt-4 w-[110px] h-[110px] rounded-full border border-dashed border-violet-200 mx-auto flex items-center justify-center">
+                        <div className="w-14 h-14 rounded-2xl bg-violet-50 border border-violet-200 text-violet-500 flex items-center justify-center">
+                          <MonitorPlay size={24} />
                         </div>
-                        <div className="text-[10px] text-gray-400">Meeting links accept direct codes or full URLs, like Meet-style joins.</div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-3 gap-2 text-left">
+                        <button onClick={() => openMeetingSetup(generateRoomCode())} className="rounded-xl border border-violet-200 bg-violet-50 text-violet-700 py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-violet-100">
+                          <Plus size={13} /> Start room
+                        </button>
+                        <button onClick={handleShareMeeting} className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-slate-50">
+                          <UserPlus size={13} /> Invite people
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (joinCode.trim()) {
+                              openMeetingSetup(joinCode.trim());
+                            } else {
+                              showToast('Please enter a room code');
+                            }
+                          }}
+                          className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-slate-50"
+                        >
+                          <LinkIcon size={13} /> Join with code
+                        </button>
                       </div>
                     </div>
 
-                    <div className="mt-3 rounded-2xl border border-[#eceef7] bg-white px-4 py-3 text-left">
+                    <div className="rounded-2xl border border-[#eceef7] bg-white px-4 py-3 text-left">
                       <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Upcoming Meetings</span>
-                        <button type="button" className="text-[11px] font-semibold text-violet-600 hover:text-violet-700">View calendar</button>
+                        <span className="text-[18px] font-bold text-[#23283b] tracking-tight">Upcoming</span>
+                        <button type="button" className="text-[12px] font-semibold text-violet-600 hover:text-violet-700">View calendar</button>
                       </div>
                       <button onClick={() => openMeetingSetup('beta-launch-kickoff')} className="w-full rounded-xl border border-gray-200 bg-white p-3 hover:border-violet-200 hover:bg-violet-50/20 transition-colors text-left">
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-2.5">
                           <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
                             <Calendar size={14} />
                           </div>
-                          <div className="min-w-0">
-                            <div className="text-xs font-semibold text-slate-800">Today, May 15</div>
-                            <div className="text-[10px] text-slate-500 mt-0.5">10:00 AM - 11:00 AM</div>
-                            <div className="text-[11px] font-semibold text-slate-700 mt-1">Beta Launch Kickoff</div>
-                            <div className="mt-2 flex items-center -space-x-1.5">
-                              {meetingParticipants.slice(0, 4).map((participant) => (
-                                <img key={`upcoming-${participant.name}`} src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full border border-white object-cover" />
-                              ))}
-                              <span className="ml-2 text-[10px] font-semibold text-slate-500">+2</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="text-xs font-semibold text-slate-800">Today, May 15</div>
+                              <div className="text-[10px] text-slate-400">• in 45 min</div>
+                            </div>
+                            <div className="text-[14px] font-semibold text-slate-900 mt-1 leading-tight">Beta Launch Kickoff</div>
+                            <div className="text-[11px] text-slate-500 mt-1">10:00 AM - 11:00 AM</div>
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className="flex items-center -space-x-1.5">
+                                {meetingParticipants.slice(0, 4).map((participant) => (
+                                  <img key={`upcoming-${participant.name}`} src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full border border-white object-cover" />
+                                ))}
+                                <span className="ml-2 text-[10px] font-semibold text-slate-500">+2</span>
+                              </div>
+                              <span className="px-2 py-1 rounded-lg border border-violet-200 text-violet-600 text-[11px] font-semibold">Join</span>
                             </div>
                           </div>
                         </div>
                       </button>
                     </div>
 
-                    <div className="mt-3 rounded-2xl border border-[#eceef7] bg-white px-4 py-3 text-left">
+                    <div className="rounded-2xl border border-[#eceef7] bg-white px-4 py-3 text-left">
                       <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Recent Rooms</span>
-                        <button type="button" className="text-[11px] font-semibold text-violet-600 hover:text-violet-700">See all</button>
+                        <span className="text-[18px] font-bold text-[#23283b] tracking-tight">Recent rooms</span>
+                        <button type="button" className="text-[12px] font-semibold text-violet-600 hover:text-violet-700">See all</button>
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <button onClick={() => openMeetingSetup('q2-launch')} className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-violet-50/30 transition-colors text-left">
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-6 h-6 rounded-md bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                              <Clock size={13} />
-                            </div>
+                            <div className="w-6 h-6 rounded-md bg-violet-50 text-violet-600 flex items-center justify-center shrink-0"><Clock size={13} /></div>
                             <div className="min-w-0">
-                              <div className="text-xs font-semibold text-slate-800 truncate">Q2 Launch Strategy</div>
-                              <div className="text-[10px] text-slate-500">Last active yesterday</div>
+                              <div className="text-sm font-semibold text-slate-800 truncate">Q2 Launch Strategy</div>
+                              <div className="text-[11px] text-slate-500">Active yesterday</div>
                             </div>
                           </div>
                           <div className="flex items-center -space-x-1.5">
@@ -11522,15 +11501,12 @@ Rules:
                             <span className="ml-2 text-[10px] font-semibold text-slate-500">+3</span>
                           </div>
                         </button>
-
                         <button onClick={() => openMeetingSetup('product-hunt-planning')} className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-violet-50/30 transition-colors text-left">
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-6 h-6 rounded-md bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                              <Clock size={13} />
-                            </div>
+                            <div className="w-6 h-6 rounded-md bg-violet-50 text-violet-600 flex items-center justify-center shrink-0"><Clock size={13} /></div>
                             <div className="min-w-0">
-                              <div className="text-xs font-semibold text-slate-800 truncate">Product Hunt Planning</div>
-                              <div className="text-[10px] text-slate-500">Last active May 12</div>
+                              <div className="text-sm font-semibold text-slate-800 truncate">Product Hunt Planning</div>
+                              <div className="text-[11px] text-slate-500">Active May 12</div>
                             </div>
                           </div>
                           <div className="flex items-center -space-x-1.5">
@@ -11540,6 +11516,37 @@ Rules:
                             <span className="ml-2 text-[10px] font-semibold text-slate-500">+2</span>
                           </div>
                         </button>
+                        <button onClick={() => openMeetingSetup('design-review-room')} className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-violet-50/30 transition-colors text-left">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-6 h-6 rounded-md bg-violet-50 text-violet-600 flex items-center justify-center shrink-0"><Clock size={13} /></div>
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold text-slate-800 truncate">Design Review Room</div>
+                              <div className="text-[11px] text-slate-500">Active May 8</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center -space-x-1.5">
+                            {meetingParticipants.slice(0, 3).map((participant) => (
+                              <img key={`recent-c-${participant.name}`} src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full border border-white object-cover" />
+                            ))}
+                            <span className="ml-2 text-[10px] font-semibold text-slate-500">+4</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-violet-100 bg-[#f6f2ff] px-4 py-3 text-left flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-[#1f2537]">AI Assistant</span>
+                          <span className="px-1.5 py-0.5 rounded-full bg-violet-200 text-violet-700 text-[9px] font-semibold">BETA</span>
+                        </div>
+                        <p className="text-[12px] text-slate-600 mt-2">I can capture key points, decisions, and action items during your call.</p>
+                        <button type="button" className="mt-3 text-[12px] font-semibold text-violet-600 hover:text-violet-700 inline-flex items-center gap-1">
+                          View how it works <ArrowRight size={12} />
+                        </button>
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-white/70 border border-violet-200 text-violet-500 flex items-center justify-center shrink-0">
+                        <Sparkles size={16} />
                       </div>
                     </div>
                   </div>
