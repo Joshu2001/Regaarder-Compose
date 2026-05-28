@@ -355,6 +355,8 @@ export default function App() {
   const [roomMode, setRoomMode] = useState('meetings');
   const [roomId, setRoomId] = useState('');
   const [joinCode, setJoinCode] = useState('');
+  const [isRoomStartMenuOpen, setIsRoomStartMenuOpen] = useState(false);
+  const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
   const [isRoomMicOn, setIsRoomMicOn] = useState(true);
   const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -533,6 +535,7 @@ export default function App() {
   const pointerDownInSelectionMenuRef = useRef(false);
   const docSearchMarksRef = useRef([]);
   const docSearchAutoPlayTimerRef = useRef(null);
+  const roomJoinInputRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -11390,7 +11393,7 @@ Rules:
 
               {/* STATE: LOBBY */}
               {roomState === 'lobby' && (
-                <div className="flex-1 min-h-0 bg-[#f7f8fd] animate-fade-in flex flex-col">
+                <div className="flex-1 min-h-0 bg-[#f7f8fd] animate-fade-in flex flex-col relative">
                   <div className="h-12 px-4 border-b border-gray-200 bg-white flex items-center justify-between">
                     <div className="flex items-center gap-2 text-slate-900">
                       <span className="w-5 h-5 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center">
@@ -11427,13 +11430,85 @@ Rules:
                           <MonitorPlay size={24} />
                         </div>
                       </div>
-                      <div className="mt-4 grid grid-cols-3 gap-2 text-left">
-                        <button onClick={() => openMeetingSetup(generateRoomCode())} className="rounded-xl border border-violet-200 bg-violet-50 text-violet-700 py-2 px-1 text-[10px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-violet-100">
-                          <Plus size={13} /> Start room
-                        </button>
-                        <button onClick={handleShareMeeting} className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 px-1 text-[10px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-slate-50">
-                          <UserPlus size={12} /> Invite people
-                        </button>
+                      <div className="mt-4 space-y-2 text-left">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setIsRoomStartMenuOpen((prev) => !prev)}
+                              className="w-full rounded-xl border border-violet-200 bg-violet-50 text-violet-700 py-2 px-1 text-[10px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-violet-100"
+                            >
+                              <Plus size={13} /> Start room <ChevronDown size={11} />
+                            </button>
+                            {isRoomStartMenuOpen && (
+                              <div className="absolute z-30 left-0 mt-1 w-[220px] rounded-xl border border-gray-200 bg-white shadow-[0_18px_40px_-20px_rgba(15,23,42,0.45)] p-2 text-left">
+                                <div className="text-[9px] uppercase tracking-wide text-gray-400 font-semibold px-2 py-1">Quick start</div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsRoomStartMenuOpen(false);
+                                    openMeetingSetup(generateRoomCode());
+                                  }}
+                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2"
+                                >
+                                  <Sparkles size={12} className="text-violet-500 mt-0.5" />
+                                  <span>
+                                    <span className="block text-[10px] font-semibold text-slate-800">Start instant room</span>
+                                    <span className="block text-[9px] text-slate-500">Start collaborating immediately</span>
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsRoomStartMenuOpen(false);
+                                    setActiveRightTab('calendar');
+                                    setRightSidebarOpen(true);
+                                  }}
+                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2"
+                                >
+                                  <Calendar size={12} className="text-slate-500 mt-0.5" />
+                                  <span>
+                                    <span className="block text-[10px] font-semibold text-slate-800">Schedule session</span>
+                                    <span className="block text-[9px] text-slate-500">Plan with Google Calendar</span>
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setIsRoomStartMenuOpen(false);
+                                    roomJoinInputRef.current?.focus();
+                                  }}
+                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2"
+                                >
+                                  <LinkIcon size={12} className="text-slate-500 mt-0.5" />
+                                  <span>
+                                    <span className="block text-[10px] font-semibold text-slate-800">Join with code or link</span>
+                                    <span className="block text-[9px] text-slate-500">Enter a code to join instantly</span>
+                                  </span>
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setIsRoomInviteModalOpen(true);
+                              setIsRoomStartMenuOpen(false);
+                            }}
+                            className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 px-1 text-[10px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-slate-50"
+                          >
+                            <UserPlus size={12} /> Invite people
+                          </button>
+                        </div>
+
+                        <input
+                          ref={roomJoinInputRef}
+                          type="text"
+                          value={joinCode}
+                          onChange={(e) => setJoinCode(e.target.value)}
+                          onFocus={() => setIsRoomStartMenuOpen(false)}
+                          placeholder="Join with code"
+                          className="w-full rounded-xl border border-gray-200 bg-white py-2 px-3 text-[10px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-violet-300"
+                        />
                         <button
                           onClick={() => {
                             if (joinCode.trim()) {
@@ -11442,9 +11517,9 @@ Rules:
                               showToast('Please enter a room code');
                             }
                           }}
-                          className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 px-1 text-[10px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-slate-50"
+                          className="w-full rounded-xl border border-gray-200 bg-white text-slate-700 py-2 px-1 text-[10px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-slate-50"
                         >
-                          <LinkIcon size={12} /> Join with code
+                          <LinkIcon size={12} /> Join
                         </button>
                       </div>
                     </div>
@@ -11549,6 +11624,55 @@ Rules:
                         <Sparkles size={16} />
                       </div>
                     </div>
+                  </div>
+                </div>
+              )}
+              {roomState === 'lobby' && isRoomInviteModalOpen && (
+                <div className="absolute z-40 top-[182px] left-4 right-4 flex justify-center">
+                  <div className="w-full max-w-[280px] rounded-2xl border border-gray-200 bg-white shadow-[0_24px_48px_-24px_rgba(15,23,42,0.5)] p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-[10px] font-semibold text-slate-900">People in the room</div>
+                      <button type="button" className="text-[10px] font-semibold text-violet-600 hover:text-violet-700">View all</button>
+                    </div>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img src={meetingParticipants[0]?.img} alt="You" className="w-6 h-6 rounded-full object-cover border border-white" />
+                          <div>
+                            <div className="text-[10px] font-semibold text-slate-800">You (Joshua)</div>
+                          </div>
+                        </div>
+                        <Mic size={12} className="text-violet-500" />
+                      </div>
+                      {meetingParticipants.slice(1).map((participant, index) => (
+                        <div key={`invite-${participant.name}`} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <img src={participant.img} alt={participant.name} className="w-6 h-6 rounded-full object-cover border border-white" />
+                            <div>
+                              <div className="text-[10px] font-semibold text-slate-800">{participant.name}</div>
+                              <div className="text-[9px] text-slate-400">{index === 0 ? '1m ago' : 'Active'}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await handleShareMeeting();
+                        setIsRoomInviteModalOpen(false);
+                      }}
+                      className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-50 text-violet-700 text-[10px] font-semibold py-2 inline-flex items-center justify-center gap-1.5 hover:bg-violet-100"
+                    >
+                      <Sparkles size={12} /> Invite from team
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsRoomInviteModalOpen(false)}
+                      className="mt-2 w-full rounded-lg border border-gray-200 bg-white text-slate-600 text-[10px] font-semibold py-2 hover:bg-slate-50"
+                    >
+                      Close
+                    </button>
                   </div>
                 </div>
               )}
