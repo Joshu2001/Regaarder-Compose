@@ -8965,7 +8965,9 @@ Rules:
             onClick={() => handleMiniSidebarClick('orb')}
             className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'orb' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Cloud size={20} /></div>
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-white text-[11px] font-bold">O</span>
+            </div>
             <span className="text-[9px] font-semibold">Orb</span>
           </div>
 
@@ -12807,63 +12809,116 @@ Rules:
           )}
 
           {activeRightTab === 'orb' && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f7f8fd] animate-fade-in">
-              <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-[11px] uppercase tracking-[0.11em] font-semibold text-violet-600">Regaarder Orb</div>
-                    <div className="text-base font-semibold text-slate-900 mt-1">Workspace Memory</div>
-                    <p className="text-xs text-slate-500 mt-1">Connected assets, AI summaries, and operational context in one place.</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-violet-700"
-                  >
-                    <Upload size={12} /> Upload
-                  </button>
+            <div className="flex-1 min-h-0 bg-[#fbfbff] animate-fade-in flex flex-col">
+              <div className="h-14 px-4 border-b border-gray-200 bg-white flex items-center justify-between">
+                <div className="flex items-center gap-2 text-slate-900">
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-white text-[11px] font-bold">O</span>
+                  <span className="text-[28px] leading-none font-semibold tracking-tight">Orb</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button type="button" className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100"><Search size={14} /></button>
+                  <button type="button" className="p-1.5 rounded-full text-violet-600 hover:text-violet-700 hover:bg-violet-50 border border-violet-100"><Plus size={14} /></button>
+                  <button type="button" className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100"><X size={14} /></button>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Quick Access</div>
-                <div className="space-y-1.5">
-                  {[
-                    { label: 'Recent', value: '24 assets' },
-                    { label: 'Shared', value: '11 assets' },
-                    { label: 'Favorites', value: '8 assets' },
-                  ].map((item) => (
-                    <button key={item.label} className="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-left hover:bg-violet-50/40 hover:border-violet-200 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-slate-700">{item.label}</span>
-                        <span className="text-[10px] text-slate-500">{item.value}</span>
-                      </div>
-                    </button>
-                  ))}
+              <div className="flex-1 overflow-y-auto thin-scrollbar p-3 space-y-4">
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search Orb..."
+                    className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-10 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-violet-300"
+                  />
+                  <span className="absolute right-3 top-2 text-[10px] font-semibold text-gray-400 border border-gray-200 rounded px-1.5 py-0.5">K</span>
                 </div>
-              </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Workspace Intelligence</div>
-                <div className="space-y-2">
-                  {[
-                    'AI suggested assets for this document',
-                    'Related to current project context',
-                    'Recently referenced in meetings',
-                    'Trending in your team workspace',
-                  ].map((item) => (
-                    <div key={item} className="rounded-lg border border-gray-200 bg-[#fafaff] px-2.5 py-2 text-xs text-slate-600">
-                      {item}
+                <div className="flex items-center gap-5 px-2 text-xs font-semibold border-b border-gray-200">
+                  <button className="pb-2 border-b-2 border-violet-500 text-violet-600">Context</button>
+                  <button className="pb-2 border-b-2 border-transparent text-slate-400 hover:text-slate-600">Recent</button>
+                  <button className="pb-2 border-b-2 border-transparent text-slate-400 hover:text-slate-600">Favorites</button>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 bg-white p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={13} className="text-violet-500" />
+                      <h4 className="text-sm font-semibold text-slate-900">Related to this document</h4>
+                      <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">AI</span>
                     </div>
-                  ))}
+                    <button className="text-[11px] font-semibold text-violet-600 hover:text-violet-700">View all</button>
+                  </div>
+                  <p className="mt-1 text-[10px] text-slate-500">Based on content and workspace context</p>
+                  <div className="mt-3 space-y-2">
+                    {[
+                      { name: 'Competitive Analysis.pdf', meta: 'Mentioned: pricing, positioning, bundling', ago: '2h ago' },
+                      { name: 'Creator Pricing Model.xlsx', meta: 'Related to: monetization strategy', ago: '4h ago' },
+                      { name: 'Market Entry Strategy.docx', meta: 'Related to: go-to-market, verticals', ago: '1d ago' },
+                      { name: 'Strategy Call Recording.mp4', meta: 'From: Strategy Sync · May 10', ago: '2d ago' },
+                    ].map((asset, idx) => (
+                      <div key={asset.name} className="rounded-lg border border-gray-200 bg-white px-2.5 py-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-slate-800 truncate">{asset.name}</div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">{asset.meta}</div>
+                          </div>
+                          <div className="text-[10px] text-slate-400 whitespace-nowrap">{asset.ago}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Orb Storage</div>
-                <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                  <div className="h-full w-[26%] rounded-full bg-violet-500" />
+                <div className="rounded-xl border border-gray-200 bg-white p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={13} className="text-violet-500" />
+                      <h4 className="text-sm font-semibold text-slate-900">AI Suggestions</h4>
+                      <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">New</span>
+                    </div>
+                    <button className="text-slate-400 hover:text-slate-600"><RefreshCcw size={12} /></button>
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {[
+                      'This document mentions "creator monetization". Found 8 related assets.',
+                      'Extracted 6 potential tasks from related assets.',
+                      'Investor deck v5.pdf is often referenced in this context.',
+                    ].map((item) => (
+                      <div key={item} className="rounded-lg border border-gray-200 bg-[#fbfbff] px-2.5 py-2 text-[11px] text-slate-600">
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                  <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more</button>
                 </div>
-                <div className="mt-2 text-[11px] text-slate-500">256 GB of 1 TB used</div>
+
+                <div className="rounded-xl border border-gray-200 bg-white p-3">
+                  <h4 className="text-sm font-semibold text-slate-900 mb-2">Quick Actions</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'Upload file', Icon: Upload },
+                      { label: 'Link from...', Icon: LinkIcon },
+                      { label: 'Record meeting', Icon: Mic },
+                      { label: 'Create folder', Icon: File },
+                    ].map(({ label, Icon }) => (
+                      <button key={label} className="rounded-lg border border-gray-200 bg-white px-2 py-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 inline-flex items-center gap-1.5">
+                        <Icon size={12} className="text-violet-500" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 bg-white px-3 py-2.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-slate-700">Orb Storage</span>
+                    <span className="text-slate-500">256 GB of 1 TB used</span>
+                  </div>
+                  <div className="mt-2 h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-full w-[25%] rounded-full bg-violet-500" />
+                  </div>
+                  <div className="mt-1.5 text-right text-[11px] font-semibold text-slate-600">25%</div>
+                </div>
               </div>
             </div>
           )}
@@ -12954,7 +13009,7 @@ Rules:
           }`}
         >
           <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <Cloud size={20} />
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-white text-[11px] font-bold">O</span>
           </div>
           <span className="text-[9px] font-semibold">Orb</span>
         </div>
