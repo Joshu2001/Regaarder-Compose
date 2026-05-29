@@ -10533,7 +10533,7 @@ Rules:
           </div>
         )}
 
-        {isPromptMinimized && (
+        {isPromptMinimized && activeRightTab !== 'calendar' && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[340]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
@@ -11152,36 +11152,34 @@ Rules:
 
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
-            <div className="fixed inset-0 z-[1350] bg-black/70 flex items-center justify-center p-4">
-              <div className="w-[min(92vw,1180px)] h-[min(84vh,760px)] rounded-2xl border border-[#ececf7] bg-white shadow-[0_24px_80px_-32px_rgba(15,23,42,0.45)] overflow-hidden flex flex-col">
+            <div
+              className="fixed inset-0 z-[1350] bg-black/70 flex items-center justify-center p-4"
+              onClick={() => {
+                setIsScheduleCalendarExpanded(false);
+                setRightSidebarOpen(false);
+              }}
+            >
+              <div
+                className="w-[min(90vw,1100px)] h-[min(90vh,860px)] rounded-xl border border-[#ececf7] bg-white shadow-[0_24px_80px_-32px_rgba(15,23,42,0.45)] overflow-hidden flex flex-col"
+                onClick={(event) => event.stopPropagation()}
+              >
                 <div className="h-16 px-5 border-b border-[#ececf5] bg-white flex items-center justify-between">
                   <div>
-                    <div className="text-[32px] font-semibold text-slate-900 leading-none">Schedule a session</div>
+                    <div className="text-[24px] font-semibold text-slate-900 leading-tight">Schedule a session</div>
                     <div className="text-[11px] text-slate-500 mt-1">Plan ahead and invite others to collaborate.</div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center">
                     <button
                       type="button"
                       className="h-10 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700"
                     >
                       Save
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsScheduleCalendarExpanded(false);
-                        setRightSidebarOpen(false);
-                      }}
-                      className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                      title="Close schedule"
-                    >
-                      <X size={18} />
-                    </button>
                   </div>
                 </div>
                 <div className="flex-1 grid grid-cols-[2fr_1fr] gap-0 overflow-hidden">
                   <div className="p-5 overflow-hidden">
-                    <div className="h-full overflow-hidden rounded-xl border border-[#ececf5] bg-white p-4 flex flex-col">
+                    <div className="h-full overflow-y-auto thin-scrollbar rounded-lg border border-[#ececf5] bg-white p-4 flex flex-col">
                       <div className="grid grid-cols-[1fr_1fr_auto_1fr_1fr_auto] gap-2 text-[12px]">
                         <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">May 29, 2025</button>
                         <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">10:00 AM</button>
@@ -11265,8 +11263,8 @@ Rules:
                     </div>
                   </div>
                   <div className="border-l border-[#ececf5] p-5 overflow-hidden">
-                    <div className="h-full overflow-hidden flex flex-col gap-3">
-                      <div className="rounded-xl border border-[#ececf5] bg-white p-3">
+                    <div className="h-full overflow-y-auto thin-scrollbar flex flex-col gap-3 pr-1">
+                      <div className="rounded-lg border border-[#ececf5] bg-white p-3">
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-[14px] font-semibold text-slate-900">Participants</div>
                           <button className="text-[12px] text-violet-600 font-semibold">+ Add people</button>
@@ -11284,7 +11282,7 @@ Rules:
                         </div>
                       </div>
 
-                      <div className="rounded-xl border border-[#ececf5] bg-white p-3">
+                      <div className="rounded-lg border border-[#ececf5] bg-white p-3">
                         <div className="text-[14px] font-semibold text-slate-900 mb-2">Options</div>
                         <div className="space-y-2 text-[12px] text-slate-700">
                           <label className="flex items-start gap-2"><input type="checkbox" defaultChecked className="mt-0.5" /><span>Enable AI notes &amp; summary</span></label>
@@ -11294,7 +11292,7 @@ Rules:
                         </div>
                       </div>
 
-                      <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3 mt-auto">
+                      <div className="rounded-lg border border-violet-100 bg-violet-50/50 p-3 mt-auto">
                         <div className="text-[14px] font-semibold text-slate-900">AI Assistant <span className="text-[10px] text-violet-600 font-semibold ml-1">BETA</span></div>
                         <div className="text-[12px] text-slate-600 mt-1">I can help prepare for this session.</div>
                         <div className="mt-2 text-[12px] text-violet-700 space-y-1">
