@@ -11150,9 +11150,27 @@ Rules:
 
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
-            <div className="flex-1 min-h-0 flex flex-col relative">
-              <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-1 pb-3 bg-[linear-gradient(180deg,#f6f7fb_0%,#f4f5f9_100%)]">
-                <div className="rounded-2xl border border-[#e8eaf2] bg-[#f5f6fa] p-3 space-y-3">
+            <div className="fixed inset-0 z-[1350] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="w-[min(96vw,1120px)] h-[min(92vh,900px)] rounded-[20px] border border-[#e6e3fb] bg-white shadow-[0_24px_80px_-32px_rgba(76,29,149,0.45)] overflow-hidden flex flex-col">
+                <div className="h-16 px-6 border-b border-[#ececf5] bg-white flex items-center justify-between">
+                  <div>
+                    <div className="text-[34px] font-semibold text-slate-900 leading-none">Schedule a session</div>
+                    <div className="text-[11px] text-slate-500 mt-1">Plan ahead and invite others to collaborate.</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsScheduleCalendarExpanded(false);
+                      setRightSidebarOpen(false);
+                    }}
+                    className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                    title="Close schedule"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-3 pb-4 bg-[linear-gradient(180deg,#f6f7fb_0%,#f4f5f9_100%)]">
+                  <div className="rounded-2xl border border-[#e8eaf2] bg-[#f5f6fa] p-3 space-y-3 min-h-full">
                   <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)]">
                     <div className="flex items-center justify-between text-[12px]">
                       <div className="text-slate-800 font-medium inline-flex items-center gap-1.5">
@@ -11382,6 +11400,7 @@ Rules:
                   </div>
                 )}
 
+                  </div>
                 </div>
               </div>
             </div>
