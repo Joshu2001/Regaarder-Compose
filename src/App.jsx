@@ -402,6 +402,9 @@ export default function App() {
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
   const [roomPanelMode, setRoomPanelMode] = useState('expanded');
+  const [isRoomFullscreen, setIsRoomFullscreen] = useState(false);
+  const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
+  const [roomStageInteraction, setRoomStageInteraction] = useState(null);
   const [meetingStartedAt, setMeetingStartedAt] = useState(null);
   const [meetingDurationLabel, setMeetingDurationLabel] = useState('00:00');
   const [meetingSummary, setMeetingSummary] = useState(null);
@@ -528,6 +531,7 @@ export default function App() {
   const docSearchPanelRef = useRef(null);
   const replaySpeedMenuRef = useRef(null);
   const notificationsPanelRef = useRef(null);
+  const roomStageRef = useRef(null);
   const promptFileInputRef = useRef(null);
   const chatFileInputRef = useRef(null);
   const scheduleFileInputRef = useRef(null);
@@ -2146,6 +2150,65 @@ export default function App() {
     window.addEventListener('pointerdown', handleClickOutside);
     return () => window.removeEventListener('pointerdown', handleClickOutside);
   }, [openDropdown]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsRoomFullscreen(Boolean(document.fullscreenElement === roomStageRef.current));
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  useEffect(() => {
+    setRoomStageFrame((prev) => {
+      const width = Math.min(1180, Math.max(860, window.innerWidth - 170));
+      const height = Math.min(760, Math.max(520, window.innerHeight - 120));
+      return clampRoomStageFrame({
+        x: Math.max(16, Math.round((window.innerWidth - width) / 2) - 20),
+        y: 66,
+        width,
+        height,
+      });
+    });
+  }, [clampRoomStageFrame]);
+
+  useEffect(() => {
+    if (!roomStageInteraction) {
+      return undefined;
+    }
+
+    const handlePointerMove = (event) => {
+      const deltaX = event.clientX - roomStageInteraction.startX;
+      const deltaY = event.clientY - roomStageInteraction.startY;
+
+      if (roomStageInteraction.mode === 'drag') {
+        setRoomStageFrame(clampRoomStageFrame({
+          ...roomStageInteraction.origin,
+          x: roomStageInteraction.origin.x + deltaX,
+          y: roomStageInteraction.origin.y + deltaY,
+        }));
+        return;
+      }
+
+      setRoomStageFrame(clampRoomStageFrame({
+        ...roomStageInteraction.origin,
+        width: roomStageInteraction.origin.width + deltaX,
+        height: roomStageInteraction.origin.height + deltaY,
+      }));
+    };
+
+    const handlePointerUp = () => {
+      setRoomStageInteraction(null);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [roomStageInteraction, clampRoomStageFrame]);
 
   const handleQuickAddSourceAction = async (sourceId) => {
     setIsQuickAddSourceMenuOpen(false);
@@ -5263,6 +5326,74 @@ Rules:
     setMeetingDurationLabel('00:00');
     requestMediaPermissions();
     showToast(`Joined meeting: ${code}`);
+  };
+
+  const clampRoomStageFrame = useCallback((nextFrame) => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const minWidth = 860;
+    const minHeight = 520;
+    const maxWidth = Math.max(minWidth, viewportWidth - 32);
+    const maxHeight = Math.max(minHeight, viewportHeight - 32);
+    const width = Math.min(maxWidth, Math.max(minWidth, nextFrame.width));
+    const height = Math.min(maxHeight, Math.max(minHeight, nextFrame.height));
+    const x = Math.min(Math.max(8, nextFrame.x), Math.max(8, viewportWidth - width - 8));
+    const y = Math.min(Math.max(8, nextFrame.y), Math.max(8, viewportHeight - height - 8));
+    return { x, y, width, height };
+  }, []);
+
+  const beginRoomStageDrag = (event) => {
+    if (isRoomFullscreen) {
+      return;
+    }
+    if (event.target.closest('button')) {
+      return;
+    }
+    event.preventDefault();
+    setRoomStageInteraction({
+      mode: 'drag',
+      startX: event.clientX,
+      startY: event.clientY,
+      origin: roomStageFrame,
+    });
+  };
+
+  const beginRoomStageResize = (event) => {
+    if (isRoomFullscreen) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    setRoomStageInteraction({
+      mode: 'resize',
+      startX: event.clientX,
+      startY: event.clientY,
+      origin: roomStageFrame,
+    });
+  };
+
+  const toggleRoomStageFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      } else if (roomStageRef.current?.requestFullscreen) {
+        await roomStageRef.current.requestFullscreen();
+      }
+    } catch (_error) {
+      // noop
+    }
+  };
+
+  const minimizeExpandedMeeting = async () => {
+    if (document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+      } catch (_error) {
+        // noop
+      }
+    }
+    setRoomPanelMode('docked');
+    setMainView('document');
   };
 
   const stopMediaStream = () => {
@@ -10754,7 +10885,7 @@ Rules:
 
         {isPromptMinimized && activeRightTab !== 'calendar' && !isScheduleSessionModalOpen && (
           <div
-            className="pointer-events-none absolute left-6 top-20 z-[340]"
+            className="pointer-events-none absolute left-6 top-20 z-[140]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
           >
             <div className="pointer-events-auto flex items-center gap-2 group">
@@ -12749,9 +12880,18 @@ Rules:
       </div>
 
       {roomState === 'active' && roomPanelMode === 'expanded' && mainView === 'room' && (
-        <div className="fixed left-14 right-[104px] top-16 bottom-14 rounded-3xl overflow-hidden border border-white/40 shadow-[0_24px_70px_rgba(15,23,42,0.35)] bg-slate-900 z-[320]">
+        <div
+          ref={roomStageRef}
+          className={`fixed overflow-hidden border border-white/40 shadow-[0_24px_70px_rgba(15,23,42,0.35)] bg-slate-900 z-[320] ${isRoomFullscreen ? 'inset-0 rounded-none' : 'rounded-3xl'}`}
+          style={isRoomFullscreen ? undefined : {
+            left: `${roomStageFrame.x}px`,
+            top: `${roomStageFrame.y}px`,
+            width: `${roomStageFrame.width}px`,
+            height: `${roomStageFrame.height}px`,
+          }}
+        >
           <div className="h-12 px-4 bg-black/45 backdrop-blur-md flex items-center justify-between text-white">
-            <div className="flex items-center gap-3 min-w-0">
+            <div className={`flex items-center gap-3 min-w-0 ${isRoomFullscreen ? '' : 'cursor-move'}`} onPointerDown={beginRoomStageDrag}>
               <span className="text-sm font-semibold truncate">{scheduleForm.title || 'Project MOAT Sync'}</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">LIVE {meetingDurationLabel}</span>
               <div className="hidden md:flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 p-1">
@@ -12780,7 +12920,10 @@ Rules:
                 <Paperclip size={13} /> Share file
               </button>
               <button onClick={handleShareMeeting} className="px-2.5 py-1.5 rounded-lg text-xs bg-white/15 hover:bg-white/25 transition">Share</button>
-              <button onClick={() => { setRoomPanelMode('docked'); setMainView('document'); }} className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition" title="Minimize meeting"><Minimize2 size={15} /></button>
+              <button onClick={toggleRoomStageFullscreen} className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition" title={isRoomFullscreen ? 'Exit fullscreen' : 'Open fullscreen'}>
+                {isRoomFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+              </button>
+              <button onClick={minimizeExpandedMeeting} className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition" title="Minimize meeting"><Minimize2 size={15} /></button>
             </div>
           </div>
 
@@ -12847,15 +12990,15 @@ Rules:
                 </>
               ) : (
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_32%_24%,rgba(99,102,241,0.32),rgba(15,23,42,0)_45%),radial-gradient(circle_at_72%_74%,rgba(56,189,248,0.24),rgba(2,6,23,0)_42%),linear-gradient(145deg,#020617_0%,#0b1120_55%,#111827_100%)] text-white">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-                    <div className="w-48 h-48 rounded-full border border-dashed border-white/25 flex items-center justify-center">
-                      <div className="w-14 h-14 rounded-xl border border-violet-300/60 bg-violet-500/20 flex items-center justify-center">
-                        <MonitorPlay size={24} className="text-violet-200" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center px-6 pb-36 text-center">
+                    <div className="w-36 h-36 rounded-full border border-dashed border-white/25 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl border border-violet-300/60 bg-violet-500/20 flex items-center justify-center">
+                        <MonitorPlay size={20} className="text-violet-200" />
                       </div>
                     </div>
-                    <div className="mt-5 text-xl font-semibold">No one is sharing yet</div>
-                    <p className="mt-2 text-sm text-slate-300 max-w-sm">Share your screen, a window, or upload a file to get started.</p>
-                    <div className="mt-6 flex items-center gap-3">
+                    <div className="mt-4 text-lg font-semibold">No one is sharing yet</div>
+                    <p className="mt-1.5 text-[13px] text-slate-300 max-w-sm">Share your screen, a window, or upload a file to get started.</p>
+                    <div className="mt-4 flex items-center gap-3">
                       <button
                         onClick={toggleScreenShare}
                         className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold inline-flex items-center gap-2"
@@ -12875,7 +13018,7 @@ Rules:
                   </div>
                 </div>
               )}
-              <div className="absolute bottom-20 left-4 right-4">
+              <div className="absolute bottom-[76px] left-4 right-4">
                 <div className="flex items-stretch gap-2 overflow-x-auto thin-scrollbar pb-1">
                   <div className="min-w-[86px] rounded-xl border border-white/20 bg-black/45 overflow-hidden">
                     <div className="h-14 bg-slate-900">
@@ -12917,7 +13060,7 @@ Rules:
               </div>
             </div>
 
-            <div className="w-[320px] bg-white border-l border-slate-200 p-3 space-y-3 text-slate-800">
+            <div className="w-[320px] bg-white border-l border-slate-200 p-3 space-y-3 text-slate-800 overflow-y-auto thin-scrollbar">
               <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <div className="text-[13px] font-semibold truncate">{scheduleForm.title || 'Project MOAT Sync'}</div>
@@ -12967,6 +13110,14 @@ Rules:
               </div>
             </div>
           </div>
+          {!isRoomFullscreen && (
+            <button
+              type="button"
+              onPointerDown={beginRoomStageResize}
+              className="absolute bottom-2 right-2 h-4 w-4 rounded-sm border border-white/30 bg-white/20 hover:bg-white/30 cursor-se-resize"
+              title="Resize meeting panel"
+            />
+          )}
         </div>
       )}
 
