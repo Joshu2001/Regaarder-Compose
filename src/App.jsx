@@ -10198,7 +10198,7 @@ Rules:
 
         {/* Persistent Floating AI Prompt Bar */}
         {/* Center blur overlay: only while prompt is open and only across workspace center */}
-        {shouldShowPromptBackdrop && (
+        {shouldShowPromptBackdrop && activeRightTab !== 'calendar' && (
           <div
             aria-hidden
             style={{
@@ -10213,6 +10213,7 @@ Rules:
             />
           </div>
         )}
+        {activeRightTab !== 'calendar' && (
         <div
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
@@ -10456,8 +10457,9 @@ Rules:
             </form>
           </div>
         </div>
+        )}
 
-        {!isComposing && !shouldHideDictationOverlay && (
+        {!isComposing && !shouldHideDictationOverlay && activeRightTab !== 'calendar' && (
           <div 
             className="pointer-events-none fixed z-[300] flex items-center justify-center"
             style={{
@@ -11150,256 +11152,169 @@ Rules:
 
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
-            <div className="fixed inset-0 z-[1350] bg-black/60 backdrop-blur-md flex items-center justify-center p-4">
-              <div className="w-[min(96vw,1120px)] h-[min(92vh,900px)] rounded-[20px] border border-[#e6e3fb] bg-white shadow-[0_24px_80px_-32px_rgba(76,29,149,0.45)] overflow-hidden flex flex-col">
-                <div className="h-16 px-6 border-b border-[#ececf5] bg-white flex items-center justify-between">
+            <div className="fixed inset-0 z-[1350] bg-black/70 flex items-center justify-center p-4">
+              <div className="w-[min(92vw,1180px)] h-[min(84vh,760px)] rounded-2xl border border-[#ececf7] bg-white shadow-[0_24px_80px_-32px_rgba(15,23,42,0.45)] overflow-hidden flex flex-col">
+                <div className="h-16 px-5 border-b border-[#ececf5] bg-white flex items-center justify-between">
                   <div>
-                    <div className="text-[34px] font-semibold text-slate-900 leading-none">Schedule a session</div>
+                    <div className="text-[32px] font-semibold text-slate-900 leading-none">Schedule a session</div>
                     <div className="text-[11px] text-slate-500 mt-1">Plan ahead and invite others to collaborate.</div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsScheduleCalendarExpanded(false);
-                      setRightSidebarOpen(false);
-                    }}
-                    className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-                    title="Close schedule"
-                  >
-                    <X size={18} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="h-10 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsScheduleCalendarExpanded(false);
+                        setRightSidebarOpen(false);
+                      }}
+                      className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                      title="Close schedule"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-3 pb-4 bg-[linear-gradient(180deg,#f6f7fb_0%,#f4f5f9_100%)]">
-                  <div className="rounded-2xl border border-[#e8eaf2] bg-[#f5f6fa] p-3 space-y-3 min-h-full">
-                  <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)]">
-                    <div className="flex items-center justify-between text-[12px]">
-                      <div className="text-slate-800 font-medium inline-flex items-center gap-1.5">
-                        <Calendar size={12} className="text-violet-500" />
-                        Today <span className="text-violet-600 font-semibold">· {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                      </div>
-                      <div className="inline-flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            closeTransientMenus();
-                            setIsScheduleCalendarExpanded(true);
-                          }}
-                          className="text-slate-400 hover:text-slate-600"
-                          title="Toggle calendar"
-                        >
-                          <ChevronDown size={14} />
+                <div className="flex-1 grid grid-cols-[2fr_1fr] gap-0 overflow-hidden">
+                  <div className="p-5 overflow-hidden">
+                    <div className="h-full overflow-hidden rounded-xl border border-[#ececf5] bg-white p-4 flex flex-col">
+                      <div className="grid grid-cols-[1fr_1fr_auto_1fr_1fr_auto] gap-2 text-[12px]">
+                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">May 29, 2025</button>
+                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">10:00 AM</button>
+                        <span className="self-center text-slate-500 text-center">to</span>
+                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">11:00 AM</button>
+                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">{selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</button>
+                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700 inline-flex items-center justify-center gap-1">
+                          <Clock size={12} />
+                          <span>GMT+5:30</span>
                         </button>
                       </div>
-                    </div>
 
-                    <div className="mt-3 border-t border-[#ececf5] pt-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="text-[11px] font-medium text-slate-600">Upcoming</div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            closeTransientMenus();
-                            setIsScheduleCalendarExpanded(true);
-                          }}
-                          className="text-[10px] font-medium text-violet-600 hover:text-violet-700"
-                        >
-                          See full calendar
-                        </button>
-                      </div>
-                      <div className="relative mt-2 space-y-0">
-                        <div className="absolute left-[6px] top-[12px] bottom-[16px] w-px bg-[#d1d5db]" />
-                        {scheduleAgendaItems.slice(0, 2).map((event, index) => (
-                          <div key={`timeline-${event.id}`} className={`relative grid grid-cols-[62px_1fr] gap-3 ${index > 0 ? 'border-t border-[#ececf5]' : ''}`}>
-                            <div className="relative pl-3 text-[11.5px] leading-4 text-slate-700 pt-[8px] pb-[8px]">
-                              <span className="absolute left-[0px] top-[13px] h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
-                              <div className="whitespace-nowrap">{event.slot || '10:00 AM'}</div>
-                              <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
-                            </div>
-                            <div className="relative rounded-lg px-2 py-[8px]">
-                              <div className="text-[12.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
-                              <span className="mt-0.5 inline-flex rounded-full border border-violet-100 bg-violet-50 px-1.5 py-[1px] text-[10px] text-violet-500">{event.category || 'General'}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="mt-3 rounded-2xl border border-[#e9e0ff] bg-[#f6f1ff] px-3.5 py-3">
-                      <div className="text-[12px] font-medium text-slate-800 inline-flex items-center gap-1.5">
-                        <Sparkles size={12} className="text-violet-500" /> AI Schedule Insight
-                      </div>
-                      <div className="mt-2 text-[12px] text-slate-700 leading-relaxed">{scheduleAiInsights[0] || 'Schedule balance looks healthy. Keep one flexible slot open for AI-assisted revisions.'}</div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setRightSidebarOpen(true);
-                          setActiveRightTab('assistant');
-                          setAssistantQuickPrompt('Optimize my next three schedule blocks for focus and momentum.');
-                        }}
-                        className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-100 px-3 py-1.5 text-[12px] font-medium text-violet-700 hover:bg-violet-200/70"
-                      >
-                        Optimize Schedule
-                      </button>
-                    </div>
-
-                    <div className="mt-3 rounded-2xl border border-[#ede7ff] bg-[#faf7ff] px-3.5 py-3">
-                      <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
-                      <div className="relative">
-                        <textarea
-                          ref={scheduleInputRef}
-                          value={scheduleInput}
-                          onChange={(e) => setScheduleInput(e.target.value)}
-                          onInput={(e) => autoResizeTextarea(e.currentTarget, 92)}
-                          onPaste={handleSchedulePaste}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
-                              convertMessyScheduleToPlan();
-                            }
-                          }}
-                          placeholder="What do you want to schedule?"
-                          rows={1}
-                          className="w-full rounded-xl border border-slate-200 bg-[#fcfcff] pl-3 pr-9 py-1.5 text-[12px] text-slate-700 placeholder:text-[10px] placeholder:text-slate-400 focus:outline-none focus:border-violet-300 resize-none leading-5"
-                        />
-                        <button
-                          type="button"
-                          onClick={convertMessyScheduleToPlan}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-violet-100/90 text-violet-700 hover:bg-violet-200 flex items-center justify-center"
-                          title="Add"
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 rounded-2xl border border-[#e9ebf2] bg-[#f8f9fc] px-3.5 py-3">
-                      <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><Link size={11} className="text-slate-500" />Related to this document</div>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-800">
-                            <span className="inline-flex h-4.5 w-4.5 items-center justify-center rounded bg-amber-100 text-amber-600">
-                              <Calendar size={10} />
-                            </span>
-                            <span className="truncate">Product Hunt Launch Plan</span>
-                          </div>
-                          <div className="mt-1 text-[11px] text-slate-500">Milestone · Due {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                      <div className="mt-3">
+                        <label className="text-[11px] font-semibold text-slate-600">Title</label>
+                        <div className="mt-1 h-10 rounded-lg border border-[#e8eaf2] bg-white px-3 flex items-center justify-between">
+                          <span className="text-[14px] text-slate-800">Project MOAT Sync</span>
+                          <span className="text-[11px] text-slate-400">16/200</span>
                         </div>
-                        <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">On Track</span>
                       </div>
-                    </div>
-                  </div>
 
-                {isScheduleCalendarExpanded && (
-                  <div className="absolute inset-0 z-20 bg-[#f4f5fa] p-3" ref={calendarMenuRef}>
-                    <div className="h-full rounded-2xl border border-[#dfe3ef] bg-white p-3 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.35)] overflow-y-auto thin-scrollbar">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-[20px] font-semibold text-slate-900 leading-none">Launch Timeline</div>
-                        <div className="text-[11px] text-slate-500 mt-1">Intelligent schedule optimized around your work</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsScheduleCalendarExpanded(false)}
-                        className="rounded-md p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        aria-label="Close full calendar"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-
-                    <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50/70 px-2.5 py-2 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-medium text-violet-700">AI Planning Insight</div>
-                        <div className="text-[10px] text-violet-600 truncate">You have two focus blocks back-to-back today.</div>
-                      </div>
-                      <button className="shrink-0 rounded-md border border-violet-200 bg-white px-2 py-1 text-[10px] font-medium text-violet-700">Optimize Day</button>
-                    </div>
-
-                    <div className="mt-3 rounded-xl border border-[#ececf5] bg-white px-2.5 py-2">
-                      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (calendarYear === 2026 && calendarMonth === 0) return;
-                            if (calendarMonth === 0) {
-                              setCalendarView(11, calendarYear - 1);
-                            } else {
-                              setCalendarView(calendarMonth - 1, calendarYear);
-                            }
-                          }}
-                          className="rounded p-1 hover:bg-slate-100"
-                          disabled={calendarYear === 2026 && calendarMonth === 0}
-                        >
-                          <ChevronLeft size={13} />
-                        </button>
-                        <span>{monthNames[calendarMonth]} {calendarYear}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (calendarMonth === 11) {
-                              setCalendarView(0, calendarYear + 1);
-                            } else {
-                              setCalendarView(calendarMonth + 1, calendarYear);
-                            }
-                          }}
-                          className="rounded p-1 hover:bg-slate-100"
-                          disabled={calendarYear === 2029 && calendarMonth === 11}
-                        >
-                          <ChevronRight size={13} />
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400 mb-1">
-                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-                      </div>
-                      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate-700">
-                        {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => {
-                              if (!dayObj.isCurrentMonth) return;
-                              setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
-                            }}
-                            className={`py-1.5 rounded ${dayObj.isCurrentMonth ? ((selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day) ? 'bg-violet-600 text-white' : dayObj.isToday ? 'bg-violet-100 text-violet-700' : 'hover:bg-slate-100') : 'text-slate-300'}`}
-                            disabled={!dayObj.isCurrentMonth}
-                          >
-                            {dayObj.day}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[11px] font-medium text-slate-700">{selectedCalendarDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                        <button
-                          type="button"
-                          onClick={() => setIsScheduleCalendarExpanded(false)}
-                          className="rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-medium text-violet-700 hover:bg-violet-100"
-                        >
-                          View Day
-                        </button>
-                      </div>
-                      <div className="space-y-2">
-                        {scheduleAgendaItems.slice(0, 2).map((event) => (
-                          <div key={`expanded-${event.id}`} className="rounded-xl border border-[#ececf5] bg-[#fbfbff] px-2.5 py-2">
-                            <div className="grid grid-cols-[56px_1fr] gap-2">
-                              <div>
-                                <div className="text-[10px] font-medium text-slate-700">{event.slot || '10:00 AM'}</div>
-                                <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
-                              </div>
-                              <div>
-                                <div className="text-[11.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
-                                <span className="mt-1 inline-flex rounded-full border border-violet-100 bg-violet-50 px-1.5 py-[1px] text-[9px] text-violet-500">{event.category || 'General'}</span>
-                              </div>
-                            </div>
+                      <div className="mt-3">
+                        <label className="text-[11px] font-semibold text-slate-600">Room link</label>
+                        <div className="mt-1 h-10 rounded-lg border border-[#e8eaf2] bg-[#f8f9fd] px-3 flex items-center justify-between">
+                          <span className="text-[12px] text-slate-600">https://compose.ai/room/moat-sync</span>
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <File size={14} />
+                            <Settings size={14} />
                           </div>
-                        ))}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex-1 min-h-0">
+                        <label className="text-[11px] font-semibold text-slate-600">Description (optional)</label>
+                        <div className="mt-1 rounded-lg border border-[#e8eaf2] bg-white h-full min-h-[140px] flex flex-col">
+                          <textarea
+                            ref={scheduleInputRef}
+                            value={scheduleInput}
+                            onChange={(e) => setScheduleInput(e.target.value)}
+                            onPaste={handleSchedulePaste}
+                            placeholder="Strategic review of distribution moat, go-to-market plan, and launch milestones."
+                            className="flex-1 resize-none rounded-t-lg px-3 py-2 text-[12px] text-slate-700 focus:outline-none"
+                          />
+                          <div className="h-9 border-t border-[#ececf5] px-3 flex items-center gap-3 text-slate-500">
+                            <Bold size={13} />
+                            <Italic size={13} />
+                            <Underline size={13} />
+                            <List size={13} />
+                            <Link size={13} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
+                            <span>Notification · 30 minutes before</span>
+                            <ChevronDown size={13} />
+                          </div>
+                          <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
+                            <span>Add to calendar · Joshua&apos;s Calendar</span>
+                            <ChevronDown size={13} />
+                          </div>
+                          <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
+                            <span>Repeat · Does not repeat</span>
+                            <ChevronDown size={13} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
+                            <span>Who join · Only invited people</span>
+                            <ChevronDown size={13} />
+                          </div>
+                          <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
+                            <span>Allow recording</span>
+                            <button className="w-9 h-5 rounded-full bg-violet-600 relative">
+                              <span className="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    </div>
                   </div>
-                )}
+                  <div className="border-l border-[#ececf5] p-5 overflow-hidden">
+                    <div className="h-full overflow-hidden flex flex-col gap-3">
+                      <div className="rounded-xl border border-[#ececf5] bg-white p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-[14px] font-semibold text-slate-900">Participants</div>
+                          <button className="text-[12px] text-violet-600 font-semibold">+ Add people</button>
+                        </div>
+                        <div className="space-y-2">
+                          {meetingParticipants.slice(0, 3).map((participant, idx) => (
+                            <div key={`modal-participant-${participant.name}`} className="h-10 rounded-lg border border-[#ececf5] px-2.5 flex items-center justify-between">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <img src={participant.img} alt={participant.name} className="w-6 h-6 rounded-full object-cover" />
+                                <span className="text-[12px] text-slate-700 truncate">{idx === 0 ? 'Joshua (You)' : participant.name}</span>
+                              </div>
+                              <X size={13} className="text-slate-400" />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
 
+                      <div className="rounded-xl border border-[#ececf5] bg-white p-3">
+                        <div className="text-[14px] font-semibold text-slate-900 mb-2">Options</div>
+                        <div className="space-y-2 text-[12px] text-slate-700">
+                          <label className="flex items-start gap-2"><input type="checkbox" defaultChecked className="mt-0.5" /><span>Enable AI notes &amp; summary</span></label>
+                          <label className="flex items-start gap-2"><input type="checkbox" defaultChecked className="mt-0.5" /><span>Allow screen sharing</span></label>
+                          <label className="flex items-start gap-2"><input type="checkbox" defaultChecked className="mt-0.5" /><span>Allow whiteboard</span></label>
+                          <label className="flex items-start gap-2"><input type="checkbox" className="mt-0.5" /><span>Enable waiting room</span></label>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-violet-100 bg-violet-50/50 p-3 mt-auto">
+                        <div className="text-[14px] font-semibold text-slate-900">AI Assistant <span className="text-[10px] text-violet-600 font-semibold ml-1">BETA</span></div>
+                        <div className="text-[12px] text-slate-600 mt-1">I can help prepare for this session.</div>
+                        <div className="mt-2 text-[12px] text-violet-700 space-y-1">
+                          <div>• Create an agenda</div>
+                          <div>• Add discussion topics</div>
+                          <div>• Share relevant docs</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRightSidebarOpen(true);
+                            setActiveRightTab('assistant');
+                            setAssistantQuickPrompt('Generate agenda');
+                          }}
+                          className="mt-3 h-9 px-3 rounded-lg border border-violet-200 bg-white text-violet-700 text-[12px] font-medium hover:bg-violet-50"
+                        >
+                          Generate agenda
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
