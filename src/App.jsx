@@ -5673,7 +5673,7 @@ Rules:
     }
 
     event.preventDefault();
-    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'people', 'memory'];
+    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'people', 'memory', 'orb'];
     const currentIndex = tabOrder.indexOf(activeRightTab);
     const safeIndex = currentIndex >= 0 ? currentIndex : 0;
     const nextIndex = event.key === 'ArrowRight'
@@ -8962,6 +8962,14 @@ Rules:
           </div>
 
           <div
+            onClick={() => handleMiniSidebarClick('orb')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'orb' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Cloud size={20} /></div>
+            <span className="text-[9px] font-semibold">Orb</span>
+          </div>
+
+          <div
             onClick={() => handleMiniSidebarClick('room')}
             className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
           >
@@ -11038,6 +11046,7 @@ Rules:
                 { key: 'calendar', label: 'Schedule' },
                 { key: 'room', label: 'Room' },
                 { key: 'memory', label: 'Memory' },
+                { key: 'orb', label: 'Orb' },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -12797,6 +12806,68 @@ Rules:
             </div>
           )}
 
+          {activeRightTab === 'orb' && (
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#f7f8fd] animate-fade-in">
+              <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[11px] uppercase tracking-[0.11em] font-semibold text-violet-600">Regaarder Orb</div>
+                    <div className="text-base font-semibold text-slate-900 mt-1">Workspace Memory</div>
+                    <p className="text-xs text-slate-500 mt-1">Connected assets, AI summaries, and operational context in one place.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-violet-700"
+                  >
+                    <Upload size={12} /> Upload
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Quick Access</div>
+                <div className="space-y-1.5">
+                  {[
+                    { label: 'Recent', value: '24 assets' },
+                    { label: 'Shared', value: '11 assets' },
+                    { label: 'Favorites', value: '8 assets' },
+                  ].map((item) => (
+                    <button key={item.label} className="w-full rounded-lg border border-gray-200 px-2.5 py-2 text-left hover:bg-violet-50/40 hover:border-violet-200 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-slate-700">{item.label}</span>
+                        <span className="text-[10px] text-slate-500">{item.value}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Workspace Intelligence</div>
+                <div className="space-y-2">
+                  {[
+                    'AI suggested assets for this document',
+                    'Related to current project context',
+                    'Recently referenced in meetings',
+                    'Trending in your team workspace',
+                  ].map((item) => (
+                    <div key={item} className="rounded-lg border border-gray-200 bg-[#fafaff] px-2.5 py-2 text-xs text-slate-600">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Orb Storage</div>
+                <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+                  <div className="h-full w-[26%] rounded-full bg-violet-500" />
+                </div>
+                <div className="mt-2 text-[11px] text-slate-500">256 GB of 1 TB used</div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -12874,6 +12945,18 @@ Rules:
             <Database size={20} />
           </div>
           <span className="text-[9px] font-semibold">Memory</span>
+        </div>
+
+        <div
+          onClick={() => handleMiniSidebarClick('orb')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'orb' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <Cloud size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">Orb</span>
         </div>
 
         <div
