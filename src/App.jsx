@@ -2151,6 +2151,22 @@ export default function App() {
     return () => window.removeEventListener('pointerdown', handleClickOutside);
   }, [openDropdown]);
 
+  const clampRoomStageFrame = useCallback((nextFrame) => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const horizontalGutter = 88;
+    const verticalGutter = 16;
+    const minWidth = 860;
+    const minHeight = 520;
+    const maxWidth = Math.max(minWidth, viewportWidth - (horizontalGutter * 2));
+    const maxHeight = Math.max(minHeight, viewportHeight - 90);
+    const width = Math.min(maxWidth, Math.max(minWidth, nextFrame.width));
+    const height = Math.min(maxHeight, Math.max(minHeight, nextFrame.height));
+    const x = Math.min(Math.max(horizontalGutter, nextFrame.x), Math.max(horizontalGutter, viewportWidth - width - horizontalGutter));
+    const y = Math.min(Math.max(verticalGutter, nextFrame.y), Math.max(verticalGutter, viewportHeight - height - verticalGutter));
+    return { x, y, width, height };
+  }, []);
+
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsRoomFullscreen(Boolean(document.fullscreenElement === roomStageRef.current));
@@ -2162,11 +2178,11 @@ export default function App() {
 
   useEffect(() => {
     setRoomStageFrame((prev) => {
-      const width = Math.min(1180, Math.max(860, window.innerWidth - 170));
-      const height = Math.min(760, Math.max(520, window.innerHeight - 120));
+      const width = Math.min(980, Math.max(860, window.innerWidth - 460));
+      const height = Math.min(700, Math.max(520, window.innerHeight - 170));
       return clampRoomStageFrame({
-        x: Math.max(16, Math.round((window.innerWidth - width) / 2) - 20),
-        y: 66,
+        x: Math.round((window.innerWidth - width) / 2),
+        y: 72,
         width,
         height,
       });
@@ -5327,20 +5343,6 @@ Rules:
     requestMediaPermissions();
     showToast(`Joined meeting: ${code}`);
   };
-
-  const clampRoomStageFrame = useCallback((nextFrame) => {
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const minWidth = 860;
-    const minHeight = 520;
-    const maxWidth = Math.max(minWidth, viewportWidth - 32);
-    const maxHeight = Math.max(minHeight, viewportHeight - 32);
-    const width = Math.min(maxWidth, Math.max(minWidth, nextFrame.width));
-    const height = Math.min(maxHeight, Math.max(minHeight, nextFrame.height));
-    const x = Math.min(Math.max(8, nextFrame.x), Math.max(8, viewportWidth - width - 8));
-    const y = Math.min(Math.max(8, nextFrame.y), Math.max(8, viewportHeight - height - 8));
-    return { x, y, width, height };
-  }, []);
 
   const beginRoomStageDrag = (event) => {
     if (isRoomFullscreen) {
