@@ -5164,7 +5164,7 @@ Rules:
     setRoomState('active');
     setActiveMeetingStageTab('room');
     setMainView('room');
-    setRoomPanelMode('expanded');
+    setRoomPanelMode('docked');
     setMeetingSummary(null);
     setMeetingStartedAt(Date.now());
     setMeetingDurationLabel('00:00');
@@ -8623,7 +8623,7 @@ Rules:
           </div>
         )}
 
-        <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto thin-scrollbar">
+        <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
           <div
             onClick={() => handleMiniSidebarClick('chat')}
             className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'chat' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
@@ -11284,7 +11284,7 @@ Rules:
                     <div className="flex items-center justify-between text-[12px]">
                       <div className="text-slate-800 font-medium inline-flex items-center gap-1.5">
                         <Calendar size={12} className="text-violet-500" />
-                        Today <span className="text-violet-600 font-semibold">繚 {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        Today <span className="text-violet-600 font-semibold">- {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                       <div className="inline-flex items-center gap-1.5">
                         <button
@@ -11390,7 +11390,7 @@ Rules:
                             </span>
                             <span className="truncate">Product Hunt Launch Plan</span>
                           </div>
-                          <div className="mt-1 text-[11px] text-slate-500">Milestone 繚 Due {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                          <div className="mt-1 text-[11px] text-slate-500">Milestone - Due {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
                         </div>
                         <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">On Track</span>
                       </div>
@@ -11606,16 +11606,16 @@ Rules:
                         </div>
                       </div>
 
-                      <div className="mt-3 flex-1 min-h-0">
+                      <div className="mt-3">
                         <label className="text-[11px] font-semibold text-slate-600">Description (optional)</label>
-                        <div className="mt-1 rounded-lg border border-[#e8eaf2] bg-white h-full min-h-[140px] flex flex-col">
+                        <div className="mt-1 rounded-lg border border-[#e8eaf2] bg-white min-h-[150px] flex flex-col">
                           <textarea
                             ref={scheduleInputRef}
                             value={scheduleInput}
                             onChange={(e) => setScheduleInput(e.target.value)}
                             onPaste={handleSchedulePaste}
                             placeholder="Strategic review of distribution moat, go-to-market plan, and launch milestones."
-                            className="flex-1 resize-none rounded-t-lg px-3 py-2 text-[12px] text-slate-700 focus:outline-none"
+                            className="w-full min-h-[110px] resize-y rounded-t-lg px-3 py-2 text-[12px] leading-5 text-slate-700 focus:outline-none"
                           />
                           <div className="h-9 border-t border-[#ececf5] px-3 flex items-center gap-3 text-slate-500">
                             <Bold size={13} />
@@ -11632,27 +11632,27 @@ Rules:
                           <select
                             value={scheduleForm.notification}
                             onChange={(event) => setScheduleForm((prev) => ({ ...prev, notification: event.target.value }))}
-                            className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
+                            className="brand-select h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
                           >
                             {SCHEDULE_NOTIFICATION_OPTIONS.map((option) => (
-                              <option key={option} value={option}>{`Notification 繚 ${option}`}</option>
+                              <option key={option} value={option}>{`Notification - ${option}`}</option>
                             ))}
                           </select>
                           <select
                             value={scheduleForm.addToCalendar}
                             onChange={(event) => setScheduleForm((prev) => ({ ...prev, addToCalendar: event.target.value }))}
-                            className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
+                            className="brand-select h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
                           >
-                            <option value="Joshua's Calendar">Add to calendar 繚 Joshua&apos;s Calendar</option>
-                            <option value="Team Calendar">Add to calendar 繚 Team Calendar</option>
+                            <option value="Joshua's Calendar">Add to calendar - Joshua&apos;s Calendar</option>
+                            <option value="Team Calendar">Add to calendar - Team Calendar</option>
                           </select>
                           <select
                             value={scheduleForm.repeat}
                             onChange={(event) => setScheduleForm((prev) => ({ ...prev, repeat: event.target.value }))}
-                            className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
+                            className="brand-select h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
                           >
                             {SCHEDULE_REPEAT_OPTIONS.map((option) => (
-                              <option key={option} value={option}>{`Repeat 繚 ${option}`}</option>
+                              <option key={option} value={option}>{`Repeat - ${option}`}</option>
                             ))}
                           </select>
                         </div>
@@ -11660,10 +11660,10 @@ Rules:
                           <select
                             value={scheduleForm.whoCanJoin}
                             onChange={(event) => setScheduleForm((prev) => ({ ...prev, whoCanJoin: event.target.value }))}
-                            className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
+                            className="brand-select h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
                           >
                             {SCHEDULE_JOIN_OPTIONS.map((option) => (
-                              <option key={option} value={option}>{`Who join 繚 ${option}`}</option>
+                              <option key={option} value={option}>{`Who can join - ${option}`}</option>
                             ))}
                           </select>
                           <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
@@ -11734,9 +11734,9 @@ Rules:
                         <div className="text-[14px] font-semibold text-slate-900">AI Assistant <span className="text-[10px] text-violet-600 font-semibold ml-1">BETA</span></div>
                         <div className="text-[12px] text-slate-600 mt-1">I can help prepare for this session.</div>
                         <div className="mt-2 text-[12px] text-violet-700 space-y-1">
-                          <div>??Create an agenda</div>
-                          <div>??Add discussion topics</div>
-                          <div>??Share relevant docs</div>
+                          <div>- Create an agenda</div>
+                          <div>- Add discussion topics</div>
+                          <div>- Share relevant docs</div>
                         </div>
                         <button
                           type="button"
@@ -11819,13 +11819,13 @@ Rules:
                                     setIsRoomStartMenuOpen(false);
                                     startMeetingNow(generateRoomCode());
                                   }}
-                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2"
+                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2.5"
                                 >
-                                  <Sparkles size={12} className="text-violet-500 mt-0.5" />
-                                  <span>
-                                    <span className="block text-[10px] font-semibold text-slate-800">Start instant room</span>
-                                    <span className="block text-[9px] text-slate-500">Start collaborating immediately</span>
-                                  </span>
+                                  <Sparkles size={12} className="text-violet-500 mt-0.5 shrink-0" />
+                                  <div className="min-w-0 text-left">
+                                    <div className="text-[10px] font-semibold leading-none text-slate-800">Start instant room</div>
+                                    <div className="mt-1 text-[9px] leading-tight text-slate-500">Start collaborating immediately</div>
+                                  </div>
                                 </button>
                                 <button
                                   type="button"
@@ -11833,13 +11833,13 @@ Rules:
                                     setIsRoomStartMenuOpen(false);
                                     setIsScheduleSessionModalOpen(true);
                                   }}
-                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2"
+                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2.5"
                                 >
-                                  <Calendar size={12} className="text-slate-500 mt-0.5" />
-                                  <span>
-                                    <span className="block text-[10px] font-semibold text-slate-800">Schedule session</span>
-                                    <span className="block text-[9px] text-slate-500">Plan with Google Calendar</span>
-                                  </span>
+                                  <Calendar size={12} className="text-slate-500 mt-0.5 shrink-0" />
+                                  <div className="min-w-0 text-left">
+                                    <div className="text-[10px] font-semibold leading-none text-slate-800">Schedule session</div>
+                                    <div className="mt-1 text-[9px] leading-tight text-slate-500">Plan with Google Calendar</div>
+                                  </div>
                                 </button>
                                 <button
                                   type="button"
@@ -11847,13 +11847,13 @@ Rules:
                                     setIsRoomStartMenuOpen(false);
                                     roomJoinInputRef.current?.focus();
                                   }}
-                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2"
+                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2.5"
                                 >
-                                  <LinkIcon size={12} className="text-slate-500 mt-0.5" />
-                                  <span>
-                                    <span className="block text-[10px] font-semibold text-slate-800">Join with code or link</span>
-                                    <span className="block text-[9px] text-slate-500">Enter a code to join instantly</span>
-                                  </span>
+                                  <LinkIcon size={12} className="text-slate-500 mt-0.5 shrink-0" />
+                                  <div className="min-w-0 text-left">
+                                    <div className="text-[10px] font-semibold leading-none text-slate-800">Join with code or link</div>
+                                    <div className="mt-1 text-[9px] leading-tight text-slate-500">Enter a code to join instantly</div>
+                                  </div>
                                 </button>
                               </div>
                             )}
@@ -11898,30 +11898,45 @@ Rules:
                         <span className="text-[12px] font-semibold text-[#23283b] tracking-tight">Upcoming</span>
                         <button type="button" className="text-[10px] font-semibold text-violet-600 hover:text-violet-700">View calendar</button>
                       </div>
-                      <button onClick={() => openMeetingSetup('beta-launch-kickoff')} className="w-full rounded-xl border border-gray-200 bg-white p-3 hover:border-violet-200 hover:bg-violet-50/20 transition-colors text-left">
-                        <div className="flex items-start gap-2.5">
-                          <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                            <Calendar size={14} />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <div className="text-[12px] font-semibold text-slate-800">Today, May 15</div>
-                              <div className="text-[10px] text-slate-400">??in 45 min</div>
-                            </div>
-                            <div className="text-[10px] font-semibold text-slate-900 mt-1 leading-tight">Beta Launch Kickoff</div>
-                            <div className="text-[10px] text-slate-500 mt-1">10:00 AM - 11:00 AM</div>
-                            <div className="mt-2 flex items-center justify-between">
-                              <div className="flex items-center -space-x-1.5">
-                                {meetingParticipants.slice(0, 4).map((participant) => (
-                                  <img key={`upcoming-${participant.name}`} src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full border border-white object-cover" />
-                                ))}
-                                <span className="ml-2 text-[10px] font-semibold text-slate-500">+2</span>
+                      {upcomingEvents.slice(0, 1).map((event) => {
+                        const eventDate = event?.dueDate ? new Date(event.dueDate) : null;
+                        const hasDate = eventDate && !Number.isNaN(eventDate.getTime());
+                        const dateLabel = hasDate
+                          ? eventDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                          : 'Upcoming';
+                        return (
+                          <button
+                            key={`room-upcoming-${event.id}`}
+                            onClick={() => openMeetingSetup(normalizeRoomCode(event.title) || generateRoomCode())}
+                            className="w-full rounded-xl border border-gray-200 bg-white p-3 hover:border-violet-200 hover:bg-violet-50/20 transition-colors text-left"
+                          >
+                            <div className="flex items-start gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                                <Calendar size={14} />
                               </div>
-                              <span className="px-2 py-1 rounded-lg border border-violet-200 text-violet-600 text-[10px] font-semibold">Join</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[12px] font-semibold text-slate-800">{dateLabel}</div>
+                                <div className="text-[10px] font-semibold text-slate-900 mt-1 leading-tight">{event.title}</div>
+                                <div className="text-[10px] text-slate-500 mt-1">{event.slotLabel || `${scheduleForm.startDate} - ${event.slot || scheduleForm.startTime}`}</div>
+                                <div className="mt-2 flex items-center justify-between">
+                                  <div className="flex items-center -space-x-1.5">
+                                    {meetingParticipants.slice(0, 3).map((participant) => (
+                                      <img key={`upcoming-${event.id}-${participant.name}`} src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full border border-white object-cover" />
+                                    ))}
+                                    <span className="ml-2 text-[10px] font-semibold text-slate-500">+{Math.max(1, (event.participants || []).length)}</span>
+                                  </div>
+                                  <span className="px-2 py-1 rounded-lg border border-violet-200 text-violet-600 text-[10px] font-semibold">Join</span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          </button>
+                        );
+                      })}
+                      {upcomingEvents.length === 0 && (
+                        <div className="rounded-xl border border-dashed border-gray-200 bg-white p-3 text-[11px] text-slate-500">
+                          No upcoming meetings yet. Use Schedule session to add one.
                         </div>
-                      </button>
+                      )}
                     </div>
 
                     <div className="rounded-2xl border border-[#eceef7] bg-white px-4 py-3 text-left">
@@ -12238,7 +12253,7 @@ Rules:
                       <PhoneOff size={20} />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 tracking-tight">Room Ended</h3>
-                    <p className="text-xs text-gray-500 mt-1">{meetingSummary?.roomCode || 'q2-launch'} ??{meetingSummary?.durationLabel || meetingDurationLabel} duration</p>
+                    <p className="text-xs text-gray-500 mt-1">{meetingSummary?.roomCode || 'q2-launch'} - {meetingSummary?.durationLabel || meetingDurationLabel} duration</p>
                   </div>
 
                   <div className="space-y-4">
@@ -12452,7 +12467,7 @@ Rules:
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className="w-16 border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto thin-scrollbar">
+      <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
         
         <div 
           onClick={() => handleMiniSidebarClick('chat')}
@@ -12618,7 +12633,7 @@ Rules:
                         <div className="min-w-0">
                           <div className="text-[11px] uppercase tracking-[0.12em] text-violet-600 font-semibold">Presentation</div>
                           <div className="text-[15px] font-semibold text-slate-900 truncate">{activeSharedMeetingFile.name}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">Shared by {activeSharedMeetingFile.sharedBy} ??{formatMeetingFileSize(activeSharedMeetingFile.size)}</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">Shared by {activeSharedMeetingFile.sharedBy} - {formatMeetingFileSize(activeSharedMeetingFile.size)}</div>
                         </div>
                         <div className="text-[11px] text-slate-600 rounded-lg border border-slate-200 bg-white px-2 py-1">1 / {activeSharedMeetingFile.pages}</div>
                       </div>
@@ -12728,7 +12743,7 @@ Rules:
                       className={`w-full rounded-xl border text-left px-2 py-2 transition ${activeSharedMeetingFile?.id === item.id ? 'border-violet-300 bg-violet-100/20' : 'border-white/10 bg-slate-800 hover:border-violet-300/40'}`}
                     >
                       <div className="text-[11px] text-slate-100 font-medium truncate">{item.name}</div>
-                      <div className="text-[10px] text-slate-400 mt-1">{formatMeetingFileSize(item.size)} ??{item.pages} pages</div>
+                      <div className="text-[10px] text-slate-400 mt-1">{formatMeetingFileSize(item.size)} - {item.pages} pages</div>
                     </button>
                   ))
                 ) : (
@@ -12765,11 +12780,11 @@ Rules:
         </div>
       )}
 
-      {roomState === 'active' && (roomPanelMode === 'docked' || mainView === 'document') && (
+      {roomState === 'active' && mainView === 'document' && (
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-xs font-semibold text-gray-700">Meeting live ??{meetingDurationLabel}</span>
-          <button onClick={() => { setMainView('room'); setRoomPanelMode('expanded'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Return</button>
+          <span className="text-xs font-semibold text-gray-700">Meeting live - {meetingDurationLabel}</span>
+          <button onClick={() => { setMainView('room'); setRoomPanelMode('docked'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Return</button>
           <button onClick={leaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50">Leave</button>
         </div>
       )}
