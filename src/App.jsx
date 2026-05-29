@@ -11030,7 +11030,7 @@ Rules:
         style={ rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }
       >
         {/* Sidebar Header Tabs */}
-        {activeRightTab !== 'calendar' && activeRightTab !== 'room' && (
+        {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && (
         <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
           <div
             className="flex-1 min-w-0 overflow-x-auto no-scrollbar"
@@ -12807,129 +12807,137 @@ Rules:
           )}
 
           {activeRightTab === 'orb' && (
-            <div className="flex-1 min-h-0 animate-fade-in flex flex-col">
-              <div className="h-14 px-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2 text-slate-900">
-                  <Cloud size={18} className="text-violet-600" />
-                  <span className="text-[28px] leading-none font-semibold tracking-tight">Orb</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button type="button" className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100"><Search size={14} /></button>
-                  <button type="button" className="p-1.5 rounded-full text-violet-600 hover:text-violet-700 hover:bg-violet-50 border border-violet-100"><Plus size={14} /></button>
-                  <button type="button" className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100"><X size={14} /></button>
-                </div>
-              </div>
+            <div className="flex-1 min-h-0 animate-fade-in flex flex-col bg-white">
+              <div className="flex-1 overflow-y-auto thin-scrollbar">
 
-              <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-2 pb-3 bg-[linear-gradient(180deg,#f6f7fb_0%,#f4f5f9_100%)]">
-                <div className="rounded-2xl border border-[#e8eaf2] bg-[#f5f6fa] p-3 space-y-3">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 pt-4 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white text-[11px] font-bold">O</span>
+                    <span className="text-[22px] leading-none font-bold tracking-tight text-slate-900">Orb</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button type="button" className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"><Search size={14} /></button>
+                    <button type="button" className="p-1.5 rounded-full text-violet-600 hover:text-violet-700 hover:bg-violet-50 border border-violet-200"><Plus size={14} /></button>
+                    <button type="button" onClick={() => setRightSidebarOpen(false)} className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"><X size={14} /></button>
+                  </div>
+                </div>
 
-                  {/* Search */}
+                {/* Search */}
+                <div className="px-4 pb-3">
                   <div className="relative">
                     <Search size={13} className="absolute left-3 top-2.5 text-gray-400" />
                     <input
                       type="text"
                       placeholder="Search Orb..."
-                      className="w-full rounded-xl bg-gray-100 py-2 pl-8 pr-10 text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border-0"
+                      className="w-full rounded-xl bg-gray-100 py-2 pl-8 pr-14 text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border-0"
                     />
-                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">K</span>
+                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">⌘K</span>
                   </div>
+                </div>
 
-                  {/* Tabs */}
-                  <div className="flex items-center gap-5 px-1 text-xs font-semibold border-b border-[#e8eaf2]">
-                    <button className="pb-2 border-b-2 border-violet-500 text-violet-600">Context</button>
-                    <button className="pb-2 border-b-2 border-transparent text-slate-400 hover:text-slate-600">Recent</button>
-                    <button className="pb-2 border-b-2 border-transparent text-slate-400 hover:text-slate-600">Favorites</button>
-                  </div>
+                {/* Tabs */}
+                <div className="flex items-center gap-5 px-4 text-xs font-semibold border-b border-gray-100">
+                  <button className="pb-2.5 border-b-2 border-violet-500 text-violet-600">Context</button>
+                  <button className="pb-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-600">Recent</button>
+                  <button className="pb-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-600">Favorites</button>
+                </div>
 
-                  {/* Related to this document */}
-                  <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.25)]">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Sparkles size={13} className="text-violet-500" />
-                        <h4 className="text-[13px] font-semibold text-slate-900">Related to this document</h4>
-                        <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">AI</span>
-                      </div>
-                      <button className="text-[11px] font-semibold text-violet-600 hover:text-violet-700">View all</button>
+                {/* Related to this document */}
+                <div className="px-4 pt-4 pb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={12} className="text-violet-500" />
+                      <span className="text-[13px] font-semibold text-slate-900">Related to this document</span>
+                      <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">AI</span>
                     </div>
-                    <p className="mt-1 text-[10px] text-slate-500">Based on content and workspace context</p>
-                    <div className="mt-3 space-y-2">
-                      {[
-                        { name: 'Competitive Analysis.pdf', ext: 'PDF', iconBg: 'bg-red-100', iconText: 'text-red-600', meta: 'Mentioned: pricing, positioning, bundling', ago: '2h ago' },
-                        { name: 'Creator Pricing Model.xlsx', ext: 'XLS', iconBg: 'bg-green-100', iconText: 'text-green-700', meta: 'Related to: monetization strategy', ago: '4h ago' },
-                        { name: 'Market Entry Strategy.docx', ext: 'DOC', iconBg: 'bg-blue-100', iconText: 'text-blue-600', meta: 'Related to: go-to-market, verticals', ago: '1d ago' },
-                        { name: 'Strategy Call Recording.mp4', ext: '▶', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync · May 10', ago: '2d ago' },
-                      ].map((asset) => (
-                        <div key={asset.name} className="rounded-lg border border-[#ececf5] bg-[#fafafe] px-2.5 py-2 hover:bg-white transition-colors cursor-pointer">
-                          <div className="flex items-start gap-2.5">
-                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-md ${asset.iconBg} ${asset.iconText} text-[9px] font-bold flex-shrink-0 mt-0.5`}>{asset.ext}</span>
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="text-[12px] font-semibold text-slate-800 truncate">{asset.name}</div>
-                                <div className="text-[10px] text-slate-400 whitespace-nowrap">{asset.ago}</div>
-                              </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">{asset.meta}</div>
+                    <button className="text-[11px] font-semibold text-violet-600 hover:text-violet-700">View all</button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mb-3">Based on content and workspace context</p>
+                  <div className="space-y-2">
+                    {[
+                      { name: 'Competitive Analysis.pdf', ext: 'PDF', iconBg: 'bg-red-100', iconText: 'text-red-600', meta: 'Mentioned: pricing, positioning, bundling', ago: '2h ago' },
+                      { name: 'Creator Pricing Model.xlsx', ext: 'XLS', iconBg: 'bg-green-100', iconText: 'text-green-700', meta: 'Related to: monetization strategy', ago: '4h ago' },
+                      { name: 'Market Entry Strategy.docx', ext: 'DOC', iconBg: 'bg-blue-100', iconText: 'text-blue-600', meta: 'Related to: go-to-market, verticals', ago: '1d ago' },
+                      { name: 'Strategy Call Recording.mp4', ext: '▶', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync · May 10', ago: '2d ago' },
+                    ].map((asset) => (
+                      <div key={asset.name} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-white hover:border-gray-200 transition-colors cursor-pointer">
+                        <div className="flex items-start gap-2.5">
+                          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${asset.iconBg} ${asset.iconText} text-[9px] font-bold flex-shrink-0 mt-0.5`}>{asset.ext}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="text-[12px] font-semibold text-slate-800 truncate">{asset.name}</div>
+                              <div className="text-[10px] text-slate-400 whitespace-nowrap">{asset.ago}</div>
                             </div>
+                            <div className="text-[10px] text-slate-500 mt-0.5">{asset.meta}</div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* AI Suggestions */}
-                  <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.25)]">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Sparkles size={13} className="text-violet-500" />
-                        <h4 className="text-[13px] font-semibold text-slate-900">AI Suggestions</h4>
-                        <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">New</span>
                       </div>
-                      <button className="text-slate-400 hover:text-slate-600"><RefreshCcw size={12} /></button>
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      {[
-                        'This document mentions "creator monetization". Found 8 related assets.',
-                        'Extracted 6 potential tasks from related assets.',
-                        'Investor deck v5.pdf is often referenced in this context.',
-                      ].map((item) => (
-                        <div key={item} className="rounded-lg border border-[#ececf5] bg-[#f9f8ff] px-2.5 py-2 text-[11px] text-slate-600">
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                    <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more</button>
+                    ))}
                   </div>
-
-                  {/* Quick Actions */}
-                  <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.25)]">
-                    <h4 className="text-[13px] font-semibold text-slate-900 mb-2">Quick Actions</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { label: 'Upload file', Icon: Upload },
-                        { label: 'Link from...', Icon: LinkIcon },
-                        { label: 'Record meeting', Icon: Mic },
-                        { label: 'Create folder', Icon: File },
-                      ].map(({ label, Icon }) => (
-                        <button key={label} className="rounded-lg border border-[#ececf5] bg-[#fafafe] hover:bg-white px-2 py-2 text-[11px] font-semibold text-slate-700 inline-flex items-center gap-1.5 transition-colors">
-                          <Icon size={12} className="text-violet-500" />
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Orb Storage */}
-                  <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.25)]">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-semibold text-slate-700">Orb Storage</span>
-                      <span className="text-slate-500">256 GB of 1 TB used</span>
-                    </div>
-                    <div className="mt-2 h-2 rounded-full bg-gray-100 overflow-hidden">
-                      <div className="h-full w-[25%] rounded-full bg-violet-500" />
-                    </div>
-                    <div className="mt-1.5 text-right text-[11px] font-semibold text-slate-600">25%</div>
-                  </div>
-
                 </div>
+
+                <div className="mx-4 border-t border-gray-100" />
+
+                {/* AI Suggestions */}
+                <div className="px-4 pt-3 pb-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={12} className="text-violet-500" />
+                      <span className="text-[13px] font-semibold text-slate-900">AI Suggestions</span>
+                      <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">New</span>
+                    </div>
+                    <button className="text-slate-400 hover:text-slate-600"><RefreshCcw size={12} /></button>
+                  </div>
+                  <div className="space-y-2">
+                    {[
+                      { icon: Sparkles, text: 'This document mentions "creator monetization". Found 8 related assets.' },
+                      { icon: Sparkles, text: 'Extracted 6 potential tasks from related assets.' },
+                      { icon: Sparkles, text: 'Investor deck v5.pdf is often referenced in this context.' },
+                    ].map(({ icon: Icon, text }) => (
+                      <div key={text} className="flex items-start gap-2.5 py-1">
+                        <Icon size={11} className="text-violet-400 mt-0.5 flex-shrink-0" />
+                        <span className="text-[11px] text-slate-600 leading-relaxed">{text}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more →</button>
+                </div>
+
+                <div className="mx-4 border-t border-gray-100" />
+
+                {/* Quick Actions */}
+                <div className="px-4 pt-3 pb-3">
+                  <span className="text-[13px] font-semibold text-slate-900 block mb-2.5">Quick Actions</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'Upload file', Icon: Upload },
+                      { label: 'Link from...', Icon: LinkIcon },
+                      { label: 'Record meeting', Icon: Mic },
+                      { label: 'Create folder', Icon: File },
+                    ].map(({ label, Icon }) => (
+                      <button key={label} className="rounded-xl border border-gray-100 bg-gray-50 hover:bg-white hover:border-gray-200 px-2.5 py-2 text-[11px] font-semibold text-slate-700 inline-flex items-center gap-1.5 transition-colors">
+                        <Icon size={12} className="text-violet-500" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mx-4 border-t border-gray-100" />
+
+                {/* Orb Storage */}
+                <div className="px-4 pt-3 pb-5">
+                  <div className="flex items-center justify-between text-[11px] mb-2">
+                    <span className="font-semibold text-slate-700">Orb Storage</span>
+                    <span className="text-slate-400">256 GB of 1 TB used</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-full w-[25%] rounded-full bg-violet-500" />
+                  </div>
+                  <div className="mt-1.5 text-right text-[11px] font-semibold text-slate-500">25%</div>
+                </div>
+
               </div>
             </div>
           )}
