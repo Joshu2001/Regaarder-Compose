@@ -11,7 +11,7 @@ import {
   LayoutGrid, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
-  UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar,
+  UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight
 } from 'lucide-react';
 import './thin-scrollbar.css';
@@ -107,6 +107,7 @@ const QUICK_ADD_SOURCE_OPTIONS = [
   { id: 'note', label: 'Add note' },
   { id: 'link', label: 'Add link' },
 ];
+const SCHEDULE_TIMEZONE_OPTIONS = ['GMT+5:30', 'GMT+0:00', 'GMT-8:00', 'GMT+1:00'];
 
 const FONT_FAMILY_MAP = {
   Manrope: "Manrope, 'Plus Jakarta Sans', 'DM Sans', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
@@ -542,7 +543,6 @@ export default function App() {
   const pointerDownInPromptRef = useRef(false);
   const pointerDownInDocumentRef = useRef(false);
   const calendarMenuRef = useRef(null);
-  const scheduleRepeatMenuRef = useRef(null);
   const formattingDropdownCloseTimerRef = useRef(null);
   const textStyleMenuCloseTimerRef = useRef(null);
   const didAutoJoinRoomRef = useRef(false);
@@ -2094,14 +2094,10 @@ export default function App() {
     const handleClickOutside = (event) => {
       const clickedOutsideFormatting = formattingMenuRef.current && !formattingMenuRef.current.contains(event.target);
       const clickedOutsideCalendar = calendarMenuRef.current && !calendarMenuRef.current.contains(event.target);
-      const clickedOutsideScheduleRepeat = scheduleRepeatMenuRef.current && !scheduleRepeatMenuRef.current.contains(event.target);
 
       if (clickedOutsideFormatting && clickedOutsideCalendar) {
         setOpenDropdown(null);
         setTextStyleMenuOpen(false);
-      }
-      if (clickedOutsideScheduleRepeat && openDropdown === 'schedule-repeat') {
-        setOpenDropdown(null);
       }
       if (!event.target.closest('[data-doc-menu-root]')) {
         setOpenDocMenuId(null);
@@ -2183,6 +2179,41 @@ export default function App() {
 
     scheduleFileInputRef.current.accept = source.accept || '*/*';
     scheduleFileInputRef.current.click();
+  };
+
+  const scheduleDateOptions = useMemo(() => {
+    const anchor = selectedCalendarDate instanceof Date && !Number.isNaN(selectedCalendarDate.getTime())
+      ? new Date(selectedCalendarDate)
+      : new Date();
+    return Array.from({ length: 21 }, (_, index) => {
+      const dayOffset = index - 10;
+      const valueDate = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + dayOffset);
+      const value = `${valueDate.getFullYear()}-${String(valueDate.getMonth() + 1).padStart(2, '0')}-${String(valueDate.getDate()).padStart(2, '0')}`;
+      const label = valueDate.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit', year: 'numeric' });
+      return { value, label };
+    });
+  }, [selectedCalendarDate]);
+
+  const scheduleTimeOptions = useMemo(() => {
+    return Array.from({ length: 48 }, (_, index) => {
+      const hours = Math.floor(index / 2);
+      const minutes = index % 2 === 0 ? '00' : '30';
+      const value = `${String(hours).padStart(2, '0')}:${minutes}`;
+      const label = new Date(`2000-01-01T${value}:00`).toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+      return { value, label };
+    });
+  }, []);
+
+  const getQuickAddSourceIcon = (sourceId) => {
+    if (sourceId === 'image') return <ImageIcon size={12} />;
+    if (sourceId === 'file') return <File size={12} />;
+    if (sourceId === 'audio') return <Mic size={12} />;
+    if (sourceId === 'note') return <AlignLeft size={12} />;
+    if (sourceId === 'link') return <Link size={12} />;
+    return <Plus size={12} />;
   };
 
   const isRangeInsideEditor = (range) => {
@@ -7188,7 +7219,8 @@ Rules:
     || docSearchPanelOpen
     || creationPickerOpen
     || workspaceModalOpen
-    || shareModalOpen;
+    || shareModalOpen
+    || isScheduleSessionModalOpen;
   const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
   const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
 
@@ -11414,26 +11446,27 @@ Rules:
 
                     <div className="mt-3 rounded-2xl border border-[#ede7ff] bg-[#faf7ff] px-3.5 py-3">
                       <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                         <div className="relative" ref={quickAddSourceMenuRef}>
                           <button
                             type="button"
                             onClick={() => setIsQuickAddSourceMenuOpen((prev) => !prev)}
-                            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-2.5 text-[11px] font-medium text-violet-700 hover:border-violet-300 hover:bg-violet-50"
+                            className="inline-flex h-8 items-center gap-1 rounded-lg border border-violet-200 bg-white px-2 text-[10px] font-medium text-violet-700 hover:border-violet-300 hover:bg-violet-50"
                             title="Add context source"
                           >
-                            <Plus size={12} />
-                            <ChevronDown size={12} />
+                            <Plus size={11} />
+                            <ChevronDown size={11} />
                           </button>
                           {isQuickAddSourceMenuOpen && (
-                            <div className="absolute left-0 top-full z-20 mt-1.5 w-40 rounded-lg border border-[#e5e7f1] bg-white p-1 shadow-[0_12px_28px_-18px_rgba(15,23,42,0.45)]">
+                            <div className="absolute left-0 top-full z-20 mt-1.5 w-44 rounded-lg border border-[#e5e7f1] bg-white p-1 shadow-[0_12px_28px_-18px_rgba(15,23,42,0.45)]">
                               {QUICK_ADD_SOURCE_OPTIONS.map((source) => (
                                 <button
                                   key={source.id}
                                   type="button"
                                   onClick={() => handleQuickAddSourceAction(source.id)}
-                                  className="w-full rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:bg-violet-50"
+                                  className="w-full rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:bg-violet-50 inline-flex items-center gap-2"
                                 >
+                                  <span className="text-slate-500">{getQuickAddSourceIcon(source.id)}</span>
                                   {source.label}
                                 </button>
                               ))}
@@ -11452,13 +11485,13 @@ Rules:
                             }
                           }}
                           placeholder="What do you want to schedule?"
-                          className="h-9 flex-1 rounded-lg border border-slate-200 bg-[#fcfcff] px-3 text-[12px] text-slate-700 placeholder:text-[10px] placeholder:text-slate-400 focus:outline-none focus:border-violet-300"
+                          className="h-8 min-w-0 flex-1 rounded-lg border border-slate-200 bg-[#fcfcff] px-2.5 text-[11px] text-slate-700 placeholder:text-[10px] placeholder:text-slate-400 focus:outline-none focus:border-violet-300"
                         />
 
                         <button
                           type="button"
                           onClick={convertMessyScheduleToPlan}
-                          className="h-9 rounded-lg bg-violet-600 px-3.5 text-[11px] font-semibold text-white hover:bg-violet-700"
+                          className="h-8 shrink-0 rounded-lg bg-violet-600 px-2.5 text-[10px] font-semibold text-white hover:bg-violet-700"
                         >
                           Add
                         </button>
@@ -11637,29 +11670,55 @@ Rules:
                   <div className="p-5 overflow-hidden">
                     <div className="h-full overflow-y-auto thin-scrollbar rounded-lg border border-[#ececf5] bg-white p-4 flex flex-col">
                       <div className="grid grid-cols-[1fr_1fr_auto_1fr_auto] gap-2 text-[12px]">
-                        <input
-                          type="date"
-                          value={scheduleForm.startDate}
-                          onChange={(event) => setScheduleForm((prev) => ({ ...prev, startDate: event.target.value }))}
-                          className="h-9 rounded-lg border border-violet-100 bg-violet-50/30 text-slate-700 px-2 focus:outline-none focus:border-violet-300"
-                        />
-                        <input
-                          type="time"
-                          value={scheduleForm.startTime}
-                          onChange={(event) => setScheduleForm((prev) => ({ ...prev, startTime: event.target.value }))}
-                          className="h-9 rounded-lg border border-violet-100 bg-violet-50/30 text-slate-700 px-2 focus:outline-none focus:border-violet-300"
-                        />
-                        <span className="self-center text-slate-500 text-center">to</span>
-                        <input
-                          type="time"
-                          value={scheduleForm.endTime}
-                          onChange={(event) => setScheduleForm((prev) => ({ ...prev, endTime: event.target.value }))}
-                          className="h-9 rounded-lg border border-violet-100 bg-violet-50/30 text-slate-700 px-2 focus:outline-none focus:border-violet-300"
-                        />
-                        <div className="h-9 rounded-lg border border-violet-100 bg-violet-50/30 text-slate-700 inline-flex items-center justify-center gap-1 px-2">
-                          <Clock size={12} />
-                          <span>{scheduleForm.timezone}</span>
+                        <div className="relative">
+                          <select
+                            value={scheduleForm.startDate}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, startDate: event.target.value }))}
+                            className="brand-select h-9 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-2.5 pr-7 text-slate-700 focus:outline-none focus:border-violet-300"
+                          >
+                            {!scheduleDateOptions.some((option) => option.value === scheduleForm.startDate) && (
+                              <option value={scheduleForm.startDate}>{new Date(`${scheduleForm.startDate}T00:00:00`).toLocaleDateString(undefined, { month: '2-digit', day: '2-digit', year: 'numeric' })}</option>
+                            )}
+                            {scheduleDateOptions.map((option) => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                          <Calendar size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
                         </div>
+                        <div className="relative">
+                          <select
+                            value={scheduleForm.startTime}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, startTime: event.target.value }))}
+                            className="brand-select h-9 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-2.5 pr-7 text-slate-700 focus:outline-none focus:border-violet-300"
+                          >
+                            {scheduleTimeOptions.map((option) => (
+                              <option key={`start-${option.value}`} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                          <Clock size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
+                        </div>
+                        <span className="self-center text-slate-500 text-center">to</span>
+                        <div className="relative">
+                          <select
+                            value={scheduleForm.endTime}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, endTime: event.target.value }))}
+                            className="brand-select h-9 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-2.5 pr-7 text-slate-700 focus:outline-none focus:border-violet-300"
+                          >
+                            {scheduleTimeOptions.map((option) => (
+                              <option key={`end-${option.value}`} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                          <Clock size={12} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" />
+                        </div>
+                        <select
+                          value={scheduleForm.timezone}
+                          onChange={(event) => setScheduleForm((prev) => ({ ...prev, timezone: event.target.value }))}
+                          className="brand-select h-9 rounded-lg border border-violet-100 bg-violet-50/30 px-2.5 pr-7 text-slate-700 focus:outline-none focus:border-violet-300"
+                        >
+                          {SCHEDULE_TIMEZONE_OPTIONS.map((timezone) => (
+                            <option key={timezone} value={timezone}>{timezone}</option>
+                          ))}
+                        </select>
                       </div>
 
                       <div className="mt-3">
@@ -11741,33 +11800,15 @@ Rules:
                             <option value="Joshua's Calendar">Add to calendar - Joshua&apos;s Calendar</option>
                             <option value="Team Calendar">Add to calendar - Team Calendar</option>
                           </select>
-                          <div className="relative" ref={scheduleRepeatMenuRef}>
-                            <button
-                              type="button"
-                              onClick={() => setOpenDropdown((prev) => (prev === 'schedule-repeat' ? null : 'schedule-repeat'))}
-                              className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300 inline-flex items-center justify-between"
-                            >
-                              <span>{`Repeat - ${scheduleForm.repeat}`}</span>
-                              <ChevronDown size={12} className="text-slate-500" />
-                            </button>
-                            {openDropdown === 'schedule-repeat' && (
-                              <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-lg border border-[#e6e8f1] bg-white p-1 shadow-[0_12px_28px_-20px_rgba(15,23,42,0.45)]">
-                                {SCHEDULE_REPEAT_OPTIONS.map((option) => (
-                                  <button
-                                    key={option}
-                                    type="button"
-                                    onClick={() => {
-                                      setScheduleForm((prev) => ({ ...prev, repeat: option }));
-                                      setOpenDropdown(null);
-                                    }}
-                                    className={`w-full rounded-md px-2.5 py-1.5 text-left text-[11px] ${scheduleForm.repeat === option ? 'bg-violet-50 text-violet-700' : 'text-slate-700 hover:bg-slate-50'}`}
-                                  >
-                                    {`Repeat - ${option}`}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                          <select
+                            value={scheduleForm.repeat}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, repeat: event.target.value }))}
+                            className="brand-select h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
+                          >
+                            {SCHEDULE_REPEAT_OPTIONS.map((option) => (
+                              <option key={option} value={option}>{`Repeat - ${option}`}</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="space-y-2">
                           <select
@@ -12708,10 +12749,10 @@ Rules:
       </div>
 
       {roomState === 'active' && roomPanelMode === 'expanded' && mainView === 'room' && (
-        <div className="fixed bottom-5 right-24 w-[min(76vw,980px)] h-[min(74vh,560px)] rounded-3xl overflow-hidden border border-white/40 shadow-[0_24px_70px_rgba(15,23,42,0.35)] bg-slate-900 z-[320]">
+        <div className="fixed left-14 right-[104px] top-16 bottom-14 rounded-3xl overflow-hidden border border-white/40 shadow-[0_24px_70px_rgba(15,23,42,0.35)] bg-slate-900 z-[320]">
           <div className="h-12 px-4 bg-black/45 backdrop-blur-md flex items-center justify-between text-white">
             <div className="flex items-center gap-3 min-w-0">
-              <span className="text-sm font-semibold truncate">Meeting: {roomId || 'live-room'}</span>
+              <span className="text-sm font-semibold truncate">{scheduleForm.title || 'Project MOAT Sync'}</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">LIVE {meetingDurationLabel}</span>
               <div className="hidden md:flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 p-1">
                 {[
@@ -12834,6 +12875,22 @@ Rules:
                   </div>
                 </div>
               )}
+              <div className="absolute bottom-20 left-4 right-4">
+                <div className="flex items-stretch gap-2 overflow-x-auto thin-scrollbar pb-1">
+                  <div className="min-w-[86px] rounded-xl border border-white/20 bg-black/45 overflow-hidden">
+                    <div className="h-14 bg-slate-900">
+                      <RoomStageFeed stream={localStream} placeholder="You" />
+                    </div>
+                    <div className="px-2 py-1 text-[11px] text-slate-100">You</div>
+                  </div>
+                  {meetingParticipants.map((participant) => (
+                    <div key={`stage-tile-${participant.name}`} className="min-w-[86px] rounded-xl border border-white/20 bg-black/45 overflow-hidden">
+                      <img src={participant.img} alt={participant.name} className="w-full h-14 object-cover" />
+                      <div className="px-2 py-1 text-[11px] text-slate-100 truncate">{participant.name}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20">
                 <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition ${isRoomMicOn ? 'bg-white text-slate-800' : 'bg-red-500 text-white'}`} title="Microphone">
                   {isRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}
@@ -12860,52 +12917,53 @@ Rules:
               </div>
             </div>
 
-            <div className="w-52 bg-slate-950/90 border-l border-white/10 p-3 space-y-3">
-              <div className="text-[11px] uppercase tracking-wider text-slate-300 font-semibold">{activeMeetingStageTab === 'files' ? `Files (${sharedMeetingFiles.length})` : 'Participants'}</div>
-              <div className="space-y-2">
-                {activeMeetingStageTab === 'files' && sharedMeetingFiles.length > 0 ? (
-                  sharedMeetingFiles.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveSharedMeetingFileId(item.id);
-                        setActiveMeetingStageTab('files');
-                      }}
-                      className={`w-full rounded-xl border text-left px-2 py-2 transition ${activeSharedMeetingFile?.id === item.id ? 'border-violet-300 bg-violet-100/20' : 'border-white/10 bg-slate-800 hover:border-violet-300/40'}`}
-                    >
-                      <div className="text-[11px] text-slate-100 font-medium truncate">{item.name}</div>
-                      <div className="text-[10px] text-slate-400 mt-1">{formatMeetingFileSize(item.size)} - {item.pages} pages</div>
-                    </button>
-                  ))
-                ) : (
-                  <>
-                    <div className="rounded-xl overflow-hidden border border-emerald-300/30 bg-slate-800">
-                      <div className="h-24 bg-slate-900">
-                        <RoomStageFeed stream={localStream} placeholder="You" />
-                      </div>
-                      <div className="px-2 py-1 text-[11px] text-slate-100 flex items-center justify-between"><span>You</span>{!isRoomMicOn && <MicOff size={12} className="text-red-400" />}</div>
-                    </div>
-                    {meetingParticipants.map((participant) => (
-                      <div key={participant.name} className="rounded-xl overflow-hidden border border-white/10 bg-slate-800">
-                        <img src={participant.img} alt={participant.name} className="w-full h-20 object-cover" />
-                        <div className="px-2 py-1 text-[11px] text-slate-100">{participant.name}</div>
-                      </div>
-                    ))}
-                  </>
-                )}
-                {activeMeetingStageTab === 'files' && sharedMeetingFiles.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-white/20 bg-slate-900/60 px-3 py-4 text-center">
-                    <div className="text-[11px] text-slate-200 font-medium">No files shared yet</div>
-                    <button
-                      type="button"
-                      onClick={() => meetingShareFileInputRef.current?.click()}
-                      className="mt-2 px-2.5 py-1.5 rounded-lg bg-violet-600 text-white text-[11px] font-semibold hover:bg-violet-500"
-                    >
-                      Share first file
-                    </button>
+            <div className="w-[320px] bg-white border-l border-slate-200 p-3 space-y-3 text-slate-800">
+              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-[13px] font-semibold truncate">{scheduleForm.title || 'Project MOAT Sync'}</div>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 font-semibold">LIVE</span>
+                </div>
+                <div className="text-[10px] text-slate-500 mt-1">{meetingDurationLabel}</div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="text-[12px] font-semibold">Participants ({meetingParticipants.length + 1})</div>
+                  <button type="button" className="text-[10px] text-violet-600 font-semibold">Mute all</button>
+                </div>
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <div className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" />Joshua (You)</div>
+                    {!isRoomMicOn && <MicOff size={12} className="text-rose-500" />}
                   </div>
-                )}
+                  {meetingParticipants.slice(0, 4).map((participant) => (
+                    <div key={`side-${participant.name}`} className="flex items-center justify-between text-[11px] text-slate-700">
+                      <span>{participant.name}</span>
+                      <span className="text-slate-400">Listening</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-violet-100 bg-violet-50/50 px-3 py-2.5">
+                <div className="text-[12px] font-semibold inline-flex items-center gap-1.5"><Sparkles size={12} className="text-violet-500" />AI Assistant <span className="text-[10px] text-violet-600">BETA</span></div>
+                <div className="mt-2 text-[11px] text-slate-600">I’m listening and will capture key points, decisions, and action items.</div>
+                <button type="button" className="mt-2 w-full rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-50">View live summary</button>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 text-[11px] font-medium">
+                  <button type="button" className="rounded-md bg-white py-1 text-slate-700 shadow-sm">Chat</button>
+                  <button type="button" className="rounded-md py-1 text-slate-500">Transcript</button>
+                </div>
+                <div className="mt-2 space-y-2 max-h-44 overflow-y-auto thin-scrollbar pr-1">
+                  {chatMessages.slice(-4).map((message) => (
+                    <div key={`meeting-chat-${message.id}`} className="text-[11px]">
+                      <div className="font-semibold text-slate-700">{message.sender === 'user' ? 'Joshua' : 'Priya'}</div>
+                      <div className="text-slate-500 line-clamp-2">{message.text}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
