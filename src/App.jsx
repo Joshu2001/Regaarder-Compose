@@ -5141,8 +5141,8 @@ Rules:
     showToast(`Meeting ready: ${normalizedCode}`);
   };
 
-  const startMeetingNow = () => {
-    const code = normalizeRoomCode(roomId) || generateRoomCode();
+  const startMeetingNow = (providedCode) => {
+    const code = normalizeRoomCode(providedCode || roomId) || generateRoomCode();
     setRoomId(code);
     setJoinCode(code);
     setRoomState('active');
@@ -5151,6 +5151,7 @@ Rules:
     setMeetingSummary(null);
     setMeetingStartedAt(Date.now());
     setMeetingDurationLabel('00:00');
+    requestMediaPermissions();
     showToast(`Joined meeting: ${code}`);
   };
 
@@ -11520,7 +11521,7 @@ Rules:
                                   type="button"
                                   onClick={() => {
                                     setIsRoomStartMenuOpen(false);
-                                    openMeetingSetup(generateRoomCode());
+                                    startMeetingNow(generateRoomCode());
                                   }}
                                   className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2"
                                 >
@@ -12272,10 +12273,40 @@ Rules:
 
           <div className="h-[calc(100%-3rem)] flex">
             <div className="flex-1 relative bg-black">
-              <RoomStageFeed stream={isScreenSharing ? screenShareStream : localStream} placeholder={isScreenSharing ? 'Screen share preview' : 'Camera preview'} />
-              <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/45 text-white text-xs">
-                {isScreenSharing ? 'Presenting Screen' : 'You are on camera'}
-              </div>
+              {isScreenSharing ? (
+                <>
+                  <RoomStageFeed stream={screenShareStream} placeholder="Screen share preview" />
+                  <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/45 text-white text-xs">
+                    Presenting Screen
+                  </div>
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_32%_24%,rgba(99,102,241,0.32),rgba(15,23,42,0)_45%),radial-gradient(circle_at_72%_74%,rgba(56,189,248,0.24),rgba(2,6,23,0)_42%),linear-gradient(145deg,#020617_0%,#0b1120_55%,#111827_100%)] text-white">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+                    <div className="w-48 h-48 rounded-full border border-dashed border-white/25 flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-xl border border-violet-300/60 bg-violet-500/20 flex items-center justify-center">
+                        <MonitorPlay size={24} className="text-violet-200" />
+                      </div>
+                    </div>
+                    <div className="mt-5 text-xl font-semibold">No one is sharing yet</div>
+                    <p className="mt-2 text-sm text-slate-300 max-w-sm">Share your screen, a window, or upload a file to get started.</p>
+                    <div className="mt-6 flex items-center gap-3">
+                      <button
+                        onClick={toggleScreenShare}
+                        className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold inline-flex items-center gap-2"
+                      >
+                        <MonitorPlay size={14} /> Share screen
+                      </button>
+                      <button
+                        onClick={() => showToast('Upload flow coming soon')}
+                        className="px-4 py-2 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-white text-sm font-semibold inline-flex items-center gap-2"
+                      >
+                        <Upload size={14} /> Upload file
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20">
                 <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition ${isRoomMicOn ? 'bg-white text-slate-800' : 'bg-red-500 text-white'}`} title="Microphone">
                   {isRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}
