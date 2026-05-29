@@ -11218,6 +11218,21 @@ Rules:
           )}
 
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
+          {activeRightTab === 'calendar' && (
+            <div className="flex-1 min-h-0 flex flex-col">
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                <h3 className="text-sm font-bold text-gray-900">Launch Timeline</h3>
+                <p className="text-xs text-gray-500">Consolidated product rollouts aligned with team calendar events.</p>
+                {upcomingEvents.map((event) => (
+                  <div key={event.id} className="p-3 rounded-xl border border-gray-200 bg-white">
+                    <div className="text-xs font-semibold text-gray-800">{event.title}</div>
+                    <div className="text-[11px] text-gray-500 mt-1">{event.slotLabel}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {isScheduleSessionModalOpen && (
             <div
               className="fixed inset-0 z-[1350] bg-black/70 flex items-center justify-center p-4"
