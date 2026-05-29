@@ -406,6 +406,10 @@ export default function App() {
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
   const [meetingShareMenuAnchor, setMeetingShareMenuAnchor] = useState(null);
+  const [isMeetingLinkInputOpen, setIsMeetingLinkInputOpen] = useState(false);
+  const [meetingLinkDraft, setMeetingLinkDraft] = useState('');
+  const [isMeetingOverflowParticipantsOpen, setIsMeetingOverflowParticipantsOpen] = useState(false);
+  const [meetingConversationTab, setMeetingConversationTab] = useState('chat');
   const [meetingStartedAt, setMeetingStartedAt] = useState(null);
   const [meetingDurationLabel, setMeetingDurationLabel] = useState('00:00');
   const [meetingSummary, setMeetingSummary] = useState(null);
@@ -417,6 +421,10 @@ export default function App() {
     { name: 'Sarah', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=320&q=80' },
     { name: 'Mike', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80' },
     { name: 'Ana', img: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=320&q=80' },
+  ]);
+  const [meetingOverflowParticipants] = useState([
+    { name: 'Kevin', img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=320&q=80' },
+    { name: 'Aisha', img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=320&q=80' },
   ]);
   const [mediaError, setMediaError] = useState(false);
   const [platformContacts, setPlatformContacts] = useState([
@@ -619,7 +627,7 @@ export default function App() {
   const [isUnsavedDraftVisible, setIsUnsavedDraftVisible] = useState(true);
   const [isEditingUnsavedDraftName, setIsEditingUnsavedDraftName] = useState(false);
   const [unsavedDraftNameInput, setUnsavedDraftNameInput] = useState('');
-  const [activePrimaryNav, setActivePrimaryNav] = useState('home');
+  const [activePrimaryNav, setActivePrimaryNav] = useState('my-orb');
   const [documentStats, setDocumentStats] = useState({ words: 0, characters: 0 });
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isFocusMode, setIsFocusMode] = useState(false);
@@ -2149,6 +2157,12 @@ export default function App() {
       if (!event.target.closest('[data-meeting-share-root]')) {
         setMeetingShareMenuAnchor(null);
       }
+      if (!event.target.closest('[data-meeting-link-input-root]')) {
+        setIsMeetingLinkInputOpen(false);
+      }
+      if (!event.target.closest('[data-meeting-overflow-root]')) {
+        setIsMeetingOverflowParticipantsOpen(false);
+      }
     };
 
     window.addEventListener('pointerdown', handleClickOutside);
@@ -3392,6 +3406,8 @@ export default function App() {
     setIsSchedulePeopleMenuOpen(false);
     setIsQuickAddSourceMenuOpen(false);
     setMeetingShareMenuAnchor(null);
+    setIsMeetingLinkInputOpen(false);
+    setIsMeetingOverflowParticipantsOpen(false);
   };
 
   const trackMemoryAction = (type, summary, details = {}) => {
@@ -5395,9 +5411,8 @@ Rules:
     setMeetingShareMenuAnchor(null);
 
     if (option === 'link') {
-      const meetingLink = `https://compose.ai/room/${roomId || 'live-room'}`;
-      navigator.clipboard?.writeText(meetingLink);
-      showToast('Meeting link copied');
+      setMeetingLinkDraft(`https://compose.ai/room/${roomId || 'live-room'}`);
+      setIsMeetingLinkInputOpen(true);
       return;
     }
 
@@ -5418,6 +5433,31 @@ Rules:
     }
 
     meetingShareFileInputRef.current.click();
+  };
+
+  const saveMeetingSharedLink = () => {
+    const link = String(meetingLinkDraft || '').trim();
+    if (!link) {
+      showToast('Enter a link to share');
+      return;
+    }
+
+    const item = {
+      id: `link-${Date.now()}`,
+      name: link,
+      baseName: 'Shared link',
+      sharedBy: 'Joshua',
+      size: 0,
+      pages: 1,
+      type: 'link',
+      uploadedAt: new Date().toISOString(),
+    };
+
+    setSharedMeetingFiles((prev) => [item, ...prev]);
+    setActiveSharedMeetingFileId(item.id);
+    setActiveMeetingStageTab('files');
+    setIsMeetingLinkInputOpen(false);
+    showToast('Link added to meeting share list');
   };
 
   const stopMediaStream = () => {
@@ -9225,28 +9265,26 @@ Rules:
           </div>
         ) : (
           <>
-            {/* Logo Area */}
-            <div className="h-14 flex items-center justify-between px-4">
-              <div className="flex items-center gap-2 font-bold text-gray-900 text-lg">
-                {/* Custom Logo SVG - Elegant, minimalist "C" and "R" intersection */}
-                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-violet-600">
-                  <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 12 10c3.1 0 5.89-1.41 1.77-5.5L12 13.5L8.5 17H6.5L12 11.5L17.5 17H15.5L12 13.5L15.5 10H19.5C21.1 12 22 14.4 22 12c0-5.523-4.477-10-10-10z" fill="currentColor" />
-                </svg>
-                <span className="tracking-tight text-gray-900">Regaarder Compose</span>
+            <div className="h-16 flex items-center justify-between px-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 text-white flex items-center justify-center shadow-[0_12px_24px_-14px_rgba(139,92,246,0.95)]">
+                  <Sparkles size={16} />
+                </div>
+                <div className="leading-tight">
+                  <div className="text-[17px] font-semibold tracking-tight text-gray-900">Orb</div>
+                  <div className="text-[11px] text-gray-500">by Regaarder</div>
+                </div>
               </div>
-            </div>
-
-            <div className="px-4 py-3">
-              <button 
+              <button
                 onClick={openCreationPicker}
-                className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 font-medium text-sm transition-colors active:scale-95"
+                className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
               >
-                <Plus size={16} />
-                New Composition
+                <Upload size={13} />
+                Upload
               </button>
             </div>
 
-            <div className="px-4 pb-2">
+            <div className="px-4 pb-3">
               <div
                 className="relative"
                 onMouseEnter={() => setIsFormattingDropdownHovered(true)}
@@ -9255,7 +9293,7 @@ Rules:
                 <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
                 <input 
                   type="text" 
-                  placeholder="Search compositions..." 
+                  placeholder="Search Orb..." 
                   className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
                 />
                 <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
@@ -9297,119 +9335,87 @@ Rules:
             </div>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
-            <button
-              onClick={() => setActivePrimaryNav('home')}
-              className={`w-full flex items-center gap-3 px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'home' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              <Home size={16} /> Home
-            </button>
-            <button
-              onClick={() => setActivePrimaryNav('library')}
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'library' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen size={16} className={activePrimaryNav === 'library' ? 'text-violet-600' : ''} /> Library
-              </div>
-            </button>
-            <button
-              onClick={() => setActivePrimaryNav('drafts')}
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'drafts' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              <div className="flex items-center gap-3">
-                <FileText size={16} className={activePrimaryNav === 'drafts' ? 'text-violet-600' : ''} /> Drafts
-              </div>
-            </button>
-            <button
-              onClick={() => setActivePrimaryNav('inbox')}
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-sm rounded-md transition-colors ${activePrimaryNav === 'inbox' ? 'bg-violet-50 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-              <div className="flex items-center gap-3">
-                <Inbox size={16} /> Inbox
-              </div>
-              <span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full font-medium">12</span>
-            </button>
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
-              <Star size={16} /> Starred
-            </button>
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors">
-              <Users size={16} /> Shared
-            </button>
-            <button
-              onClick={() => {
-                setActiveRightTab('memory');
-                setRightSidebarOpen(true);
-              }}
-              className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-            >
-              <Database size={16} /> Memory
-            </button>
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors mb-4">
-              <Trash size={16} /> Trash
-            </button>
-
-            {/* Workspaces Section */}
-            <div className="flex items-center justify-between px-2 py-2 mt-4">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspaces</span>
-              <button onClick={openCreateWorkspaceModal} className="text-gray-400 hover:text-gray-600">
-                <Plus size={14} className="cursor-pointer" />
+          <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
+            <div className="space-y-0.5">
+              <button
+                onClick={() => setActivePrimaryNav('my-orb')}
+                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'my-orb' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+              >
+                <Database size={15} /> My Orb
+              </button>
+              <button
+                onClick={() => setActivePrimaryNav('shared')}
+                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'shared' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+              >
+                <Users size={15} /> Shared with me
+              </button>
+              <button
+                onClick={() => setActivePrimaryNav('favorites')}
+                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'favorites' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+              >
+                <Star size={15} /> Favorites
+              </button>
+              <button
+                onClick={() => setActivePrimaryNav('recent')}
+                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'recent' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+              >
+                <Clock size={15} /> Recent
+              </button>
+              <button
+                onClick={() => setActivePrimaryNav('trash')}
+                className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'trash' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
+              >
+                <Trash size={15} /> Trash
               </button>
             </div>
 
-            <div className="space-y-1">
-              {workspaces.map((workspace) => (
-                <div key={workspace.id} className="relative">
-                  <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md font-medium transition-colors">
-                    <div className="flex items-center gap-3">
-                      <WorkspaceIcon letter={workspace.letter} colorClass={workspace.colorClass} /> {workspace.name}
+            <div>
+              <div className="px-2.5 text-[10px] uppercase tracking-[0.11em] font-semibold text-gray-400 mb-1.5">Workspace Intelligence</div>
+              <div className="space-y-0.5">
+                <button className="w-full flex items-center justify-between px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                  <span className="flex items-center gap-3"><Sparkles size={15} /> AI Suggested</span>
+                  <span className="text-[10px] font-semibold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">12</span>
+                </button>
+                <button className="w-full flex items-center justify-between px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                  <span className="flex items-center gap-3"><LinkIcon size={15} /> Related to me</span>
+                  <span className="text-[10px] font-semibold bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full">8</span>
+                </button>
+                <button className="w-full flex items-center gap-3 px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                  <BookOpen size={15} /> Recently referenced
+                </button>
+                <button className="w-full flex items-center gap-3 px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                  <ArrowUp size={15} /> Trending in team
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <div className="px-2.5 text-[10px] uppercase tracking-[0.11em] font-semibold text-gray-400 mb-1.5">Spaces</div>
+              <div className="space-y-1">
+                {workspaces.map((workspace) => (
+                  <button key={workspace.id} className="w-full flex items-center justify-between px-2.5 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                    <div className="flex items-center gap-2.5">
+                      <WorkspaceIcon letter={workspace.letter} colorClass={workspace.colorClass} />
+                      <span>{workspace.name}</span>
                     </div>
-                    <MoreHorizontal
-                      size={14}
-                      data-workspace-menu-root
-                      className="text-gray-400"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        closeTransientMenus();
-                        setOpenWorkspaceMenuId((prev) => (prev === workspace.id ? null : workspace.id));
-                      }}
-                    />
+                    <ChevronRight size={13} className="text-gray-300" />
                   </button>
+                ))}
+              </div>
+            </div>
 
-                  {openWorkspaceMenuId === workspace.id && (
-                    <div className="absolute right-2 top-9 z-30 w-28 bg-white border border-gray-200 rounded-lg shadow-lg p-1" data-workspace-menu-root>
-                      <button
-                        onClick={() => openRenameWorkspaceModal(workspace)}
-                        className="w-full text-left px-2 py-1 text-xs rounded hover:bg-violet-50"
-                      >
-                        Rename
-                      </button>
-                    </div>
-                  )}
+            <div className="rounded-xl border border-gray-200 bg-white p-3 mb-3">
+              <div className="text-xs font-semibold text-gray-700 mb-2">Orb Storage</div>
+              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden mb-1.5">
+                <div className="h-full w-[26%] rounded-full bg-violet-500" />
+              </div>
+              <div className="text-[11px] text-gray-500">256 GB of 1 TB used</div>
+            </div>
 
-                  {workspace.hasDocuments && (
-                    <div className="ml-7 mt-1 space-y-0.5 border-l border-gray-200 pl-1">
-                      {orderedDocuments.map((doc) => {
-                        const label = doc.title?.trim() ? doc.title : UNTITLED_COMPOSITION_LABEL;
-                        const isActive = activeDocId === doc.id;
-
-                        return (
-                          <button
-                            key={doc.id}
-                            onClick={() => switchDocument(doc.id)}
-                            className={`w-full flex items-center justify-between pl-3 pr-2 py-1 text-sm rounded-r-md transition-colors ${isActive ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <FileText size={14} className={isActive ? 'text-violet-500' : 'text-gray-400'} />
-                              <span className="truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
-                            </div>
-                            <MoreHorizontal size={14} className={isActive ? 'text-violet-400' : 'text-gray-300'} />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
+            <div className="pb-2">
+              <button className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                Manage storage
+              </button>
             </div>
           </div>
         )}
@@ -13024,23 +13030,23 @@ Rules:
               ) : (
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_32%_24%,rgba(99,102,241,0.32),rgba(15,23,42,0)_45%),radial-gradient(circle_at_72%_74%,rgba(56,189,248,0.24),rgba(2,6,23,0)_42%),linear-gradient(145deg,#020617_0%,#0b1120_55%,#111827_100%)] text-white">
                   <div className="absolute inset-0 flex flex-col items-center justify-center px-6 pb-40 text-center">
-                    <div className="w-64 h-64 rounded-full border border-dashed border-white/25 flex flex-col items-center justify-center px-6">
+                    <div className="w-52 h-52 rounded-full border border-dashed border-white/25 flex flex-col items-center justify-center px-5">
                       <div className="w-12 h-12 rounded-xl border border-violet-300/60 bg-violet-500/20 flex items-center justify-center">
                         <MonitorPlay size={20} className="text-violet-200" />
                       </div>
-                      <div className="mt-4 text-2xl font-semibold leading-tight">No one is sharing yet</div>
-                      <p className="mt-2 text-[13px] text-slate-300 max-w-[220px]">Share your screen, a window, or share a file to get started.</p>
+                      <div className="mt-3 text-[18px] font-semibold leading-tight">No one is sharing yet</div>
+                      <p className="mt-1 text-[12px] text-slate-300 max-w-[210px]">Share your screen, a window, or share a file to get started.</p>
                       <div className="mt-4 flex items-center gap-2" data-meeting-share-root>
                         <button
                           onClick={toggleScreenShare}
-                          className="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+                          className="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap"
                         >
                           <MonitorPlay size={12} /> Share screen
                         </button>
                         <div className="relative">
                           <button
                             onClick={() => setMeetingShareMenuAnchor((prev) => (prev === 'center' ? null : 'center'))}
-                            className="px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+                            className="px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-white text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap"
                           >
                             <Upload size={12} /> Share a file
                           </button>
@@ -13072,6 +13078,26 @@ Rules:
                       <div className="px-2 py-1 text-[11px] text-slate-100 truncate">{participant.name}</div>
                     </div>
                   ))}
+                  <div className="relative" data-meeting-overflow-root>
+                    <button
+                      type="button"
+                      onClick={() => setIsMeetingOverflowParticipantsOpen((prev) => !prev)}
+                      className="min-w-[86px] h-full rounded-xl border border-white/20 bg-black/45 flex flex-col items-center justify-center px-2 py-2 text-slate-100 hover:border-violet-300"
+                    >
+                      <span className="text-2xl font-semibold">+{meetingOverflowParticipants.length}</span>
+                      <span className="text-[11px]">Others</span>
+                    </button>
+                    {isMeetingOverflowParticipantsOpen && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-xl border border-slate-200 bg-[#0b1225] p-2 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
+                        {meetingOverflowParticipants.map((participant) => (
+                          <div key={`overflow-card-${participant.name}`} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/10">
+                            <img src={participant.img} alt={participant.name} className="w-6 h-6 rounded-full object-cover border border-white/20" />
+                            <span className="text-xs text-slate-100">{participant.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20">
@@ -13099,6 +13125,33 @@ Rules:
                     <button type="button" onClick={() => handleMeetingShareOption('link')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><LinkIcon size={12} />Share link</button>
                   </div>
                 )}
+                {isMeetingLinkInputOpen && (
+                  <div data-meeting-link-input-root className="absolute bottom-[54px] right-[20px] z-20 w-72 rounded-xl border border-slate-200 bg-[#0b1225] p-2 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
+                    <div className="text-[11px] font-semibold text-slate-100 mb-1">Add link</div>
+                    <input
+                      value={meetingLinkDraft}
+                      onChange={(event) => setMeetingLinkDraft(event.target.value)}
+                      placeholder="https://"
+                      className="w-full rounded-lg border border-slate-500/60 bg-[#111a31] px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-violet-400"
+                    />
+                    <div className="mt-2 flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsMeetingLinkInputOpen(false)}
+                        className="rounded-md px-2.5 py-1 text-xs text-slate-200 hover:bg-white/10"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveMeetingSharedLink}
+                        className="rounded-md bg-violet-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-violet-500"
+                      >
+                        Add link
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <button onClick={leaveRoom} className="px-3 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold" title="Leave meeting">
                   Leave
                 </button>
@@ -13116,18 +13169,33 @@ Rules:
 
               <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
                 <div className="flex items-center justify-between">
-                  <div className="text-[12px] font-semibold">Participants ({meetingParticipants.length + 1})</div>
+                  <div className="text-[12px] font-semibold">Participants ({meetingParticipants.length + meetingOverflowParticipants.length + 1})</div>
                   <button type="button" className="text-[10px] text-violet-600 font-semibold">Mute all</button>
                 </div>
                 <div className="mt-2 space-y-2">
                   <div className="flex items-center justify-between text-[11px]">
-                    <div className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" />Joshua (You)</div>
+                    <div className="inline-flex items-center gap-2">
+                      <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=120&q=80" alt="Joshua" className="w-5 h-5 rounded-full object-cover border border-slate-200" />
+                      <span>Joshua (You)</span>
+                    </div>
                     {!isRoomMicOn && <MicOff size={12} className="text-rose-500" />}
                   </div>
                   {meetingParticipants.slice(0, 4).map((participant) => (
                     <div key={`side-${participant.name}`} className="flex items-center justify-between text-[11px] text-slate-700">
-                      <span>{participant.name}</span>
+                      <div className="inline-flex items-center gap-2">
+                        <img src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full object-cover border border-slate-200" />
+                        <span>{participant.name}</span>
+                      </div>
                       <span className="text-slate-400">Listening</span>
+                    </div>
+                  ))}
+                  {meetingOverflowParticipants.map((participant) => (
+                    <div key={`side-overflow-${participant.name}`} className="flex items-center justify-between text-[11px] text-slate-700">
+                      <div className="inline-flex items-center gap-2">
+                        <img src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full object-cover border border-slate-200" />
+                        <span>{participant.name}</span>
+                      </div>
+                      <span className="text-slate-400">Muted</span>
                     </div>
                   ))}
                 </div>
@@ -13141,16 +13209,30 @@ Rules:
 
               <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
                 <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 text-[11px] font-medium">
-                  <button type="button" className="rounded-md bg-white py-1 text-slate-700 shadow-sm">Chat</button>
-                  <button type="button" className="rounded-md py-1 text-slate-500">Transcript</button>
+                  <button type="button" onClick={() => setMeetingConversationTab('chat')} className={`rounded-md py-1 ${meetingConversationTab === 'chat' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'}`}>Chat</button>
+                  <button type="button" onClick={() => setMeetingConversationTab('transcript')} className={`rounded-md py-1 ${meetingConversationTab === 'transcript' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'}`}>Transcript</button>
                 </div>
                 <div className="mt-2 space-y-2 max-h-44 overflow-y-auto thin-scrollbar pr-1">
-                  {chatMessages.slice(-4).map((message) => (
-                    <div key={`meeting-chat-${message.id}`} className="text-[11px]">
-                      <div className="font-semibold text-slate-700">{message.sender === 'user' ? 'Joshua' : 'Priya'}</div>
-                      <div className="text-slate-500 line-clamp-2">{message.text}</div>
-                    </div>
-                  ))}
+                  {meetingConversationTab === 'chat' ? (
+                    chatMessages.length ? chatMessages.slice(-6).map((message, index) => (
+                      <div key={`meeting-chat-${message.id}`} className="text-[11px] rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                        <div className="font-semibold text-slate-700">{message.sender === 'user' ? 'Joshua' : 'Priya'} <span className="ml-1 text-[10px] text-slate-400 font-normal">10:{30 + index} AM</span></div>
+                        <div className="text-slate-500 line-clamp-2 mt-0.5">{message.text}</div>
+                      </div>
+                    )) : (
+                      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-[11px] text-slate-500 text-center">No chat yet. Messages from the room will appear here.</div>
+                    )
+                  ) : (
+                    chatMessages.length > 1 ? chatMessages.slice(-6).map((message, index) => (
+                      <div key={`meeting-transcript-${message.id}`} className="text-[11px] rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
+                        <div className="text-[10px] text-slate-400">10:{35 + index} AM</div>
+                        <div className="font-semibold text-slate-700 mt-0.5">{message.sender === 'user' ? 'Joshua' : 'Priya'}</div>
+                        <div className="text-slate-500 line-clamp-2 mt-0.5">{message.text}</div>
+                      </div>
+                    )) : (
+                      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-[11px] text-slate-500 text-center">No transcript yet. Live speech will appear here once participants start talking.</div>
+                    )
+                  )}
                 </div>
               </div>
             </div>
