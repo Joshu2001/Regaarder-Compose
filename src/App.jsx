@@ -97,6 +97,9 @@ const DECK_TEMPLATE_LIBRARY = [
 ];
 
 const DECK_STORY_SECTIONS = ['Opening', 'Problem', 'Opportunity', 'Product', 'Market', 'Strategy', 'Financials', 'Closing'];
+const SCHEDULE_NOTIFICATION_OPTIONS = ['5 minutes before', '15 minutes before', '30 minutes before', '1 hour before'];
+const SCHEDULE_JOIN_OPTIONS = ['Only invited people', 'Anyone with link', 'Workspace members'];
+const SCHEDULE_REPEAT_OPTIONS = ['Does not repeat', 'Daily', 'Weekly', 'Monthly'];
 
 const FONT_FAMILY_MAP = {
   Manrope: "Manrope, 'Plus Jakarta Sans', 'DM Sans', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
@@ -341,10 +344,36 @@ export default function App() {
     { id: 1, title: 'Beta Launch Kickoff', slotLabel: 'May 15 - 10:00 AM' },
     { id: 2, title: 'Product Hunt Checklist Finalization', slotLabel: 'June 14 - 2:30 PM' },
   ]);
+  const [scheduleForm, setScheduleForm] = useState({
+    startDate: '2026-05-29',
+    startTime: '10:00',
+    endTime: '11:00',
+    timezone: 'GMT+5:30',
+    title: 'Project MOAT Sync',
+    roomLink: 'https://compose.ai/room/moat-sync',
+    notification: '30 minutes before',
+    whoCanJoin: 'Only invited people',
+    addToCalendar: "Joshua's Calendar",
+    repeat: 'Does not repeat',
+    allowRecording: true,
+  });
+  const [scheduleOptionsState, setScheduleOptionsState] = useState({
+    aiNotes: true,
+    screenSharing: false,
+    whiteboard: false,
+    waitingRoom: false,
+  });
+  const [scheduleParticipants, setScheduleParticipants] = useState([
+    { id: 'self', name: 'Joshua (You)', img: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=320&q=80' },
+    { id: 'mike', name: 'Mike', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80' },
+    { id: 'ana', name: 'Ana', img: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=320&q=80' },
+  ]);
+  const [participantSchedules, setParticipantSchedules] = useState({});
   const [calendarMonth, setCalendarMonth] = useState(4); // 0=Jan, 4=May
   const [calendarYear, setCalendarYear] = useState(2026);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date(2026, 4, 15));
   const [isScheduleCalendarExpanded, setIsScheduleCalendarExpanded] = useState(false);
+  const [isScheduleSessionModalOpen, setIsScheduleSessionModalOpen] = useState(false);
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
@@ -2965,6 +2994,43 @@ export default function App() {
       setToastMessage('');
       toastTimerRef.current = null;
     }, 2800);
+  };
+
+  const closeScheduleSessionModal = () => {
+    setIsScheduleCalendarExpanded(false);
+    setIsScheduleSessionModalOpen(false);
+  };
+
+  const handleScheduleSessionSave = () => {
+    const title = String(scheduleForm.title || '').trim() || 'Untitled session';
+    const startDate = String(scheduleForm.startDate || '').trim();
+    const startTime = String(scheduleForm.startTime || '').trim() || '10:00';
+    const eventDate = new Date(`${startDate}T${startTime}:00`);
+    const hasValidDate = !Number.isNaN(eventDate.getTime());
+    const slotLabel = hasValidDate
+      ? `${eventDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} - ${scheduleForm.startTime}`
+      : `${scheduleForm.startDate} - ${scheduleForm.startTime}`;
+    const event = {
+      id: Date.now(),
+      title,
+      slot: scheduleForm.startTime,
+      slotLabel,
+      dueDate: hasValidDate ? eventDate.toISOString() : null,
+      participants: scheduleParticipants.map((person) => person.name),
+      source: 'room-schedule-session',
+    };
+
+    setUpcomingEvents((prev) => [event, ...prev]);
+    setParticipantSchedules((prev) => {
+      const next = { ...prev };
+      scheduleParticipants.forEach((person) => {
+        const key = person.name;
+        next[key] = [...(next[key] || []), event];
+      });
+      return next;
+    });
+    showToast(`Saved to schedule for ${scheduleParticipants.map((person) => person.name.split(' ')[0]).join(', ')}`);
+    closeScheduleSessionModal();
   };
 
   useEffect(() => () => {
@@ -11151,13 +11217,10 @@ Rules:
           )}
 
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
-          {activeRightTab === 'calendar' && (
+          {isScheduleSessionModalOpen && (
             <div
               className="fixed inset-0 z-[1350] bg-black/70 flex items-center justify-center p-4"
-              onClick={() => {
-                setIsScheduleCalendarExpanded(false);
-                setRightSidebarOpen(false);
-              }}
+              onClick={closeScheduleSessionModal}
             >
               <div
                 className="w-[min(90vw,1100px)] h-[min(90vh,860px)] rounded-xl border border-[#ececf7] bg-white shadow-[0_24px_80px_-32px_rgba(15,23,42,0.45)] overflow-hidden flex flex-col"
@@ -11171,6 +11234,7 @@ Rules:
                   <div className="flex items-center">
                     <button
                       type="button"
+                      onClick={handleScheduleSessionSave}
                       className="h-10 px-5 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700"
                     >
                       Save
@@ -11180,33 +11244,67 @@ Rules:
                 <div className="flex-1 grid grid-cols-[2fr_1fr] gap-0 overflow-hidden">
                   <div className="p-5 overflow-hidden">
                     <div className="h-full overflow-y-auto thin-scrollbar rounded-lg border border-[#ececf5] bg-white p-4 flex flex-col">
-                      <div className="grid grid-cols-[1fr_1fr_auto_1fr_1fr_auto] gap-2 text-[12px]">
-                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">May 29, 2025</button>
-                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">10:00 AM</button>
+                      <div className="grid grid-cols-[1fr_1fr_auto_1fr_auto] gap-2 text-[12px]">
+                        <input
+                          type="date"
+                          value={scheduleForm.startDate}
+                          onChange={(event) => setScheduleForm((prev) => ({ ...prev, startDate: event.target.value }))}
+                          className="h-9 rounded-lg border border-violet-100 bg-violet-50/30 text-slate-700 px-2 focus:outline-none focus:border-violet-300"
+                        />
+                        <input
+                          type="time"
+                          value={scheduleForm.startTime}
+                          onChange={(event) => setScheduleForm((prev) => ({ ...prev, startTime: event.target.value }))}
+                          className="h-9 rounded-lg border border-violet-100 bg-violet-50/30 text-slate-700 px-2 focus:outline-none focus:border-violet-300"
+                        />
                         <span className="self-center text-slate-500 text-center">to</span>
-                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">11:00 AM</button>
-                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700">{selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</button>
-                        <button className="h-9 rounded-lg border border-[#e8eaf2] bg-[#f7f8fc] text-slate-700 inline-flex items-center justify-center gap-1">
+                        <input
+                          type="time"
+                          value={scheduleForm.endTime}
+                          onChange={(event) => setScheduleForm((prev) => ({ ...prev, endTime: event.target.value }))}
+                          className="h-9 rounded-lg border border-violet-100 bg-violet-50/30 text-slate-700 px-2 focus:outline-none focus:border-violet-300"
+                        />
+                        <div className="h-9 rounded-lg border border-violet-100 bg-violet-50/30 text-slate-700 inline-flex items-center justify-center gap-1 px-2">
                           <Clock size={12} />
-                          <span>GMT+5:30</span>
-                        </button>
+                          <span>{scheduleForm.timezone}</span>
+                        </div>
                       </div>
 
                       <div className="mt-3">
                         <label className="text-[11px] font-semibold text-slate-600">Title</label>
                         <div className="mt-1 h-10 rounded-lg border border-[#e8eaf2] bg-white px-3 flex items-center justify-between">
-                          <span className="text-[14px] text-slate-800">Project MOAT Sync</span>
-                          <span className="text-[11px] text-slate-400">16/200</span>
+                          <input
+                            value={scheduleForm.title}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, title: event.target.value.slice(0, 200) }))}
+                            className="w-full bg-transparent text-[14px] text-slate-800 focus:outline-none"
+                          />
+                          <span className="text-[11px] text-slate-400">{scheduleForm.title.length}/200</span>
                         </div>
                       </div>
 
                       <div className="mt-3">
                         <label className="text-[11px] font-semibold text-slate-600">Room link</label>
                         <div className="mt-1 h-10 rounded-lg border border-[#e8eaf2] bg-[#f8f9fd] px-3 flex items-center justify-between">
-                          <span className="text-[12px] text-slate-600">https://compose.ai/room/moat-sync</span>
+                          <input
+                            value={scheduleForm.roomLink}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, roomLink: event.target.value }))}
+                            className="w-full bg-transparent text-[12px] text-slate-600 focus:outline-none"
+                          />
                           <div className="flex items-center gap-2 text-slate-400">
-                            <File size={14} />
-                            <Settings size={14} />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (scheduleForm.roomLink) {
+                                  navigator.clipboard?.writeText(scheduleForm.roomLink);
+                                  showToast('Room link copied');
+                                }
+                              }}
+                            >
+                              <File size={14} />
+                            </button>
+                            <button type="button" onClick={() => showToast('Room link settings opened')}>
+                              <Settings size={14} />
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -11234,28 +11332,51 @@ Rules:
 
                       <div className="mt-3 grid grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
-                            <span>Notification · 30 minutes before</span>
-                            <ChevronDown size={13} />
-                          </div>
-                          <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
-                            <span>Add to calendar · Joshua&apos;s Calendar</span>
-                            <ChevronDown size={13} />
-                          </div>
-                          <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
-                            <span>Repeat · Does not repeat</span>
-                            <ChevronDown size={13} />
-                          </div>
+                          <select
+                            value={scheduleForm.notification}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, notification: event.target.value }))}
+                            className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
+                          >
+                            {SCHEDULE_NOTIFICATION_OPTIONS.map((option) => (
+                              <option key={option} value={option}>{`Notification · ${option}`}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={scheduleForm.addToCalendar}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, addToCalendar: event.target.value }))}
+                            className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
+                          >
+                            <option value="Joshua's Calendar">Add to calendar · Joshua&apos;s Calendar</option>
+                            <option value="Team Calendar">Add to calendar · Team Calendar</option>
+                          </select>
+                          <select
+                            value={scheduleForm.repeat}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, repeat: event.target.value }))}
+                            className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
+                          >
+                            {SCHEDULE_REPEAT_OPTIONS.map((option) => (
+                              <option key={option} value={option}>{`Repeat · ${option}`}</option>
+                            ))}
+                          </select>
                         </div>
                         <div className="space-y-2">
-                          <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
-                            <span>Who join · Only invited people</span>
-                            <ChevronDown size={13} />
-                          </div>
+                          <select
+                            value={scheduleForm.whoCanJoin}
+                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, whoCanJoin: event.target.value }))}
+                            className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
+                          >
+                            {SCHEDULE_JOIN_OPTIONS.map((option) => (
+                              <option key={option} value={option}>{`Who join · ${option}`}</option>
+                            ))}
+                          </select>
                           <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
                             <span>Allow recording</span>
-                            <button className="w-9 h-5 rounded-full bg-violet-600 relative">
-                              <span className="absolute right-0.5 top-0.5 w-4 h-4 rounded-full bg-white" />
+                            <button
+                              type="button"
+                              onClick={() => setScheduleForm((prev) => ({ ...prev, allowRecording: !prev.allowRecording }))}
+                              className={`w-9 h-5 rounded-full relative transition-colors ${scheduleForm.allowRecording ? 'bg-violet-600' : 'bg-slate-300'}`}
+                            >
+                              <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${scheduleForm.allowRecording ? 'right-0.5' : 'left-0.5'}`} />
                             </button>
                           </div>
                         </div>
@@ -11267,16 +11388,36 @@ Rules:
                       <div className="rounded-lg border border-[#ececf5] bg-white p-3">
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-[14px] font-semibold text-slate-900">Participants</div>
-                          <button className="text-[12px] text-violet-600 font-semibold">+ Add people</button>
+                          <button
+                            className="text-[12px] text-violet-600 font-semibold"
+                            onClick={() => {
+                              const nextPerson = platformContacts.find((person) => !scheduleParticipants.some((p) => p.name === person.name));
+                              if (nextPerson) {
+                                setScheduleParticipants((prev) => [
+                                  ...prev,
+                                  { id: `contact-${nextPerson.id}`, name: nextPerson.name, img: `https://i.pravatar.cc/80?u=${nextPerson.id}` },
+                                ]);
+                              } else {
+                                showToast('All contacts already added');
+                              }
+                            }}
+                          >
+                            + Add people
+                          </button>
                         </div>
                         <div className="space-y-2">
-                          {meetingParticipants.slice(0, 3).map((participant, idx) => (
+                          {scheduleParticipants.map((participant) => (
                             <div key={`modal-participant-${participant.name}`} className="h-10 rounded-lg border border-[#ececf5] px-2.5 flex items-center justify-between">
                               <div className="flex items-center gap-2 min-w-0">
                                 <img src={participant.img} alt={participant.name} className="w-6 h-6 rounded-full object-cover" />
-                                <span className="text-[12px] text-slate-700 truncate">{idx === 0 ? 'Joshua (You)' : participant.name}</span>
+                                <span className="text-[12px] text-slate-700 truncate">{participant.name}</span>
                               </div>
-                              <X size={13} className="text-slate-400" />
+                              <button
+                                type="button"
+                                onClick={() => setScheduleParticipants((prev) => prev.filter((person) => person.id !== participant.id))}
+                              >
+                                <X size={13} className="text-slate-400" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -11285,10 +11426,10 @@ Rules:
                       <div className="rounded-lg border border-[#ececf5] bg-white p-3">
                         <div className="text-[14px] font-semibold text-slate-900 mb-2">Options</div>
                         <div className="space-y-2 text-[12px] text-slate-700">
-                          <label className="flex items-start gap-2"><input type="checkbox" defaultChecked className="mt-0.5" /><span>Enable AI notes &amp; summary</span></label>
-                          <label className="flex items-start gap-2"><input type="checkbox" defaultChecked className="mt-0.5" /><span>Allow screen sharing</span></label>
-                          <label className="flex items-start gap-2"><input type="checkbox" defaultChecked className="mt-0.5" /><span>Allow whiteboard</span></label>
-                          <label className="flex items-start gap-2"><input type="checkbox" className="mt-0.5" /><span>Enable waiting room</span></label>
+                          <label className="flex items-start gap-2"><input type="checkbox" checked={scheduleOptionsState.aiNotes} onChange={(event) => setScheduleOptionsState((prev) => ({ ...prev, aiNotes: event.target.checked }))} className="mt-0.5 accent-violet-600" /><span>Enable AI notes &amp; summary</span></label>
+                          <label className="flex items-start gap-2"><input type="checkbox" checked={scheduleOptionsState.screenSharing} onChange={(event) => setScheduleOptionsState((prev) => ({ ...prev, screenSharing: event.target.checked }))} className="mt-0.5 accent-violet-600" /><span>Allow screen sharing</span></label>
+                          <label className="flex items-start gap-2"><input type="checkbox" checked={scheduleOptionsState.whiteboard} onChange={(event) => setScheduleOptionsState((prev) => ({ ...prev, whiteboard: event.target.checked }))} className="mt-0.5 accent-violet-600" /><span>Allow whiteboard</span></label>
+                          <label className="flex items-start gap-2"><input type="checkbox" checked={scheduleOptionsState.waitingRoom} onChange={(event) => setScheduleOptionsState((prev) => ({ ...prev, waitingRoom: event.target.checked }))} className="mt-0.5 accent-violet-600" /><span>Enable waiting room</span></label>
                         </div>
                       </div>
 
@@ -11393,8 +11534,7 @@ Rules:
                                   type="button"
                                   onClick={() => {
                                     setIsRoomStartMenuOpen(false);
-                                    setActiveRightTab('calendar');
-                                    setRightSidebarOpen(true);
+                                    setIsScheduleSessionModalOpen(true);
                                   }}
                                   className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2"
                                 >
