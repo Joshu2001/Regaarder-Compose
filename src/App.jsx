@@ -100,6 +100,13 @@ const DECK_STORY_SECTIONS = ['Opening', 'Problem', 'Opportunity', 'Product', 'Ma
 const SCHEDULE_NOTIFICATION_OPTIONS = ['5 minutes before', '15 minutes before', '30 minutes before', '1 hour before'];
 const SCHEDULE_JOIN_OPTIONS = ['Only invited people', 'Anyone with link', 'Workspace members'];
 const SCHEDULE_REPEAT_OPTIONS = ['Does not repeat', 'Daily', 'Weekly', 'Monthly'];
+const QUICK_ADD_SOURCE_OPTIONS = [
+  { id: 'image', label: 'Upload image', accept: 'image/*' },
+  { id: 'file', label: 'Upload file', accept: '*/*' },
+  { id: 'audio', label: 'Upload audio', accept: 'audio/*' },
+  { id: 'note', label: 'Add note' },
+  { id: 'link', label: 'Add link' },
+];
 
 const FONT_FAMILY_MAP = {
   Manrope: "Manrope, 'Plus Jakarta Sans', 'DM Sans', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
@@ -374,6 +381,8 @@ export default function App() {
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(new Date(2026, 4, 15));
   const [isScheduleCalendarExpanded, setIsScheduleCalendarExpanded] = useState(false);
   const [isScheduleSessionModalOpen, setIsScheduleSessionModalOpen] = useState(false);
+  const [isSchedulePeopleMenuOpen, setIsSchedulePeopleMenuOpen] = useState(false);
+  const [isQuickAddSourceMenuOpen, setIsQuickAddSourceMenuOpen] = useState(false);
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
@@ -521,6 +530,8 @@ export default function App() {
   const promptFileInputRef = useRef(null);
   const chatFileInputRef = useRef(null);
   const scheduleFileInputRef = useRef(null);
+  const schedulePeopleMenuRef = useRef(null);
+  const quickAddSourceMenuRef = useRef(null);
   const voiceTargetRef = useRef('compose');
   const isMicMutedRef = useRef(false);
   const isVoiceActiveRef = useRef(false);
@@ -531,6 +542,7 @@ export default function App() {
   const pointerDownInPromptRef = useRef(false);
   const pointerDownInDocumentRef = useRef(false);
   const calendarMenuRef = useRef(null);
+  const scheduleRepeatMenuRef = useRef(null);
   const formattingDropdownCloseTimerRef = useRef(null);
   const textStyleMenuCloseTimerRef = useRef(null);
   const didAutoJoinRoomRef = useRef(false);
@@ -2082,10 +2094,14 @@ export default function App() {
     const handleClickOutside = (event) => {
       const clickedOutsideFormatting = formattingMenuRef.current && !formattingMenuRef.current.contains(event.target);
       const clickedOutsideCalendar = calendarMenuRef.current && !calendarMenuRef.current.contains(event.target);
+      const clickedOutsideScheduleRepeat = scheduleRepeatMenuRef.current && !scheduleRepeatMenuRef.current.contains(event.target);
 
       if (clickedOutsideFormatting && clickedOutsideCalendar) {
         setOpenDropdown(null);
         setTextStyleMenuOpen(false);
+      }
+      if (clickedOutsideScheduleRepeat && openDropdown === 'schedule-repeat') {
+        setOpenDropdown(null);
       }
       if (!event.target.closest('[data-doc-menu-root]')) {
         setOpenDocMenuId(null);
@@ -2123,11 +2139,51 @@ export default function App() {
       if (selectionActionMenuRef.current && !selectionActionMenuRef.current.contains(event.target)) {
         setSelectionActionMenu((prev) => ({ ...prev, open: false }));
       }
+      if (schedulePeopleMenuRef.current && !schedulePeopleMenuRef.current.contains(event.target)) {
+        setIsSchedulePeopleMenuOpen(false);
+      }
+      if (quickAddSourceMenuRef.current && !quickAddSourceMenuRef.current.contains(event.target)) {
+        setIsQuickAddSourceMenuOpen(false);
+      }
     };
 
     window.addEventListener('pointerdown', handleClickOutside);
     return () => window.removeEventListener('pointerdown', handleClickOutside);
-  }, []);
+  }, [openDropdown]);
+
+  const handleQuickAddSourceAction = async (sourceId) => {
+    setIsQuickAddSourceMenuOpen(false);
+
+    if (sourceId === 'note') {
+      const noteText = window.prompt('Add a quick note');
+      const normalized = String(noteText || '').trim();
+      if (!normalized) {
+        return;
+      }
+      setScheduleInput((prev) => `${prev}${prev ? '\n' : ''}Note: ${normalized}`);
+      showToast('Note added to quick add context');
+      return;
+    }
+
+    if (sourceId === 'link') {
+      const linkText = window.prompt('Paste a link');
+      const normalized = String(linkText || '').trim();
+      if (!normalized) {
+        return;
+      }
+      setScheduleInput((prev) => `${prev}${prev ? '\n' : ''}Link: ${normalized}`);
+      showToast('Link added to quick add context');
+      return;
+    }
+
+    const source = QUICK_ADD_SOURCE_OPTIONS.find((item) => item.id === sourceId);
+    if (!source || !scheduleFileInputRef.current) {
+      return;
+    }
+
+    scheduleFileInputRef.current.accept = source.accept || '*/*';
+    scheduleFileInputRef.current.click();
+  };
 
   const isRangeInsideEditor = (range) => {
     if (!range || !documentCardRef.current) {
@@ -3002,6 +3058,7 @@ export default function App() {
 
   const closeScheduleSessionModal = () => {
     setIsScheduleCalendarExpanded(false);
+    setIsSchedulePeopleMenuOpen(false);
     setIsScheduleSessionModalOpen(false);
   };
 
@@ -3025,6 +3082,9 @@ export default function App() {
     };
 
     setUpcomingEvents((prev) => [event, ...prev]);
+    if (hasValidDate) {
+      setSelectedCalendarDate(eventDate);
+    }
     setParticipantSchedules((prev) => {
       const next = { ...prev };
       scheduleParticipants.forEach((person) => {
@@ -3215,6 +3275,8 @@ export default function App() {
     setLanguageMenuOpen(false);
     setDocSearchPanelOpen(false);
     setOutlineLevelMenuOpen(false);
+    setIsSchedulePeopleMenuOpen(false);
+    setIsQuickAddSourceMenuOpen(false);
   };
 
   const trackMemoryAction = (type, summary, details = {}) => {
@@ -5164,7 +5226,7 @@ Rules:
     setRoomState('active');
     setActiveMeetingStageTab('room');
     setMainView('room');
-    setRoomPanelMode('docked');
+    setRoomPanelMode('expanded');
     setMeetingSummary(null);
     setMeetingStartedAt(Date.now());
     setMeetingDurationLabel('00:00');
@@ -10658,7 +10720,7 @@ Rules:
           </div>
         )}
 
-        {isPromptMinimized && activeRightTab !== 'calendar' && (
+        {isPromptMinimized && activeRightTab !== 'calendar' && !isScheduleSessionModalOpen && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[340]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
@@ -11352,32 +11414,65 @@ Rules:
 
                     <div className="mt-3 rounded-2xl border border-[#ede7ff] bg-[#faf7ff] px-3.5 py-3">
                       <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
-                      <div className="relative">
-                        <textarea
-                          ref={scheduleInputRef}
+                      <div className="flex items-center gap-2">
+                        <div className="relative" ref={quickAddSourceMenuRef}>
+                          <button
+                            type="button"
+                            onClick={() => setIsQuickAddSourceMenuOpen((prev) => !prev)}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-violet-200 bg-white px-2.5 text-[11px] font-medium text-violet-700 hover:border-violet-300 hover:bg-violet-50"
+                            title="Add context source"
+                          >
+                            <Plus size={12} />
+                            <ChevronDown size={12} />
+                          </button>
+                          {isQuickAddSourceMenuOpen && (
+                            <div className="absolute left-0 top-full z-20 mt-1.5 w-40 rounded-lg border border-[#e5e7f1] bg-white p-1 shadow-[0_12px_28px_-18px_rgba(15,23,42,0.45)]">
+                              {QUICK_ADD_SOURCE_OPTIONS.map((source) => (
+                                <button
+                                  key={source.id}
+                                  type="button"
+                                  onClick={() => handleQuickAddSourceAction(source.id)}
+                                  className="w-full rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:bg-violet-50"
+                                >
+                                  {source.label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <input
                           value={scheduleInput}
-                          onChange={(e) => setScheduleInput(e.target.value)}
-                          onInput={(e) => autoResizeTextarea(e.currentTarget, 92)}
+                          onChange={(event) => setScheduleInput(event.target.value)}
                           onPaste={handleSchedulePaste}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                              e.preventDefault();
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
                               convertMessyScheduleToPlan();
                             }
                           }}
                           placeholder="What do you want to schedule?"
-                          rows={1}
-                          className="w-full rounded-xl border border-slate-200 bg-[#fcfcff] pl-3 pr-9 py-1.5 text-[12px] text-slate-700 placeholder:text-[10px] placeholder:text-slate-400 focus:outline-none focus:border-violet-300 resize-none leading-5"
+                          className="h-9 flex-1 rounded-lg border border-slate-200 bg-[#fcfcff] px-3 text-[12px] text-slate-700 placeholder:text-[10px] placeholder:text-slate-400 focus:outline-none focus:border-violet-300"
                         />
+
                         <button
                           type="button"
                           onClick={convertMessyScheduleToPlan}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-violet-100/90 text-violet-700 hover:bg-violet-200 flex items-center justify-center"
-                          title="Add"
+                          className="h-9 rounded-lg bg-violet-600 px-3.5 text-[11px] font-semibold text-white hover:bg-violet-700"
                         >
-                          <Plus size={12} />
+                          Add
                         </button>
                       </div>
+                      <input
+                        ref={scheduleFileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={async (event) => {
+                          await ingestScheduleAttachments(event.target.files);
+                          event.target.value = '';
+                          showToast('Attachment added to schedule input');
+                        }}
+                      />
                     </div>
 
                     <div className="mt-3 rounded-2xl border border-[#e9ebf2] bg-[#f8f9fc] px-3.5 py-3">
@@ -11646,15 +11741,33 @@ Rules:
                             <option value="Joshua's Calendar">Add to calendar - Joshua&apos;s Calendar</option>
                             <option value="Team Calendar">Add to calendar - Team Calendar</option>
                           </select>
-                          <select
-                            value={scheduleForm.repeat}
-                            onChange={(event) => setScheduleForm((prev) => ({ ...prev, repeat: event.target.value }))}
-                            className="brand-select h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
-                          >
-                            {SCHEDULE_REPEAT_OPTIONS.map((option) => (
-                              <option key={option} value={option}>{`Repeat - ${option}`}</option>
-                            ))}
-                          </select>
+                          <div className="relative" ref={scheduleRepeatMenuRef}>
+                            <button
+                              type="button"
+                              onClick={() => setOpenDropdown((prev) => (prev === 'schedule-repeat' ? null : 'schedule-repeat'))}
+                              className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300 inline-flex items-center justify-between"
+                            >
+                              <span>{`Repeat - ${scheduleForm.repeat}`}</span>
+                              <ChevronDown size={12} className="text-slate-500" />
+                            </button>
+                            {openDropdown === 'schedule-repeat' && (
+                              <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-lg border border-[#e6e8f1] bg-white p-1 shadow-[0_12px_28px_-20px_rgba(15,23,42,0.45)]">
+                                {SCHEDULE_REPEAT_OPTIONS.map((option) => (
+                                  <button
+                                    key={option}
+                                    type="button"
+                                    onClick={() => {
+                                      setScheduleForm((prev) => ({ ...prev, repeat: option }));
+                                      setOpenDropdown(null);
+                                    }}
+                                    className={`w-full rounded-md px-2.5 py-1.5 text-left text-[11px] ${scheduleForm.repeat === option ? 'bg-violet-50 text-violet-700' : 'text-slate-700 hover:bg-slate-50'}`}
+                                  >
+                                    {`Repeat - ${option}`}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <select
@@ -11685,22 +11798,41 @@ Rules:
                       <div className="rounded-lg border border-[#ececf5] bg-white p-3">
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-[14px] font-semibold text-slate-900">Participants</div>
-                          <button
-                            className="text-[12px] text-violet-600 font-semibold"
-                            onClick={() => {
-                              const nextPerson = platformContacts.find((person) => !scheduleParticipants.some((p) => p.name === person.name));
-                              if (nextPerson) {
-                                setScheduleParticipants((prev) => [
-                                  ...prev,
-                                  { id: `contact-${nextPerson.id}`, name: nextPerson.name, img: `https://i.pravatar.cc/80?u=${nextPerson.id}` },
-                                ]);
-                              } else {
-                                showToast('All contacts already added');
-                              }
-                            }}
-                          >
-                            + Add people
-                          </button>
+                          <div className="relative" ref={schedulePeopleMenuRef}>
+                            <button
+                              className="text-[12px] text-violet-600 font-semibold"
+                              type="button"
+                              onClick={() => setIsSchedulePeopleMenuOpen((prev) => !prev)}
+                            >
+                              + Add people
+                            </button>
+                            {isSchedulePeopleMenuOpen && (
+                              <div className="absolute right-0 top-full z-10 mt-1 w-52 rounded-lg border border-[#e6e8f1] bg-white p-1 shadow-[0_12px_28px_-20px_rgba(15,23,42,0.45)]">
+                                {platformContacts
+                                  .filter((person) => !scheduleParticipants.some((participant) => participant.name === person.name))
+                                  .map((person) => (
+                                    <button
+                                      key={`participant-option-${person.id}`}
+                                      type="button"
+                                      onClick={() => {
+                                        setScheduleParticipants((prev) => [
+                                          ...prev,
+                                          { id: `contact-${person.id}`, name: person.name, img: `https://i.pravatar.cc/80?u=${person.id}` },
+                                        ]);
+                                        setIsSchedulePeopleMenuOpen(false);
+                                      }}
+                                      className="w-full rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-700 hover:bg-violet-50"
+                                    >
+                                      <div className="font-medium">{person.name}</div>
+                                      <div className="text-[10px] text-slate-500">{person.title}</div>
+                                    </button>
+                                  ))}
+                                {platformContacts.filter((person) => !scheduleParticipants.some((participant) => participant.name === person.name)).length === 0 && (
+                                  <div className="px-2.5 py-2 text-[11px] text-slate-500">No more contacts to add.</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="space-y-2">
                           {scheduleParticipants.map((participant) => (
