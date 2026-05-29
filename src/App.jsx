@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
@@ -170,7 +170,7 @@ const createBlankDeckSlide = (id = 1) => ({
   keyMetric: '',
   speakerNotes: '',
   section: '',
-  footer: 'Original design · Editable',
+  footer: 'Original design 繚 Editable',
 });
 
 // Sub-component to cleanly handle the local video stream without cluttering the main render
@@ -2181,7 +2181,7 @@ export default function App() {
     };
 
     lines.forEach((line, index) => {
-      const bulletMatch = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+      const bulletMatch = line.match(/^(?:[-*?兡|\d+[.)])\s+(.+)$/);
       if (bulletMatch) {
         if (!listOpen) {
           html.push('<ul style="margin:0 0 10px 18px;padding:0;list-style:disc;color:#334155;line-height:1.7;">');
@@ -3370,7 +3370,7 @@ export default function App() {
         keyMetric: '',
         speakerNotes: `Frame this ${section.toLowerCase()} point clearly, then transition to the next narrative beat.`,
         section,
-        footer: 'Original design · Editable',
+        footer: 'Original design 繚 Editable',
       };
     };
 
@@ -3393,7 +3393,7 @@ export default function App() {
             keyMetric: String(slide.keyMetric || ''),
             speakerNotes: String(slide.speakerNotes || ''),
             section: String(slide.section || inferDeckStorySection(slide, index, sourceSlides.length)),
-            footer: 'Original design · Editable',
+            footer: 'Original design 繚 Editable',
           };
         });
 
@@ -3825,7 +3825,7 @@ export default function App() {
 
     const cleaned = subject
       .replace(/\b(like you were writing|as if you were writing|like a|as a)\b.*$/i, '')
-      .replace(/[,;:】【。]/g, ' ')
+      .replace(/[,;:?]/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
@@ -4375,7 +4375,7 @@ Rules:
                   keyMetric: String(slide?.keyMetric || ''),
                   speakerNotes: String(slide?.speakerNotes || ''),
                   section: String(slide?.section || ''),
-                  footer: 'Original design · Editable',
+                  footer: 'Original design 繚 Editable',
                 };
               })
               .slice(0, 20);
@@ -6664,7 +6664,7 @@ Rules:
       keyMetric: activeDeckSlide.keyMetric || '',
       speakerNotes: activeDeckSlide.speakerNotes || '',
       section: activeDeckSlide.section || inferDeckStorySection(activeDeckSlide, Math.max(0, activeDeckSlide.id - 1), Math.max(1, deckSlides.length)),
-      footer: activeDeckSlide.footer || 'Original design · Editable',
+      footer: activeDeckSlide.footer || 'Original design 繚 Editable',
     };
   }, [activeDeckSlide, deckSlides.length]);
 
@@ -6747,7 +6747,7 @@ Rules:
         designPresetKey: randomPreset.key,
         headline,
         blurb,
-        footer: `Original concept · ${new Date().toLocaleDateString()}`,
+        footer: `Original concept 繚 ${new Date().toLocaleDateString()}`,
       };
     }));
     showToast('Generated original slide design. You can edit headline and body directly.');
@@ -6765,7 +6765,7 @@ Rules:
       layoutStyle: template.layoutStyle,
       motionCue: template.motionCue,
       section: slide.section || inferDeckStorySection(slide, index, total),
-      footer: `${template.label} · Editable`,
+      footer: `${template.label} 繚 Editable`,
     });
 
     if (scope === 'deck') {
@@ -6800,7 +6800,7 @@ Rules:
       keyMetric: '',
       speakerNotes: '',
       section: inferDeckStorySection({ title: `Slide ${nextId}` }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
-      footer: 'Original design · Editable',
+      footer: 'Original design 繚 Editable',
     };
     setDeckSlidesData((prev) => [...prev, newSlide]);
     setActiveDeckSlideId(nextId);
@@ -8059,7 +8059,7 @@ Rules:
                                 <div className={`h-16 rounded-lg ${preset.background} border border-white/20`} />
                                 <div className="mt-2 text-xs font-semibold text-gray-900">{template.label}</div>
                                 <div className="text-[11px] text-gray-500">{template.detail}</div>
-                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} · {template.motionCue}</div>
+                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} 繚 {template.motionCue}</div>
                                 <div className="mt-2 flex items-center gap-1.5">
                                   <button
                                     type="button"
@@ -8131,7 +8131,7 @@ Rules:
                           onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
                           className="text-sm text-indigo-100/80 outline-none rounded-md focus:ring-2 focus:ring-white/20"
                         >
-                          {resolvedDeckSlideDesign.footer} · Slide {activeDeckSlide.id}: {activeDeckSlide.title}
+                          {resolvedDeckSlideDesign.footer} 繚 Slide {activeDeckSlide.id}: {activeDeckSlide.title}
                         </div>
                       </div>
                     </div>
@@ -9342,7 +9342,7 @@ Rules:
                 <div className="text-[13px] font-semibold text-slate-900">Edit replay</div>
                 <div className="mt-1 text-[12px] text-slate-500">
                   {replayTimeline.length
-                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps · ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
+                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps 繚 ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
                     : 'Start typing or editing to build a replay history'}
                 </div>
               </div>
@@ -11277,16 +11277,239 @@ Rules:
 
           {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
-            <div className="flex-1 min-h-0 flex flex-col">
-              <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                <h3 className="text-sm font-bold text-gray-900">Launch Timeline</h3>
-                <p className="text-xs text-gray-500">Consolidated product rollouts aligned with team calendar events.</p>
-                {upcomingEvents.map((event) => (
-                  <div key={event.id} className="p-3 rounded-xl border border-gray-200 bg-white">
-                    <div className="text-xs font-semibold text-gray-800">{event.title}</div>
-                    <div className="text-[11px] text-gray-500 mt-1">{event.slotLabel}</div>
+            <div className="flex-1 min-h-0 flex flex-col relative">
+              <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-1 pb-3 bg-[linear-gradient(180deg,#f6f7fb_0%,#f4f5f9_100%)]">
+                <div className="rounded-2xl border border-[#e8eaf2] bg-[#f5f6fa] p-3 space-y-3">
+                  <div className="rounded-2xl border border-[#ececf5] bg-white px-3.5 py-3 shadow-[0_14px_32px_-28px_rgba(15,23,42,0.35)]">
+                    <div className="flex items-center justify-between text-[12px]">
+                      <div className="text-slate-800 font-medium inline-flex items-center gap-1.5">
+                        <Calendar size={12} className="text-violet-500" />
+                        Today <span className="text-violet-600 font-semibold">繚 {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <div className="inline-flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            closeTransientMenus();
+                            setIsScheduleCalendarExpanded(true);
+                          }}
+                          className="text-slate-400 hover:text-slate-600"
+                          title="Toggle calendar"
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 border-t border-[#ececf5] pt-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[11px] font-medium text-slate-600">Upcoming</div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            closeTransientMenus();
+                            setIsScheduleCalendarExpanded(true);
+                          }}
+                          className="text-[10px] font-medium text-violet-600 hover:text-violet-700"
+                        >
+                          See full calendar
+                        </button>
+                      </div>
+                      <div className="relative mt-2 space-y-0">
+                        <div className="absolute left-[6px] top-[12px] bottom-[16px] w-px bg-[#d1d5db]" />
+                        {scheduleAgendaItems.slice(0, 2).map((event, index) => (
+                          <div key={`timeline-${event.id}`} className={`relative grid grid-cols-[62px_1fr] gap-3 ${index > 0 ? 'border-t border-[#ececf5]' : ''}`}>
+                            <div className="relative pl-3 text-[11.5px] leading-4 text-slate-700 pt-[8px] pb-[8px]">
+                              <span className="absolute left-[0px] top-[13px] h-1.5 w-1.5 rounded-full bg-violet-500 ring-2 ring-white" />
+                              <div className="whitespace-nowrap">{event.slot || '10:00 AM'}</div>
+                              <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
+                            </div>
+                            <div className="relative rounded-lg px-2 py-[8px]">
+                              <div className="text-[12.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
+                              <span className="mt-0.5 inline-flex rounded-full border border-violet-100 bg-violet-50 px-1.5 py-[1px] text-[10px] text-violet-500">{event.category || 'General'}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded-2xl border border-[#e9e0ff] bg-[#f6f1ff] px-3.5 py-3">
+                      <div className="text-[12px] font-medium text-slate-800 inline-flex items-center gap-1.5">
+                        <Sparkles size={12} className="text-violet-500" /> AI Schedule Insight
+                      </div>
+                      <div className="mt-2 text-[12px] text-slate-700 leading-relaxed">{scheduleAiInsights[0] || 'Schedule balance looks healthy. Keep one flexible slot open for AI-assisted revisions.'}</div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRightSidebarOpen(true);
+                          setActiveRightTab('assistant');
+                          setAssistantQuickPrompt('Optimize my next three schedule blocks for focus and momentum.');
+                        }}
+                        className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-100 px-3 py-1.5 text-[12px] font-medium text-violet-700 hover:bg-violet-200/70"
+                      >
+                        Optimize Schedule
+                      </button>
+                    </div>
+
+                    <div className="mt-3 rounded-2xl border border-[#ede7ff] bg-[#faf7ff] px-3.5 py-3">
+                      <div className="text-[12px] font-medium text-slate-700 mb-2">Quick Add</div>
+                      <div className="relative">
+                        <textarea
+                          ref={scheduleInputRef}
+                          value={scheduleInput}
+                          onChange={(e) => setScheduleInput(e.target.value)}
+                          onInput={(e) => autoResizeTextarea(e.currentTarget, 92)}
+                          onPaste={handleSchedulePaste}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              convertMessyScheduleToPlan();
+                            }
+                          }}
+                          placeholder="What do you want to schedule?"
+                          rows={1}
+                          className="w-full rounded-xl border border-slate-200 bg-[#fcfcff] pl-3 pr-9 py-1.5 text-[12px] text-slate-700 placeholder:text-[10px] placeholder:text-slate-400 focus:outline-none focus:border-violet-300 resize-none leading-5"
+                        />
+                        <button
+                          type="button"
+                          onClick={convertMessyScheduleToPlan}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-violet-100/90 text-violet-700 hover:bg-violet-200 flex items-center justify-center"
+                          title="Add"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 rounded-2xl border border-[#e9ebf2] bg-[#f8f9fc] px-3.5 py-3">
+                      <div className="text-[12px] font-medium text-slate-700 mb-2 inline-flex items-center gap-1.5"><Link size={11} className="text-slate-500" />Related to this document</div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 text-[12px] font-medium text-slate-800">
+                            <span className="inline-flex h-4.5 w-4.5 items-center justify-center rounded bg-amber-100 text-amber-600">
+                              <Calendar size={10} />
+                            </span>
+                            <span className="truncate">Product Hunt Launch Plan</span>
+                          </div>
+                          <div className="mt-1 text-[11px] text-slate-500">Milestone 繚 Due {selectedCalendarDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">On Track</span>
+                      </div>
+                    </div>
                   </div>
-                ))}
+
+                {isScheduleCalendarExpanded && (
+                  <div className="absolute inset-0 z-20 bg-[#f4f5fa] p-3" ref={calendarMenuRef}>
+                    <div className="h-full rounded-2xl border border-[#dfe3ef] bg-white p-3 shadow-[0_18px_36px_-24px_rgba(15,23,42,0.35)] overflow-y-auto thin-scrollbar">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-[20px] font-semibold text-slate-900 leading-none">Launch Timeline</div>
+                        <div className="text-[11px] text-slate-500 mt-1">Intelligent schedule optimized around your work</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsScheduleCalendarExpanded(false)}
+                        className="rounded-md p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                        aria-label="Close full calendar"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+
+                    <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50/70 px-2.5 py-2 flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-medium text-violet-700">AI Planning Insight</div>
+                        <div className="text-[10px] text-violet-600 truncate">You have two focus blocks back-to-back today.</div>
+                      </div>
+                      <button className="shrink-0 rounded-md border border-violet-200 bg-white px-2 py-1 text-[10px] font-medium text-violet-700">Optimize Day</button>
+                    </div>
+
+                    <div className="mt-3 rounded-xl border border-[#ececf5] bg-white px-2.5 py-2">
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (calendarYear === 2026 && calendarMonth === 0) return;
+                            if (calendarMonth === 0) {
+                              setCalendarView(11, calendarYear - 1);
+                            } else {
+                              setCalendarView(calendarMonth - 1, calendarYear);
+                            }
+                          }}
+                          className="rounded p-1 hover:bg-slate-100"
+                          disabled={calendarYear === 2026 && calendarMonth === 0}
+                        >
+                          <ChevronLeft size={13} />
+                        </button>
+                        <span>{monthNames[calendarMonth]} {calendarYear}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (calendarMonth === 11) {
+                              setCalendarView(0, calendarYear + 1);
+                            } else {
+                              setCalendarView(calendarMonth + 1, calendarYear);
+                            }
+                          }}
+                          className="rounded p-1 hover:bg-slate-100"
+                          disabled={calendarYear === 2029 && calendarMonth === 11}
+                        >
+                          <ChevronRight size={13} />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-slate-400 mb-1">
+                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                      </div>
+                      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate-700">
+                        {generateCalendarDays(calendarMonth, calendarYear).map((dayObj, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              if (!dayObj.isCurrentMonth) return;
+                              setSelectedCalendarDate(new Date(calendarYear, calendarMonth, dayObj.day));
+                            }}
+                            className={`py-1.5 rounded ${dayObj.isCurrentMonth ? ((selectedCalendarDate && selectedCalendarDate.getFullYear() === calendarYear && selectedCalendarDate.getMonth() === calendarMonth && selectedCalendarDate.getDate() === dayObj.day) ? 'bg-violet-600 text-white' : dayObj.isToday ? 'bg-violet-100 text-violet-700' : 'hover:bg-slate-100') : 'text-slate-300'}`}
+                            disabled={!dayObj.isCurrentMonth}
+                          >
+                            {dayObj.day}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-medium text-slate-700">{selectedCalendarDate.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsScheduleCalendarExpanded(false)}
+                          className="rounded-md border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-medium text-violet-700 hover:bg-violet-100"
+                        >
+                          View Day
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {scheduleAgendaItems.slice(0, 2).map((event) => (
+                          <div key={`expanded-${event.id}`} className="rounded-xl border border-[#ececf5] bg-[#fbfbff] px-2.5 py-2">
+                            <div className="grid grid-cols-[56px_1fr] gap-2">
+                              <div>
+                                <div className="text-[10px] font-medium text-slate-700">{event.slot || '10:00 AM'}</div>
+                                <div className="text-[10px] text-slate-400">{Math.max(15, Number(event.durationMinutes || 60))}m</div>
+                              </div>
+                              <div>
+                                <div className="text-[11.5px] font-medium text-slate-800 leading-snug">{event.title}</div>
+                                <span className="mt-1 inline-flex rounded-full border border-violet-100 bg-violet-50 px-1.5 py-[1px] text-[9px] text-violet-500">{event.category || 'General'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    </div>
+                  </div>
+                )}
+
+                </div>
               </div>
             </div>
           )}
@@ -11412,7 +11635,7 @@ Rules:
                             className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
                           >
                             {SCHEDULE_NOTIFICATION_OPTIONS.map((option) => (
-                              <option key={option} value={option}>{`Notification · ${option}`}</option>
+                              <option key={option} value={option}>{`Notification 繚 ${option}`}</option>
                             ))}
                           </select>
                           <select
@@ -11420,8 +11643,8 @@ Rules:
                             onChange={(event) => setScheduleForm((prev) => ({ ...prev, addToCalendar: event.target.value }))}
                             className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
                           >
-                            <option value="Joshua's Calendar">Add to calendar · Joshua&apos;s Calendar</option>
-                            <option value="Team Calendar">Add to calendar · Team Calendar</option>
+                            <option value="Joshua's Calendar">Add to calendar 繚 Joshua&apos;s Calendar</option>
+                            <option value="Team Calendar">Add to calendar 繚 Team Calendar</option>
                           </select>
                           <select
                             value={scheduleForm.repeat}
@@ -11429,7 +11652,7 @@ Rules:
                             className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
                           >
                             {SCHEDULE_REPEAT_OPTIONS.map((option) => (
-                              <option key={option} value={option}>{`Repeat · ${option}`}</option>
+                              <option key={option} value={option}>{`Repeat 繚 ${option}`}</option>
                             ))}
                           </select>
                         </div>
@@ -11440,7 +11663,7 @@ Rules:
                             className="h-10 w-full rounded-lg border border-violet-100 bg-violet-50/30 px-3 text-[12px] text-slate-700 focus:outline-none focus:border-violet-300"
                           >
                             {SCHEDULE_JOIN_OPTIONS.map((option) => (
-                              <option key={option} value={option}>{`Who join · ${option}`}</option>
+                              <option key={option} value={option}>{`Who join 繚 ${option}`}</option>
                             ))}
                           </select>
                           <div className="h-10 rounded-lg border border-[#e8eaf2] px-3 flex items-center justify-between text-[12px] text-slate-700">
@@ -11511,9 +11734,9 @@ Rules:
                         <div className="text-[14px] font-semibold text-slate-900">AI Assistant <span className="text-[10px] text-violet-600 font-semibold ml-1">BETA</span></div>
                         <div className="text-[12px] text-slate-600 mt-1">I can help prepare for this session.</div>
                         <div className="mt-2 text-[12px] text-violet-700 space-y-1">
-                          <div>• Create an agenda</div>
-                          <div>• Add discussion topics</div>
-                          <div>• Share relevant docs</div>
+                          <div>??Create an agenda</div>
+                          <div>??Add discussion topics</div>
+                          <div>??Share relevant docs</div>
                         </div>
                         <button
                           type="button"
@@ -11683,7 +11906,7 @@ Rules:
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2">
                               <div className="text-[12px] font-semibold text-slate-800">Today, May 15</div>
-                              <div className="text-[10px] text-slate-400">• in 45 min</div>
+                              <div className="text-[10px] text-slate-400">??in 45 min</div>
                             </div>
                             <div className="text-[10px] font-semibold text-slate-900 mt-1 leading-tight">Beta Launch Kickoff</div>
                             <div className="text-[10px] text-slate-500 mt-1">10:00 AM - 11:00 AM</div>
@@ -12015,7 +12238,7 @@ Rules:
                       <PhoneOff size={20} />
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 tracking-tight">Room Ended</h3>
-                    <p className="text-xs text-gray-500 mt-1">{meetingSummary?.roomCode || 'q2-launch'} • {meetingSummary?.durationLabel || meetingDurationLabel} duration</p>
+                    <p className="text-xs text-gray-500 mt-1">{meetingSummary?.roomCode || 'q2-launch'} ??{meetingSummary?.durationLabel || meetingDurationLabel} duration</p>
                   </div>
 
                   <div className="space-y-4">
@@ -12395,7 +12618,7 @@ Rules:
                         <div className="min-w-0">
                           <div className="text-[11px] uppercase tracking-[0.12em] text-violet-600 font-semibold">Presentation</div>
                           <div className="text-[15px] font-semibold text-slate-900 truncate">{activeSharedMeetingFile.name}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">Shared by {activeSharedMeetingFile.sharedBy} • {formatMeetingFileSize(activeSharedMeetingFile.size)}</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">Shared by {activeSharedMeetingFile.sharedBy} ??{formatMeetingFileSize(activeSharedMeetingFile.size)}</div>
                         </div>
                         <div className="text-[11px] text-slate-600 rounded-lg border border-slate-200 bg-white px-2 py-1">1 / {activeSharedMeetingFile.pages}</div>
                       </div>
@@ -12505,7 +12728,7 @@ Rules:
                       className={`w-full rounded-xl border text-left px-2 py-2 transition ${activeSharedMeetingFile?.id === item.id ? 'border-violet-300 bg-violet-100/20' : 'border-white/10 bg-slate-800 hover:border-violet-300/40'}`}
                     >
                       <div className="text-[11px] text-slate-100 font-medium truncate">{item.name}</div>
-                      <div className="text-[10px] text-slate-400 mt-1">{formatMeetingFileSize(item.size)} • {item.pages} pages</div>
+                      <div className="text-[10px] text-slate-400 mt-1">{formatMeetingFileSize(item.size)} ??{item.pages} pages</div>
                     </button>
                   ))
                 ) : (
@@ -12545,7 +12768,7 @@ Rules:
       {roomState === 'active' && (roomPanelMode === 'docked' || mainView === 'document') && (
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span className="text-xs font-semibold text-gray-700">Meeting live • {meetingDurationLabel}</span>
+          <span className="text-xs font-semibold text-gray-700">Meeting live ??{meetingDurationLabel}</span>
           <button onClick={() => { setMainView('room'); setRoomPanelMode('expanded'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Return</button>
           <button onClick={leaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50">Leave</button>
         </div>
