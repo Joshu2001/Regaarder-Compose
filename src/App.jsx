@@ -395,6 +395,9 @@ export default function App() {
   const [meetingStartedAt, setMeetingStartedAt] = useState(null);
   const [meetingDurationLabel, setMeetingDurationLabel] = useState('00:00');
   const [meetingSummary, setMeetingSummary] = useState(null);
+  const [activeMeetingStageTab, setActiveMeetingStageTab] = useState('room');
+  const [sharedMeetingFiles, setSharedMeetingFiles] = useState([]);
+  const [activeSharedMeetingFileId, setActiveSharedMeetingFileId] = useState(null);
   const [collaboratorInvite, setCollaboratorInvite] = useState('');
   const [meetingParticipants] = useState([
     { name: 'Sarah', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=320&q=80' },
@@ -565,6 +568,7 @@ export default function App() {
   const docSearchMarksRef = useRef([]);
   const docSearchAutoPlayTimerRef = useRef(null);
   const roomJoinInputRef = useRef(null);
+  const meetingShareFileInputRef = useRef(null);
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -5098,6 +5102,17 @@ Rules:
     return `${window.location.origin}${window.location.pathname}?room=${normalized}`;
   }, [normalizeRoomCode, roomId]);
 
+  const formatMeetingFileSize = useCallback((bytes) => {
+    const value = Number(bytes) || 0;
+    if (value <= 0) {
+      return '0 KB';
+    }
+    if (value >= 1024 * 1024) {
+      return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+    }
+    return `${Math.max(1, Math.round(value / 1024))} KB`;
+  }, []);
+
   const requestMediaPermissions = async () => {
     if (!navigator?.mediaDevices?.getUserMedia) {
       setMediaError(true);
@@ -5134,6 +5149,7 @@ Rules:
     setRoomState('ready');
     setMainView('document');
     setRoomPanelMode('docked');
+    setActiveMeetingStageTab('room');
     setMeetingSummary(null);
     setMeetingStartedAt(null);
     setMeetingDurationLabel('00:00');
@@ -5146,6 +5162,7 @@ Rules:
     setRoomId(code);
     setJoinCode(code);
     setRoomState('active');
+    setActiveMeetingStageTab('room');
     setMainView('room');
     setRoomPanelMode('expanded');
     setMeetingSummary(null);
@@ -5194,6 +5211,7 @@ Rules:
     });
     setMeetingDurationLabel(completedDuration);
     setRoomState('summary');
+    setActiveMeetingStageTab('room');
     setMainView('document');
     setRoomPanelMode('docked');
     stopMediaStream();
@@ -5254,6 +5272,33 @@ Rules:
     setCollaboratorInvite('');
     showToast(`Invitation prepared for ${invite}`);
   };
+
+  const handleMeetingFileSelection = useCallback((files) => {
+    const list = Array.from(files || []);
+    if (!list.length) {
+      return;
+    }
+
+    const entries = list.map((file, index) => {
+      const baseName = (file?.name || `Shared File ${index + 1}`).replace(/\.[^.]+$/, '');
+      const slideCount = Math.min(18, Math.max(6, Math.round((file?.size || 300000) / 90000)));
+      return {
+        id: `shared-${Date.now()}-${index}`,
+        name: file?.name || `Shared File ${index + 1}`,
+        baseName,
+        type: file?.type || 'application/octet-stream',
+        size: file?.size || 0,
+        pages: slideCount,
+        sharedBy: 'Joshua',
+        sharedAt: new Date().toISOString(),
+      };
+    });
+
+    setSharedMeetingFiles((prev) => [...entries, ...prev]);
+    setActiveSharedMeetingFileId(entries[0].id);
+    setActiveMeetingStageTab('files');
+    showToast(`${entries.length} file${entries.length > 1 ? 's' : ''} shared in meeting`);
+  }, []);
 
   const toggleRoomCamera = async () => {
     if (localStream && !mediaError) {
@@ -5326,6 +5371,13 @@ Rules:
     }, 1000);
     return () => clearInterval(interval);
   }, [roomState, meetingStartedAt, formatMeetingElapsed]);
+
+  const activeSharedMeetingFile = useMemo(() => {
+    if (!sharedMeetingFiles.length) {
+      return null;
+    }
+    return sharedMeetingFiles.find((file) => file.id === activeSharedMeetingFileId) || sharedMeetingFiles[0];
+  }, [sharedMeetingFiles, activeSharedMeetingFileId]);
 
   const handleRightSidebarTabsKeyDown = (event) => {
     if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
@@ -8628,7 +8680,13 @@ Rules:
             <span className="text-[9px] font-semibold">Room</span>
           </div>
 
-          <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
+          <div
+            onClick={() => {
+              handleMiniSidebarClick('room');
+              setActiveMeetingStageTab('files');
+            }}
+            className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer"
+          >
             <div className="p-2"><File size={20} /></div>
             <span className="text-[9px] font-semibold">Files</span>
           </div>
@@ -12258,7 +12316,13 @@ Rules:
           <span className="text-[9px] font-semibold">Room</span>
         </div>
 
-        <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer">
+        <div
+          onClick={() => {
+            handleMiniSidebarClick('room');
+            setActiveMeetingStageTab('files');
+          }}
+          className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer"
+        >
           <div className="p-2">
             <File size={20} />
           </div>
@@ -12279,8 +12343,31 @@ Rules:
             <div className="flex items-center gap-3 min-w-0">
               <span className="text-sm font-semibold truncate">Meeting: {roomId || 'live-room'}</span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">LIVE {meetingDurationLabel}</span>
+              <div className="hidden md:flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 p-1">
+                {[
+                  { key: 'room', label: 'Room' },
+                  { key: 'call', label: 'Call' },
+                  { key: 'files', label: 'Files' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setActiveMeetingStageTab(tab.key)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition ${activeMeetingStageTab === tab.key ? 'bg-white text-slate-900' : 'text-slate-200 hover:bg-white/10'}`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => meetingShareFileInputRef.current?.click()}
+                className="px-2.5 py-1.5 rounded-lg text-xs bg-white/15 hover:bg-white/25 transition inline-flex items-center gap-1.5"
+                title="Share file"
+              >
+                <Paperclip size={13} /> Share file
+              </button>
               <button onClick={handleShareMeeting} className="px-2.5 py-1.5 rounded-lg text-xs bg-white/15 hover:bg-white/25 transition">Share</button>
               <button onClick={() => { setRoomPanelMode('docked'); setMainView('document'); }} className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition" title="Minimize meeting"><Minimize2 size={15} /></button>
             </div>
@@ -12288,7 +12375,59 @@ Rules:
 
           <div className="h-[calc(100%-3rem)] flex">
             <div className="flex-1 relative bg-black">
-              {isScreenSharing ? (
+              {activeMeetingStageTab === 'files' && activeSharedMeetingFile ? (
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_18%,rgba(196,181,253,0.3),rgba(30,41,59,0)_36%),radial-gradient(circle_at_14%_84%,rgba(59,130,246,0.22),rgba(15,23,42,0)_38%),linear-gradient(150deg,#f8fafc_0%,#eef2ff_48%,#f1f5f9_100%)]">
+                  <div className="h-full p-4 flex gap-3">
+                    <div className="w-24 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-sm p-2 space-y-2 overflow-y-auto thin-scrollbar">
+                      {Array.from({ length: Math.min(6, activeSharedMeetingFile.pages) }).map((_, index) => (
+                        <button
+                          key={`thumb-${activeSharedMeetingFile.id}-${index}`}
+                          type="button"
+                          className={`w-full rounded-lg border p-1.5 text-left transition ${index === 0 ? 'border-violet-300 bg-violet-50 shadow-sm' : 'border-slate-200 bg-white hover:border-violet-200'}`}
+                        >
+                          <div className="h-8 rounded bg-gradient-to-br from-slate-100 to-slate-200" />
+                          <div className="mt-1 text-[9px] font-semibold text-slate-600">{index + 1}</div>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex-1 rounded-2xl border border-slate-200 bg-white/88 backdrop-blur-sm shadow-[0_18px_45px_-26px_rgba(15,23,42,0.4)] p-5 flex flex-col min-h-0">
+                      <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                        <div className="min-w-0">
+                          <div className="text-[11px] uppercase tracking-[0.12em] text-violet-600 font-semibold">Presentation</div>
+                          <div className="text-[15px] font-semibold text-slate-900 truncate">{activeSharedMeetingFile.name}</div>
+                          <div className="text-[11px] text-slate-500 mt-0.5">Shared by {activeSharedMeetingFile.sharedBy} • {formatMeetingFileSize(activeSharedMeetingFile.size)}</div>
+                        </div>
+                        <div className="text-[11px] text-slate-600 rounded-lg border border-slate-200 bg-white px-2 py-1">1 / {activeSharedMeetingFile.pages}</div>
+                      </div>
+                      <div className="flex-1 min-h-0 py-4">
+                        <div className="h-full rounded-2xl border border-slate-200 bg-white p-6 relative overflow-hidden">
+                          <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-violet-200/50 blur-3xl" />
+                          <div className="absolute -bottom-14 left-[-20px] w-44 h-44 rounded-full bg-blue-200/50 blur-3xl" />
+                          <div className="relative z-10 max-w-[520px]">
+                            <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-600">Project MOAT</div>
+                            <h2 className="mt-2 text-[28px] leading-[1.1] font-semibold text-slate-900">{activeSharedMeetingFile.baseName || 'Strategic Disruption Through AI-Native Bundling'}</h2>
+                            <p className="mt-2 text-[13px] text-slate-600">Shared deck is now visible to all participants in the meeting workspace.</p>
+                            <div className="mt-5 grid grid-cols-3 gap-3 text-[11px]">
+                              <div className="rounded-xl border border-slate-200 bg-violet-50/60 p-3">
+                                <div className="font-semibold text-slate-900">The Problem</div>
+                                <div className="mt-1 text-slate-600">Incumbents win by bundling and distribution leverage.</div>
+                              </div>
+                              <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-3">
+                                <div className="font-semibold text-slate-900">Our Approach</div>
+                                <div className="mt-1 text-slate-600">Build a superior suite and distribute as a unified ecosystem.</div>
+                              </div>
+                              <div className="rounded-xl border border-slate-200 bg-amber-50/60 p-3">
+                                <div className="font-semibold text-slate-900">Our Advantage</div>
+                                <div className="mt-1 text-slate-600">AI-native tools, speed, and deep workflow integration.</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : isScreenSharing ? (
                 <>
                   <RoomStageFeed stream={screenShareStream} placeholder="Screen share preview" />
                   <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/45 text-white text-xs">
@@ -12313,7 +12452,10 @@ Rules:
                         <MonitorPlay size={14} /> Share screen
                       </button>
                       <button
-                        onClick={() => showToast('Upload flow coming soon')}
+                        onClick={() => {
+                          setActiveMeetingStageTab('files');
+                          meetingShareFileInputRef.current?.click();
+                        }}
                         className="px-4 py-2 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-white text-sm font-semibold inline-flex items-center gap-2"
                       >
                         <Upload size={14} /> Upload file
@@ -12332,6 +12474,16 @@ Rules:
                 <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-slate-800'}`} title="Share screen">
                   <MonitorPlay size={16} />
                 </button>
+                <button
+                  onClick={() => {
+                    setActiveMeetingStageTab('files');
+                    meetingShareFileInputRef.current?.click();
+                  }}
+                  className="p-2 rounded-xl transition bg-white text-slate-800"
+                  title="Share files"
+                >
+                  <File size={16} />
+                </button>
                 <button onClick={leaveRoom} className="px-3 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold" title="Leave meeting">
                   Leave
                 </button>
@@ -12339,20 +12491,51 @@ Rules:
             </div>
 
             <div className="w-52 bg-slate-950/90 border-l border-white/10 p-3 space-y-3">
-              <div className="text-[11px] uppercase tracking-wider text-slate-300 font-semibold">Participants</div>
+              <div className="text-[11px] uppercase tracking-wider text-slate-300 font-semibold">{activeMeetingStageTab === 'files' ? `Files (${sharedMeetingFiles.length})` : 'Participants'}</div>
               <div className="space-y-2">
-                <div className="rounded-xl overflow-hidden border border-emerald-300/30 bg-slate-800">
-                  <div className="h-24 bg-slate-900">
-                    <RoomStageFeed stream={localStream} placeholder="You" />
+                {activeMeetingStageTab === 'files' && sharedMeetingFiles.length > 0 ? (
+                  sharedMeetingFiles.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveSharedMeetingFileId(item.id);
+                        setActiveMeetingStageTab('files');
+                      }}
+                      className={`w-full rounded-xl border text-left px-2 py-2 transition ${activeSharedMeetingFile?.id === item.id ? 'border-violet-300 bg-violet-100/20' : 'border-white/10 bg-slate-800 hover:border-violet-300/40'}`}
+                    >
+                      <div className="text-[11px] text-slate-100 font-medium truncate">{item.name}</div>
+                      <div className="text-[10px] text-slate-400 mt-1">{formatMeetingFileSize(item.size)} • {item.pages} pages</div>
+                    </button>
+                  ))
+                ) : (
+                  <>
+                    <div className="rounded-xl overflow-hidden border border-emerald-300/30 bg-slate-800">
+                      <div className="h-24 bg-slate-900">
+                        <RoomStageFeed stream={localStream} placeholder="You" />
+                      </div>
+                      <div className="px-2 py-1 text-[11px] text-slate-100 flex items-center justify-between"><span>You</span>{!isRoomMicOn && <MicOff size={12} className="text-red-400" />}</div>
+                    </div>
+                    {meetingParticipants.map((participant) => (
+                      <div key={participant.name} className="rounded-xl overflow-hidden border border-white/10 bg-slate-800">
+                        <img src={participant.img} alt={participant.name} className="w-full h-20 object-cover" />
+                        <div className="px-2 py-1 text-[11px] text-slate-100">{participant.name}</div>
+                      </div>
+                    ))}
+                  </>
+                )}
+                {activeMeetingStageTab === 'files' && sharedMeetingFiles.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-white/20 bg-slate-900/60 px-3 py-4 text-center">
+                    <div className="text-[11px] text-slate-200 font-medium">No files shared yet</div>
+                    <button
+                      type="button"
+                      onClick={() => meetingShareFileInputRef.current?.click()}
+                      className="mt-2 px-2.5 py-1.5 rounded-lg bg-violet-600 text-white text-[11px] font-semibold hover:bg-violet-500"
+                    >
+                      Share first file
+                    </button>
                   </div>
-                  <div className="px-2 py-1 text-[11px] text-slate-100 flex items-center justify-between"><span>You</span>{!isRoomMicOn && <MicOff size={12} className="text-red-400" />}</div>
-                </div>
-                {meetingParticipants.map((participant) => (
-                  <div key={participant.name} className="rounded-xl overflow-hidden border border-white/10 bg-slate-800">
-                    <img src={participant.img} alt={participant.name} className="w-full h-20 object-cover" />
-                    <div className="px-2 py-1 text-[11px] text-slate-100">{participant.name}</div>
-                  </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -12367,6 +12550,17 @@ Rules:
           <button onClick={leaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50">Leave</button>
         </div>
       )}
+
+      <input
+        ref={meetingShareFileInputRef}
+        type="file"
+        multiple
+        className="hidden"
+        onChange={(event) => {
+          handleMeetingFileSelection(event.target.files);
+          event.target.value = '';
+        }}
+      />
 
     </div>
   );
