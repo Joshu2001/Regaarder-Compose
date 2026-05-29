@@ -405,6 +405,7 @@ export default function App() {
   const [isRoomFullscreen, setIsRoomFullscreen] = useState(false);
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
+  const [meetingShareMenuAnchor, setMeetingShareMenuAnchor] = useState(null);
   const [meetingStartedAt, setMeetingStartedAt] = useState(null);
   const [meetingDurationLabel, setMeetingDurationLabel] = useState('00:00');
   const [meetingSummary, setMeetingSummary] = useState(null);
@@ -2145,6 +2146,9 @@ export default function App() {
       if (quickAddSourceMenuRef.current && !quickAddSourceMenuRef.current.contains(event.target)) {
         setIsQuickAddSourceMenuOpen(false);
       }
+      if (!event.target.closest('[data-meeting-share-root]')) {
+        setMeetingShareMenuAnchor(null);
+      }
     };
 
     window.addEventListener('pointerdown', handleClickOutside);
@@ -3387,6 +3391,7 @@ export default function App() {
     setOutlineLevelMenuOpen(false);
     setIsSchedulePeopleMenuOpen(false);
     setIsQuickAddSourceMenuOpen(false);
+    setMeetingShareMenuAnchor(null);
   };
 
   const trackMemoryAction = (type, summary, details = {}) => {
@@ -5386,16 +5391,33 @@ Rules:
     }
   };
 
-  const minimizeExpandedMeeting = async () => {
-    if (document.fullscreenElement) {
-      try {
-        await document.exitFullscreen();
-      } catch (_error) {
-        // noop
-      }
+  const handleMeetingShareOption = (option) => {
+    setMeetingShareMenuAnchor(null);
+
+    if (option === 'link') {
+      const meetingLink = `https://compose.ai/room/${roomId || 'live-room'}`;
+      navigator.clipboard?.writeText(meetingLink);
+      showToast('Meeting link copied');
+      return;
     }
-    setRoomPanelMode('docked');
-    setMainView('document');
+
+    if (!meetingShareFileInputRef.current) {
+      return;
+    }
+
+    setActiveMeetingStageTab('files');
+
+    if (option === 'document') {
+      meetingShareFileInputRef.current.accept = '.pdf,.doc,.docx,.ppt,.pptx,.txt,.md';
+    } else if (option === 'image') {
+      meetingShareFileInputRef.current.accept = 'image/*';
+    } else if (option === 'audio') {
+      meetingShareFileInputRef.current.accept = 'audio/*';
+    } else {
+      meetingShareFileInputRef.current.accept = '*/*';
+    }
+
+    meetingShareFileInputRef.current.click();
   };
 
   const stopMediaStream = () => {
@@ -12913,19 +12935,28 @@ Rules:
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => meetingShareFileInputRef.current?.click()}
-                className="px-2.5 py-1.5 rounded-lg text-xs bg-white/15 hover:bg-white/25 transition inline-flex items-center gap-1.5"
-                title="Share file"
-              >
-                <Paperclip size={13} /> Share file
-              </button>
+            <div className="flex items-center gap-2" data-meeting-share-root>
+              <div className="relative">
+                <button
+                  onClick={() => setMeetingShareMenuAnchor((prev) => (prev === 'header' ? null : 'header'))}
+                  className="px-2.5 py-1.5 rounded-lg text-xs bg-white/15 hover:bg-white/25 transition inline-flex items-center gap-1.5"
+                  title="Share file"
+                >
+                  <Paperclip size={13} /> Share file
+                </button>
+                {meetingShareMenuAnchor === 'header' && (
+                  <div className="absolute right-0 top-full mt-1.5 z-20 w-44 rounded-xl border border-slate-200 bg-[#0b1225] p-1.5 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
+                    <button type="button" onClick={() => handleMeetingShareOption('document')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><FileText size={12} />Share document</button>
+                    <button type="button" onClick={() => handleMeetingShareOption('image')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><ImageIcon size={12} />Share image</button>
+                    <button type="button" onClick={() => handleMeetingShareOption('audio')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><Mic size={12} />Share audio</button>
+                    <button type="button" onClick={() => handleMeetingShareOption('link')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><LinkIcon size={12} />Share link</button>
+                  </div>
+                )}
+              </div>
               <button onClick={handleShareMeeting} className="px-2.5 py-1.5 rounded-lg text-xs bg-white/15 hover:bg-white/25 transition">Share</button>
               <button onClick={toggleRoomStageFullscreen} className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition" title={isRoomFullscreen ? 'Exit fullscreen' : 'Open fullscreen'}>
                 {isRoomFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
               </button>
-              <button onClick={minimizeExpandedMeeting} className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition" title="Minimize meeting"><Minimize2 size={15} /></button>
             </div>
           </div>
 
@@ -12992,30 +13023,37 @@ Rules:
                 </>
               ) : (
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_32%_24%,rgba(99,102,241,0.32),rgba(15,23,42,0)_45%),radial-gradient(circle_at_72%_74%,rgba(56,189,248,0.24),rgba(2,6,23,0)_42%),linear-gradient(145deg,#020617_0%,#0b1120_55%,#111827_100%)] text-white">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center px-6 pb-36 text-center">
-                    <div className="w-36 h-36 rounded-full border border-dashed border-white/25 flex items-center justify-center">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center px-6 pb-40 text-center">
+                    <div className="w-64 h-64 rounded-full border border-dashed border-white/25 flex flex-col items-center justify-center px-6">
                       <div className="w-12 h-12 rounded-xl border border-violet-300/60 bg-violet-500/20 flex items-center justify-center">
                         <MonitorPlay size={20} className="text-violet-200" />
                       </div>
-                    </div>
-                    <div className="mt-4 text-lg font-semibold">No one is sharing yet</div>
-                    <p className="mt-1.5 text-[13px] text-slate-300 max-w-sm">Share your screen, a window, or upload a file to get started.</p>
-                    <div className="mt-4 flex items-center gap-3">
-                      <button
-                        onClick={toggleScreenShare}
-                        className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold inline-flex items-center gap-2"
-                      >
-                        <MonitorPlay size={14} /> Share screen
-                      </button>
-                      <button
-                        onClick={() => {
-                          setActiveMeetingStageTab('files');
-                          meetingShareFileInputRef.current?.click();
-                        }}
-                        className="px-4 py-2 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-white text-sm font-semibold inline-flex items-center gap-2"
-                      >
-                        <Upload size={14} /> Upload file
-                      </button>
+                      <div className="mt-4 text-2xl font-semibold leading-tight">No one is sharing yet</div>
+                      <p className="mt-2 text-[13px] text-slate-300 max-w-[220px]">Share your screen, a window, or share a file to get started.</p>
+                      <div className="mt-4 flex items-center gap-2" data-meeting-share-root>
+                        <button
+                          onClick={toggleScreenShare}
+                          className="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+                        >
+                          <MonitorPlay size={12} /> Share screen
+                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setMeetingShareMenuAnchor((prev) => (prev === 'center' ? null : 'center'))}
+                            className="px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+                          >
+                            <Upload size={12} /> Share a file
+                          </button>
+                          {meetingShareMenuAnchor === 'center' && (
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-20 w-44 rounded-xl border border-slate-200 bg-[#0b1225] p-1.5 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
+                              <button type="button" onClick={() => handleMeetingShareOption('document')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><FileText size={12} />Share document</button>
+                              <button type="button" onClick={() => handleMeetingShareOption('image')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><ImageIcon size={12} />Share image</button>
+                              <button type="button" onClick={() => handleMeetingShareOption('audio')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><Mic size={12} />Share audio</button>
+                              <button type="button" onClick={() => handleMeetingShareOption('link')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><LinkIcon size={12} />Share link</button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -13047,15 +13085,20 @@ Rules:
                   <MonitorPlay size={16} />
                 </button>
                 <button
-                  onClick={() => {
-                    setActiveMeetingStageTab('files');
-                    meetingShareFileInputRef.current?.click();
-                  }}
+                  onClick={() => setMeetingShareMenuAnchor((prev) => (prev === 'toolbar' ? null : 'toolbar'))}
                   className="p-2 rounded-xl transition bg-white text-slate-800"
                   title="Share files"
                 >
                   <File size={16} />
                 </button>
+                {meetingShareMenuAnchor === 'toolbar' && (
+                  <div data-meeting-share-root className="absolute bottom-[54px] right-[82px] z-20 w-44 rounded-xl border border-slate-200 bg-[#0b1225] p-1.5 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
+                    <button type="button" onClick={() => handleMeetingShareOption('document')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><FileText size={12} />Share document</button>
+                    <button type="button" onClick={() => handleMeetingShareOption('image')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><ImageIcon size={12} />Share image</button>
+                    <button type="button" onClick={() => handleMeetingShareOption('audio')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><Mic size={12} />Share audio</button>
+                    <button type="button" onClick={() => handleMeetingShareOption('link')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><LinkIcon size={12} />Share link</button>
+                  </div>
+                )}
                 <button onClick={leaveRoom} className="px-3 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold" title="Leave meeting">
                   Leave
                 </button>
