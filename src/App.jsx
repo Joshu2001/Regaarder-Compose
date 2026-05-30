@@ -12,7 +12,8 @@ import {
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
-  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus
+  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus,
+  Square, Circle, Diamond, Triangle, Shapes, StickyNote, PencilLine, Palette
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -294,9 +295,19 @@ export default function App() {
   const [whiteboardRedoStrokes, setWhiteboardRedoStrokes] = useState([]);
   const [whiteboardCurrentStroke, setWhiteboardCurrentStroke] = useState('');
   const [whiteboardLineAnchor, setWhiteboardLineAnchor] = useState(null);
+  const [whiteboardCurrentShape, setWhiteboardCurrentShape] = useState(null);
+  const [whiteboardShapes, setWhiteboardShapes] = useState([]);
+  const [whiteboardShapeVariant, setWhiteboardShapeVariant] = useState('line');
+  const [whiteboardShapeMenuOpen, setWhiteboardShapeMenuOpen] = useState(false);
   const [isWhiteboardDrawing, setIsWhiteboardDrawing] = useState(false);
   const [whiteboardWidgets, setWhiteboardWidgets] = useState([]);
   const [whiteboardMoreMenuOpen, setWhiteboardMoreMenuOpen] = useState(false);
+  const [whiteboardStickyPaletteOpen, setWhiteboardStickyPaletteOpen] = useState(false);
+  const [whiteboardStickyColor, setWhiteboardStickyColor] = useState('#fef08a');
+  const [whiteboardStickyDragStart, setWhiteboardStickyDragStart] = useState(null);
+  const [whiteboardStickyPreview, setWhiteboardStickyPreview] = useState(null);
+  const [whiteboardStickyCursorPosition, setWhiteboardStickyCursorPosition] = useState(null);
+  const [whiteboardEditingWidgetId, setWhiteboardEditingWidgetId] = useState(null);
   const whiteboardCanvasRef = useRef(null);
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
@@ -314,22 +325,41 @@ export default function App() {
   const [rotatingExampleSetIndex, setRotatingExampleSetIndex] = useState(0);
 
   const whiteboardPenPresets = [
-    { key: 'felt-pen', label: 'Felt pen', stroke: '#4f46e5', width: 2.6 },
-    { key: 'ballpoint', label: 'Ballpoint pen', stroke: '#1f2937', width: 1.9 },
-    { key: 'pencil', label: 'Pencil', stroke: '#52525b', width: 1.5 },
-    { key: 'marker', label: 'Marker', stroke: '#0f766e', width: 3.8 },
-    { key: 'highlighter', label: 'Highlighter', stroke: '#ca8a04', width: 6.2, opacity: 0.42 },
-    { key: 'calligraphy', label: 'Calligraphy pen', stroke: '#7c2d12', width: 3.4 },
+    { key: 'felt-pen', label: 'Felt pen', stroke: '#4f46e5', width: 2.6, icon: PenTool },
+    { key: 'ballpoint', label: 'Ballpoint pen', stroke: '#1f2937', width: 1.9, icon: PencilLine },
+    { key: 'pencil', label: 'Pencil', stroke: '#52525b', width: 1.5, icon: PencilLine },
+    { key: 'marker', label: 'Marker', stroke: '#0f766e', width: 3.8, icon: PenTool },
+    { key: 'highlighter', label: 'Highlighter', stroke: '#ca8a04', width: 6.2, opacity: 0.42, icon: Palette },
+    { key: 'calligraphy', label: 'Calligraphy pen', stroke: '#7c2d12', width: 3.4, icon: PenTool },
+  ];
+  const whiteboardShapePresets = [
+    { key: 'line', label: 'Line', icon: Minus },
+    { key: 'arrow', label: 'Arrow', icon: MoveRight },
+    { key: 'rectangle', label: 'Rectangle', icon: Square },
+    { key: 'ellipse', label: 'Ellipse', icon: Circle },
+    { key: 'diamond', label: 'Diamond', icon: Diamond },
+    { key: 'triangle', label: 'Triangle', icon: Triangle },
+  ];
+  const whiteboardStickyColorPresets = [
+    { key: 'yellow', label: 'Yellow', value: '#fde047' },
+    { key: 'purple', label: 'Purple', value: '#d8b4fe' },
+    { key: 'blue', label: 'Blue', value: '#93c5fd' },
+    { key: 'green', label: 'Green', value: '#86efac' },
+    { key: 'pink', label: 'Pink', value: '#f9a8d4' },
   ];
   const activeWhiteboardPen = whiteboardPenPresets.find((pen) => pen.key === whiteboardPenVariant) || whiteboardPenPresets[0];
 
-  const addWhiteboardWidget = (type) => {
+  const addWhiteboardWidget = (type, options = {}) => {
     const index = whiteboardWidgets.length;
     const nextWidget = {
       id: `wb-widget-${Date.now()}-${index}`,
       type,
-      x: 120 + (index % 4) * 170,
-      y: 90 + Math.floor(index / 4) * 130,
+      x: options.x ?? 120 + (index % 4) * 170,
+      y: options.y ?? 90 + Math.floor(index / 4) * 130,
+      width: options.width ?? 170,
+      height: options.height ?? 120,
+      color: options.color ?? whiteboardStickyColor,
+      text: options.text ?? '',
       title:
         type === 'sticky' ? 'New sticky note'
         : type === 'text' ? 'Text block'
@@ -342,17 +372,38 @@ export default function App() {
         : 'Link to related node',
     };
     setWhiteboardWidgets((prev) => [...prev, nextWidget]);
+    if (type === 'sticky') {
+      setWhiteboardEditingWidgetId(nextWidget.id);
+      showToast('Sticky note ready to edit');
+      return;
+    }
     showToast(`${nextWidget.title} added`);
   };
 
   const activateWhiteboardTool = (toolKey) => {
     setWhiteboardTool(toolKey);
     setWhiteboardMoreMenuOpen(false);
+    setWhiteboardShapeMenuOpen(false);
+    if (toolKey !== 'sticky') {
+      setWhiteboardStickyPaletteOpen(false);
+      setWhiteboardStickyDragStart(null);
+      setWhiteboardStickyPreview(null);
+    }
     if (toolKey === 'pen') {
       showToast('Pen tool active');
       return;
     }
-    if (toolKey === 'sticky' || toolKey === 'text' || toolKey === 'image' || toolKey === 'link') {
+    if (toolKey === 'shapes') {
+      setWhiteboardShapeMenuOpen(true);
+      showToast('Shape tools opened');
+      return;
+    }
+    if (toolKey === 'sticky') {
+      setWhiteboardStickyPaletteOpen(true);
+      showToast('Sticky note tool active');
+      return;
+    }
+    if (toolKey === 'text' || toolKey === 'image' || toolKey === 'link') {
       addWhiteboardWidget(toolKey);
       return;
     }
@@ -395,6 +446,66 @@ export default function App() {
       return next;
     });
   };
+
+  const createStickyNote = (x, y, width, height) => {
+    addWhiteboardWidget('sticky', {
+      x,
+      y,
+      width,
+      height,
+      color: whiteboardStickyColor,
+      text: '',
+    });
+  };
+
+  const renderWhiteboardShape = (shape, key) => {
+    const sharedProps = {
+      key,
+      stroke: shape.stroke,
+      strokeWidth: shape.strokeWidth,
+      fill: shape.fill ?? 'transparent',
+      fillOpacity: shape.fillOpacity ?? 1,
+      strokeOpacity: shape.opacity ?? 1,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+    };
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      return <line {...sharedProps} x1={shape.x1} y1={shape.y1} x2={shape.x2} y2={shape.y2} />;
+    }
+    if (shape.type === 'rectangle') {
+      return <rect {...sharedProps} x={shape.x} y={shape.y} width={shape.width} height={shape.height} rx="10" ry="10" />;
+    }
+    if (shape.type === 'ellipse') {
+      return <ellipse {...sharedProps} cx={shape.x + shape.width / 2} cy={shape.y + shape.height / 2} rx={shape.width / 2} ry={shape.height / 2} />;
+    }
+    if (shape.type === 'diamond') {
+      const cx = shape.x + shape.width / 2;
+      const cy = shape.y + shape.height / 2;
+      const points = `${cx},${shape.y} ${shape.x + shape.width},${cy} ${cx},${shape.y + shape.height} ${shape.x},${cy}`;
+      return <polygon {...sharedProps} points={points} />;
+    }
+    const trianglePoints = `${shape.x + shape.width / 2},${shape.y} ${shape.x + shape.width},${shape.y + shape.height} ${shape.x},${shape.y + shape.height}`;
+    return <polygon {...sharedProps} points={trianglePoints} />;
+  };
+
+  useEffect(() => {
+    const handleWhiteboardEscape = (event) => {
+      if (event.key !== 'Escape' || activeRightTab !== 'whiteboard') {
+        return;
+      }
+      setWhiteboardTool('select');
+      setWhiteboardShapeMenuOpen(false);
+      setWhiteboardStickyPaletteOpen(false);
+      setWhiteboardStickyDragStart(null);
+      setWhiteboardStickyPreview(null);
+      setIsWhiteboardDrawing(false);
+      setWhiteboardLineAnchor(null);
+      setWhiteboardCurrentShape(null);
+      showToast('Pointer tool active');
+    };
+    window.addEventListener('keydown', handleWhiteboardEscape);
+    return () => window.removeEventListener('keydown', handleWhiteboardEscape);
+  }, [activeRightTab]);
 
   // Example sets that rotate every minute
   const EXAMPLE_SETS = [
@@ -10524,19 +10635,29 @@ Rules:
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => showToast('Share whiteboard opened')} className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Share</button>
+                    <button
+                      onClick={() => {
+                        setWhiteboardTool('sticky');
+                        setWhiteboardStickyPaletteOpen(true);
+                        showToast('Sticky note tool active');
+                      }}
+                      className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1.5"
+                    >
+                      <StickyNote size={13} />
+                      Sticky notes
+                    </button>
                     <button onClick={() => setActiveRightTab('tasks')} className="px-2.5 py-1.5 text-xs rounded-lg bg-violet-600 text-white hover:bg-violet-700">Convert to Tasks</button>
                   </div>
                 </div>
                 <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#ececf6_1px,transparent_0)] bg-[size:24px_24px]">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-1.5 flex flex-col gap-1">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2 flex flex-col gap-1.5">
                     {[
                       { key: 'select', label: 'Select', icon: Move },
                       { key: 'pen', label: 'Pen', icon: PenTool },
-                      { key: 'line', label: 'Line', icon: Minus },
+                      { key: 'shapes', label: 'Shapes', icon: Shapes },
                       { key: 'text', label: 'Text', icon: Type },
                       { key: 'link', label: 'Connector', icon: LinkIcon },
-                      { key: 'sticky', label: 'Sticky note', icon: FileText },
+                      { key: 'sticky', label: 'Sticky note', icon: StickyNote },
                       { key: 'image', label: 'Image', icon: ImageIcon },
                       { key: 'more', label: 'More', icon: MoreHorizontal },
                     ].map((tool) => (
@@ -10546,10 +10667,10 @@ Rules:
                         onMouseEnter={() => setWhiteboardHoverLabel(tool.label)}
                         onMouseLeave={() => setWhiteboardHoverLabel('')}
                         onClick={() => activateWhiteboardTool(tool.key)}
-                        className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                        className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                         title={tool.label}
                       >
-                        <tool.icon size={14} />
+                        <tool.icon size={15} />
                       </button>
                     ))}
                   </div>
@@ -10559,7 +10680,7 @@ Rules:
                     </div>
                   )}
                   {whiteboardTool === 'pen' && (
-                    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2 flex flex-col gap-1.5 w-[140px]">
+                    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2.5 flex flex-col gap-1.5 w-[172px]">
                       <p className="text-[10px] font-semibold text-gray-500 px-1">Pen styles</p>
                       {whiteboardPenPresets.map((penPreset, penIndex) => (
                         <button
@@ -10574,11 +10695,67 @@ Rules:
                           className={`h-8 rounded-lg px-2 flex items-center gap-2 transition-colors ${whiteboardPenVariant === penPreset.key ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
                           title={penPreset.label}
                         >
-                          <span className="h-4 w-4 rounded-full border border-white shadow-sm" style={{ backgroundColor: penPreset.stroke, opacity: penPreset.opacity ?? 1 }} />
+                          <span className="h-5 w-5 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center">
+                            <penPreset.icon size={12} style={{ color: penPreset.stroke, opacity: penPreset.opacity ?? 1 }} />
+                          </span>
                           <span className="text-[11px] font-medium truncate">{penPreset.label}</span>
                           {penIndex < 2 && <span className="ml-auto text-[9px] text-gray-400">Popular</span>}
                         </button>
                       ))}
+                    </div>
+                  )}
+                  {whiteboardShapeMenuOpen && (
+                    <div className="absolute left-20 top-[44%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2 flex flex-col gap-1.5 w-[172px]">
+                      <p className="text-[10px] font-semibold text-gray-500 px-1">Shapes</p>
+                      {whiteboardShapePresets.map((shapePreset) => (
+                        <button
+                          key={shapePreset.key}
+                          type="button"
+                          onMouseEnter={() => setWhiteboardHoverLabel(shapePreset.label)}
+                          onMouseLeave={() => setWhiteboardHoverLabel('')}
+                          onClick={() => {
+                            setWhiteboardShapeVariant(shapePreset.key);
+                            setWhiteboardTool('shapes');
+                            showToast(`${shapePreset.label} selected`);
+                          }}
+                          className={`h-8 rounded-lg px-2 flex items-center gap-2 transition-colors ${whiteboardShapeVariant === shapePreset.key ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                          title={shapePreset.label}
+                        >
+                          <shapePreset.icon size={13} />
+                          <span className="text-[11px] font-medium truncate">{shapePreset.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {whiteboardStickyPaletteOpen && (
+                    <div className="absolute left-20 top-[62%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2 flex flex-col gap-1.5 w-[172px]">
+                      <p className="text-[10px] font-semibold text-gray-500 px-1">Sticky note colors</p>
+                      {whiteboardStickyColorPresets.map((colorPreset) => (
+                        <button
+                          key={colorPreset.key}
+                          type="button"
+                          onClick={() => {
+                            setWhiteboardStickyColor(colorPreset.value);
+                            setWhiteboardTool('sticky');
+                            showToast(`${colorPreset.label} sticky selected`);
+                          }}
+                          className={`h-8 rounded-lg px-2 flex items-center gap-2 transition-colors ${whiteboardStickyColor === colorPreset.value ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                          title={colorPreset.label}
+                        >
+                          <span className="h-4 w-4 rounded-md border border-gray-200" style={{ backgroundColor: colorPreset.value }} />
+                          <span className="text-[11px] font-medium truncate">{colorPreset.label}</span>
+                        </button>
+                      ))}
+                      <div className="px-2 pb-1">
+                        <label className="text-[10px] font-medium text-gray-500">Custom color</label>
+                        <input
+                          type="color"
+                          value={whiteboardStickyColor}
+                          onChange={(event) => setWhiteboardStickyColor(event.target.value)}
+                          className="mt-1 h-8 w-full rounded-lg border border-gray-200 bg-white cursor-pointer"
+                          title="Custom color"
+                        />
+                      </div>
                     </div>
                   )}
                   {whiteboardMoreMenuOpen && (
@@ -10587,9 +10764,13 @@ Rules:
                         type="button"
                         onClick={() => {
                           setWhiteboardStrokes([]);
+                          setWhiteboardShapes([]);
                           setWhiteboardRedoStrokes([]);
                           setWhiteboardCurrentStroke('');
+                          setWhiteboardCurrentShape(null);
                           setWhiteboardWidgets([]);
+                          setWhiteboardStickyDragStart(null);
+                          setWhiteboardStickyPreview(null);
                           setWhiteboardMoreMenuOpen(false);
                           showToast('Whiteboard reset');
                         }}
@@ -10624,39 +10805,125 @@ Rules:
                   <div
                     ref={whiteboardCanvasRef}
                     className="absolute inset-0"
-                    style={{ cursor: whiteboardTool === 'pen' ? WHITEBOARD_PEN_CURSOR : 'default' }}
+                    style={{
+                      cursor:
+                        whiteboardTool === 'pen'
+                          ? WHITEBOARD_PEN_CURSOR
+                          : whiteboardTool === 'sticky'
+                            ? 'none'
+                            : whiteboardTool === 'shapes'
+                              ? 'crosshair'
+                              : 'default',
+                    }}
                     onPointerDown={(event) => {
-                      if (whiteboardTool !== 'pen' && whiteboardTool !== 'line') return;
                       const rect = event.currentTarget.getBoundingClientRect();
                       const startX = event.clientX - rect.left;
                       const startY = event.clientY - rect.top;
+                      if (whiteboardTool === 'sticky') {
+                        setWhiteboardStickyDragStart({ x: startX, y: startY });
+                        setWhiteboardStickyPreview({ x: startX, y: startY, width: 0, height: 0 });
+                        return;
+                      }
+                      if (whiteboardTool !== 'pen' && whiteboardTool !== 'shapes') return;
                       setIsWhiteboardDrawing(true);
-                      if (whiteboardTool === 'line') {
+                      if (whiteboardTool === 'shapes') {
                         setWhiteboardLineAnchor({ x: startX, y: startY });
-                        setWhiteboardCurrentStroke(`M ${startX} ${startY} L ${startX} ${startY}`);
+                        setWhiteboardCurrentShape({
+                          type: whiteboardShapeVariant,
+                          x: startX,
+                          y: startY,
+                          width: 0,
+                          height: 0,
+                          x1: startX,
+                          y1: startY,
+                          x2: startX,
+                          y2: startY,
+                          stroke: activeWhiteboardPen.stroke,
+                          strokeWidth: Math.max(activeWhiteboardPen.width, 2.2),
+                          fill: whiteboardShapeVariant === 'line' || whiteboardShapeVariant === 'arrow' ? 'transparent' : `${activeWhiteboardPen.stroke}22`,
+                          fillOpacity: 1,
+                          opacity: activeWhiteboardPen.opacity ?? 1,
+                        });
                         return;
                       }
                       setWhiteboardCurrentStroke(`M ${startX} ${startY}`);
                     }}
                     onPointerMove={(event) => {
-                      if (!isWhiteboardDrawing || (whiteboardTool !== 'pen' && whiteboardTool !== 'line')) return;
                       const rect = event.currentTarget.getBoundingClientRect();
                       const x = event.clientX - rect.left;
                       const y = event.clientY - rect.top;
-                      if (whiteboardTool === 'line' && whiteboardLineAnchor) {
-                        setWhiteboardCurrentStroke(`M ${whiteboardLineAnchor.x} ${whiteboardLineAnchor.y} L ${x} ${y}`);
+                      setWhiteboardStickyCursorPosition({ x, y });
+                      if (whiteboardTool === 'sticky' && whiteboardStickyDragStart) {
+                        const deltaX = x - whiteboardStickyDragStart.x;
+                        const deltaY = y - whiteboardStickyDragStart.y;
+                        setWhiteboardStickyPreview({
+                          x: Math.min(whiteboardStickyDragStart.x, x),
+                          y: Math.min(whiteboardStickyDragStart.y, y),
+                          width: Math.abs(deltaX),
+                          height: Math.abs(deltaY),
+                        });
+                        return;
+                      }
+                      if (!isWhiteboardDrawing || (whiteboardTool !== 'pen' && whiteboardTool !== 'shapes')) return;
+                      if (whiteboardTool === 'shapes' && whiteboardLineAnchor) {
+                        const nextShape = {
+                          type: whiteboardShapeVariant,
+                          x: Math.min(whiteboardLineAnchor.x, x),
+                          y: Math.min(whiteboardLineAnchor.y, y),
+                          width: Math.abs(x - whiteboardLineAnchor.x),
+                          height: Math.abs(y - whiteboardLineAnchor.y),
+                          x1: whiteboardLineAnchor.x,
+                          y1: whiteboardLineAnchor.y,
+                          x2: x,
+                          y2: y,
+                          stroke: activeWhiteboardPen.stroke,
+                          strokeWidth: Math.max(activeWhiteboardPen.width, 2.2),
+                          fill: whiteboardShapeVariant === 'line' || whiteboardShapeVariant === 'arrow' ? 'transparent' : `${activeWhiteboardPen.stroke}22`,
+                          fillOpacity: 1,
+                          opacity: activeWhiteboardPen.opacity ?? 1,
+                        };
+                        setWhiteboardCurrentShape(nextShape);
                         return;
                       }
                       setWhiteboardCurrentStroke((prev) => `${prev} L ${x} ${y}`);
                     }}
-                    onPointerUp={() => {
+                    onPointerUp={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      const x = event.clientX - rect.left;
+                      const y = event.clientY - rect.top;
+                      if (whiteboardTool === 'sticky' && whiteboardStickyDragStart) {
+                        const deltaX = x - whiteboardStickyDragStart.x;
+                        const deltaY = y - whiteboardStickyDragStart.y;
+                        const dragged = Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5;
+                        if (!dragged) {
+                          createStickyNote(whiteboardStickyDragStart.x - 80, whiteboardStickyDragStart.y - 55, 160, 110);
+                        } else {
+                          createStickyNote(
+                            Math.min(whiteboardStickyDragStart.x, x),
+                            Math.min(whiteboardStickyDragStart.y, y),
+                            Math.max(Math.abs(deltaX), 120),
+                            Math.max(Math.abs(deltaY), 90),
+                          );
+                        }
+                        setWhiteboardStickyDragStart(null);
+                        setWhiteboardStickyPreview(null);
+                        return;
+                      }
+                      if (whiteboardTool === 'shapes' && isWhiteboardDrawing && whiteboardCurrentShape) {
+                        setWhiteboardShapes((prev) => [...prev, whiteboardCurrentShape]);
+                        setWhiteboardCurrentShape(null);
+                        setIsWhiteboardDrawing(false);
+                        setWhiteboardLineAnchor(null);
+                        setWhiteboardRedoStrokes([]);
+                        return;
+                      }
                       if (!isWhiteboardDrawing || !whiteboardCurrentStroke) return;
                       setWhiteboardStrokes((prev) => [
                         ...prev,
                         {
                           path: whiteboardCurrentStroke,
                           stroke: activeWhiteboardPen.stroke,
-                          width: whiteboardTool === 'line' ? Math.max(activeWhiteboardPen.width, 2.2) : activeWhiteboardPen.width,
+                          width: activeWhiteboardPen.width,
                           opacity: activeWhiteboardPen.opacity ?? 1,
                         },
                       ]);
@@ -10666,13 +10933,36 @@ Rules:
                       setWhiteboardLineAnchor(null);
                     }}
                     onPointerLeave={() => {
+                      if (whiteboardTool === 'sticky') {
+                        setWhiteboardStickyCursorPosition(null);
+                        if (whiteboardStickyDragStart && whiteboardStickyPreview) {
+                          createStickyNote(
+                            whiteboardStickyPreview.x,
+                            whiteboardStickyPreview.y,
+                            Math.max(whiteboardStickyPreview.width, 120),
+                            Math.max(whiteboardStickyPreview.height, 90),
+                          );
+                          setWhiteboardStickyDragStart(null);
+                          setWhiteboardStickyPreview(null);
+                        }
+                        return;
+                      }
+                      if (whiteboardTool === 'shapes') {
+                        if (whiteboardCurrentShape) {
+                          setWhiteboardShapes((prev) => [...prev, whiteboardCurrentShape]);
+                        }
+                        setWhiteboardCurrentShape(null);
+                        setIsWhiteboardDrawing(false);
+                        setWhiteboardLineAnchor(null);
+                        return;
+                      }
                       if (!isWhiteboardDrawing || !whiteboardCurrentStroke) return;
                       setWhiteboardStrokes((prev) => [
                         ...prev,
                         {
                           path: whiteboardCurrentStroke,
                           stroke: activeWhiteboardPen.stroke,
-                          width: whiteboardTool === 'line' ? Math.max(activeWhiteboardPen.width, 2.2) : activeWhiteboardPen.width,
+                          width: activeWhiteboardPen.width,
                           opacity: activeWhiteboardPen.opacity ?? 1,
                         },
                       ]);
@@ -10682,6 +10972,27 @@ Rules:
                       setWhiteboardLineAnchor(null);
                     }}
                   />
+                  {whiteboardTool === 'sticky' && whiteboardStickyCursorPosition && (
+                    <div
+                      className="absolute pointer-events-none z-20"
+                      style={{ left: `${whiteboardStickyCursorPosition.x + 8}px`, top: `${whiteboardStickyCursorPosition.y + 8}px` }}
+                    >
+                      <div className="h-7 w-7 rounded-md border border-amber-300 shadow-sm flex items-center justify-center" style={{ backgroundColor: whiteboardStickyColor }}>
+                        <StickyNote size={13} className="text-amber-900" />
+                      </div>
+                    </div>
+                  )}
+                  {whiteboardStickyPreview && (
+                    <div
+                      className="absolute z-10 border-2 border-dashed border-violet-400 bg-violet-200/25 rounded-lg pointer-events-none"
+                      style={{
+                        left: `${whiteboardStickyPreview.x}px`,
+                        top: `${whiteboardStickyPreview.y}px`,
+                        width: `${Math.max(whiteboardStickyPreview.width, 1)}px`,
+                        height: `${Math.max(whiteboardStickyPreview.height, 1)}px`,
+                      }}
+                    />
+                  )}
                   {whiteboardWidgets.map((widget) => (
                     <div
                       key={widget.id}
@@ -10694,10 +11005,35 @@ Rules:
                               ? 'bg-emerald-100 border-emerald-200'
                               : 'bg-blue-100 border-blue-200'
                       }`}
-                      style={{ left: `${widget.x}px`, top: `${widget.y}px`, width: '170px' }}
+                      style={{
+                        left: `${widget.x}px`,
+                        top: `${widget.y}px`,
+                        width: `${widget.width || 170}px`,
+                        height: `${widget.height || 120}px`,
+                        backgroundColor: widget.type === 'sticky' ? widget.color || '#fde047' : undefined,
+                      }}
                     >
-                      <p className="text-[11px] font-semibold text-gray-900">{widget.title}</p>
-                      <p className="mt-1 text-[11px] text-gray-700 leading-snug">{widget.body}</p>
+                      {widget.type === 'sticky' ? (
+                        <textarea
+                          value={widget.text || ''}
+                          autoFocus={whiteboardEditingWidgetId === widget.id}
+                          onFocus={() => setWhiteboardEditingWidgetId(widget.id)}
+                          onBlur={() => setWhiteboardEditingWidgetId(null)}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setWhiteboardWidgets((prev) => prev.map((existingWidget) => (
+                              existingWidget.id === widget.id ? { ...existingWidget, text: value } : existingWidget
+                            )));
+                          }}
+                          className="w-full h-full bg-transparent resize-none outline-none text-[12px] text-amber-950 placeholder:text-amber-800/60 leading-snug"
+                          placeholder="Type sticky note..."
+                        />
+                      ) : (
+                        <>
+                          <p className="text-[11px] font-semibold text-gray-900">{widget.title}</p>
+                          <p className="mt-1 text-[11px] text-gray-700 leading-snug">{widget.body}</p>
+                        </>
+                      )}
                     </div>
                   ))}
                   <div className="absolute top-8 left-10 bg-amber-100 border border-amber-200 rounded-xl px-4 py-3 shadow-sm w-56">
@@ -10715,6 +11051,7 @@ Rules:
                   <svg className="absolute inset-0 w-full h-full pointer-events-none">
                     <path d="M230 95 C 300 120, 320 170, 360 205" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
                     <path d="M520 95 C 470 130, 460 170, 430 210" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
+                    {whiteboardShapes.map((shape, shapeIndex) => renderWhiteboardShape(shape, `whiteboard-shape-${shapeIndex}`))}
                     {whiteboardStrokes.map((stroke, strokeIndex) => (
                       <path
                         key={`whiteboard-stroke-${strokeIndex}`}
@@ -10731,36 +11068,42 @@ Rules:
                       <path
                         d={whiteboardCurrentStroke}
                         stroke={activeWhiteboardPen.stroke}
-                        strokeWidth={whiteboardTool === 'line' ? Math.max(activeWhiteboardPen.width, 2.2) : activeWhiteboardPen.width}
+                        strokeWidth={activeWhiteboardPen.width}
                         strokeOpacity={activeWhiteboardPen.opacity ?? 1}
                         fill="none"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
                     )}
+                    {whiteboardCurrentShape && renderWhiteboardShape(whiteboardCurrentShape, 'whiteboard-active-shape')}
                   </svg>
-                  <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm px-2 py-1.5 flex items-center gap-1">
-                    <button type="button" onClick={handleWhiteboardUndo} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo"><Undo2 size={14} /></button>
-                    <button type="button" onClick={handleWhiteboardRedo} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo"><Redo2 size={14} /></button>
-                    <button type="button" onClick={() => activateWhiteboardTool('pen')} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Pen"><PenTool size={14} /></button>
-                    <button type="button" onClick={() => activateWhiteboardTool('line')} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'line' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Line"><Minus size={14} /></button>
-                    <button type="button" onClick={() => activateWhiteboardTool('text')} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'text' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Text"><Type size={14} /></button>
-                    <button type="button" onClick={() => activateWhiteboardTool('link')} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'link' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Connector"><LinkIcon size={14} /></button>
+                  <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm px-2.5 py-2 flex items-center gap-1.5">
+                    <button type="button" onClick={handleWhiteboardUndo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo"><Undo2 size={15} /></button>
+                    <button type="button" onClick={handleWhiteboardRedo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo"><Redo2 size={15} /></button>
+                    <button type="button" onClick={() => activateWhiteboardTool('pen')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Pen"><PenTool size={15} /></button>
+                    <button type="button" onClick={() => activateWhiteboardTool('shapes')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'shapes' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Shapes"><Shapes size={15} /></button>
+                    <button type="button" onClick={() => activateWhiteboardTool('sticky')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'sticky' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Sticky note"><StickyNote size={15} /></button>
+                    <button type="button" onClick={() => activateWhiteboardTool('text')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'text' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Text"><Type size={15} /></button>
+                    <button type="button" onClick={() => activateWhiteboardTool('link')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'link' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Connector"><LinkIcon size={15} /></button>
                     <button
                       type="button"
                       onClick={() => {
                         setWhiteboardStrokes([]);
+                        setWhiteboardShapes([]);
                         setWhiteboardRedoStrokes([]);
                         setWhiteboardCurrentStroke('');
+                        setWhiteboardCurrentShape(null);
                         setWhiteboardWidgets([]);
                         setIsWhiteboardDrawing(false);
                         setWhiteboardLineAnchor(null);
+                        setWhiteboardStickyDragStart(null);
+                        setWhiteboardStickyPreview(null);
                         showToast('Whiteboard cleared');
                       }}
-                      className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"
+                      className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"
                       title="Clear board"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
