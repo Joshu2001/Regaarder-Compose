@@ -8640,8 +8640,27 @@ Rules:
     const aiConversations = ['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent'];
     const activeThreadFiles = dmFiles.filter((file) => file.threadId === activeDmThread?.id).slice(0, 3);
     const activeThreadDecisions = dmDecisions.filter((item) => item.threadId === activeDmThread?.id).slice(0, 3);
-    const projectCount = dmThreads.length;
     const currentUserShort = 'J';
+    const openDmWorkspaceTab = (tabKey, options = {}) => {
+      if (tabKey === 'dm') {
+        createDmExperience();
+        return;
+      }
+
+      setProductMode('compose');
+      setLeftSidebarOpen(true);
+      if (rightPanelMaximized) {
+        setRightPanelMaximized(false);
+      }
+      setRightSidebarOpen(true);
+      setActiveRightTab(tabKey);
+      if (tabKey === 'room') {
+        setRoomState((prev) => prev || 'lobby');
+      }
+      if (options.meetingStageTab) {
+        setActiveMeetingStageTab(options.meetingStageTab);
+      }
+    };
 
     return (
       <div className={`flex h-screen bg-[#f5f6fb] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
@@ -8652,7 +8671,7 @@ Rules:
           </div>
         )}
 
-        <aside className="w-[250px] shrink-0 border-r border-gray-200 bg-white flex flex-col">
+        <aside className="w-[250px] shrink-0 border-r border-gray-200 bg-[#f1f2f6] flex flex-col">
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="text-[19px] font-semibold text-slate-900">Regaarder</div>
@@ -8766,8 +8785,8 @@ Rules:
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 flex bg-[#f7f8fc]">
-          <section className="flex-1 min-w-0 flex flex-col border-r border-gray-200">
+        <main className="flex-1 min-w-0 flex bg-white">
+          <section className="flex-1 min-w-0 flex flex-col border-r border-gray-200 bg-white">
             <div className="h-[74px] bg-white border-b border-gray-200 px-6 flex items-center justify-between gap-4">
               <div>
                 <div className="text-[29px] leading-none">🚀 <span className="text-2xl font-semibold text-slate-900">{activeDmThread?.title || 'Beta Launch'}</span></div>
@@ -8801,7 +8820,7 @@ Rules:
               ))}
             </div>
 
-            <div className="px-6 pt-3 pb-2 border-b border-gray-200 bg-[#f7f8fc]">
+            <div className="px-6 pt-3 pb-2 border-b border-gray-200 bg-white">
               <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <Sparkles size={14} className="text-violet-500" />
@@ -8814,7 +8833,7 @@ Rules:
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto thin-scrollbar px-6 pt-4 pb-5 space-y-4 bg-[#f7f8fc]">
+            <div className="flex-1 overflow-y-auto thin-scrollbar px-6 pt-4 pb-5 space-y-4 bg-white">
               <div className="w-fit mx-auto rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-500">Today</div>
               {activeDmMessages.map((message, index) => {
                 const isAssistant = message.role === 'assistant';
@@ -9004,15 +9023,15 @@ Rules:
 
         <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
           <div
-            onClick={() => handleMiniSidebarClick('chat')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'chat' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            onClick={() => openDmWorkspaceTab('chat')}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'chat' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><MessageCircle size={20} /></div>
+            <div className="p-2 rounded-xl transition-all"><MessageCircle size={20} /></div>
             <span className="text-[9px] font-semibold">Chat</span>
           </div>
 
           <div
-            onClick={() => createDmExperience()}
+            onClick={() => openDmWorkspaceTab('dm')}
             className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${productMode === 'dm' ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
           >
             <div className={`p-2 rounded-xl transition-all ${productMode === 'dm' ? 'bg-violet-100' : ''}`}><MessageSquare size={20} /></div>
@@ -9020,73 +9039,72 @@ Rules:
           </div>
 
           <div
-            onClick={() => handleMiniSidebarClick('assistant')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'assistant' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            onClick={() => openDmWorkspaceTab('assistant')}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><PenTool size={20} /></div>
+            <div className="p-2 rounded-xl transition-all"><PenTool size={20} /></div>
             <span className="text-[9px] font-semibold">Assist</span>
           </div>
 
           <div
-            onClick={() => handleMiniSidebarClick('whiteboard')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'whiteboard' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            onClick={() => openDmWorkspaceTab('whiteboard')}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'whiteboard' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><LayoutGrid size={20} /></div>
+            <div className="p-2 rounded-xl transition-all"><LayoutGrid size={20} /></div>
             <span className="text-[9px] font-semibold">Whiteboard</span>
           </div>
 
           <div
-            onClick={() => handleMiniSidebarClick('tasks')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'tasks' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            onClick={() => openDmWorkspaceTab('tasks')}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'tasks' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><CheckSquare size={20} /></div>
+            <div className="p-2 rounded-xl transition-all"><CheckSquare size={20} /></div>
             <span className="text-[9px] font-semibold">Tasks</span>
           </div>
 
           <div
-            onClick={() => handleMiniSidebarClick('calendar')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'calendar' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            onClick={() => openDmWorkspaceTab('calendar')}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'calendar' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Calendar size={20} /></div>
+            <div className="p-2 rounded-xl transition-all"><Calendar size={20} /></div>
             <span className="text-[9px] font-semibold">Schedule</span>
           </div>
 
           <div
-            onClick={() => handleMiniSidebarClick('people')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'people' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            onClick={() => openDmWorkspaceTab('people')}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'people' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Users size={20} /></div>
+            <div className="p-2 rounded-xl transition-all"><Users size={20} /></div>
             <span className="text-[9px] font-semibold">People</span>
           </div>
 
           <div
-            onClick={() => handleMiniSidebarClick('memory')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            onClick={() => openDmWorkspaceTab('memory')}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'memory' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Database size={20} /></div>
+            <div className="p-2 rounded-xl transition-all"><Database size={20} /></div>
             <span className="text-[9px] font-semibold">Memory</span>
           </div>
 
           <div
-            onClick={() => handleMiniSidebarClick('orb')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'orb' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            onClick={() => openDmWorkspaceTab('orb')}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Cloud size={20} /></div>
+            <div className="p-2 rounded-xl transition-all"><Cloud size={20} /></div>
             <span className="text-[9px] font-semibold">Orb</span>
           </div>
 
           <div
-            onClick={() => handleMiniSidebarClick('room')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            onClick={() => openDmWorkspaceTab('room')}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
           >
-            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><MonitorPlay size={20} /></div>
+            <div className="p-2 rounded-xl transition-all"><MonitorPlay size={20} /></div>
             <span className="text-[9px] font-semibold">Room</span>
           </div>
 
           <div
             onClick={() => {
-              handleMiniSidebarClick('room');
-              setActiveMeetingStageTab('files');
+              openDmWorkspaceTab('room', { meetingStageTab: 'files' });
             }}
             className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer"
           >
@@ -9094,7 +9112,10 @@ Rules:
             <span className="text-[9px] font-semibold">Files</span>
           </div>
 
-          <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 cursor-pointer mt-auto">
+          <div
+            onClick={() => openDmWorkspaceTab('assistant')}
+            className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 cursor-pointer mt-auto"
+          >
             <div className="p-2"><MoreHorizontal size={20} /></div>
             <span className="text-[9px] font-semibold">More</span>
           </div>
