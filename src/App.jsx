@@ -6017,6 +6017,10 @@ Rules:
 
   // Click handler for Right Mini Sidebar
   const handleMiniSidebarClick = (tabKey) => {
+    if (tabKey === 'dm') {
+      createDmExperience();
+      return;
+    }
     // If panel was maximized, un-maximize when switching
     if (rightPanelMaximized) setRightPanelMaximized(false);
     if (rightSidebarOpen && activeRightTab === tabKey) {
@@ -10124,6 +10128,14 @@ Rules:
           >
             <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'chat' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><MessageCircle size={20} /></div>
             <span className="text-[9px] font-semibold">Chat</span>
+          </div>
+
+          <div
+            onClick={() => handleMiniSidebarClick('dm')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${productMode === 'dm' ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${productMode === 'dm' ? 'bg-violet-100' : ''}`}><MessageSquare size={20} /></div>
+            <span className="text-[9px] font-semibold">DMs</span>
           </div>
 
           <div
@@ -15479,6 +15491,18 @@ Rules:
             <MessageCircle size={20} />
           </div>
           <span className="text-[9px] font-semibold">Chat</span>
+        </div>
+
+        <div
+          onClick={() => handleMiniSidebarClick('dm')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            productMode === 'dm' ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${productMode === 'dm' ? 'bg-violet-100' : ''}`}>
+            <MessageSquare size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">DMs</span>
         </div>
 
         <div 
