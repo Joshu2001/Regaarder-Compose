@@ -271,6 +271,56 @@ export default function App() {
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
   const [productMode, setProductMode] = useState('landing');
+  const [dmSearchQuery, setDmSearchQuery] = useState('');
+  const [dmComposerValue, setDmComposerValue] = useState('');
+  const [dmActiveThreadId, setDmActiveThreadId] = useState('thread-beta-launch');
+  const [dmThreads, setDmThreads] = useState([
+    { id: 'thread-beta-launch', title: 'Beta Launch', members: 12, unread: 1, pinned: true, description: 'Private project', lastMessageAt: Date.now() - 1000 * 60 * 8 },
+    { id: 'thread-mobile-app', title: 'Mobile App', members: 9, unread: 0, pinned: false, description: 'Delivery squad', lastMessageAt: Date.now() - 1000 * 60 * 62 },
+    { id: 'thread-compose-ai', title: 'Compose AI', members: 7, unread: 0, pinned: false, description: 'AI systems', lastMessageAt: Date.now() - 1000 * 60 * 120 },
+  ]);
+  const [dmMessages, setDmMessages] = useState([
+    {
+      id: 'dm-1',
+      threadId: 'thread-beta-launch',
+      author: 'Sarah Johnson',
+      role: 'product-lead',
+      text: 'The landing page is ready for review. Please drop comments before 4 PM.',
+      createdAt: Date.now() - 1000 * 60 * 46,
+      files: [{ id: 'file-landing-v2', name: 'Landing Page V2', kind: 'doc', updatedAt: Date.now() - 1000 * 60 * 6 }],
+      decisions: [],
+    },
+    {
+      id: 'dm-2',
+      threadId: 'thread-beta-launch',
+      author: 'Joshua David',
+      role: 'you',
+      text: 'Looks clean. I will share it with the team and gather feedback in this thread.',
+      createdAt: Date.now() - 1000 * 60 * 40,
+      files: [],
+      decisions: [],
+    },
+    {
+      id: 'dm-3',
+      threadId: 'thread-beta-launch',
+      author: 'Orb (AI Assistant)',
+      role: 'assistant',
+      text: 'Decision log update: Team agreed to finalize the launch copy tomorrow morning.',
+      createdAt: Date.now() - 1000 * 60 * 34,
+      files: [],
+      decisions: ['Finalize launch copy by tomorrow morning'],
+    },
+  ]);
+  const [dmFiles, setDmFiles] = useState([
+    { id: 'dm-file-1', threadId: 'thread-beta-launch', name: 'Launch Plan', kind: 'doc', updatedAt: Date.now() - 1000 * 60 * 120 },
+    { id: 'dm-file-2', threadId: 'thread-beta-launch', name: 'Budget Forecast', kind: 'sheet', updatedAt: Date.now() - 1000 * 60 * 65 },
+    { id: 'dm-file-3', threadId: 'thread-beta-launch', name: 'Investor Deck', kind: 'deck', updatedAt: Date.now() - 1000 * 60 * 1440 },
+  ]);
+  const [dmDecisions, setDmDecisions] = useState([
+    { id: 'dm-decision-1', threadId: 'thread-beta-launch', summary: 'Launch date held for May 15', createdAt: Date.now() - 1000 * 60 * 80, by: 'Sarah Johnson' },
+    { id: 'dm-decision-2', threadId: 'thread-beta-launch', summary: 'Final copy review due tomorrow 10:00 AM', createdAt: Date.now() - 1000 * 60 * 32, by: 'Orb (AI Assistant)' },
+  ]);
+  const [dmArchive, setDmArchive] = useState([]);
   const [creationPickerOpen, setCreationPickerOpen] = useState(false);
   const [activeDeckSlideId, setActiveDeckSlideId] = useState(1);
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
@@ -6523,6 +6573,17 @@ Rules:
     showToast('Sheets workspace ready');
   };
 
+  const createDmExperience = () => {
+    setCreationPickerOpen(false);
+    setProductMode('dm');
+    setRightSidebarOpen(false);
+    setLeftSidebarOpen(false);
+    setDmSearchQuery('');
+    setDmComposerValue('');
+    setDmActiveThreadId((prev) => prev || 'thread-beta-launch');
+    showToast('DM workspace ready');
+  };
+
   const openLandingWorkspace = (destination) => {
     setCreationPickerOpen(false);
 
@@ -6541,6 +6602,12 @@ Rules:
     if (destination === 'sheets') {
       setActivePrimaryNav('home');
       createSheetsExperience();
+      return;
+    }
+
+    if (destination === 'dm') {
+      setActivePrimaryNav('home');
+      createDmExperience();
       return;
     }
 
@@ -8356,6 +8423,378 @@ Rules:
     sheetsTitle,
   ]);
 
+  useEffect(() => {
+    try {
+      const savedThreads = JSON.parse(localStorage.getItem('rc.dm.threads') || 'null');
+      const savedMessages = JSON.parse(localStorage.getItem('rc.dm.messages') || 'null');
+      const savedFiles = JSON.parse(localStorage.getItem('rc.dm.files') || 'null');
+      const savedDecisions = JSON.parse(localStorage.getItem('rc.dm.decisions') || 'null');
+      const savedArchive = JSON.parse(localStorage.getItem('rc.dm.archive') || 'null');
+      if (Array.isArray(savedThreads) && savedThreads.length) {
+        setDmThreads(savedThreads);
+      }
+      if (Array.isArray(savedMessages) && savedMessages.length) {
+        setDmMessages(savedMessages);
+      }
+      if (Array.isArray(savedFiles)) {
+        setDmFiles(savedFiles);
+      }
+      if (Array.isArray(savedDecisions)) {
+        setDmDecisions(savedDecisions);
+      }
+      if (Array.isArray(savedArchive)) {
+        setDmArchive(savedArchive);
+      }
+    } catch (_error) {
+      // noop
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.threads', JSON.stringify(dmThreads));
+  }, [dmThreads]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.messages', JSON.stringify(dmMessages));
+  }, [dmMessages]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.files', JSON.stringify(dmFiles));
+  }, [dmFiles]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.decisions', JSON.stringify(dmDecisions));
+  }, [dmDecisions]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.archive', JSON.stringify(dmArchive));
+  }, [dmArchive]);
+
+  useEffect(() => {
+    if (dmArchive.length) {
+      return;
+    }
+    const seeded = [
+      ...dmMessages.map((message) => ({
+        id: `seed-msg-${message.id}`,
+        type: 'message',
+        threadId: message.threadId,
+        threadTitle: dmThreads.find((thread) => thread.id === message.threadId)?.title || 'Thread',
+        author: message.author,
+        text: message.text,
+        createdAt: message.createdAt,
+      })),
+      ...dmFiles.map((file) => ({
+        id: `seed-file-${file.id}`,
+        type: 'file',
+        threadId: file.threadId,
+        threadTitle: dmThreads.find((thread) => thread.id === file.threadId)?.title || 'Thread',
+        author: 'system',
+        fileName: file.name,
+        createdAt: file.updatedAt,
+      })),
+      ...dmDecisions.map((decision) => ({
+        id: `seed-decision-${decision.id}`,
+        type: 'decision',
+        threadId: decision.threadId,
+        threadTitle: dmThreads.find((thread) => thread.id === decision.threadId)?.title || 'Thread',
+        author: decision.by,
+        decision: decision.summary,
+        createdAt: decision.createdAt,
+      })),
+    ];
+    setDmArchive(seeded.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 1200));
+  }, [dmArchive.length, dmMessages, dmFiles, dmDecisions, dmThreads]);
+
+  const formatDmRelative = (timestamp) => {
+    const diff = Date.now() - Number(timestamp || Date.now());
+    const mins = Math.max(0, Math.floor(diff / 60000));
+    if (mins < 1) {
+      return 'just now';
+    }
+    if (mins < 60) {
+      return `${mins}m ago`;
+    }
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) {
+      return `${hours}h ago`;
+    }
+    return `${Math.floor(hours / 24)}d ago`;
+  };
+
+  const activeDmThread = dmThreads.find((thread) => thread.id === dmActiveThreadId) || dmThreads[0] || null;
+  const activeDmMessages = useMemo(() => dmMessages
+    .filter((message) => message.threadId === (activeDmThread?.id || ''))
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)), [dmMessages, activeDmThread?.id]);
+
+  const dmSearchResults = useMemo(() => {
+    const needle = String(dmSearchQuery || '').trim().toLowerCase();
+    if (!needle) {
+      return dmArchive.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 40);
+    }
+    return dmArchive
+      .filter((entry) => {
+        const textBlob = `${entry.type || ''} ${entry.threadTitle || ''} ${entry.author || ''} ${entry.text || ''} ${entry.fileName || ''} ${entry.decision || ''}`.toLowerCase();
+        return textBlob.includes(needle);
+      })
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }, [dmArchive, dmSearchQuery]);
+
+  const appendDmArchive = (entries) => {
+    const list = Array.isArray(entries) ? entries : [entries];
+    setDmArchive((prev) => [...list, ...prev].slice(0, 1200));
+  };
+
+  const sendDmMessage = () => {
+    const text = String(dmComposerValue || '').trim();
+    if (!text || !activeDmThread) {
+      return;
+    }
+    const now = Date.now();
+    const message = {
+      id: `dm-${now}-${Math.floor(Math.random() * 1000)}`,
+      threadId: activeDmThread.id,
+      author: 'You',
+      role: 'you',
+      text,
+      createdAt: now,
+      files: [],
+      decisions: [],
+    };
+    const decisionSignals = ['decision', 'decided', 'approved', 'ship', 'finalized'];
+    const hasDecisionSignal = decisionSignals.some((signal) => text.toLowerCase().includes(signal));
+
+    setDmMessages((prev) => [...prev, message]);
+    setDmThreads((prev) => prev.map((thread) => (
+      thread.id === activeDmThread.id
+        ? { ...thread, lastMessageAt: now }
+        : thread
+    )));
+
+    const archiveEntries = [{
+      id: `arc-msg-${now}`,
+      type: 'message',
+      threadId: activeDmThread.id,
+      threadTitle: activeDmThread.title,
+      author: 'You',
+      text,
+      createdAt: now,
+    }];
+
+    if (hasDecisionSignal) {
+      const decision = {
+        id: `dm-decision-${now}`,
+        threadId: activeDmThread.id,
+        summary: text,
+        createdAt: now,
+        by: 'You',
+      };
+      setDmDecisions((prev) => [decision, ...prev].slice(0, 200));
+      archiveEntries.push({
+        id: `arc-decision-${now}`,
+        type: 'decision',
+        threadId: activeDmThread.id,
+        threadTitle: activeDmThread.title,
+        author: 'You',
+        decision: text,
+        createdAt: now,
+      });
+    }
+
+    appendDmArchive(archiveEntries);
+    setDmComposerValue('');
+  };
+
+  const quickAttachDmFile = () => {
+    if (!activeDmThread) {
+      return;
+    }
+    const now = Date.now();
+    const nextFile = {
+      id: `dm-file-${now}`,
+      threadId: activeDmThread.id,
+      name: `Decision Notes ${new Date(now).toLocaleTimeString()}`,
+      kind: 'doc',
+      updatedAt: now,
+    };
+    setDmFiles((prev) => [nextFile, ...prev].slice(0, 300));
+    appendDmArchive({
+      id: `arc-file-${now}`,
+      type: 'file',
+      threadId: activeDmThread.id,
+      threadTitle: activeDmThread.title,
+      author: 'You',
+      fileName: nextFile.name,
+      createdAt: now,
+    });
+    showToast('File archived in conversation log');
+  };
+
+  if (productMode === 'dm') {
+    return (
+      <div className={`flex h-screen bg-[#f4f5fb] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+        {toastMessage && (
+          <div className="absolute top-5 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
+            <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+            <span>{toastMessage}</span>
+          </div>
+        )}
+
+        <aside className="w-[252px] shrink-0 border-r border-gray-200/80 bg-white/85 backdrop-blur-sm p-4 flex flex-col">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-semibold text-gray-900">Regaarder</div>
+            <button type="button" onClick={openCreationPicker} className="h-7 px-2 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50">New</button>
+          </div>
+          <button
+            type="button"
+            onClick={createComposeExperience}
+            className="w-full rounded-lg bg-violet-600 text-white text-sm font-medium py-2 mb-4 hover:bg-violet-700"
+          >
+            New message
+          </button>
+          <div className="text-[11px] uppercase tracking-wide text-gray-400 px-1 mb-2">Projects</div>
+          <div className="space-y-1 overflow-y-auto thin-scrollbar">
+            {dmThreads.map((thread) => {
+              const active = activeDmThread?.id === thread.id;
+              return (
+                <button
+                  key={thread.id}
+                  type="button"
+                  onClick={() => setDmActiveThreadId(thread.id)}
+                  className={`w-full text-left rounded-xl px-3 py-2.5 border transition-colors ${active ? 'border-violet-200 bg-violet-50/80' : 'border-transparent hover:border-gray-200 hover:bg-gray-50'}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-gray-800 truncate">{thread.title}</span>
+                    {thread.unread ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">{thread.unread}</span> : null}
+                  </div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">{thread.description}</div>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-auto pt-3">
+            <button
+              type="button"
+              onClick={createComposeExperience}
+              className="w-full rounded-lg border border-gray-200 text-xs py-2 text-gray-600 hover:bg-gray-50"
+            >
+              Back to Compose
+            </button>
+          </div>
+        </aside>
+
+        <main className="flex-1 min-w-0 flex">
+          <section className="flex-1 min-w-0 flex flex-col border-r border-gray-200/80 bg-[#fcfcff]">
+            <div className="h-16 px-6 border-b border-gray-200 bg-white/90 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">{activeDmThread?.title || 'Team Thread'}</h2>
+                <p className="text-xs text-gray-500">{activeDmThread?.members || 0} members • searchable log enabled</p>
+              </div>
+              <div className="w-[380px] max-w-[45%]">
+                <input
+                  value={dmSearchQuery}
+                  onChange={(event) => setDmSearchQuery(event.target.value)}
+                  placeholder="Search all conversation, files, and decisions"
+                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-violet-300"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3 thin-scrollbar">
+              {activeDmMessages.map((message) => (
+                <article key={message.id} className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-[0_10px_28px_-24px_rgba(15,23,42,0.8)]">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-gray-900">{message.author}</div>
+                    <div className="text-[11px] text-gray-400">{formatDmRelative(message.createdAt)}</div>
+                  </div>
+                  <p className="text-sm text-gray-700 mt-1 leading-relaxed">{message.text}</p>
+                  {Array.isArray(message.files) && message.files.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {message.files.map((file) => (
+                        <span key={file.id} className="text-[11px] rounded-lg border border-violet-100 bg-violet-50 text-violet-700 px-2 py-1">{file.name}</span>
+                      ))}
+                    </div>
+                  )}
+                  {Array.isArray(message.decisions) && message.decisions.length > 0 && (
+                    <div className="mt-2 text-[11px] rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 px-2 py-1.5">
+                      Decision captured: {message.decisions[0]}
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+
+            <div className="border-t border-gray-200 bg-white px-6 py-4">
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 flex items-end gap-2">
+                <textarea
+                  value={dmComposerValue}
+                  onChange={(event) => setDmComposerValue(event.target.value)}
+                  placeholder="Message team, log a decision, or share a file update..."
+                  rows={2}
+                  className="flex-1 resize-none bg-transparent border-none outline-none text-sm text-gray-700 placeholder:text-gray-400"
+                />
+                <button type="button" onClick={quickAttachDmFile} className="h-9 px-3 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-white">Attach</button>
+                <button type="button" onClick={sendDmMessage} className="h-9 px-4 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700">Send</button>
+              </div>
+            </div>
+          </section>
+
+          <aside className="w-[360px] shrink-0 bg-white/90 p-4 overflow-y-auto thin-scrollbar">
+            <div className="rounded-xl border border-gray-200 bg-white p-3 mb-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Intelligence Layer</div>
+              <p className="text-sm text-gray-700 leading-relaxed">SLACK: Searchable Log of All Conversation & Knowledge. Every message, file, and decision is archived and queryable instantly.</p>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-lg bg-violet-50 border border-violet-100 py-2">
+                  <div className="text-base font-semibold text-violet-700">{dmMessages.length}</div>
+                  <div className="text-[10px] text-violet-600">Messages</div>
+                </div>
+                <div className="rounded-lg bg-emerald-50 border border-emerald-100 py-2">
+                  <div className="text-base font-semibold text-emerald-700">{dmFiles.length}</div>
+                  <div className="text-[10px] text-emerald-600">Files</div>
+                </div>
+                <div className="rounded-lg bg-amber-50 border border-amber-100 py-2">
+                  <div className="text-base font-semibold text-amber-700">{dmDecisions.length}</div>
+                  <div className="text-[10px] text-amber-600">Decisions</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-3 mb-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Decision Log</div>
+              <div className="space-y-2 max-h-44 overflow-y-auto thin-scrollbar">
+                {dmDecisions.filter((item) => item.threadId === activeDmThread?.id).slice(0, 8).map((decision) => (
+                  <div key={decision.id} className="rounded-lg border border-amber-100 bg-amber-50 px-2 py-1.5">
+                    <div className="text-xs text-amber-800">{decision.summary}</div>
+                    <div className="text-[10px] text-amber-600 mt-1">{decision.by} • {formatDmRelative(decision.createdAt)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-white p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Deep Search Results</div>
+                <div className="text-[11px] text-gray-400">{dmSearchResults.length}</div>
+              </div>
+              <div className="space-y-2 max-h-[420px] overflow-y-auto thin-scrollbar">
+                {dmSearchResults.map((entry) => (
+                  <div key={entry.id} className="rounded-lg border border-gray-200 px-2 py-1.5">
+                    <div className="text-[10px] uppercase tracking-wide text-gray-400">{entry.type}</div>
+                    <div className="text-[11px] font-semibold text-gray-700 mt-0.5">{entry.threadTitle || activeDmThread?.title}</div>
+                    <div className="text-xs text-gray-600 mt-0.5 leading-relaxed">
+                      {entry.text || entry.fileName || entry.decision || 'Archived record'}
+                    </div>
+                    <div className="text-[10px] text-gray-400 mt-1">{entry.author || 'system'} • {formatDmRelative(entry.createdAt)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </aside>
+        </main>
+      </div>
+    );
+  }
+
   if (productMode === 'landing') {
     return (
       <RegaarderComposeLanding
@@ -8393,7 +8832,7 @@ Rules:
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <button
                   type="button"
                   onClick={createComposeExperience}
@@ -8428,6 +8867,18 @@ Rules:
                   </div>
                   <div className="text-sm font-semibold text-gray-900 mb-1">Sheets</div>
                   <p className="text-xs text-gray-600">Our spreadsheet workspace for AI-native analysis, modeling, and planning.</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={createDmExperience}
+                  className="group text-left rounded-xl border border-indigo-200 bg-indigo-50/50 p-4 hover:bg-indigo-50 transition-colors"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-indigo-600 text-white flex items-center justify-center mb-3">
+                    <MessageCircle size={18} />
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900 mb-1">DMs</div>
+                  <p className="text-xs text-gray-600">Dedicated team chat workspace with searchable conversation intelligence.</p>
                 </button>
               </div>
             </div>
@@ -9788,7 +10239,7 @@ Rules:
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <button
                 type="button"
                 onClick={createComposeExperience}
@@ -9823,6 +10274,18 @@ Rules:
                 </div>
                 <div className="text-sm font-semibold text-gray-900 mb-1">Sheets</div>
                 <p className="text-xs text-gray-600">Our spreadsheet workspace for AI-native analysis, modeling, and planning.</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={createDmExperience}
+                className="group text-left rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center mb-3">
+                  <MessageCircle size={18} />
+                </div>
+                <div className="text-sm font-semibold text-gray-900 mb-1">DMs</div>
+                <p className="text-xs text-gray-600">Dedicated team chat workspace with searchable conversation intelligence.</p>
               </button>
             </div>
           </div>
