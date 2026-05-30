@@ -21,6 +21,7 @@ const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
 const ENTERPRISE_PAGE_WIDTH_PX = 794;
 const ENTERPRISE_PAGE_HEIGHT_PX = 1123;
+const WHITEBOARD_PEN_CURSOR = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E\") 2 24, crosshair";
 const DECK_DESIGN_PRESETS = [
   {
     key: 'aurora-split',
@@ -286,6 +287,11 @@ export default function App() {
   const [deckSlidesData, setDeckSlidesData] = useState([createBlankDeckSlide(1)]);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
+  const [whiteboardTool, setWhiteboardTool] = useState('pen');
+  const [whiteboardStrokes, setWhiteboardStrokes] = useState([]);
+  const [whiteboardCurrentStroke, setWhiteboardCurrentStroke] = useState('');
+  const [isWhiteboardDrawing, setIsWhiteboardDrawing] = useState(false);
+  const whiteboardCanvasRef = useRef(null);
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
@@ -10429,12 +10435,68 @@ Rules:
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => showToast('Shape tool ready')} className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Shapes</button>
-                    <button onClick={() => showToast('Sticky notes opened')} className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Sticky Notes</button>
+                    <button onClick={() => showToast('Share whiteboard opened')} className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Share</button>
                     <button onClick={() => setActiveRightTab('tasks')} className="px-2.5 py-1.5 text-xs rounded-lg bg-violet-600 text-white hover:bg-violet-700">Convert to Tasks</button>
                   </div>
                 </div>
                 <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#ececf6_1px,transparent_0)] bg-[size:24px_24px]">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-1.5 flex flex-col gap-1">
+                    {[
+                      { key: 'select', label: 'Select', icon: Move },
+                      { key: 'pen', label: 'Pen', icon: PenTool },
+                      { key: 'line', label: 'Line', icon: Minus },
+                      { key: 'text', label: 'Text', icon: Type },
+                      { key: 'link', label: 'Connector', icon: LinkIcon },
+                      { key: 'sticky', label: 'Sticky', icon: FileText },
+                      { key: 'image', label: 'Image', icon: ImageIcon },
+                      { key: 'more', label: 'More', icon: MoreHorizontal },
+                    ].map((tool) => (
+                      <button
+                        key={tool.key}
+                        type="button"
+                        onClick={() => {
+                          setWhiteboardTool(tool.key);
+                          showToast(`${tool.label} tool active`);
+                        }}
+                        className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                        title={tool.label}
+                      >
+                        <tool.icon size={14} />
+                      </button>
+                    ))}
+                  </div>
+                  <div
+                    ref={whiteboardCanvasRef}
+                    className="absolute inset-0"
+                    style={{ cursor: whiteboardTool === 'pen' ? WHITEBOARD_PEN_CURSOR : 'default' }}
+                    onPointerDown={(event) => {
+                      if (whiteboardTool !== 'pen') return;
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      const startX = event.clientX - rect.left;
+                      const startY = event.clientY - rect.top;
+                      setIsWhiteboardDrawing(true);
+                      setWhiteboardCurrentStroke(`M ${startX} ${startY}`);
+                    }}
+                    onPointerMove={(event) => {
+                      if (!isWhiteboardDrawing || whiteboardTool !== 'pen') return;
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      const x = event.clientX - rect.left;
+                      const y = event.clientY - rect.top;
+                      setWhiteboardCurrentStroke((prev) => `${prev} L ${x} ${y}`);
+                    }}
+                    onPointerUp={() => {
+                      if (!isWhiteboardDrawing || !whiteboardCurrentStroke) return;
+                      setWhiteboardStrokes((prev) => [...prev, whiteboardCurrentStroke]);
+                      setWhiteboardCurrentStroke('');
+                      setIsWhiteboardDrawing(false);
+                    }}
+                    onPointerLeave={() => {
+                      if (!isWhiteboardDrawing || !whiteboardCurrentStroke) return;
+                      setWhiteboardStrokes((prev) => [...prev, whiteboardCurrentStroke]);
+                      setWhiteboardCurrentStroke('');
+                      setIsWhiteboardDrawing(false);
+                    }}
+                  />
                   <div className="absolute top-8 left-10 bg-amber-100 border border-amber-200 rounded-xl px-4 py-3 shadow-sm w-56">
                     <p className="text-xs font-semibold text-amber-900">Vision</p>
                     <p className="mt-1 text-xs text-amber-800">Launch AI-native workspace for teams.</p>
@@ -10450,7 +10512,22 @@ Rules:
                   <svg className="absolute inset-0 w-full h-full pointer-events-none">
                     <path d="M230 95 C 300 120, 320 170, 360 205" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
                     <path d="M520 95 C 470 130, 460 170, 430 210" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
+                    {whiteboardStrokes.map((stroke, strokeIndex) => (
+                      <path key={`whiteboard-stroke-${strokeIndex}`} d={stroke} stroke="#7c3aed" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    ))}
+                    {whiteboardCurrentStroke && (
+                      <path d={whiteboardCurrentStroke} stroke="#7c3aed" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    )}
                   </svg>
+                  <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm px-2 py-1.5 flex items-center gap-1">
+                    <button type="button" onClick={() => showToast('Undo not available in demo')} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo"><Undo2 size={14} /></button>
+                    <button type="button" onClick={() => showToast('Redo not available in demo')} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo"><Redo2 size={14} /></button>
+                    <button type="button" onClick={() => { setWhiteboardTool('pen'); showToast('Pen tool active'); }} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Pen"><PenTool size={14} /></button>
+                    <button type="button" onClick={() => { setWhiteboardTool('line'); showToast('Line tool active'); }} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'line' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Line"><Minus size={14} /></button>
+                    <button type="button" onClick={() => { setWhiteboardTool('text'); showToast('Text tool active'); }} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'text' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Text"><Type size={14} /></button>
+                    <button type="button" onClick={() => { setWhiteboardTool('link'); showToast('Connector tool active'); }} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'link' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Connector"><LinkIcon size={14} /></button>
+                    <button type="button" onClick={() => { setWhiteboardStrokes([]); setWhiteboardCurrentStroke(''); showToast('Whiteboard cleared'); }} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Clear board"><Trash2 size={14} /></button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -11088,6 +11165,7 @@ Rules:
         )}
 
         {/* Bottom Status Bar */}
+        {activeRightTab !== 'whiteboard' && (
         <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
           <div className="flex items-center gap-6">
             <span title="Real-time document stats">{documentStats.words} words - {documentStats.characters} characters</span>
@@ -11143,6 +11221,7 @@ Rules:
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {!shareModalOpen && rightSidebarOpen && (
