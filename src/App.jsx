@@ -13,8 +13,8 @@ import {
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus,
-  Square, Circle, Diamond, Triangle, Shapes, StickyNote, PencilLine, Palette,
-  Hand, Eraser, MousePointer2, Lasso, Bot, Highlighter
+  Square, Circle, Diamond, Triangle, Shapes, StickyNote, PencilLine,
+  Hand, Eraser, MousePointer2, Bot, Highlighter
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -346,7 +346,7 @@ export default function App() {
     { key: 'ballpoint', label: 'Ballpoint pen', stroke: '#1f2937', width: 1.9, icon: PencilLine },
     { key: 'pencil', label: 'Pencil', stroke: '#52525b', width: 1.5, icon: PencilLine },
     { key: 'marker', label: 'Marker', stroke: '#0f766e', width: 3.8, icon: PenTool },
-    { key: 'highlighter', label: 'Highlighter', stroke: '#ca8a04', width: 6.2, opacity: 0.42, icon: Palette },
+    { key: 'highlighter', label: 'Highlighter', stroke: '#ca8a04', width: 6.2, opacity: 0.42, icon: Highlighter },
     { key: 'calligraphy', label: 'Calligraphy pen', stroke: '#7c2d12', width: 3.4, icon: PenTool },
   ];
   const whiteboardShapePresets = [
@@ -11204,21 +11204,7 @@ Rules:
                     </div>
                     );
                   })}
-                  <div className="absolute top-8 left-10 bg-amber-100 border border-amber-200 rounded-xl px-4 py-3 shadow-sm w-56">
-                    <p className="text-xs font-semibold text-amber-900">Vision</p>
-                    <p className="mt-1 text-xs text-amber-800">Launch AI-native workspace for teams.</p>
-                  </div>
-                  <div className="absolute top-40 left-72 bg-emerald-100 border border-emerald-200 rounded-xl px-4 py-3 shadow-sm w-52">
-                    <p className="text-xs font-semibold text-emerald-900">Go-to-market</p>
-                    <p className="mt-1 text-xs text-emerald-800">Creators, founders, and product teams.</p>
-                  </div>
-                  <div className="absolute top-24 right-24 bg-violet-100 border border-violet-200 rounded-xl px-4 py-3 shadow-sm w-52">
-                    <p className="text-xs font-semibold text-violet-900">Core value</p>
-                    <p className="mt-1 text-xs text-violet-800">Compose, plan, and execute in one flow.</p>
-                  </div>
                   <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                    <path d="M230 95 C 300 120, 320 170, 360 205" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
-                    <path d="M520 95 C 470 130, 460 170, 430 210" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
                     {whiteboardShapes.map((shape, shapeIndex) => renderWhiteboardShape(shape, `whiteboard-shape-${shapeIndex}`))}
                     {whiteboardStrokes.map((stroke, strokeIndex) => (
                       <path
@@ -11271,15 +11257,7 @@ Rules:
                     <button type="button" onClick={handleWhiteboardUndo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo (Ctrl+Z)"><Undo2 size={15} /></button>
                     <button type="button" onClick={handleWhiteboardRedo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo (Ctrl+Shift+Z)"><Redo2 size={15} /></button>
                     <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                    <button type="button" onClick={() => activateWhiteboardTool('pen')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' && whiteboardPenVariant !== 'highlighter' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Pen"><PenTool size={15} /></button>
                     <button type="button" onClick={() => { activateWhiteboardTool('pen'); setWhiteboardPenVariant('highlighter'); showToast('Highlighter active'); }} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' && whiteboardPenVariant === 'highlighter' ? 'bg-yellow-100 text-yellow-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Highlighter"><Highlighter size={15} /></button>
-                    <button type="button" onClick={() => activateWhiteboardTool('eraser')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'eraser' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Eraser"><Eraser size={15} /></button>
-                    <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                    <button type="button" onClick={() => activateWhiteboardTool('shapes')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'shapes' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Shapes"><Shapes size={15} /></button>
-                    <button type="button" onClick={() => activateWhiteboardTool('sticky')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'sticky' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Sticky note"><StickyNote size={15} /></button>
-                    <button type="button" onClick={() => activateWhiteboardTool('text')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'text' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Text"><Type size={15} /></button>
-                    <button type="button" onClick={() => activateWhiteboardTool('link')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'link' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Connector"><LinkIcon size={15} /></button>
-                    <button type="button" onClick={() => activateWhiteboardTool('select')} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'select' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Smart select / lasso"><Lasso size={15} /></button>
                     <div className="w-px h-5 bg-gray-200 mx-0.5" />
                     <button type="button" onClick={() => showToast('Collaboration: invite collaborators from the Rooms panel')} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Collaboration"><Users size={15} /></button>
                     <div className="relative">
