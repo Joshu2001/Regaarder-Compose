@@ -338,6 +338,7 @@ export default function App() {
   const shapeResizeRef = useRef(null);
   const panDragRef = useRef(null);
   const eraserActiveRef = useRef(false);
+  const eraserLastPointRef = useRef(null);
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
@@ -677,6 +678,128 @@ export default function App() {
     };
   };
 
+  const applyEraserToStroke = (stroke, x, y, radius) => {
+    const path = typeof stroke === 'string' ? stroke : stroke.path;
+    const points = getPathPoints(path);
+    if (!points.length) {
+      return [];
+    }
+
+    const segments = [];
+    let current = [];
+    points.forEach((point) => {
+      const shouldErase = Math.hypot(point.x - x, point.y - y) <= radius;
+      if (shouldErase) {
+        if (current.length > 1) {
+          segments.push(current);
+        }
+        current = [];
+        return;
+      }
+      current.push(point);
+    });
+    if (current.length > 1) {
+      segments.push(current);
+    }
+
+    const baseStroke = typeof stroke === 'string'
+      ? { stroke: '#7c3aed', width: 2.5, opacity: 1 }
+      : { stroke: stroke.stroke, width: stroke.width, opacity: stroke.opacity };
+
+    return segments.map((segment) => ({
+      ...baseStroke,
+      path: `M ${segment[0].x} ${segment[0].y}${segment.slice(1).map((p) => ` L ${p.x} ${p.y}`).join('')}`,
+    }));
+  };
+
+  const applyEraserToShape = (shape, x, y, amount = 8, radius = 10) => {
+    if (!shape || !isPointNearShape(shape, x, y, radius)) {
+      return shape;
+    }
+
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      const dx = (shape.x2 ?? 0) - (shape.x1 ?? 0);
+      const dy = (shape.y2 ?? 0) - (shape.y1 ?? 0);
+      const len = Math.hypot(dx, dy);
+      if (len <= amount + 4) {
+        return null;
+      }
+      const nx = dx / len;
+      const ny = dy / len;
+      return {
+        ...shape,
+        x2: (shape.x2 ?? 0) - nx * amount,
+        y2: (shape.y2 ?? 0) - ny * amount,
+      };
+    }
+
+    const width = Math.max(1, (shape.width ?? 0) - amount);
+    const height = Math.max(1, (shape.height ?? 0) - amount);
+    if (width < 14 || height < 14) {
+      return null;
+    }
+
+    return {
+      ...shape,
+      x: (shape.x ?? 0) + amount / 2,
+      y: (shape.y ?? 0) + amount / 2,
+      width,
+      height,
+    };
+  };
+
+  const applyEraserToWidget = (widget, x, y, amount = 2, radius = 12) => {
+    if (!isPointNearWidget(widget, x, y, radius)) {
+      return widget;
+    }
+
+    if ((widget.type === 'sticky' || widget.type === 'text') && String(widget.text || '').length) {
+      const trimmed = String(widget.text || '').slice(0, Math.max(0, String(widget.text || '').length - amount));
+      return {
+        ...widget,
+        text: trimmed,
+      };
+    }
+
+    const nextOpacity = Math.max(0, Number(widget.opacity ?? 100) - 8);
+    if (nextOpacity <= 0) {
+      return null;
+    }
+
+    return {
+      ...widget,
+      opacity: nextOpacity,
+    };
+  };
+
+  const eraseWhiteboardAtPoint = (x, y) => {
+    const last = eraserLastPointRef.current;
+    const dx = last ? x - last.x : 0;
+    const dy = last ? y - last.y : 0;
+    const distance = Math.hypot(dx, dy);
+    const steps = Math.max(1, Math.ceil(distance / 6));
+    const points = Array.from({ length: steps }, (_, index) => {
+      const t = (index + 1) / steps;
+      return {
+        x: (last ? last.x : x) + dx * t,
+        y: (last ? last.y : y) + dy * t,
+      };
+    });
+
+    points.forEach((point) => {
+      setWhiteboardStrokes((prev) => prev.flatMap((stroke) => applyEraserToStroke(stroke, point.x, point.y, 9)));
+      setWhiteboardShapes((prev) => prev
+        .map((shape) => applyEraserToShape(shape, point.x, point.y, 8, 9))
+        .filter(Boolean));
+      setWhiteboardComments((prev) => prev.filter((comment) => Math.hypot(comment.x - point.x, comment.y - point.y) > 10));
+      setWhiteboardWidgets((prev) => prev
+        .map((widget) => applyEraserToWidget(widget, point.x, point.y, 2, 12))
+        .filter(Boolean));
+    });
+
+    eraserLastPointRef.current = { x, y };
+  };
+
   const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*•]\s+|\d+\.\s+)/, '');
 
   const toggleWidgetList = (widgetId, nextType) => {
@@ -725,6 +848,21 @@ export default function App() {
     const trianglePoints = `${shape.x + shape.width / 2},${shape.y} ${shape.x + shape.width},${shape.y + shape.height} ${shape.x},${shape.y + shape.height}`;
     return <polygon {...sharedProps} points={trianglePoints} />;
   };
+
+  useEffect(() => {
+    if (selectedWidgetId && !whiteboardWidgets.some((widget) => widget.id === selectedWidgetId)) {
+      setSelectedWidgetId(null);
+      setWhiteboardEditingWidgetId(null);
+      setWhiteboardStickyColorMenuFor(null);
+      setWhiteboardMoreTextMenuFor(null);
+    }
+  }, [selectedWidgetId, whiteboardWidgets]);
+
+  useEffect(() => {
+    if (selectedShapeIndex !== null && (selectedShapeIndex < 0 || selectedShapeIndex >= whiteboardShapes.length)) {
+      setSelectedShapeIndex(null);
+    }
+  }, [selectedShapeIndex, whiteboardShapes.length]);
 
   useEffect(() => {
     const handleWhiteboardEscape = (event) => {
@@ -2041,6 +2179,13 @@ export default function App() {
     appendedSections,
     docBodyHtml,
     isBlankDocument,
+    whiteboardTool,
+    whiteboardPenVariant,
+    whiteboardShapeVariant,
+    whiteboardStrokes,
+    whiteboardShapes,
+    whiteboardWidgets,
+    whiteboardComments,
   });
 
   const applySnapshot = (snapshot) => {
@@ -2055,6 +2200,22 @@ export default function App() {
     setAppendedSections(Array.isArray(snapshot.appendedSections) ? snapshot.appendedSections : []);
     setDocBodyHtml(snapshot.docBodyHtml || '');
     setIsBlankDocument(Boolean(snapshot.isBlankDocument));
+    if (typeof snapshot.whiteboardTool === 'string') {
+      setWhiteboardTool(snapshot.whiteboardTool);
+    }
+    if (typeof snapshot.whiteboardPenVariant === 'string') {
+      setWhiteboardPenVariant(snapshot.whiteboardPenVariant);
+    }
+    if (typeof snapshot.whiteboardShapeVariant === 'string') {
+      setWhiteboardShapeVariant(snapshot.whiteboardShapeVariant);
+    }
+    setWhiteboardStrokes(Array.isArray(snapshot.whiteboardStrokes) ? snapshot.whiteboardStrokes : []);
+    setWhiteboardShapes(Array.isArray(snapshot.whiteboardShapes) ? snapshot.whiteboardShapes : []);
+    setWhiteboardWidgets(Array.isArray(snapshot.whiteboardWidgets) ? snapshot.whiteboardWidgets : []);
+    setWhiteboardComments(Array.isArray(snapshot.whiteboardComments) ? snapshot.whiteboardComments : []);
+    setSelectedWidgetId(null);
+    setSelectedShapeIndex(null);
+    setWhiteboardEditingWidgetId(null);
 
     setTimeout(() => {
       historyMuteRef.current = false;
@@ -2083,7 +2244,21 @@ export default function App() {
     if (replayIndex === null) {
       setReplayIndex(historyPastRef.current.length - 1);
     }
-  }, [docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
+  }, [
+    docTitle,
+    docSubtitle,
+    initiatives,
+    appendedSections,
+    docBodyHtml,
+    isBlankDocument,
+    whiteboardTool,
+    whiteboardPenVariant,
+    whiteboardShapeVariant,
+    whiteboardStrokes,
+    whiteboardShapes,
+    whiteboardWidgets,
+    whiteboardComments,
+  ]);
 
   useEffect(() => {
     if (!isReplayPlaying || replayIndex === null || !replayTimeline.length) {
@@ -11093,6 +11268,8 @@ Rules:
                       }
                       if (whiteboardTool === 'eraser') {
                         eraserActiveRef.current = true;
+                        eraserLastPointRef.current = { x: startX, y: startY };
+                        eraseWhiteboardAtPoint(startX, startY);
                         event.currentTarget.setPointerCapture(event.pointerId);
                         return;
                       }
@@ -11137,26 +11314,7 @@ Rules:
                         return;
                       }
                       if (whiteboardTool === 'eraser' && eraserActiveRef.current) {
-                        const ERASE_RADIUS = 20;
-                        setWhiteboardStrokes((prev) => prev.filter((stroke) => !isPointNearStroke(stroke, x, y, ERASE_RADIUS)));
-                        setWhiteboardShapes((prev) => {
-                          const next = prev.filter((shape) => !isPointNearShape(shape, x, y, ERASE_RADIUS));
-                          if (next.length !== prev.length) {
-                            setSelectedShapeIndex(null);
-                          }
-                          return next;
-                        });
-                        setWhiteboardComments((prev) => prev.filter((comment) => Math.hypot(comment.x - x, comment.y - y) > ERASE_RADIUS + 6));
-                        setWhiteboardWidgets((prev) => {
-                          const next = prev.filter((widget) => !isPointNearWidget(widget, x, y, ERASE_RADIUS));
-                          if (next.length !== prev.length) {
-                            setSelectedWidgetId(null);
-                            setWhiteboardEditingWidgetId(null);
-                            setWhiteboardStickyColorMenuFor(null);
-                            setWhiteboardMoreTextMenuFor(null);
-                          }
-                          return next;
-                        });
+                        eraseWhiteboardAtPoint(x, y);
                         return;
                       }
                       if (!isWhiteboardDrawing || (whiteboardTool !== 'pen' && whiteboardTool !== 'shapes')) return;
@@ -11193,6 +11351,7 @@ Rules:
                       }
                       if (whiteboardTool === 'eraser') {
                         eraserActiveRef.current = false;
+                        eraserLastPointRef.current = null;
                         return;
                       }
                       if (whiteboardTool === 'sticky' && whiteboardStickyDragStart) {
@@ -11244,6 +11403,7 @@ Rules:
                       }
                       if (whiteboardTool === 'eraser') {
                         eraserActiveRef.current = false;
+                        eraserLastPointRef.current = null;
                         return;
                       }
                       if (whiteboardTool === 'sticky') {
@@ -11326,12 +11486,12 @@ Rules:
                         width: `${widget.width || 170}px`,
                         height: `${widget.height || 120}px`,
                         backgroundColor: widget.type === 'sticky' ? widget.color || '#fde047' : undefined,
-                        cursor: whiteboardTool === 'select' ? (isSelected ? 'move' : 'pointer') : undefined,
+                        cursor: ['eraser', 'hand'].includes(whiteboardTool) ? undefined : (isSelected ? 'move' : 'pointer'),
                         userSelect: 'none',
                         touchAction: 'none',
                       }}
                       onPointerDown={(e) => {
-                        if (whiteboardTool !== 'select') return;
+                        if (['eraser', 'hand'].includes(whiteboardTool)) return;
                         e.stopPropagation();
                         setSelectedWidgetId(widget.id);
                         setSelectedShapeIndex(null);
@@ -11368,10 +11528,10 @@ Rules:
                           }}
                           className="w-full h-full bg-transparent resize-none outline-none text-[12px] text-amber-950 placeholder:text-amber-800/60 leading-snug"
                           placeholder="Type sticky note..."
-                          style={{ cursor: whiteboardTool === 'select' ? 'text' : undefined }}
+                          style={{ cursor: ['eraser', 'hand'].includes(whiteboardTool) ? undefined : 'text' }}
                           onPointerDown={(e) => {
                             e.stopPropagation();
-                            if (whiteboardTool === 'select') {
+                            if (!['eraser', 'hand'].includes(whiteboardTool)) {
                               setSelectedWidgetId(widget.id);
                               setSelectedShapeIndex(null);
                             }
@@ -11392,7 +11552,7 @@ Rules:
                           className="w-full h-full bg-transparent resize-none outline-none placeholder:text-violet-700/60 leading-relaxed"
                           placeholder="Type your text..."
                           style={{
-                            cursor: whiteboardTool === 'select' ? 'text' : undefined,
+                            cursor: ['eraser', 'hand'].includes(whiteboardTool) ? undefined : 'text',
                             fontFamily: widget.fontFamily || 'Calibri',
                             fontSize: `${widget.fontSize || 14}px`,
                             fontWeight: widget.isBold ? 700 : 500,
@@ -11405,7 +11565,7 @@ Rules:
                           }}
                           onPointerDown={(e) => {
                             e.stopPropagation();
-                            if (whiteboardTool === 'select') {
+                            if (!['eraser', 'hand'].includes(whiteboardTool)) {
                               setSelectedWidgetId(widget.id);
                               setSelectedShapeIndex(null);
                             }
@@ -11417,7 +11577,7 @@ Rules:
                           <p className="mt-1 text-[11px] text-gray-700 leading-snug">{widget.body}</p>
                         </>
                       )}
-                      {isSelected && whiteboardTool === 'select' && (
+                      {isSelected && !['eraser', 'hand'].includes(whiteboardTool) && (
                         <>
                           {[
                             { corner: 'tl', style: { top: -5, left: -5, cursor: 'nwse-resize' }, dw: -1, dh: -1, ox: 1, oy: 1 },
@@ -11459,7 +11619,7 @@ Rules:
                           ))}
                         </>
                       )}
-                      {isSelected && whiteboardTool === 'select' && (
+                      {isSelected && !['eraser', 'hand'].includes(whiteboardTool) && (
                         <div
                           className="absolute left-1/2 -translate-x-1/2 z-30 rounded-xl border border-gray-200 bg-white shadow-sm px-2 py-1.5"
                           style={{ top: `${(widget.height || 120) + 14}px` }}
@@ -11649,7 +11809,7 @@ Rules:
                     </div>
                     );
                   })}
-                  {whiteboardTool === 'select' && whiteboardShapes.map((shape, shapeIndex) => {
+                  {!['eraser', 'hand'].includes(whiteboardTool) && whiteboardShapes.map((shape, shapeIndex) => {
                     const bounds = getShapeBounds(shape);
                     const isShapeSelected = selectedShapeIndex === shapeIndex;
                     const hitPadding = 8;
