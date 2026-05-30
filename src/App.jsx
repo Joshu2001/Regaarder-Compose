@@ -12,7 +12,7 @@ import {
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
-  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus,
+  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote, PencilLine,
   Hand, Eraser, MousePointer2, Bot, Highlighter
 } from 'lucide-react';
@@ -8635,8 +8635,16 @@ Rules:
   };
 
   if (productMode === 'dm') {
+    const directMessages = ['Sarah Johnson', 'Alex Morgan', 'Michael Chen'];
+    const teamChannels = ['Marketing', 'Engineering', 'Design', 'General'];
+    const aiConversations = ['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent'];
+    const activeThreadFiles = dmFiles.filter((file) => file.threadId === activeDmThread?.id).slice(0, 3);
+    const activeThreadDecisions = dmDecisions.filter((item) => item.threadId === activeDmThread?.id).slice(0, 3);
+    const projectCount = dmThreads.length;
+    const currentUserShort = 'J';
+
     return (
-      <div className={`flex h-screen bg-[#f4f5fb] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div className={`flex h-screen bg-[#f5f6fb] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
           <div className="absolute top-5 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
             <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
@@ -8644,260 +8652,363 @@ Rules:
           </div>
         )}
 
-        <aside className="w-[252px] shrink-0 border-r border-gray-200/80 bg-white/85 backdrop-blur-sm p-4 flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <div className="font-semibold text-gray-900">Regaarder</div>
-            <button type="button" onClick={openCreationPicker} className="h-7 px-2 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-gray-50">New</button>
+        <aside className="w-[250px] shrink-0 border-r border-gray-200 bg-white flex flex-col">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <div className="text-[19px] font-semibold text-slate-900">Regaarder</div>
+              <button type="button" className="text-gray-400 hover:text-gray-600">
+                <ChevronDown size={16} />
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={createComposeExperience}
-            className="w-full rounded-lg bg-violet-600 text-white text-sm font-medium py-2 mb-4 hover:bg-violet-700"
-          >
-            New message
-          </button>
-          <div className="text-[11px] uppercase tracking-wide text-gray-400 px-1 mb-2">Projects</div>
-          <div className="space-y-1 overflow-y-auto thin-scrollbar">
-            {dmThreads.map((thread) => {
-              const active = activeDmThread?.id === thread.id;
-              return (
-                <button
-                  key={thread.id}
-                  type="button"
-                  onClick={() => setDmActiveThreadId(thread.id)}
-                  className={`w-full text-left rounded-xl px-3 py-2.5 border transition-colors ${active ? 'border-violet-200 bg-violet-50/80' : 'border-transparent hover:border-gray-200 hover:bg-gray-50'}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-gray-800 truncate">{thread.title}</span>
-                    {thread.unread ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700">{thread.unread}</span> : null}
-                  </div>
-                  <div className="text-[11px] text-gray-500 mt-0.5">{thread.description}</div>
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-auto pt-3">
-            <button
-              type="button"
-              onClick={createComposeExperience}
-              className="w-full rounded-lg border border-gray-200 text-xs py-2 text-gray-600 hover:bg-gray-50"
-            >
-              Back to Compose
+
+          <div className="px-4 pt-4 pb-3">
+            <button type="button" className="w-full h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium flex items-center justify-between px-3">
+              <span>New message</span>
+              <KeyRound size={14} />
             </button>
+          </div>
+
+          <div className="px-3 space-y-1 text-[14px]">
+            {[
+              { label: 'Inbox', count: 6 },
+              { label: 'Threads', count: 0 },
+              { label: 'Mentions', count: 2 },
+              { label: 'Saved', count: 0 },
+              { label: 'AI Summary', count: 0 },
+            ].map((item) => (
+              <button key={item.label} type="button" className="w-full h-8 px-2 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 rounded border border-slate-300" />
+                  {item.label}
+                </span>
+                {item.count > 0 ? <span className="text-[11px] font-semibold text-slate-400">{item.count}</span> : <span />}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 overflow-y-auto thin-scrollbar px-3 pt-4 pb-3 space-y-4">
+            <div>
+              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 flex items-center justify-between">
+                <span>Direct Messages</span>
+                <Plus size={14} />
+              </div>
+              <div className="space-y-1">
+                {directMessages.map((name) => (
+                  <button key={name} type="button" className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="truncate">{name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 flex items-center justify-between">
+                <span>Teams</span>
+                <Plus size={14} />
+              </div>
+              <div className="space-y-1">
+                {teamChannels.map((team, index) => (
+                  <button key={team} type="button" className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
+                    <span className={`w-4 h-4 rounded text-white text-[9px] font-bold flex items-center justify-center ${index === 0 ? 'bg-violet-500' : index === 1 ? 'bg-sky-500' : index === 2 ? 'bg-fuchsia-500' : 'bg-emerald-500'}`}>{team.charAt(0)}</span>
+                    <span className="truncate">{team}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 flex items-center justify-between">
+                <span>Projects</span>
+                <Plus size={14} />
+              </div>
+              <div className="space-y-1">
+                {dmThreads.map((thread) => {
+                  const active = activeDmThread?.id === thread.id;
+                  return (
+                    <button
+                      key={thread.id}
+                      type="button"
+                      onClick={() => setDmActiveThreadId(thread.id)}
+                      className={`w-full h-8 px-2 rounded-lg flex items-center justify-between text-left ${active ? 'bg-violet-50 text-violet-700' : 'text-slate-700 hover:bg-slate-50'}`}
+                    >
+                      <span className="truncate">{thread.title}</span>
+                      {thread.unread > 0 ? <span className="w-1.5 h-1.5 rounded-full bg-violet-500" /> : <span />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 flex items-center justify-between">
+                <span>AI Conversations</span>
+                <Plus size={14} />
+              </div>
+              <div className="space-y-1">
+                {aiConversations.map((item, index) => (
+                  <button key={item} type="button" className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center justify-between text-left">
+                    <span className="truncate">{item}</span>
+                    {index === 0 ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> : <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 p-3 flex items-center justify-between">
+            <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-sm font-semibold flex items-center justify-center">{currentUserShort}</div>
+            <div className="flex items-center gap-2 text-slate-400">
+              <Clock size={15} />
+              <Settings size={15} />
+            </div>
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0 flex">
-          <section className="flex-1 min-w-0 flex flex-col border-r border-gray-200/80 bg-[#fcfcff]">
-            <div className="h-16 px-6 border-b border-gray-200 bg-white/90 flex items-center justify-between">
+        <main className="flex-1 min-w-0 flex bg-[#f7f8fc]">
+          <section className="flex-1 min-w-0 flex flex-col border-r border-gray-200">
+            <div className="h-[74px] bg-white border-b border-gray-200 px-6 flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">{activeDmThread?.title || 'Team Thread'}</h2>
-                <p className="text-xs text-gray-500">{activeDmThread?.members || 0} members • searchable log enabled</p>
+                <div className="text-[29px] leading-none">🚀 <span className="text-2xl font-semibold text-slate-900">{activeDmThread?.title || 'Beta Launch'}</span></div>
+                <div className="text-sm text-slate-400 mt-1">{activeDmThread?.members || 12} members | Add a description</div>
               </div>
-              <div className="w-[380px] max-w-[45%]">
-                <input
-                  value={dmSearchQuery}
-                  onChange={(event) => setDmSearchQuery(event.target.value)}
-                  placeholder="Search all conversation, files, and decisions"
-                  className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none focus:border-violet-300"
-                />
+              <div className="flex items-center gap-3 w-[440px] max-w-[48%]">
+                <div className="relative flex-1">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={dmSearchQuery}
+                    onChange={(event) => setDmSearchQuery(event.target.value)}
+                    placeholder={`Search in ${activeDmThread?.title || 'Beta Launch'}`}
+                    className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-300"
+                  />
+                </div>
+                <button type="button" className="text-slate-400 hover:text-slate-600"><Video size={16} /></button>
+                <button type="button" className="text-slate-400 hover:text-slate-600"><Users size={16} /></button>
+                <button type="button" className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={16} /></button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3 thin-scrollbar">
-              {activeDmMessages.map((message) => (
-                <article key={message.id} className="rounded-2xl border border-gray-200 bg-white p-3.5 shadow-[0_10px_28px_-24px_rgba(15,23,42,0.8)]">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold text-gray-900">{message.author}</div>
-                    <div className="text-[11px] text-gray-400">{formatDmRelative(message.createdAt)}</div>
-                  </div>
-                  <p className="text-sm text-gray-700 mt-1 leading-relaxed">{message.text}</p>
-                  {Array.isArray(message.files) && message.files.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {message.files.map((file) => (
-                        <span key={file.id} className="text-[11px] rounded-lg border border-violet-100 bg-violet-50 text-violet-700 px-2 py-1">{file.name}</span>
-                      ))}
-                    </div>
-                  )}
-                  {Array.isArray(message.decisions) && message.decisions.length > 0 && (
-                    <div className="mt-2 text-[11px] rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 px-2 py-1.5">
-                      Decision captured: {message.decisions[0]}
-                    </div>
-                  )}
-                </article>
+            <div className="h-11 bg-white border-b border-gray-200 px-6 flex items-center gap-7 text-[14px]">
+              {['Chat', 'Threads', 'Highlights', 'AI Summary'].map((tab, index) => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={`h-full border-b-2 transition-colors ${index === 0 ? 'border-violet-500 text-violet-600 font-semibold' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                >
+                  {tab}
+                </button>
               ))}
             </div>
 
-            <div className="border-t border-gray-200 bg-white px-6 py-4">
-              <div className="rounded-2xl border border-gray-200 bg-gray-50 px-3 py-3 flex items-end gap-2">
+            <div className="px-6 pt-3 pb-2 border-b border-gray-200 bg-[#f7f8fc]">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Sparkles size={14} className="text-violet-500" />
+                  <div>
+                    <div className="text-xs text-slate-500">Pinned by Sarah</div>
+                    <div className="text-sm text-slate-700">Product Hunt launch is scheduled for May 15! Let&apos;s make it amazing 🚀</div>
+                  </div>
+                </div>
+                <button type="button" className="h-8 px-3 rounded-lg border border-violet-200 text-violet-600 text-xs font-semibold bg-violet-50">View details</button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto thin-scrollbar px-6 pt-4 pb-5 space-y-4 bg-[#f7f8fc]">
+              <div className="w-fit mx-auto rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-500">Today</div>
+              {activeDmMessages.map((message, index) => {
+                const isAssistant = message.role === 'assistant';
+                const initials = message.author.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2).toUpperCase();
+                const bubbleColor = message.role === 'you'
+                  ? 'bg-[#eef2ff] border-violet-200'
+                  : isAssistant
+                    ? 'bg-[#f3f0ff] border-violet-200'
+                    : 'bg-white border-slate-200';
+
+                return (
+                  <article key={message.id} className="flex items-start gap-3">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold ${isAssistant ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-700'}`}>
+                      {isAssistant ? 'Orb' : initials}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-semibold text-slate-900">{message.author}</span>
+                        {isAssistant ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600 font-semibold">APP</span> : null}
+                        <span className="text-xs text-slate-400">{formatDmRelative(message.createdAt)}</span>
+                      </div>
+                      <div className={`mt-1 rounded-xl border px-3 py-2.5 text-[15px] text-slate-700 ${bubbleColor}`}>
+                        {message.text}
+
+                        {Array.isArray(message.files) && message.files.length > 0 && (
+                          <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 max-w-[290px] flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <FileText size={15} className="text-violet-600" />
+                              <div>
+                                <div className="text-sm font-medium text-slate-700">{message.files[0].name}</div>
+                                <div className="text-[11px] text-slate-400">Updated recently</div>
+                              </div>
+                            </div>
+                            <button type="button" className="text-xs text-violet-600 font-semibold">Open</button>
+                          </div>
+                        )}
+
+                        {isAssistant && (
+                          <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm text-slate-700">
+                            <div className="font-semibold mb-1">Summary</div>
+                            <ul className="list-disc pl-5 space-y-0.5 text-sm text-slate-700">
+                              <li>Landing page v2 is ready for review.</li>
+                              <li>Team feedback is in the document.</li>
+                              <li>Next step: Final approval from design team.</li>
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-400">
+                        <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🔥 {index === 0 ? 3 : 2}</span>
+                        <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🙌 {index === 0 ? 2 : 0}</span>
+                        <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">☺</span>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="p-5 border-t border-gray-200 bg-white">
+              <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
                 <textarea
                   value={dmComposerValue}
                   onChange={(event) => setDmComposerValue(event.target.value)}
-                  placeholder="Message team, log a decision, or share a file update..."
+                  placeholder={`Message #${(activeDmThread?.title || 'beta-launch').replace(/\s+/g, '-').toLowerCase()}`}
                   rows={2}
-                  className="flex-1 resize-none bg-transparent border-none outline-none text-sm text-gray-700 placeholder:text-gray-400"
+                  className="w-full resize-none bg-transparent outline-none border-none text-sm text-slate-700 placeholder:text-slate-400"
                 />
-                <button type="button" onClick={quickAttachDmFile} className="h-9 px-3 rounded-lg border border-gray-200 text-xs text-gray-600 hover:bg-white">Attach</button>
-                <button type="button" onClick={sendDmMessage} className="h-9 px-4 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700">Send</button>
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-slate-400">
+                    <button type="button" className="hover:text-violet-600"><Plus size={16} /></button>
+                    <button type="button" className="hover:text-violet-600"><AlignLeft size={15} /></button>
+                    <button type="button" className="hover:text-violet-600"><Smile size={15} /></button>
+                    <button type="button" className="hover:text-violet-600"><Paperclip size={15} /></button>
+                    <button type="button" className="hover:text-violet-600"><Clock size={15} /></button>
+                  </div>
+                  <button type="button" onClick={sendDmMessage} className="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700">
+                    <Send size={14} />
+                  </button>
+                </div>
               </div>
             </div>
           </section>
 
-          <aside className="w-[360px] shrink-0 bg-white/90 p-4 overflow-y-auto thin-scrollbar">
-            <div className="rounded-xl border border-gray-200 bg-white p-3 mb-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Intelligence Layer</div>
-              <p className="text-sm text-gray-700 leading-relaxed">SLACK: Searchable Log of All Conversation & Knowledge. Every message, file, and decision is archived and queryable instantly.</p>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-lg bg-violet-50 border border-violet-100 py-2">
-                  <div className="text-base font-semibold text-violet-700">{dmMessages.length}</div>
-                  <div className="text-[10px] text-violet-600">Messages</div>
+          <aside className="w-[360px] shrink-0 bg-white p-4 overflow-y-auto thin-scrollbar">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-2xl">🚀 <span className="text-3xl font-semibold text-slate-900">{activeDmThread?.title || 'Beta Launch'}</span></div>
+                  <div className="text-xs text-slate-400 mt-1">Private project</div>
                 </div>
-                <div className="rounded-lg bg-emerald-50 border border-emerald-100 py-2">
-                  <div className="text-base font-semibold text-emerald-700">{dmFiles.length}</div>
-                  <div className="text-[10px] text-emerald-600">Files</div>
-                </div>
-                <div className="rounded-lg bg-amber-50 border border-amber-100 py-2">
-                  <div className="text-base font-semibold text-amber-700">{dmDecisions.length}</div>
-                  <div className="text-[10px] text-amber-600">Decisions</div>
-                </div>
+                <button type="button" className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
               </div>
-            </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-3 mb-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Decision Log</div>
-              <div className="space-y-2 max-h-44 overflow-y-auto thin-scrollbar">
-                {dmDecisions.filter((item) => item.threadId === activeDmThread?.id).slice(0, 8).map((decision) => (
-                  <div key={decision.id} className="rounded-lg border border-amber-100 bg-amber-50 px-2 py-1.5">
-                    <div className="text-xs text-amber-800">{decision.summary}</div>
-                    <div className="text-[10px] text-amber-600 mt-1">{decision.by} • {formatDmRelative(decision.createdAt)}</div>
-                  </div>
+              <div className="mt-3 grid grid-cols-6 gap-2 text-[10px] text-slate-500">
+                {['Overview', 'Tasks', 'Files', 'Meetings', 'Docs', 'People'].map((tab, index) => (
+                  <div key={tab} className={`text-center pb-1 border-b-2 ${index === 0 ? 'border-violet-500 text-violet-600 font-semibold' : 'border-transparent'}`}>{tab}</div>
                 ))}
               </div>
+
+              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="text-sm font-semibold text-slate-800">About this project</div>
+                <p className="text-sm text-slate-500 mt-1">Coordinating everything for our beta launch on May 15.</p>
+                <button type="button" className="mt-2 text-xs text-violet-600 font-medium">Show more</button>
+              </div>
             </div>
 
-            <div className="rounded-xl border border-gray-200 bg-white p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">Deep Search Results</div>
-                <div className="text-[11px] text-gray-400">{dmSearchResults.length}</div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-800">Tasks</div>
+                <button type="button" className="text-xs text-violet-600 font-medium">View all</button>
               </div>
-              <div className="space-y-2 max-h-[420px] overflow-y-auto thin-scrollbar">
-                {dmSearchResults.map((entry) => (
-                  <div key={entry.id} className="rounded-lg border border-gray-200 px-2 py-1.5">
-                    <div className="text-[10px] uppercase tracking-wide text-gray-400">{entry.type}</div>
-                    <div className="text-[11px] font-semibold text-gray-700 mt-0.5">{entry.threadTitle || activeDmThread?.title}</div>
-                    <div className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-                      {entry.text || entry.fileName || entry.decision || 'Archived record'}
+              <div className="mt-3 space-y-2.5 text-sm text-slate-700">
+                {[
+                  { name: 'Review landing page', tag: 'High', when: 'Today' },
+                  { name: 'Finalize Product Hunt copy', tag: 'Medium', when: 'Tomorrow' },
+                  { name: 'Create launch video', tag: 'Medium', when: 'May 14' },
+                ].map((task) => (
+                  <div key={task.name} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-4 h-4 rounded border border-slate-300" />
+                      <span className="truncate">{task.name}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600">{task.tag}</span>
                     </div>
-                    <div className="text-[10px] text-gray-400 mt-1">{entry.author || 'system'} • {formatDmRelative(entry.createdAt)}</div>
+                    <span className="text-xs text-slate-400">{task.when}</span>
                   </div>
                 ))}
               </div>
+              <button type="button" className="mt-2 text-xs text-violet-600">+ Add task</button>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-800">Files</div>
+                <button type="button" className="text-xs text-violet-600 font-medium">View all</button>
+              </div>
+              <div className="mt-3 space-y-2">
+                {activeThreadFiles.map((fileItem) => (
+                  <div key={fileItem.id} className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <FileText size={15} className="text-violet-600 mt-0.5" />
+                      <div className="min-w-0">
+                        <div className="text-sm text-slate-700 truncate">{fileItem.name}</div>
+                        <div className="text-xs text-slate-400">Updated {formatDmRelative(fileItem.updatedAt)}</div>
+                      </div>
+                    </div>
+                    <button type="button" className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={14} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-800">Upcoming Meetings</div>
+                <button type="button" className="text-xs text-violet-600 font-medium">View all</button>
+              </div>
+              <div className="mt-3 rounded-xl border border-slate-200 p-3 flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-slate-700">Launch Planning Meeting</div>
+                  <div className="text-xs text-slate-400">Tomorrow, 10:00 AM</div>
+                </div>
+                <div className="text-xs text-violet-600 font-semibold">+3</div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-800">People</div>
+                <button type="button" className="text-xs text-violet-600 font-medium">View all</button>
+              </div>
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                {['SJ', 'JD', 'AM', 'MC', 'OR'].map((name) => (
+                  <div key={name} className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center justify-center">{name}</div>
+                ))}
+                <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 text-[11px] font-semibold flex items-center justify-center">+7</div>
+              </div>
+              {activeThreadDecisions.length > 0 && (
+                <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50 p-2.5">
+                  <div className="text-[11px] font-semibold text-violet-700 uppercase tracking-wide mb-1">Recent Decision</div>
+                  <div className="text-xs text-violet-800">{activeThreadDecisions[0].summary}</div>
+                </div>
+              )}
             </div>
           </aside>
         </main>
 
-        <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
-          <div
-            onClick={createComposeExperience}
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all"><MessageCircle size={20} /></div>
-            <span className="text-[9px] font-semibold">Chat</span>
-          </div>
-
-          <div
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all bg-violet-100"><MessageSquare size={20} /></div>
-            <span className="text-[9px] font-semibold">DMs</span>
-          </div>
-
-          <div
-            onClick={createComposeExperience}
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all"><PenTool size={20} /></div>
-            <span className="text-[9px] font-semibold">Assist</span>
-          </div>
-
-          <div
-            onClick={createComposeExperience}
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all"><LayoutGrid size={20} /></div>
-            <span className="text-[9px] font-semibold">Whiteboard</span>
-          </div>
-
-          <div
-            onClick={createComposeExperience}
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all"><CheckSquare size={20} /></div>
-            <span className="text-[9px] font-semibold">Tasks</span>
-          </div>
-
-          <div
-            onClick={createComposeExperience}
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all"><Calendar size={20} /></div>
-            <span className="text-[9px] font-semibold">Schedule</span>
-          </div>
-
-          <div
-            onClick={createComposeExperience}
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all"><Users size={20} /></div>
-            <span className="text-[9px] font-semibold">People</span>
-          </div>
-
-          <div
-            onClick={createComposeExperience}
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all"><Database size={20} /></div>
-            <span className="text-[9px] font-semibold">Memory</span>
-          </div>
-
-          <div
-            onClick={createComposeExperience}
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all"><Cloud size={20} /></div>
-            <span className="text-[9px] font-semibold">Orb</span>
-          </div>
-
-          <div
-            onClick={() => {
-              createComposeExperience();
-              setActiveRightTab('room');
-              setRightSidebarOpen(true);
-            }}
-            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
-          >
-            <div className="p-2 rounded-xl transition-all"><MonitorPlay size={20} /></div>
-            <span className="text-[9px] font-semibold">Room</span>
-          </div>
-
-          <div
-            onClick={() => {
-              createComposeExperience();
-              setActiveRightTab('room');
-              setRightSidebarOpen(true);
-              setActiveMeetingStageTab('files');
-            }}
-            className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer"
-          >
-            <div className="p-2"><File size={20} /></div>
-            <span className="text-[9px] font-semibold">Files</span>
-          </div>
-
-          <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 cursor-pointer mt-auto">
-            <div className="p-2"><MoreHorizontal size={20} /></div>
-            <span className="text-[9px] font-semibold">More</span>
-          </div>
-        </div>
+        <button
+          type="button"
+          onClick={createComposeExperience}
+          className="absolute bottom-4 left-[270px] text-xs text-slate-500 hover:text-slate-700"
+        >
+          Back to Compose
+        </button>
       </div>
     );
   }
