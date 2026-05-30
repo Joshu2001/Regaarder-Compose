@@ -10415,6 +10415,47 @@ Rules:
 
         {/* Document Editor Content (Beautifully separated page area) */}
         <div className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
+          {activeRightTab === 'whiteboard' && (
+            <div className="absolute inset-0 z-30 p-6 md:p-8 bg-[#F7F7F9]">
+              <div className="h-full w-full rounded-[24px] border border-violet-100 bg-white shadow-[0_20px_60px_-30px_rgba(124,58,237,0.45)] overflow-hidden flex flex-col">
+                <div className="h-14 border-b border-gray-100 px-5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center">
+                      <PenTool size={15} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Whiteboard</p>
+                      <p className="text-[11px] text-gray-500">Brainstorm & map ideas</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => showToast('Shape tool ready')} className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Shapes</button>
+                    <button onClick={() => showToast('Sticky notes opened')} className="px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Sticky Notes</button>
+                    <button onClick={() => setActiveRightTab('tasks')} className="px-2.5 py-1.5 text-xs rounded-lg bg-violet-600 text-white hover:bg-violet-700">Convert to Tasks</button>
+                  </div>
+                </div>
+                <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#ececf6_1px,transparent_0)] bg-[size:24px_24px]">
+                  <div className="absolute top-8 left-10 bg-amber-100 border border-amber-200 rounded-xl px-4 py-3 shadow-sm w-56">
+                    <p className="text-xs font-semibold text-amber-900">Vision</p>
+                    <p className="mt-1 text-xs text-amber-800">Launch AI-native workspace for teams.</p>
+                  </div>
+                  <div className="absolute top-40 left-72 bg-emerald-100 border border-emerald-200 rounded-xl px-4 py-3 shadow-sm w-52">
+                    <p className="text-xs font-semibold text-emerald-900">Go-to-market</p>
+                    <p className="mt-1 text-xs text-emerald-800">Creators, founders, and product teams.</p>
+                  </div>
+                  <div className="absolute top-24 right-24 bg-violet-100 border border-violet-200 rounded-xl px-4 py-3 shadow-sm w-52">
+                    <p className="text-xs font-semibold text-violet-900">Core value</p>
+                    <p className="mt-1 text-xs text-violet-800">Compose, plan, and execute in one flow.</p>
+                  </div>
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                    <path d="M230 95 C 300 120, 320 170, 360 205" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
+                    <path d="M520 95 C 470 130, 460 170, 430 210" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className={activeRightTab === 'whiteboard' ? 'opacity-0 pointer-events-none select-none' : ''}>
           <div
             className="mx-auto"
             style={{
@@ -10935,8 +10976,9 @@ Rules:
           </div>
         </div>
         )}
+          </div>
 
-        {!isComposing && !shouldHideDictationOverlay && activeRightTab !== 'calendar' && (
+        {!isComposing && !shouldHideDictationOverlay && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
           <div 
             className="pointer-events-none fixed z-[300] flex items-center justify-center"
             style={{
