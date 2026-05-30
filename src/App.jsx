@@ -288,9 +288,15 @@ export default function App() {
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
+  const [whiteboardPenVariant, setWhiteboardPenVariant] = useState('felt-pen');
+  const [whiteboardHoverLabel, setWhiteboardHoverLabel] = useState('');
   const [whiteboardStrokes, setWhiteboardStrokes] = useState([]);
+  const [whiteboardRedoStrokes, setWhiteboardRedoStrokes] = useState([]);
   const [whiteboardCurrentStroke, setWhiteboardCurrentStroke] = useState('');
+  const [whiteboardLineAnchor, setWhiteboardLineAnchor] = useState(null);
   const [isWhiteboardDrawing, setIsWhiteboardDrawing] = useState(false);
+  const [whiteboardWidgets, setWhiteboardWidgets] = useState([]);
+  const [whiteboardMoreMenuOpen, setWhiteboardMoreMenuOpen] = useState(false);
   const whiteboardCanvasRef = useRef(null);
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
@@ -306,6 +312,89 @@ export default function App() {
   const [dictationAnchor, setDictationAnchor] = useState({ left: 0, top: 0 });
   const [promptCollapsed, setPromptCollapsed] = useState(false);
   const [rotatingExampleSetIndex, setRotatingExampleSetIndex] = useState(0);
+
+  const whiteboardPenPresets = [
+    { key: 'felt-pen', label: 'Felt pen', stroke: '#4f46e5', width: 2.6 },
+    { key: 'ballpoint', label: 'Ballpoint pen', stroke: '#1f2937', width: 1.9 },
+    { key: 'pencil', label: 'Pencil', stroke: '#52525b', width: 1.5 },
+    { key: 'marker', label: 'Marker', stroke: '#0f766e', width: 3.8 },
+    { key: 'highlighter', label: 'Highlighter', stroke: '#ca8a04', width: 6.2, opacity: 0.42 },
+    { key: 'calligraphy', label: 'Calligraphy pen', stroke: '#7c2d12', width: 3.4 },
+  ];
+  const activeWhiteboardPen = whiteboardPenPresets.find((pen) => pen.key === whiteboardPenVariant) || whiteboardPenPresets[0];
+
+  const addWhiteboardWidget = (type) => {
+    const index = whiteboardWidgets.length;
+    const nextWidget = {
+      id: `wb-widget-${Date.now()}-${index}`,
+      type,
+      x: 120 + (index % 4) * 170,
+      y: 90 + Math.floor(index / 4) * 130,
+      title:
+        type === 'sticky' ? 'New sticky note'
+        : type === 'text' ? 'Text block'
+        : type === 'image' ? 'Image placeholder'
+        : 'Connector note',
+      body:
+        type === 'sticky' ? 'Capture key idea...'
+        : type === 'text' ? 'Type your annotation...'
+        : type === 'image' ? 'Drop an image here'
+        : 'Link to related node',
+    };
+    setWhiteboardWidgets((prev) => [...prev, nextWidget]);
+    showToast(`${nextWidget.title} added`);
+  };
+
+  const activateWhiteboardTool = (toolKey) => {
+    setWhiteboardTool(toolKey);
+    setWhiteboardMoreMenuOpen(false);
+    if (toolKey === 'pen') {
+      showToast('Pen tool active');
+      return;
+    }
+    if (toolKey === 'sticky' || toolKey === 'text' || toolKey === 'image' || toolKey === 'link') {
+      addWhiteboardWidget(toolKey);
+      return;
+    }
+    if (toolKey === 'more') {
+      setWhiteboardMoreMenuOpen(true);
+      showToast('More whiteboard actions opened');
+      return;
+    }
+    showToast(`${toolKey.charAt(0).toUpperCase()}${toolKey.slice(1)} tool active`);
+  };
+
+  const handleWhiteboardUndo = () => {
+    setWhiteboardCurrentStroke('');
+    setIsWhiteboardDrawing(false);
+    setWhiteboardStrokes((prev) => {
+      if (!prev.length) {
+        showToast('Nothing to undo');
+        return prev;
+      }
+      const next = [...prev];
+      const lastStroke = next.pop();
+      if (lastStroke) {
+        setWhiteboardRedoStrokes((redo) => [...redo, lastStroke]);
+      }
+      return next;
+    });
+  };
+
+  const handleWhiteboardRedo = () => {
+    setWhiteboardRedoStrokes((prev) => {
+      if (!prev.length) {
+        showToast('Nothing to redo');
+        return prev;
+      }
+      const next = [...prev];
+      const stroke = next.pop();
+      if (stroke) {
+        setWhiteboardStrokes((existing) => [...existing, stroke]);
+      }
+      return next;
+    });
+  };
 
   // Example sets that rotate every minute
   const EXAMPLE_SETS = [
@@ -10447,17 +10536,16 @@ Rules:
                       { key: 'line', label: 'Line', icon: Minus },
                       { key: 'text', label: 'Text', icon: Type },
                       { key: 'link', label: 'Connector', icon: LinkIcon },
-                      { key: 'sticky', label: 'Sticky', icon: FileText },
+                      { key: 'sticky', label: 'Sticky note', icon: FileText },
                       { key: 'image', label: 'Image', icon: ImageIcon },
                       { key: 'more', label: 'More', icon: MoreHorizontal },
                     ].map((tool) => (
                       <button
                         key={tool.key}
                         type="button"
-                        onClick={() => {
-                          setWhiteboardTool(tool.key);
-                          showToast(`${tool.label} tool active`);
-                        }}
+                        onMouseEnter={() => setWhiteboardHoverLabel(tool.label)}
+                        onMouseLeave={() => setWhiteboardHoverLabel('')}
+                        onClick={() => activateWhiteboardTool(tool.key)}
                         className={`h-8 w-8 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                         title={tool.label}
                       >
@@ -10465,38 +10553,153 @@ Rules:
                       </button>
                     ))}
                   </div>
+                  {Boolean(whiteboardHoverLabel) && (
+                    <div className="absolute left-16 top-1/2 -translate-y-1/2 z-20 px-2 py-1 rounded-md bg-slate-900 text-white text-[11px] font-medium shadow-lg whitespace-nowrap">
+                      {whiteboardHoverLabel}
+                    </div>
+                  )}
+                  {whiteboardTool === 'pen' && (
+                    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2 flex flex-col gap-1.5 w-[140px]">
+                      <p className="text-[10px] font-semibold text-gray-500 px-1">Pen styles</p>
+                      {whiteboardPenPresets.map((penPreset, penIndex) => (
+                        <button
+                          key={penPreset.key}
+                          type="button"
+                          onMouseEnter={() => setWhiteboardHoverLabel(penPreset.label)}
+                          onMouseLeave={() => setWhiteboardHoverLabel('')}
+                          onClick={() => {
+                            setWhiteboardPenVariant(penPreset.key);
+                            showToast(`${penPreset.label} selected`);
+                          }}
+                          className={`h-8 rounded-lg px-2 flex items-center gap-2 transition-colors ${whiteboardPenVariant === penPreset.key ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                          title={penPreset.label}
+                        >
+                          <span className="h-4 w-4 rounded-full border border-white shadow-sm" style={{ backgroundColor: penPreset.stroke, opacity: penPreset.opacity ?? 1 }} />
+                          <span className="text-[11px] font-medium truncate">{penPreset.label}</span>
+                          {penIndex < 2 && <span className="ml-auto text-[9px] text-gray-400">Popular</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {whiteboardMoreMenuOpen && (
+                    <div className="absolute left-20 top-[72%] -translate-y-1/2 z-20 rounded-xl border border-gray-200 bg-white shadow-lg p-1.5 w-40">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setWhiteboardStrokes([]);
+                          setWhiteboardRedoStrokes([]);
+                          setWhiteboardCurrentStroke('');
+                          setWhiteboardWidgets([]);
+                          setWhiteboardMoreMenuOpen(false);
+                          showToast('Whiteboard reset');
+                        }}
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                      >
+                        Reset whiteboard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveRightTab('assistant');
+                          setWhiteboardMoreMenuOpen(false);
+                          showToast('Assistant opened');
+                        }}
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                      >
+                        Open assistant
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveRightTab('tasks');
+                          setWhiteboardMoreMenuOpen(false);
+                          showToast('Tasks opened');
+                        }}
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                      >
+                        Convert to tasks
+                      </button>
+                    </div>
+                  )}
                   <div
                     ref={whiteboardCanvasRef}
                     className="absolute inset-0"
                     style={{ cursor: whiteboardTool === 'pen' ? WHITEBOARD_PEN_CURSOR : 'default' }}
                     onPointerDown={(event) => {
-                      if (whiteboardTool !== 'pen') return;
+                      if (whiteboardTool !== 'pen' && whiteboardTool !== 'line') return;
                       const rect = event.currentTarget.getBoundingClientRect();
                       const startX = event.clientX - rect.left;
                       const startY = event.clientY - rect.top;
                       setIsWhiteboardDrawing(true);
+                      if (whiteboardTool === 'line') {
+                        setWhiteboardLineAnchor({ x: startX, y: startY });
+                        setWhiteboardCurrentStroke(`M ${startX} ${startY} L ${startX} ${startY}`);
+                        return;
+                      }
                       setWhiteboardCurrentStroke(`M ${startX} ${startY}`);
                     }}
                     onPointerMove={(event) => {
-                      if (!isWhiteboardDrawing || whiteboardTool !== 'pen') return;
+                      if (!isWhiteboardDrawing || (whiteboardTool !== 'pen' && whiteboardTool !== 'line')) return;
                       const rect = event.currentTarget.getBoundingClientRect();
                       const x = event.clientX - rect.left;
                       const y = event.clientY - rect.top;
+                      if (whiteboardTool === 'line' && whiteboardLineAnchor) {
+                        setWhiteboardCurrentStroke(`M ${whiteboardLineAnchor.x} ${whiteboardLineAnchor.y} L ${x} ${y}`);
+                        return;
+                      }
                       setWhiteboardCurrentStroke((prev) => `${prev} L ${x} ${y}`);
                     }}
                     onPointerUp={() => {
                       if (!isWhiteboardDrawing || !whiteboardCurrentStroke) return;
-                      setWhiteboardStrokes((prev) => [...prev, whiteboardCurrentStroke]);
+                      setWhiteboardStrokes((prev) => [
+                        ...prev,
+                        {
+                          path: whiteboardCurrentStroke,
+                          stroke: activeWhiteboardPen.stroke,
+                          width: whiteboardTool === 'line' ? Math.max(activeWhiteboardPen.width, 2.2) : activeWhiteboardPen.width,
+                          opacity: activeWhiteboardPen.opacity ?? 1,
+                        },
+                      ]);
+                      setWhiteboardRedoStrokes([]);
                       setWhiteboardCurrentStroke('');
                       setIsWhiteboardDrawing(false);
+                      setWhiteboardLineAnchor(null);
                     }}
                     onPointerLeave={() => {
                       if (!isWhiteboardDrawing || !whiteboardCurrentStroke) return;
-                      setWhiteboardStrokes((prev) => [...prev, whiteboardCurrentStroke]);
+                      setWhiteboardStrokes((prev) => [
+                        ...prev,
+                        {
+                          path: whiteboardCurrentStroke,
+                          stroke: activeWhiteboardPen.stroke,
+                          width: whiteboardTool === 'line' ? Math.max(activeWhiteboardPen.width, 2.2) : activeWhiteboardPen.width,
+                          opacity: activeWhiteboardPen.opacity ?? 1,
+                        },
+                      ]);
+                      setWhiteboardRedoStrokes([]);
                       setWhiteboardCurrentStroke('');
                       setIsWhiteboardDrawing(false);
+                      setWhiteboardLineAnchor(null);
                     }}
                   />
+                  {whiteboardWidgets.map((widget) => (
+                    <div
+                      key={widget.id}
+                      className={`absolute rounded-xl px-3 py-2 shadow-sm border ${
+                        widget.type === 'sticky'
+                          ? 'bg-amber-100 border-amber-200'
+                          : widget.type === 'text'
+                            ? 'bg-violet-100 border-violet-200'
+                            : widget.type === 'image'
+                              ? 'bg-emerald-100 border-emerald-200'
+                              : 'bg-blue-100 border-blue-200'
+                      }`}
+                      style={{ left: `${widget.x}px`, top: `${widget.y}px`, width: '170px' }}
+                    >
+                      <p className="text-[11px] font-semibold text-gray-900">{widget.title}</p>
+                      <p className="mt-1 text-[11px] text-gray-700 leading-snug">{widget.body}</p>
+                    </div>
+                  ))}
                   <div className="absolute top-8 left-10 bg-amber-100 border border-amber-200 rounded-xl px-4 py-3 shadow-sm w-56">
                     <p className="text-xs font-semibold text-amber-900">Vision</p>
                     <p className="mt-1 text-xs text-amber-800">Launch AI-native workspace for teams.</p>
@@ -10513,20 +10716,52 @@ Rules:
                     <path d="M230 95 C 300 120, 320 170, 360 205" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
                     <path d="M520 95 C 470 130, 460 170, 430 210" stroke="#a78bfa" strokeWidth="2.5" fill="none" />
                     {whiteboardStrokes.map((stroke, strokeIndex) => (
-                      <path key={`whiteboard-stroke-${strokeIndex}`} d={stroke} stroke="#7c3aed" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        key={`whiteboard-stroke-${strokeIndex}`}
+                        d={typeof stroke === 'string' ? stroke : stroke.path}
+                        stroke={typeof stroke === 'string' ? '#7c3aed' : stroke.stroke}
+                        strokeWidth={typeof stroke === 'string' ? 2.5 : stroke.width}
+                        strokeOpacity={typeof stroke === 'string' ? 1 : stroke.opacity}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     ))}
                     {whiteboardCurrentStroke && (
-                      <path d={whiteboardCurrentStroke} stroke="#7c3aed" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      <path
+                        d={whiteboardCurrentStroke}
+                        stroke={activeWhiteboardPen.stroke}
+                        strokeWidth={whiteboardTool === 'line' ? Math.max(activeWhiteboardPen.width, 2.2) : activeWhiteboardPen.width}
+                        strokeOpacity={activeWhiteboardPen.opacity ?? 1}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     )}
                   </svg>
                   <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm px-2 py-1.5 flex items-center gap-1">
-                    <button type="button" onClick={() => showToast('Undo not available in demo')} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo"><Undo2 size={14} /></button>
-                    <button type="button" onClick={() => showToast('Redo not available in demo')} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo"><Redo2 size={14} /></button>
-                    <button type="button" onClick={() => { setWhiteboardTool('pen'); showToast('Pen tool active'); }} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Pen"><PenTool size={14} /></button>
-                    <button type="button" onClick={() => { setWhiteboardTool('line'); showToast('Line tool active'); }} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'line' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Line"><Minus size={14} /></button>
-                    <button type="button" onClick={() => { setWhiteboardTool('text'); showToast('Text tool active'); }} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'text' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Text"><Type size={14} /></button>
-                    <button type="button" onClick={() => { setWhiteboardTool('link'); showToast('Connector tool active'); }} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'link' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Connector"><LinkIcon size={14} /></button>
-                    <button type="button" onClick={() => { setWhiteboardStrokes([]); setWhiteboardCurrentStroke(''); showToast('Whiteboard cleared'); }} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Clear board"><Trash2 size={14} /></button>
+                    <button type="button" onClick={handleWhiteboardUndo} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo"><Undo2 size={14} /></button>
+                    <button type="button" onClick={handleWhiteboardRedo} className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo"><Redo2 size={14} /></button>
+                    <button type="button" onClick={() => activateWhiteboardTool('pen')} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Pen"><PenTool size={14} /></button>
+                    <button type="button" onClick={() => activateWhiteboardTool('line')} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'line' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Line"><Minus size={14} /></button>
+                    <button type="button" onClick={() => activateWhiteboardTool('text')} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'text' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Text"><Type size={14} /></button>
+                    <button type="button" onClick={() => activateWhiteboardTool('link')} className={`h-8 w-8 rounded-lg flex items-center justify-center ${whiteboardTool === 'link' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Connector"><LinkIcon size={14} /></button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWhiteboardStrokes([]);
+                        setWhiteboardRedoStrokes([]);
+                        setWhiteboardCurrentStroke('');
+                        setWhiteboardWidgets([]);
+                        setIsWhiteboardDrawing(false);
+                        setWhiteboardLineAnchor(null);
+                        showToast('Whiteboard cleared');
+                      }}
+                      className="h-8 w-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"
+                      title="Clear board"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -10793,7 +11028,7 @@ Rules:
 
         {/* Persistent Floating AI Prompt Bar */}
         {/* Center blur overlay: only while prompt is open and only across workspace center */}
-        {shouldShowPromptBackdrop && activeRightTab !== 'calendar' && (
+        {shouldShowPromptBackdrop && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
           <div
             aria-hidden
             style={{
@@ -10808,7 +11043,7 @@ Rules:
             />
           </div>
         )}
-        {activeRightTab !== 'calendar' && (
+        {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
         <div
           className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{ transform: `translateY(${promptOffset.y}px)` }}
@@ -11129,7 +11364,7 @@ Rules:
           </div>
         )}
 
-        {isPromptMinimized && activeRightTab !== 'calendar' && !isScheduleSessionModalOpen && (
+        {isPromptMinimized && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
             className="pointer-events-none absolute left-6 top-20 z-[140]"
             style={{ transform: `translate(${miniPromptOffset.x}px, ${miniPromptOffset.y}px)` }}
