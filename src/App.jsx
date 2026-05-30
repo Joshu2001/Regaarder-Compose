@@ -9011,6 +9011,14 @@ Rules:
           </div>
 
           <div
+            onClick={() => handleMiniSidebarClick('whiteboard')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'whiteboard' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'whiteboard' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><LayoutGrid size={20} /></div>
+            <span className="text-[9px] font-semibold">Whiteboard</span>
+          </div>
+
+          <div
             onClick={() => handleMiniSidebarClick('tasks')}
             className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'tasks' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
           >
@@ -13210,6 +13218,18 @@ Rules:
             {selectedEditorText && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse" />}
           </div>
           <span className="text-[9px] font-semibold">Assist</span>
+        </div>
+
+        <div
+          onClick={() => handleMiniSidebarClick('whiteboard')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'whiteboard' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'whiteboard' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <LayoutGrid size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">Whiteboard</span>
         </div>
 
         <div 
