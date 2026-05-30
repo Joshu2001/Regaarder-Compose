@@ -28,6 +28,7 @@ const WHITEBOARD_PEN_CURSORS = {
   'felt-pen': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E\") 2 26, crosshair",
   'ballpoint': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%231f2937' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E\") 2 18, crosshair",
   'pencil': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z'/%3E%3Cpath d='m15 5 4 4'/%3E%3C/svg%3E\") 2 22, crosshair",
+  lasso: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7c3-3 10-3 13 0s3 9 0 12c-3 3-10 3-13 0s-3-9 0-12Z'/%3E%3Cpath d='M8 8h8' stroke-dasharray='3 3'/%3E%3C/svg%3E\") 2 24, crosshair",
   'marker': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E\") 2 32, crosshair",
   'highlighter': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='22' viewBox='0 0 36 22'%3E%3Crect x='1' y='6' width='26' height='12' rx='3' fill='%23fde047' fill-opacity='0.85' stroke='%23ca8a04' stroke-width='1.5'/%3E%3Cpolygon points='27 6 34 11 34 13 27 18' fill='%23ca8a04'/%3E%3Ccircle cx='34' cy='12' r='1.5' fill='%23fff'/%3E%3C/svg%3E\") 33 12, crosshair",
   'calligraphy': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24' fill='none' stroke='%237c2d12' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 21L12 3l10 18'/%3E%3Cpath d='M5.5 14.5h13'/%3E%3C/svg%3E\") 2 28, crosshair",
@@ -320,9 +321,12 @@ export default function App() {
   const [whiteboardEditingWidgetId, setWhiteboardEditingWidgetId] = useState(null);
   const [selectedWidgetId, setSelectedWidgetId] = useState(null);
   const [whiteboardComments, setWhiteboardComments] = useState([]);
+  const [whiteboardActiveCommentId, setWhiteboardActiveCommentId] = useState(null);
   const [whiteboardAddMenuOpen, setWhiteboardAddMenuOpen] = useState(false);
   const [whiteboardStickyColorMenuFor, setWhiteboardStickyColorMenuFor] = useState(null);
   const [whiteboardMoreTextMenuFor, setWhiteboardMoreTextMenuFor] = useState(null);
+  const [whiteboardEraserMenuOpen, setWhiteboardEraserMenuOpen] = useState(false);
+  const [whiteboardEraserSize, setWhiteboardEraserSize] = useState(9);
   const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
   const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
   const [whiteboardCollaborators, setWhiteboardCollaborators] = useState([
@@ -358,6 +362,7 @@ export default function App() {
     { key: 'felt-pen', label: 'Felt pen', stroke: '#4f46e5', width: 2.6, icon: PenTool },
     { key: 'ballpoint', label: 'Ballpoint pen', stroke: '#1f2937', width: 1.9, icon: PencilLine },
     { key: 'pencil', label: 'Pencil', stroke: '#52525b', width: 1.5, icon: PencilLine },
+    { key: 'lasso', label: 'Lasso dashed', stroke: '#334155', width: 2.2, dashArray: '8 7', icon: PencilLine },
     { key: 'marker', label: 'Marker', stroke: '#0f766e', width: 3.8, icon: PenTool },
     { key: 'highlighter', label: 'Highlighter', stroke: '#ca8a04', width: 6.2, opacity: 0.42, icon: Highlighter },
     { key: 'calligraphy', label: 'Calligraphy pen', stroke: '#7c2d12', width: 3.4, icon: PenTool },
@@ -458,6 +463,7 @@ export default function App() {
     setWhiteboardMoreMenuOpen(false);
     setWhiteboardShapeMenuOpen(false);
     setWhiteboardAddMenuOpen(false);
+    setWhiteboardEraserMenuOpen(toolKey === 'eraser');
     if (toolKey !== 'sticky') {
       setWhiteboardStickyPaletteOpen(false);
       setWhiteboardStickyDragStart(null);
@@ -786,18 +792,66 @@ export default function App() {
       };
     });
 
+    const eraserRadius = Math.max(4, Number(whiteboardEraserSize) || 9);
     points.forEach((point) => {
-      setWhiteboardStrokes((prev) => prev.flatMap((stroke) => applyEraserToStroke(stroke, point.x, point.y, 9)));
+      setWhiteboardStrokes((prev) => prev.flatMap((stroke) => applyEraserToStroke(stroke, point.x, point.y, eraserRadius)));
       setWhiteboardShapes((prev) => prev
-        .map((shape) => applyEraserToShape(shape, point.x, point.y, 8, 9))
+        .map((shape) => applyEraserToShape(shape, point.x, point.y, Math.max(4, eraserRadius * 0.9), eraserRadius))
         .filter(Boolean));
-      setWhiteboardComments((prev) => prev.filter((comment) => Math.hypot(comment.x - point.x, comment.y - point.y) > 10));
+      setWhiteboardComments((prev) => prev.filter((comment) => Math.hypot(comment.x - point.x, comment.y - point.y) > eraserRadius + 2));
       setWhiteboardWidgets((prev) => prev
-        .map((widget) => applyEraserToWidget(widget, point.x, point.y, 2, 12))
+        .map((widget) => applyEraserToWidget(widget, point.x, point.y, Math.max(1, Math.round(eraserRadius / 5)), eraserRadius + 3))
         .filter(Boolean));
     });
 
     eraserLastPointRef.current = { x, y };
+  };
+
+  const exportWhiteboardQuick = async (mode = 'png') => {
+    const target = whiteboardCanvasRef.current?.parentElement;
+    if (!target) {
+      showToast('Whiteboard is not ready for export yet');
+      return;
+    }
+
+    try {
+      showToast(mode === 'pdf' ? 'Exporting whiteboard PDF...' : 'Snapping whiteboard...');
+      const canvas = await html2canvas(target, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
+
+      const safeStamp = new Date().toISOString().replace(/[:.]/g, '-');
+      if (mode === 'pdf') {
+        const imageData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imageProps = pdf.getImageProperties(imageData);
+        const widthRatio = pageWidth / imageProps.width;
+        const heightRatio = pageHeight / imageProps.height;
+        const ratio = Math.min(widthRatio, heightRatio);
+        const drawWidth = imageProps.width * ratio;
+        const drawHeight = imageProps.height * ratio;
+        const x = (pageWidth - drawWidth) / 2;
+        const y = (pageHeight - drawHeight) / 2;
+        pdf.addImage(imageData, 'PNG', x, y, drawWidth, drawHeight, undefined, 'FAST');
+        pdf.save(`whiteboard-${safeStamp}.pdf`);
+      } else {
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            showToast('Unable to create whiteboard snapshot');
+            return;
+          }
+          triggerBlobDownload(`whiteboard-${safeStamp}.png`, blob);
+        }, 'image/png', 0.95);
+      }
+
+      showToast(mode === 'pdf' ? 'Whiteboard PDF exported' : 'Whiteboard snapshot saved');
+    } catch (_error) {
+      showToast('Whiteboard export failed');
+    }
   };
 
   const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*•]\s+|\d+\.\s+)/, '');
@@ -11082,7 +11136,12 @@ Rules:
                         type="button"
                         onMouseEnter={() => setWhiteboardHoverLabel(tool.label)}
                         onMouseLeave={() => setWhiteboardHoverLabel('')}
-                        onClick={() => activateWhiteboardTool(tool.key)}
+                        onClick={() => {
+                          activateWhiteboardTool(tool.key);
+                          if (tool.key === 'eraser') {
+                            setWhiteboardEraserMenuOpen(true);
+                          }
+                        }}
                         className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                         title={tool.label}
                       >
@@ -11090,6 +11149,22 @@ Rules:
                       </button>
                     ))}
                   </div>
+                  {whiteboardTool === 'eraser' && whiteboardEraserMenuOpen && (
+                    <div className="absolute left-20 top-[74%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2.5 w-[172px]">
+                      <p className="text-[10px] font-semibold text-gray-500">Eraser size</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="range"
+                          min="4"
+                          max="28"
+                          value={whiteboardEraserSize}
+                          onChange={(event) => setWhiteboardEraserSize(Number.parseInt(event.target.value, 10) || 9)}
+                          className="w-full"
+                        />
+                        <span className="text-[11px] text-gray-600 w-8 text-right">{whiteboardEraserSize}</span>
+                      </div>
+                    </div>
+                  )}
                   {Boolean(whiteboardHoverLabel) && (
                     <div className="absolute left-16 top-1/2 -translate-y-1/2 z-20 px-2 py-1 rounded-md bg-slate-900 text-white text-[11px] font-medium shadow-lg whitespace-nowrap">
                       {whiteboardHoverLabel}
@@ -11188,12 +11263,33 @@ Rules:
                           setSelectedShapeIndex(null);
                           setWhiteboardStickyDragStart(null);
                           setWhiteboardStickyPreview(null);
+                          setWhiteboardActiveCommentId(null);
                           setWhiteboardMoreMenuOpen(false);
                           showToast('Whiteboard reset');
                         }}
                         className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
                       >
                         Reset whiteboard
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportWhiteboardQuick('png');
+                          setWhiteboardMoreMenuOpen(false);
+                        }}
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                      >
+                        Quick snapshot (PNG)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportWhiteboardQuick('pdf');
+                          setWhiteboardMoreMenuOpen(false);
+                        }}
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                      >
+                        Quick export (single PDF)
                       </button>
                       <button
                         type="button"
@@ -11261,8 +11357,18 @@ Rules:
                         return;
                       }
                       if (whiteboardTool === 'comment') {
-                        const newComment = { id: `comment-${Date.now()}`, x: startX, y: startY, text: 'Comment', resolved: false };
+                        const newComment = {
+                          id: `comment-${Date.now()}`,
+                          x: startX,
+                          y: startY,
+                          text: '',
+                          resolved: false,
+                          expanded: true,
+                          width: 180,
+                          height: 86,
+                        };
                         setWhiteboardComments((prev) => [...prev, newComment]);
+                        setWhiteboardActiveCommentId(newComment.id);
                         showToast('Comment placed');
                         return;
                       }
@@ -11388,6 +11494,7 @@ Rules:
                           stroke: activeWhiteboardPen.stroke,
                           width: activeWhiteboardPen.width,
                           opacity: activeWhiteboardPen.opacity ?? 1,
+                          dashArray: activeWhiteboardPen.dashArray || '',
                         },
                       ]);
                       setWhiteboardRedoStrokes([]);
@@ -11437,6 +11544,7 @@ Rules:
                           stroke: activeWhiteboardPen.stroke,
                           width: activeWhiteboardPen.width,
                           opacity: activeWhiteboardPen.opacity ?? 1,
+                          dashArray: activeWhiteboardPen.dashArray || '',
                         },
                       ]);
                       setWhiteboardRedoStrokes([]);
@@ -11948,6 +12056,7 @@ Rules:
                         stroke={typeof stroke === 'string' ? '#7c3aed' : stroke.stroke}
                         strokeWidth={typeof stroke === 'string' ? 2.5 : stroke.width}
                         strokeOpacity={typeof stroke === 'string' ? 1 : stroke.opacity}
+                        strokeDasharray={typeof stroke === 'string' ? undefined : (stroke.dashArray || undefined)}
                         fill="none"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -11959,6 +12068,7 @@ Rules:
                         stroke={activeWhiteboardPen.stroke}
                         strokeWidth={activeWhiteboardPen.width}
                         strokeOpacity={activeWhiteboardPen.opacity ?? 1}
+                        strokeDasharray={activeWhiteboardPen.dashArray || undefined}
                         fill="none"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -11973,13 +12083,68 @@ Rules:
                       style={{ left: `${comment.x}px`, top: `${comment.y}px`, transform: 'translate(-50%, -100%)' }}
                     >
                       <div className="relative flex flex-col items-center">
-                        <div className="bg-sky-500 text-white rounded-lg px-2 py-1 text-[10px] font-medium shadow-md whitespace-nowrap max-w-[120px] truncate">
-                          {comment.text}
+                        <div
+                          className="bg-sky-500 text-white rounded-lg px-2 py-1 text-[10px] font-medium shadow-md"
+                          style={{
+                            width: `${comment.expanded ? (comment.width || 180) : 148}px`,
+                            minHeight: `${comment.expanded ? (comment.height || 86) : 34}px`,
+                          }}
+                          onPointerDown={(event) => {
+                            event.stopPropagation();
+                            setWhiteboardActiveCommentId(comment.id);
+                          }}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-[10px] font-semibold">Comment</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setWhiteboardComments((prev) => prev.map((item) => (
+                                  item.id === comment.id
+                                    ? {
+                                      ...item,
+                                      expanded: !item.expanded,
+                                      width: item.expanded ? 148 : Math.max(180, item.width || 180),
+                                      height: item.expanded ? 34 : Math.max(86, item.height || 86),
+                                    }
+                                    : item
+                                )));
+                              }}
+                              className="h-5 w-5 rounded bg-white/15 hover:bg-white/25 flex items-center justify-center text-[11px]"
+                              title={comment.expanded ? 'Collapse' : 'Expand'}
+                            >
+                              {comment.expanded ? '-' : '+'}
+                            </button>
+                          </div>
+                          {comment.expanded ? (
+                            <textarea
+                              autoFocus={whiteboardActiveCommentId === comment.id}
+                              value={comment.text || ''}
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                const nextWidth = Math.max(180, event.currentTarget.offsetWidth || comment.width || 180);
+                                const nextHeight = Math.max(86, event.currentTarget.offsetHeight || comment.height || 86);
+                                setWhiteboardComments((prev) => prev.map((item) => (
+                                  item.id === comment.id
+                                    ? { ...item, text: value, width: nextWidth, height: nextHeight }
+                                    : item
+                                )));
+                              }}
+                              className="w-full h-[64px] resize bg-transparent border border-white/30 rounded px-1.5 py-1 outline-none placeholder:text-white/70 text-[11px] leading-snug"
+                              placeholder="Type your comment..."
+                              onPointerDown={(event) => event.stopPropagation()}
+                            />
+                          ) : (
+                            <p className="text-[11px] leading-snug whitespace-nowrap overflow-hidden text-ellipsis">{comment.text || 'Tap + to expand comment'}</p>
+                          )}
                         </div>
                         <div className="w-2 h-2 bg-sky-500 rotate-45 -mt-1 shadow-sm" />
                         <button
                           type="button"
-                          onClick={() => setWhiteboardComments((prev) => prev.filter((c) => c.id !== comment.id))}
+                          onClick={() => {
+                            setWhiteboardComments((prev) => prev.filter((c) => c.id !== comment.id));
+                            setWhiteboardActiveCommentId((prev) => (prev === comment.id ? null : prev));
+                          }}
                           className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-gray-200 rounded-full text-gray-400 hover:text-red-500 items-center justify-center hidden group-hover:flex"
                           title="Remove comment"
                         >
@@ -12038,6 +12203,7 @@ Rules:
                         setWhiteboardCurrentShape(null);
                         setWhiteboardWidgets([]);
                         setWhiteboardComments([]);
+                        setWhiteboardActiveCommentId(null);
                         setIsWhiteboardDrawing(false);
                         setWhiteboardLineAnchor(null);
                         setWhiteboardStickyDragStart(null);
