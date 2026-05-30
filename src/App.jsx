@@ -7,7 +7,7 @@ import {
   FileText, Trash, Settings, MoreHorizontal,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
-  List, Bold, Italic, Underline, Type, X, ChevronDown,
+  List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
@@ -306,6 +306,7 @@ export default function App() {
   const [whiteboardLineAnchor, setWhiteboardLineAnchor] = useState(null);
   const [whiteboardCurrentShape, setWhiteboardCurrentShape] = useState(null);
   const [whiteboardShapes, setWhiteboardShapes] = useState([]);
+  const [selectedShapeIndex, setSelectedShapeIndex] = useState(null);
   const [whiteboardShapeVariant, setWhiteboardShapeVariant] = useState('line');
   const [whiteboardShapeMenuOpen, setWhiteboardShapeMenuOpen] = useState(false);
   const [isWhiteboardDrawing, setIsWhiteboardDrawing] = useState(false);
@@ -321,10 +322,20 @@ export default function App() {
   const [whiteboardComments, setWhiteboardComments] = useState([]);
   const [whiteboardAddMenuOpen, setWhiteboardAddMenuOpen] = useState(false);
   const [whiteboardStickyColorMenuFor, setWhiteboardStickyColorMenuFor] = useState(null);
+  const [whiteboardMoreTextMenuFor, setWhiteboardMoreTextMenuFor] = useState(null);
+  const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
+  const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
+  const [whiteboardCollaborators, setWhiteboardCollaborators] = useState([
+    { id: 'collab-you', name: 'You', color: '#7c3aed', access: 'Owner', x: 240, y: 160, online: true },
+    { id: 'collab-alex', name: 'Alex', color: '#0ea5e9', access: 'Editor', x: 420, y: 240, online: true },
+    { id: 'collab-maya', name: 'Maya', color: '#f97316', access: 'Commenter', x: 620, y: 340, online: true },
+  ]);
   const [isWhiteboardPanning, setIsWhiteboardPanning] = useState(false);
   const whiteboardCanvasRef = useRef(null);
   const widgetDragRef = useRef(null);
   const widgetResizeRef = useRef(null);
+  const shapeDragRef = useRef(null);
+  const shapeResizeRef = useRef(null);
   const panDragRef = useRef(null);
   const eraserActiveRef = useRef(false);
   const [dragTarget, setDragTarget] = useState(null);
@@ -365,7 +376,38 @@ export default function App() {
     { key: 'green', label: 'Green', value: '#86efac' },
     { key: 'pink', label: 'Pink', value: '#f9a8d4' },
   ];
+  const whiteboardFontOptions = [
+    'Calibri',
+    'Arial',
+    'Segoe UI',
+    'Times New Roman',
+    'Cambria',
+    'Georgia',
+    'Verdana',
+    'Tahoma',
+    'Trebuchet MS',
+    'Garamond',
+    'Courier New',
+    'Consolas',
+  ];
   const activeWhiteboardPen = whiteboardPenPresets.find((pen) => pen.key === whiteboardPenVariant) || whiteboardPenPresets[0];
+
+  useEffect(() => {
+    if (activeRightTab !== 'whiteboard') {
+      return undefined;
+    }
+    const timer = window.setInterval(() => {
+      setWhiteboardCollaborators((prev) => prev.map((person) => {
+        if (person.id === 'collab-you' || !person.online) {
+          return person;
+        }
+        const nextX = Math.max(24, Math.min(980, person.x + (Math.random() * 36 - 18)));
+        const nextY = Math.max(24, Math.min(620, person.y + (Math.random() * 36 - 18)));
+        return { ...person, x: nextX, y: nextY };
+      }));
+    }, 2200);
+    return () => window.clearInterval(timer);
+  }, [activeRightTab]);
 
   const addWhiteboardWidget = (type, options = {}) => {
     const index = whiteboardWidgets.length;
@@ -378,6 +420,18 @@ export default function App() {
       height: options.height ?? 120,
       color: options.color ?? whiteboardStickyColor,
       text: options.text ?? '',
+      fontFamily: options.fontFamily ?? 'Calibri',
+      fontSize: options.fontSize ?? 14,
+      isBold: options.isBold ?? false,
+      isItalic: options.isItalic ?? false,
+      isUnderline: options.isUnderline ?? false,
+      textAlign: options.textAlign ?? 'left',
+      textColor: options.textColor ?? '#111827',
+      highlightColor: options.highlightColor ?? '#ffffff',
+      opacity: options.opacity ?? 100,
+      hasList: options.hasList ?? false,
+      listType: options.listType ?? 'bullet',
+      linkedUrl: options.linkedUrl ?? '',
       title:
         type === 'sticky' ? 'New sticky note'
         : type === 'text' ? 'Text block'
@@ -491,6 +545,155 @@ export default function App() {
       color: whiteboardStickyColor,
       text: '',
     });
+  };
+
+  const distanceToSegment = (px, py, ax, ay, bx, by) => {
+    const dx = bx - ax;
+    const dy = by - ay;
+    if (dx === 0 && dy === 0) {
+      return Math.hypot(px - ax, py - ay);
+    }
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
+    const cx = ax + t * dx;
+    const cy = ay + t * dy;
+    return Math.hypot(px - cx, py - cy);
+  };
+
+  const getPathPoints = (path = '') => {
+    const nums = String(path).match(/-?\d*\.?\d+/g) || [];
+    const points = [];
+    for (let i = 0; i < nums.length - 1; i += 2) {
+      points.push({ x: Number(nums[i]), y: Number(nums[i + 1]) });
+    }
+    return points;
+  };
+
+  const isPointNearStroke = (stroke, x, y, radius) => {
+    const path = typeof stroke === 'string' ? stroke : stroke.path;
+    const points = getPathPoints(path);
+    if (!points.length) {
+      return false;
+    }
+    if (points.length === 1) {
+      return Math.hypot(points[0].x - x, points[0].y - y) <= radius;
+    }
+    for (let i = 0; i < points.length - 1; i += 1) {
+      if (distanceToSegment(x, y, points[i].x, points[i].y, points[i + 1].x, points[i + 1].y) <= radius) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const isPointNearShape = (shape, x, y, radius) => {
+    if (!shape) {
+      return false;
+    }
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      return distanceToSegment(x, y, shape.x1, shape.y1, shape.x2, shape.y2) <= radius;
+    }
+    const left = shape.x ?? Math.min(shape.x1 ?? 0, shape.x2 ?? 0);
+    const top = shape.y ?? Math.min(shape.y1 ?? 0, shape.y2 ?? 0);
+    const width = shape.width ?? Math.abs((shape.x2 ?? 0) - (shape.x1 ?? 0));
+    const height = shape.height ?? Math.abs((shape.y2 ?? 0) - (shape.y1 ?? 0));
+    return x >= left - radius && x <= left + width + radius && y >= top - radius && y <= top + height + radius;
+  };
+
+  const isPointNearWidget = (widget, x, y, radius) => (
+    x >= widget.x - radius
+      && x <= widget.x + (widget.width || 170) + radius
+      && y >= widget.y - radius
+      && y <= widget.y + (widget.height || 120) + radius
+  );
+
+  const getShapeBounds = (shape) => {
+    if (!shape) {
+      return { x: 0, y: 0, width: 1, height: 1 };
+    }
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      const x = Math.min(shape.x1 ?? 0, shape.x2 ?? 0);
+      const y = Math.min(shape.y1 ?? 0, shape.y2 ?? 0);
+      const width = Math.max(1, Math.abs((shape.x2 ?? 0) - (shape.x1 ?? 0)));
+      const height = Math.max(1, Math.abs((shape.y2 ?? 0) - (shape.y1 ?? 0)));
+      return { x, y, width, height };
+    }
+    return {
+      x: shape.x ?? 0,
+      y: shape.y ?? 0,
+      width: Math.max(1, shape.width ?? 1),
+      height: Math.max(1, shape.height ?? 1),
+    };
+  };
+
+  const moveShapeByDelta = (shape, dx, dy) => {
+    if (!shape) {
+      return shape;
+    }
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      return {
+        ...shape,
+        x1: (shape.x1 ?? 0) + dx,
+        y1: (shape.y1 ?? 0) + dy,
+        x2: (shape.x2 ?? 0) + dx,
+        y2: (shape.y2 ?? 0) + dy,
+      };
+    }
+    return {
+      ...shape,
+      x: (shape.x ?? 0) + dx,
+      y: (shape.y ?? 0) + dy,
+    };
+  };
+
+  const resizeShapeFromBounds = (shape, sourceBounds, targetBounds) => {
+    if (!shape) {
+      return shape;
+    }
+    if (shape.type === 'line' || shape.type === 'arrow') {
+      const sx = sourceBounds.width || 1;
+      const sy = sourceBounds.height || 1;
+      const tx = targetBounds.width;
+      const ty = targetBounds.height;
+      const transformPoint = (px, py) => ({
+        x: targetBounds.x + (((px - sourceBounds.x) / sx) * tx),
+        y: targetBounds.y + (((py - sourceBounds.y) / sy) * ty),
+      });
+      const p1 = transformPoint(shape.x1 ?? 0, shape.y1 ?? 0);
+      const p2 = transformPoint(shape.x2 ?? 0, shape.y2 ?? 0);
+      return {
+        ...shape,
+        x1: p1.x,
+        y1: p1.y,
+        x2: p2.x,
+        y2: p2.y,
+      };
+    }
+    return {
+      ...shape,
+      x: targetBounds.x,
+      y: targetBounds.y,
+      width: targetBounds.width,
+      height: targetBounds.height,
+    };
+  };
+
+  const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*•]\s+|\d+\.\s+)/, '');
+
+  const toggleWidgetList = (widgetId, nextType) => {
+    setWhiteboardWidgets((prev) => prev.map((w) => {
+      if (w.id !== widgetId) {
+        return w;
+      }
+      const lines = String(w.text || '').split('\n');
+      const normalized = lines.map(stripListPrefix);
+      if (w.hasList && w.listType === nextType) {
+        return { ...w, hasList: false, text: normalized.join('\n') };
+      }
+      if (nextType === 'numbered') {
+        return { ...w, hasList: true, listType: 'numbered', text: normalized.map((line, i) => `${i + 1}. ${line}`).join('\n') };
+      }
+      return { ...w, hasList: true, listType: 'bullet', text: normalized.map((line) => `• ${line}`).join('\n') };
+    }));
   };
 
   const renderWhiteboardShape = (shape, key) => {
@@ -10807,6 +11010,7 @@ Rules:
                           setWhiteboardCurrentStroke('');
                           setWhiteboardCurrentShape(null);
                           setWhiteboardWidgets([]);
+                          setSelectedShapeIndex(null);
                           setWhiteboardStickyDragStart(null);
                           setWhiteboardStickyPreview(null);
                           setWhiteboardMoreMenuOpen(false);
@@ -10872,6 +11076,7 @@ Rules:
                       }
                       if (whiteboardTool === 'select') {
                         setSelectedWidgetId(null);
+                        setSelectedShapeIndex(null);
                         return;
                       }
                       if (whiteboardTool === 'hand') {
@@ -10933,14 +11138,25 @@ Rules:
                       }
                       if (whiteboardTool === 'eraser' && eraserActiveRef.current) {
                         const ERASE_RADIUS = 20;
-                        setWhiteboardStrokes((prev) => prev.filter((stroke) => {
-                          const pathStr = typeof stroke === 'string' ? stroke : stroke.path;
-                          const points = pathStr.match(/[\d.]+\s[\d.]+/g) || [];
-                          return !points.some((pt) => {
-                            const [px, py] = pt.split(' ').map(Number);
-                            return Math.hypot(px - x, py - y) < ERASE_RADIUS;
-                          });
-                        }));
+                        setWhiteboardStrokes((prev) => prev.filter((stroke) => !isPointNearStroke(stroke, x, y, ERASE_RADIUS)));
+                        setWhiteboardShapes((prev) => {
+                          const next = prev.filter((shape) => !isPointNearShape(shape, x, y, ERASE_RADIUS));
+                          if (next.length !== prev.length) {
+                            setSelectedShapeIndex(null);
+                          }
+                          return next;
+                        });
+                        setWhiteboardComments((prev) => prev.filter((comment) => Math.hypot(comment.x - x, comment.y - y) > ERASE_RADIUS + 6));
+                        setWhiteboardWidgets((prev) => {
+                          const next = prev.filter((widget) => !isPointNearWidget(widget, x, y, ERASE_RADIUS));
+                          if (next.length !== prev.length) {
+                            setSelectedWidgetId(null);
+                            setWhiteboardEditingWidgetId(null);
+                            setWhiteboardStickyColorMenuFor(null);
+                            setWhiteboardMoreTextMenuFor(null);
+                          }
+                          return next;
+                        });
                         return;
                       }
                       if (!isWhiteboardDrawing || (whiteboardTool !== 'pen' && whiteboardTool !== 'shapes')) return;
@@ -11118,6 +11334,7 @@ Rules:
                         if (whiteboardTool !== 'select') return;
                         e.stopPropagation();
                         setSelectedWidgetId(widget.id);
+                        setSelectedShapeIndex(null);
                         const startX = e.clientX;
                         const startY = e.clientY;
                         const origX = widget.x;
@@ -11152,7 +11369,47 @@ Rules:
                           className="w-full h-full bg-transparent resize-none outline-none text-[12px] text-amber-950 placeholder:text-amber-800/60 leading-snug"
                           placeholder="Type sticky note..."
                           style={{ cursor: whiteboardTool === 'select' ? 'text' : undefined }}
-                          onPointerDown={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            if (whiteboardTool === 'select') {
+                              setSelectedWidgetId(widget.id);
+                              setSelectedShapeIndex(null);
+                            }
+                          }}
+                        />
+                      ) : widget.type === 'text' ? (
+                        <textarea
+                          value={widget.text || ''}
+                          autoFocus={whiteboardEditingWidgetId === widget.id}
+                          onFocus={() => setWhiteboardEditingWidgetId(widget.id)}
+                          onBlur={() => setWhiteboardEditingWidgetId(null)}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setWhiteboardWidgets((prev) => prev.map((existingWidget) => (
+                              existingWidget.id === widget.id ? { ...existingWidget, text: value } : existingWidget
+                            )));
+                          }}
+                          className="w-full h-full bg-transparent resize-none outline-none placeholder:text-violet-700/60 leading-relaxed"
+                          placeholder="Type your text..."
+                          style={{
+                            cursor: whiteboardTool === 'select' ? 'text' : undefined,
+                            fontFamily: widget.fontFamily || 'Calibri',
+                            fontSize: `${widget.fontSize || 14}px`,
+                            fontWeight: widget.isBold ? 700 : 500,
+                            fontStyle: widget.isItalic ? 'italic' : 'normal',
+                            textDecoration: widget.isUnderline ? 'underline' : 'none',
+                            textAlign: widget.textAlign || 'left',
+                            color: widget.textColor || '#111827',
+                            backgroundColor: widget.highlightColor && widget.highlightColor !== '#ffffff' ? `${widget.highlightColor}33` : 'transparent',
+                            opacity: Math.max(0, Math.min(100, widget.opacity ?? 100)) / 100,
+                          }}
+                          onPointerDown={(e) => {
+                            e.stopPropagation();
+                            if (whiteboardTool === 'select') {
+                              setSelectedWidgetId(widget.id);
+                              setSelectedShapeIndex(null);
+                            }
+                          }}
                         />
                       ) : (
                         <>
@@ -11203,7 +11460,11 @@ Rules:
                         </>
                       )}
                       {isSelected && whiteboardTool === 'select' && (
-                        <div className="absolute left-1/2 -translate-x-1/2 z-30 rounded-xl border border-gray-200 bg-white shadow-sm px-2 py-1.5" style={{ top: `${(widget.height || 120) + 14}px` }}>
+                        <div
+                          className="absolute left-1/2 -translate-x-1/2 z-30 rounded-xl border border-gray-200 bg-white shadow-sm px-2 py-1.5"
+                          style={{ top: `${(widget.height || 120) + 14}px` }}
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
                           <div className="flex items-center gap-1">
                             <button type="button" className="h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 flex items-center justify-center" title="Move"><Move size={13} /></button>
                             {widget.type === 'sticky' && (
@@ -11212,7 +11473,7 @@ Rules:
                                   <span className="h-4 w-4 rounded-full border border-gray-300" style={{ backgroundColor: widget.color || '#fde047' }} />
                                 </button>
                                 {whiteboardStickyColorMenuFor === widget.id && (
-                                  <div className="absolute left-0 mt-1 w-44 rounded-lg border border-gray-200 bg-white shadow-lg z-40 p-2">
+                                  <div className="absolute left-0 mt-1 w-44 rounded-lg border border-gray-200 bg-white shadow-lg z-40 p-2" onPointerDown={(e) => e.stopPropagation()}>
                                     <div className="grid grid-cols-6 gap-1">
                                       {['#fde047', '#fca5a5', '#fdba74', '#86efac', '#93c5fd', '#d8b4fe', '#f9a8d4', '#67e8f9', '#e5e7eb', '#fef3c7', '#c7d2fe', '#bbf7d0'].map((color) => (
                                         <button key={color} type="button" onClick={() => { setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, color } : w))); setWhiteboardStickyColorMenuFor(null); }} className={`h-5 w-5 rounded-full border ${widget.color === color ? 'border-violet-500 ring-1 ring-violet-300' : 'border-gray-300'}`} style={{ backgroundColor: color }} title={color} />
@@ -11225,27 +11486,297 @@ Rules:
                                 )}
                               </div>
                             )}
-                            <button type="button" onClick={() => { const clone = { ...widget, id: `wb-widget-${Date.now()}-clone`, x: widget.x + 20, y: widget.y + 20 }; setWhiteboardWidgets((prev) => [...prev, clone]); setSelectedWidgetId(clone.id); }} className="h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 flex items-center justify-center" title="Duplicate"><Plus size={13} /></button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (widget.type === 'text') {
+                                  addWhiteboardWidget('text', {
+                                    x: widget.x + 24,
+                                    y: widget.y + 24,
+                                    width: widget.width,
+                                    height: widget.height,
+                                    fontFamily: widget.fontFamily,
+                                    fontSize: widget.fontSize,
+                                    textColor: widget.textColor,
+                                  });
+                                  const newId = `wb-widget-${Date.now()}-${whiteboardWidgets.length}`;
+                                  setSelectedWidgetId(newId);
+                                  setWhiteboardEditingWidgetId(newId);
+                                  return;
+                                }
+                                const clone = { ...widget, id: `wb-widget-${Date.now()}-clone`, x: widget.x + 20, y: widget.y + 20 };
+                                setWhiteboardWidgets((prev) => [...prev, clone]);
+                                setSelectedWidgetId(clone.id);
+                              }}
+                              className="h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 flex items-center justify-center"
+                              title={widget.type === 'text' ? 'New text block' : 'Duplicate'}
+                            >
+                              <Plus size={13} />
+                            </button>
                             <button type="button" onClick={() => { setWhiteboardWidgets((prev) => prev.filter((w) => w.id !== widget.id)); setSelectedWidgetId((prev) => (prev === widget.id ? null : prev)); }} className="h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 hover:text-rose-600 flex items-center justify-center" title="Delete"><Trash2 size={13} /></button>
                             {widget.type === 'text' && (
                               <>
-                            <select value={widget.fontFamily || 'Noto Sans'} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, fontFamily: e.target.value } : w)))} className="text-xs px-1.5 py-0.5 border border-gray-200 rounded text-gray-700 hover:bg-gray-50 bg-white">
-                              <option value="Noto Sans">Noto Sans</option>
-                              <option value="Manrope">Manrope</option>
-                              <option value="Inter">Inter</option>
-                              <option value="Georgia">Georgia</option>
-                              <option value="Courier New">Courier</option>
+                            <select
+                              value={widget.fontFamily || 'Calibri'}
+                              onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, fontFamily: e.target.value } : w)))}
+                              className="h-7 text-xs px-2 border border-gray-300 rounded-md text-gray-700 bg-white shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+                              title="Font Family"
+                            >
+                              {whiteboardFontOptions.map((font) => (
+                                <option key={font} value={font}>{font}</option>
+                              ))}
                             </select>
-                            <input type="number" min="8" max="72" value={widget.fontSize || 14} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, fontSize: parseInt(e.target.value) } : w)))} className="text-xs w-10 px-1.5 py-0.5 border border-gray-200 rounded text-gray-700 hover:bg-gray-50 bg-white" title="Font Size" />
+                            <input
+                              type="number"
+                              min="8"
+                              max="96"
+                              value={widget.fontSize || 14}
+                              onChange={(e) => {
+                                const nextSize = Number.parseInt(e.target.value, 10);
+                                setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, fontSize: Number.isNaN(nextSize) ? 14 : Math.max(8, Math.min(96, nextSize)) } : w)));
+                              }}
+                              className="h-7 text-xs w-12 px-1.5 border border-gray-300 rounded-md text-gray-700 bg-white"
+                              title="Font Size"
+                            />
                             <button type="button" onClick={() => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, isBold: !w.isBold } : w)))} className={`h-6 w-6 rounded-md flex items-center justify-center text-xs font-bold ${widget.isBold ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Bold">B</button>
                             <button type="button" onClick={() => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, isItalic: !w.isItalic } : w)))} className={`h-6 w-6 rounded-md flex items-center justify-center text-xs italic ${widget.isItalic ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Italic">I</button>
                             <button type="button" onClick={() => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, isUnderline: !w.isUnderline } : w)))} className={`h-6 w-6 rounded-md flex items-center justify-center text-xs underline ${widget.isUnderline ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Underline">U</button>
+                            <div className="border-l border-gray-200 pl-1 ml-0.5 flex gap-0.5">
+                              <button type="button" onClick={() => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, textAlign: 'left' } : w)))} className={`h-6 w-6 rounded-md flex items-center justify-center ${widget.textAlign === 'left' ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Align left"><AlignLeft size={13} /></button>
+                              <button type="button" onClick={() => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, textAlign: 'center' } : w)))} className={`h-6 w-6 rounded-md flex items-center justify-center ${widget.textAlign === 'center' ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Align center"><AlignCenter size={13} /></button>
+                              <button type="button" onClick={() => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, textAlign: 'right' } : w)))} className={`h-6 w-6 rounded-md flex items-center justify-center ${widget.textAlign === 'right' ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Align right"><AlignRight size={13} /></button>
+                            </div>
+                            <div className="border-l border-gray-200 pl-1 ml-0.5 flex gap-0.5">
+                              <button type="button" onClick={() => toggleWidgetList(widget.id, 'bullet')} className={`h-6 w-6 rounded-md flex items-center justify-center ${widget.hasList && widget.listType === 'bullet' ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Bullet list"><List size={13} /></button>
+                              <button type="button" onClick={() => toggleWidgetList(widget.id, 'numbered')} className={`h-6 w-6 rounded-md flex items-center justify-center ${widget.hasList && widget.listType === 'numbered' ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Numbered list"><ListOrdered size={13} /></button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextUrl = window.prompt('Enter link URL', widget.linkedUrl || 'https://');
+                                if (nextUrl === null) return;
+                                setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, linkedUrl: nextUrl.trim() } : w)));
+                              }}
+                              className={`h-6 w-6 rounded-md flex items-center justify-center ${widget.linkedUrl ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`}
+                              title="Insert link"
+                            >
+                              <LinkIcon size={13} />
+                            </button>
+                            <input type="color" value={widget.textColor || '#111827'} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, textColor: e.target.value } : w)))} className="h-6 w-6 rounded border border-gray-300 cursor-pointer" title="Text color" />
+                            <input type="color" value={widget.highlightColor || '#ffffff'} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, highlightColor: e.target.value } : w)))} className="h-6 w-6 rounded border border-gray-300 cursor-pointer" title="Highlight color" />
+                            <input type="range" min="10" max="100" value={widget.opacity ?? 100} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, opacity: Number.parseInt(e.target.value, 10) || 100 } : w)))} className="h-6 w-14 cursor-pointer" title="Opacity" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setWhiteboardWidgets((prev) => prev.map((w) => (
+                                  w.id === widget.id
+                                    ? { ...w, text: (w.text && String(w.text).trim()) ? w.text : 'Idea\nKey points\nAction items' }
+                                    : w
+                                )));
+                                showToast('Compose AI suggestion added');
+                              }}
+                              className="h-6 w-6 rounded-md text-gray-600 hover:bg-gray-100 flex items-center justify-center"
+                              title="Compose AI"
+                            >
+                              <Sparkles size={13} />
+                            </button>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setWhiteboardMoreTextMenuFor((prev) => (prev === widget.id ? null : widget.id))}
+                                className="h-6 w-6 rounded-md text-gray-600 hover:bg-gray-100 flex items-center justify-center"
+                                title="More options"
+                              >
+                                <MoreHorizontal size={13} />
+                              </button>
+                              {whiteboardMoreTextMenuFor === widget.id && (
+                                <div className="absolute right-0 mt-1 w-40 rounded-lg border border-gray-200 bg-white shadow-lg z-40 py-1 text-xs" onPointerDown={(e) => e.stopPropagation()}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (widget.text) {
+                                        navigator.clipboard?.writeText(String(widget.text)).catch(() => {});
+                                      }
+                                      setWhiteboardMoreTextMenuFor(null);
+                                      showToast('Text copied');
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-gray-50 text-gray-700"
+                                  >
+                                    Copy text
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const stylePayload = JSON.stringify({
+                                        fontFamily: widget.fontFamily,
+                                        fontSize: widget.fontSize,
+                                        isBold: widget.isBold,
+                                        isItalic: widget.isItalic,
+                                        isUnderline: widget.isUnderline,
+                                        textAlign: widget.textAlign,
+                                        textColor: widget.textColor,
+                                        highlightColor: widget.highlightColor,
+                                        opacity: widget.opacity,
+                                      });
+                                      navigator.clipboard?.writeText(stylePayload).catch(() => {});
+                                      setWhiteboardMoreTextMenuFor(null);
+                                      showToast('Style copied');
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-gray-50 text-gray-700"
+                                  >
+                                    Copy style
+                                  </button>
+                                  <div className="border-t border-gray-100 my-1" />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setWhiteboardWidgets((prev) => prev.filter((w) => w.id !== widget.id));
+                                      setSelectedWidgetId((prev) => (prev === widget.id ? null : prev));
+                                      setWhiteboardMoreTextMenuFor(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-rose-600"
+                                  >
+                                    Delete block
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                               </>
                             )}
                           </div>
                         </div>
                       )}
                     </div>
+                    );
+                  })}
+                  {whiteboardTool === 'select' && whiteboardShapes.map((shape, shapeIndex) => {
+                    const bounds = getShapeBounds(shape);
+                    const isShapeSelected = selectedShapeIndex === shapeIndex;
+                    const hitPadding = 8;
+                    return (
+                      <React.Fragment key={`whiteboard-shape-hit-${shapeIndex}`}>
+                        <div
+                          className="absolute z-[14]"
+                          style={{
+                            left: `${bounds.x - hitPadding}px`,
+                            top: `${bounds.y - hitPadding}px`,
+                            width: `${Math.max(bounds.width + hitPadding * 2, 18)}px`,
+                            height: `${Math.max(bounds.height + hitPadding * 2, 18)}px`,
+                            cursor: isShapeSelected ? 'move' : 'pointer',
+                          }}
+                          onPointerDown={(event) => {
+                            event.stopPropagation();
+                            event.preventDefault();
+                            setSelectedShapeIndex(shapeIndex);
+                            setSelectedWidgetId(null);
+                            setWhiteboardEditingWidgetId(null);
+                            shapeDragRef.current = {
+                              shapeIndex,
+                              startX: event.clientX,
+                              startY: event.clientY,
+                              originalShape: { ...shape },
+                            };
+                            event.currentTarget.setPointerCapture(event.pointerId);
+                          }}
+                          onPointerMove={(event) => {
+                            const dragState = shapeDragRef.current;
+                            if (!dragState || dragState.shapeIndex !== shapeIndex) {
+                              return;
+                            }
+                            const dx = event.clientX - dragState.startX;
+                            const dy = event.clientY - dragState.startY;
+                            setWhiteboardShapes((prev) => prev.map((existingShape, existingIndex) => (
+                              existingIndex === shapeIndex
+                                ? moveShapeByDelta(dragState.originalShape, dx, dy)
+                                : existingShape
+                            )));
+                          }}
+                          onPointerUp={() => {
+                            shapeDragRef.current = null;
+                          }}
+                          onPointerCancel={() => {
+                            shapeDragRef.current = null;
+                          }}
+                        />
+                        {isShapeSelected && (
+                          <>
+                            <div
+                              className="absolute pointer-events-none z-[15] rounded-sm border-2 border-violet-500"
+                              style={{
+                                left: `${bounds.x}px`,
+                                top: `${bounds.y}px`,
+                                width: `${Math.max(bounds.width, 1)}px`,
+                                height: `${Math.max(bounds.height, 1)}px`,
+                              }}
+                            />
+                            {[
+                              { corner: 'tl', style: { top: -5, left: -5, cursor: 'nwse-resize' }, dw: -1, dh: -1, ox: 1, oy: 1 },
+                              { corner: 'tr', style: { top: -5, right: -5, cursor: 'nesw-resize' }, dw: 1, dh: -1, ox: 0, oy: 1 },
+                              { corner: 'bl', style: { bottom: -5, left: -5, cursor: 'nesw-resize' }, dw: -1, dh: 1, ox: 1, oy: 0 },
+                              { corner: 'br', style: { bottom: -5, right: -5, cursor: 'nwse-resize' }, dw: 1, dh: 1, ox: 0, oy: 0 },
+                            ].map(({ corner, style, dw, dh, ox, oy }) => (
+                              <div
+                                key={`${shapeIndex}-${corner}`}
+                                className="absolute z-[16]"
+                                style={{
+                                  left: `${bounds.x}px`,
+                                  top: `${bounds.y}px`,
+                                  width: `${Math.max(bounds.width, 1)}px`,
+                                  height: `${Math.max(bounds.height, 1)}px`,
+                                }}
+                              >
+                                <div
+                                  className="absolute w-3 h-3 bg-white border-2 border-violet-500 rounded-sm"
+                                  style={style}
+                                  onPointerDown={(event) => {
+                                    event.stopPropagation();
+                                    event.preventDefault();
+                                    shapeResizeRef.current = {
+                                      shapeIndex,
+                                      startX: event.clientX,
+                                      startY: event.clientY,
+                                      sourceBounds: bounds,
+                                      originalShape: { ...shape },
+                                      dw,
+                                      dh,
+                                      ox,
+                                      oy,
+                                    };
+                                    event.currentTarget.setPointerCapture(event.pointerId);
+                                  }}
+                                  onPointerMove={(event) => {
+                                    const resizeState = shapeResizeRef.current;
+                                    if (!resizeState || resizeState.shapeIndex !== shapeIndex) {
+                                      return;
+                                    }
+                                    const dx = (event.clientX - resizeState.startX) * resizeState.dw;
+                                    const dy = (event.clientY - resizeState.startY) * resizeState.dh;
+                                    const nextWidth = Math.max(24, resizeState.sourceBounds.width + dx);
+                                    const nextHeight = Math.max(24, resizeState.sourceBounds.height + dy);
+                                    const nextX = resizeState.sourceBounds.x - (nextWidth - resizeState.sourceBounds.width) * resizeState.ox;
+                                    const nextY = resizeState.sourceBounds.y - (nextHeight - resizeState.sourceBounds.height) * resizeState.oy;
+                                    setWhiteboardShapes((prev) => prev.map((existingShape, existingIndex) => (
+                                      existingIndex === shapeIndex
+                                        ? resizeShapeFromBounds(
+                                          resizeState.originalShape,
+                                          resizeState.sourceBounds,
+                                          { x: nextX, y: nextY, width: nextWidth, height: nextHeight },
+                                        )
+                                        : existingShape
+                                    )));
+                                  }}
+                                  onPointerUp={() => {
+                                    shapeResizeRef.current = null;
+                                  }}
+                                  onPointerCancel={() => {
+                                    shapeResizeRef.current = null;
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </React.Fragment>
                     );
                   })}
                   <svg className="absolute inset-0 w-full h-full pointer-events-none">
@@ -11352,6 +11883,7 @@ Rules:
                         setWhiteboardStickyDragStart(null);
                         setWhiteboardStickyPreview(null);
                         setSelectedWidgetId(null);
+                        setSelectedShapeIndex(null);
                         showToast('Whiteboard cleared');
                       }}
                       className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"
