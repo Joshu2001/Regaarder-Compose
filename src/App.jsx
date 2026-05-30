@@ -8795,6 +8795,109 @@ Rules:
             </div>
           </aside>
         </main>
+
+        <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
+          <div
+            onClick={createComposeExperience}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><MessageCircle size={20} /></div>
+            <span className="text-[9px] font-semibold">Chat</span>
+          </div>
+
+          <div
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all bg-violet-100"><MessageSquare size={20} /></div>
+            <span className="text-[9px] font-semibold">DMs</span>
+          </div>
+
+          <div
+            onClick={createComposeExperience}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><PenTool size={20} /></div>
+            <span className="text-[9px] font-semibold">Assist</span>
+          </div>
+
+          <div
+            onClick={createComposeExperience}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><LayoutGrid size={20} /></div>
+            <span className="text-[9px] font-semibold">Whiteboard</span>
+          </div>
+
+          <div
+            onClick={createComposeExperience}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><CheckSquare size={20} /></div>
+            <span className="text-[9px] font-semibold">Tasks</span>
+          </div>
+
+          <div
+            onClick={createComposeExperience}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><Calendar size={20} /></div>
+            <span className="text-[9px] font-semibold">Schedule</span>
+          </div>
+
+          <div
+            onClick={createComposeExperience}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><Users size={20} /></div>
+            <span className="text-[9px] font-semibold">People</span>
+          </div>
+
+          <div
+            onClick={createComposeExperience}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><Database size={20} /></div>
+            <span className="text-[9px] font-semibold">Memory</span>
+          </div>
+
+          <div
+            onClick={createComposeExperience}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><Cloud size={20} /></div>
+            <span className="text-[9px] font-semibold">Orb</span>
+          </div>
+
+          <div
+            onClick={() => {
+              createComposeExperience();
+              setActiveRightTab('room');
+              setRightSidebarOpen(true);
+            }}
+            className="flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-violet-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><MonitorPlay size={20} /></div>
+            <span className="text-[9px] font-semibold">Room</span>
+          </div>
+
+          <div
+            onClick={() => {
+              createComposeExperience();
+              setActiveRightTab('room');
+              setRightSidebarOpen(true);
+              setActiveMeetingStageTab('files');
+            }}
+            className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer"
+          >
+            <div className="p-2"><File size={20} /></div>
+            <span className="text-[9px] font-semibold">Files</span>
+          </div>
+
+          <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 cursor-pointer mt-auto">
+            <div className="p-2"><MoreHorizontal size={20} /></div>
+            <span className="text-[9px] font-semibold">More</span>
+          </div>
+        </div>
       </div>
     );
   }
