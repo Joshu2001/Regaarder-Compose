@@ -284,7 +284,8 @@ export default function App() {
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
   const [deckSlidesData, setDeckSlidesData] = useState([createBlankDeckSlide(1)]);
-  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'tasks' | 'calendar' | 'room' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
+  const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
   const [isPromptExpanded, setIsPromptExpanded] = useState(true);
@@ -3184,6 +3185,65 @@ export default function App() {
     }, 2800);
   };
 
+  const handleWhiteboardAssistantAction = (action) => {
+    if (!action?.prompt) {
+      return;
+    }
+
+    if (action.key === 'breakdown-tasks') {
+      const seedTasks = [
+        'Finalize social campaign and influencer shortlist',
+        'Publish onboarding flow improvements before launch week',
+        'Prepare retention webinar series onboarding script',
+      ];
+      setTasks((prev) => {
+        const existing = new Set(prev.map((task) => task.text));
+        const additions = seedTasks
+          .filter((taskText) => !existing.has(taskText))
+          .map((taskText, index) => ({
+            id: Date.now() + index,
+            text: taskText,
+            completed: false,
+            owner: 'agent',
+          }));
+        return additions.length ? [...additions, ...prev] : prev;
+      });
+      setActiveRightTab('tasks');
+      showToast('Launch tasks added to checklist');
+      return;
+    }
+
+    if (action.key === 'create-timeline') {
+      setActiveRightTab('calendar');
+      setScheduleInput('Q2 launch timeline: Awareness -> Activation -> Conversion -> Retention milestones with weekly checkpoints.');
+      showToast('Timeline draft sent to Schedule');
+      return;
+    }
+
+    setActiveRightTab('assistant');
+    setAssistantQuickPrompt(action.prompt);
+    showToast(`${action.label} ready in AI Assistant`);
+  };
+
+  const handleWhiteboardConnectionAction = (connectionKey) => {
+    if (connectionKey === 'orb-brief') {
+      setActivePrimaryNav('my-orb');
+      showToast('Opened Orb connection');
+      return;
+    }
+    if (connectionKey === 'tasks') {
+      setActiveRightTab('tasks');
+      showToast('Opened connected launch tasks');
+      return;
+    }
+    if (connectionKey === 'compose') {
+      setActiveRightTab('assistant');
+      setAssistantQuickPrompt('Create a go-to-market launch draft based on the whiteboard strategy.');
+      showToast('Opened Compose connection');
+      return;
+    }
+  };
+
   const closeScheduleSessionModal = () => {
     setIsScheduleCalendarExpanded(false);
     setIsSchedulePeopleMenuOpen(false);
@@ -5673,7 +5733,7 @@ Rules:
     }
 
     event.preventDefault();
-    const tabOrder = ['chat', 'assistant', 'tasks', 'calendar', 'room', 'people', 'memory', 'orb'];
+    const tabOrder = ['chat', 'assistant', 'whiteboard', 'tasks', 'calendar', 'room', 'people', 'memory', 'orb'];
     const currentIndex = tabOrder.indexOf(activeRightTab);
     const safeIndex = currentIndex >= 0 ? currentIndex : 0;
     const nextIndex = event.key === 'ArrowRight'
@@ -7509,6 +7569,27 @@ Rules:
         { key: 'create-outline', label: 'Create outline', detail: 'Structure messy notes into sections', icon: ListTodo, color: 'text-indigo-500', prompt: 'Create a clear outline from this content with logical section flow.' },
         { key: 'title-headers', label: 'Generate title/headers', detail: 'Auto-structure with strong headings', icon: Type, color: 'text-emerald-500', prompt: 'Generate a strong title and section headers for this document.' },
       ];
+
+  const whiteboardAssistantActions = {
+    ask: [
+      { key: 'launch-plan', label: 'Generate launch plan', prompt: 'Generate a launch plan for Q2 Product Launch Strategy whiteboard.' },
+      { key: 'breakdown-tasks', label: 'Break down into tasks', prompt: 'Break this whiteboard strategy into clear execution tasks with owners.' },
+      { key: 'identify-risks', label: 'Identify risks', prompt: 'Identify the main launch risks in this whiteboard and suggest mitigations.' },
+      { key: 'create-timeline', label: 'Create timeline', prompt: 'Create a timeline for this whiteboard strategy from May 1 to Jun 30.' },
+    ],
+    generate: [
+      { key: 'summary', label: 'Generate board summary', prompt: 'Write a concise executive summary from this whiteboard board.' },
+      { key: 'meeting-brief', label: 'Create meeting brief', prompt: 'Create a meeting brief from this whiteboard with goals and next steps.' },
+      { key: 'sync-update', label: 'Draft status update', prompt: 'Draft a weekly status update from this whiteboard progress.' },
+      { key: 'stakeholder-email', label: 'Compose stakeholder email', prompt: 'Compose a stakeholder-ready launch update email from this whiteboard.' },
+    ],
+    insights: [
+      { key: 'conversion-gaps', label: 'Review conversion gaps', prompt: 'Analyze this whiteboard and report likely conversion bottlenecks.' },
+      { key: 'goal-coverage', label: 'Check goal coverage', prompt: 'Check whether this whiteboard fully covers awareness, activation, conversion, and retention.' },
+      { key: 'resource-risks', label: 'Evaluate dependencies', prompt: 'Evaluate key dependencies and resource risks in this whiteboard plan.' },
+      { key: 'cadence-health', label: 'Assess launch cadence', prompt: 'Assess whether this whiteboard timeline cadence is realistic and balanced.' },
+    ],
+  };
 
   useEffect(() => {
     setSheetGrids((prev) => {
@@ -11042,6 +11123,7 @@ Rules:
               {[
                 { key: 'chat', label: 'AI Chat' },
                 { key: 'assistant', label: 'AI Assistant' },
+                { key: 'whiteboard', label: 'Whiteboard' },
                 { key: 'tasks', label: `Tasks (${tasks.filter((t) => !t.completed).length})` },
                 { key: 'calendar', label: 'Schedule' },
                 { key: 'room', label: 'Room' },
@@ -11383,7 +11465,164 @@ Rules:
             </div>
           )}
 
-          {/* C. ACTIVE TAB: TASKS WORKLIST */}
+          {/* C. ACTIVE TAB: WHITEBOARD ASSISTANT */}
+          {activeRightTab === 'whiteboard' && (
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#fcfcff]">
+              <div className="rounded-2xl border border-[#ece8ff] bg-white shadow-[0_18px_34px_-28px_rgba(109,40,217,0.45)] overflow-hidden">
+                <div className="px-4 pt-4 pb-2 border-b border-gray-100">
+                  <div className="text-[14px] font-semibold text-[#1f2537] inline-flex items-center gap-1.5">
+                    <Sparkles size={13} className="text-violet-500" />
+                    AI Assistant
+                  </div>
+                </div>
+                <div className="px-2 pt-2">
+                  <div className="grid grid-cols-3 gap-1 rounded-xl bg-[#f7f5ff] p-1">
+                    {['ask', 'generate', 'insights'].map((tabKey) => (
+                      <button
+                        key={tabKey}
+                        type="button"
+                        onClick={() => {
+                          setWhiteboardAssistantTab(tabKey);
+                          showToast(`Whiteboard ${tabKey} mode active`);
+                        }}
+                        className={`h-8 rounded-lg text-[11px] font-semibold transition-colors ${whiteboardAssistantTab === tabKey ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-violet-600'}`}
+                      >
+                        {tabKey.charAt(0).toUpperCase() + tabKey.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="px-4 py-3">
+                  <div className="text-[12px] text-slate-600 mb-2">What would you like to do?</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(whiteboardAssistantActions[whiteboardAssistantTab] || []).map((action) => (
+                      <button
+                        key={action.key}
+                        type="button"
+                        onClick={() => handleWhiteboardAssistantAction(action)}
+                        className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-medium text-violet-700 hover:bg-violet-100 hover:border-violet-300 transition-colors"
+                      >
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-[12px] font-semibold text-[#1f2537]">Board insights</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWhiteboardAssistantTab('insights');
+                      setActiveRightTab('whiteboard');
+                      showToast('Insights refreshed');
+                    }}
+                    className="text-[10px] font-semibold text-violet-600 hover:text-violet-700"
+                  >
+                    Refresh
+                  </button>
+                </div>
+                <div className="mt-2.5 space-y-2 text-[11px]">
+                  {[
+                    { key: 'notes', label: '12 sticky notes', icon: FileText },
+                    { key: 'links', label: '8 connections', icon: LinkIcon },
+                    { key: 'collabs', label: '5 collaborators', icon: Users },
+                    { key: 'edited', label: 'Last edited 2m ago', icon: Clock },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => showToast(`${item.label} opened`)}
+                        className="w-full rounded-lg border border-gray-100 bg-[#fafaff] px-2.5 py-2 text-left text-slate-600 hover:bg-violet-50 hover:border-violet-200 inline-flex items-center gap-2 transition-colors"
+                      >
+                        <Icon size={12} className="text-violet-500" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                <div className="text-[12px] font-semibold text-[#1f2537]">Connected to</div>
+                <div className="mt-2 space-y-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleWhiteboardConnectionAction('orb-brief')}
+                    className="w-full rounded-lg border border-gray-100 px-2.5 py-2 text-left text-[11px] text-slate-700 hover:bg-violet-50 hover:border-violet-200 inline-flex items-center gap-2"
+                  >
+                    <FileText size={12} className="text-violet-500" />
+                    Q2 Launch Brief (Orb)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleWhiteboardConnectionAction('tasks')}
+                    className="w-full rounded-lg border border-gray-100 px-2.5 py-2 text-left text-[11px] text-slate-700 hover:bg-violet-50 hover:border-violet-200 inline-flex items-center gap-2"
+                  >
+                    <CheckSquare size={12} className="text-violet-500" />
+                    Launch Tasks
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleWhiteboardConnectionAction('compose')}
+                    className="w-full rounded-lg border border-gray-100 px-2.5 py-2 text-left text-[11px] text-slate-700 hover:bg-violet-50 hover:border-violet-200 inline-flex items-center gap-2"
+                  >
+                    <Sparkles size={12} className="text-violet-500" />
+                    Go-to-Market Plan
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => showToast('Add connection menu opened')}
+                  className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-medium text-violet-600 hover:text-violet-700"
+                >
+                  <Plus size={12} />
+                  Add connection
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-[12px] font-semibold text-[#1f2537]">Participants</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveRightTab('room');
+                      setIsRoomInviteModalOpen(true);
+                      showToast('Invite panel opened');
+                    }}
+                    className="text-[10px] font-semibold text-violet-600 hover:text-violet-700"
+                  >
+                    Invite
+                  </button>
+                </div>
+                <div className="mt-2 flex items-center -space-x-2">
+                  {meetingParticipants.slice(0, 4).map((participant) => (
+                    <img
+                      key={`whiteboard-participant-${participant.name}`}
+                      src={participant.img}
+                      alt={participant.name}
+                      title={participant.name}
+                      className="w-7 h-7 rounded-full border-2 border-white object-cover"
+                    />
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => showToast('Participant list opened')}
+                    className="ml-2 h-7 px-2 rounded-full border border-violet-200 bg-violet-50 text-[10px] font-semibold text-violet-700 hover:bg-violet-100"
+                  >
+                    +{meetingOverflowParticipants.length}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* D. ACTIVE TAB: TASKS WORKLIST */}
           {activeRightTab === 'tasks' && (
             <div className="flex-1 overflow-y-auto p-5 flex flex-col">
               <div className="flex items-center justify-between mb-4">
@@ -11539,7 +11778,7 @@ Rules:
             </div>
           )}
 
-          {/* D. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
+          {/* E. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
             <div className="flex-1 min-h-0 flex flex-col relative">
               <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-1 pb-3 bg-[linear-gradient(180deg,#f6f7fb_0%,#f4f5f9_100%)]">
