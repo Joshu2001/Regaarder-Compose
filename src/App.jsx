@@ -320,6 +320,7 @@ export default function App() {
   const [selectedWidgetId, setSelectedWidgetId] = useState(null);
   const [whiteboardComments, setWhiteboardComments] = useState([]);
   const [whiteboardAddMenuOpen, setWhiteboardAddMenuOpen] = useState(false);
+  const [whiteboardStickyColorMenuFor, setWhiteboardStickyColorMenuFor] = useState(null);
   const [isWhiteboardPanning, setIsWhiteboardPanning] = useState(false);
   const whiteboardCanvasRef = useRef(null);
   const widgetDragRef = useRef(null);
@@ -11200,6 +11201,49 @@ Rules:
                             />
                           ))}
                         </>
+                      )}
+                      {isSelected && whiteboardTool === 'select' && (
+                        <div className="absolute left-1/2 -translate-x-1/2 z-30 rounded-xl border border-gray-200 bg-white shadow-sm px-2 py-1.5" style={{ top: `${(widget.height || 120) + 14}px` }}>
+                          <div className="flex items-center gap-1">
+                            <button type="button" className="h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 flex items-center justify-center" title="Move"><Move size={13} /></button>
+                            {widget.type === 'sticky' && (
+                              <div className="relative">
+                                <button type="button" onClick={() => setWhiteboardStickyColorMenuFor((prev) => (prev === widget.id ? null : widget.id))} className="h-7 w-7 rounded-md hover:bg-gray-100 flex items-center justify-center" title="Choose color">
+                                  <span className="h-4 w-4 rounded-full border border-gray-300" style={{ backgroundColor: widget.color || '#fde047' }} />
+                                </button>
+                                {whiteboardStickyColorMenuFor === widget.id && (
+                                  <div className="absolute left-0 mt-1 w-44 rounded-lg border border-gray-200 bg-white shadow-lg z-40 p-2">
+                                    <div className="grid grid-cols-6 gap-1">
+                                      {['#fde047', '#fca5a5', '#fdba74', '#86efac', '#93c5fd', '#d8b4fe', '#f9a8d4', '#67e8f9', '#e5e7eb', '#fef3c7', '#c7d2fe', '#bbf7d0'].map((color) => (
+                                        <button key={color} type="button" onClick={() => { setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, color } : w))); setWhiteboardStickyColorMenuFor(null); }} className={`h-5 w-5 rounded-full border ${widget.color === color ? 'border-violet-500 ring-1 ring-violet-300' : 'border-gray-300'}`} style={{ backgroundColor: color }} title={color} />
+                                      ))}
+                                    </div>
+                                    <div className="mt-2 border-t border-gray-100 pt-2">
+                                      <input type="color" value={widget.color || '#fde047'} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, color: e.target.value } : w)))} className="h-7 w-full rounded border border-gray-300 cursor-pointer" title="Custom color" />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <button type="button" onClick={() => { const clone = { ...widget, id: `wb-widget-${Date.now()}-clone`, x: widget.x + 20, y: widget.y + 20 }; setWhiteboardWidgets((prev) => [...prev, clone]); setSelectedWidgetId(clone.id); }} className="h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 flex items-center justify-center" title="Duplicate"><Plus size={13} /></button>
+                            <button type="button" onClick={() => { setWhiteboardWidgets((prev) => prev.filter((w) => w.id !== widget.id)); setSelectedWidgetId((prev) => (prev === widget.id ? null : prev)); }} className="h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 hover:text-rose-600 flex items-center justify-center" title="Delete"><Trash2 size={13} /></button>
+                            {widget.type === 'text' && (
+                              <>
+                            <select value={widget.fontFamily || 'Noto Sans'} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, fontFamily: e.target.value } : w)))} className="text-xs px-1.5 py-0.5 border border-gray-200 rounded text-gray-700 hover:bg-gray-50 bg-white">
+                              <option value="Noto Sans">Noto Sans</option>
+                              <option value="Manrope">Manrope</option>
+                              <option value="Inter">Inter</option>
+                              <option value="Georgia">Georgia</option>
+                              <option value="Courier New">Courier</option>
+                            </select>
+                            <input type="number" min="8" max="72" value={widget.fontSize || 14} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, fontSize: parseInt(e.target.value) } : w)))} className="text-xs w-10 px-1.5 py-0.5 border border-gray-200 rounded text-gray-700 hover:bg-gray-50 bg-white" title="Font Size" />
+                            <button type="button" onClick={() => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, isBold: !w.isBold } : w)))} className={`h-6 w-6 rounded-md flex items-center justify-center text-xs font-bold ${widget.isBold ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Bold">B</button>
+                            <button type="button" onClick={() => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, isItalic: !w.isItalic } : w)))} className={`h-6 w-6 rounded-md flex items-center justify-center text-xs italic ${widget.isItalic ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Italic">I</button>
+                            <button type="button" onClick={() => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, isUnderline: !w.isUnderline } : w)))} className={`h-6 w-6 rounded-md flex items-center justify-center text-xs underline ${widget.isUnderline ? 'bg-violet-100 text-violet-600 border border-violet-300' : 'text-gray-600 hover:bg-gray-100'}`} title="Underline">U</button>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       )}
                     </div>
                     );
