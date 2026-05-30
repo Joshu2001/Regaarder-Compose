@@ -12,7 +12,7 @@ import {
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
-  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight
+  Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
