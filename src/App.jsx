@@ -2014,6 +2014,7 @@ export default function App() {
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
+  const selectionActionMenuEnabled = false;
   const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
@@ -4029,6 +4030,11 @@ export default function App() {
   };
 
   const updateSelectionActionMenuPosition = (range) => {
+    if (!selectionActionMenuEnabled) {
+      setSelectionActionMenu({ open: false, left: 0, top: 0 });
+      return;
+    }
+
     if (!range || !documentCardRef.current) {
       setSelectionActionMenu({ open: false, left: 0, top: 0 });
       return;
@@ -6544,6 +6550,21 @@ Rules:
       : undefined;
     const actionKey = String(actionMeta.actionKey || '').toLowerCase();
     const requestedOutlineLevels = Math.max(2, Math.min(4, Number(actionMeta.outlineLevels || outlineLevels || 3) || 3));
+    const liveDocumentText = String(documentCardRef.current?.innerText || '')
+      .replace(/\r/g, '')
+      .replace(/\u00a0/g, ' ')
+      .trim();
+    const aiReadyDocumentContext = liveDocumentText
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .filter((line) => !/^(@font-face|@list|mso-|p\.msonormal|h1\{|h3\{|span\.mso|@page|div\.section|font-family:|margin-|text-align:|layout-grid:|size:|#?1111microsoftinternetexplorer)/i.test(line))
+      .slice(0, 140)
+      .join('\n')
+      .slice(0, 7000);
+    const documentContextBlock = aiReadyDocumentContext
+      ? `\n\nCurrent document content:\n"""${aiReadyDocumentContext}"""`
+      : '';
 
     if (productMode === 'deck') {
       const deckPrompt = `${instruction}\n\nCreate or refine a cinematic deck structure with stronger visual hierarchy, audience fit, and pacing. Include clear visual direction per slide.`;
@@ -6570,7 +6591,7 @@ Rules:
       const hasSelection = requestedSelectionScope !== undefined ? requestedSelectionScope : Boolean(selectedScope);
       const outlinePrompt = hasSelection
         ? `Create a structured outline from this selected text. Use concise headings and nested bullets where useful. Keep headings short and clear. Target up to ${requestedOutlineLevels} heading levels.\n\nSelected text:\n"""${selectedScope}"""`
-        : `${instruction}\n\nCreate a structured outline from the current document with concise headings and nested bullets where useful. Keep headings short and clear. Target up to ${requestedOutlineLevels} heading levels.`;
+        : `${instruction}\n\nCreate a structured outline from the current document with concise headings and nested bullets where useful. Keep headings short and clear. Target up to ${requestedOutlineLevels} heading levels.${documentContextBlock}`;
 
       setRightSidebarOpen(false);
       setActiveRightTab('assistant');
@@ -6590,26 +6611,24 @@ Rules:
     }
 
     if (productMode === 'compose' && (actionKey === 'generate-toc' || actionKey === 'toc' || actionKey === 'table-of-content')) {
-      const selectedScope = selectedEditorTextRef.current || selectedEditorText;
-      const hasSelection = requestedSelectionScope !== undefined ? requestedSelectionScope : Boolean(selectedScope);
-      const tocPrompt = hasSelection
-        ? `Generate a table of contents from this selected text. Use clear numbered section headings, include concise nested points when helpful, and keep labels short.
+          const tocPrompt = `${instruction}
 
-Selected text:
-"""${selectedScope}"""`
-        : `${instruction}
-
-Generate a complete table of contents from the current document. Then rewrite the document structure to align with that table of contents using clear headings and concise supporting paragraphs.`;
+    Generate a complete table of contents for the full document (not just a selected excerpt).
+    Return clean content with this exact structure:
+    1) "Table of Contents" heading
+    2) Numbered TOC entries
+    3) Matching section headings and concise supporting paragraphs for each TOC item
+    Do not include CSS, style definitions, markdown fences, or editor metadata.${documentContextBlock}`;
 
       setRightSidebarOpen(false);
       setActiveRightTab('assistant');
       showToast('Compose AI is generating a table of contents...');
       handleAISubmit(tocPrompt, {
-        source: hasSelection ? 'compose' : 'chat',
+      source: 'chat',
         forceDocBuild: true,
         suppressChatEcho: true,
         composeFormat: 'Plain Text',
-        selectionScoped: hasSelection,
+      selectionScoped: false,
         smartActionKey: 'toc',
         tone: promptTone,
         lengthMode: promptLengthMode,
@@ -9404,7 +9423,7 @@ Generate a complete table of contents from the current document. Then rewrite th
     || notificationsOpen
     || replayPanelOpen
     || replaySpeedMenuOpen
-    || selectionActionMenu.open
+    || (selectionActionMenuEnabled && selectionActionMenu.open)
     || pageContextMenu.open
     || docSearchPanelOpen
     || creationPickerOpen
@@ -13056,7 +13075,7 @@ Generate a complete table of contents from the current document. Then rewrite th
           </div>
         )}
 
-        {selectionActionMenu.open && !isComposing && (
+        {selectionActionMenuEnabled && selectionActionMenu.open && !isComposing && (
           <div
             ref={selectionActionMenuRef}
             onPointerDownCapture={() => {
