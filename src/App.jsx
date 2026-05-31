@@ -499,11 +499,6 @@ export default function App() {
     const index = whiteboardWidgets.length;
     const nextWidget = {
       id: `wb-widget-${Date.now()}-${index}`,
-      type,
-      x: options.x ?? 120 + (index % 4) * 170,
-      y: options.y ?? 90 + Math.floor(index / 4) * 130,
-      width: options.width ?? 170,
-      height: options.height ?? 120,
       color: options.color ?? whiteboardStickyColor,
       text: options.text ?? '',
       fontFamily: options.fontFamily ?? 'Calibri',
@@ -1257,6 +1252,7 @@ export default function App() {
   const docSearchPanelRef = useRef(null);
   const replaySpeedMenuRef = useRef(null);
   const notificationsPanelRef = useRef(null);
+  const appShellRef = useRef(null);
   const roomStageRef = useRef(null);
   const promptFileInputRef = useRef(null);
   const dmAnyAttachmentInputRef = useRef(null);
@@ -1351,6 +1347,11 @@ export default function App() {
   const [documentStats, setDocumentStats] = useState({ words: 0, characters: 0 });
   const [zoomLevel, setZoomLevel] = useState(100);
   const [isFocusMode, setIsFocusMode] = useState(false);
+  const [isDocumentImmersive, setIsDocumentImmersive] = useState(false);
+  const [workspaceLauncherOpen, setWorkspaceLauncherOpen] = useState(false);
+  const [workspaceLauncherIconStyle, setWorkspaceLauncherIconStyle] = useState('solid');
+  const [workspaceLauncherIconSize, setWorkspaceLauncherIconSize] = useState('md');
+  const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
@@ -2952,6 +2953,22 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const handleDocumentImmersiveFullscreen = () => {
+      const immersiveActive = document.fullscreenElement === appShellRef.current;
+      if (immersiveActive && !isDocumentImmersive) {
+        setIsDocumentImmersive(true);
+      }
+      if (!immersiveActive && isDocumentImmersive) {
+        setIsDocumentImmersive(false);
+        setIsFocusMode(false);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
+    return () => document.removeEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
+  }, [isDocumentImmersive]);
+
+  useEffect(() => {
     setRoomStageFrame((prev) => {
       const width = Math.min(980, Math.max(860, window.innerWidth - 460));
       const height = Math.min(700, Math.max(520, window.innerHeight - 170));
@@ -4224,6 +4241,7 @@ export default function App() {
     setMeetingShareMenuAnchor(null);
     setIsMeetingLinkInputOpen(false);
     setIsMeetingOverflowParticipantsOpen(false);
+    setWorkspaceLauncherOpen(false);
   };
 
   const trackMemoryAction = (type, summary, details = {}) => {
@@ -6050,6 +6068,7 @@ Rules:
 
   // Click handler for Right Mini Sidebar
   const handleMiniSidebarClick = (tabKey) => {
+    setWorkspaceLauncherOpen(false);
     if (tabKey === 'dm') {
       createDmExperience();
       return;
@@ -6061,6 +6080,68 @@ Rules:
     } else {
       setRightSidebarOpen(true);
       setActiveRightTab(tabKey);
+    }
+  };
+
+  const launchWorkspaceFromMiniPlus = (workspaceKey) => {
+    setWorkspaceLauncherOpen(false);
+    if (workspaceKey === 'compose') {
+      createComposeExperience();
+      return;
+    }
+    if (workspaceKey === 'deck') {
+      createDeckExperience();
+      return;
+    }
+    if (workspaceKey === 'sheets') {
+      createSheetsExperience();
+      return;
+    }
+    if (workspaceKey === 'dms') {
+      createDmExperience();
+      return;
+    }
+    if (workspaceKey === 'whiteboard') {
+      setProductMode('compose');
+      setLeftSidebarOpen(true);
+      setRightSidebarOpen(true);
+      setActiveRightTab('whiteboard');
+      showToast('Whiteboard opened');
+      return;
+    }
+    if (workspaceKey === 'dashboard') {
+      setProductMode('landing');
+      setActivePrimaryNav('home');
+      showToast('Dashboard opened');
+      return;
+    }
+    handleMiniSidebarClick('chat');
+  };
+
+  const toggleDocumentImmersiveMode = async () => {
+    const entering = !isDocumentImmersive;
+    try {
+      if (entering) {
+        setIsFocusMode(true);
+        if (appShellRef.current?.requestFullscreen && document.fullscreenElement !== appShellRef.current) {
+          await appShellRef.current.requestFullscreen();
+        }
+        setIsDocumentImmersive(true);
+        showToast('Immersive mode enabled');
+        return;
+      }
+
+      if (document.fullscreenElement && document.exitFullscreen) {
+        await document.exitFullscreen();
+      }
+      setIsDocumentImmersive(false);
+      setIsFocusMode(false);
+      showToast('Immersive mode disabled');
+    } catch (_error) {
+      if (entering) {
+        setIsFocusMode(false);
+      }
+      showToast('Fullscreen is unavailable in this browser context');
     }
   };
 
@@ -10980,6 +11061,87 @@ Rules:
         )}
 
         <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
+          <div className="relative">
+            <div
+              onClick={() => setWorkspaceLauncherOpen((prev) => !prev)}
+              className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${workspaceLauncherOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            >
+                <Plus
+                  className="transition-all"
+                  size={workspaceLauncherIconSize === 'sm' ? 16 : workspaceLauncherIconSize === 'lg' ? 24 : 20}
+                  strokeWidth={workspaceLauncherIconStyle === 'solid' ? 2.5 : workspaceLauncherIconStyle === 'soft' ? 1.7 : 2}
+                  style={{ color: workspaceLauncherIconColor, opacity: workspaceLauncherIconStyle === 'soft' ? 0.78 : 1 }}
+                />
+              <span className="text-[9px] font-semibold">Launch</span>
+            </div>
+
+            {workspaceLauncherOpen && (
+              <div className="absolute top-0 right-full mr-3 z-[260] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5">
+                <div className="text-[11px] font-semibold text-gray-700 px-1 pb-1.5">Choose Workspace</div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { key: 'whiteboard', label: 'Whiteboard', icon: LayoutGrid },
+                    { key: 'compose', label: 'Compose', icon: FileText },
+                    { key: 'deck', label: 'Deck', icon: Presentation },
+                    { key: 'sheets', label: 'Sheets', icon: ListOrdered },
+                    { key: 'dms', label: 'DMs', icon: MessageSquare },
+                    { key: 'dashboard', label: 'Dashboard', icon: Home },
+                  ].map(({ key, label, icon: Icon }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => launchWorkspaceFromMiniPlus(key)}
+                      className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[11px] text-gray-700 hover:bg-violet-50 hover:border-violet-200 inline-flex items-center gap-1.5"
+                    >
+                      <Icon size={12} />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-2 border-t border-gray-100 pt-2">
+                  <div className="text-[10px] uppercase tracking-wide text-gray-400 px-1">Icon style</div>
+                  <div className="mt-1 flex items-center gap-1">
+                    {['solid', 'soft', 'outline'].map((styleKey) => (
+                      <button
+                        key={styleKey}
+                        type="button"
+                        onClick={() => setWorkspaceLauncherIconStyle(styleKey)}
+                        className={`px-2 py-1 rounded text-[10px] border ${workspaceLauncherIconStyle === styleKey ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                      >
+                        {styleKey}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-2 text-[10px] uppercase tracking-wide text-gray-400 px-1">Icon size</div>
+                  <div className="mt-1 flex items-center gap-1">
+                    {['sm', 'md', 'lg'].map((sizeKey) => (
+                      <button
+                        key={sizeKey}
+                        type="button"
+                        onClick={() => setWorkspaceLauncherIconSize(sizeKey)}
+                        className={`px-2 py-1 rounded text-[10px] border ${workspaceLauncherIconSize === sizeKey ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                      >
+                        {sizeKey.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-2 text-[10px] uppercase tracking-wide text-gray-400 px-1">Icon color</div>
+                  <div className="mt-1 px-1">
+                    <input
+                      type="color"
+                      value={workspaceLauncherIconColor}
+                      onChange={(event) => setWorkspaceLauncherIconColor(event.target.value)}
+                      className="h-8 w-full rounded-md border border-gray-200 bg-white cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <div
             onClick={() => handleMiniSidebarClick('chat')}
             className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'chat' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
@@ -11081,7 +11243,7 @@ Rules:
   }
 
   return (
-    <div className={`flex h-screen bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+    <div ref={appShellRef} className={`flex h-screen bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
       
       {/* Dynamic Toast System */}
       {toastMessage && (
@@ -12274,6 +12436,14 @@ Rules:
             title="Convert current document to PDF"
           >
             PDF
+          </button>
+          <button
+            type="button"
+            onClick={toggleDocumentImmersiveMode}
+            className={`p-1.5 rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+            title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
+          >
+            {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
           </button>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
@@ -13549,6 +13719,34 @@ Rules:
                       title="Clear board"
                     >
                       <Trash2 size={15} />
+                    </button>
+                    <div className="w-px h-5 bg-gray-200 mx-0.5" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        activateWhiteboardTool('eraser');
+                        setWhiteboardEraserMenuOpen(true);
+                      }}
+                      className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'eraser' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                      title="Eraser"
+                    >
+                      <Eraser size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => activateWhiteboardTool('image')}
+                      className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'image' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                      title="Image"
+                    >
+                      <ImageIcon size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWhiteboardMoreMenuOpen((prev) => !prev)}
+                      className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardMoreMenuOpen ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                      title="More"
+                    >
+                      <MoreHorizontal size={15} />
                     </button>
                   </div>
                 </div>
@@ -16338,6 +16536,86 @@ Rules:
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
       <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
+        <div className="relative">
+          <div
+            onClick={() => setWorkspaceLauncherOpen((prev) => !prev)}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${workspaceLauncherOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <Plus
+              className="transition-all"
+              size={workspaceLauncherIconSize === 'sm' ? 16 : workspaceLauncherIconSize === 'lg' ? 24 : 20}
+              strokeWidth={workspaceLauncherIconStyle === 'solid' ? 2.5 : workspaceLauncherIconStyle === 'soft' ? 1.7 : 2}
+              style={{ color: workspaceLauncherIconColor, opacity: workspaceLauncherIconStyle === 'soft' ? 0.78 : 1 }}
+            />
+            <span className="text-[9px] font-semibold">Launch</span>
+          </div>
+
+          {workspaceLauncherOpen && (
+            <div className="absolute top-0 right-full mr-3 z-[260] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5">
+              <div className="text-[11px] font-semibold text-gray-700 px-1 pb-1.5">Choose Workspace</div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { key: 'whiteboard', label: 'Whiteboard', icon: LayoutGrid },
+                  { key: 'compose', label: 'Compose', icon: FileText },
+                  { key: 'deck', label: 'Deck', icon: Presentation },
+                  { key: 'sheets', label: 'Sheets', icon: ListOrdered },
+                  { key: 'dms', label: 'DMs', icon: MessageSquare },
+                  { key: 'dashboard', label: 'Dashboard', icon: Home },
+                ].map(({ key, label, icon: Icon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => launchWorkspaceFromMiniPlus(key)}
+                    className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[11px] text-gray-700 hover:bg-violet-50 hover:border-violet-200 inline-flex items-center gap-1.5"
+                  >
+                    <Icon size={12} />
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-2 border-t border-gray-100 pt-2">
+                <div className="text-[10px] uppercase tracking-wide text-gray-400 px-1">Icon style</div>
+                <div className="mt-1 flex items-center gap-1">
+                  {['solid', 'soft', 'outline'].map((styleKey) => (
+                    <button
+                      key={styleKey}
+                      type="button"
+                      onClick={() => setWorkspaceLauncherIconStyle(styleKey)}
+                      className={`px-2 py-1 rounded text-[10px] border ${workspaceLauncherIconStyle === styleKey ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                    >
+                      {styleKey}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-2 text-[10px] uppercase tracking-wide text-gray-400 px-1">Icon size</div>
+                <div className="mt-1 flex items-center gap-1">
+                  {['sm', 'md', 'lg'].map((sizeKey) => (
+                    <button
+                      key={sizeKey}
+                      type="button"
+                      onClick={() => setWorkspaceLauncherIconSize(sizeKey)}
+                      className={`px-2 py-1 rounded text-[10px] border ${workspaceLauncherIconSize === sizeKey ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                    >
+                      {sizeKey.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-2 text-[10px] uppercase tracking-wide text-gray-400 px-1">Icon color</div>
+                <div className="mt-1 px-1">
+                  <input
+                    type="color"
+                    value={workspaceLauncherIconColor}
+                    onChange={(event) => setWorkspaceLauncherIconColor(event.target.value)}
+                    className="h-8 w-full rounded-md border border-gray-200 bg-white cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
         
         <div 
           onClick={() => handleMiniSidebarClick('chat')}
