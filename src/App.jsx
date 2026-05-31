@@ -5733,6 +5733,9 @@ export default function App() {
     if (/article|essay|write up|writeup/.test(normalizedPrompt)) {
       return 'Article';
     }
+    if (/table of contents?|toc/.test(normalizedPrompt)) {
+      return 'Table of Contents';
+    }
     if (/outline|key points|bullet/.test(normalizedPrompt)) {
       return 'Outline';
     }
@@ -5775,6 +5778,9 @@ export default function App() {
     if (sourceTitle) {
       if (/summary/i.test(requestedAction)) {
         return `${sourceTitle} Summary`;
+      }
+      if (/table of contents?/i.test(requestedAction)) {
+        return `${sourceTitle} Table of Contents`;
       }
       if (/outline/i.test(requestedAction)) {
         return `${sourceTitle} Outline`;
@@ -5831,6 +5837,9 @@ export default function App() {
 
   const deriveGeneratedDocumentSubtitle = ({ promptText = '', requestedTone = 'normal', requestedLengthValue = 220, requestedLengthMode = 'words', attachmentContext = '' }) => {
     const sourceSummary = summarizeAttachmentContext(attachmentContext, promptText);
+    if (/table of contents?|\btoc\b/i.test(String(promptText || ''))) {
+      return 'Structured around an AI-generated table of contents.';
+    }
     if (sourceSummary.fileNames.length) {
       const sourceLabel = cleanSourceLabel(sourceSummary.fileNames[0] || sourceSummary.fileNames.join(', '));
       return `Based on ${sourceLabel || sourceSummary.fileNames.join(', ')} in a ${requestedTone} tone.`;
@@ -6421,7 +6430,7 @@ Rules:
           ? String(finalizedAction.paragraph || '').replace(/\n{2,}/g, '\n\n')
           : aiResponseText;
         const shouldRenderOutlineHtml = finalizedAction.type === 'text'
-          && (smartActionKey === 'outline' || /\boutline\b/i.test(promptText));
+          && (smartActionKey === 'outline' || smartActionKey === 'toc' || /\boutline\b|table of contents?|\btoc\b/i.test(promptText));
         const shouldInjectOutlineHtml = selectionScoped && shouldRenderOutlineHtml;
         const selectionPayload = shouldInjectOutlineHtml
           ? toOutlineHtml(targetedText)
@@ -6573,6 +6582,35 @@ Rules:
         composeFormat: 'Plain Text',
         selectionScoped: hasSelection,
         smartActionKey: 'outline',
+        tone: promptTone,
+        lengthMode: promptLengthMode,
+        lengthValue: promptLengthValue,
+      });
+      return;
+    }
+
+    if (productMode === 'compose' && (actionKey === 'generate-toc' || actionKey === 'toc' || actionKey === 'table-of-content')) {
+      const selectedScope = selectedEditorTextRef.current || selectedEditorText;
+      const hasSelection = requestedSelectionScope !== undefined ? requestedSelectionScope : Boolean(selectedScope);
+      const tocPrompt = hasSelection
+        ? `Generate a table of contents from this selected text. Use clear numbered section headings, include concise nested points when helpful, and keep labels short.
+
+Selected text:
+"""${selectedScope}"""`
+        : `${instruction}
+
+Generate a complete table of contents from the current document. Then rewrite the document structure to align with that table of contents using clear headings and concise supporting paragraphs.`;
+
+      setRightSidebarOpen(false);
+      setActiveRightTab('assistant');
+      showToast('Compose AI is generating a table of contents...');
+      handleAISubmit(tocPrompt, {
+        source: hasSelection ? 'compose' : 'chat',
+        forceDocBuild: true,
+        suppressChatEcho: true,
+        composeFormat: 'Plain Text',
+        selectionScoped: hasSelection,
+        smartActionKey: 'toc',
         tone: promptTone,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
@@ -9468,6 +9506,7 @@ Rules:
       : [
         { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content to be more professional while preserving meaning.' },
         { key: 'create-outline', label: 'Create outline', detail: 'Structure messy notes into sections', icon: ListTodo, color: 'text-indigo-500', prompt: 'Create a clear outline from this content with logical section flow.' },
+        { key: 'generate-toc', label: 'Generate table of content', detail: 'Build TOC and align headings', icon: BookOpen, color: 'text-cyan-500', prompt: 'Generate a table of contents for this document and align headings/content to it.' },
         { key: 'title-headers', label: 'Generate title/headers', detail: 'Auto-structure with strong headings', icon: Type, color: 'text-emerald-500', prompt: 'Generate a strong title and section headers for this document.' },
       ];
 
