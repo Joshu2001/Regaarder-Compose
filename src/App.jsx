@@ -469,14 +469,27 @@ export default function App() {
   const [whiteboardAddMenuOpen, setWhiteboardAddMenuOpen] = useState(false);
   const [whiteboardStickyColorMenuFor, setWhiteboardStickyColorMenuFor] = useState(null);
   const [whiteboardMoreTextMenuFor, setWhiteboardMoreTextMenuFor] = useState(null);
+  const [whiteboardTextColorMenuFor, setWhiteboardTextColorMenuFor] = useState(null);
+  const [whiteboardHighlightColorMenuFor, setWhiteboardHighlightColorMenuFor] = useState(null);
   const [whiteboardPenMenuOpen, setWhiteboardPenMenuOpen] = useState(false);
+  const [whiteboardPenWidthOverride, setWhiteboardPenWidthOverride] = useState(null);
+  const [whiteboardPenCustomWidth, setWhiteboardPenCustomWidth] = useState(2.6);
+  const [whiteboardPenCustomSizeOpen, setWhiteboardPenCustomSizeOpen] = useState(false);
   const [whiteboardEraserMenuOpen, setWhiteboardEraserMenuOpen] = useState(false);
   const [whiteboardEraserSize, setWhiteboardEraserSize] = useState(9);
+  const [whiteboardEraserCustomSizeOpen, setWhiteboardEraserCustomSizeOpen] = useState(false);
   const [whiteboardZoomLevel, setWhiteboardZoomLevel] = useState(100);
   const [whiteboardTemplateMenuOpen, setWhiteboardTemplateMenuOpen] = useState(false);
   const [whiteboardTemplatePrompt, setWhiteboardTemplatePrompt] = useState('');
   const [whiteboardTemplateSources, setWhiteboardTemplateSources] = useState([]);
   const [whiteboardCustomTemplates, setWhiteboardCustomTemplates] = useState([]);
+  const [whiteboardTaskPreviewOpen, setWhiteboardTaskPreviewOpen] = useState(false);
+  const [whiteboardTaskPreview, setWhiteboardTaskPreview] = useState({
+    projectName: 'Whiteboard Project',
+    summary: '',
+    items: [],
+    dependencyLinks: [],
+  });
   const [isWhiteboardImmersive, setIsWhiteboardImmersive] = useState(false);
   const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
   const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
@@ -488,6 +501,7 @@ export default function App() {
   const [isWhiteboardPanning, setIsWhiteboardPanning] = useState(false);
   const whiteboardCanvasRef = useRef(null);
   const whiteboardTemplateSourceInputRef = useRef(null);
+  const commentDragRef = useRef(null);
   const widgetDragRef = useRef(null);
   const widgetResizeRef = useRef(null);
   const shapeDragRef = useRef(null);
@@ -550,6 +564,11 @@ export default function App() {
     'Consolas',
   ];
   const activeWhiteboardPen = whiteboardPenPresets.find((pen) => pen.key === whiteboardPenVariant) || whiteboardPenPresets[0];
+  const whiteboardPenSizeOptions = [1.8, 2.6, 4.4, 6.2];
+  const whiteboardEraserSizeOptions = [6, 10, 16, 24];
+  const whiteboardTextColorPresets = ['#111827', '#1d4ed8', '#7c3aed', '#be123c', '#047857', '#ea580c', '#475569', '#b45309'];
+  const whiteboardHighlightColorPresets = ['#ffffff', '#fef08a', '#bfdbfe', '#bbf7d0', '#fecdd3', '#ddd6fe', '#fed7aa', '#e5e7eb'];
+  const effectiveWhiteboardPenWidth = whiteboardPenWidthOverride ?? activeWhiteboardPen.width;
 
   useEffect(() => {
     if (activeRightTab !== 'whiteboard') {
@@ -785,6 +804,248 @@ export default function App() {
     setWhiteboardCustomTemplates((prev) => [savedTemplate, ...prev].slice(0, 24));
     showToast('Template saved');
   };
+
+  const summarizeWhiteboardTaskPreview = useCallback((items, dependencyLinks = []) => ({
+    tasks: items.filter((item) => item.type === 'task').length,
+    milestones: items.filter((item) => item.type === 'milestone').length,
+    risks: items.filter((item) => item.type === 'risk').length,
+    phases: new Set(items.map((item) => item.phase).filter(Boolean)).size,
+    dependencies: items.reduce((count, item) => count + (item.dependencies?.length || 0), 0) || dependencyLinks.length,
+  }), []);
+
+  const inferWhiteboardDueLabel = useCallback((text) => {
+    const value = String(text || '');
+    const weekdayMatch = value.match(/\b(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|today|tomorrow)\b/i);
+    if (weekdayMatch) {
+      return weekdayMatch[1];
+    }
+    const dateMatch = value.match(/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}(?:,\s*\d{4})?/i);
+    return dateMatch ? dateMatch[0] : '';
+  }, []);
+
+  const inferWhiteboardAssignee = useCallback((text) => {
+    const value = String(text || '');
+    const match = value.match(/(?:@|owner\s*:\s*|assignee\s*:\s*|by\s+)([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/);
+    return match ? match[1] : '';
+  }, []);
+
+  const inferWhiteboardPriority = useCallback((text) => {
+    const value = String(text || '').toLowerCase();
+    if (/critical|urgent|asap|blocker|high priority/.test(value)) return 'high';
+    if (/soon|important|follow up|review/.test(value)) return 'medium';
+    return 'low';
+  }, []);
+
+  const classifyWhiteboardItem = useCallback((text, widgetType = 'sticky') => {
+    const value = String(text || '').toLowerCase();
+    if (/risk|issue|blocker|concern|dependency risk/.test(value)) return 'risk';
+    if (/milestone|launch|deadline|ship|go live|release/.test(value)) return 'milestone';
+    if (widgetType === 'task') return 'task';
+    return 'task';
+  }, []);
+
+  const getWhiteboardItemLabel = useCallback((text, fallback = 'Untitled item') => {
+    const lines = String(text || '').split('\n').map((line) => line.trim()).filter(Boolean);
+    return lines[0] || fallback;
+  }, []);
+
+  const analyzeWhiteboardToTasks = useCallback(() => {
+    const boardWidgets = whiteboardWidgets || [];
+    const projectName = getWhiteboardItemLabel(
+      boardWidgets.find((widget) => widget.type === 'text' && (widget.width || 0) >= 240)?.text
+        || boardWidgets[0]?.text
+        || 'Whiteboard Project',
+      'Whiteboard Project',
+    );
+
+    const phaseAnchors = boardWidgets
+      .map((widget) => ({
+        title: getWhiteboardItemLabel(widget.text || widget.title, ''),
+        x: (widget.x || 0) + ((widget.width || 170) / 2),
+        y: widget.y || 0,
+      }))
+      .filter((item) => item.title && item.y <= 180);
+
+    const findPhaseForX = (x) => {
+      const nearest = phaseAnchors
+        .map((anchor) => ({ ...anchor, distance: Math.abs(anchor.x - x) }))
+        .sort((a, b) => a.distance - b.distance)[0];
+      if (nearest && nearest.distance < 220) {
+        return nearest.title;
+      }
+      const bucket = Math.max(1, Math.min(4, Math.floor((x || 0) / 260) + 1));
+      return `Phase ${bucket}`;
+    };
+
+    const widgetCenters = boardWidgets.map((widget) => ({
+      id: widget.id,
+      label: getWhiteboardItemLabel(widget.text || widget.title || widget.body, widget.title || 'Item'),
+      x: (widget.x || 0) + ((widget.width || 170) / 2),
+      y: (widget.y || 0) + ((widget.height || 120) / 2),
+    }));
+
+    const findNearestWidget = (x, y) => widgetCenters
+      .map((widget) => ({ ...widget, distance: Math.hypot(widget.x - x, widget.y - y) }))
+      .sort((a, b) => a.distance - b.distance)[0];
+
+    const dependencyLinks = (whiteboardShapes || [])
+      .filter((shape) => shape.type === 'arrow' || shape.type === 'line')
+      .map((shape) => {
+        const from = findNearestWidget(shape.x1 ?? shape.x ?? 0, shape.y1 ?? shape.y ?? 0);
+        const to = findNearestWidget(shape.x2 ?? ((shape.x ?? 0) + (shape.width ?? 0)), shape.y2 ?? ((shape.y ?? 0) + (shape.height ?? 0)));
+        if (!from || !to || from.id === to.id) {
+          return null;
+        }
+        return { fromId: from.id, from: from.label, toId: to.id, to: to.label };
+      })
+      .filter(Boolean)
+      .filter((item, index, array) => array.findIndex((candidate) => candidate.fromId === item.fromId && candidate.toId === item.toId) === index);
+
+    const previewItems = [
+      ...boardWidgets.map((widget, index) => {
+        const sourceText = String(widget.text || widget.body || widget.title || '').trim();
+        if (!sourceText) {
+          return null;
+        }
+        const label = getWhiteboardItemLabel(sourceText, widget.title || `Item ${index + 1}`);
+        const lines = sourceText.split('\n').map((line) => line.trim()).filter(Boolean);
+        const subtasks = lines.slice(1).filter((line) => !/^owner\s*:|assignee\s*:|due\s*:|priority\s*:/i.test(line));
+        return {
+          id: `wb-task-preview-${widget.id}`,
+          sourceId: widget.id,
+          title: label,
+          type: classifyWhiteboardItem(sourceText, widget.type),
+          phase: findPhaseForX((widget.x || 0) + ((widget.width || 170) / 2)),
+          assignee: inferWhiteboardAssignee(sourceText),
+          dueLabel: inferWhiteboardDueLabel(sourceText),
+          priority: inferWhiteboardPriority(sourceText),
+          notes: sourceText,
+          subtasks,
+          dependencies: dependencyLinks.filter((link) => link.toId === widget.id).map((link) => link.from),
+        };
+      }),
+      ...whiteboardComments.map((comment) => {
+        const sourceText = String(comment.text || '').trim();
+        if (!sourceText) {
+          return null;
+        }
+        return {
+          id: `wb-task-preview-comment-${comment.id}`,
+          sourceId: comment.id,
+          title: getWhiteboardItemLabel(sourceText, 'Comment insight'),
+          type: classifyWhiteboardItem(sourceText, 'comment'),
+          phase: findPhaseForX(comment.x || 0),
+          assignee: inferWhiteboardAssignee(sourceText),
+          dueLabel: inferWhiteboardDueLabel(sourceText),
+          priority: inferWhiteboardPriority(sourceText),
+          notes: sourceText,
+          subtasks: [],
+          dependencies: [],
+        };
+      }),
+    ].filter(Boolean);
+
+    const mergedPreviewItems = previewItems.filter((item, index, array) => array.findIndex((candidate) => candidate.title.toLowerCase() === item.title.toLowerCase() && candidate.type === item.type) === index);
+    const stats = summarizeWhiteboardTaskPreview(mergedPreviewItems, dependencyLinks);
+    return {
+      projectName,
+      summary: `${mergedPreviewItems.length} structured items inferred from notes, connectors, and comments.`,
+      items: mergedPreviewItems,
+      dependencyLinks,
+      stats,
+    };
+  }, [classifyWhiteboardItem, getWhiteboardItemLabel, inferWhiteboardAssignee, inferWhiteboardDueLabel, inferWhiteboardPriority, summarizeWhiteboardTaskPreview, whiteboardComments, whiteboardShapes, whiteboardWidgets]);
+
+  const openWhiteboardTaskPreview = () => {
+    const preview = analyzeWhiteboardToTasks();
+    if (!preview.items.length) {
+      showToast('Add whiteboard content before converting to tasks');
+      return;
+    }
+    setWhiteboardTaskPreview(preview);
+    setWhiteboardTaskPreviewOpen(true);
+  };
+
+  const updateWhiteboardTaskPreviewItem = (itemId, updates) => {
+    setWhiteboardTaskPreview((prev) => ({
+      ...prev,
+      items: prev.items.map((item) => (item.id === itemId ? { ...item, ...updates } : item)),
+    }));
+  };
+
+  const removeWhiteboardTaskPreviewItem = (itemId) => {
+    setWhiteboardTaskPreview((prev) => {
+      const target = prev.items.find((item) => item.id === itemId);
+      return {
+        ...prev,
+        items: prev.items.filter((item) => item.id !== itemId),
+        dependencyLinks: prev.dependencyLinks.filter((link) => link.fromId !== target?.sourceId && link.toId !== target?.sourceId),
+      };
+    });
+  };
+
+  const mergeWhiteboardTaskPreviewDuplicates = () => {
+    setWhiteboardTaskPreview((prev) => {
+      const merged = [];
+      prev.items.forEach((item) => {
+        const existing = merged.find((candidate) => candidate.title.trim().toLowerCase() === item.title.trim().toLowerCase() && candidate.type === item.type);
+        if (!existing) {
+          merged.push({ ...item });
+          return;
+        }
+        existing.subtasks = Array.from(new Set([...(existing.subtasks || []), ...(item.subtasks || [])]));
+        existing.dependencies = Array.from(new Set([...(existing.dependencies || []), ...(item.dependencies || [])]));
+        existing.notes = [existing.notes, item.notes].filter(Boolean).join('\n');
+        if (!existing.assignee && item.assignee) existing.assignee = item.assignee;
+        if (!existing.dueLabel && item.dueLabel) existing.dueLabel = item.dueLabel;
+        if (existing.priority === 'low' && item.priority !== 'low') existing.priority = item.priority;
+      });
+      return { ...prev, items: merged };
+    });
+    showToast('Duplicate task ideas merged');
+  };
+
+  const importWhiteboardPreviewToTasks = () => {
+    const previewItems = whiteboardTaskPreview.items || [];
+    if (!previewItems.length) {
+      showToast('Nothing to import');
+      return;
+    }
+    setTasks((prev) => {
+      const existing = new Set(prev.map((task) => String(task.text || '').toLowerCase()));
+      const additions = previewItems
+        .map((item, index) => {
+          const segments = [
+            item.type === 'milestone' ? 'Milestone' : item.type === 'risk' ? 'Risk' : 'Task',
+            item.priority ? item.priority.toUpperCase() : '',
+            item.phase || '',
+          ].filter(Boolean);
+          const meta = [
+            item.assignee ? `Owner: ${item.assignee}` : '',
+            item.dueLabel ? `Due: ${item.dueLabel}` : '',
+            item.dependencies?.length ? `Depends on: ${item.dependencies.join(', ')}` : '',
+            item.subtasks?.length ? `Subtasks: ${item.subtasks.join(' | ')}` : '',
+          ].filter(Boolean).join(' • ');
+          const text = `[${segments.join(' • ')}] ${item.title}${meta ? ` — ${meta}` : ''}`;
+          return {
+            id: Date.now() + index,
+            text,
+            completed: false,
+            owner: item.assignee ? 'user' : 'agent',
+          };
+        })
+        .filter((task) => !existing.has(String(task.text || '').toLowerCase()));
+      return additions.length ? [...additions, ...prev] : prev;
+    });
+    setWhiteboardTaskPreviewOpen(false);
+    setActiveRightTab('tasks');
+    showToast('Whiteboard plan imported into Tasks');
+  };
+
+  const whiteboardTaskPreviewStats = summarizeWhiteboardTaskPreview(
+    whiteboardTaskPreview.items || [],
+    whiteboardTaskPreview.dependencyLinks || [],
+  );
 
   const activateWhiteboardTool = (toolKey) => {
     setWhiteboardTool(toolKey);
@@ -1239,8 +1500,16 @@ export default function App() {
       setWhiteboardEditingWidgetId(null);
       setWhiteboardStickyColorMenuFor(null);
       setWhiteboardMoreTextMenuFor(null);
+      setWhiteboardTextColorMenuFor(null);
+      setWhiteboardHighlightColorMenuFor(null);
     }
   }, [selectedWidgetId, whiteboardWidgets]);
+
+  useEffect(() => {
+    if (whiteboardPenWidthOverride === null) {
+      setWhiteboardPenCustomWidth(activeWhiteboardPen.width);
+    }
+  }, [activeWhiteboardPen.width, whiteboardPenWidthOverride]);
 
   useEffect(() => {
     if (selectedShapeIndex !== null && (selectedShapeIndex < 0 || selectedShapeIndex >= whiteboardShapes.length)) {
@@ -4261,8 +4530,7 @@ export default function App() {
       return;
     }
     if (connectionKey === 'tasks') {
-      setActiveRightTab('tasks');
-      showToast('Opened connected launch tasks');
+      openWhiteboardTaskPreview();
       return;
     }
     if (connectionKey === 'compose') {
@@ -10589,7 +10857,7 @@ Rules:
                 >
                   <Bell size={18} />
                   {notifications.length > 0 && (
-                    <span className="absolute top-[1px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                    <span className="absolute top-1 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white"></span>
                   )}
                 </button>
                 {notificationsOpen && (
@@ -12243,7 +12511,7 @@ Rules:
               >
                 <Bell size={18} />
                 {notifications.length > 0 && (
-                  <span className="absolute top-[1px] right-[6px] w-1.5 h-1.5 bg-violet-500 rounded-full"></span>
+                  <span className="absolute top-1 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white"></span>
                 )}
               </button>
               {notificationsOpen && (
@@ -13043,7 +13311,7 @@ Rules:
                       <StickyNote size={13} />
                       Sticky notes
                     </button>
-                    <button onClick={() => setActiveRightTab('tasks')} className="px-2.5 py-1.5 text-xs rounded-lg bg-violet-600 text-white hover:bg-violet-700">Convert to Tasks</button>
+                    <button onClick={openWhiteboardTaskPreview} className="px-2.5 py-1.5 text-xs rounded-lg bg-violet-600 text-white hover:bg-violet-700">Convert to Tasks</button>
                   </div>
                 </div>
                 <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#ececf6_1px,transparent_0)] bg-[size:24px_24px]" style={{ zoom: whiteboardZoomScale }}>
@@ -13091,17 +13359,39 @@ Rules:
                   {whiteboardTool === 'eraser' && whiteboardEraserMenuOpen && (
                     <div className="absolute left-20 top-[74%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2.5 w-[172px]">
                       <p className="text-[10px] font-semibold text-gray-500">Eraser size</p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <input
-                          type="range"
-                          min="4"
-                          max="28"
-                          value={whiteboardEraserSize}
-                          onChange={(event) => setWhiteboardEraserSize(Number.parseInt(event.target.value, 10) || 9)}
-                          className="w-full"
-                        />
-                        <span className="text-[11px] text-gray-600 w-8 text-right">{whiteboardEraserSize}</span>
+                      <div className="mt-2 flex items-end justify-between gap-2">
+                        {whiteboardEraserSizeOptions.map((sizeValue) => (
+                          <button
+                            key={`eraser-size-${sizeValue}`}
+                            type="button"
+                            onClick={() => setWhiteboardEraserSize(sizeValue)}
+                            className={`flex flex-col items-center gap-1 rounded-lg px-1.5 py-1 ${whiteboardEraserSize === sizeValue ? 'bg-violet-50 text-violet-700' : 'text-gray-500 hover:bg-gray-100'}`}
+                            title={`${sizeValue}px eraser`}
+                          >
+                            <span className="rounded-full border border-gray-300 bg-white" style={{ width: `${Math.max(8, sizeValue)}px`, height: `${Math.max(8, sizeValue)}px` }} />
+                          </button>
+                        ))}
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setWhiteboardEraserCustomSizeOpen((prev) => !prev)}
+                        className={`mt-2 w-full rounded-lg border px-2 py-1.5 text-[11px] font-medium ${whiteboardEraserCustomSizeOpen ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                      >
+                        Custom size
+                      </button>
+                      {whiteboardEraserCustomSizeOpen && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <input
+                            type="range"
+                            min="4"
+                            max="32"
+                            value={whiteboardEraserSize}
+                            onChange={(event) => setWhiteboardEraserSize(Number.parseInt(event.target.value, 10) || 9)}
+                            className="w-full"
+                          />
+                          <span className="text-[11px] text-gray-600 w-8 text-right">{whiteboardEraserSize}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                   {Boolean(whiteboardHoverLabel) && (
@@ -13133,6 +13423,62 @@ Rules:
                           {penIndex < 2 && <span className="ml-auto text-[9px] text-gray-400">Popular</span>}
                         </button>
                       ))}
+                      <div className="mt-1 rounded-xl border border-gray-200 bg-gray-50 px-2 py-2">
+                        <div className="text-[10px] font-semibold text-gray-500">Tip size</div>
+                        <div className="mt-2 flex items-end justify-between gap-1">
+                          {whiteboardPenSizeOptions.map((sizeValue) => {
+                            const isActive = Math.abs(effectiveWhiteboardPenWidth - sizeValue) < 0.01;
+                            return (
+                              <button
+                                key={`pen-size-${sizeValue}`}
+                                type="button"
+                                onClick={() => {
+                                  setWhiteboardPenWidthOverride(sizeValue);
+                                  setWhiteboardPenCustomWidth(sizeValue);
+                                }}
+                                className={`flex flex-col items-center justify-end rounded-lg px-1.5 py-1 ${isActive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-white'}`}
+                                title={`${sizeValue}px stroke`}
+                              >
+                                <span className="rounded-full bg-current" style={{ width: `${Math.max(4, sizeValue * 2.8)}px`, height: `${Math.max(4, sizeValue * 2.8)}px`, opacity: 0.9 }} />
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setWhiteboardPenWidthOverride(null)}
+                            className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-medium ${whiteboardPenWidthOverride === null ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+                          >
+                            Auto
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWhiteboardPenCustomSizeOpen((prev) => !prev)}
+                            className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-medium ${whiteboardPenCustomSizeOpen ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+                          >
+                            Custom
+                          </button>
+                        </div>
+                        {whiteboardPenCustomSizeOpen && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <input
+                              type="range"
+                              min="1"
+                              max="12"
+                              step="0.2"
+                              value={whiteboardPenCustomWidth}
+                              onChange={(event) => {
+                                const nextWidth = Number.parseFloat(event.target.value) || activeWhiteboardPen.width;
+                                setWhiteboardPenCustomWidth(nextWidth);
+                                setWhiteboardPenWidthOverride(nextWidth);
+                              }}
+                              className="w-full"
+                            />
+                            <span className="w-8 text-right text-[11px] text-gray-600">{effectiveWhiteboardPenWidth.toFixed(1)}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                   {whiteboardShapeMenuOpen && (
@@ -13249,9 +13595,8 @@ Rules:
                       <button
                         type="button"
                         onClick={() => {
-                          setActiveRightTab('tasks');
+                          openWhiteboardTaskPreview();
                           setWhiteboardMoreMenuOpen(false);
-                          showToast('Tasks opened');
                         }}
                         className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
                       >
@@ -13339,7 +13684,7 @@ Rules:
                           x2: startX,
                           y2: startY,
                           stroke: activeWhiteboardPen.stroke,
-                          strokeWidth: Math.max(activeWhiteboardPen.width, 2.2),
+                          strokeWidth: Math.max(effectiveWhiteboardPenWidth, 2.2),
                           fill: whiteboardShapeVariant === 'line' || whiteboardShapeVariant === 'arrow' ? 'transparent' : `${activeWhiteboardPen.stroke}22`,
                           fillOpacity: 1,
                           opacity: activeWhiteboardPen.opacity ?? 1,
@@ -13381,7 +13726,7 @@ Rules:
                           x2: x,
                           y2: y,
                           stroke: activeWhiteboardPen.stroke,
-                          strokeWidth: Math.max(activeWhiteboardPen.width, 2.2),
+                          strokeWidth: Math.max(effectiveWhiteboardPenWidth, 2.2),
                           fill: whiteboardShapeVariant === 'line' || whiteboardShapeVariant === 'arrow' ? 'transparent' : `${activeWhiteboardPen.stroke}22`,
                           fillOpacity: 1,
                           opacity: activeWhiteboardPen.opacity ?? 1,
@@ -13437,7 +13782,7 @@ Rules:
                         {
                           path: whiteboardCurrentStroke,
                           stroke: activeWhiteboardPen.stroke,
-                          width: activeWhiteboardPen.width,
+                          width: effectiveWhiteboardPenWidth,
                           opacity: activeWhiteboardPen.opacity ?? 1,
                           dashArray: activeWhiteboardPen.dashArray || '',
                         },
@@ -13487,7 +13832,7 @@ Rules:
                         {
                           path: whiteboardCurrentStroke,
                           stroke: activeWhiteboardPen.stroke,
-                          width: activeWhiteboardPen.width,
+                          width: effectiveWhiteboardPenWidth,
                           opacity: activeWhiteboardPen.opacity ?? 1,
                           dashArray: activeWhiteboardPen.dashArray || '',
                         },
@@ -13778,8 +14123,76 @@ Rules:
                             >
                               <LinkIcon size={13} />
                             </button>
-                            <input type="color" value={widget.textColor || '#111827'} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, textColor: e.target.value } : w)))} className="h-6 w-6 rounded border border-gray-300 cursor-pointer" title="Text color" />
-                            <input type="color" value={widget.highlightColor || '#ffffff'} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, highlightColor: e.target.value } : w)))} className="h-6 w-6 rounded border border-gray-300 cursor-pointer" title="Highlight color" />
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setWhiteboardTextColorMenuFor((prev) => (prev === widget.id ? null : widget.id))}
+                                className="h-6 w-6 rounded border border-gray-300 flex items-center justify-center"
+                                title="Text color"
+                              >
+                                <span className="h-3.5 w-3.5 rounded-sm border border-gray-200" style={{ backgroundColor: widget.textColor || '#111827' }} />
+                              </button>
+                              {whiteboardTextColorMenuFor === widget.id && (
+                                <div className="absolute left-0 mt-1 z-40 w-36 rounded-lg border border-gray-200 bg-white shadow-lg p-2" onPointerDown={(e) => e.stopPropagation()}>
+                                  <div className="grid grid-cols-4 gap-1.5">
+                                    {whiteboardTextColorPresets.map((color) => (
+                                      <button
+                                        key={`${widget.id}-text-${color}`}
+                                        type="button"
+                                        onClick={() => {
+                                          setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, textColor: color } : w)));
+                                          setWhiteboardTextColorMenuFor(null);
+                                        }}
+                                        className={`h-6 w-6 rounded-md border ${widget.textColor === color ? 'border-violet-500 ring-1 ring-violet-200' : 'border-gray-200'}`}
+                                        style={{ backgroundColor: color }}
+                                      />
+                                    ))}
+                                  </div>
+                                  <input
+                                    type="color"
+                                    value={widget.textColor || '#111827'}
+                                    onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, textColor: e.target.value } : w)))}
+                                    className="mt-2 h-7 w-full rounded border border-gray-300 cursor-pointer"
+                                    title="Custom text color"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={() => setWhiteboardHighlightColorMenuFor((prev) => (prev === widget.id ? null : widget.id))}
+                                className="h-6 w-6 rounded border border-gray-300 flex items-center justify-center"
+                                title="Highlight color"
+                              >
+                                <span className="h-3.5 w-3.5 rounded-sm border border-gray-200" style={{ backgroundColor: widget.highlightColor || '#ffffff' }} />
+                              </button>
+                              {whiteboardHighlightColorMenuFor === widget.id && (
+                                <div className="absolute left-0 mt-1 z-40 w-36 rounded-lg border border-gray-200 bg-white shadow-lg p-2" onPointerDown={(e) => e.stopPropagation()}>
+                                  <div className="grid grid-cols-4 gap-1.5">
+                                    {whiteboardHighlightColorPresets.map((color) => (
+                                      <button
+                                        key={`${widget.id}-highlight-${color}`}
+                                        type="button"
+                                        onClick={() => {
+                                          setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, highlightColor: color } : w)));
+                                          setWhiteboardHighlightColorMenuFor(null);
+                                        }}
+                                        className={`h-6 w-6 rounded-md border ${widget.highlightColor === color ? 'border-violet-500 ring-1 ring-violet-200' : 'border-gray-200'}`}
+                                        style={{ backgroundColor: color }}
+                                      />
+                                    ))}
+                                  </div>
+                                  <input
+                                    type="color"
+                                    value={widget.highlightColor || '#ffffff'}
+                                    onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, highlightColor: e.target.value } : w)))}
+                                    className="mt-2 h-7 w-full rounded border border-gray-300 cursor-pointer"
+                                    title="Custom highlight color"
+                                  />
+                                </div>
+                              )}
+                            </div>
                             <input type="range" min="10" max="100" value={widget.opacity ?? 100} onChange={(e) => setWhiteboardWidgets((prev) => prev.map((w) => (w.id === widget.id ? { ...w, opacity: Number.parseInt(e.target.value, 10) || 100 } : w)))} className="h-6 w-14 cursor-pointer" title="Opacity" />
                             <button
                               type="button"
@@ -14014,7 +14427,7 @@ Rules:
                       <path
                         d={whiteboardCurrentStroke}
                         stroke={activeWhiteboardPen.stroke}
-                        strokeWidth={activeWhiteboardPen.width}
+                        strokeWidth={effectiveWhiteboardPenWidth}
                         strokeOpacity={activeWhiteboardPen.opacity ?? 1}
                         strokeDasharray={activeWhiteboardPen.dashArray || undefined}
                         fill="none"
@@ -14036,16 +14449,49 @@ Rules:
                           style={{
                             width: `${comment.expanded ? (comment.width || 180) : 148}px`,
                             minHeight: `${comment.expanded ? (comment.height || 86) : 34}px`,
+                            cursor: commentDragRef.current?.commentId === comment.id ? 'grabbing' : 'grab',
+                            touchAction: 'none',
                           }}
                           onPointerDown={(event) => {
+                            if (event.target.closest('textarea,button')) {
+                              return;
+                            }
                             event.stopPropagation();
                             setWhiteboardActiveCommentId(comment.id);
+                            commentDragRef.current = {
+                              commentId: comment.id,
+                              startClientX: event.clientX,
+                              startClientY: event.clientY,
+                              originX: comment.x,
+                              originY: comment.y,
+                            };
+                            event.currentTarget.setPointerCapture(event.pointerId);
+                          }}
+                          onPointerMove={(event) => {
+                            const dragState = commentDragRef.current;
+                            if (!dragState || dragState.commentId !== comment.id) {
+                              return;
+                            }
+                            const dx = event.clientX - dragState.startClientX;
+                            const dy = event.clientY - dragState.startClientY;
+                            setWhiteboardComments((prev) => prev.map((item) => (
+                              item.id === comment.id
+                                ? { ...item, x: dragState.originX + dx, y: dragState.originY + dy }
+                                : item
+                            )));
+                          }}
+                          onPointerUp={() => {
+                            commentDragRef.current = null;
+                          }}
+                          onPointerCancel={() => {
+                            commentDragRef.current = null;
                           }}
                         >
                           <div className="flex items-center justify-between gap-1 mb-1">
                             <span className="text-[10px] font-semibold">Comment</span>
                             <button
                               type="button"
+                              onPointerDown={(event) => event.stopPropagation()}
                               onClick={() => {
                                 setWhiteboardComments((prev) => prev.map((item) => (
                                   item.id === comment.id
@@ -14274,6 +14720,161 @@ Rules:
                       <MoreHorizontal size={15} />
                     </button>
                   </div>
+
+                  {whiteboardTaskPreviewOpen && (
+                    <div className="absolute inset-0 z-30 bg-slate-950/28 backdrop-blur-[2px] flex items-center justify-center p-4">
+                      <div className="w-[920px] max-w-[96vw] max-h-[88vh] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.55)] flex flex-col">
+                        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
+                          <div>
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-violet-600">AI Task Conversion Preview</div>
+                            <div className="mt-1 text-lg font-semibold text-slate-900">{whiteboardTaskPreview.projectName || 'Whiteboard Project'}</div>
+                            <div className="mt-1 text-sm text-slate-500">{whiteboardTaskPreview.summary}</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setWhiteboardTaskPreviewOpen(false)}
+                            className="h-9 w-9 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center"
+                            title="Close preview"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-5 gap-2 border-b border-slate-100 px-5 py-3 bg-slate-50/70">
+                          {[
+                            { label: 'Tasks', value: whiteboardTaskPreviewStats.tasks },
+                            { label: 'Milestones', value: whiteboardTaskPreviewStats.milestones },
+                            { label: 'Risks', value: whiteboardTaskPreviewStats.risks },
+                            { label: 'Phases', value: whiteboardTaskPreviewStats.phases },
+                            { label: 'Dependencies', value: whiteboardTaskPreviewStats.dependencies },
+                          ].map((stat) => (
+                            <div key={stat.label} className="rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                              <div className="text-[11px] font-medium text-slate-500">{stat.label}</div>
+                              <div className="mt-1 text-lg font-semibold text-slate-900">{stat.value}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 px-5 py-3 border-b border-slate-100">
+                          <div className="text-sm text-slate-500">Review detected work items before sending them into Tasks.</div>
+                          <button
+                            type="button"
+                            onClick={mergeWhiteboardTaskPreviewDuplicates}
+                            className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-100"
+                          >
+                            <Sparkles size={13} />
+                            Merge duplicates
+                          </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto thin-scrollbar px-5 py-4 space-y-3 bg-[#fbfbfe]">
+                          {whiteboardTaskPreview.items.map((item) => (
+                            <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                              <div className="grid grid-cols-[minmax(0,1.6fr)_130px_130px_130px_auto] gap-2 items-start">
+                                <div>
+                                  <input
+                                    value={item.title}
+                                    onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { title: event.target.value })}
+                                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 outline-none focus:border-violet-300"
+                                  />
+                                  <textarea
+                                    value={item.notes || ''}
+                                    onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { notes: event.target.value })}
+                                    className="mt-2 h-20 w-full resize-none rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600 outline-none focus:border-violet-300"
+                                  />
+                                </div>
+                                <select
+                                  value={item.type}
+                                  onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { type: event.target.value })}
+                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                >
+                                  <option value="task">Task</option>
+                                  <option value="milestone">Milestone</option>
+                                  <option value="risk">Risk</option>
+                                </select>
+                                <input
+                                  value={item.phase || ''}
+                                  onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { phase: event.target.value })}
+                                  placeholder="Phase"
+                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                />
+                                <input
+                                  value={item.assignee || ''}
+                                  onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { assignee: event.target.value })}
+                                  placeholder="Assignee"
+                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeWhiteboardTaskPreviewItem(item.id)}
+                                  className="h-9 w-9 rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center"
+                                  title="Remove item"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+
+                              <div className="mt-2 grid grid-cols-[140px_140px_minmax(0,1fr)] gap-2">
+                                <select
+                                  value={item.priority || 'low'}
+                                  onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { priority: event.target.value })}
+                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                >
+                                  <option value="low">Low priority</option>
+                                  <option value="medium">Medium priority</option>
+                                  <option value="high">High priority</option>
+                                </select>
+                                <input
+                                  value={item.dueLabel || ''}
+                                  onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { dueLabel: event.target.value })}
+                                  placeholder="Due date"
+                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                />
+                                <input
+                                  value={(item.dependencies || []).join(', ')}
+                                  onChange={(event) => updateWhiteboardTaskPreviewItem(item.id, { dependencies: event.target.value.split(',').map((value) => value.trim()).filter(Boolean) })}
+                                  placeholder="Dependencies"
+                                  className="rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                                />
+                              </div>
+
+                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                {(item.subtasks || []).map((subtask) => (
+                                  <span key={`${item.id}-${subtask}`} className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
+                                    {subtask}
+                                  </span>
+                                ))}
+                                {!item.subtasks?.length && (
+                                  <span className="text-[11px] text-slate-400">No subtasks detected</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-4 bg-white">
+                          <div className="text-xs text-slate-500">AI considered sticky notes, text blocks, comments, connectors, and board layout before building this plan.</div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setWhiteboardTaskPreviewOpen(false)}
+                              className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={importWhiteboardPreviewToTasks}
+                              className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-700"
+                            >
+                              <CheckSquare size={13} />
+                              Import to Tasks
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
