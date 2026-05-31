@@ -6691,6 +6691,57 @@ Rules:
     showToast('Sheets workspace ready');
   };
 
+  const resetWhiteboardCanvas = ({ toastMessage = 'Whiteboard cleared' } = {}) => {
+    setWhiteboardStrokes([]);
+    setWhiteboardShapes([]);
+    setWhiteboardRedoStrokes([]);
+    setWhiteboardCurrentStroke('');
+    setWhiteboardCurrentShape(null);
+    setWhiteboardWidgets([]);
+    setWhiteboardComments([]);
+    setWhiteboardActiveCommentId(null);
+    setIsWhiteboardDrawing(false);
+    setWhiteboardLineAnchor(null);
+    setWhiteboardStickyDragStart(null);
+    setWhiteboardStickyPreview(null);
+    setSelectedWidgetId(null);
+    setSelectedShapeIndex(null);
+    showToast(toastMessage);
+  };
+
+  const createWhiteboardExperience = () => {
+    setCreationPickerOpen(false);
+    setProductMode('compose');
+    setLeftSidebarOpen(true);
+    setRightSidebarOpen(true);
+    setActiveRightTab('whiteboard');
+    resetWhiteboardCanvas({ toastMessage: 'New whiteboard created' });
+  };
+
+  const createItemForCurrentContext = () => {
+    if (activeRightTab === 'whiteboard') {
+      createWhiteboardExperience();
+      return;
+    }
+    if (productMode === 'compose') {
+      createNewComposition();
+      return;
+    }
+    if (productMode === 'deck') {
+      createDeckExperience();
+      return;
+    }
+    if (productMode === 'sheets') {
+      createSheetsExperience();
+      return;
+    }
+    if (productMode === 'dm') {
+      createDmExperience();
+      return;
+    }
+    openCreationPicker();
+  };
+
   const createDmExperience = () => {
     setCreationPickerOpen(false);
     setProductMode('dm');
@@ -11072,7 +11123,7 @@ Rules:
                   strokeWidth={workspaceLauncherIconStyle === 'solid' ? 2.5 : workspaceLauncherIconStyle === 'soft' ? 1.7 : 2}
                   style={{ color: workspaceLauncherIconColor, opacity: workspaceLauncherIconStyle === 'soft' ? 0.78 : 1 }}
                 />
-              <span className="text-[9px] font-semibold">Launch</span>
+              <span className="text-[9px] font-semibold">Nrew</span>
             </div>
 
             {workspaceLauncherOpen && (
@@ -12182,10 +12233,10 @@ Rules:
           })}
           <button
             type="button"
-            onClick={() => createNewComposition()}
+            onClick={createItemForCurrentContext}
             className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-violet-600 hover:bg-violet-50 hover:text-violet-700 transition-colors"
-            title="Create new composition"
-            aria-label="Create new composition"
+            title="Create new item"
+            aria-label="Create new item"
           >
             <Plus size={18} strokeWidth={2.4} />
           </button>
@@ -13698,23 +13749,7 @@ Rules:
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
-                        setWhiteboardStrokes([]);
-                        setWhiteboardShapes([]);
-                        setWhiteboardRedoStrokes([]);
-                        setWhiteboardCurrentStroke('');
-                        setWhiteboardCurrentShape(null);
-                        setWhiteboardWidgets([]);
-                        setWhiteboardComments([]);
-                        setWhiteboardActiveCommentId(null);
-                        setIsWhiteboardDrawing(false);
-                        setWhiteboardLineAnchor(null);
-                        setWhiteboardStickyDragStart(null);
-                        setWhiteboardStickyPreview(null);
-                        setSelectedWidgetId(null);
-                        setSelectedShapeIndex(null);
-                        showToast('Whiteboard cleared');
-                      }}
+                      onClick={() => resetWhiteboardCanvas()}
                       className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"
                       title="Clear board"
                     >
