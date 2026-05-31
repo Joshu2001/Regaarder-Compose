@@ -1384,6 +1384,62 @@ export default function App() {
     });
   };
 
+  const createLinkedStickyNote = (sourceWidget, anchorKey) => {
+    if (!sourceWidget) {
+      return;
+    }
+
+    const sourceWidth = sourceWidget.width || 170;
+    const sourceHeight = sourceWidget.height || 120;
+    const sourceAnchor = ({
+      top: { x: sourceWidget.x + sourceWidth / 2, y: sourceWidget.y },
+      right: { x: sourceWidget.x + sourceWidth, y: sourceWidget.y + sourceHeight / 2 },
+      bottom: { x: sourceWidget.x + sourceWidth / 2, y: sourceWidget.y + sourceHeight },
+      left: { x: sourceWidget.x, y: sourceWidget.y + sourceHeight / 2 },
+    })[anchorKey] || { x: sourceWidget.x + sourceWidth, y: sourceWidget.y + sourceHeight / 2 };
+
+    const noteWidth = 172;
+    const noteHeight = 118;
+    const noteX = sourceAnchor.x + 132;
+    const noteY = sourceAnchor.y - noteHeight / 2;
+    const noteId = `wb-widget-${Date.now()}-${Math.round(Math.random() * 1000)}`;
+    const linePadding = 14;
+
+    setWhiteboardWidgets((prev) => ([
+      ...prev,
+      {
+        id: noteId,
+        type: 'sticky',
+        x: noteX,
+        y: noteY,
+        width: noteWidth,
+        height: noteHeight,
+        color: whiteboardStickyColor,
+        text: '',
+      },
+    ]));
+
+    setWhiteboardShapes((prev) => ([
+      ...prev,
+      {
+        type: 'line',
+        x1: sourceAnchor.x,
+        y1: sourceAnchor.y,
+        x2: noteX - linePadding,
+        y2: noteY + noteHeight / 2,
+        stroke: '#2563eb',
+        strokeWidth: 2.6,
+        fill: 'transparent',
+        fillOpacity: 1,
+        opacity: 1,
+      },
+    ]));
+
+    setSelectedWidgetId(noteId);
+    setWhiteboardEditingWidgetId(noteId);
+    showToast('Connected note added');
+  };
+
   const distanceToSegment = (px, py, ax, ay, bx, by) => {
     const dx = bx - ax;
     const dy = by - ay;
@@ -14159,10 +14215,10 @@ Rules:
                     const showWidgetReactionControls = (isWidgetHovered || isSelected || isWidgetReactionMenuOpen) && !isWidgetEditing && !['hand', 'eraser'].includes(whiteboardTool);
                     const showWidgetAnchorDots = (isWidgetHovered || isSelected) && !['hand', 'eraser'].includes(whiteboardTool);
                     const widgetAnchorPoints = [
-                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '↑' },
-                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '→' },
-                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '↓' },
-                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '←' },
+                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '↑', kind: 'resize' },
+                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'pointer', icon: '→', kind: 'connect' },
+                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '↓', kind: 'resize' },
+                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '←', kind: 'resize' },
                     ];
                     return (
                     <div
@@ -14312,6 +14368,11 @@ Rules:
                           onPointerDown={(event) => {
                             event.stopPropagation();
                             event.preventDefault();
+                            if (anchor.kind === 'connect') {
+                              createLinkedStickyNote(widget, anchor.key);
+                              setWhiteboardHoveredAnchor(null);
+                              return;
+                            }
                             setSelectedWidgetId(widget.id);
                             setWhiteboardHoveredAnchor({ objectId: widget.id, anchorKey: anchor.key });
                             widgetDragRef.current = {
@@ -14359,6 +14420,12 @@ Rules:
                           >
                             {whiteboardHoveredAnchor?.objectId === widget.id && whiteboardHoveredAnchor?.anchorKey === anchor.key && (
                               <span className="text-[8px] leading-none">{anchor.icon}</span>
+                            )}
+                            {anchor.kind === 'connect' && (
+                              <span className="absolute left-full ml-1 flex items-center gap-1 rounded-full border border-blue-500/20 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-blue-600 shadow-sm">
+                                <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                                Link
+                              </span>
                             )}
                           </div>
                         </div>
