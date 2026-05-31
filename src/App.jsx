@@ -23,12 +23,31 @@ const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
 const ENTERPRISE_PAGE_WIDTH_PX = 794;
 const ENTERPRISE_PAGE_HEIGHT_PX = 1123;
+const LassoLoopIcon = ({ size = 12, className = '', style = {} }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    style={style}
+  >
+    <path d="M12 4a8 8 0 1 0 0 16a3 3 0 1 0 3-3" strokeDasharray="2.6 2.6" />
+    <circle cx="15" cy="17" r="1.4" />
+  </svg>
+);
+
 const WHITEBOARD_PEN_CURSOR = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E\") 2 24, crosshair";
 const WHITEBOARD_PEN_CURSORS = {
   'felt-pen': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E\") 2 26, crosshair",
   'ballpoint': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%231f2937' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E\") 2 18, crosshair",
   'pencil': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z'/%3E%3Cpath d='m15 5 4 4'/%3E%3C/svg%3E\") 2 22, crosshair",
-  lasso: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7c3-3 10-3 13 0s3 9 0 12c-3 3-10 3-13 0s-3-9 0-12Z'/%3E%3Cpath d='M8 8h8' stroke-dasharray='3 3'/%3E%3C/svg%3E\") 2 24, crosshair",
+  lasso: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='%23334155' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4a8 8 0 1 0 0 16a3 3 0 1 0 3-3' stroke-dasharray='2.6 2.6'/%3E%3Ccircle cx='15' cy='17' r='1.4'/%3E%3C/svg%3E\") 2 24, crosshair",
   'marker': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E\") 2 32, crosshair",
   'highlighter': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='22' viewBox='0 0 36 22'%3E%3Crect x='1' y='6' width='26' height='12' rx='3' fill='%23fde047' fill-opacity='0.85' stroke='%23ca8a04' stroke-width='1.5'/%3E%3Cpolygon points='27 6 34 11 34 13 27 18' fill='%23ca8a04'/%3E%3Ccircle cx='34' cy='12' r='1.5' fill='%23fff'/%3E%3C/svg%3E\") 33 12, crosshair",
   'calligraphy': "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 24 24' fill='none' stroke='%237c2d12' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 21L12 3l10 18'/%3E%3Cpath d='M5.5 14.5h13'/%3E%3C/svg%3E\") 2 28, crosshair",
@@ -105,6 +124,45 @@ const DECK_TEMPLATE_LIBRARY = [
     visualType: 'premium minimal',
     layoutStyle: 'high whitespace emphasis',
     motionCue: 'Elegant dissolve',
+  },
+];
+
+const WHITEBOARD_TEMPLATE_LIBRARY = [
+  {
+    key: 'startup-lean-canvas',
+    category: 'Startup',
+    label: 'Lean Canvas',
+    detail: 'Problem, solution, channels, metrics, unfair advantage.',
+  },
+  {
+    key: 'startup-roadmap-sprint',
+    category: 'Startup',
+    label: 'MVP Sprint Roadmap',
+    detail: 'Weekly milestones from validation to launch.',
+  },
+  {
+    key: 'enterprise-quarterly-operating-review',
+    category: 'Enterprise',
+    label: 'Quarterly Operating Review',
+    detail: 'OKRs, risks, dependencies, owners, and escalations.',
+  },
+  {
+    key: 'enterprise-stakeholder-update',
+    category: 'Enterprise',
+    label: 'Stakeholder Update Board',
+    detail: 'Status rollup for leadership and cross-functional teams.',
+  },
+  {
+    key: 'personal-weekly-planner',
+    category: 'Personal',
+    label: 'Weekly Planner',
+    detail: 'Goals, priorities, routines, and reflections.',
+  },
+  {
+    key: 'personal-goals-habit-tracker',
+    category: 'Personal',
+    label: 'Goals + Habit Tracker',
+    detail: 'Monthly outcomes with daily habit checkpoints.',
   },
 ];
 
@@ -407,6 +465,8 @@ export default function App() {
   const [whiteboardMoreTextMenuFor, setWhiteboardMoreTextMenuFor] = useState(null);
   const [whiteboardEraserMenuOpen, setWhiteboardEraserMenuOpen] = useState(false);
   const [whiteboardEraserSize, setWhiteboardEraserSize] = useState(9);
+  const [whiteboardZoomLevel, setWhiteboardZoomLevel] = useState(100);
+  const [whiteboardTemplateMenuOpen, setWhiteboardTemplateMenuOpen] = useState(false);
   const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
   const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
   const [whiteboardCollaborators, setWhiteboardCollaborators] = useState([
@@ -442,11 +502,12 @@ export default function App() {
     { key: 'felt-pen', label: 'Felt pen', stroke: '#4f46e5', width: 2.6, icon: PenTool },
     { key: 'ballpoint', label: 'Ballpoint pen', stroke: '#1f2937', width: 1.9, icon: PencilLine },
     { key: 'pencil', label: 'Pencil', stroke: '#52525b', width: 1.5, icon: PencilLine },
-    { key: 'lasso', label: 'Lasso dashed', stroke: '#334155', width: 2.2, dashArray: '8 7', icon: PencilLine },
+    { key: 'lasso', label: 'Lasso dashed', stroke: '#334155', width: 2.2, dashArray: '8 7', icon: LassoLoopIcon },
     { key: 'marker', label: 'Marker', stroke: '#0f766e', width: 3.8, icon: PenTool },
     { key: 'highlighter', label: 'Highlighter', stroke: '#ca8a04', width: 6.2, opacity: 0.42, icon: Highlighter },
     { key: 'calligraphy', label: 'Calligraphy pen', stroke: '#7c2d12', width: 3.4, icon: PenTool },
   ];
+  const whiteboardZoomScale = Math.max(0.3, Math.min(2, whiteboardZoomLevel / 100));
   const whiteboardShapePresets = [
     { key: 'line', label: 'Line', icon: Minus },
     { key: 'arrow', label: 'Arrow', icon: MoveRight },
@@ -538,6 +599,7 @@ export default function App() {
     setWhiteboardMoreMenuOpen(false);
     setWhiteboardShapeMenuOpen(false);
     setWhiteboardAddMenuOpen(false);
+    setWhiteboardTemplateMenuOpen(false);
     setWhiteboardEraserMenuOpen(toolKey === 'eraser');
     if (toolKey !== 'sticky') {
       setWhiteboardStickyPaletteOpen(false);
@@ -6706,7 +6768,114 @@ Rules:
     setWhiteboardStickyPreview(null);
     setSelectedWidgetId(null);
     setSelectedShapeIndex(null);
-    showToast(toastMessage);
+    if (toastMessage) {
+      showToast(toastMessage);
+    }
+  };
+
+  const applyWhiteboardTemplate = (templateKey) => {
+    const buildWidget = ({
+      index,
+      type = 'sticky',
+      x,
+      y,
+      width = 180,
+      height = 120,
+      text = '',
+      title = '',
+      body = '',
+      color = '#fde047',
+    }) => ({
+      id: `wb-template-${templateKey}-${Date.now()}-${index}`,
+      type,
+      x,
+      y,
+      width,
+      height,
+      color,
+      text,
+      title,
+      body,
+      fontFamily: 'Calibri',
+      fontSize: 14,
+      isBold: false,
+      isItalic: false,
+      isUnderline: false,
+      textAlign: 'left',
+      textColor: '#111827',
+      highlightColor: '#ffffff',
+      opacity: 100,
+      hasList: false,
+      listType: 'bullet',
+      linkedUrl: '',
+    });
+
+    const templates = {
+      'startup-lean-canvas': [
+        buildWidget({ index: 1, type: 'text', x: 48, y: 38, width: 260, height: 96, text: 'Lean Startup Canvas\nCustomer segment\nCore problem' }),
+        buildWidget({ index: 2, x: 342, y: 38, width: 220, height: 120, color: '#fde68a', text: 'Solution\n- MVP scope\n- Differentiator' }),
+        buildWidget({ index: 3, x: 590, y: 38, width: 220, height: 120, color: '#bfdbfe', text: 'Channels\n- Community\n- Partner\n- Paid tests' }),
+        buildWidget({ index: 4, x: 342, y: 184, width: 220, height: 120, color: '#86efac', text: 'North-star metric\nActivation rate\nRetention D30' }),
+        buildWidget({ index: 5, x: 590, y: 184, width: 220, height: 120, color: '#f9a8d4', text: 'Unfair advantage\nDistribution moat\nData feedback loop' }),
+      ],
+      'startup-roadmap-sprint': [
+        buildWidget({ index: 1, type: 'text', x: 56, y: 36, width: 300, height: 90, text: 'MVP Sprint Roadmap\nWeek 1 to Week 6 execution board' }),
+        buildWidget({ index: 2, x: 64, y: 154, width: 180, height: 110, color: '#fde68a', text: 'Week 1\nUser interviews\nProblem validation' }),
+        buildWidget({ index: 3, x: 270, y: 154, width: 180, height: 110, color: '#bfdbfe', text: 'Week 2-3\nPrototype\nCore UX flow' }),
+        buildWidget({ index: 4, x: 476, y: 154, width: 180, height: 110, color: '#bbf7d0', text: 'Week 4-5\nBuild\nIntegrations\nQA' }),
+        buildWidget({ index: 5, x: 682, y: 154, width: 180, height: 110, color: '#fbcfe8', text: 'Week 6\nLaunch test\nCollect signal\nIterate' }),
+      ],
+      'enterprise-quarterly-operating-review': [
+        buildWidget({ index: 1, type: 'text', x: 46, y: 34, width: 340, height: 96, text: 'Quarterly Operating Review\nObjectives, execution, risk and decisions' }),
+        buildWidget({ index: 2, type: 'task', x: 420, y: 34, width: 260, height: 112, title: 'Top 3 KPIs', body: 'Revenue growth\nGross margin\nNet retention' }),
+        buildWidget({ index: 3, x: 46, y: 164, width: 230, height: 120, color: '#bfdbfe', text: 'Objective A\nOwner\nStatus\nBlockers' }),
+        buildWidget({ index: 4, x: 300, y: 164, width: 230, height: 120, color: '#bbf7d0', text: 'Objective B\nOwner\nStatus\nDependencies' }),
+        buildWidget({ index: 5, x: 554, y: 164, width: 230, height: 120, color: '#fef3c7', text: 'Objective C\nOwner\nStatus\nRisks' }),
+        buildWidget({ index: 6, type: 'task', x: 808, y: 164, width: 230, height: 120, title: 'Escalations', body: 'Cross-team blockers\nDecision needed\nDue date' }),
+      ],
+      'enterprise-stakeholder-update': [
+        buildWidget({ index: 1, type: 'text', x: 56, y: 36, width: 312, height: 88, text: 'Stakeholder Update\nWhat changed, what is next, what needs support' }),
+        buildWidget({ index: 2, type: 'task', x: 396, y: 36, width: 260, height: 104, title: 'Highlights', body: 'Shipped this week\nCustomer wins\nImpact' }),
+        buildWidget({ index: 3, x: 56, y: 160, width: 260, height: 120, color: '#bfdbfe', text: 'In progress\nMilestones\nConfidence level' }),
+        buildWidget({ index: 4, x: 342, y: 160, width: 260, height: 120, color: '#fde68a', text: 'Upcoming\nNext 2 weeks\nOwners' }),
+        buildWidget({ index: 5, x: 628, y: 160, width: 260, height: 120, color: '#fbcfe8', text: 'Risks and asks\nSupport needed\nDecision date' }),
+      ],
+      'personal-weekly-planner': [
+        buildWidget({ index: 1, type: 'text', x: 58, y: 36, width: 300, height: 88, text: 'Weekly Planner\nTop priorities, routines, and review' }),
+        buildWidget({ index: 2, x: 58, y: 150, width: 200, height: 120, color: '#fde68a', text: 'Must-do\n1.\n2.\n3.' }),
+        buildWidget({ index: 3, x: 284, y: 150, width: 200, height: 120, color: '#bfdbfe', text: 'Should-do\n1.\n2.\n3.' }),
+        buildWidget({ index: 4, x: 510, y: 150, width: 200, height: 120, color: '#bbf7d0', text: 'Could-do\nIdeas\nBacklog' }),
+        buildWidget({ index: 5, type: 'task', x: 736, y: 150, width: 220, height: 120, title: 'Reflection', body: 'Wins\nLessons\nNext focus' }),
+      ],
+      'personal-goals-habit-tracker': [
+        buildWidget({ index: 1, type: 'text', x: 58, y: 36, width: 320, height: 92, text: 'Goals + Habit Tracker\nMonthly outcomes and daily consistency' }),
+        buildWidget({ index: 2, x: 58, y: 156, width: 220, height: 120, color: '#fef3c7', text: 'Goal 1\nOutcome\nMilestone' }),
+        buildWidget({ index: 3, x: 304, y: 156, width: 220, height: 120, color: '#bfdbfe', text: 'Goal 2\nOutcome\nMilestone' }),
+        buildWidget({ index: 4, x: 550, y: 156, width: 220, height: 120, color: '#fbcfe8', text: 'Goal 3\nOutcome\nMilestone' }),
+        buildWidget({ index: 5, type: 'task', x: 796, y: 156, width: 220, height: 120, title: 'Habit streaks', body: 'Sleep\nWorkout\nDeep work\nReading' }),
+      ],
+    };
+
+    const selected = templates[templateKey] || templates['startup-lean-canvas'];
+    const selectedMeta = WHITEBOARD_TEMPLATE_LIBRARY.find((template) => template.key === templateKey);
+
+    setWhiteboardStrokes([]);
+    setWhiteboardShapes([]);
+    setWhiteboardRedoStrokes([]);
+    setWhiteboardCurrentStroke('');
+    setWhiteboardCurrentShape(null);
+    setWhiteboardComments([]);
+    setWhiteboardActiveCommentId(null);
+    setWhiteboardWidgets(selected);
+    setIsWhiteboardDrawing(false);
+    setWhiteboardLineAnchor(null);
+    setWhiteboardStickyDragStart(null);
+    setWhiteboardStickyPreview(null);
+    setSelectedWidgetId(null);
+    setSelectedShapeIndex(null);
+    setWhiteboardTool('select');
+    setWhiteboardTemplateMenuOpen(false);
+    showToast(`${selectedMeta?.label || 'Template'} loaded`);
   };
 
   const createWhiteboardExperience = () => {
@@ -12172,7 +12341,7 @@ Rules:
               <div
                 key={doc.id}
                 onClick={() => switchDocument(doc.id)}
-                className={`relative shrink-0 px-2 py-1 rounded-md text-xs font-medium border transition-colors flex items-center gap-1.5 ${isActive ? 'bg-white border-violet-200 text-violet-700' : 'bg-transparent border-transparent text-gray-500 hover:bg-white hover:border-gray-200'}`}
+                className={`relative shrink-0 px-2 py-1 rounded-md text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white border-violet-200 text-violet-700' : 'bg-transparent border-transparent text-gray-500 hover:bg-white hover:border-gray-200'}`}
               >
                 {renamingDocId === doc.id ? (
                   <input
@@ -12670,7 +12839,7 @@ Rules:
                     <button onClick={() => setActiveRightTab('tasks')} className="px-2.5 py-1.5 text-xs rounded-lg bg-violet-600 text-white hover:bg-violet-700">Convert to Tasks</button>
                   </div>
                 </div>
-                <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#ececf6_1px,transparent_0)] bg-[size:24px_24px]">
+                <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#ececf6_1px,transparent_0)] bg-[size:24px_24px]" style={{ zoom: whiteboardZoomScale }}>
                   <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2 flex flex-col gap-1.5">
                     {[
                       { key: 'select', label: 'Select', icon: MousePointer2 },
@@ -12681,8 +12850,6 @@ Rules:
                       { key: 'link', label: 'Connector', icon: LinkIcon },
                       { key: 'sticky', label: 'Sticky note', icon: StickyNote },
                       { key: 'comment', label: 'Comment', icon: MessageCircle },
-                      { key: 'eraser', label: 'Eraser', icon: Eraser },
-                      { key: 'image', label: 'Image', icon: ImageIcon },
                       { key: 'more', label: 'More', icon: MoreHorizontal },
                     ].map((tool) => (
                       <button
@@ -13712,8 +13879,48 @@ Rules:
                     <button type="button" onClick={handleWhiteboardRedo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo (Ctrl+Shift+Z)"><Redo2 size={15} /></button>
                     <div className="w-px h-5 bg-gray-200 mx-0.5" />
                     <button type="button" onClick={() => { activateWhiteboardTool('pen'); setWhiteboardPenVariant('highlighter'); showToast('Highlighter active'); }} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' && whiteboardPenVariant === 'highlighter' ? 'bg-yellow-100 text-yellow-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Highlighter"><Highlighter size={15} /></button>
+                    <div className="h-9 rounded-lg border border-gray-200 bg-gray-50 px-1.5 flex items-center gap-1">
+                      <button type="button" onClick={() => setWhiteboardZoomLevel((prev) => Math.max(30, prev - 10))} className="h-7 w-7 rounded-md text-gray-600 hover:bg-white hover:text-gray-800 flex items-center justify-center" title="Zoom out">-</button>
+                      <span className="min-w-[42px] text-center text-[13px] font-semibold text-gray-700 select-none">{whiteboardZoomLevel}%</span>
+                      <button type="button" onClick={() => setWhiteboardZoomLevel((prev) => Math.min(200, prev + 10))} className="h-7 w-7 rounded-md text-gray-600 hover:bg-white hover:text-gray-800 flex items-center justify-center" title="Zoom in">+</button>
+                    </div>
                     <div className="w-px h-5 bg-gray-200 mx-0.5" />
                     <button type="button" onClick={() => showToast('Collaboration: invite collaborators from the Rooms panel')} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Collaboration"><Users size={15} /></button>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setWhiteboardTemplateMenuOpen((prev) => !prev)}
+                        className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTemplateMenuOpen ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                        title="Templates"
+                      >
+                        <LayoutGrid size={15} />
+                      </button>
+                      {whiteboardTemplateMenuOpen && (
+                        <div className="absolute bottom-11 right-0 z-30 rounded-xl border border-gray-200 bg-white shadow-lg p-2 w-[290px] max-h-[320px] overflow-y-auto thin-scrollbar">
+                          <div className="px-1 pb-1 text-[11px] font-semibold text-gray-700">Prebuilt templates</div>
+                          {['Startup', 'Enterprise', 'Personal'].map((category) => (
+                            <div key={category} className="mt-1.5">
+                              <div className="px-1 py-1 text-[10px] uppercase tracking-wide text-gray-400">{category}</div>
+                              <div className="space-y-1">
+                                {WHITEBOARD_TEMPLATE_LIBRARY
+                                  .filter((template) => template.category === category)
+                                  .map((template) => (
+                                    <button
+                                      key={template.key}
+                                      type="button"
+                                      onClick={() => applyWhiteboardTemplate(template.key)}
+                                      className="w-full text-left px-2 py-1.5 rounded-md hover:bg-violet-50"
+                                    >
+                                      <div className="text-xs font-semibold text-gray-800">{template.label}</div>
+                                      <div className="text-[10px] text-gray-500 mt-0.5">{template.detail}</div>
+                                    </button>
+                                  ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     <div className="relative">
                       <button
                         type="button"
