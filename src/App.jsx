@@ -469,6 +469,7 @@ export default function App() {
   const [whiteboardAddMenuOpen, setWhiteboardAddMenuOpen] = useState(false);
   const [whiteboardStickyColorMenuFor, setWhiteboardStickyColorMenuFor] = useState(null);
   const [whiteboardMoreTextMenuFor, setWhiteboardMoreTextMenuFor] = useState(null);
+  const [whiteboardPenMenuOpen, setWhiteboardPenMenuOpen] = useState(false);
   const [whiteboardEraserMenuOpen, setWhiteboardEraserMenuOpen] = useState(false);
   const [whiteboardEraserSize, setWhiteboardEraserSize] = useState(9);
   const [whiteboardZoomLevel, setWhiteboardZoomLevel] = useState(100);
@@ -604,6 +605,7 @@ export default function App() {
 
   const activateWhiteboardTool = (toolKey) => {
     setWhiteboardTool(toolKey);
+    setWhiteboardPenMenuOpen(false);
     setWhiteboardMoreMenuOpen(false);
     setWhiteboardShapeMenuOpen(false);
     setWhiteboardAddMenuOpen(false);
@@ -12342,7 +12344,9 @@ Rules:
 
         <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-[140]">
           {orderedDocuments.map((doc) => {
-            const label = doc.title?.trim() ? doc.title : UNTITLED_COMPOSITION_LABEL;
+            const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
+              ? 'Untitled whiteboard'
+              : (doc.title?.trim() ? doc.title : UNTITLED_COMPOSITION_LABEL);
             const isActive = activeDocId === doc.id;
 
             return (
@@ -12427,7 +12431,7 @@ Rules:
               event.preventDefault();
             }
           }}
-          className="h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130]"
+          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''}`}
         >
           <div
             className="relative"
@@ -12874,6 +12878,17 @@ Rules:
                         onMouseEnter={() => setWhiteboardHoverLabel(tool.label)}
                         onMouseLeave={() => setWhiteboardHoverLabel('')}
                         onClick={() => {
+                          if (tool.key === 'pen') {
+                            setWhiteboardTool('pen');
+                            setWhiteboardPenMenuOpen((prev) => !prev);
+                            setWhiteboardMoreMenuOpen(false);
+                            setWhiteboardShapeMenuOpen(false);
+                            setWhiteboardAddMenuOpen(false);
+                            setWhiteboardTemplateMenuOpen(false);
+                            setWhiteboardEraserMenuOpen(false);
+                            showToast('Pen tool active');
+                            return;
+                          }
                           activateWhiteboardTool(tool.key);
                           if (tool.key === 'eraser') {
                             setWhiteboardEraserMenuOpen(true);
@@ -12907,7 +12922,7 @@ Rules:
                       {whiteboardHoverLabel}
                     </div>
                   )}
-                  {whiteboardTool === 'pen' && (
+                  {whiteboardTool === 'pen' && whiteboardPenMenuOpen && (
                     <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2.5 flex flex-col gap-1.5 w-[172px]">
                       <p className="text-[10px] font-semibold text-gray-500 px-1">Pen styles</p>
                       {whiteboardPenPresets.map((penPreset, penIndex) => (
@@ -12918,6 +12933,7 @@ Rules:
                           onMouseLeave={() => setWhiteboardHoverLabel('')}
                           onClick={() => {
                             setWhiteboardPenVariant(penPreset.key);
+                            setWhiteboardPenMenuOpen(false);
                             showToast(`${penPreset.label} selected`);
                           }}
                           className={`h-8 rounded-lg px-2 flex items-center gap-2 transition-colors ${whiteboardPenVariant === penPreset.key ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
