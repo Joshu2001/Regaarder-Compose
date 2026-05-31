@@ -133,36 +133,42 @@ const WHITEBOARD_TEMPLATE_LIBRARY = [
     category: 'Startup',
     label: 'Lean Canvas',
     detail: 'Problem, solution, channels, metrics, unfair advantage.',
+    preview: ['#fde047', '#a5b4fc', '#93c5fd', '#a3e635', '#fb923c'],
   },
   {
     key: 'startup-roadmap-sprint',
     category: 'Startup',
     label: 'MVP Sprint Roadmap',
     detail: 'Weekly milestones from validation to launch.',
+    preview: ['#a78bfa', '#818cf8', '#60a5fa', '#facc15'],
   },
   {
     key: 'enterprise-quarterly-operating-review',
     category: 'Enterprise',
     label: 'Quarterly Operating Review',
     detail: 'OKRs, risks, dependencies, owners, and escalations.',
+    preview: ['#c4b5fd', '#93c5fd', '#fcd34d', '#f9a8d4'],
   },
   {
     key: 'enterprise-stakeholder-update',
     category: 'Enterprise',
     label: 'Stakeholder Update Board',
     detail: 'Status rollup for leadership and cross-functional teams.',
+    preview: ['#bfdbfe', '#86efac', '#fcd34d', '#c4b5fd'],
   },
   {
     key: 'personal-weekly-planner',
     category: 'Personal',
     label: 'Weekly Planner',
     detail: 'Goals, priorities, routines, and reflections.',
+    preview: ['#fde68a', '#bfdbfe', '#bbf7d0', '#fbcfe8'],
   },
   {
     key: 'personal-goals-habit-tracker',
     category: 'Personal',
     label: 'Goals + Habit Tracker',
     detail: 'Monthly outcomes with daily habit checkpoints.',
+    preview: ['#fef3c7', '#bfdbfe', '#fbcfe8', '#c4b5fd'],
   },
 ];
 
@@ -467,6 +473,7 @@ export default function App() {
   const [whiteboardEraserSize, setWhiteboardEraserSize] = useState(9);
   const [whiteboardZoomLevel, setWhiteboardZoomLevel] = useState(100);
   const [whiteboardTemplateMenuOpen, setWhiteboardTemplateMenuOpen] = useState(false);
+  const [isWhiteboardImmersive, setIsWhiteboardImmersive] = useState(false);
   const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
   const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
   const [whiteboardCollaborators, setWhiteboardCollaborators] = useState([
@@ -541,6 +548,7 @@ export default function App() {
 
   useEffect(() => {
     if (activeRightTab !== 'whiteboard') {
+      setIsWhiteboardImmersive(false);
       return undefined;
     }
     const timer = window.setInterval(() => {
@@ -12812,8 +12820,8 @@ Rules:
         {/* Document Editor Content (Beautifully separated page area) */}
         <div className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
           {activeRightTab === 'whiteboard' && (
-            <div className="absolute inset-0 z-30 p-6 md:p-8 bg-[#F7F7F9]">
-              <div className="h-full w-full rounded-[24px] border border-violet-100 bg-white shadow-[0_20px_60px_-30px_rgba(124,58,237,0.45)] overflow-hidden flex flex-col">
+            <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-40 p-0 bg-white' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
+              <div className={`h-full w-full bg-white overflow-hidden flex flex-col ${isWhiteboardImmersive ? 'rounded-none border-0 shadow-none' : 'rounded-[24px] border border-violet-100 shadow-[0_20px_60px_-30px_rgba(124,58,237,0.45)]'}`}>
                 <div className="h-14 border-b border-gray-100 px-5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center">
@@ -12825,6 +12833,14 @@ Rules:
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsWhiteboardImmersive((prev) => !prev)}
+                      className={`h-8 w-8 rounded-lg border flex items-center justify-center ${isWhiteboardImmersive ? 'border-violet-200 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                      title={isWhiteboardImmersive ? 'Collapse whiteboard' : 'Expand whiteboard'}
+                    >
+                      {isWhiteboardImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
+                    </button>
                     <button
                       onClick={() => {
                         setWhiteboardTool('sticky');
@@ -12887,7 +12903,7 @@ Rules:
                     </div>
                   )}
                   {Boolean(whiteboardHoverLabel) && (
-                    <div className="absolute left-16 top-1/2 -translate-y-1/2 z-20 px-2 py-1 rounded-md bg-slate-900 text-white text-[11px] font-medium shadow-lg whitespace-nowrap">
+                    <div className={`absolute top-1/2 -translate-y-1/2 z-40 px-2 py-1 rounded-md bg-slate-900 text-white text-[11px] font-medium shadow-lg whitespace-nowrap ${whiteboardTool === 'pen' ? 'left-[204px]' : 'left-16'}`}>
                       {whiteboardHoverLabel}
                     </div>
                   )}
@@ -12988,8 +13004,9 @@ Rules:
                           setWhiteboardMoreMenuOpen(false);
                           showToast('Whiteboard reset');
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
                       >
+                        <RefreshCcw size={12} />
                         Reset whiteboard
                       </button>
                       <button
@@ -12998,8 +13015,9 @@ Rules:
                           exportWhiteboardQuick('png');
                           setWhiteboardMoreMenuOpen(false);
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
                       >
+                        <ImageIcon size={12} />
                         Quick snapshot (PNG)
                       </button>
                       <button
@@ -13008,8 +13026,9 @@ Rules:
                           exportWhiteboardQuick('pdf');
                           setWhiteboardMoreMenuOpen(false);
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
                       >
+                        <File size={12} />
                         Quick export (single PDF)
                       </button>
                       <button
@@ -13019,8 +13038,9 @@ Rules:
                           setWhiteboardMoreMenuOpen(false);
                           showToast('Assistant opened');
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
                       >
+                        <Sparkles size={12} />
                         Open assistant
                       </button>
                       <button
@@ -13030,8 +13050,9 @@ Rules:
                           setWhiteboardMoreMenuOpen(false);
                           showToast('Tasks opened');
                         }}
-                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50"
+                        className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-gray-50 inline-flex items-center gap-1.5"
                       >
+                        <CheckSquare size={12} />
                         Convert to tasks
                       </button>
                     </div>
@@ -13896,12 +13917,12 @@ Rules:
                         <LayoutGrid size={15} />
                       </button>
                       {whiteboardTemplateMenuOpen && (
-                        <div className="absolute bottom-11 right-0 z-30 rounded-xl border border-gray-200 bg-white shadow-lg p-2 w-[290px] max-h-[320px] overflow-y-auto thin-scrollbar">
+                        <div className="absolute bottom-11 right-0 z-30 rounded-xl border border-gray-200 bg-white shadow-lg p-2 w-[332px] max-h-[420px] overflow-y-auto thin-scrollbar">
                           <div className="px-1 pb-1 text-[11px] font-semibold text-gray-700">Prebuilt templates</div>
                           {['Startup', 'Enterprise', 'Personal'].map((category) => (
                             <div key={category} className="mt-1.5">
                               <div className="px-1 py-1 text-[10px] uppercase tracking-wide text-gray-400">{category}</div>
-                              <div className="space-y-1">
+                              <div className="grid grid-cols-2 gap-2">
                                 {WHITEBOARD_TEMPLATE_LIBRARY
                                   .filter((template) => template.category === category)
                                   .map((template) => (
@@ -13909,8 +13930,13 @@ Rules:
                                       key={template.key}
                                       type="button"
                                       onClick={() => applyWhiteboardTemplate(template.key)}
-                                      className="w-full text-left px-2 py-1.5 rounded-md hover:bg-violet-50"
+                                      className="w-full text-left p-2 rounded-lg border border-gray-200 hover:border-violet-200 hover:bg-violet-50"
                                     >
+                                      <div className="mb-2 h-20 rounded-md bg-gray-100 p-2 flex items-end gap-1 overflow-hidden">
+                                        {(template.preview || ['#c4b5fd', '#93c5fd', '#fcd34d', '#86efac']).map((swatch, index) => (
+                                          <div key={`${template.key}-swatch-${index}`} className="flex-1 rounded-sm" style={{ backgroundColor: swatch, height: `${58 + (index % 3) * 8}px` }} />
+                                        ))}
+                                      </div>
                                       <div className="text-xs font-semibold text-gray-800">{template.label}</div>
                                       <div className="text-[10px] text-gray-500 mt-0.5">{template.detail}</div>
                                     </button>
@@ -13933,21 +13959,22 @@ Rules:
                       {whiteboardAddMenuOpen && (
                         <div className="absolute bottom-11 right-0 z-30 rounded-xl border border-gray-200 bg-white shadow-lg p-1.5 w-44">
                           {[
-                            { label: 'Sticky Note', action: () => { activateWhiteboardTool('sticky'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Text', action: () => { activateWhiteboardTool('text'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Shape', action: () => { activateWhiteboardTool('shapes'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Image', action: () => { activateWhiteboardTool('image'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Connector', action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Comment', action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
-                            { label: 'Task Card', action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
-                            { label: 'AI Workflow', action: () => { showToast('AI Workflow — coming soon'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Sticky Note', icon: StickyNote, action: () => { activateWhiteboardTool('sticky'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Text', icon: Type, action: () => { activateWhiteboardTool('text'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Shape', icon: Shapes, action: () => { activateWhiteboardTool('shapes'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Image', icon: ImageIcon, action: () => { activateWhiteboardTool('image'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
+                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow — coming soon'); setWhiteboardAddMenuOpen(false); } },
                           ].map((item) => (
                             <button
                               key={item.label}
                               type="button"
                               onClick={item.action}
-                              className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-violet-50 hover:text-violet-700"
+                              className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-violet-50 hover:text-violet-700 inline-flex items-center gap-1.5"
                             >
+                              <item.icon size={12} />
                               {item.label}
                             </button>
                           ))}
