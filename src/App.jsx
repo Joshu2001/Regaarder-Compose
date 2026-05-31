@@ -273,6 +273,11 @@ export default function App() {
   const [productMode, setProductMode] = useState('landing');
   const [dmSearchQuery, setDmSearchQuery] = useState('');
   const [dmComposerValue, setDmComposerValue] = useState('');
+  const [dmPendingAttachments, setDmPendingAttachments] = useState([]);
+  const [dmEmojiPickerOpen, setDmEmojiPickerOpen] = useState(false);
+  const [dmFormatMenuOpen, setDmFormatMenuOpen] = useState(false);
+  const [dmComposerQuickMenuOpen, setDmComposerQuickMenuOpen] = useState(false);
+  const [dmScheduleMenuOpen, setDmScheduleMenuOpen] = useState(false);
   const [dmConversationTab, setDmConversationTab] = useState('chat');
   const [dmActiveParentMessageId, setDmActiveParentMessageId] = useState(null);
   const [dmThreadComposerValue, setDmThreadComposerValue] = useState('');
@@ -1254,6 +1259,9 @@ export default function App() {
   const notificationsPanelRef = useRef(null);
   const roomStageRef = useRef(null);
   const promptFileInputRef = useRef(null);
+  const dmAnyAttachmentInputRef = useRef(null);
+  const dmImageAttachmentInputRef = useRef(null);
+  const dmAudioAttachmentInputRef = useRef(null);
   const chatFileInputRef = useRef(null);
   const scheduleFileInputRef = useRef(null);
   const schedulePeopleMenuRef = useRef(null);
@@ -6610,6 +6618,11 @@ Rules:
     setDmSearchQuery('');
     setDmConversationTab('chat');
     setDmComposerValue('');
+    setDmPendingAttachments([]);
+    setDmEmojiPickerOpen(false);
+    setDmFormatMenuOpen(false);
+    setDmComposerQuickMenuOpen(false);
+    setDmScheduleMenuOpen(false);
     setDmThreadComposerValue('');
     setDmActiveParentMessageId(null);
     setDmActiveThreadId((prev) => prev || 'thread-beta-launch');
@@ -8665,26 +8678,71 @@ Rules:
     setDmThreadComposerValue('');
   };
 
+  const classifyDmAttachmentKind = (file) => {
+    const mime = String(file?.type || '').toLowerCase();
+    const name = String(file?.name || '').toLowerCase();
+    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('audio/')) return 'audio';
+    if (mime.includes('sheet') || /\.csv$|\.xlsx?$/.test(name)) return 'sheet';
+    if (mime.includes('presentation') || /\.pptx?$/.test(name)) return 'deck';
+    return 'doc';
+  };
+
+  const addDmAttachments = (fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length) {
+      return;
+    }
+    const nextItems = files.map((file) => ({
+      id: `dm-attach-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      kind: classifyDmAttachmentKind(file),
+      file,
+    }));
+    setDmPendingAttachments((prev) => [...prev, ...nextItems].slice(0, 20));
+    showToast(`${files.length} attachment${files.length > 1 ? 's' : ''} added`);
+  };
+
+  const handleDmAttachmentInputChange = (event) => {
+    addDmAttachments(event.target.files);
+    event.target.value = '';
+  };
+
   const sendDmMessage = () => {
     const text = String(dmComposerValue || '').trim();
-    if (!text || !activeDmThread) {
+    if ((!text && !dmPendingAttachments.length) || !activeDmThread) {
       return;
     }
     const now = Date.now();
+    const attachedFiles = dmPendingAttachments.map((attachment, index) => ({
+      id: `dm-file-${now}-${index}`,
+      threadId: activeDmThread.id,
+      name: attachment.name,
+      kind: attachment.kind,
+      updatedAt: now,
+      size: attachment.size,
+      mimeType: attachment.type,
+    }));
+    const messageText = text || `Shared ${attachedFiles.length} attachment${attachedFiles.length > 1 ? 's' : ''}`;
     const message = {
       id: `dm-${now}-${Math.floor(Math.random() * 1000)}`,
       threadId: activeDmThread.id,
       author: 'You',
       role: 'you',
-      text,
+      text: messageText,
       createdAt: now,
-      files: [],
+      files: attachedFiles,
       decisions: [],
     };
     const decisionSignals = ['decision', 'decided', 'approved', 'ship', 'finalized'];
-    const hasDecisionSignal = decisionSignals.some((signal) => text.toLowerCase().includes(signal));
+    const hasDecisionSignal = decisionSignals.some((signal) => messageText.toLowerCase().includes(signal));
 
     setDmMessages((prev) => [...prev, message]);
+    if (attachedFiles.length) {
+      setDmFiles((prev) => [...attachedFiles, ...prev].slice(0, 300));
+    }
     setDmThreads((prev) => prev.map((thread) => (
       thread.id === activeDmThread.id
         ? { ...thread, lastMessageAt: now }
@@ -8697,15 +8755,27 @@ Rules:
       threadId: activeDmThread.id,
       threadTitle: activeDmThread.title,
       author: 'You',
-      text,
+      text: messageText,
       createdAt: now,
     }];
+
+    attachedFiles.forEach((file) => {
+      archiveEntries.push({
+        id: `arc-file-${file.id}`,
+        type: 'file',
+        threadId: activeDmThread.id,
+        threadTitle: activeDmThread.title,
+        author: 'You',
+        fileName: file.name,
+        createdAt: now,
+      });
+    });
 
     if (hasDecisionSignal) {
       const decision = {
         id: `dm-decision-${now}`,
         threadId: activeDmThread.id,
-        summary: text,
+        summary: messageText,
         createdAt: now,
         by: 'You',
       };
@@ -8716,13 +8786,18 @@ Rules:
         threadId: activeDmThread.id,
         threadTitle: activeDmThread.title,
         author: 'You',
-        decision: text,
+        decision: messageText,
         createdAt: now,
       });
     }
 
     appendDmArchive(archiveEntries);
     setDmComposerValue('');
+    setDmPendingAttachments([]);
+    setDmEmojiPickerOpen(false);
+    setDmFormatMenuOpen(false);
+    setDmComposerQuickMenuOpen(false);
+    setDmScheduleMenuOpen(false);
   };
 
   const quickAttachDmFile = () => {
@@ -8798,24 +8873,35 @@ Rules:
     };
     const handleDmComposerAction = (action) => {
       if (action === 'attach') {
-        quickAttachDmFile();
+        dmAnyAttachmentInputRef.current?.click();
         return;
       }
       if (action === 'emoji') {
-        setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}🙂`);
+        setDmEmojiPickerOpen((prev) => !prev);
+        setDmFormatMenuOpen(false);
+        setDmComposerQuickMenuOpen(false);
+        setDmScheduleMenuOpen(false);
         return;
       }
       if (action === 'schedule') {
-        setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}[scheduled update]`);
-        showToast('Message marked for schedule');
+        setDmScheduleMenuOpen((prev) => !prev);
+        setDmEmojiPickerOpen(false);
+        setDmFormatMenuOpen(false);
+        setDmComposerQuickMenuOpen(false);
         return;
       }
       if (action === 'format') {
-        showToast('Formatting tools ready');
+        setDmFormatMenuOpen((prev) => !prev);
+        setDmEmojiPickerOpen(false);
+        setDmComposerQuickMenuOpen(false);
+        setDmScheduleMenuOpen(false);
         return;
       }
       if (action === 'plus') {
-        showToast('Shortcut actions opened');
+        setDmComposerQuickMenuOpen((prev) => !prev);
+        setDmEmojiPickerOpen(false);
+        setDmFormatMenuOpen(false);
+        setDmScheduleMenuOpen(false);
       }
     };
 
@@ -9167,6 +9253,30 @@ Rules:
 
             <div className="p-5 border-t border-gray-200 bg-white">
               <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                <input
+                  ref={dmAnyAttachmentInputRef}
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleDmAttachmentInputChange}
+                />
+                <input
+                  ref={dmImageAttachmentInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleDmAttachmentInputChange}
+                />
+                <input
+                  ref={dmAudioAttachmentInputRef}
+                  type="file"
+                  multiple
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={handleDmAttachmentInputChange}
+                />
+
                 <textarea
                   value={dmComposerValue}
                   onChange={(event) => setDmComposerValue(event.target.value)}
@@ -9174,6 +9284,77 @@ Rules:
                   rows={2}
                   className="w-full resize-none bg-transparent outline-none border-none text-sm text-slate-700 placeholder:text-slate-400"
                 />
+
+                {dmPendingAttachments.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {dmPendingAttachments.map((attachment) => (
+                      <button
+                        key={attachment.id}
+                        type="button"
+                        onClick={() => setDmPendingAttachments((prev) => prev.filter((item) => item.id !== attachment.id))}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600"
+                        title="Click to remove"
+                      >
+                        <Paperclip size={11} />
+                        <span className="truncate max-w-[140px]">{attachment.name}</span>
+                        <X size={11} className="text-slate-400" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {dmComposerQuickMenuOpen && (
+                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1.5 text-xs">
+                    <button type="button" onClick={() => dmAnyAttachmentInputRef.current?.click()} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300">Upload file</button>
+                    <button type="button" onClick={() => dmImageAttachmentInputRef.current?.click()} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300">Upload image</button>
+                    <button type="button" onClick={() => dmAudioAttachmentInputRef.current?.click()} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300">Upload audio</button>
+                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}https://`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300">Add link</button>
+                  </div>
+                )}
+
+                {dmFormatMenuOpen && (
+                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1.5 text-xs">
+                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}**bold**`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700">Bold</button>
+                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}_italic_`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700">Italic</button>
+                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? '\n' : ''}> quote`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700">Quote</button>
+                    <button type="button" onClick={() => setDmComposerValue((prev) => `${prev}${prev ? '\n' : ''}- item`)} className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700">Bullets</button>
+                  </div>
+                )}
+
+                {dmEmojiPickerOpen && (
+                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1.5 text-lg">
+                    {['🙂', '🔥', '✅', '🎯', '🚀', '👏', '🎉', '💡', '📌', '🤝', '❤️', '😄'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${emoji}`)}
+                        className="w-8 h-8 rounded-md border border-slate-200 bg-white hover:bg-violet-50"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {dmScheduleMenuOpen && (
+                  <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1.5 text-xs">
+                    {['in 10 minutes', 'in 1 hour', 'tomorrow 9:00 AM', 'next Monday 9:00 AM'].map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => {
+                          setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}[scheduled ${slot}]`);
+                          setDmScheduleMenuOpen(false);
+                          showToast(`Scheduled for ${slot}`);
+                        }}
+                        className="px-2 py-1 rounded border border-slate-200 bg-white text-slate-700 hover:border-violet-300"
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="mt-2 flex items-center justify-between">
                   <div className="flex items-center gap-3 text-slate-400">
                     <button type="button" onClick={() => handleDmComposerAction('plus')} className="hover:text-violet-600"><Plus size={16} /></button>
