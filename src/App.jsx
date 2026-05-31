@@ -14255,14 +14255,14 @@ Rules:
                               setWhiteboardEmojiSearch('');
                               setWhiteboardReactionMenuOpen(true);
                             }}
-                            className="h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
+                            className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
                             title="Quick reactions"
                           >
                             <span className="text-[14px] leading-none">☺</span>
                             <span className="absolute -top-1 -right-1 text-[9px] text-slate-500">+</span>
                           </button>
                           {isWidgetReactionMenuOpen && (
-                            <div className="absolute left-0 top-9 z-50 flex items-center gap-1 rounded-2xl border border-slate-200 bg-white px-2 py-1.5 shadow-[0_16px_34px_-22px_rgba(15,23,42,0.55)]" onPointerDown={(event) => event.stopPropagation()}>
+                            <div className="absolute left-0 top-9 z-50 flex items-center gap-1.5 px-1 py-0.5" onPointerDown={(event) => event.stopPropagation()}>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -14276,7 +14276,7 @@ Rules:
                               >
                                 +
                               </button>
-                              {orderedWhiteboardEmojis.slice(0, 5).map((emojiItem) => (
+                              {orderedWhiteboardEmojis.slice(0, 8).map((emojiItem) => (
                                   <button
                                     key={`${widget.id}-${emojiItem.emoji}`}
                                     type="button"
@@ -14353,12 +14353,14 @@ Rules:
                           onMouseEnter={() => setWhiteboardHoveredAnchor({ objectId: widget.id, anchorKey: anchor.key })}
                           onMouseLeave={() => setWhiteboardHoveredAnchor((prev) => (prev?.objectId === widget.id && prev?.anchorKey === anchor.key ? null : prev))}
                         >
-                          <div className="h-3 w-3 rounded-full border-2 border-blue-600 bg-white shadow-sm" style={{ cursor: anchor.cursor }} />
-                          {whiteboardHoveredAnchor?.objectId === widget.id && whiteboardHoveredAnchor?.anchorKey === anchor.key && (
-                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 h-7 w-7 rounded-full bg-blue-600 text-white shadow-md flex items-center justify-center text-sm">
-                              {anchor.icon}
-                            </div>
-                          )}
+                          <div
+                            className={`relative h-3 w-3 rounded-full border-2 shadow-sm flex items-center justify-center ${whiteboardHoveredAnchor?.objectId === widget.id && whiteboardHoveredAnchor?.anchorKey === anchor.key ? 'border-blue-600 bg-blue-600 text-white' : 'border-blue-600 bg-white'}`}
+                            style={{ cursor: anchor.cursor }}
+                          >
+                            {whiteboardHoveredAnchor?.objectId === widget.id && whiteboardHoveredAnchor?.anchorKey === anchor.key && (
+                              <span className="text-[8px] leading-none">{anchor.icon}</span>
+                            )}
+                          </div>
                         </div>
                       ))}
                       {widget.type === 'sticky' ? (
@@ -14825,14 +14827,14 @@ Rules:
                                 setWhiteboardEmojiSearch('');
                                 setWhiteboardReactionMenuOpen(true);
                               }}
-                              className="h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
+                              className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
                               title="Quick reactions"
                             >
                               <span className="text-[14px] leading-none">☺</span>
                               <span className="absolute -top-1 -right-1 text-[9px] text-slate-500">+</span>
                             </button>
                             {isShapeReactionMenuOpen && (
-                              <div className="absolute left-0 top-9 z-50 flex items-center gap-1 rounded-2xl border border-slate-200 bg-white px-2 py-1.5 shadow-[0_16px_34px_-22px_rgba(15,23,42,0.55)]">
+                              <div className="absolute left-0 top-9 z-50 flex items-center gap-1.5 px-1 py-0.5">
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -14846,7 +14848,7 @@ Rules:
                                 >
                                   +
                                 </button>
-                                {orderedWhiteboardEmojis.slice(0, 5).map((emojiItem) => (
+                                  {orderedWhiteboardEmojis.slice(0, 8).map((emojiItem) => (
                                     <button
                                       key={`${shapeIndex}-${emojiItem.emoji}`}
                                       type="button"
@@ -15142,7 +15144,7 @@ Rules:
                         }}
                       >
                         <div
-                          className="absolute w-[340px] max-w-[calc(100%-20px)] rounded-2xl border-2 border-blue-500 bg-white p-3 shadow-[0_24px_56px_-28px_rgba(15,23,42,0.55)]"
+                          className="absolute w-[360px] max-w-[calc(100%-20px)] rounded-[22px] border border-slate-200 bg-white p-3 shadow-[0_18px_48px_-26px_rgba(15,23,42,0.5)]"
                           style={{ left: `${modalLeft}px`, top: `${modalTop}px` }}
                           onPointerDown={(event) => event.stopPropagation()}
                         >
@@ -15152,7 +15154,7 @@ Rules:
                               value={whiteboardEmojiSearch}
                               onChange={(event) => setWhiteboardEmojiSearch(event.target.value)}
                               placeholder="Search"
-                              className="w-full h-10 rounded-xl border-2 border-blue-500/80 px-3 pr-10 text-sm text-slate-700 outline-none"
+                              className="w-full h-10 rounded-2xl border border-slate-200 px-3 pr-10 text-sm text-slate-700 outline-none focus:border-blue-500"
                             />
                             <button
                               type="button"
@@ -15163,13 +15165,16 @@ Rules:
                               ×
                             </button>
                           </div>
-                          <div className="mt-2 flex items-center gap-2 text-slate-500">
+                          <div className="mt-2 flex items-center gap-2 text-slate-500 overflow-x-auto thin-scrollbar pb-1">
                             <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Recent">🕘</button>
                             <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Smileys">🙂</button>
                             <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Animals">🐻</button>
                             <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Gestures">👍</button>
                             <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Ideas">💡</button>
                             <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Objects">🏷️</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Stars">✨</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Hearts">❤️</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Rocket">🚀</button>
                           </div>
                           <div className="mt-2 text-[11px] font-semibold text-slate-500">Recent</div>
                           <div className="mt-1 grid grid-cols-8 gap-1.5 max-h-[260px] overflow-y-auto thin-scrollbar pr-1">
