@@ -8777,6 +8777,47 @@ Rules:
         setActiveMeetingStageTab(options.meetingStageTab);
       }
     };
+    const handleDmStartNewMessage = () => {
+      setDmConversationTab('chat');
+      setDmComposerValue('');
+      setDmSearchQuery('');
+      setDmActiveParentMessageId(null);
+      showToast('Start a new channel message');
+    };
+    const handleDmQuickJump = (label) => {
+      if (label === 'Threads') {
+        setDmConversationTab('threads');
+      } else if (label === 'AI Summary') {
+        setDmConversationTab('ai-summary');
+      } else if (label === 'Mentions' || label === 'Saved') {
+        setDmSearchQuery(label.toLowerCase());
+      } else {
+        setDmConversationTab('chat');
+      }
+      showToast(`${label} opened`);
+    };
+    const handleDmComposerAction = (action) => {
+      if (action === 'attach') {
+        quickAttachDmFile();
+        return;
+      }
+      if (action === 'emoji') {
+        setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}🙂`);
+        return;
+      }
+      if (action === 'schedule') {
+        setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}[scheduled update]`);
+        showToast('Message marked for schedule');
+        return;
+      }
+      if (action === 'format') {
+        showToast('Formatting tools ready');
+        return;
+      }
+      if (action === 'plus') {
+        showToast('Shortcut actions opened');
+      }
+    };
 
     return (
       <div className={`flex h-screen bg-[#f5f6fb] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
@@ -8791,14 +8832,14 @@ Rules:
           <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex items-center justify-between">
               <div className="text-[19px] font-semibold text-slate-900">Regaarder</div>
-              <button type="button" className="text-gray-400 hover:text-gray-600">
+              <button type="button" onClick={() => showToast('Workspace switcher coming next')} className="text-gray-400 hover:text-gray-600">
                 <ChevronDown size={16} />
               </button>
             </div>
           </div>
 
           <div className="px-4 pt-4 pb-3">
-            <button type="button" className="w-full h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium flex items-center justify-between px-3">
+            <button type="button" onClick={handleDmStartNewMessage} className="w-full h-9 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium flex items-center justify-between px-3">
               <span>New message</span>
               <KeyRound size={14} />
             </button>
@@ -8815,11 +8856,7 @@ Rules:
               <button
                 key={item.label}
                 type="button"
-                onClick={() => {
-                  if (item.label === 'Threads') setDmConversationTab('threads');
-                  if (item.label === 'AI Summary') setDmConversationTab('ai-summary');
-                  if (item.label === 'Inbox') setDmConversationTab('chat');
-                }}
+                onClick={() => handleDmQuickJump(item.label)}
                 className="w-full h-8 px-2 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center justify-between"
               >
                 <span className="flex items-center gap-2">
@@ -8858,11 +8895,11 @@ Rules:
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 flex items-center justify-between">
                 <span>Direct Messages</span>
-                <Plus size={14} />
+                <button type="button" onClick={() => showToast('Invite teammate flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
               </div>
               <div className="space-y-1">
                 {directMessages.map((name) => (
-                  <button key={name} type="button" className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
+                  <button key={name} type="button" onClick={() => showToast(`${name} conversation opened`)} className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     <span className="truncate">{name}</span>
                   </button>
@@ -8873,11 +8910,11 @@ Rules:
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 flex items-center justify-between">
                 <span>Teams</span>
-                <Plus size={14} />
+                <button type="button" onClick={() => showToast('Create team flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
               </div>
               <div className="space-y-1">
                 {teamChannels.map((team, index) => (
-                  <button key={team} type="button" className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
+                  <button key={team} type="button" onClick={() => showToast(`${team} team opened`)} className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
                     <span className={`w-4 h-4 rounded text-white text-[9px] font-bold flex items-center justify-center ${index === 0 ? 'bg-violet-500' : index === 1 ? 'bg-sky-500' : index === 2 ? 'bg-fuchsia-500' : 'bg-emerald-500'}`}>{team.charAt(0)}</span>
                     <span className="truncate">{team}</span>
                   </button>
@@ -8888,7 +8925,7 @@ Rules:
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 flex items-center justify-between">
                 <span>Channels</span>
-                <Plus size={14} />
+                <button type="button" onClick={() => showToast('Create channel flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
               </div>
               <div className="space-y-1">
                 {dmThreads.map((thread) => {
@@ -8911,11 +8948,11 @@ Rules:
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 flex items-center justify-between">
                 <span>AI Conversations</span>
-                <Plus size={14} />
+                <button type="button" onClick={() => showToast('New AI conversation flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
               </div>
               <div className="space-y-1">
                 {aiConversations.map((item, index) => (
-                  <button key={item} type="button" className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center justify-between text-left">
+                  <button key={item} type="button" onClick={() => showToast(`${item} opened`)} className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center justify-between text-left">
                     <span className="truncate">{item}</span>
                     {index === 0 ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> : <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />}
                   </button>
@@ -8950,9 +8987,9 @@ Rules:
                     className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-300"
                   />
                 </div>
-                <button type="button" className="text-slate-400 hover:text-slate-600"><Video size={16} /></button>
-                <button type="button" className="text-slate-400 hover:text-slate-600"><Users size={16} /></button>
-                <button type="button" className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={16} /></button>
+                <button type="button" onClick={() => showToast('Huddle starting flow coming next')} className="text-slate-400 hover:text-slate-600"><Video size={16} /></button>
+                <button type="button" onClick={() => showToast('Member list opened')} className="text-slate-400 hover:text-slate-600"><Users size={16} /></button>
+                <button type="button" onClick={() => showToast('Channel actions opened')} className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={16} /></button>
               </div>
             </div>
 
@@ -8983,7 +9020,7 @@ Rules:
                     <div className="text-sm text-slate-700">Product Hunt launch is scheduled for May 15! Let&apos;s make it amazing 🚀</div>
                   </div>
                 </div>
-                <button type="button" className="h-8 px-3 rounded-lg border border-violet-200 text-violet-600 text-xs font-semibold bg-violet-50">View details</button>
+                <button type="button" onClick={() => setDmConversationTab('highlights')} className="h-8 px-3 rounded-lg border border-violet-200 text-violet-600 text-xs font-semibold bg-violet-50">View details</button>
               </div>
             </div>
 
@@ -8997,6 +9034,19 @@ Rules:
               {dmConversationTab === 'chat' && (
                 <>
                   <div className="w-fit mx-auto rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-500">Today</div>
+                  {visibleDmMessages.length === 0 && (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-center">
+                      <div className="text-sm font-semibold text-slate-700">No messages yet in this channel</div>
+                      <div className="text-xs text-slate-500 mt-1">Start the conversation or attach a file to create searchable context.</div>
+                      <button
+                        type="button"
+                        onClick={handleDmStartNewMessage}
+                        className="mt-3 h-8 px-3 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700"
+                      >
+                        Send first message
+                      </button>
+                    </div>
+                  )}
                   {visibleDmMessages.map((message, index) => {
                     const isAssistant = message.role === 'assistant';
                     const initials = message.author.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2).toUpperCase();
@@ -9030,7 +9080,7 @@ Rules:
                                     <div className="text-[11px] text-slate-400">Updated recently</div>
                                   </div>
                                 </div>
-                                <button type="button" className="text-xs text-violet-600 font-semibold">Open</button>
+                                <button type="button" onClick={() => showToast(`Opened ${message.files[0].name}`)} className="text-xs text-violet-600 font-semibold">Open</button>
                               </div>
                             )}
 
@@ -9046,9 +9096,9 @@ Rules:
                             )}
                           </div>
                           <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-400">
-                            <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🔥 {index === 0 ? 3 : 2}</span>
-                            <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🙌 {index === 0 ? 2 : 0}</span>
-                            <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">☺</span>
+                            <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🔥 {index === 0 ? 3 : 2}</button>
+                            <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🙌 {index === 0 ? 2 : 0}</button>
+                            <button type="button" onClick={() => showToast('Reaction picker coming next')} className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">☺</button>
                             <button
                               type="button"
                               onClick={() => openDmMessageThread(message.id)}
@@ -9086,6 +9136,9 @@ Rules:
 
               {dmConversationTab === 'highlights' && (
                 <div className="space-y-2">
+                  {activeThreadDecisions.length === 0 && (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No highlights yet. Decisions and notable updates will appear here.</div>
+                  )}
                   {activeThreadDecisions.map((decision) => (
                     <div key={decision.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                       <div className="text-sm font-semibold text-amber-900">Decision</div>
@@ -9098,6 +9151,9 @@ Rules:
 
               {dmConversationTab === 'ai-summary' && (
                 <div className="space-y-2">
+                  {visibleDmSearchResults.length === 0 && (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No searchable results yet for this scope.</div>
+                  )}
                   {visibleDmSearchResults.slice(0, 30).map((entry) => (
                     <div key={entry.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
                       <div className="text-[10px] uppercase tracking-wide text-slate-400">{entry.type || 'record'}</div>
@@ -9120,13 +9176,18 @@ Rules:
                 />
                 <div className="mt-2 flex items-center justify-between">
                   <div className="flex items-center gap-3 text-slate-400">
-                    <button type="button" className="hover:text-violet-600"><Plus size={16} /></button>
-                    <button type="button" className="hover:text-violet-600"><AlignLeft size={15} /></button>
-                    <button type="button" className="hover:text-violet-600"><Smile size={15} /></button>
-                    <button type="button" className="hover:text-violet-600"><Paperclip size={15} /></button>
-                    <button type="button" className="hover:text-violet-600"><Clock size={15} /></button>
+                    <button type="button" onClick={() => handleDmComposerAction('plus')} className="hover:text-violet-600"><Plus size={16} /></button>
+                    <button type="button" onClick={() => handleDmComposerAction('format')} className="hover:text-violet-600"><AlignLeft size={15} /></button>
+                    <button type="button" onClick={() => handleDmComposerAction('emoji')} className="hover:text-violet-600"><Smile size={15} /></button>
+                    <button type="button" onClick={() => handleDmComposerAction('attach')} className="hover:text-violet-600"><Paperclip size={15} /></button>
+                    <button type="button" onClick={() => handleDmComposerAction('schedule')} className="hover:text-violet-600"><Clock size={15} /></button>
                   </div>
-                  <button type="button" onClick={sendDmMessage} className="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center hover:bg-violet-700">
+                  <button
+                    type="button"
+                    onClick={sendDmMessage}
+                    disabled={!String(dmComposerValue || '').trim()}
+                    className={`w-8 h-8 rounded-full text-white flex items-center justify-center ${String(dmComposerValue || '').trim() ? 'bg-violet-600 hover:bg-violet-700' : 'bg-violet-300 cursor-not-allowed'}`}
+                  >
                     <Send size={14} />
                   </button>
                 </div>
@@ -9155,6 +9216,12 @@ Rules:
                   <div className="text-sm font-semibold text-slate-800">{activeDmParentMessage.author}</div>
                   <div className="text-sm text-slate-700 mt-0.5">{activeDmParentMessage.text}</div>
                 </div>
+
+                {activeDmThreadPanelReplies.length === 0 && (
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
+                    No replies in this thread yet. Be the first to reply.
+                  </div>
+                )}
 
                 {activeDmThreadPanelReplies.map((reply) => (
                   <div key={reply.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
@@ -9193,7 +9260,7 @@ Rules:
                   <div className="text-2xl">🚀 <span className="text-3xl font-semibold text-slate-900">{activeDmThread?.title || 'Beta Launch'}</span></div>
                   <div className="text-xs text-slate-400 mt-1">Private project</div>
                 </div>
-                <button type="button" className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
+                <button type="button" onClick={() => showToast('Project panel collapsed')} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
               </div>
 
               <div className="mt-3 grid grid-cols-6 gap-2 text-[10px] text-slate-500">
@@ -9206,14 +9273,14 @@ Rules:
                 <div className="text-sm font-semibold text-slate-800">About this project</div>
                 <p className="text-sm text-slate-500 mt-1">Coordinating everything for our beta launch on May 15.</p>
                 <p className="text-xs text-slate-400 mt-1">Workspace-managed identity and searchable team history are retained for onboarding continuity.</p>
-                <button type="button" className="mt-2 text-xs text-violet-600 font-medium">Show more</button>
+                <button type="button" onClick={() => showToast('Full project brief opened')} className="mt-2 text-xs text-violet-600 font-medium">Show more</button>
               </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-slate-800">Tasks</div>
-                <button type="button" className="text-xs text-violet-600 font-medium">View all</button>
+                <button type="button" onClick={() => openDmWorkspaceTab('tasks')} className="text-xs text-violet-600 font-medium">View all</button>
               </div>
               <div className="mt-3 space-y-2.5 text-sm text-slate-700">
                 {[
@@ -9231,15 +9298,18 @@ Rules:
                   </div>
                 ))}
               </div>
-              <button type="button" className="mt-2 text-xs text-violet-600">+ Add task</button>
+              <button type="button" onClick={() => showToast('Task creation flow coming next')} className="mt-2 text-xs text-violet-600">+ Add task</button>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-slate-800">Files</div>
-                <button type="button" className="text-xs text-violet-600 font-medium">View all</button>
+                <button type="button" onClick={() => openDmWorkspaceTab('room', { meetingStageTab: 'files' })} className="text-xs text-violet-600 font-medium">View all</button>
               </div>
               <div className="mt-3 space-y-2">
+                {activeThreadFiles.length === 0 && (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No files shared in this channel yet.</div>
+                )}
                 {activeThreadFiles.map((fileItem) => (
                   <div key={fileItem.id} className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 min-w-0">
@@ -9249,7 +9319,7 @@ Rules:
                         <div className="text-xs text-slate-400">Updated {formatDmRelative(fileItem.updatedAt)}</div>
                       </div>
                     </div>
-                    <button type="button" className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={14} /></button>
+                    <button type="button" onClick={() => showToast(`Actions for ${fileItem.name}`)} className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={14} /></button>
                   </div>
                 ))}
               </div>
@@ -9258,7 +9328,7 @@ Rules:
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-slate-800">Upcoming Meetings</div>
-                <button type="button" className="text-xs text-violet-600 font-medium">View all</button>
+                <button type="button" onClick={() => openDmWorkspaceTab('calendar')} className="text-xs text-violet-600 font-medium">View all</button>
               </div>
               <div className="mt-3 rounded-xl border border-slate-200 p-3 flex items-center justify-between">
                 <div>
@@ -9272,7 +9342,7 @@ Rules:
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-slate-800">People</div>
-                <button type="button" className="text-xs text-violet-600 font-medium">View all</button>
+                <button type="button" onClick={() => openDmWorkspaceTab('people')} className="text-xs text-violet-600 font-medium">View all</button>
               </div>
               <div className="mt-3 flex items-center gap-2 flex-wrap">
                 {['SJ', 'JD', 'AM', 'MC', 'OR'].map((name) => (
@@ -9284,6 +9354,11 @@ Rules:
                 <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50 p-2.5">
                   <div className="text-[11px] font-semibold text-violet-700 uppercase tracking-wide mb-1">Recent Decision</div>
                   <div className="text-xs text-violet-800">{activeThreadDecisions[0].summary}</div>
+                </div>
+              )}
+              {activeThreadDecisions.length === 0 && (
+                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-500">
+                  No decisions logged yet for this channel.
                 </div>
               )}
             </div>
