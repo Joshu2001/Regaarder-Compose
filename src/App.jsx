@@ -13,7 +13,7 @@ import {
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
-  Square, Circle, Diamond, Triangle, Shapes, StickyNote, PencilLine,
+  Square, Circle, Diamond, Triangle, Shapes, StickyNote,
   Hand, Eraser, MousePointer2, Bot, Highlighter
 } from 'lucide-react';
 import './thin-scrollbar.css';
@@ -21,6 +21,8 @@ import RegaarderComposeLanding from './RegaarderComposeLanding';
 
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
+const UNTITLED_WHITEBOARD_LABEL = 'Untitled whiteboard';
+const SAVED_DRAFT_LABEL = 'Saved Drafts';
 const ENTERPRISE_PAGE_WIDTH_PX = 794;
 const ENTERPRISE_PAGE_HEIGHT_PX = 1123;
 const LassoLoopIcon = ({ size = 12, className = '', style = {} }) => (
@@ -41,6 +43,13 @@ const LassoLoopIcon = ({ size = 12, className = '', style = {} }) => (
     <circle cx="15" cy="17" r="1.4" />
   </svg>
 );
+
+const WHITEBOARD_EMOJI_LIBRARY = [
+  '🙂', '🔥', '✨', '🎯', '👍', '👏', '💡', '✅', '❤️', '🚀',
+  '📌', '🤝', '😄', '🙌', '⚡', '🧠', '🌟', '🪄', '📝', '📎',
+  '🔔', '👀', '💭', '😍', '🤍', '🏷️', '🎉', '🙋', '🔍', '🗂️',
+];
+const WHITEBOARD_EMOJI_STORAGE_KEY = 'rc.whiteboardEmojiUsage';
 
 const WHITEBOARD_PEN_CURSOR = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='%237c3aed' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h9'/%3E%3Cpath d='M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'/%3E%3C/svg%3E\") 2 24, crosshair";
 const WHITEBOARD_PEN_CURSORS = {
@@ -445,6 +454,14 @@ export default function App() {
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
   const [whiteboardPenVariant, setWhiteboardPenVariant] = useState('felt-pen');
   const [whiteboardHoverLabel, setWhiteboardHoverLabel] = useState('');
+  const [whiteboardHoveredObject, setWhiteboardHoveredObject] = useState(null);
+  const [whiteboardReactionTarget, setWhiteboardReactionTarget] = useState(null);
+  const [whiteboardReactionMenuOpen, setWhiteboardReactionMenuOpen] = useState(false);
+  const [whiteboardEmojiModalOpen, setWhiteboardEmojiModalOpen] = useState(false);
+  const [whiteboardEmojiSearch, setWhiteboardEmojiSearch] = useState('');
+  const [whiteboardEmojiUsage, setWhiteboardEmojiUsage] = useState([]);
+  const [whiteboardAlignmentGuides, setWhiteboardAlignmentGuides] = useState([]);
+  const [whiteboardHoveredAnchor, setWhiteboardHoveredAnchor] = useState(null);
   const [whiteboardStrokes, setWhiteboardStrokes] = useState([]);
   const [whiteboardRedoStrokes, setWhiteboardRedoStrokes] = useState([]);
   const [whiteboardCurrentStroke, setWhiteboardCurrentStroke] = useState('');
@@ -526,8 +543,8 @@ export default function App() {
 
   const whiteboardPenPresets = [
     { key: 'felt-pen', label: 'Felt pen', stroke: '#4f46e5', width: 2.6, icon: PenTool },
-    { key: 'ballpoint', label: 'Ballpoint pen', stroke: '#1f2937', width: 1.9, icon: PencilLine },
-    { key: 'pencil', label: 'Pencil', stroke: '#52525b', width: 1.5, icon: PencilLine },
+    { key: 'ballpoint', label: 'Ballpoint pen', stroke: '#1f2937', width: 1.9, icon: PenTool },
+    { key: 'pencil', label: 'Pencil', stroke: '#52525b', width: 1.5, icon: PenTool },
     { key: 'lasso', label: 'Lasso dashed', stroke: '#334155', width: 2.2, dashArray: '8 7', icon: LassoLoopIcon },
     { key: 'marker', label: 'Marker', stroke: '#0f766e', width: 3.8, icon: PenTool },
     { key: 'highlighter', label: 'Highlighter', stroke: '#ca8a04', width: 6.2, opacity: 0.42, icon: Highlighter },
@@ -569,6 +586,228 @@ export default function App() {
   const whiteboardTextColorPresets = ['#111827', '#1d4ed8', '#7c3aed', '#be123c', '#047857', '#ea580c', '#475569', '#b45309'];
   const whiteboardHighlightColorPresets = ['#ffffff', '#fef08a', '#bfdbfe', '#bbf7d0', '#fecdd3', '#ddd6fe', '#fed7aa', '#e5e7eb'];
   const effectiveWhiteboardPenWidth = whiteboardPenWidthOverride ?? activeWhiteboardPen.width;
+  const isWhiteboardFloatingUiOpen = whiteboardTemplateMenuOpen
+    || whiteboardAddMenuOpen
+    || whiteboardPenMenuOpen
+    || whiteboardShapeMenuOpen
+    || whiteboardStickyPaletteOpen
+    || whiteboardMoreMenuOpen
+    || whiteboardEraserMenuOpen;
+
+  const orderedWhiteboardEmojis = useMemo(() => {
+    const usageMap = new Map();
+    const knownEmojis = [...WHITEBOARD_EMOJI_LIBRARY];
+    knownEmojis.forEach((emoji) => {
+      usageMap.set(emoji, { emoji, count: 0, lastUsed: 0 });
+    });
+    whiteboardEmojiUsage.forEach((item) => {
+      if (!item || typeof item.emoji !== 'string') {
+        return;
+      }
+      if (!usageMap.has(item.emoji)) {
+        knownEmojis.push(item.emoji);
+      }
+      usageMap.set(item.emoji, {
+        emoji: item.emoji,
+        count: Number(item.count) || 0,
+        lastUsed: Number(item.lastUsed) || 0,
+      });
+    });
+    return knownEmojis.map((emoji) => usageMap.get(emoji) || { emoji, count: 0, lastUsed: 0 }).sort((left, right) => (
+      (right.count - left.count)
+      || (right.lastUsed - left.lastUsed)
+      || left.emoji.localeCompare(right.emoji)
+    ));
+  }, [whiteboardEmojiUsage]);
+
+  const filteredWhiteboardEmojis = useMemo(() => {
+    const query = whiteboardEmojiSearch.trim().toLowerCase();
+    if (!query) {
+      return orderedWhiteboardEmojis;
+    }
+    return orderedWhiteboardEmojis.filter((item) => item.emoji.includes(query));
+  }, [orderedWhiteboardEmojis, whiteboardEmojiSearch]);
+
+  const getWhiteboardCursor = () => {
+    if (whiteboardTool === 'pen') {
+      return WHITEBOARD_PEN_CURSORS[whiteboardPenVariant] || WHITEBOARD_PEN_CURSOR;
+    }
+    if (whiteboardTool === 'sticky') {
+      return 'none';
+    }
+    if (whiteboardTool === 'shapes') {
+      return 'crosshair';
+    }
+    if (whiteboardTool === 'hand') {
+      return isWhiteboardPanning ? 'grabbing' : 'grab';
+    }
+    if (whiteboardTool === 'eraser') {
+      return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 20H7L3 16l9.5-9.5 7.5 7.5-4 4'/%3E%3Cpath d='m6.5 17.5 3-3'/%3E%3C/svg%3E\") 0 20, crosshair";
+    }
+    if (whiteboardTool === 'comment') {
+      return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%230ea5e9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E\") 2 20, pointer";
+    }
+    return 'default';
+  };
+
+  const getWhiteboardObjectBounds = (object) => {
+    if (!object) {
+      return { x: 0, y: 0, width: 0, height: 0 };
+    }
+    return {
+      x: object.x ?? 0,
+      y: object.y ?? 0,
+      width: Math.max(1, object.width || 170),
+      height: Math.max(1, object.height || 120),
+    };
+  };
+
+  const computeWhiteboardAlignmentGuides = useCallback((movingBounds, movingKey) => {
+    const candidates = [
+      ...whiteboardWidgets.map((widget) => ({ key: widget.id, ...getWhiteboardObjectBounds(widget) })),
+      ...whiteboardShapes.map((shape, shapeIndex) => ({ key: `shape-${shapeIndex}`, ...getShapeBounds(shape) })),
+    ].filter((candidate) => candidate.key !== movingKey);
+
+    if (!candidates.length) {
+      return [];
+    }
+
+    const threshold = 8;
+    const matches = [];
+    const movingEdges = {
+      left: movingBounds.x,
+      centerX: movingBounds.x + movingBounds.width / 2,
+      right: movingBounds.x + movingBounds.width,
+      top: movingBounds.y,
+      centerY: movingBounds.y + movingBounds.height / 2,
+      bottom: movingBounds.y + movingBounds.height,
+    };
+
+    const captureMatch = (kind, sourceValue, targetValue, candidate, targetSide) => {
+      const delta = Math.abs(sourceValue - targetValue);
+      if (delta > threshold) {
+        return;
+      }
+      if (kind === 'vertical') {
+        const startY = Math.min(movingBounds.y, candidate.y) - 14;
+        const endY = Math.max(movingBounds.y + movingBounds.height, candidate.y + candidate.height) + 14;
+        matches.push({
+          kind,
+          delta,
+          x: targetValue,
+          y1: startY,
+          y2: endY,
+          targetSide,
+          candidateKey: candidate.key,
+        });
+        return;
+      }
+      const startX = Math.min(movingBounds.x, candidate.x) - 14;
+      const endX = Math.max(movingBounds.x + movingBounds.width, candidate.x + candidate.width) + 14;
+      matches.push({
+        kind,
+        delta,
+        y: targetValue,
+        x1: startX,
+        x2: endX,
+        targetSide,
+        candidateKey: candidate.key,
+      });
+    };
+
+    candidates.forEach((candidate) => {
+      const candidateEdges = {
+        left: candidate.x,
+        centerX: candidate.x + candidate.width / 2,
+        right: candidate.x + candidate.width,
+        top: candidate.y,
+        centerY: candidate.y + candidate.height / 2,
+        bottom: candidate.y + candidate.height,
+      };
+      captureMatch('vertical', movingEdges.left, candidateEdges.left, candidate, 'left');
+      captureMatch('vertical', movingEdges.left, candidateEdges.centerX, candidate, 'center');
+      captureMatch('vertical', movingEdges.left, candidateEdges.right, candidate, 'right');
+      captureMatch('vertical', movingEdges.centerX, candidateEdges.left, candidate, 'left');
+      captureMatch('vertical', movingEdges.centerX, candidateEdges.centerX, candidate, 'center');
+      captureMatch('vertical', movingEdges.centerX, candidateEdges.right, candidate, 'right');
+      captureMatch('vertical', movingEdges.right, candidateEdges.left, candidate, 'left');
+      captureMatch('vertical', movingEdges.right, candidateEdges.centerX, candidate, 'center');
+      captureMatch('vertical', movingEdges.right, candidateEdges.right, candidate, 'right');
+
+      captureMatch('horizontal', movingEdges.top, candidateEdges.top, candidate, 'top');
+      captureMatch('horizontal', movingEdges.top, candidateEdges.centerY, candidate, 'center');
+      captureMatch('horizontal', movingEdges.top, candidateEdges.bottom, candidate, 'bottom');
+      captureMatch('horizontal', movingEdges.centerY, candidateEdges.top, candidate, 'top');
+      captureMatch('horizontal', movingEdges.centerY, candidateEdges.centerY, candidate, 'center');
+      captureMatch('horizontal', movingEdges.centerY, candidateEdges.bottom, candidate, 'bottom');
+      captureMatch('horizontal', movingEdges.bottom, candidateEdges.top, candidate, 'top');
+      captureMatch('horizontal', movingEdges.bottom, candidateEdges.centerY, candidate, 'center');
+      captureMatch('horizontal', movingEdges.bottom, candidateEdges.bottom, candidate, 'bottom');
+    });
+
+    const pickBest = (kind) => matches
+      .filter((match) => match.kind === kind)
+      .sort((left, right) => left.delta - right.delta)
+      .slice(0, 2);
+
+    return [...pickBest('vertical'), ...pickBest('horizontal')];
+  }, [whiteboardShapes, whiteboardWidgets]);
+
+  const getWhiteboardReactionTargetBounds = useCallback((target) => {
+    if (!target) {
+      return null;
+    }
+    if (target.kind === 'widget') {
+      const widget = whiteboardWidgets.find((item) => item.id === target.id);
+      return widget ? getWhiteboardObjectBounds(widget) : null;
+    }
+    if (target.kind === 'shape') {
+      const shape = whiteboardShapes[target.id];
+      return shape ? getShapeBounds(shape) : null;
+    }
+    return null;
+  }, [whiteboardShapes, whiteboardWidgets]);
+
+  const setWhiteboardObjectHover = (kind, id) => {
+    setWhiteboardHoveredObject({ kind, id });
+  };
+
+  const clearWhiteboardObjectHover = (kind, id) => {
+    setWhiteboardHoveredObject((prev) => (prev?.kind === kind && prev?.id === id ? null : prev));
+  };
+
+  const updateWhiteboardReactionHistory = (emoji) => {
+    setWhiteboardEmojiUsage((prev) => {
+      const next = [...prev.filter((item) => item && item.emoji !== emoji)];
+      const previous = prev.find((item) => item && item.emoji === emoji);
+      next.unshift({
+        emoji,
+        count: (previous?.count || 0) + 1,
+        lastUsed: Date.now(),
+      });
+      return next.slice(0, 48);
+    });
+  };
+
+  const applyWhiteboardReaction = (emoji) => {
+    if (!whiteboardReactionTarget) {
+      return;
+    }
+    if (whiteboardReactionTarget.kind === 'widget') {
+      setWhiteboardWidgets((prev) => prev.map((widget) => (
+        widget.id === whiteboardReactionTarget.id ? { ...widget, reactionEmoji: emoji } : widget
+      )));
+    } else if (whiteboardReactionTarget.kind === 'shape') {
+      setWhiteboardShapes((prev) => prev.map((shape, shapeIndex) => (
+        shapeIndex === whiteboardReactionTarget.id ? { ...shape, reactionEmoji: emoji } : shape
+      )));
+    }
+    updateWhiteboardReactionHistory(emoji);
+    setWhiteboardReactionMenuOpen(false);
+    setWhiteboardEmojiModalOpen(false);
+    setWhiteboardReactionTarget(null);
+    showToast(`Reaction set to ${emoji}`);
+  };
 
   useEffect(() => {
     if (activeRightTab !== 'whiteboard') {
@@ -1504,6 +1743,21 @@ export default function App() {
       setWhiteboardHighlightColorMenuFor(null);
     }
   }, [selectedWidgetId, whiteboardWidgets]);
+
+  useEffect(() => {
+    if (whiteboardReactionTarget?.kind === 'widget' && !whiteboardWidgets.some((widget) => widget.id === whiteboardReactionTarget.id)) {
+      setWhiteboardReactionTarget(null);
+      setWhiteboardReactionMenuOpen(false);
+      setWhiteboardEmojiModalOpen(false);
+      setWhiteboardEmojiSearch('');
+    }
+    if (whiteboardReactionTarget?.kind === 'shape' && !whiteboardShapes[whiteboardReactionTarget.id]) {
+      setWhiteboardReactionTarget(null);
+      setWhiteboardReactionMenuOpen(false);
+      setWhiteboardEmojiModalOpen(false);
+      setWhiteboardEmojiSearch('');
+    }
+  }, [whiteboardReactionTarget, whiteboardShapes, whiteboardWidgets]);
 
   useEffect(() => {
     if (whiteboardPenWidthOverride === null) {
@@ -2732,10 +2986,25 @@ export default function App() {
           }
         }
       }
+      const storedWhiteboardEmojiUsage = localStorage.getItem(WHITEBOARD_EMOJI_STORAGE_KEY);
+      if (storedWhiteboardEmojiUsage) {
+        const parsedWhiteboardEmojiUsage = JSON.parse(storedWhiteboardEmojiUsage);
+        if (Array.isArray(parsedWhiteboardEmojiUsage)) {
+          setWhiteboardEmojiUsage(parsedWhiteboardEmojiUsage.filter((item) => item && typeof item.emoji === 'string').slice(0, 48));
+        }
+      }
     } catch (_error) {
       // noop
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(WHITEBOARD_EMOJI_STORAGE_KEY, JSON.stringify(whiteboardEmojiUsage.slice(0, 48)));
+    } catch (_error) {
+      // noop
+    }
+  }, [whiteboardEmojiUsage]);
 
   useEffect(() => {
     localStorage.setItem('rc.darkMode', String(isDarkMode));
@@ -2879,6 +3148,13 @@ export default function App() {
     setSelectedWidgetId(null);
     setSelectedShapeIndex(null);
     setWhiteboardEditingWidgetId(null);
+    setWhiteboardHoveredObject(null);
+    setWhiteboardHoveredAnchor(null);
+    setWhiteboardReactionTarget(null);
+    setWhiteboardReactionMenuOpen(false);
+    setWhiteboardEmojiModalOpen(false);
+    setWhiteboardEmojiSearch('');
+    setWhiteboardAlignmentGuides([]);
 
     setTimeout(() => {
       historyMuteRef.current = false;
@@ -7230,6 +7506,13 @@ Rules:
     setWhiteboardStickyPreview(null);
     setSelectedWidgetId(null);
     setSelectedShapeIndex(null);
+    setWhiteboardHoveredObject(null);
+    setWhiteboardHoveredAnchor(null);
+    setWhiteboardReactionTarget(null);
+    setWhiteboardReactionMenuOpen(false);
+    setWhiteboardEmojiModalOpen(false);
+    setWhiteboardEmojiSearch('');
+    setWhiteboardAlignmentGuides([]);
     if (toastMessage) {
       showToast(toastMessage);
     }
@@ -7338,6 +7621,13 @@ Rules:
     setWhiteboardStickyPreview(null);
     setSelectedWidgetId(null);
     setSelectedShapeIndex(null);
+    setWhiteboardHoveredObject(null);
+    setWhiteboardHoveredAnchor(null);
+    setWhiteboardReactionTarget(null);
+    setWhiteboardReactionMenuOpen(false);
+    setWhiteboardEmojiModalOpen(false);
+    setWhiteboardEmojiSearch('');
+    setWhiteboardAlignmentGuides([]);
     setWhiteboardTool('select');
     setWhiteboardTemplateMenuOpen(false);
     showToast(`${selectedMeta?.label || 'Template'} loaded`);
@@ -7347,7 +7637,7 @@ Rules:
     setCreationPickerOpen(false);
     setProductMode('compose');
     setLeftSidebarOpen(true);
-    setRightSidebarOpen(true);
+    setRightSidebarOpen(false);
     setActiveRightTab('whiteboard');
     resetWhiteboardCanvas({ toastMessage: 'New whiteboard created' });
   };
@@ -9029,6 +9319,10 @@ Rules:
     || isScheduleSessionModalOpen;
   const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
   const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
+  const activeDraftDisplayTitle = (() => {
+    const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
+    return rawTitle || (lastSavedAt ? SAVED_DRAFT_LABEL : 'Unsaved draft');
+  })();
 
   useEffect(() => {
     if (productMode !== 'compose') {
@@ -12426,14 +12720,13 @@ Rules:
                     onClick={() => setIsTopDraftTitleExpanded((prev) => !prev)}
                     onDoubleClick={beginUnsavedDraftRename}
                     className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left"
-                    title={(documents.find((doc) => doc.id === activeDocId)?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft'}
+                    title={activeDraftDisplayTitle}
                   >
                     {(() => {
-                      const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft';
-                      if (isTopDraftTitleExpanded || rawTitle.length <= 20) {
-                        return rawTitle;
+                      if (isTopDraftTitleExpanded || activeDraftDisplayTitle.length <= 20) {
+                        return activeDraftDisplayTitle;
                       }
-                      return `${rawTitle.slice(0, 20)}...`;
+                      return `${activeDraftDisplayTitle.slice(0, 20)}...`;
                     })()}
                   </button>
                 )}
@@ -12800,7 +13093,7 @@ Rules:
         <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-[140]">
           {orderedDocuments.map((doc) => {
             const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
-              ? 'Untitled whiteboard'
+              ? UNTITLED_WHITEBOARD_LABEL
               : (doc.title?.trim() ? doc.title : UNTITLED_COMPOSITION_LABEL);
             const isActive = activeDocId === doc.id;
 
@@ -13279,7 +13572,7 @@ Rules:
         {/* Document Editor Content (Beautifully separated page area) */}
         <div className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
           {activeRightTab === 'whiteboard' && (
-            <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-40 p-0 bg-white' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
+            <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-[340] p-0 bg-white' : isWhiteboardFloatingUiOpen ? 'z-[320] p-6 md:p-8 bg-[#F7F7F9]' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
               <div className={`h-full w-full bg-white overflow-hidden flex flex-col ${isWhiteboardImmersive ? 'rounded-none border-0 shadow-none' : 'rounded-[24px] border border-violet-100 shadow-[0_20px_60px_-30px_rgba(124,58,237,0.45)]'}`}>
                 <div className="h-14 border-b border-gray-100 px-5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -13326,35 +13619,42 @@ Rules:
                       { key: 'sticky', label: 'Sticky note', icon: StickyNote },
                       { key: 'comment', label: 'Comment', icon: MessageCircle },
                       { key: 'more', label: 'More', icon: MoreHorizontal },
-                    ].map((tool) => (
-                      <button
-                        key={tool.key}
-                        type="button"
-                        onMouseEnter={() => setWhiteboardHoverLabel(tool.label)}
-                        onMouseLeave={() => setWhiteboardHoverLabel('')}
-                        onClick={() => {
-                          if (tool.key === 'pen') {
-                            setWhiteboardTool('pen');
-                            setWhiteboardPenMenuOpen((prev) => !prev);
-                            setWhiteboardMoreMenuOpen(false);
-                            setWhiteboardShapeMenuOpen(false);
-                            setWhiteboardAddMenuOpen(false);
-                            setWhiteboardTemplateMenuOpen(false);
-                            setWhiteboardEraserMenuOpen(false);
-                            showToast('Pen tool active');
-                            return;
-                          }
-                          activateWhiteboardTool(tool.key);
-                          if (tool.key === 'eraser') {
-                            setWhiteboardEraserMenuOpen(true);
-                          }
-                        }}
-                        className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
-                        title={tool.label}
-                      >
-                        <tool.icon size={15} />
-                      </button>
-                    ))}
+                    ].map((tool) => {
+                      const ToolIcon = tool.key === 'pen' ? activeWhiteboardPen.icon : tool.icon;
+                      const toolIconStyle = tool.key === 'pen'
+                        ? { color: activeWhiteboardPen.stroke, opacity: activeWhiteboardPen.opacity ?? 1 }
+                        : undefined;
+
+                      return (
+                        <button
+                          key={tool.key}
+                          type="button"
+                          onMouseEnter={() => setWhiteboardHoverLabel(tool.label)}
+                          onMouseLeave={() => setWhiteboardHoverLabel('')}
+                          onClick={() => {
+                            if (tool.key === 'pen') {
+                              setWhiteboardTool('pen');
+                              setWhiteboardPenMenuOpen((prev) => !prev);
+                              setWhiteboardMoreMenuOpen(false);
+                              setWhiteboardShapeMenuOpen(false);
+                              setWhiteboardAddMenuOpen(false);
+                              setWhiteboardTemplateMenuOpen(false);
+                              setWhiteboardEraserMenuOpen(false);
+                              showToast('Pen tool active');
+                              return;
+                            }
+                            activateWhiteboardTool(tool.key);
+                            if (tool.key === 'eraser') {
+                              setWhiteboardEraserMenuOpen(true);
+                            }
+                          }}
+                          className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                          title={tool.label}
+                        >
+                          <ToolIcon size={15} style={toolIconStyle} />
+                        </button>
+                      );
+                    })}
                   </div>
                   {whiteboardTool === 'eraser' && whiteboardEraserMenuOpen && (
                     <div className="absolute left-20 top-[74%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2.5 w-[172px]">
@@ -13387,7 +13687,7 @@ Rules:
                             max="32"
                             value={whiteboardEraserSize}
                             onChange={(event) => setWhiteboardEraserSize(Number.parseInt(event.target.value, 10) || 9)}
-                            className="w-full"
+                            className="whiteboard-range-slider w-full"
                           />
                           <span className="text-[11px] text-gray-600 w-8 text-right">{whiteboardEraserSize}</span>
                         </div>
@@ -13473,7 +13773,7 @@ Rules:
                                 setWhiteboardPenCustomWidth(nextWidth);
                                 setWhiteboardPenWidthOverride(nextWidth);
                               }}
-                              className="w-full"
+                              className="whiteboard-range-slider w-full"
                             />
                             <span className="w-8 text-right text-[11px] text-gray-600">{effectiveWhiteboardPenWidth.toFixed(1)}</span>
                           </div>
@@ -13609,24 +13909,11 @@ Rules:
                     ref={whiteboardCanvasRef}
                     className="absolute inset-0"
                     style={{
-                      cursor:
-                        whiteboardTool === 'pen'
-                          ? (WHITEBOARD_PEN_CURSORS[whiteboardPenVariant] || WHITEBOARD_PEN_CURSOR)
-                          : whiteboardTool === 'sticky'
-                            ? 'none'
-                            : whiteboardTool === 'shapes'
-                              ? 'crosshair'
-                              : whiteboardTool === 'hand'
-                                ? (isWhiteboardPanning ? 'grabbing' : 'grab')
-                                : whiteboardTool === 'eraser'
-                                  ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 20H7L3 16l9.5-9.5 7.5 7.5-4 4'/%3E%3Cpath d='m6.5 17.5 3-3'/%3E%3C/svg%3E\") 0 20, crosshair"
-                                  : whiteboardTool === 'comment'
-                                    ? "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%230ea5e9' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E\") 2 20, pointer"
-                                    : whiteboardTool === 'select'
-                                      ? 'default'
-                                      : 'default',
+                      cursor: getWhiteboardCursor(),
                     }}
                     onPointerDown={(event) => {
+                      setWhiteboardReactionMenuOpen(false);
+                      setWhiteboardReactionTarget(null);
                       const rect = event.currentTarget.getBoundingClientRect();
                       const startX = event.clientX - rect.left;
                       const startY = event.clientY - rect.top;
@@ -13866,6 +14153,17 @@ Rules:
                   )}
                   {whiteboardWidgets.map((widget) => {
                     const isSelected = selectedWidgetId === widget.id;
+                    const isWidgetEditing = whiteboardEditingWidgetId === widget.id;
+                    const isWidgetHovered = whiteboardHoveredObject?.kind === 'widget' && whiteboardHoveredObject?.id === widget.id;
+                    const isWidgetReactionMenuOpen = whiteboardReactionMenuOpen && whiteboardReactionTarget?.kind === 'widget' && whiteboardReactionTarget?.id === widget.id;
+                    const showWidgetReactionControls = (isWidgetHovered || isSelected || isWidgetReactionMenuOpen) && !isWidgetEditing && !['hand', 'eraser'].includes(whiteboardTool);
+                    const showWidgetAnchorDots = (isWidgetHovered || isSelected) && !['hand', 'eraser'].includes(whiteboardTool);
+                    const widgetAnchorPoints = [
+                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '↑' },
+                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '→' },
+                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '↓' },
+                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '←' },
+                    ];
                     return (
                     <div
                       key={widget.id}
@@ -13884,15 +14182,32 @@ Rules:
                         width: `${widget.width || 170}px`,
                         height: `${widget.height || 120}px`,
                         backgroundColor: widget.type === 'sticky' ? widget.color || '#fde047' : undefined,
-                        cursor: ['eraser', 'hand'].includes(whiteboardTool) ? undefined : (isSelected ? 'move' : 'pointer'),
+                        cursor: whiteboardTool === 'pen'
+                          ? getWhiteboardCursor()
+                          : ['eraser', 'hand'].includes(whiteboardTool)
+                            ? undefined
+                            : (isSelected ? 'move' : 'pointer'),
                         userSelect: 'none',
                         touchAction: 'none',
                       }}
-                      onPointerDown={(e) => {
-                        if (['eraser', 'hand'].includes(whiteboardTool)) return;
+                      onMouseEnter={() => setWhiteboardObjectHover('widget', widget.id)}
+                      onMouseLeave={() => clearWhiteboardObjectHover('widget', widget.id)}
+                      onDoubleClick={(e) => {
+                        if (widget.type !== 'sticky' && widget.type !== 'text') {
+                          return;
+                        }
                         e.stopPropagation();
                         setSelectedWidgetId(widget.id);
                         setSelectedShapeIndex(null);
+                        setWhiteboardEditingWidgetId(widget.id);
+                      }}
+                      onPointerDown={(e) => {
+                        if (['eraser', 'hand'].includes(whiteboardTool)) return;
+                        if (e.target.closest('[data-widget-interactive="true"]')) return;
+                        e.stopPropagation();
+                        setSelectedWidgetId(widget.id);
+                        setSelectedShapeIndex(null);
+                        setWhiteboardEditingWidgetId(null);
                         const startX = e.clientX;
                         const startY = e.clientY;
                         const origX = widget.x;
@@ -13904,21 +14219,154 @@ Rules:
                         if (!widgetDragRef.current || widgetDragRef.current.widgetId !== widget.id) return;
                         const dx = e.clientX - widgetDragRef.current.startX;
                         const dy = e.clientY - widgetDragRef.current.startY;
-                        setWhiteboardWidgets((prev) => prev.map((w) =>
-                          w.id === widget.id ? { ...w, x: widgetDragRef.current.origX + dx, y: widgetDragRef.current.origY + dy } : w
-                        ));
+                        const nextBounds = {
+                          x: widgetDragRef.current.origX + dx,
+                          y: widgetDragRef.current.origY + dy,
+                          width: widget.width || 170,
+                          height: widget.height || 120,
+                        };
+                        setWhiteboardWidgets((prev) => prev.map((w) => (
+                          w.id === widget.id ? { ...w, x: nextBounds.x, y: nextBounds.y } : w
+                        )));
+                        setWhiteboardAlignmentGuides(computeWhiteboardAlignmentGuides(nextBounds, widget.id));
                       }}
                       onPointerUp={() => {
                         widgetDragRef.current = null;
+                        setWhiteboardAlignmentGuides([]);
                       }}
                       onPointerCancel={() => {
                         widgetDragRef.current = null;
+                        setWhiteboardAlignmentGuides([]);
                       }}
                     >
+                      {showWidgetReactionControls && (
+                        <div className="absolute bottom-1.5 left-1.5 z-40">
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              if (isWidgetReactionMenuOpen) {
+                                setWhiteboardReactionMenuOpen(false);
+                                setWhiteboardReactionTarget(null);
+                                return;
+                              }
+                              setWhiteboardReactionTarget({ kind: 'widget', id: widget.id });
+                              setWhiteboardEmojiModalOpen(false);
+                              setWhiteboardEmojiSearch('');
+                              setWhiteboardReactionMenuOpen(true);
+                            }}
+                            className="h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
+                            title="Quick reactions"
+                          >
+                            <span className="text-[14px] leading-none">☺</span>
+                            <span className="absolute -top-1 -right-1 text-[9px] text-slate-500">+</span>
+                          </button>
+                          {isWidgetReactionMenuOpen && (
+                            <div className="absolute left-0 top-9 z-50 flex items-center gap-1 rounded-2xl border border-slate-200 bg-white px-2 py-1.5 shadow-[0_16px_34px_-22px_rgba(15,23,42,0.55)]" onPointerDown={(event) => event.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setWhiteboardReactionTarget({ kind: 'widget', id: widget.id });
+                                  setWhiteboardReactionMenuOpen(false);
+                                  setWhiteboardEmojiModalOpen(true);
+                                  setWhiteboardEmojiSearch('');
+                                }}
+                                className="h-8 w-8 rounded-lg text-slate-700 hover:bg-slate-100 text-[22px] leading-none"
+                                title="All emojis"
+                              >
+                                +
+                              </button>
+                              {orderedWhiteboardEmojis.slice(0, 5).map((emojiItem) => (
+                                  <button
+                                    key={`${widget.id}-${emojiItem.emoji}`}
+                                    type="button"
+                                    onClick={() => applyWhiteboardReaction(emojiItem.emoji)}
+                                    className="h-8 w-8 rounded-lg text-lg hover:bg-slate-100"
+                                    title={`React with ${emojiItem.emoji}`}
+                                  >
+                                    {emojiItem.emoji}
+                                  </button>
+                                ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setWhiteboardReactionTarget({ kind: 'widget', id: widget.id });
+                                  setWhiteboardReactionMenuOpen(false);
+                                  setWhiteboardEmojiModalOpen(true);
+                                  setWhiteboardEmojiSearch('');
+                                }}
+                                className="h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 text-[18px]"
+                                title="More"
+                              >
+                                ˅
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {showWidgetAnchorDots && widgetAnchorPoints.map((anchor) => (
+                        <div
+                          key={`${widget.id}-anchor-${anchor.key}`}
+                          className="absolute z-40"
+                          style={{ left: `${anchor.x}px`, top: `${anchor.y}px`, transform: 'translate(-50%, -50%)' }}
+                          onPointerDown={(event) => {
+                            event.stopPropagation();
+                            event.preventDefault();
+                            setSelectedWidgetId(widget.id);
+                            setWhiteboardHoveredAnchor({ objectId: widget.id, anchorKey: anchor.key });
+                            widgetDragRef.current = {
+                              widgetId: widget.id,
+                              startX: event.clientX,
+                              startY: event.clientY,
+                              origX: widget.x,
+                              origY: widget.y,
+                            };
+                            event.currentTarget.setPointerCapture(event.pointerId);
+                          }}
+                          onPointerMove={(event) => {
+                            if (!widgetDragRef.current || widgetDragRef.current.widgetId !== widget.id) {
+                              return;
+                            }
+                            const dx = event.clientX - widgetDragRef.current.startX;
+                            const dy = event.clientY - widgetDragRef.current.startY;
+                            const nextBounds = {
+                              x: widgetDragRef.current.origX + dx,
+                              y: widgetDragRef.current.origY + dy,
+                              width: widget.width || 170,
+                              height: widget.height || 120,
+                            };
+                            setWhiteboardWidgets((prev) => prev.map((item) => (
+                              item.id === widget.id ? { ...item, x: nextBounds.x, y: nextBounds.y } : item
+                            )));
+                            setWhiteboardAlignmentGuides(computeWhiteboardAlignmentGuides(nextBounds, widget.id));
+                          }}
+                          onPointerUp={() => {
+                            widgetDragRef.current = null;
+                            setWhiteboardAlignmentGuides([]);
+                            setWhiteboardHoveredAnchor(null);
+                          }}
+                          onPointerCancel={() => {
+                            widgetDragRef.current = null;
+                            setWhiteboardAlignmentGuides([]);
+                            setWhiteboardHoveredAnchor(null);
+                          }}
+                          onMouseEnter={() => setWhiteboardHoveredAnchor({ objectId: widget.id, anchorKey: anchor.key })}
+                          onMouseLeave={() => setWhiteboardHoveredAnchor((prev) => (prev?.objectId === widget.id && prev?.anchorKey === anchor.key ? null : prev))}
+                        >
+                          <div className="h-3 w-3 rounded-full border-2 border-blue-600 bg-white shadow-sm" style={{ cursor: anchor.cursor }} />
+                          {whiteboardHoveredAnchor?.objectId === widget.id && whiteboardHoveredAnchor?.anchorKey === anchor.key && (
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 h-7 w-7 rounded-full bg-blue-600 text-white shadow-md flex items-center justify-center text-sm">
+                              {anchor.icon}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                       {widget.type === 'sticky' ? (
                         <textarea
                           value={widget.text || ''}
-                          autoFocus={whiteboardEditingWidgetId === widget.id}
+                          data-widget-interactive="true"
+                          readOnly={!isWidgetEditing}
+                          autoFocus={isWidgetEditing}
                           onFocus={() => setWhiteboardEditingWidgetId(widget.id)}
                           onBlur={() => setWhiteboardEditingWidgetId(null)}
                           onChange={(event) => {
@@ -13929,19 +14377,30 @@ Rules:
                           }}
                           className="w-full h-full bg-transparent resize-none outline-none text-[12px] text-amber-950 placeholder:text-amber-800/60 leading-snug"
                           placeholder="Type sticky note..."
-                          style={{ cursor: ['eraser', 'hand'].includes(whiteboardTool) ? undefined : 'text' }}
+                          style={{
+                            cursor: ['eraser', 'hand'].includes(whiteboardTool) ? undefined : (isWidgetEditing ? 'text' : 'move'),
+                            pointerEvents: isWidgetEditing ? 'auto' : 'none',
+                          }}
                           onPointerDown={(e) => {
+                            if (!isWidgetEditing) {
+                              return;
+                            }
                             e.stopPropagation();
-                            if (!['eraser', 'hand'].includes(whiteboardTool)) {
-                              setSelectedWidgetId(widget.id);
-                              setSelectedShapeIndex(null);
+                            setSelectedWidgetId(widget.id);
+                            setSelectedShapeIndex(null);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              event.currentTarget.blur();
                             }
                           }}
                         />
                       ) : widget.type === 'text' ? (
                         <textarea
                           value={widget.text || ''}
-                          autoFocus={whiteboardEditingWidgetId === widget.id}
+                          data-widget-interactive="true"
+                          readOnly={!isWidgetEditing}
+                          autoFocus={isWidgetEditing}
                           onFocus={() => setWhiteboardEditingWidgetId(widget.id)}
                           onBlur={() => setWhiteboardEditingWidgetId(null)}
                           onChange={(event) => {
@@ -13953,7 +14412,7 @@ Rules:
                           className="w-full h-full bg-transparent resize-none outline-none placeholder:text-violet-700/60 leading-relaxed"
                           placeholder="Type your text..."
                           style={{
-                            cursor: ['eraser', 'hand'].includes(whiteboardTool) ? undefined : 'text',
+                            cursor: ['eraser', 'hand'].includes(whiteboardTool) ? undefined : (isWidgetEditing ? 'text' : 'move'),
                             fontFamily: widget.fontFamily || 'Calibri',
                             fontSize: `${widget.fontSize || 14}px`,
                             fontWeight: widget.isBold ? 700 : 500,
@@ -13963,12 +14422,19 @@ Rules:
                             color: widget.textColor || '#111827',
                             backgroundColor: widget.highlightColor && widget.highlightColor !== '#ffffff' ? `${widget.highlightColor}33` : 'transparent',
                             opacity: Math.max(0, Math.min(100, widget.opacity ?? 100)) / 100,
+                            pointerEvents: isWidgetEditing ? 'auto' : 'none',
                           }}
                           onPointerDown={(e) => {
+                            if (!isWidgetEditing) {
+                              return;
+                            }
                             e.stopPropagation();
-                            if (!['eraser', 'hand'].includes(whiteboardTool)) {
-                              setSelectedWidgetId(widget.id);
-                              setSelectedShapeIndex(null);
+                            setSelectedWidgetId(widget.id);
+                            setSelectedShapeIndex(null);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              event.currentTarget.blur();
                             }
                           }}
                         />
@@ -13988,6 +14454,7 @@ Rules:
                           ].map(({ corner, style, dw, dh, ox, oy }) => (
                             <div
                               key={corner}
+                              data-widget-interactive="true"
                               className="absolute w-3 h-3 bg-white border-2 border-violet-500 rounded-sm z-30"
                               style={{ ...style, position: 'absolute' }}
                               onPointerDown={(e) => {
@@ -14022,12 +14489,13 @@ Rules:
                       )}
                       {isSelected && !['eraser', 'hand'].includes(whiteboardTool) && (
                         <div
+                          data-widget-interactive="true"
                           className="absolute left-1/2 -translate-x-1/2 z-30 rounded-xl border border-gray-200 bg-white shadow-sm px-2 py-1.5"
                           style={{ top: `${(widget.height || 120) + 14}px` }}
                           onPointerDown={(e) => e.stopPropagation()}
                         >
                           <div className="flex items-center gap-1">
-                            <button type="button" className="h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 flex items-center justify-center" title="Move"><Move size={13} /></button>
+                            <button type="button" onClick={() => showToast('Drag anywhere on the block to move it. Double-click to edit text.')} className="h-7 w-7 rounded-md text-gray-600 hover:bg-gray-100 flex items-center justify-center cursor-grab" title="Move block"><Move size={13} /></button>
                             {widget.type === 'sticky' && (
                               <div className="relative">
                                 <button type="button" onClick={() => setWhiteboardStickyColorMenuFor((prev) => (prev === widget.id ? null : widget.id))} className="h-7 w-7 rounded-md hover:bg-gray-100 flex items-center justify-center" title="Choose color">
@@ -14281,6 +14749,9 @@ Rules:
                   {!['eraser', 'hand'].includes(whiteboardTool) && whiteboardShapes.map((shape, shapeIndex) => {
                     const bounds = getShapeBounds(shape);
                     const isShapeSelected = selectedShapeIndex === shapeIndex;
+                    const isShapeHovered = whiteboardHoveredObject?.kind === 'shape' && whiteboardHoveredObject?.id === shapeIndex;
+                    const isShapeReactionMenuOpen = whiteboardReactionMenuOpen && whiteboardReactionTarget?.kind === 'shape' && whiteboardReactionTarget?.id === shapeIndex;
+                    const showShapeReactionControls = (isShapeHovered || isShapeSelected || isShapeReactionMenuOpen) && whiteboardTool !== 'hand' && whiteboardTool !== 'eraser';
                     const hitPadding = 8;
                     return (
                       <React.Fragment key={`whiteboard-shape-hit-${shapeIndex}`}>
@@ -14291,8 +14762,12 @@ Rules:
                             top: `${bounds.y - hitPadding}px`,
                             width: `${Math.max(bounds.width + hitPadding * 2, 18)}px`,
                             height: `${Math.max(bounds.height + hitPadding * 2, 18)}px`,
-                            cursor: isShapeSelected ? 'move' : 'pointer',
+                            cursor: whiteboardTool === 'pen'
+                              ? getWhiteboardCursor()
+                              : (isShapeSelected ? 'move' : 'pointer'),
                           }}
+                          onMouseEnter={() => setWhiteboardObjectHover('shape', shapeIndex)}
+                          onMouseLeave={() => clearWhiteboardObjectHover('shape', shapeIndex)}
                           onPointerDown={(event) => {
                             event.stopPropagation();
                             event.preventDefault();
@@ -14314,19 +14789,91 @@ Rules:
                             }
                             const dx = event.clientX - dragState.startX;
                             const dy = event.clientY - dragState.startY;
+                            const nextShape = moveShapeByDelta(dragState.originalShape, dx, dy);
                             setWhiteboardShapes((prev) => prev.map((existingShape, existingIndex) => (
                               existingIndex === shapeIndex
-                                ? moveShapeByDelta(dragState.originalShape, dx, dy)
+                                ? nextShape
                                 : existingShape
                             )));
+                            setWhiteboardAlignmentGuides(computeWhiteboardAlignmentGuides(getShapeBounds(nextShape), `shape-${shapeIndex}`));
                           }}
                           onPointerUp={() => {
                             shapeDragRef.current = null;
+                            setWhiteboardAlignmentGuides([]);
                           }}
                           onPointerCancel={() => {
                             shapeDragRef.current = null;
+                            setWhiteboardAlignmentGuides([]);
                           }}
                         />
+                        {showShapeReactionControls && (
+                          <div
+                            className="absolute z-[17]"
+                            style={{ left: `${bounds.x + 4}px`, top: `${bounds.y + bounds.height - 20}px` }}
+                            onPointerDown={(event) => event.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isShapeReactionMenuOpen) {
+                                  setWhiteboardReactionMenuOpen(false);
+                                  setWhiteboardReactionTarget(null);
+                                  return;
+                                }
+                                setWhiteboardReactionTarget({ kind: 'shape', id: shapeIndex });
+                                setWhiteboardEmojiModalOpen(false);
+                                setWhiteboardEmojiSearch('');
+                                setWhiteboardReactionMenuOpen(true);
+                              }}
+                              className="h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
+                              title="Quick reactions"
+                            >
+                              <span className="text-[14px] leading-none">☺</span>
+                              <span className="absolute -top-1 -right-1 text-[9px] text-slate-500">+</span>
+                            </button>
+                            {isShapeReactionMenuOpen && (
+                              <div className="absolute left-0 top-9 z-50 flex items-center gap-1 rounded-2xl border border-slate-200 bg-white px-2 py-1.5 shadow-[0_16px_34px_-22px_rgba(15,23,42,0.55)]">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setWhiteboardReactionTarget({ kind: 'shape', id: shapeIndex });
+                                    setWhiteboardReactionMenuOpen(false);
+                                    setWhiteboardEmojiModalOpen(true);
+                                    setWhiteboardEmojiSearch('');
+                                  }}
+                                  className="h-8 w-8 rounded-lg text-slate-700 hover:bg-slate-100 text-[22px] leading-none"
+                                  title="All emojis"
+                                >
+                                  +
+                                </button>
+                                {orderedWhiteboardEmojis.slice(0, 5).map((emojiItem) => (
+                                    <button
+                                      key={`${shapeIndex}-${emojiItem.emoji}`}
+                                      type="button"
+                                      onClick={() => applyWhiteboardReaction(emojiItem.emoji)}
+                                      className="h-8 w-8 rounded-lg text-lg hover:bg-slate-100"
+                                      title={`React with ${emojiItem.emoji}`}
+                                    >
+                                      {emojiItem.emoji}
+                                    </button>
+                                  ))}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setWhiteboardReactionTarget({ kind: 'shape', id: shapeIndex });
+                                    setWhiteboardReactionMenuOpen(false);
+                                    setWhiteboardEmojiModalOpen(true);
+                                    setWhiteboardEmojiSearch('');
+                                  }}
+                                  className="h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 text-[18px]"
+                                  title="More"
+                                >
+                                  ˅
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {isShapeSelected && (
                           <>
                             <div
@@ -14437,6 +14984,39 @@ Rules:
                     )}
                     {whiteboardCurrentShape && renderWhiteboardShape(whiteboardCurrentShape, 'whiteboard-active-shape')}
                   </svg>
+                  {whiteboardAlignmentGuides.length > 0 && (
+                    <svg className="absolute inset-0 w-full h-full pointer-events-none z-20">
+                      {whiteboardAlignmentGuides.map((guide, guideIndex) => (
+                        guide.kind === 'vertical'
+                          ? (
+                            <line
+                              key={`whiteboard-guide-v-${guide.candidateKey}-${guideIndex}`}
+                              x1={guide.x}
+                              y1={guide.y1}
+                              x2={guide.x}
+                              y2={guide.y2}
+                              stroke="rgba(37,99,235,0.85)"
+                              strokeWidth="1.6"
+                              strokeDasharray="5 5"
+                              strokeLinecap="round"
+                            />
+                          )
+                          : (
+                            <line
+                              key={`whiteboard-guide-h-${guide.candidateKey}-${guideIndex}`}
+                              x1={guide.x1}
+                              y1={guide.y}
+                              x2={guide.x2}
+                              y2={guide.y}
+                              stroke="rgba(37,99,235,0.85)"
+                              strokeWidth="1.6"
+                              strokeDasharray="5 5"
+                              strokeLinecap="round"
+                            />
+                          )
+                      ))}
+                    </svg>
+                  )}
                   {whiteboardComments.map((comment) => (
                     <div
                       key={comment.id}
@@ -14547,6 +15127,68 @@ Rules:
                       </div>
                     </div>
                   ))}
+                  {whiteboardEmojiModalOpen && whiteboardReactionTarget && (() => {
+                    const targetBounds = getWhiteboardReactionTargetBounds(whiteboardReactionTarget);
+                    const modalLeft = Math.max(16, Math.min((targetBounds?.x || 40), 760));
+                    const modalTop = Math.max(16, Math.min((targetBounds ? targetBounds.y + targetBounds.height + 16 : 64), 520));
+                    return (
+                      <div
+                        className="absolute inset-0 z-[360]"
+                        onPointerDown={() => {
+                          setWhiteboardEmojiModalOpen(false);
+                          setWhiteboardReactionMenuOpen(false);
+                          setWhiteboardReactionTarget(null);
+                          setWhiteboardEmojiSearch('');
+                        }}
+                      >
+                        <div
+                          className="absolute w-[340px] max-w-[calc(100%-20px)] rounded-2xl border-2 border-blue-500 bg-white p-3 shadow-[0_24px_56px_-28px_rgba(15,23,42,0.55)]"
+                          style={{ left: `${modalLeft}px`, top: `${modalTop}px` }}
+                          onPointerDown={(event) => event.stopPropagation()}
+                        >
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={whiteboardEmojiSearch}
+                              onChange={(event) => setWhiteboardEmojiSearch(event.target.value)}
+                              placeholder="Search"
+                              className="w-full h-10 rounded-xl border-2 border-blue-500/80 px-3 pr-10 text-sm text-slate-700 outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setWhiteboardEmojiSearch('')}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                              title="Clear"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          <div className="mt-2 flex items-center gap-2 text-slate-500">
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Recent">🕘</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Smileys">🙂</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Animals">🐻</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Gestures">👍</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Ideas">💡</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Objects">🏷️</button>
+                          </div>
+                          <div className="mt-2 text-[11px] font-semibold text-slate-500">Recent</div>
+                          <div className="mt-1 grid grid-cols-8 gap-1.5 max-h-[260px] overflow-y-auto thin-scrollbar pr-1">
+                            {(filteredWhiteboardEmojis.length ? filteredWhiteboardEmojis : orderedWhiteboardEmojis).map((item) => (
+                              <button
+                                key={item.emoji}
+                                type="button"
+                                onClick={() => applyWhiteboardReaction(item.emoji)}
+                                className="h-8 rounded-lg border border-slate-100 text-lg hover:bg-slate-100"
+                                title={`${item.emoji} · ${item.count || 0} uses`}
+                              >
+                                {item.emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm px-2.5 py-2 flex items-center gap-1.5">
                     <button type="button" onClick={handleWhiteboardUndo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo (Ctrl+Z)"><Undo2 size={15} /></button>
                     <button type="button" onClick={handleWhiteboardRedo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo (Ctrl+Shift+Z)"><Redo2 size={15} /></button>
@@ -14569,7 +15211,7 @@ Rules:
                         <LayoutGrid size={15} />
                       </button>
                       {whiteboardTemplateMenuOpen && (
-                        <div className="absolute bottom-11 right-0 z-30 rounded-xl border border-gray-200 bg-white shadow-lg p-2 w-[332px] max-h-[420px] overflow-y-auto thin-scrollbar">
+                        <div className="absolute bottom-11 right-0 z-[360] rounded-xl border border-gray-200 bg-white shadow-lg p-2 w-[332px] max-h-[420px] overflow-y-auto thin-scrollbar">
                           <div className="rounded-lg border border-violet-100 bg-violet-50/50 p-2 mb-2">
                             <div className="text-[11px] font-semibold text-violet-700 mb-1">AI template generator</div>
                             <textarea
@@ -14659,7 +15301,7 @@ Rules:
                         <Plus size={15} />
                       </button>
                       {whiteboardAddMenuOpen && (
-                        <div className="absolute bottom-11 right-0 z-30 rounded-xl border border-gray-200 bg-white shadow-lg p-1.5 w-44">
+                        <div className="absolute bottom-11 right-0 z-[360] rounded-xl border border-gray-200 bg-white shadow-lg p-1.5 w-44">
                           {[
                             { label: 'Sticky Note', icon: StickyNote, action: () => { activateWhiteboardTool('sticky'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Text', icon: Type, action: () => { activateWhiteboardTool('text'); setWhiteboardAddMenuOpen(false); } },
