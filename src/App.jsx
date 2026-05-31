@@ -273,6 +273,11 @@ export default function App() {
   const [productMode, setProductMode] = useState('landing');
   const [dmSearchQuery, setDmSearchQuery] = useState('');
   const [dmComposerValue, setDmComposerValue] = useState('');
+  const [dmConversationTab, setDmConversationTab] = useState('chat');
+  const [dmActiveParentMessageId, setDmActiveParentMessageId] = useState(null);
+  const [dmThreadComposerValue, setDmThreadComposerValue] = useState('');
+  const [dmMemberView, setDmMemberView] = useState('member');
+  const [dmJoinedAt, setDmJoinedAt] = useState(null);
   const [dmActiveThreadId, setDmActiveThreadId] = useState('thread-beta-launch');
   const [dmThreads, setDmThreads] = useState([
     { id: 'thread-beta-launch', title: 'Beta Launch', members: 12, unread: 1, pinned: true, description: 'Private project', lastMessageAt: Date.now() - 1000 * 60 * 8 },
@@ -321,6 +326,26 @@ export default function App() {
     { id: 'dm-decision-2', threadId: 'thread-beta-launch', summary: 'Final copy review due tomorrow 10:00 AM', createdAt: Date.now() - 1000 * 60 * 32, by: 'Orb (AI Assistant)' },
   ]);
   const [dmArchive, setDmArchive] = useState([]);
+  const [dmThreadReplies, setDmThreadReplies] = useState([
+    {
+      id: 'dm-thread-reply-1',
+      threadId: 'thread-beta-launch',
+      parentMessageId: 'dm-2',
+      author: 'Alex Morgan',
+      role: 'member',
+      text: 'Great. I can own collecting design feedback by EOD.',
+      createdAt: Date.now() - 1000 * 60 * 36,
+    },
+    {
+      id: 'dm-thread-reply-2',
+      threadId: 'thread-beta-launch',
+      parentMessageId: 'dm-2',
+      author: 'Sarah Johnson',
+      role: 'product-lead',
+      text: 'Perfect, please also link final comments back here for archive search.',
+      createdAt: Date.now() - 1000 * 60 * 31,
+    },
+  ]);
   const [creationPickerOpen, setCreationPickerOpen] = useState(false);
   const [activeDeckSlideId, setActiveDeckSlideId] = useState(1);
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
@@ -6583,7 +6608,10 @@ Rules:
     setRightSidebarOpen(false);
     setLeftSidebarOpen(false);
     setDmSearchQuery('');
+    setDmConversationTab('chat');
     setDmComposerValue('');
+    setDmThreadComposerValue('');
+    setDmActiveParentMessageId(null);
     setDmActiveThreadId((prev) => prev || 'thread-beta-launch');
     showToast('DM workspace ready');
   };
@@ -8434,6 +8462,7 @@ Rules:
       const savedFiles = JSON.parse(localStorage.getItem('rc.dm.files') || 'null');
       const savedDecisions = JSON.parse(localStorage.getItem('rc.dm.decisions') || 'null');
       const savedArchive = JSON.parse(localStorage.getItem('rc.dm.archive') || 'null');
+      const savedThreadReplies = JSON.parse(localStorage.getItem('rc.dm.threadReplies') || 'null');
       if (Array.isArray(savedThreads) && savedThreads.length) {
         setDmThreads(savedThreads);
       }
@@ -8448,6 +8477,9 @@ Rules:
       }
       if (Array.isArray(savedArchive)) {
         setDmArchive(savedArchive);
+      }
+      if (Array.isArray(savedThreadReplies)) {
+        setDmThreadReplies(savedThreadReplies);
       }
     } catch (_error) {
       // noop
@@ -8473,6 +8505,10 @@ Rules:
   useEffect(() => {
     localStorage.setItem('rc.dm.archive', JSON.stringify(dmArchive));
   }, [dmArchive]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.threadReplies', JSON.stringify(dmThreadReplies));
+  }, [dmThreadReplies]);
 
   useEffect(() => {
     if (dmArchive.length) {
@@ -8530,6 +8566,25 @@ Rules:
   const activeDmMessages = useMemo(() => dmMessages
     .filter((message) => message.threadId === (activeDmThread?.id || ''))
     .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)), [dmMessages, activeDmThread?.id]);
+  const activeDmThreadReplyMap = useMemo(() => {
+    const map = new Map();
+    dmThreadReplies
+      .filter((reply) => reply.threadId === (activeDmThread?.id || ''))
+      .forEach((reply) => {
+        map.set(reply.parentMessageId, (map.get(reply.parentMessageId) || 0) + 1);
+      });
+    return map;
+  }, [dmThreadReplies, activeDmThread?.id]);
+  const activeDmParentMessage = useMemo(
+    () => activeDmMessages.find((message) => message.id === dmActiveParentMessageId) || null,
+    [activeDmMessages, dmActiveParentMessageId],
+  );
+  const activeDmThreadPanelReplies = useMemo(
+    () => dmThreadReplies
+      .filter((reply) => reply.parentMessageId === dmActiveParentMessageId)
+      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)),
+    [dmThreadReplies, dmActiveParentMessageId],
+  );
 
   const dmSearchResults = useMemo(() => {
     const needle = String(dmSearchQuery || '').trim().toLowerCase();
@@ -8544,9 +8599,70 @@ Rules:
       .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   }, [dmArchive, dmSearchQuery]);
 
+  const effectiveDmJoinedAt = dmJoinedAt || null;
+  const visibleDmMessages = useMemo(() => {
+    if (dmMemberView !== 'new-member' || !effectiveDmJoinedAt) {
+      return activeDmMessages;
+    }
+    return activeDmMessages.filter((message) => (message.createdAt || 0) >= effectiveDmJoinedAt);
+  }, [activeDmMessages, dmMemberView, effectiveDmJoinedAt]);
+
+  const visibleDmSearchResults = useMemo(() => {
+    if (dmMemberView !== 'new-member' || !effectiveDmJoinedAt) {
+      return dmSearchResults;
+    }
+    return dmSearchResults.filter((entry) => (entry.createdAt || 0) >= effectiveDmJoinedAt);
+  }, [dmSearchResults, dmMemberView, effectiveDmJoinedAt]);
+
+  const dmThreadSummaries = useMemo(() => {
+    return activeDmMessages
+      .filter((message) => (activeDmThreadReplyMap.get(message.id) || 0) > 0)
+      .map((message) => ({
+        ...message,
+        replyCount: activeDmThreadReplyMap.get(message.id) || 0,
+      }))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }, [activeDmMessages, activeDmThreadReplyMap]);
+
   const appendDmArchive = (entries) => {
     const list = Array.isArray(entries) ? entries : [entries];
     setDmArchive((prev) => [...list, ...prev].slice(0, 1200));
+  };
+
+  const openDmMessageThread = (messageId) => {
+    setDmActiveParentMessageId(messageId);
+    setDmThreadComposerValue('');
+  };
+
+  const sendDmThreadReply = () => {
+    const text = String(dmThreadComposerValue || '').trim();
+    if (!text || !activeDmThread || !activeDmParentMessage) {
+      return;
+    }
+    const now = Date.now();
+    const reply = {
+      id: `dm-thread-reply-${now}`,
+      threadId: activeDmThread.id,
+      parentMessageId: activeDmParentMessage.id,
+      author: 'You',
+      role: 'you',
+      text,
+      createdAt: now,
+    };
+
+    setDmThreadReplies((prev) => [...prev, reply]);
+    appendDmArchive({
+      id: `arc-thread-${now}`,
+      type: 'thread-reply',
+      threadId: activeDmThread.id,
+      threadTitle: activeDmThread.title,
+      author: 'You',
+      text,
+      parentMessageId: activeDmParentMessage.id,
+      parentMessageText: activeDmParentMessage.text,
+      createdAt: now,
+    });
+    setDmThreadComposerValue('');
   };
 
   const sendDmMessage = () => {
@@ -8691,12 +8807,21 @@ Rules:
           <div className="px-3 space-y-1 text-[14px]">
             {[
               { label: 'Inbox', count: 6 },
-              { label: 'Threads', count: 0 },
+              { label: 'Threads', count: dmThreadSummaries.length },
               { label: 'Mentions', count: 2 },
               { label: 'Saved', count: 0 },
-              { label: 'AI Summary', count: 0 },
+              { label: 'AI Summary', count: visibleDmSearchResults.filter((entry) => entry.type === 'decision').length },
             ].map((item) => (
-              <button key={item.label} type="button" className="w-full h-8 px-2 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center justify-between">
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => {
+                  if (item.label === 'Threads') setDmConversationTab('threads');
+                  if (item.label === 'AI Summary') setDmConversationTab('ai-summary');
+                  if (item.label === 'Inbox') setDmConversationTab('chat');
+                }}
+                className="w-full h-8 px-2 rounded-lg text-slate-600 hover:bg-slate-50 flex items-center justify-between"
+              >
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 rounded border border-slate-300" />
                   {item.label}
@@ -8704,6 +8829,29 @@ Rules:
                 {item.count > 0 ? <span className="text-[11px] font-semibold text-slate-400">{item.count}</span> : <span />}
               </button>
             ))}
+          </div>
+
+          <div className="px-3 pt-3 pb-2 border-t border-slate-200 mt-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-2">History Scope</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => setDmMemberView('member')}
+                className={`h-7 rounded-md text-[11px] font-medium border ${dmMemberView === 'member' ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+              >
+                Full Log
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDmMemberView('new-member');
+                  setDmJoinedAt((prev) => prev || Date.now() - (1000 * 60 * 15));
+                }}
+                className={`h-7 rounded-md text-[11px] font-medium border ${dmMemberView === 'new-member' ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+              >
+                New Member
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto thin-scrollbar px-3 pt-4 pb-3 space-y-4">
@@ -8739,7 +8887,7 @@ Rules:
 
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 flex items-center justify-between">
-                <span>Projects</span>
+                <span>Channels</span>
                 <Plus size={14} />
               </div>
               <div className="space-y-1">
@@ -8752,7 +8900,7 @@ Rules:
                       onClick={() => setDmActiveThreadId(thread.id)}
                       className={`w-full h-8 px-2 rounded-lg flex items-center justify-between text-left ${active ? 'bg-violet-50 text-violet-700' : 'text-slate-700 hover:bg-slate-50'}`}
                     >
-                      <span className="truncate">{thread.title}</span>
+                      <span className="truncate"># {thread.title.replace(/\s+/g, '-').toLowerCase()}</span>
                       {thread.unread > 0 ? <span className="w-1.5 h-1.5 rounded-full bg-violet-500" /> : <span />}
                     </button>
                   );
@@ -8809,13 +8957,19 @@ Rules:
             </div>
 
             <div className="h-11 bg-white border-b border-gray-200 px-6 flex items-center gap-7 text-[14px]">
-              {['Chat', 'Threads', 'Highlights', 'AI Summary'].map((tab, index) => (
+              {[
+                { key: 'chat', label: 'Chat' },
+                { key: 'threads', label: 'Threads' },
+                { key: 'highlights', label: 'Highlights' },
+                { key: 'ai-summary', label: 'AI Summary' },
+              ].map((tab) => (
                 <button
-                  key={tab}
+                  key={tab.key}
                   type="button"
-                  className={`h-full border-b-2 transition-colors ${index === 0 ? 'border-violet-500 text-violet-600 font-semibold' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                  onClick={() => setDmConversationTab(tab.key)}
+                  className={`h-full border-b-2 transition-colors ${dmConversationTab === tab.key ? 'border-violet-500 text-violet-600 font-semibold' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 >
-                  {tab}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -8834,63 +8988,125 @@ Rules:
             </div>
 
             <div className="flex-1 overflow-y-auto thin-scrollbar px-6 pt-4 pb-5 space-y-4 bg-white">
-              <div className="w-fit mx-auto rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-500">Today</div>
-              {activeDmMessages.map((message, index) => {
-                const isAssistant = message.role === 'assistant';
-                const initials = message.author.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2).toUpperCase();
-                const bubbleColor = message.role === 'you'
-                  ? 'bg-[#eef2ff] border-violet-200'
-                  : isAssistant
-                    ? 'bg-[#f3f0ff] border-violet-200'
-                    : 'bg-white border-slate-200';
+              {dmMemberView === 'new-member' && effectiveDmJoinedAt && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  New-member mode: viewing history since {new Date(effectiveDmJoinedAt).toLocaleString()}.
+                </div>
+              )}
 
-                return (
-                  <article key={message.id} className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold ${isAssistant ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-700'}`}>
-                      {isAssistant ? 'Orb' : initials}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="font-semibold text-slate-900">{message.author}</span>
-                        {isAssistant ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600 font-semibold">APP</span> : null}
-                        <span className="text-xs text-slate-400">{formatDmRelative(message.createdAt)}</span>
-                      </div>
-                      <div className={`mt-1 rounded-xl border px-3 py-2.5 text-[15px] text-slate-700 ${bubbleColor}`}>
-                        {message.text}
+              {dmConversationTab === 'chat' && (
+                <>
+                  <div className="w-fit mx-auto rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-500">Today</div>
+                  {visibleDmMessages.map((message, index) => {
+                    const isAssistant = message.role === 'assistant';
+                    const initials = message.author.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2).toUpperCase();
+                    const bubbleColor = message.role === 'you'
+                      ? 'bg-[#eef2ff] border-violet-200'
+                      : isAssistant
+                        ? 'bg-[#f3f0ff] border-violet-200'
+                        : 'bg-white border-slate-200';
+                    const replyCount = activeDmThreadReplyMap.get(message.id) || 0;
 
-                        {Array.isArray(message.files) && message.files.length > 0 && (
-                          <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 max-w-[290px] flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <FileText size={15} className="text-violet-600" />
-                              <div>
-                                <div className="text-sm font-medium text-slate-700">{message.files[0].name}</div>
-                                <div className="text-[11px] text-slate-400">Updated recently</div>
+                    return (
+                      <article key={message.id} className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold ${isAssistant ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-700'}`}>
+                          {isAssistant ? 'Orb' : initials}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="font-semibold text-slate-900">{message.author}</span>
+                            {isAssistant ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600 font-semibold">APP</span> : null}
+                            <span className="text-xs text-slate-400">{formatDmRelative(message.createdAt)}</span>
+                          </div>
+                          <div className={`mt-1 rounded-xl border px-3 py-2.5 text-[15px] text-slate-700 ${bubbleColor}`}>
+                            {message.text}
+
+                            {Array.isArray(message.files) && message.files.length > 0 && (
+                              <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 max-w-[290px] flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <FileText size={15} className="text-violet-600" />
+                                  <div>
+                                    <div className="text-sm font-medium text-slate-700">{message.files[0].name}</div>
+                                    <div className="text-[11px] text-slate-400">Updated recently</div>
+                                  </div>
+                                </div>
+                                <button type="button" className="text-xs text-violet-600 font-semibold">Open</button>
                               </div>
-                            </div>
-                            <button type="button" className="text-xs text-violet-600 font-semibold">Open</button>
-                          </div>
-                        )}
+                            )}
 
-                        {isAssistant && (
-                          <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm text-slate-700">
-                            <div className="font-semibold mb-1">Summary</div>
-                            <ul className="list-disc pl-5 space-y-0.5 text-sm text-slate-700">
-                              <li>Landing page v2 is ready for review.</li>
-                              <li>Team feedback is in the document.</li>
-                              <li>Next step: Final approval from design team.</li>
-                            </ul>
+                            {isAssistant && (
+                              <div className="mt-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2.5 text-sm text-slate-700">
+                                <div className="font-semibold mb-1">Summary</div>
+                                <ul className="list-disc pl-5 space-y-0.5 text-sm text-slate-700">
+                                  <li>Landing page v2 is ready for review.</li>
+                                  <li>Team feedback is in the document.</li>
+                                  <li>Next step: Final approval from design team.</li>
+                                </ul>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-400">
-                        <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🔥 {index === 0 ? 3 : 2}</span>
-                        <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🙌 {index === 0 ? 2 : 0}</span>
-                        <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">☺</span>
-                      </div>
+                          <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-400">
+                            <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🔥 {index === 0 ? 3 : 2}</span>
+                            <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🙌 {index === 0 ? 2 : 0}</span>
+                            <span className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">☺</span>
+                            <button
+                              type="button"
+                              onClick={() => openDmMessageThread(message.id)}
+                              className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-violet-700 hover:bg-violet-100"
+                            >
+                              {replyCount > 0 ? `${replyCount} replies` : 'Reply in thread'}
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </>
+              )}
+
+              {dmConversationTab === 'threads' && (
+                <div className="space-y-2">
+                  {dmThreadSummaries.length === 0 && (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No threaded conversations yet.</div>
+                  )}
+                  {dmThreadSummaries.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => openDmMessageThread(item.id)}
+                      className="w-full text-left rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-violet-300"
+                    >
+                      <div className="text-sm font-semibold text-slate-800">{item.author}</div>
+                      <div className="text-sm text-slate-600 mt-0.5 line-clamp-2">{item.text}</div>
+                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies • Open thread</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {dmConversationTab === 'highlights' && (
+                <div className="space-y-2">
+                  {activeThreadDecisions.map((decision) => (
+                    <div key={decision.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+                      <div className="text-sm font-semibold text-amber-900">Decision</div>
+                      <div className="text-sm text-amber-800 mt-0.5">{decision.summary}</div>
+                      <div className="text-xs text-amber-700 mt-1">{decision.by} • {formatDmRelative(decision.createdAt)}</div>
                     </div>
-                  </article>
-                );
-              })}
+                  ))}
+                </div>
+              )}
+
+              {dmConversationTab === 'ai-summary' && (
+                <div className="space-y-2">
+                  {visibleDmSearchResults.slice(0, 30).map((entry) => (
+                    <div key={entry.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                      <div className="text-[10px] uppercase tracking-wide text-slate-400">{entry.type || 'record'}</div>
+                      <div className="text-sm font-semibold text-slate-700">{entry.threadTitle || activeDmThread?.title}</div>
+                      <div className="text-sm text-slate-600 mt-0.5">{entry.text || entry.fileName || entry.decision || 'Archived record'}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="p-5 border-t border-gray-200 bg-white">
@@ -8918,6 +9134,58 @@ Rules:
             </div>
           </section>
 
+          {activeDmParentMessage && (
+            <aside className="w-[320px] shrink-0 border-r border-gray-200 bg-white flex flex-col">
+              <div className="h-12 px-3 border-b border-gray-200 flex items-center justify-between">
+                <div className="text-sm font-semibold text-slate-800">Thread</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDmActiveParentMessageId(null);
+                    setDmThreadComposerValue('');
+                  }}
+                  className="text-slate-400 hover:text-slate-700"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto thin-scrollbar p-3 space-y-3">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <div className="text-sm font-semibold text-slate-800">{activeDmParentMessage.author}</div>
+                  <div className="text-sm text-slate-700 mt-0.5">{activeDmParentMessage.text}</div>
+                </div>
+
+                {activeDmThreadPanelReplies.map((reply) => (
+                  <div key={reply.id} className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <div className="text-sm font-semibold text-slate-800">{reply.author}</div>
+                    <div className="text-sm text-slate-700 mt-0.5">{reply.text}</div>
+                    <div className="text-xs text-slate-400 mt-1">{formatDmRelative(reply.createdAt)}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t border-gray-200 p-3">
+                <textarea
+                  value={dmThreadComposerValue}
+                  onChange={(event) => setDmThreadComposerValue(event.target.value)}
+                  rows={2}
+                  placeholder="Reply in thread..."
+                  className="w-full resize-none rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-violet-300"
+                />
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={sendDmThreadReply}
+                    className="h-8 px-3 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700"
+                  >
+                    Reply
+                  </button>
+                </div>
+              </div>
+            </aside>
+          )}
+
           <aside className="w-[360px] shrink-0 bg-white p-4 overflow-y-auto thin-scrollbar">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-start justify-between">
@@ -8937,6 +9205,7 @@ Rules:
               <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div className="text-sm font-semibold text-slate-800">About this project</div>
                 <p className="text-sm text-slate-500 mt-1">Coordinating everything for our beta launch on May 15.</p>
+                <p className="text-xs text-slate-400 mt-1">Workspace-managed identity and searchable team history are retained for onboarding continuity.</p>
                 <button type="button" className="mt-2 text-xs text-violet-600 font-medium">Show more</button>
               </div>
             </div>
