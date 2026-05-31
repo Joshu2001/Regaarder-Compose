@@ -474,6 +474,9 @@ export default function App() {
   const [whiteboardEraserSize, setWhiteboardEraserSize] = useState(9);
   const [whiteboardZoomLevel, setWhiteboardZoomLevel] = useState(100);
   const [whiteboardTemplateMenuOpen, setWhiteboardTemplateMenuOpen] = useState(false);
+  const [whiteboardTemplatePrompt, setWhiteboardTemplatePrompt] = useState('');
+  const [whiteboardTemplateSources, setWhiteboardTemplateSources] = useState([]);
+  const [whiteboardCustomTemplates, setWhiteboardCustomTemplates] = useState([]);
   const [isWhiteboardImmersive, setIsWhiteboardImmersive] = useState(false);
   const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
   const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
@@ -484,6 +487,7 @@ export default function App() {
   ]);
   const [isWhiteboardPanning, setIsWhiteboardPanning] = useState(false);
   const whiteboardCanvasRef = useRef(null);
+  const whiteboardTemplateSourceInputRef = useRef(null);
   const widgetDragRef = useRef(null);
   const widgetResizeRef = useRef(null);
   const shapeDragRef = useRef(null);
@@ -567,8 +571,15 @@ export default function App() {
 
   const addWhiteboardWidget = (type, options = {}) => {
     const index = whiteboardWidgets.length;
+    const defaultX = 130 + (index % 4) * 188;
+    const defaultY = 120 + Math.floor(index / 4) * 132;
     const nextWidget = {
       id: `wb-widget-${Date.now()}-${index}`,
+      type,
+      x: options.x ?? defaultX,
+      y: options.y ?? defaultY,
+      width: options.width ?? (type === 'text' ? 260 : 170),
+      height: options.height ?? 120,
       color: options.color ?? whiteboardStickyColor,
       text: options.text ?? '',
       fontFamily: options.fontFamily ?? 'Calibri',
@@ -595,12 +606,184 @@ export default function App() {
         : 'Link to related node',
     };
     setWhiteboardWidgets((prev) => [...prev, nextWidget]);
-    if (type === 'sticky') {
+    if (type === 'sticky' || type === 'text') {
       setWhiteboardEditingWidgetId(nextWidget.id);
-      showToast('Sticky note ready to edit');
+      showToast(type === 'text' ? 'Text box ready to edit' : 'Sticky note ready to edit');
       return;
     }
     showToast(`${nextWidget.title} added`);
+  };
+
+  const whiteboardTemplateCatalog = useMemo(
+    () => [...WHITEBOARD_TEMPLATE_LIBRARY, ...whiteboardCustomTemplates],
+    [whiteboardCustomTemplates],
+  );
+
+  const cloneTemplateWidgets = useCallback((widgets = [], templateKey = 'template') => widgets.map((widget, index) => ({
+    ...widget,
+    id: `wb-template-${templateKey}-${Date.now()}-${index}`,
+  })), []);
+
+  const buildAiTemplateWidgets = useCallback((prompt, sources = []) => {
+    const sourceNames = sources.map((item) => item.name).filter(Boolean);
+    const chunks = String(prompt || '')
+      .split(/\n|,|;|\.|\|/)
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+    const base = chunks.length ? chunks.slice(0, 4) : ['Goals', 'Audience', 'Flow', 'Deliverables'];
+    const widgets = [
+      {
+        type: 'text',
+        x: 56,
+        y: 36,
+        width: 340,
+        height: 100,
+        text: `AI Template\n${prompt.trim() || 'Generated from attached sources'}`,
+        fontFamily: 'Calibri',
+        fontSize: 15,
+        isBold: true,
+        isItalic: false,
+        isUnderline: false,
+        textAlign: 'left',
+        textColor: '#111827',
+        highlightColor: '#ffffff',
+        opacity: 100,
+        hasList: false,
+        listType: 'bullet',
+        linkedUrl: '',
+      },
+      {
+        type: 'sticky',
+        x: 430,
+        y: 36,
+        width: 280,
+        height: 100,
+        color: '#bfdbfe',
+        text: sourceNames.length ? `Sources\n${sourceNames.slice(0, 5).join('\n')}` : 'Sources\nCustomer input',
+        fontFamily: 'Calibri',
+        fontSize: 13,
+        isBold: false,
+        isItalic: false,
+        isUnderline: false,
+        textAlign: 'left',
+        textColor: '#111827',
+        highlightColor: '#ffffff',
+        opacity: 100,
+        hasList: false,
+        listType: 'bullet',
+        linkedUrl: '',
+      },
+      ...base.map((item, index) => ({
+        type: 'sticky',
+        x: 56 + index * 220,
+        y: 170,
+        width: 200,
+        height: 120,
+        color: ['#fde68a', '#bbf7d0', '#fbcfe8', '#c4b5fd'][index % 4],
+        text: `${item}\nAction items\nOwner\nTimeline`,
+        fontFamily: 'Calibri',
+        fontSize: 13,
+        isBold: false,
+        isItalic: false,
+        isUnderline: false,
+        textAlign: 'left',
+        textColor: '#111827',
+        highlightColor: '#ffffff',
+        opacity: 100,
+        hasList: false,
+        listType: 'bullet',
+        linkedUrl: '',
+      })),
+    ];
+    return cloneTemplateWidgets(widgets, 'ai-generated');
+  }, [cloneTemplateWidgets]);
+
+  const handleWhiteboardTemplateSourceUpload = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) {
+      return;
+    }
+    const uploaded = files.map((file, index) => ({
+      id: `wb-template-source-${Date.now()}-${index}`,
+      name: file.name,
+      kind: file.type || 'file',
+    }));
+    setWhiteboardTemplateSources((prev) => [...prev, ...uploaded].slice(-8));
+    showToast(`${uploaded.length} source file${uploaded.length > 1 ? 's' : ''} attached`);
+    event.target.value = '';
+  };
+
+  const generateAiWhiteboardTemplate = () => {
+    const prompt = whiteboardTemplatePrompt.trim();
+    if (!prompt && !whiteboardTemplateSources.length) {
+      showToast('Add customer input or attach source files first');
+      return;
+    }
+    const templateKey = `ai-template-${Date.now()}`;
+    const normalizedSignal = `${prompt} ${whiteboardTemplateSources.map((source) => source.name).join(' ')}`.toLowerCase();
+    const category = /personal|habit|routine|journal|self/.test(normalizedSignal)
+      ? 'Personal'
+      : /enterprise|stakeholder|department|okr|team|company/.test(normalizedSignal)
+        ? 'Enterprise'
+        : 'Startup';
+    const labelCore = (prompt || whiteboardTemplateSources[0]?.name || 'Custom board')
+      .replace(/\.[a-z0-9]+$/i, '')
+      .slice(0, 28)
+      .trim();
+    const widgets = buildAiTemplateWidgets(prompt, whiteboardTemplateSources);
+    const nextTemplate = {
+      key: templateKey,
+      category,
+      label: `AI ${labelCore || 'Template'}`,
+      detail: `Generated from customer input${whiteboardTemplateSources.length ? ' + files' : ''}`,
+      preview: ['#bfdbfe', '#fde68a', '#bbf7d0', '#fbcfe8'],
+      widgets,
+      sourceSummary: {
+        prompt,
+        files: whiteboardTemplateSources.map((source) => source.name),
+      },
+    };
+    setWhiteboardCustomTemplates((prev) => [nextTemplate, ...prev].slice(0, 24));
+    setWhiteboardWidgets(widgets);
+    setWhiteboardStrokes([]);
+    setWhiteboardShapes([]);
+    setWhiteboardRedoStrokes([]);
+    setWhiteboardCurrentStroke('');
+    setWhiteboardCurrentShape(null);
+    setWhiteboardComments([]);
+    setWhiteboardActiveCommentId(null);
+    setSelectedWidgetId(null);
+    setSelectedShapeIndex(null);
+    setWhiteboardTemplatePrompt('');
+    setWhiteboardTemplateSources([]);
+    setWhiteboardTemplateMenuOpen(false);
+    showToast('AI template generated and saved');
+  };
+
+  const saveCurrentWhiteboardAsTemplate = () => {
+    if (!whiteboardWidgets.length) {
+      showToast('Add content before saving a template');
+      return;
+    }
+    const templateName = window.prompt('Template name', 'Saved board template');
+    if (!templateName || !templateName.trim()) {
+      return;
+    }
+    const templateKey = `saved-template-${Date.now()}`;
+    const preview = whiteboardWidgets
+      .filter((widget) => widget.type === 'sticky' && widget.color)
+      .slice(0, 4)
+      .map((widget) => widget.color);
+    const savedTemplate = {
+      key: templateKey,
+      category: 'Saved',
+      label: templateName.trim().slice(0, 36),
+      detail: 'Saved from your current board',
+      preview: preview.length ? preview : ['#c4b5fd', '#93c5fd', '#fcd34d', '#86efac'],
+      widgets: cloneTemplateWidgets(whiteboardWidgets.map((widget) => ({ ...widget })), templateKey),
+    };
+    setWhiteboardCustomTemplates((prev) => [savedTemplate, ...prev].slice(0, 24));
+    showToast('Template saved');
   };
 
   const activateWhiteboardTool = (toolKey) => {
@@ -1073,6 +1256,7 @@ export default function App() {
       setWhiteboardTool('select');
       setWhiteboardShapeMenuOpen(false);
       setWhiteboardStickyPaletteOpen(false);
+      setWhiteboardPenMenuOpen(false);
       setWhiteboardStickyDragStart(null);
       setWhiteboardStickyPreview(null);
       setIsWhiteboardDrawing(false);
@@ -6866,8 +7050,11 @@ Rules:
       ],
     };
 
-    const selected = templates[templateKey] || templates['startup-lean-canvas'];
-    const selectedMeta = WHITEBOARD_TEMPLATE_LIBRARY.find((template) => template.key === templateKey);
+    const customTemplate = whiteboardCustomTemplates.find((template) => template.key === templateKey);
+    const selected = customTemplate?.widgets?.length
+      ? cloneTemplateWidgets(customTemplate.widgets, customTemplate.key)
+      : (templates[templateKey] || templates['startup-lean-canvas']);
+    const selectedMeta = whiteboardTemplateCatalog.find((template) => template.key === templateKey);
 
     setWhiteboardStrokes([]);
     setWhiteboardShapes([]);
@@ -11302,11 +11489,11 @@ Rules:
                   strokeWidth={workspaceLauncherIconStyle === 'solid' ? 2.5 : workspaceLauncherIconStyle === 'soft' ? 1.7 : 2}
                   style={{ color: workspaceLauncherIconColor, opacity: workspaceLauncherIconStyle === 'soft' ? 0.78 : 1 }}
                 />
-              <span className="text-[9px] font-semibold">Nrew</span>
+              <span className="text-[9px] font-semibold">New</span>
             </div>
 
             {workspaceLauncherOpen && (
-              <div className="absolute top-0 right-full mr-3 z-[260] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5">
+              <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-[70%] z-[700] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5">
                 <div className="text-[11px] font-semibold text-gray-700 px-1 pb-1.5">Choose Workspace</div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
@@ -13379,6 +13566,9 @@ Rules:
                       onPointerUp={() => {
                         widgetDragRef.current = null;
                       }}
+                      onPointerCancel={() => {
+                        widgetDragRef.current = null;
+                      }}
                     >
                       {widget.type === 'sticky' ? (
                         <textarea
@@ -13934,12 +14124,62 @@ Rules:
                       </button>
                       {whiteboardTemplateMenuOpen && (
                         <div className="absolute bottom-11 right-0 z-30 rounded-xl border border-gray-200 bg-white shadow-lg p-2 w-[332px] max-h-[420px] overflow-y-auto thin-scrollbar">
+                          <div className="rounded-lg border border-violet-100 bg-violet-50/50 p-2 mb-2">
+                            <div className="text-[11px] font-semibold text-violet-700 mb-1">AI template generator</div>
+                            <textarea
+                              value={whiteboardTemplatePrompt}
+                              onChange={(event) => setWhiteboardTemplatePrompt(event.target.value)}
+                              className="w-full h-16 resize-none rounded-md border border-violet-200 bg-white px-2 py-1 text-[11px] text-gray-700 outline-none focus:border-violet-300"
+                              placeholder="Describe customer input, use case, or desired structure..."
+                            />
+                            <input
+                              ref={whiteboardTemplateSourceInputRef}
+                              type="file"
+                              multiple
+                              accept="image/*,.pdf,.doc,.docx,.txt,.md"
+                              className="hidden"
+                              onChange={handleWhiteboardTemplateSourceUpload}
+                            />
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => whiteboardTemplateSourceInputRef.current?.click()}
+                                className="text-[10px] px-2 py-1 rounded-md border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                              >
+                                Attach UI/docs
+                              </button>
+                              <button
+                                type="button"
+                                onClick={generateAiWhiteboardTemplate}
+                                className="text-[10px] px-2 py-1 rounded-md bg-violet-600 text-white hover:bg-violet-700 inline-flex items-center gap-1"
+                              >
+                                <Sparkles size={10} />
+                                Generate
+                              </button>
+                              <button
+                                type="button"
+                                onClick={saveCurrentWhiteboardAsTemplate}
+                                className="text-[10px] px-2 py-1 rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50"
+                              >
+                                Save current
+                              </button>
+                            </div>
+                            {whiteboardTemplateSources.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {whiteboardTemplateSources.map((source) => (
+                                  <span key={source.id} className="inline-flex items-center rounded-full bg-white border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600">
+                                    {source.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <div className="px-1 pb-1 text-[11px] font-semibold text-gray-700">Prebuilt templates</div>
-                          {['Startup', 'Enterprise', 'Personal'].map((category) => (
+                          {Array.from(new Set(['Startup', 'Enterprise', 'Personal', 'Saved', ...whiteboardTemplateCatalog.map((template) => template.category)])).map((category) => (
                             <div key={category} className="mt-1.5">
                               <div className="px-1 py-1 text-[10px] uppercase tracking-wide text-gray-400">{category}</div>
                               <div className="grid grid-cols-2 gap-2">
-                                {WHITEBOARD_TEMPLATE_LIBRARY
+                                {whiteboardTemplateCatalog
                                   .filter((template) => template.category === category)
                                   .map((template) => (
                                     <button
@@ -16832,11 +17072,11 @@ Rules:
               strokeWidth={workspaceLauncherIconStyle === 'solid' ? 2.5 : workspaceLauncherIconStyle === 'soft' ? 1.7 : 2}
               style={{ color: workspaceLauncherIconColor, opacity: workspaceLauncherIconStyle === 'soft' ? 0.78 : 1 }}
             />
-            <span className="text-[9px] font-semibold">Launch</span>
+            <span className="text-[9px] font-semibold">New</span>
           </div>
 
           {workspaceLauncherOpen && (
-            <div className="absolute top-0 right-full mr-3 z-[260] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5">
+            <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-[70%] z-[700] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5">
               <div className="text-[11px] font-semibold text-gray-700 px-1 pb-1.5">Choose Workspace</div>
               <div className="grid grid-cols-2 gap-1.5">
                 {[
