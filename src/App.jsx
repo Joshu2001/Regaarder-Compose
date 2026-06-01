@@ -19,6 +19,46 @@ import {
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 
+            {tonePickerState.open && (
+              <div className="absolute top-5 right-5 z-40 w-[340px] max-w-[calc(100%-2.5rem)] rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-[0_24px_50px_-26px_rgba(15,23,42,0.5)] backdrop-blur-sm">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-slate-500">Choose Tone</p>
+                    <p className="text-sm font-semibold text-slate-900">Apply style to this AI rewrite</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeTonePicker}
+                    className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                    aria-label="Close tone picker"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                <div className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
+                  {TONE_PICKER_GROUPS.map((group) => (
+                    <div key={group.key} className="rounded-xl border border-slate-100 bg-slate-50/75 p-2">
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{group.label}</p>
+                      <div className="space-y-1">
+                        {group.tones.map((tone) => (
+                          <button
+                            key={tone.key}
+                            type="button"
+                            onClick={() => handleTonePickerSelect(tone.key)}
+                            className="w-full rounded-lg border border-transparent bg-white px-2.5 py-2 text-left hover:border-slate-200 hover:bg-slate-100"
+                          >
+                            <p className="text-xs font-semibold text-slate-800">{tone.label}</p>
+                            <p className="text-[11px] text-slate-500">{tone.traits}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_WHITEBOARD_LABEL = 'Untitled whiteboard';
 const SAVED_DRAFT_LABEL = 'Saved Drafts';
@@ -192,6 +232,41 @@ const QUICK_ADD_SOURCE_OPTIONS = [
   { id: 'link', label: 'Add link' },
 ];
 const SCHEDULE_TIMEZONE_OPTIONS = ['GMT+5:30', 'GMT+0:00', 'GMT-8:00', 'GMT+1:00'];
+
+const TONE_PICKER_GROUPS = [
+  {
+    key: 'business',
+    label: 'Business',
+    tones: [
+      { key: 'professional', label: 'Professional', traits: 'Clear, polished, neutral, safe' },
+      { key: 'executive', label: 'Executive', traits: 'Strategic, high-level, outcome-focused, concise' },
+      { key: 'persuasive', label: 'Persuasive', traits: 'Convincing, benefit-driven, action-oriented' },
+      { key: 'formal', label: 'Formal', traits: 'Precise, structured, conservative' },
+      { key: 'technical', label: 'Technical', traits: 'Detailed, accurate, unambiguous' },
+    ],
+  },
+  {
+    key: 'creative-startup',
+    label: 'Creative & Startup',
+    tones: [
+      { key: 'friendly', label: 'Friendly', traits: 'Warm, human, approachable' },
+      { key: 'startup', label: 'Startup', traits: 'Energetic, vision-driven, modern' },
+      { key: 'creator', label: 'Creator', traits: 'Engaging, storytelling, relatable' },
+      { key: 'simplified', label: 'Simplified', traits: 'Easy to understand, clear, low jargon' },
+      { key: 'confident', label: 'Confident', traits: 'Assertive, clear, strong positioning' },
+    ],
+  },
+  {
+    key: 'smart-tone',
+    label: 'Smart Tone',
+    tones: [
+      { key: 'smart-tone', label: 'Smart Tone', traits: 'Auto-detects best tone from document type and intent' },
+    ],
+  },
+];
+
+const TONE_PICKER_LOOKUP = TONE_PICKER_GROUPS.flatMap((group) => group.tones)
+  .reduce((acc, tone) => ({ ...acc, [tone.key]: tone }), {});
 
 const FONT_FAMILY_MAP = {
   Manrope: "Manrope, 'Plus Jakarta Sans', 'DM Sans', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
@@ -2010,6 +2085,7 @@ export default function App() {
   const [editingPromptValue, setEditingPromptValue] = useState('');
   const [assistantQuickPrompt, setAssistantQuickPrompt] = useState('');
   const [selectionMenuPrompt, setSelectionMenuPrompt] = useState('');
+  const [tonePickerState, setTonePickerState] = useState({ open: false, instruction: '', actionKey: '', selectionScoped: undefined });
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
@@ -4046,7 +4122,7 @@ export default function App() {
       if (key === 'a') {
         if (insideEditor) {
           event.preventDefault();
-          selectEntireComposition();
+          selectEntireComposition({ includeHeaders: true });
         }
         return;
       }
@@ -4740,9 +4816,11 @@ export default function App() {
     return true;
   };
 
-  const selectEntireComposition = () => {
+  const selectEntireComposition = (options = {}) => {
+    const includeHeaders = Boolean(options.includeHeaders);
     const bodyRoot = blankBodyRef.current || documentCardRef.current;
-    if (!bodyRoot) {
+    const targetRoot = includeHeaders ? documentCardRef.current : bodyRoot;
+    if (!targetRoot) {
       return;
     }
 
@@ -4752,7 +4830,7 @@ export default function App() {
     }
 
     const range = document.createRange();
-    range.selectNodeContents(bodyRoot);
+    range.selectNodeContents(targetRoot);
     selection.removeAllRanges();
     selection.addRange(range);
     savedSelectionRef.current = range.cloneRange();
@@ -5677,6 +5755,36 @@ export default function App() {
     });
   };
 
+  const closeTonePicker = () => {
+    setTonePickerState({ open: false, instruction: '', actionKey: '', selectionScoped: undefined });
+  };
+
+  const handleTonePickerSelect = (toneKey) => {
+    const normalizedKey = String(toneKey || '').toLowerCase();
+    const tone = TONE_PICKER_LOOKUP[normalizedKey];
+    if (!tone) {
+      return;
+    }
+
+    const instruction = String(tonePickerState.instruction || '').trim();
+    if (!instruction) {
+      closeTonePicker();
+      return;
+    }
+
+    const actionKey = String(tonePickerState.actionKey || 'adjust-tone').toLowerCase();
+    const selectionScoped = tonePickerState.selectionScoped !== undefined
+      ? Boolean(tonePickerState.selectionScoped)
+      : undefined;
+
+    closeTonePicker();
+    runSmartAssistAction(instruction, {
+      actionKey,
+      selectionScoped,
+      toneKey: normalizedKey,
+    });
+  };
+
   const closeTransientMenus = () => {
     setOpenDropdown(null);
     setTextStyleMenuOpen(false);
@@ -5696,6 +5804,7 @@ export default function App() {
     setIsMeetingLinkInputOpen(false);
     setIsMeetingOverflowParticipantsOpen(false);
     setWorkspaceLauncherOpen(false);
+    setTonePickerState((prev) => (prev.open ? { open: false, instruction: '', actionKey: '', selectionScoped: undefined } : prev));
   };
 
   const trackMemoryAction = (type, summary, details = {}) => {
@@ -7212,7 +7321,29 @@ Rules:
       ? Boolean(actionMeta.selectionScoped)
       : undefined;
     const actionKey = String(actionMeta.actionKey || '').toLowerCase();
+    const selectedToneKey = String(actionMeta.toneKey || '').toLowerCase();
     const requestedOutlineLevels = Math.max(2, Math.min(4, Number(actionMeta.outlineLevels || outlineLevels || 3) || 3));
+
+    if (productMode === 'compose' && (actionKey === 'adjust-tone' || actionKey === 'tone') && !selectedToneKey) {
+      setTonePickerState({
+        open: true,
+        instruction,
+        actionKey,
+        selectionScoped: requestedSelectionScope,
+      });
+      showToast('Choose a tone style');
+      return;
+    }
+
+    const toneDefinition = selectedToneKey ? TONE_PICKER_LOOKUP[selectedToneKey] : null;
+    const toneDirective = toneDefinition
+      ? (selectedToneKey === 'smart-tone'
+        ? 'Use Smart Tone mode: infer the best tone from document type and intent (for example: contract->formal, investor deck->persuasive+executive, PRD->technical, team update->professional, blog post->creator, customer email->friendly).'
+        : `Rewrite in ${toneDefinition.label} tone. Tone traits: ${toneDefinition.traits}.`)
+      : '';
+    const effectiveInstruction = toneDirective
+      ? `${instruction}\n\n${toneDirective}`
+      : instruction;
     const liveDocumentText = String(documentCardRef.current?.innerText || '')
       .replace(/\r/g, '')
       .replace(/\u00a0/g, ' ')
@@ -7230,7 +7361,7 @@ Rules:
       : '';
 
     if (productMode === 'deck') {
-      const deckPrompt = `${instruction}\n\nCreate or refine a cinematic deck structure with stronger visual hierarchy, audience fit, and pacing. Include clear visual direction per slide.`;
+      const deckPrompt = `${effectiveInstruction}\n\nCreate or refine a cinematic deck structure with stronger visual hierarchy, audience fit, and pacing. Include clear visual direction per slide.`;
       setRightSidebarOpen(true);
       setActiveRightTab('assistant');
       showToast('Deck Assistant is generating visual output...');
@@ -7249,7 +7380,7 @@ Rules:
       const hasSelection = requestedSelectionScope !== undefined ? requestedSelectionScope : Boolean(selectedScope);
       const outlinePrompt = hasSelection
         ? `Create a structured outline from this selected text. Use concise headings and nested bullets where useful. Keep headings short and clear. Target up to ${requestedOutlineLevels} heading levels.\n\nSelected text:\n"""${selectedScope}"""`
-        : `${instruction}\n\nCreate a structured outline from the current document with concise headings and nested bullets where useful. Keep headings short and clear. Target up to ${requestedOutlineLevels} heading levels.${documentContextBlock}`;
+        : `${effectiveInstruction}\n\nCreate a structured outline from the current document with concise headings and nested bullets where useful. Keep headings short and clear. Target up to ${requestedOutlineLevels} heading levels.${documentContextBlock}`;
 
       setRightSidebarOpen(false);
       setActiveRightTab('assistant');
@@ -7272,7 +7403,7 @@ Rules:
       setRightSidebarOpen(false);
       setActiveRightTab('assistant');
       showToast('Compose AI is generating a table of contents...');
-      handleAISubmit(`${instruction}\n\nGenerate a polished table of contents from this document, then rewrite headings/content so hierarchy is clear and consistent.${documentContextBlock}`, {
+      handleAISubmit(`${effectiveInstruction}\n\nGenerate a polished table of contents from this document, then rewrite headings/content so hierarchy is clear and consistent.${documentContextBlock}`, {
         source: 'compose',
         forceDocBuild: true,
         suppressChatEcho: true,
@@ -7290,7 +7421,7 @@ Rules:
       setRightSidebarOpen(false);
       setActiveRightTab('assistant');
       showToast('Compose AI is generating title and headers...');
-      handleAISubmit(`${instruction}\n\nGenerate a stronger title and cleaner section headers while preserving the document meaning.${documentContextBlock}`, {
+      handleAISubmit(`${effectiveInstruction}\n\nGenerate a stronger title and cleaner section headers while preserving the document meaning.${documentContextBlock}`, {
         source: 'compose',
         forceDocBuild: true,
         suppressChatEcho: true,
@@ -7307,8 +7438,8 @@ Rules:
     const selectedScope = selectedEditorTextRef.current || selectedEditorText;
     const hasSelection = requestedSelectionScope !== undefined ? requestedSelectionScope : Boolean(selectedScope);
     const scopedPrompt = hasSelection
-      ? `${instruction}\n\nRefine ONLY this selected excerpt and preserve intent:\n"""${selectedScope}"""\n\nIf you are producing an outline, return clear section headings with bullets under each heading.`
-      : `${instruction}\n\nUse the current document context and provide a directly usable rewrite.`;
+      ? `${effectiveInstruction}\n\nRefine ONLY this selected excerpt and preserve intent:\n"""${selectedScope}"""\n\nIf you are producing an outline, return clear section headings with bullets under each heading.`
+      : `${effectiveInstruction}\n\nUse the current document context and provide a directly usable rewrite.`;
 
     if (productMode === 'compose') {
       setRightSidebarOpen(false);
