@@ -6573,6 +6573,15 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    checkAiBackendStatus();
+  }, []);
+
+  const isLiveAiReady = aiBackendStatus.state === 'ok';
+  const smartAssistDisabledReason = aiBackendStatus.state === 'checking'
+    ? 'Checking AI backend...'
+    : (aiBackendStatus.message || 'AI backend is not ready. Run with `npm run dev:ai`.');
+
   const memoryStats = useMemo(() => {
     const uploads = memoryEntries.filter((entry) => entry.type === 'upload').length;
     const exports = memoryEntries.filter((entry) => entry.type === 'export').length;
@@ -7168,6 +7177,10 @@ Rules:
 
   const handleAssistantQuickPromptSend = (event) => {
     event.preventDefault();
+    if (!isLiveAiReady) {
+      showToast(smartAssistDisabledReason);
+      return;
+    }
     const prompt = assistantQuickPrompt.trim();
     if (!prompt || isComposing) {
       return;
@@ -7190,6 +7203,11 @@ Rules:
   };
 
   const runSmartAssistAction = (instruction, actionMeta = {}) => {
+    if (!isLiveAiReady) {
+      showToast(smartAssistDisabledReason);
+      return;
+    }
+
     const requestedSelectionScope = actionMeta.selectionScoped !== undefined
       ? Boolean(actionMeta.selectionScoped)
       : undefined;
@@ -12717,6 +12735,9 @@ Rules:
                         <div>
                           <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
                           <p className="text-xs text-gray-500">{smartAssistIntro}</p>
+                          {!isLiveAiReady && (
+                            <p className="mt-2 text-[11px] text-rose-600">{smartAssistDisabledReason}</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           {smartAssistOptions.map((option) => {
@@ -12724,14 +12745,20 @@ Rules:
                             return (
                               <div key={option.key} className="space-y-1">
                                 <button
+                                  type="button"
+                                  disabled={!isLiveAiReady}
                                   onClick={() => {
+                                    if (!isLiveAiReady) {
+                                      showToast(smartAssistDisabledReason);
+                                      return;
+                                    }
                                     if (option.key === 'create-outline') {
                                       setOutlineLevelMenuOpen((prev) => !prev);
                                       return;
                                     }
                                     runSmartAssistAction(option.prompt, { actionKey: option.key });
                                   }}
-                                  className="w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left border-gray-100"
+                                  className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm transition-colors text-left ${isLiveAiReady ? 'text-gray-700 hover:border-violet-200 hover:bg-violet-50 border-gray-100' : 'text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50'}`}
                                 >
                                   <Icon size={16} className={option.color} />
                                   <div>
@@ -12739,7 +12766,7 @@ Rules:
                                     <p className="text-[10px] text-gray-400">{option.detail}</p>
                                   </div>
                                 </button>
-                                {option.key === 'create-outline' && outlineLevelMenuOpen && (
+                                {option.key === 'create-outline' && outlineLevelMenuOpen && isLiveAiReady && (
                                   <div className="ml-7 rounded-lg border border-violet-100 bg-violet-50/40 p-2">
                                     <div className="text-[10px] font-semibold text-violet-700 mb-1">Choose depth</div>
                                     <div className="flex items-center gap-1.5">
@@ -12748,6 +12775,10 @@ Rules:
                                           key={level}
                                           type="button"
                                           onClick={() => {
+                                            if (!isLiveAiReady) {
+                                              showToast(smartAssistDisabledReason);
+                                              return;
+                                            }
                                             setOutlineLevels(level);
                                             setOutlineLevelMenuOpen(false);
                                             runSmartAssistAction(option.prompt, { actionKey: option.key, outlineLevels: level });
@@ -12769,7 +12800,7 @@ Rules:
                           <form onSubmit={handleAssistantQuickPromptSend} className="rounded-xl p-3 border border-violet-100/70 bg-gradient-to-br from-violet-50/60 via-white to-white space-y-2 shadow-[0_10px_25px_-20px_rgba(109,40,217,0.55)]">
                             <textarea value={assistantQuickPrompt} onChange={(e) => setAssistantQuickPrompt(e.target.value)} placeholder="Ask AI Assistant from here..." rows={2} className="w-full bg-white/95 border border-violet-100 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]" />
                             <div className="flex items-center justify-end">
-                              <button type="submit" disabled={isComposing || !assistantQuickPrompt.trim()} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}>Send to AI</button>
+                              <button type="submit" disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}>Send to AI</button>
                             </div>
                           </form>
                         </div>
@@ -17354,6 +17385,9 @@ Rules:
               <div>
                 <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
                 <p className="text-xs text-gray-500">{smartAssistIntro}</p>
+                {!isLiveAiReady && (
+                  <p className="mt-2 text-[11px] text-rose-600">{smartAssistDisabledReason}</p>
+                )}
               </div>
 
               {/* Action Buttons Grid */}
@@ -17363,14 +17397,20 @@ Rules:
                   return (
                     <div key={option.key} className="space-y-1">
                       <button
+                        type="button"
+                        disabled={!isLiveAiReady}
                         onClick={() => {
+                          if (!isLiveAiReady) {
+                            showToast(smartAssistDisabledReason);
+                            return;
+                          }
                           if (option.key === 'create-outline') {
                             setOutlineLevelMenuOpen((prev) => !prev);
                             return;
                           }
                           runSmartAssistAction(option.prompt, { actionKey: option.key });
                         }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm text-gray-700 hover:border-violet-200 hover:bg-violet-50 transition-colors text-left ${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'}`}
+                        className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm transition-colors text-left ${isLiveAiReady ? `${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'} text-gray-700 hover:border-violet-200 hover:bg-violet-50` : 'text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50'}`}
                       >
                         <Icon size={16} className={option.color} />
                         <div>
@@ -17378,7 +17418,7 @@ Rules:
                           <p className="text-[10px] text-gray-400">{option.detail}</p>
                         </div>
                       </button>
-                      {option.key === 'create-outline' && outlineLevelMenuOpen && (
+                      {option.key === 'create-outline' && outlineLevelMenuOpen && isLiveAiReady && (
                         <div className="ml-7 rounded-lg border border-violet-100 bg-violet-50/40 p-2">
                           <div className="text-[10px] font-semibold text-violet-700 mb-1">Choose depth</div>
                           <div className="flex items-center gap-1.5">
@@ -17387,6 +17427,10 @@ Rules:
                                 key={level}
                                 type="button"
                                 onClick={() => {
+                                  if (!isLiveAiReady) {
+                                    showToast(smartAssistDisabledReason);
+                                    return;
+                                  }
                                   setOutlineLevels(level);
                                   setOutlineLevelMenuOpen(false);
                                   runSmartAssistAction(option.prompt, { actionKey: option.key, outlineLevels: level });
@@ -17417,8 +17461,8 @@ Rules:
                   <div className="flex items-center justify-end">
                     <button
                       type="submit"
-                      disabled={isComposing || !assistantQuickPrompt.trim()}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}
+                      disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}
                     >
                       Send to AI
                     </button>

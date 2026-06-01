@@ -4,7 +4,8 @@
     "scripts": {
         "preview": "vite preview",
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "dev:ai": "npx vercel dev --listen 5174"
     },
     "devDependencies": {
         "vite": "^4.4.5"
