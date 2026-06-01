@@ -3280,9 +3280,43 @@ export default function App() {
   const historyFutureRef = useRef([]);
   const lastSnapshotHashRef = useRef('');
   const replayTimerRef = useRef(null);
+  const historyCommitTimerRef = useRef(null);
+  const pendingHistoryRecordRef = useRef(null);
 
   const syncReplayTimeline = () => {
     setReplayTimeline([...historyPastRef.current]);
+  };
+
+  const commitPendingHistoryRecord = () => {
+    if (!pendingHistoryRecordRef.current) {
+      return;
+    }
+
+    const { snapshot, nextHash } = pendingHistoryRecordRef.current;
+    pendingHistoryRecordRef.current = null;
+    if (nextHash === lastSnapshotHashRef.current) {
+      return;
+    }
+
+    lastSnapshotHashRef.current = nextHash;
+    const record = {
+      snapshot,
+      timestamp: Date.now(),
+    };
+    historyPastRef.current = [...historyPastRef.current.slice(-79), record];
+    historyFutureRef.current = [];
+    syncReplayTimeline();
+    if (replayIndex === null) {
+      setReplayIndex(historyPastRef.current.length - 1);
+    }
+  };
+
+  const flushPendingHistoryRecord = () => {
+    if (historyCommitTimerRef.current) {
+      clearTimeout(historyCommitTimerRef.current);
+      historyCommitTimerRef.current = null;
+    }
+    commitPendingHistoryRecord();
   };
 
   const formatReplayDuration = (durationMs) => {
@@ -3750,17 +3784,23 @@ export default function App() {
       return;
     }
 
-    lastSnapshotHashRef.current = nextHash;
-    const record = {
-      snapshot,
-      timestamp: Date.now(),
-    };
-    historyPastRef.current = [...historyPastRef.current.slice(-79), record];
-    historyFutureRef.current = [];
-    syncReplayTimeline();
-    if (replayIndex === null) {
-      setReplayIndex(historyPastRef.current.length - 1);
+    pendingHistoryRecordRef.current = { snapshot, nextHash };
+
+    if (historyCommitTimerRef.current) {
+      clearTimeout(historyCommitTimerRef.current);
     }
+
+    historyCommitTimerRef.current = setTimeout(() => {
+      historyCommitTimerRef.current = null;
+      commitPendingHistoryRecord();
+    }, 120);
+
+    return () => {
+      if (historyCommitTimerRef.current) {
+        clearTimeout(historyCommitTimerRef.current);
+        historyCommitTimerRef.current = null;
+      }
+    };
   }, [
     docTitle,
     docSubtitle,
@@ -3846,6 +3886,7 @@ export default function App() {
   }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
 
   const undoDocumentChange = () => {
+    flushPendingHistoryRecord();
     if (historyPastRef.current.length < 2) {
       showToast('Nothing to undo');
       return;
@@ -3863,6 +3904,7 @@ export default function App() {
   };
 
   const redoDocumentChange = () => {
+    flushPendingHistoryRecord();
     if (!historyFutureRef.current.length) {
       showToast('Nothing to redo');
       return;
@@ -3879,6 +3921,7 @@ export default function App() {
   };
 
   const openReplayPanel = () => {
+    flushPendingHistoryRecord();
     syncReplayTimeline();
     setReplayIndex(Math.max(0, historyPastRef.current.length - 1));
     setReplayPanelOpen(true);
@@ -3886,6 +3929,7 @@ export default function App() {
   };
 
   const applyReplayIndex = (nextIndex) => {
+    flushPendingHistoryRecord();
     if (!replayTimeline.length) {
       showToast('No edit history yet');
       return;
@@ -3901,6 +3945,7 @@ export default function App() {
   };
 
   const startReplayPlayback = (direction) => {
+    flushPendingHistoryRecord();
     if (!replayTimeline.length) {
       showToast('No edit history yet');
       return;
@@ -4029,7 +4074,7 @@ export default function App() {
       }
 
       const target = event.target;
-      if (!documentCardRef.current || !documentCardRef.current.contains(target)) {
+      if (!blankBodyRef.current || !blankBodyRef.current.contains(target)) {
         return;
       }
 
@@ -4473,8 +4518,26 @@ export default function App() {
 
     const ancestor = range.commonAncestorContainer;
     const targetNode = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-    return !!targetNode && documentCardRef.current.contains(targetNode);
+    if (!targetNode) {
+      return false;
+    }
+
+    const bodyRoot = blankBodyRef.current || documentCardRef.current;
+    const insideBody = Boolean(bodyRoot && bodyRoot.contains(targetNode));
+    const insideTitle = Boolean(titleEditableRef.current && titleEditableRef.current.contains(targetNode));
+    const insideSubtitle = Boolean(subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+    return insideBody && !insideTitle && !insideSubtitle;
   };
+  const stripMarkdownArtifacts = (value) => String(value || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/(^|\s)(\*\*|__|##+)(?=\s|$)/g, '$1')
+    .replace(/"""/g, '')
+    .replace(/`+/g, '')
+    .replace(/\r/g, '');
+
 
   const getEditorSelectionRange = () => {
     const selection = window.getSelection();
@@ -4636,7 +4699,7 @@ export default function App() {
   };
 
   const injectIntoSavedSelection = (text, options = {}) => {
-    const nextText = String(text || '').trim();
+    const nextText = stripMarkdownArtifacts(String(text || '')).trim();
     if (!nextText) {
       return false;
     }
@@ -4678,7 +4741,8 @@ export default function App() {
   };
 
   const selectEntireComposition = () => {
-    if (!documentCardRef.current) {
+    const bodyRoot = blankBodyRef.current || documentCardRef.current;
+    if (!bodyRoot) {
       return;
     }
 
@@ -4688,7 +4752,7 @@ export default function App() {
     }
 
     const range = document.createRange();
-    range.selectNodeContents(documentCardRef.current);
+    range.selectNodeContents(bodyRoot);
     selection.removeAllRanges();
     selection.addRange(range);
     savedSelectionRef.current = range.cloneRange();
@@ -4696,11 +4760,12 @@ export default function App() {
   };
 
   const isWholeDocumentSelection = (range) => {
-    if (!range || !documentCardRef.current) {
+    const bodyRoot = blankBodyRef.current || documentCardRef.current;
+    if (!range || !bodyRoot) {
       return false;
     }
     const selected = range.toString().replace(/\s+/g, ' ').trim();
-    const allText = (documentCardRef.current.textContent || '').replace(/\s+/g, ' ').trim();
+    const allText = (bodyRoot.textContent || '').replace(/\s+/g, ' ').trim();
     if (!selected || !allText) {
       return false;
     }
@@ -4720,7 +4785,7 @@ export default function App() {
   };
 
   const replaceEntireCompositionText = (value) => {
-    const raw = String(value || '').replace(/\r/g, '').trim();
+    const raw = stripMarkdownArtifacts(value).trim();
     setDocTitle('');
     setDocSubtitle('');
     setIsBlankDocument(true);
@@ -4763,6 +4828,7 @@ export default function App() {
   const handleEditablePaste = (event, placeholder, afterPaste) => {
     const target = event.currentTarget;
     const plainText = event.clipboardData?.getData('text/plain') || '';
+    const htmlText = event.clipboardData?.getData('text/html') || '';
     const currentValue = target.textContent?.trim() || '';
 
     if (currentValue === placeholder || currentValue === AI_NATIVE_PLACEHOLDER) {
@@ -4770,7 +4836,10 @@ export default function App() {
     }
 
     event.preventDefault();
-    if (plainText) {
+    const isBodyTarget = target === blankBodyRef.current;
+    if (isBodyTarget && htmlText.trim()) {
+      document.execCommand('insertHTML', false, htmlText);
+    } else if (plainText) {
       document.execCommand('insertText', false, plainText);
     }
     normalizeEditableDirection(target);
@@ -5671,7 +5740,7 @@ export default function App() {
   };
 
   const toParagraphHtml = (value) => {
-    const normalized = String(value || '').replace(/\r/g, '').trim();
+    const normalized = stripMarkdownArtifacts(value).trim();
     if (!normalized) {
       return '<p style="font-size:16px;color:#334155;line-height:1.8;margin-bottom:12px;"></p>';
     }
@@ -5680,6 +5749,7 @@ export default function App() {
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/__(.+?)__/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^\s{0,3}#{1,6}\s+/gm, '')
       .replace(/(^|\s)(\*\*|__)(?=\s|$)/g, '$1')
       .replace(/(^|\s)\*(?=\s|$)/g, '$1')
       .replace(/"""/g, '');
@@ -10060,6 +10130,9 @@ Rules:
     const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
     return rawTitle || (lastSavedAt ? SAVED_DRAFT_LABEL : 'Unsaved draft');
   })();
+  const showHeaderGhostPlaceholder = !String(docTitle || '').trim()
+    && !String(docSubtitle || '').trim()
+    && !getPlainText(docBodyHtml).trim();
 
   useEffect(() => {
     if (productMode !== 'compose') {
@@ -16321,10 +16394,10 @@ Rules:
               dir="ltr"
               data-doc-id={activeDocId || ''}
               className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
-              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docTitle?.trim() ? 1 : 0.28 }}
+              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docTitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.28 : 1) }}
               data-placeholder={AI_NATIVE_PLACEHOLDER}
             >
-              {docTitle || AI_NATIVE_PLACEHOLDER}
+              {docTitle || (showHeaderGhostPlaceholder ? AI_NATIVE_PLACEHOLDER : '')}
             </div>
             
             <div
@@ -16338,9 +16411,9 @@ Rules:
               dir="ltr"
               data-doc-id={activeDocId || ''}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
-              style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docSubtitle?.trim() ? 1 : 0.32 }}
+              style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docSubtitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.32 : 1) }}
             >
-              {docSubtitle || AI_NATIVE_PLACEHOLDER}
+              {docSubtitle || (showHeaderGhostPlaceholder ? AI_NATIVE_PLACEHOLDER : '')}
             </div>
 
             {isBlankDocument && (
