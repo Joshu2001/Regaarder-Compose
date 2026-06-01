@@ -20,7 +20,6 @@ import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
-const UNTITLED_COMPOSITION_LABEL = 'Untitled composition';
 const UNTITLED_WHITEBOARD_LABEL = 'Untitled whiteboard';
 const SAVED_DRAFT_LABEL = 'Saved Drafts';
 const ENTERPRISE_PAGE_WIDTH_PX = 794;
@@ -2715,6 +2714,121 @@ export default function App() {
     };
   }, []);
 
+  const parseHeadingEntriesFromHtml = useCallback((html) => {
+    if (typeof document === 'undefined') {
+      return [];
+    }
+
+    const template = document.createElement('template');
+    template.innerHTML = String(html || '');
+    return Array.from(template.content.querySelectorAll('h1, h2, h3'))
+      .map((node) => {
+        const text = String(node.textContent || '').replace(/\s+/g, ' ').trim();
+        if (!text) {
+          return null;
+        }
+        return {
+          level: Number(node.tagName.slice(1)) || 2,
+          text,
+        };
+      })
+      .filter(Boolean);
+  }, []);
+
+  const normalizeHeadingHierarchyForToc = useCallback((html, sourceText = '') => {
+    if (typeof document === 'undefined') {
+      return String(html || '');
+    }
+
+    const template = document.createElement('template');
+    template.innerHTML = String(html || '');
+
+    // Remove previously generated TOC blocks before rebuilding.
+    Array.from(template.content.querySelectorAll('[data-generated-toc="true"], [data-generated-outline="true"]'))
+      .forEach((node) => node.remove());
+
+    Array.from(template.content.querySelectorAll('h1, h2, h3, h4, h5, h6')).forEach((heading) => {
+      const text = String(heading.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!/^table of contents?$/i.test(text)) {
+        return;
+      }
+      const next = heading.nextElementSibling;
+      heading.remove();
+      if (next && ['OL', 'UL'].includes(next.tagName)) {
+        next.remove();
+      }
+    });
+
+    let headingNodes = Array.from(template.content.querySelectorAll('h1, h2, h3'));
+
+    if (!headingNodes.length) {
+      const fallbackText = String(sourceText || template.content.textContent || '').replace(/\s+/g, ' ').trim();
+      const plan = buildHeadingPlanFromText(fallbackText, 3);
+      if (!plan.sections.length) {
+        return String(html || '');
+      }
+
+      return plan.sections.map((section, index) => {
+        const level = index === 0 ? 1 : Math.min(3, Math.max(2, Number(section.level) || 2));
+        const tag = `h${level}`;
+        const headingSize = level === 1 ? 32 : level === 2 ? 24 : 20;
+        return `
+          <${tag} style="font-size:${headingSize}px;line-height:1.28;font-weight:700;color:#0f172a;margin:18px 0 8px;">${escapeHtml(section.heading || `Section ${index + 1}`)}</${tag}>
+          <p style="font-size:16px;line-height:1.75;color:#334155;margin:0 0 12px;">${escapeHtml(section.text)}</p>
+        `;
+      }).join('');
+    }
+
+    const uniqueLevels = Array.from(new Set(headingNodes.map((node) => node.tagName)));
+    if (uniqueLevels.length === 1) {
+      headingNodes.forEach((node, index) => {
+        const label = String(node.textContent || '').trim();
+        const numbering = label.match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+        let targetLevel = 2;
+        if (numbering) {
+          const depth = numbering.slice(1).filter(Boolean).length;
+          targetLevel = Math.min(3, Math.max(1, depth));
+        } else if (index === 0) {
+          targetLevel = 1;
+        }
+
+        const targetTag = `H${targetLevel}`;
+        if (node.tagName === targetTag) {
+          return;
+        }
+
+        const replacement = document.createElement(targetTag.toLowerCase());
+        Array.from(node.attributes).forEach((attr) => replacement.setAttribute(attr.name, attr.value));
+        replacement.innerHTML = node.innerHTML;
+        node.replaceWith(replacement);
+      });
+    }
+
+    return template.innerHTML;
+  }, [buildHeadingPlanFromText]);
+
+  const injectTocAtTopOfDocument = useCallback((html, sourceText = '') => {
+    const normalizedHtml = normalizeHeadingHierarchyForToc(html, sourceText);
+    const headingEntries = parseHeadingEntriesFromHtml(normalizedHtml);
+    if (!headingEntries.length) {
+      return normalizedHtml;
+    }
+
+    const tocItems = headingEntries.map((entry, index) => {
+      const indent = entry.level === 1 ? 0 : entry.level === 2 ? 16 : 30;
+      return `<li style="margin:0 0 6px ${indent}px;color:#334155;font-size:14px;line-height:1.55;">${escapeHtml(entry.text || `Section ${index + 1}`)}</li>`;
+    }).join('');
+
+    const tocHtml = `
+      <section data-generated-toc="true" style="border:1px solid #dbeafe;background:#f8fbff;border-radius:16px;padding:16px 18px;margin:0 0 18px;">
+        <h1 style="font-size:30px;line-height:1.25;font-weight:700;color:#0f172a;margin:0 0 10px;">Table of Contents</h1>
+        <ol style="margin:0;padding-left:18px;">${tocItems}</ol>
+      </section>
+    `;
+
+    return `${tocHtml}${normalizedHtml}`;
+  }, [normalizeHeadingHierarchyForToc, parseHeadingEntriesFromHtml]);
+
   const applyGeneratedTitleAndHeadings = useCallback(() => {
     const selectedScope = selectedEditorTextRef.current || selectedEditorText;
     const sourceText = selectedScope || String(documentCardRef.current?.innerText || '').trim();
@@ -4233,6 +4347,8 @@ export default function App() {
     setDocSubtitle('');
     setIsBlankDocument(true);
     setAppendedSections([]);
+    setActiveDocView('document');
+    setLeftSidebarOpen(true);
     if (!raw) {
       setDocBodyHtml('');
       return;
@@ -6483,7 +6599,7 @@ Rules:
           ? String(finalizedAction.paragraph || '').replace(/\n{2,}/g, '\n\n')
           : aiResponseText;
         const shouldRenderOutlineHtml = finalizedAction.type === 'text'
-          && (smartActionKey === 'outline' || smartActionKey === 'toc' || /\boutline\b|table of contents?|\btoc\b/i.test(promptText));
+          && (smartActionKey === 'outline' || /\boutline\b/i.test(promptText));
         const shouldInjectOutlineHtml = selectionScoped && shouldRenderOutlineHtml;
         const selectionPayload = shouldInjectOutlineHtml
           ? toOutlineHtml(targetedText)
@@ -6519,9 +6635,12 @@ Rules:
           const renderedHtml = !selectionScoped && finalizedAction.type === 'text'
             ? paginateGeneratedHtml(composedHtml)
             : composedHtml;
+          const tocFirstPageHtml = smartActionKey === 'toc' && !selectionScoped
+            ? injectTocAtTopOfDocument(renderedHtml, targetedText)
+            : renderedHtml;
           setIsBlankDocument(true);
           setAppendedSections([]);
-          setDocBodyHtml(renderedHtml);
+          setDocBodyHtml(tocFirstPageHtml);
           setDictationOffset({ x: 0, y: 0 });
           if (shouldReplaceDocumentChrome || !docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
             setDocTitle(finalizedAction.title?.replace(/^[\\s\\?]+/, '') || 'Compose Draft');
@@ -6534,7 +6653,7 @@ Rules:
           if (spawnNewComposition) {
             showToast(`Opened a new composition for ${finalizedAction.type} output`);
           }
-          if (shouldRenderOutlineHtml) {
+          if (shouldRenderOutlineHtml || smartActionKey === 'toc') {
             setLeftSidebarOpen(true);
             setTimeout(() => {
               computeDocumentOutline();
@@ -6667,7 +6786,10 @@ Rules:
     if (productMode === 'compose' && (actionKey === 'generate-toc' || actionKey === 'toc' || actionKey === 'table-of-content')) {
           const tocPrompt = `${instruction}
 
-    Generate a complete table of contents for the full document (not just a selected excerpt).
+        Analyze the full document context first.
+        If heading styles already exist, preserve and align them.
+        If headings are weak or missing, propose a clean hierarchy using Heading 1 for main chapters and Heading 2/Heading 3 for subsections.
+        Generate a complete table of contents for the full document (not just a selected excerpt).
     Return clean content with this exact structure:
     1) "Table of Contents" heading
     2) Numbered TOC entries
@@ -13278,10 +13400,10 @@ Rules:
         )}
 
         <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-[140]">
-          {orderedDocuments.map((doc) => {
+          {orderedDocuments.map((doc, docIndex) => {
             const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
               ? UNTITLED_WHITEBOARD_LABEL
-              : (doc.title?.trim() ? doc.title : UNTITLED_COMPOSITION_LABEL);
+              : (doc.title?.trim() ? doc.title : `Tab ${docIndex + 1}`);
             const isActive = activeDocId === doc.id;
 
             return (
