@@ -15,3 +15,5 @@ If you run only `npm run dev` (Vite static dev), Smart Assist will fall back bec
 
 ## Vercel Deployment
 This project is configured for Vercel using `npm run build` as the build command and `dist` as the output directory.
+
+A committed `vercel.json` enforces this so Vercel serves the built app (not source `index.html`), which avoids blank-screen failures from loading raw `/src/main.jsx` in production.
