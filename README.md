@@ -5,10 +5,9 @@
 2. Run dev: npm run dev
 
 ## AI Configuration (Secure)
-1. In Vercel Project Settings -> Environment Variables, add `GEMINI_API_KEY`.
-2. Do not use `VITE_` for AI secrets.
-3. The frontend sends prompts to `/api/gemini`; the server route reads `GEMINI_API_KEY`.
-4. Use `/api/ai-status` to confirm whether the server sees `GEMINI_API_KEY`.
+1. In Vercel Project Settings -> Environment Variables, add `GEMINI_API_KEY` (recommended) or `VITE_GEMINI_DEMO_API_KEY`.
+2. The frontend sends prompts to `/api/gemini`; the server route reads one of those server env vars.
+3. Use `/api/ai-status` to confirm whether the server sees a usable key.
 
 For local testing of the server route, use `vercel dev` so `/api/gemini` is available.
 

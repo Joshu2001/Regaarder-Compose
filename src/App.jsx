@@ -5965,7 +5965,7 @@ export default function App() {
       } else if (payload.configured) {
         setAiBackendStatus({ state: 'error', message: payload.reason || 'Backend key is present but not usable.' });
       } else {
-        setAiBackendStatus({ state: 'error', message: payload.reason || 'Backend is running, but GEMINI_API_KEY is missing.' });
+        setAiBackendStatus({ state: 'error', message: payload.reason || 'Backend is running, but GEMINI_API_KEY or VITE_GEMINI_DEMO_API_KEY is missing.' });
       }
     } catch (_error) {
       setAiBackendStatus({ state: 'error', message: 'Could not reach /api/ai-status. Use `vercel dev` locally or deploy to Vercel.' });
@@ -6387,7 +6387,7 @@ Rules:
     }
 
     if (!usedLiveModel) {
-      const failureReason = liveModelError || lastAiError || 'Check Vercel server env GEMINI_API_KEY, billing, and model access.';
+      const failureReason = liveModelError || lastAiError || 'Check Vercel server env GEMINI_API_KEY or VITE_GEMINI_DEMO_API_KEY, billing, and model access.';
       aiResponseText = composeFallbackAction.paragraph || `Live AI request failed. ${failureReason}`;
       trackMemoryAction('ai', 'Live AI request failed', {
         reason: failureReason,
@@ -18187,10 +18187,10 @@ Rules:
                 <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">API Security</div>
                 <div className="text-[11px] text-gray-500 flex items-center gap-2">
                   <KeyRound size={12} />
-                  Server-managed key expected: set `GEMINI_API_KEY` in Vercel project env.
+                  Server-managed key expected: set `GEMINI_API_KEY` or `VITE_GEMINI_DEMO_API_KEY` in Vercel project env.
                 </div>
                 <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 leading-relaxed">
-                  Keep API keys out of client code. This app now sends prompts to `/api/gemini`, and only that server route reads `GEMINI_API_KEY`. The checker validates both presence and provider usability.
+                  Keep API keys out of client code. This app now sends prompts to `/api/gemini`, and only that server route reads `GEMINI_API_KEY` or `VITE_GEMINI_DEMO_API_KEY`. The checker validates both presence and provider usability.
                 </div>
                 <div className="flex items-center gap-2">
                   <button

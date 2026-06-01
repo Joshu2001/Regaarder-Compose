@@ -1,4 +1,15 @@
 const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
+const ENV_KEY_CANDIDATES = ['GEMINI_API_KEY', 'VITE_GEMINI_DEMO_API_KEY'];
+
+const resolveApiKey = () => {
+  for (const keyName of ENV_KEY_CANDIDATES) {
+    const value = String(process.env[keyName] || '').trim();
+    if (value) {
+      return { apiKey: value, envKeyName: keyName };
+    }
+  }
+  return { apiKey: '', envKeyName: '' };
+};
 
 const parseJsonSafely = (rawText) => {
   if (!rawText) {
@@ -90,11 +101,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  const apiKey = String(process.env.GEMINI_API_KEY || '').trim();
+  const { apiKey, envKeyName } = resolveApiKey();
   if (!apiKey) {
     return res.status(500).json({
       ok: false,
-      error: 'Server is missing GEMINI_API_KEY. Set it in Vercel Project Settings -> Environment Variables.',
+      error: `Server is missing ${ENV_KEY_CANDIDATES.join(' or ')}. Set one of them in Vercel Project Settings -> Environment Variables.`,
     });
   }
 
@@ -176,6 +187,7 @@ export default async function handler(req, res) {
         text,
         parsed,
         modelName,
+        envKeyName,
       });
     } catch (_error) {
       lastError = `${modelName}: network error while contacting Gemini`;
