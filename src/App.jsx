@@ -2815,14 +2815,24 @@ export default function App() {
     }
 
     const tocItems = headingEntries.map((entry, index) => {
-      const indent = entry.level === 1 ? 0 : entry.level === 2 ? 16 : 30;
-      return `<li style="margin:0 0 6px ${indent}px;color:#334155;font-size:14px;line-height:1.55;">${escapeHtml(entry.text || `Section ${index + 1}`)}</li>`;
+      const indent = entry.level === 1 ? 0 : entry.level === 2 ? 20 : 38;
+      const weight = entry.level === 1 ? 700 : 500;
+      const pageNumber = index + 1;
+      return `
+        <li style="margin:0 0 7px ${indent}px;list-style:none;">
+          <div style="display:flex;align-items:flex-end;gap:8px;color:#0f172a;font-size:15px;line-height:1.35;font-weight:${weight};">
+            <span style="white-space:nowrap;">${escapeHtml(entry.text || `Section ${index + 1}`)}</span>
+            <span aria-hidden="true" style="flex:1;align-self:center;height:1em;background-image:radial-gradient(circle at 1px 50%, #334155 1px, transparent 1.2px);background-size:5px 2px;background-repeat:repeat-x;background-position:left center;opacity:0.75;"></span>
+            <span style="min-width:14px;text-align:right;white-space:nowrap;">${pageNumber}</span>
+          </div>
+        </li>
+      `;
     }).join('');
 
     const tocHtml = `
       <section data-generated-toc="true" style="border:1px solid #dbeafe;background:#f8fbff;border-radius:16px;padding:16px 18px;margin:0 0 18px;">
-        <h1 style="font-size:30px;line-height:1.25;font-weight:700;color:#0f172a;margin:0 0 10px;">Table of Contents</h1>
-        <ol style="margin:0;padding-left:18px;">${tocItems}</ol>
+        <h1 style="font-size:42px;line-height:1.1;font-weight:700;color:#0f172a;margin:0 0 12px;">Table of Contents</h1>
+        <ol style="margin:0;padding:0;">${tocItems}</ol>
       </section>
     `;
 
