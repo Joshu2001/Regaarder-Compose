@@ -2895,6 +2895,48 @@ export default function App() {
     showToast(`Generated outline with ${Math.max(2, Math.min(4, Number(levels) || 3))} heading levels`);
   }, [buildHeadingPlanFromText, computeDocumentOutline, selectedEditorText]);
 
+  const applyGeneratedTableOfContents = useCallback(() => {
+    const selectedScope = selectedEditorTextRef.current || selectedEditorText;
+    const cardText = String(documentCardRef.current?.innerText || '').trim();
+    const sourceText = selectedScope || cardText || getPlainText(docBodyHtml);
+
+    if (!sourceText.trim()) {
+      showToast('Add some content first, then generate a table of contents.');
+      return;
+    }
+
+    const baseHtml = String(docBodyHtml || '');
+    const normalizedBodyHtml = normalizeHeadingHierarchyForToc(baseHtml, sourceText);
+    const tocHtml = injectTocAtTopOfDocument(normalizedBodyHtml, sourceText);
+    const plan = buildHeadingPlanFromText(sourceText, 3);
+
+    if (!docTitle?.trim() || docTitle === AI_NATIVE_PLACEHOLDER || docTitle === defaultTitle) {
+      setDocTitle(plan.title || 'Untitled document');
+    }
+    if (!docSubtitle?.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER || docSubtitle === defaultSubtitle) {
+      setDocSubtitle('Structured from your document using Heading 1, Heading 2, and Heading 3 hierarchy.');
+    }
+
+    setIsBlankDocument(true);
+    setAppendedSections([]);
+    setDocBodyHtml(tocHtml);
+    setActiveDocView('document');
+    setLeftSidebarOpen(true);
+    setTimeout(() => computeDocumentOutline(), 0);
+    showToast('Table of contents generated from document headings');
+  }, [
+    buildHeadingPlanFromText,
+    computeDocumentOutline,
+    defaultSubtitle,
+    defaultTitle,
+    docBodyHtml,
+    docSubtitle,
+    docTitle,
+    injectTocAtTopOfDocument,
+    normalizeHeadingHierarchyForToc,
+    selectedEditorText,
+  ]);
+
   // Dynamically appended sections from the AI Chat
   const [appendedSections, setAppendedSections] = useState([]);
   const historyMuteRef = useRef(false);
@@ -6784,32 +6826,9 @@ Rules:
     }
 
     if (productMode === 'compose' && (actionKey === 'generate-toc' || actionKey === 'toc' || actionKey === 'table-of-content')) {
-          const tocPrompt = `${instruction}
-
-        Analyze the full document context first.
-        If heading styles already exist, preserve and align them.
-        If headings are weak or missing, propose a clean hierarchy using Heading 1 for main chapters and Heading 2/Heading 3 for subsections.
-        Generate a complete table of contents for the full document (not just a selected excerpt).
-    Return clean content with this exact structure:
-    1) "Table of Contents" heading
-    2) Numbered TOC entries
-    3) Matching section headings and concise supporting paragraphs for each TOC item
-    Do not include CSS, style definitions, markdown fences, or editor metadata.${documentContextBlock}`;
-
       setRightSidebarOpen(false);
       setActiveRightTab('assistant');
-      showToast('Compose AI is generating a table of contents...');
-      handleAISubmit(tocPrompt, {
-      source: 'chat',
-        forceDocBuild: true,
-        suppressChatEcho: true,
-        composeFormat: 'Plain Text',
-      selectionScoped: false,
-        smartActionKey: 'toc',
-        tone: promptTone,
-        lengthMode: promptLengthMode,
-        lengthValue: promptLengthValue,
-      });
+      applyGeneratedTableOfContents();
       return;
     }
 
