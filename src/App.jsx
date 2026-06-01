@@ -2729,6 +2729,22 @@ export default function App() {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' '), []);
 
+  const isInstructionLikeHeading = useCallback((label) => {
+    const normalized = String(label || '').toLowerCase();
+    return /(analyze|generate|format|return clean|do not include|heading styles|full document context)/i.test(normalized);
+  }, []);
+
+  const sanitizeAcademicHeadingLabel = useCallback((label, fallback = 'Section') => {
+    const normalized = String(label || '')
+      .replace(/\s+/g, ' ')
+      .replace(/^[-*\d.\s]+/, '')
+      .trim();
+    if (!normalized || isInstructionLikeHeading(normalized)) {
+      return fallback;
+    }
+    return normalized.length > 90 ? `${normalized.slice(0, 87).trimEnd()}...` : normalized;
+  }, [isInstructionLikeHeading]);
+
   const deriveAcademicSectionTitle = useCallback((text, fallback) => {
     const tokens = String(text || '')
       .toLowerCase()
@@ -2745,15 +2761,160 @@ export default function App() {
 
     const candidate = uniqueOrdered.slice(0, 6).join(' ');
     if (!candidate) {
-      return fallback;
+      return sanitizeAcademicHeadingLabel(fallback, 'Section');
     }
-    return toAcademicTitleCase(candidate);
-  }, [academicStopWords, toAcademicTitleCase]);
+    return sanitizeAcademicHeadingLabel(toAcademicTitleCase(candidate), fallback);
+  }, [academicStopWords, sanitizeAcademicHeadingLabel, toAcademicTitleCase]);
+
+  const extractStrategicSectionsFromSource = useCallback((sourceText) => {
+    const normalized = String(sourceText || '').replace(/\r/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+      return [];
+    }
+
+    const markers = [
+      { key: 'what', title: 'Executive Summary (The What)', regex: /Executive\s+Summary\s*\(\s*The\s*["']?What["']?\s*\)/i },
+      { key: 'why', title: 'Market Opportunity & Rationale (The Why)', regex: /Market\s+Opportunity\s*&\s*Rationale\s*\(\s*The\s*["']?Why["']?\s*\)/i },
+      { key: 'how', title: 'Strategic Execution (The How)', regex: /Strategic\s+Execution\s*\(\s*The\s*["']?How["']?\s*\)/i },
+    ];
+
+    const hits = markers
+      .map((marker) => {
+        const match = normalized.match(marker.regex);
+        if (!match) {
+          return null;
+        }
+        return {
+          ...marker,
+          start: match.index,
+          end: match.index + match[0].length,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.start - b.start);
+
+    if (!hits.length) {
+      return [];
+    }
+
+    return hits.map((hit, index) => {
+      const next = hits[index + 1];
+      const contentStart = hit.end;
+      const contentEnd = next ? next.start : normalized.length;
+      const content = normalized.slice(contentStart, contentEnd).trim();
+      return {
+        key: hit.key,
+        title: hit.title,
+        content,
+      };
+    }).filter((section) => section.content.length > 0);
+  }, []);
+
+  const extractNumberedAcademicItems = useCallback((sectionText) => {
+    const text = String(sectionText || '').replace(/\r/g, ' ').trim();
+    if (!text) {
+      return [];
+    }
+
+    const items = [];
+    const markerRegex = /(^|\s)(\d+)\.\s*/g;
+    let match;
+    const markers = [];
+    while ((match = markerRegex.exec(text)) !== null) {
+      markers.push({
+        num: Number(match[2]),
+        start: match.index + match[0].length,
+      });
+    }
+
+    if (!markers.length) {
+      return [];
+    }
+
+    markers.forEach((marker, index) => {
+      const next = markers[index + 1];
+      const segment = text.slice(marker.start, next ? next.start : text.length).trim();
+      if (!segment) {
+        return;
+      }
+
+      const titleFromColon = segment.split(':')[0].trim();
+      const title = sanitizeAcademicHeadingLabel(
+        titleFromColon && titleFromColon.length <= 80
+          ? titleFromColon
+          : deriveAcademicSectionTitle(segment, `Section ${marker.num}`),
+        `Section ${marker.num}`,
+      );
+      const body = segment.includes(':')
+        ? segment.slice(segment.indexOf(':') + 1).trim()
+        : segment;
+
+      items.push({
+        number: marker.num,
+        title,
+        body: body || segment,
+      });
+    });
+
+    return items;
+  }, [deriveAcademicSectionTitle, sanitizeAcademicHeadingLabel]);
 
   const buildAcademicDocumentBody = useCallback((sourceText) => {
     const normalized = String(sourceText || '').replace(/\r/g, '').trim();
     if (!normalized) {
       return '';
+    }
+
+    const strategicSections = extractStrategicSectionsFromSource(normalized);
+    if (strategicSections.length >= 2) {
+      return strategicSections.map((section, chapterIndex) => {
+        const chapterNumber = chapterIndex + 1;
+        const chapterTitle = sanitizeAcademicHeadingLabel(section.title, `Chapter ${chapterNumber}`);
+        const numberedItems = extractNumberedAcademicItems(section.content);
+
+        const subsectionBlocks = numberedItems.length
+          ? numberedItems.map((item, itemIndex) => {
+            const subNumber = `${chapterNumber}.${itemIndex + 1}`;
+            const paragraphHtml = String(item.body || '')
+              .split(/(?<=[.!?])\s+(?=[A-Z])/)
+              .map((part) => part.trim())
+              .filter(Boolean)
+              .map((part) => `<p style="font-size:17px;line-height:1.72;color:#334155;margin:0 0 10px;">${escapeHtml(part)}</p>`)
+              .join('');
+
+            return `
+              <h2 style="font-size:29px;line-height:1.3;font-weight:600;color:#0f172a;margin:12px 0 8px;">${subNumber} ${escapeHtml(item.title)}</h2>
+              ${paragraphHtml}
+            `;
+          }).join('')
+          : (() => {
+            const sentences = section.content
+              .split(/(?<=[.!?])\s+(?=[A-Z])/)
+              .map((sentence) => sentence.trim())
+              .filter(Boolean);
+            const midpoint = Math.max(1, Math.ceil(sentences.length / 2));
+            const groups = [
+              sentences.slice(0, midpoint).join(' '),
+              sentences.slice(midpoint).join(' '),
+            ].filter(Boolean);
+
+            return groups.map((group, index) => {
+              const subNumber = `${chapterNumber}.${index + 1}`;
+              const subTitle = deriveAcademicSectionTitle(group, `Section ${subNumber}`);
+              return `
+                <h2 style="font-size:29px;line-height:1.3;font-weight:600;color:#0f172a;margin:12px 0 8px;">${subNumber} ${escapeHtml(subTitle)}</h2>
+                <p style="font-size:17px;line-height:1.72;color:#334155;margin:0 0 10px;">${escapeHtml(group)}</p>
+              `;
+            }).join('');
+          })();
+
+        return `
+          <section data-academic-chapter="true" style="margin:0 0 20px;">
+            <h1 style="font-size:42px;line-height:1.12;font-weight:700;color:#0f172a;margin:16px 0 12px;">Chapter ${chapterNumber}. ${escapeHtml(chapterTitle)}</h1>
+            ${subsectionBlocks}
+          </section>
+        `;
+      }).join('');
     }
 
     const rawParagraphs = normalized
@@ -2796,7 +2957,7 @@ export default function App() {
 
     return limitedChunks.map((chunk, chapterIndex) => {
       const chapterNumber = chapterIndex + 1;
-      const chapterTitle = deriveAcademicSectionTitle(chunk, `Core Theme ${chapterNumber}`);
+      const chapterTitle = sanitizeAcademicHeadingLabel(deriveAcademicSectionTitle(chunk, `Core Theme ${chapterNumber}`), `Core Theme ${chapterNumber}`);
       const sentences = chunk
         .split(/(?<=[.!?])\s+(?=[A-Z])/)
         .map((sentence) => sentence.trim())
@@ -2813,7 +2974,7 @@ export default function App() {
 
       const subsectionHtml = subsectionBuckets.map((bucket, bucketIndex) => {
         const subNumber = `${chapterNumber}.${bucketIndex + 1}`;
-        const subTitle = deriveAcademicSectionTitle(bucket, `Section ${subNumber}`);
+        const subTitle = sanitizeAcademicHeadingLabel(deriveAcademicSectionTitle(bucket, `Section ${subNumber}`), `Section ${subNumber}`);
         const paragraphHtml = String(bucket || '')
           .split(/\n{2,}/)
           .map((paragraph) => paragraph.trim())
@@ -2834,7 +2995,7 @@ export default function App() {
         </section>
       `;
     }).join('');
-  }, [deriveAcademicSectionTitle]);
+  }, [deriveAcademicSectionTitle, extractNumberedAcademicItems, extractStrategicSectionsFromSource, sanitizeAcademicHeadingLabel]);
 
   const parseHeadingEntriesFromHtml = useCallback((html) => {
     if (typeof document === 'undefined') {
@@ -2845,8 +3006,8 @@ export default function App() {
     template.innerHTML = String(html || '');
     return Array.from(template.content.querySelectorAll('h1, h2, h3'))
       .map((node) => {
-        const text = String(node.textContent || '').replace(/\s+/g, ' ').trim();
-        if (!text) {
+        const text = sanitizeAcademicHeadingLabel(String(node.textContent || '').replace(/\s+/g, ' ').trim(), '');
+        if (!text || isInstructionLikeHeading(text)) {
           return null;
         }
         return {
@@ -2855,7 +3016,7 @@ export default function App() {
         };
       })
       .filter(Boolean);
-  }, []);
+  }, [isInstructionLikeHeading, sanitizeAcademicHeadingLabel]);
 
   const normalizeHeadingHierarchyForToc = useCallback((html, sourceText = '') => {
     if (typeof document === 'undefined') {
@@ -3059,6 +3220,7 @@ export default function App() {
     setIsBlankDocument(true);
     setAppendedSections([]);
     setDocBodyHtml(tocHtml);
+    setEditorHeading('Heading 1');
     setActiveDocView('document');
     setLeftSidebarOpen(true);
     setTimeout(() => computeDocumentOutline(), 0);
