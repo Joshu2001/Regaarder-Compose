@@ -11620,69 +11620,72 @@ Rules:
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-2xl">🚀 <span className="text-3xl font-semibold text-slate-900">{activeDmThread?.title || 'Beta Launch'}</span></div>
-                  <div className="text-xs text-slate-400 mt-1">Private project</div>
+                  <div className="text-[28px] font-semibold tracking-tight text-slate-900">{activeDmThread?.title || 'Beta Launch'}</div>
+                  <div className="mt-1 text-xs text-slate-400">Private project</div>
                 </div>
                 <button type="button" onClick={() => showToast('Project panel collapsed')} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
               </div>
 
-              <div className="mt-3 grid grid-cols-6 gap-2 text-[10px] text-slate-500">
+              <div className="mt-4 flex flex-wrap gap-5 text-[11px] text-slate-500">
                 {['Overview', 'Tasks', 'Files', 'Meetings', 'Docs', 'People'].map((tab, index) => (
-                  <div key={tab} className={`text-center pb-1 border-b-2 ${index === 0 ? 'border-violet-500 text-violet-600 font-semibold' : 'border-transparent'}`}>{tab}</div>
+                  <button
+                    key={tab}
+                    type="button"
+                    className={`pb-1 border-b-2 transition-colors ${index === 0 ? 'border-slate-900 text-slate-900 font-medium' : 'border-transparent hover:text-slate-700'}`}
+                  >
+                    {tab}
+                  </button>
                 ))}
               </div>
 
-              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className="text-sm font-semibold text-slate-800">About this project</div>
-                <p className="text-sm text-slate-500 mt-1">Coordinating everything for our beta launch on May 15.</p>
-                <p className="text-xs text-slate-400 mt-1">Workspace-managed identity and searchable team history are retained for onboarding continuity.</p>
-                <button type="button" onClick={() => showToast('Full project brief opened')} className="mt-2 text-xs text-violet-600 font-medium">Show more</button>
+              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                <div className="text-sm font-medium text-slate-900">About this project</div>
+                <p className="mt-1 text-sm leading-6 text-slate-500">Coordinating the beta launch with a calm, structured workspace.</p>
+                <p className="mt-1 text-xs leading-5 text-slate-400">Workspace identity and team history are retained for onboarding continuity.</p>
+                <button type="button" onClick={() => showToast('Full project brief opened')} className="mt-3 text-xs font-medium text-slate-900">Show more</button>
               </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-slate-800">Tasks</div>
-                <button type="button" onClick={() => openDmWorkspaceTab('tasks')} className="text-xs text-violet-600 font-medium">View all</button>
+                <div className="text-sm font-medium text-slate-900">Tasks</div>
+                <button type="button" onClick={() => openDmWorkspaceTab('tasks')} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
               </div>
-              <div className="mt-3 space-y-2.5 text-sm text-slate-700">
+              <div className="mt-4 space-y-3 text-sm text-slate-700">
                 {[
                   { name: 'Review landing page', tag: 'High', when: 'Today' },
                   { name: 'Finalize Product Hunt copy', tag: 'Medium', when: 'Tomorrow' },
                   { name: 'Create launch video', tag: 'Medium', when: 'May 14' },
                 ].map((task) => (
                   <div key={task.name} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-4 h-4 rounded border border-slate-300" />
-                      <span className="truncate">{task.name}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600">{task.tag}</span>
+                    <div className="min-w-0">
+                      <span className="block truncate text-slate-700">{task.name}</span>
+                      <span className="text-[10px] text-slate-400">{task.tag}</span>
                     </div>
                     <span className="text-xs text-slate-400">{task.when}</span>
                   </div>
                 ))}
               </div>
-              <button type="button" onClick={() => showToast('Task creation flow coming next')} className="mt-2 text-xs text-violet-600">+ Add task</button>
+              <button type="button" onClick={() => showToast('Task creation flow coming next')} className="mt-3 text-xs font-medium text-slate-900">+ Add task</button>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-slate-800">Files</div>
-                <button type="button" onClick={() => openDmWorkspaceTab('room', { meetingStageTab: 'files' })} className="text-xs text-violet-600 font-medium">View all</button>
+                <div className="text-sm font-medium text-slate-900">Files</div>
+                <button type="button" onClick={() => openDmWorkspaceTab('room', { meetingStageTab: 'files' })} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
               </div>
-              <div className="mt-3 space-y-2">
+              <div className="mt-4 space-y-2.5">
                 {activeThreadFiles.length === 0 && (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No files shared in this channel yet.</div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">No files shared in this channel yet.</div>
                 )}
                 {activeThreadFiles.map((fileItem) => (
                   <div key={fileItem.id} className="flex items-start justify-between gap-2">
                     <div className="flex items-start gap-2 min-w-0">
-                      <FileText size={15} className="text-violet-600 mt-0.5" />
                       <div className="min-w-0">
                         <div className="text-sm text-slate-700 truncate">{fileItem.name}</div>
                         <div className="text-xs text-slate-400">Updated {formatDmRelative(fileItem.updatedAt)}</div>
                       </div>
                     </div>
-                    <button type="button" onClick={() => showToast(`Actions for ${fileItem.name}`)} className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={14} /></button>
                   </div>
                 ))}
               </div>
@@ -11690,37 +11693,35 @@ Rules:
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-slate-800">Upcoming Meetings</div>
-                <button type="button" onClick={() => openDmWorkspaceTab('calendar')} className="text-xs text-violet-600 font-medium">View all</button>
+                <div className="text-sm font-medium text-slate-900">Upcoming Meetings</div>
+                <button type="button" onClick={() => openDmWorkspaceTab('calendar')} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
               </div>
-              <div className="mt-3 rounded-xl border border-slate-200 p-3 flex items-center justify-between">
+              <div className="mt-4 rounded-2xl border border-slate-200 p-3 flex items-center justify-between bg-slate-50/50">
                 <div>
                   <div className="text-sm text-slate-700">Launch Planning Meeting</div>
                   <div className="text-xs text-slate-400">Tomorrow, 10:00 AM</div>
                 </div>
-                <div className="text-xs text-violet-600 font-semibold">+3</div>
               </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-slate-800">People</div>
-                <button type="button" onClick={() => openDmWorkspaceTab('people')} className="text-xs text-violet-600 font-medium">View all</button>
+                <div className="text-sm font-medium text-slate-900">People</div>
+                <button type="button" onClick={() => openDmWorkspaceTab('people')} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
               </div>
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
+              <div className="mt-4 flex items-center gap-2 flex-wrap">
                 {['SJ', 'JD', 'AM', 'MC', 'OR'].map((name) => (
                   <div key={name} className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center justify-center">{name}</div>
                 ))}
-                <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 text-[11px] font-semibold flex items-center justify-center">+7</div>
               </div>
               {activeThreadDecisions.length > 0 && (
-                <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50 p-2.5">
-                  <div className="text-[11px] font-semibold text-violet-700 uppercase tracking-wide mb-1">Recent Decision</div>
-                  <div className="text-xs text-violet-800">{activeThreadDecisions[0].summary}</div>
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1">Recent Decision</div>
+                  <div className="text-xs leading-5 text-slate-600">{activeThreadDecisions[0].summary}</div>
                 </div>
               )}
               {activeThreadDecisions.length === 0 && (
-                <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-500">
+                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
                   No decisions logged yet for this channel.
                 </div>
               )}
