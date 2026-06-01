@@ -5965,7 +5965,9 @@ export default function App() {
     return Array.from({ length: requestedSlideCount }, (_, index) => makeGeneratedSlide(index, requestedSlideCount));
   };
 
-  const buildComposeFallbackAction = ({ promptText, requestedFormat, preferredDocType, attachmentContext = '', requestedTone = 'normal', requestedLengthValue = 220, requestedLengthMode = 'words' }) => {
+  const buildComposeFallbackAction = ({ promptText, requestedFormat, preferredDocType, attachmentContext = '', requestedTone = 'normal', requestedLengthValue = 220, requestedLengthMode = 'words', smartActionKey = '', sourceText = '' }) => {
+    const normalizedSmartActionKey = String(smartActionKey || '').toLowerCase();
+    const isToneRewriteAction = normalizedSmartActionKey === 'adjust-tone' || normalizedSmartActionKey === 'tone' || /adjust\s+the\s+tone|rewrite\s+in\s+.+\s+tone/i.test(String(promptText || ''));
     const topic = String(promptText || 'the requested topic')
       .replace(/```[\s\S]*?```/g, ' ')
       .replace(/"""[\s\S]*?"""/g, ' ')
@@ -5980,6 +5982,7 @@ export default function App() {
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 180);
+    const sourceDraftText = normalizeSourceText(sourceText || '');
     const sourceSummary = summarizeAttachmentContext(attachmentContext, promptText);
     const titleBase = preferredDocType === 'timeline'
       ? 'Compose Timeline'
@@ -5998,6 +6001,14 @@ export default function App() {
       : attachmentContext
       ? `The document is grounded in the uploaded source materials${sourceSummary.fileNames.length ? `, including ${sourceSummary.fileNames.join(', ')}` : ''}.`
       : 'The document is grounded in the user request and current document context.';
+
+    if (isToneRewriteAction && sourceDraftText) {
+      return {
+        title: titleBase,
+        type: 'text',
+        paragraph: buildLocalToneRewrite(sourceDraftText, requestedTone),
+      };
+    }
 
     if (preferredDocType === 'timeline') {
       return {
@@ -6481,6 +6492,136 @@ export default function App() {
     return normalized;
   };
 
+  const normalizeToneKey = (value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (!normalized) {
+      return 'professional';
+    }
+    if (normalized.includes('smart')) {
+      return 'smart-tone';
+    }
+    if (normalized.includes('executive')) {
+      return 'executive';
+    }
+    if (normalized.includes('persuasive')) {
+      return 'persuasive';
+    }
+    if (normalized.includes('friendly')) {
+      return 'friendly';
+    }
+    if (normalized.includes('startup')) {
+      return 'startup';
+    }
+    if (normalized.includes('creator')) {
+      return 'creator';
+    }
+    if (normalized.includes('simplified')) {
+      return 'simplified';
+    }
+    if (normalized.includes('confident')) {
+      return 'confident';
+    }
+    if (normalized.includes('technical')) {
+      return 'technical';
+    }
+    if (normalized.includes('formal') || normalized.includes('professional')) {
+      return 'formal';
+    }
+    return normalized;
+  };
+
+  const rewriteParagraphForTone = (paragraph, toneKey) => {
+    const text = String(paragraph || '').replace(/\s+/g, ' ').trim();
+    if (!text) {
+      return '';
+    }
+
+    const replacementSets = {
+      formal: [
+        [/\bcan't\b/gi, 'cannot'], [/\bwon't\b/gi, 'will not'], [/\bI'm\b/gi, 'I am'], [/\bit's\b/gi, 'it is'], [/\bthat's\b/gi, 'that is'], [/\bthere's\b/gi, 'there is'],
+        [/\ba lot of\b/gi, 'a significant amount of'], [/\bget\b/gi, 'obtain'], [/\bhelp\b/gi, 'support'], [/\bshow\b/gi, 'demonstrate'], [/\bbig\b/gi, 'substantial'], [/\bfix\b/gi, 'address'],
+      ],
+      executive: [
+        [/\bvery\b/gi, ''], [/\breally\b/gi, ''], [/\bjust\b/gi, ''], [/\bmaybe\b/gi, ''], [/\bkind of\b/gi, ''], [/\ba lot of\b/gi, 'substantial'], [/\bimportant\b/gi, 'material'],
+      ],
+      persuasive: [
+        [/\bpossible\b/gi, 'compelling'], [/\bmight\b/gi, 'can'], [/\bcould\b/gi, 'will'], [/\bshows\b/gi, 'demonstrates'], [/\bhelps\b/gi, 'drives'], [/\bgood\b/gi, 'strong'],
+      ],
+      friendly: [
+        [/\btherefore\b/gi, 'so'], [/\bhowever\b/gi, 'though'], [/\bin order to\b/gi, 'to'], [/\butilize\b/gi, 'use'], [/\bcommence\b/gi, 'start'], [/\bapproximately\b/gi, 'about'],
+      ],
+      creator: [
+        [/\bthe document\b/gi, 'this piece'], [/\bthe analysis\b/gi, 'the story'], [/\bshows\b/gi, 'reveals'], [/\bimportant\b/gi, 'notable'], [/\btherefore\b/gi, 'so'],
+      ],
+      startup: [
+        [/\bimportant\b/gi, 'high-impact'], [/\bgood\b/gi, 'strong'], [/\bhelp\b/gi, 'unlock'], [/\bshow\b/gi, 'signal'], [/\buseful\b/gi, 'practical'],
+      ],
+      simplified: [
+        [/\bapproximately\b/gi, 'about'], [/\butilize\b/gi, 'use'], [/\bprioritize\b/gi, 'focus on'], [/\bcommence\b/gi, 'start'], [/\bsubstantial\b/gi, 'large'],
+      ],
+      confident: [
+        [/\bmight\b/gi, 'will'], [/\bcould\b/gi, 'can'], [/\bappears to\b/gi, 'does'], [/\blikely\b/gi, 'clearly'], [/\bpossible\b/gi, 'real'],
+      ],
+      technical: [
+        [/\bprobably\b/gi, 'likely'], [/\bmaybe\b/gi, 'possibly'], [/\bgood\b/gi, 'effective'], [/\bshow\b/gi, 'indicate'], [/\bhelp\b/gi, 'improve'], [/\bbig\b/gi, 'material'],
+      ],
+      'smart-tone': [],
+    };
+
+    const swaps = replacementSets[toneKey] || replacementSets.formal;
+    const transformed = swaps.reduce((acc, [pattern, replacement]) => acc.replace(pattern, replacement), text);
+    return transformed.replace(/\s+/g, ' ').trim();
+  };
+
+  const buildLocalToneRewrite = (sourceText, requestedTone = 'normal') => {
+    const toneKey = normalizeToneKey(requestedTone);
+    const rawText = String(sourceText || '').replace(/\r/g, '').trim();
+    if (!rawText) {
+      return '';
+    }
+
+    const paragraphs = rawText
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.replace(/\s+/g, ' ').trim())
+      .filter(Boolean)
+      .slice(0, 4);
+
+    const introByTone = {
+      formal: 'This revised version keeps the original meaning while presenting it in a formal, professional voice.',
+      executive: 'Key takeaway: this version is tighter, more direct, and oriented toward executive decision-making.',
+      persuasive: 'This rewrite strengthens the case and presents the argument with greater conviction.',
+      friendly: 'This version keeps the ideas intact while sounding more approachable and easy to read.',
+      creator: 'This rewrite keeps the core message but gives it a more vivid, engaging voice.',
+      startup: 'This version sounds sharper, faster, and better suited to a modern startup audience.',
+      simplified: 'This rewrite uses clearer, simpler language while keeping the same meaning.',
+      confident: 'This version states the ideas more directly and with stronger conviction.',
+      technical: 'This rewrite keeps the meaning intact while making the language more precise and structured.',
+      'smart-tone': 'This version uses the most appropriate tone for the content and audience.',
+    };
+
+    const outroByTone = {
+      formal: 'The overall structure remains intact, but the voice is now more polished and suitable for enterprise use.',
+      executive: 'It is concise, strategic, and aimed at decision-makers.',
+      persuasive: 'The result is more compelling and action-oriented.',
+      friendly: 'The result is warmer and easier to read without losing substance.',
+      creator: 'The result feels more alive while staying grounded in the source material.',
+      startup: 'The result feels more dynamic and momentum-driven.',
+      simplified: 'The result is easier to scan and understand.',
+      confident: 'The result sounds clearer and more assured.',
+      technical: 'The result stays precise and focused on the facts.',
+      'smart-tone': 'The result is tuned to the content and audience automatically.',
+    };
+
+    const rewrittenParagraphs = paragraphs.map((paragraph) => rewriteParagraphForTone(paragraph, toneKey));
+    const body = rewrittenParagraphs
+      .filter(Boolean)
+      .join('\n\n');
+
+    return [introByTone[toneKey] || introByTone.formal, body, outroByTone[toneKey] || outroByTone.formal]
+      .filter(Boolean)
+      .join('\n\n');
+  };
+
   const getDisplayDocTitle = (value) => compactDisplayTitle(value, 20) || 'Untitled draft';
 
   const deriveGeneratedDocumentTitle = ({ actionTitle = '', promptText = '', requestedFormat = '', attachmentContext = '' }) => {
@@ -6932,6 +7073,8 @@ export default function App() {
       requestedTone,
       requestedLengthValue,
       requestedLengthMode,
+      smartActionKey,
+      sourceText: String(options.sourceText || '').trim(),
     });
 
     const looksGenericResponse = (value) => {
@@ -7358,6 +7501,7 @@ Rules:
       .replace(/\r/g, '')
       .replace(/\u00a0/g, ' ')
       .trim();
+    const currentDocumentSourceText = selectedEditorTextRef.current || selectedEditorText || liveDocumentText;
     const aiReadyDocumentContext = liveDocumentText
       .split(/\n+/)
       .map((line) => line.trim())
@@ -7381,6 +7525,7 @@ Rules:
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
         attachments: promptAttachments,
+        sourceText: currentDocumentSourceText,
       });
       return;
     }
@@ -7405,6 +7550,7 @@ Rules:
         tone: requestedToneOverride,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
+        sourceText: currentDocumentSourceText,
       });
       return;
     }
@@ -7423,6 +7569,7 @@ Rules:
         tone: requestedToneOverride,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
+        sourceText: currentDocumentSourceText,
       });
       return;
     }
@@ -7441,6 +7588,7 @@ Rules:
         tone: requestedToneOverride,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
+        sourceText: currentDocumentSourceText,
       });
       return;
     }
@@ -7466,6 +7614,7 @@ Rules:
         tone: requestedToneOverride,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
+        sourceText: currentDocumentSourceText,
       });
       return;
     }
@@ -7484,6 +7633,7 @@ Rules:
       tone: requestedToneOverride,
       lengthMode: promptLengthMode,
       lengthValue: promptLengthValue,
+      sourceText: currentDocumentSourceText,
     });
   };
 
