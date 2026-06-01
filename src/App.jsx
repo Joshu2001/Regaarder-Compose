@@ -6358,6 +6358,7 @@ export default function App() {
       .replace(/\s+/g, ' ')
       .trim()
       .replace(/^user request:\s*/i, '')
+      .replace(/^(proofread|rewrite|summari[sz]e|improve|edit|analy[sz]e|review|refine)\s+(this|the)\s+(content|text|draft|document)\b[\s\S]*?(?::|\n|$)/i, '')
       .replace(/^(write|create|generate|draft|compose|make|summarize|turn)\s+/i, '')
       .replace(/^(an?|the)\s+/i, '');
 
@@ -6436,11 +6437,51 @@ export default function App() {
 
   const isGenericGeneratedTitle = (value) => /^(compose draft|compose article|compose proposal|compose checklist|compose timeline|compose risk review|ai composed section|compose article)$/i.test(String(value || '').trim());
 
+  const isInstructionLikeTitle = (value) => {
+    const normalized = String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!normalized) {
+      return true;
+    }
+    if (/^generated in\s+\w+\s+tone\b/.test(normalized)) {
+      return true;
+    }
+    if (/\b(with\s+~?\d+\s+(words?|characters?))\b/.test(normalized)) {
+      return true;
+    }
+    if (/\b(accept|retry|undo|delete)\b/.test(normalized)) {
+      return true;
+    }
+    if (/\b(proofread|rewrite|summari[sz]e|return|generate|create|write|draft|improve|analy[sz]e|review|edit|refine)\b/.test(normalized)
+      && /\b(this|the)\s+(content|text|draft|document)\b/.test(normalized)) {
+      return true;
+    }
+    return false;
+  };
+
+  const sanitizeGeneratedTitleCandidate = (value) => {
+    const normalized = String(value || '')
+      .replace(/[`"']/g, '')
+      .replace(/^[-*\d.\s]+/, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 96);
+
+    if (!normalized) {
+      return '';
+    }
+
+    if (isInstructionLikeTitle(normalized)) {
+      return '';
+    }
+
+    return normalized;
+  };
+
   const getDisplayDocTitle = (value) => compactDisplayTitle(value, 20) || 'Untitled draft';
 
   const deriveGeneratedDocumentTitle = ({ actionTitle = '', promptText = '', requestedFormat = '', attachmentContext = '' }) => {
-    const currentTitle = String(actionTitle || '').trim();
-    if (currentTitle && !isGenericGeneratedTitle(currentTitle) && currentTitle.length <= 28) {
+    const currentTitle = sanitizeGeneratedTitleCandidate(actionTitle);
+    if (currentTitle && !isGenericGeneratedTitle(currentTitle) && currentTitle.length <= 72) {
       return currentTitle;
     }
 
@@ -6485,7 +6526,9 @@ export default function App() {
       return `${sourceTitle} ${requestedAction}`.trim();
     }
 
-    const baseSubject = compactTopic || toTitleCase(subject || sourceName || 'Document');
+    const baseSubject = sanitizeGeneratedTitleCandidate(compactTopic)
+      || sanitizeGeneratedTitleCandidate(toTitleCase(subject || sourceName || 'Document'))
+      || 'Document';
     const baseTitle = `${baseSubject} ${requestedAction}`.trim();
 
     if (/summary/i.test(requestedAction) && sourceName) {
@@ -6493,22 +6536,22 @@ export default function App() {
     }
 
     if (/article/i.test(requestedFormat)) {
-      return baseTitle;
+      return sanitizeGeneratedTitleCandidate(baseTitle) || 'Executive Summary';
     }
     if (/proposal/i.test(requestedFormat)) {
-      return baseTitle;
+      return sanitizeGeneratedTitleCandidate(baseTitle) || 'Enterprise Article';
     }
     if (/timeline/i.test(requestedFormat)) {
-      return baseTitle;
+      return sanitizeGeneratedTitleCandidate(baseTitle) || 'Project Timeline';
     }
     if (/checklist/i.test(requestedFormat)) {
-      return baseTitle;
+      return sanitizeGeneratedTitleCandidate(baseTitle) || 'Action Checklist';
     }
     if (/risk/i.test(requestedFormat)) {
-      return baseTitle;
+      return sanitizeGeneratedTitleCandidate(baseTitle) || 'Risk Review';
     }
 
-    return baseTitle;
+    return sanitizeGeneratedTitleCandidate(baseTitle) || 'Enterprise Draft';
   };
 
   const deriveGeneratedDocumentSubtitle = ({ promptText = '', requestedTone = 'normal', requestedLengthValue = 220, requestedLengthMode = 'words', attachmentContext = '' }) => {
