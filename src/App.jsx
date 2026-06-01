@@ -5686,7 +5686,7 @@ export default function App() {
     { key: 'rewrite', label: 'Rewrite', detail: 'Improve clarity and tone', icon: PenTool, prompt: 'Rewrite the selected text to be clearer, tighter, and more readable.' },
     { key: 'summary', label: 'Summarize', detail: 'Shorten this text', icon: Scissors, prompt: 'Summarize the selected text in fewer words while preserving core meaning.' },
     { key: 'expand', label: 'Expand', detail: 'Add more detail', icon: Expand, prompt: 'Expand the selected text with more detail and useful context.' },
-    { key: 'tone', label: 'Change tone', detail: 'Make it more formal', icon: Type, prompt: 'Rewrite the selected text in a more formal and professional tone.' },
+    { key: 'tone', label: 'Change tone', detail: 'Match audience and intent', icon: Type, prompt: 'Adjust the tone of this selected text while preserving meaning and key facts.' },
     { key: 'keypoints', label: 'Extract key points', detail: 'Create a bullet list', icon: ListTodo, prompt: 'Extract key points from the selected text as a concise bullet list.' },
     { key: 'outline', label: 'Create outline', detail: 'Structure into sections', icon: MessageSquarePlus, prompt: 'Turn the selected text into a structured outline with clear section headings and bullets.' },
   ];
@@ -5970,6 +5970,10 @@ export default function App() {
       .replace(/```[\s\S]*?```/g, ' ')
       .replace(/"""[\s\S]*?"""/g, ' ')
       .replace(/\b(refine|rewrite|modify)\s+only\s+this\s+selected\s+excerpt[\s\S]*$/i, '')
+      .replace(/\b(adjust\s+the\s+tone\s+of\s+this\s+(?:content|text|draft))(?:[\s\S]*?)$/i, '')
+      .replace(/\b(proofread\s+this\s+(?:content|text|draft))(?:[\s\S]*?)$/i, '')
+      .replace(/\brewrite\s+in\s+[a-z\- ]+\s+tone\.[\s\S]*$/i, '')
+      .replace(/\btone\s+traits:\s*[\s\S]*$/i, '')
       .replace(/\*\*|__/g, ' ')
       .replace(/`+/g, ' ')
       .replace(/^user request:\s*/i, '')
@@ -6063,8 +6067,8 @@ export default function App() {
 
     const body = [
       requestedFormat === 'Article'
-        ? `This article examines ${topic || 'the requested topic'}.`
-        : `This document addresses ${topic || 'the requested topic'}.`,
+        ? `This article examines ${topic || 'the core topic from the current document'}.`
+        : `This document addresses ${topic || 'the core topic from the current document'}.`,
       sourceSentence,
       ...(sourceSummary.sentences.length > 1
         ? [`Key takeaways from the attached material include ${sourceSummary.sentences.slice(0, 2).join(' ')}`]
@@ -7339,10 +7343,13 @@ Rules:
     }
 
     const toneDefinition = selectedToneKey ? TONE_PICKER_LOOKUP[selectedToneKey] : null;
+    const requestedToneOverride = toneDefinition
+      ? (selectedToneKey === 'smart-tone' ? 'smart tone' : toneDefinition.label.toLowerCase())
+      : promptTone;
     const toneDirective = toneDefinition
       ? (selectedToneKey === 'smart-tone'
-        ? 'Use Smart Tone mode: infer the best tone from document type and intent (for example: contract->formal, investor deck->persuasive+executive, PRD->technical, team update->professional, blog post->creator, customer email->friendly).'
-        : `Rewrite in ${toneDefinition.label} tone. Tone traits: ${toneDefinition.traits}.`)
+        ? 'Use Smart Tone mode: infer the best tone from document type and intent (for example: contract->formal, investor deck->persuasive+executive, PRD->technical, team update->professional, blog post->creator, customer email->friendly). Rewrite the provided content only; do not explain your process.'
+        : `Rewrite in ${toneDefinition.label} tone. Tone traits: ${toneDefinition.traits}. Return only the rewritten content.`)
       : '';
     const effectiveInstruction = toneDirective
       ? `${instruction}\n\n${toneDirective}`
@@ -7370,7 +7377,7 @@ Rules:
       showToast('Deck Assistant is generating visual output...');
       handleAISubmit(deckPrompt, {
         source: 'chat',
-        tone: promptTone,
+        tone: requestedToneOverride,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
         attachments: promptAttachments,
@@ -7395,7 +7402,7 @@ Rules:
         composeFormat: 'Plain Text',
         selectionScoped: hasSelection,
         smartActionKey: 'outline',
-        tone: promptTone,
+        tone: requestedToneOverride,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
       });
@@ -7413,7 +7420,7 @@ Rules:
         composeFormat: 'Plain Text',
         selectionScoped: false,
         smartActionKey: 'toc',
-        tone: promptTone,
+        tone: requestedToneOverride,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
       });
@@ -7431,7 +7438,7 @@ Rules:
         composeFormat: 'Plain Text',
         selectionScoped: false,
         smartActionKey: 'title-headers',
-        tone: promptTone,
+        tone: requestedToneOverride,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
       });
@@ -7456,7 +7463,7 @@ Rules:
         composeFormat: 'Plain Text',
         selectionScoped: hasSelection,
         smartActionKey: actionKey,
-        tone: promptTone,
+        tone: requestedToneOverride,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
       });
@@ -7474,7 +7481,7 @@ Rules:
       composeFormat: hasSelection ? 'Plain Text' : 'Auto (Compose decides)',
       selectionScoped: hasSelection,
       smartActionKey: actionKey,
-      tone: promptTone,
+      tone: requestedToneOverride,
       lengthMode: promptLengthMode,
       lengthValue: promptLengthValue,
     });
@@ -10372,7 +10379,7 @@ Rules:
         { key: 'speaker-notes', label: 'Speaker Notes', detail: 'Create persuasive talking tracks', icon: FileText, color: 'text-cyan-500', prompt: 'Generate speaker notes for each slide with transitions and anticipated audience questions.' },
       ]
       : [
-        { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content to be more professional while preserving meaning.' },
+        { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content while preserving meaning and key facts.' },
         { key: 'summarize', label: 'Summarize', detail: 'Condense without losing meaning', icon: Scissors, color: 'text-fuchsia-500', prompt: 'Summarize this content clearly while preserving key meaning and important context.' },
         { key: 'proofread', label: 'Proofread', detail: 'Fix typos, repeats, and grammar', icon: ShieldAlert, color: 'text-amber-500', prompt: 'Proofread this content and return a corrected version that fixes typos, repeated sentences, grammar errors, and awkward phrasing while preserving intent.' },
         { key: 'create-outline', label: 'Create outline', detail: 'Structure messy notes into sections', icon: ListTodo, color: 'text-indigo-500', prompt: 'Create a clear outline from this content with logical section flow.' },
