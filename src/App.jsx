@@ -6116,6 +6116,24 @@ export default function App() {
     });
 
     setIsComposing(true);
+    if (shouldBuildDocument && activeDocIdRef.current) {
+      setLastComposeRun({
+        prompt: promptText,
+        options: {
+          ...options,
+          source,
+          forceDocBuild: shouldBuildDocument,
+          composeFormat: requestedFormat,
+          tone: requestedTone,
+          lengthMode: requestedLengthMode,
+          lengthValue: requestedLengthValue,
+          selectionScoped,
+        },
+        documentId: activeDocIdRef.current,
+        preSnapshot: buildSnapshot(),
+        createdAt: Date.now(),
+      });
+    }
     trackMemoryAction('ai', 'Prompt sent to AI', {
       length: promptText.trim().length,
       mode: 'server',
@@ -15947,7 +15965,7 @@ Rules:
 
             {/* Composing / Analyzing State Glow */}
             {isComposing && (
-              <div className="absolute inset-0 z-30 bg-white/85 backdrop-blur-[2px] flex items-start justify-center px-6 pt-14 md:pt-20">
+              <div className="absolute inset-0 z-30 bg-white/85 backdrop-blur-[2px] flex items-start justify-center px-6 pt-24 md:pt-28">
                 <div className="w-full max-w-xl rounded-2xl border border-violet-100 bg-white shadow-[0_20px_50px_-20px_rgba(109,40,217,0.35)] p-5">
                   <div className="flex items-center gap-2 text-violet-700 mb-3">
                     <Loader2 className="animate-spin" size={16} />
@@ -16502,7 +16520,20 @@ Rules:
                           {msg.suggestions.map((sug, sIdx) => (
                             <button
                               key={sIdx}
-                              onClick={() => handleAISubmit(sug.label)}
+                              onClick={() => {
+                                if (productMode === 'compose') {
+                                  handleAISubmit(sug.label, {
+                                    source: 'compose',
+                                    forceDocBuild: true,
+                                    composeFormat: 'Plain Text',
+                                    tone: promptTone,
+                                    lengthMode: promptLengthMode,
+                                    lengthValue: promptLengthValue,
+                                  });
+                                  return;
+                                }
+                                handleAISubmit(sug.label);
+                              }}
                               className="w-full text-left bg-white hover:bg-violet-50 text-xs font-medium text-gray-700 hover:text-violet-700 p-2.5 rounded-lg border border-gray-200/60 hover:border-violet-200 transition-all flex items-center justify-between group/sug"
                             >
                               <span>{sug.label}</span>
