@@ -19,46 +19,6 @@ import {
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 
-            {tonePickerState.open && (
-              <div className="absolute top-5 right-5 z-40 w-[340px] max-w-[calc(100%-2.5rem)] rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-[0_24px_50px_-26px_rgba(15,23,42,0.5)] backdrop-blur-sm">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wide text-slate-500">Choose Tone</p>
-                    <p className="text-sm font-semibold text-slate-900">Apply style to this AI rewrite</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={closeTonePicker}
-                    className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                    aria-label="Close tone picker"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-
-                <div className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
-                  {TONE_PICKER_GROUPS.map((group) => (
-                    <div key={group.key} className="rounded-xl border border-slate-100 bg-slate-50/75 p-2">
-                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{group.label}</p>
-                      <div className="space-y-1">
-                        {group.tones.map((tone) => (
-                          <button
-                            key={tone.key}
-                            type="button"
-                            onClick={() => handleTonePickerSelect(tone.key)}
-                            className="w-full rounded-lg border border-transparent bg-white px-2.5 py-2 text-left hover:border-slate-200 hover:bg-slate-100"
-                          >
-                            <p className="text-xs font-semibold text-slate-800">{tone.label}</p>
-                            <p className="text-[11px] text-slate-500">{tone.traits}</p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_WHITEBOARD_LABEL = 'Untitled whiteboard';
 const SAVED_DRAFT_LABEL = 'Saved Drafts';
@@ -16543,6 +16503,46 @@ Rules:
             className="compose-editor-surface mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 relative"
             style={{ width: `${ENTERPRISE_PAGE_WIDTH_PX}px`, minHeight: `${ENTERPRISE_PAGE_HEIGHT_PX}px` }}
           >
+            {tonePickerState.open && (
+              <div className="absolute top-5 right-5 z-40 w-[340px] max-w-[calc(100%-2.5rem)] rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-[0_24px_50px_-26px_rgba(15,23,42,0.5)] backdrop-blur-sm">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-wide text-slate-500">Choose Tone</p>
+                    <p className="text-sm font-semibold text-slate-900">Apply style to this AI rewrite</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeTonePicker}
+                    className="rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                    aria-label="Close tone picker"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+
+                <div className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
+                  {TONE_PICKER_GROUPS.map((group) => (
+                    <div key={group.key} className="rounded-xl border border-slate-100 bg-slate-50/75 p-2">
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{group.label}</p>
+                      <div className="space-y-1">
+                        {group.tones.map((tone) => (
+                          <button
+                            key={tone.key}
+                            type="button"
+                            onClick={() => handleTonePickerSelect(tone.key)}
+                            className="w-full rounded-lg border border-transparent bg-white px-2.5 py-2 text-left hover:border-slate-200 hover:bg-slate-100"
+                          >
+                            <p className="text-xs font-semibold text-slate-800">{tone.label}</p>
+                            <p className="text-[11px] text-slate-500">{tone.traits}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             
             {/* Title & Subtitle */}
             <div
