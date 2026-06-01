@@ -2723,10 +2723,38 @@ export default function App() {
     'is', 'it', 'as', 'by', 'we', 'you', 'he', 'she', 'do', 'does', 'did', 'if', 'no', 'yes', 'ai', 'document', 'section',
   ]), []);
 
+  const normalizeAcademicSourceText = useCallback((value) => {
+    let normalized = String(value || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\r/g, '')
+      .trim();
+
+    if (!normalized) {
+      return '';
+    }
+
+    // Split inline numbered sections into standalone blocks.
+    normalized = normalized
+      .replace(/([.!?"”'])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
+      .replace(/([a-zA-Z])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
+      .replace(/(\d+)\.(\S)/g, '$1. $2')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    return normalized;
+  }, []);
+
   const toAcademicTitleCase = useCallback((value) => String(value || '')
     .split(/\s+/)
     .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map((word) => {
+      // Keep acronyms and mixed-case brand tokens intact.
+      if (/^[A-Z0-9]{2,8}$/.test(word) || /[A-Z].*[A-Z]/.test(word.slice(1))) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
     .join(' '), []);
 
   const isInstructionLikeHeading = useCallback((label) => {
@@ -2747,16 +2775,21 @@ export default function App() {
 
   const deriveAcademicSectionTitle = useCallback((text, fallback) => {
     const tokens = String(text || '')
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, ' ')
+      .replace(/[^A-Za-z0-9\s-]/g, ' ')
       .split(/\s+/)
-      .filter((word) => word.length > 2 && !academicStopWords.has(word));
+      .map((token) => token.trim())
+      .filter(Boolean)
+      .filter((token) => token.length > 2 && !academicStopWords.has(token.toLowerCase()));
 
     const uniqueOrdered = [];
-    tokens.forEach((word) => {
-      if (!uniqueOrdered.includes(word)) {
-        uniqueOrdered.push(word);
+    const seen = new Set();
+    tokens.forEach((token) => {
+      const key = token.toLowerCase();
+      if (seen.has(key)) {
+        return;
       }
+      seen.add(key);
+      uniqueOrdered.push(token);
     });
 
     const candidate = uniqueOrdered.slice(0, 6).join(' ');
@@ -2767,7 +2800,7 @@ export default function App() {
   }, [academicStopWords, sanitizeAcademicHeadingLabel, toAcademicTitleCase]);
 
   const extractStrategicSectionsFromSource = useCallback((sourceText) => {
-    const normalized = String(sourceText || '').replace(/\r/g, ' ').replace(/\s+/g, ' ').trim();
+    const normalized = normalizeAcademicSourceText(sourceText).replace(/\s+/g, ' ').trim();
     if (!normalized) {
       return [];
     }
@@ -2808,16 +2841,16 @@ export default function App() {
         content,
       };
     }).filter((section) => section.content.length > 0);
-  }, []);
+  }, [normalizeAcademicSourceText]);
 
   const extractNumberedAcademicItems = useCallback((sectionText) => {
-    const text = String(sectionText || '').replace(/\r/g, ' ').trim();
+    const text = normalizeAcademicSourceText(sectionText);
     if (!text) {
       return [];
     }
 
     const items = [];
-    const markerRegex = /(^|\s)(\d+)\.\s*/g;
+    const markerRegex = /(^|\n)\s*(\d+)[.)]\s+/g;
     let match;
     const markers = [];
     while ((match = markerRegex.exec(text)) !== null) {
@@ -2857,10 +2890,10 @@ export default function App() {
     });
 
     return items;
-  }, [deriveAcademicSectionTitle, sanitizeAcademicHeadingLabel]);
+  }, [deriveAcademicSectionTitle, normalizeAcademicSourceText, sanitizeAcademicHeadingLabel]);
 
   const buildAcademicDocumentBody = useCallback((sourceText) => {
-    const normalized = String(sourceText || '').replace(/\r/g, '').trim();
+    const normalized = normalizeAcademicSourceText(sourceText);
     if (!normalized) {
       return '';
     }
@@ -2995,7 +3028,7 @@ export default function App() {
         </section>
       `;
     }).join('');
-  }, [deriveAcademicSectionTitle, extractNumberedAcademicItems, extractStrategicSectionsFromSource, sanitizeAcademicHeadingLabel]);
+  }, [deriveAcademicSectionTitle, extractNumberedAcademicItems, extractStrategicSectionsFromSource, normalizeAcademicSourceText, sanitizeAcademicHeadingLabel]);
 
   const parseHeadingEntriesFromHtml = useCallback((html) => {
     if (typeof document === 'undefined') {
