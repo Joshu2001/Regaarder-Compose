@@ -2070,6 +2070,7 @@ export default function App() {
   const chatEndRef = useRef(null);
   const documentCardRef = useRef(null);
   const blankBodyRef = useRef(null);
+  const activeDocIdRef = useRef(null);
   const titleEditableRef = useRef(null);
   const subtitleEditableRef = useRef(null);
   const formattingMenuRef = useRef(null);
@@ -2146,6 +2147,30 @@ export default function App() {
   const docSearchAutoPlayTimerRef = useRef(null);
   const roomJoinInputRef = useRef(null);
   const meetingShareFileInputRef = useRef(null);
+
+  const commitEditableTextForActiveDoc = (target, setter) => {
+    if (!target || typeof setter !== 'function') {
+      return;
+    }
+    const sourceDocId = Number(target.dataset.docId || 0);
+    const currentDocId = Number(activeDocIdRef.current || 0);
+    if (sourceDocId && currentDocId && sourceDocId !== currentDocId) {
+      return;
+    }
+    setter(target.textContent || '');
+  };
+
+  const commitEditableHtmlForActiveDoc = (target, setter) => {
+    if (!target || typeof setter !== 'function') {
+      return;
+    }
+    const sourceDocId = Number(target.dataset.docId || 0);
+    const currentDocId = Number(activeDocIdRef.current || 0);
+    if (sourceDocId && currentDocId && sourceDocId !== currentDocId) {
+      return;
+    }
+    setter(target.innerHTML || '');
+  };
 
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
@@ -2960,6 +2985,10 @@ export default function App() {
       setActiveDocId(documents[0].id);
     }
   }, [documents, activeDocId]);
+
+  useEffect(() => {
+    activeDocIdRef.current = activeDocId;
+  }, [activeDocId]);
 
   useEffect(() => {
     try {
@@ -6106,6 +6135,8 @@ export default function App() {
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
 
+    try {
+
     let aiResponseText = '';
     let docAction = null;
     let usedLiveModel = false;
@@ -6399,8 +6430,6 @@ Rules:
       aiResponseText = composeFallbackAction.paragraph || aiResponseText;
     }
 
-    setIsComposing(false);
-
     const actionSectionId = docAction
       ? `sec_${Date.now()}_${Math.floor(Math.random() * 1000)}`
       : null;
@@ -6510,6 +6539,13 @@ Rules:
     });
 
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    } catch (_fatalError) {
+      const reason = 'AI request failed unexpectedly. Please retry.';
+      setLastAiError(reason);
+      showToast(reason);
+    } finally {
+      setIsComposing(false);
+    }
   };
 
   const handleSidebarSend = (e) => {
@@ -6642,6 +6678,25 @@ Rules:
     const scopedPrompt = hasSelection
       ? `${instruction}\n\nRefine ONLY this selected excerpt and preserve intent:\n"""${selectedScope}"""\n\nIf you are producing an outline, return clear section headings with bullets under each heading.`
       : `${instruction}\n\nUse the current document context and provide a directly usable rewrite.`;
+
+    if (productMode === 'compose') {
+      setRightSidebarOpen(false);
+      setActiveRightTab('assistant');
+      showToast('Smart Assist is running...');
+
+      handleAISubmit(scopedPrompt, {
+        source: 'compose',
+        forceDocBuild: true,
+        suppressChatEcho: false,
+        composeFormat: 'Plain Text',
+        selectionScoped: hasSelection,
+        smartActionKey: actionKey,
+        tone: promptTone,
+        lengthMode: promptLengthMode,
+        lengthValue: promptLengthValue,
+      });
+      return;
+    }
 
     setRightSidebarOpen(false);
     setActiveRightTab('assistant');
@@ -15691,8 +15746,9 @@ Rules:
               onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocTitle(target.textContent || ''))}
-              onBlur={(e) => setDocTitle(e.currentTarget.textContent || '')}
+              onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocTitle)}
               dir="ltr"
+              data-doc-id={activeDocId || ''}
               className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
               style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docTitle?.trim() ? 1 : 0.28 }}
               data-placeholder={AI_NATIVE_PLACEHOLDER}
@@ -15707,8 +15763,9 @@ Rules:
               onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocSubtitle(target.textContent || ''))}
-              onBlur={(e) => setDocSubtitle(e.currentTarget.textContent || '')}
+              onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocSubtitle)}
               dir="ltr"
+              data-doc-id={activeDocId || ''}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
               style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docSubtitle?.trim() ? 1 : 0.32 }}
             >
@@ -15723,8 +15780,9 @@ Rules:
                   suppressContentEditableWarning
                   onInput={(e) => normalizeEditableDirection(e.currentTarget)}
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
-                  onBlur={(e) => setDocBodyHtml(e.currentTarget.innerHTML)}
+                  onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml)}
                   dir="ltr"
+                  data-doc-id={activeDocId || ''}
                   className="mb-4 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed relative"
                   style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                   dangerouslySetInnerHTML={{ __html: docBodyHtml }}
@@ -15889,7 +15947,7 @@ Rules:
 
             {/* Composing / Analyzing State Glow */}
             {isComposing && (
-              <div className="absolute inset-0 z-30 bg-white/85 backdrop-blur-[2px] flex items-center justify-center px-6">
+              <div className="absolute inset-0 z-30 bg-white/85 backdrop-blur-[2px] flex items-start justify-center px-6 pt-14 md:pt-20">
                 <div className="w-full max-w-xl rounded-2xl border border-violet-100 bg-white shadow-[0_20px_50px_-20px_rgba(109,40,217,0.35)] p-5">
                   <div className="flex items-center gap-2 text-violet-700 mb-3">
                     <Loader2 className="animate-spin" size={16} />
