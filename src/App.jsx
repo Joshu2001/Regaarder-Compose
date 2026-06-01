@@ -2714,6 +2714,128 @@ export default function App() {
     };
   }, []);
 
+  const academicStopWords = useMemo(() => new Set([
+    'the', 'and', 'for', 'with', 'that', 'this', 'from', 'into', 'about', 'your', 'their', 'there', 'have', 'has', 'had',
+    'are', 'was', 'were', 'will', 'would', 'could', 'should', 'can', 'may', 'might', 'not', 'but', 'than', 'then', 'also',
+    'such', 'some', 'many', 'more', 'most', 'very', 'over', 'under', 'between', 'across', 'within', 'without', 'toward',
+    'through', 'during', 'because', 'while', 'where', 'when', 'what', 'which', 'whose', 'been', 'being', 'each', 'other',
+    'into', 'onto', 'these', 'those', 'them', 'they', 'its', 'our', 'out', 'in', 'on', 'at', 'to', 'of', 'a', 'an', 'or',
+    'is', 'it', 'as', 'by', 'we', 'you', 'he', 'she', 'do', 'does', 'did', 'if', 'no', 'yes', 'ai', 'document', 'section',
+  ]), []);
+
+  const toAcademicTitleCase = useCallback((value) => String(value || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' '), []);
+
+  const deriveAcademicSectionTitle = useCallback((text, fallback) => {
+    const tokens = String(text || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, ' ')
+      .split(/\s+/)
+      .filter((word) => word.length > 2 && !academicStopWords.has(word));
+
+    const uniqueOrdered = [];
+    tokens.forEach((word) => {
+      if (!uniqueOrdered.includes(word)) {
+        uniqueOrdered.push(word);
+      }
+    });
+
+    const candidate = uniqueOrdered.slice(0, 6).join(' ');
+    if (!candidate) {
+      return fallback;
+    }
+    return toAcademicTitleCase(candidate);
+  }, [academicStopWords, toAcademicTitleCase]);
+
+  const buildAcademicDocumentBody = useCallback((sourceText) => {
+    const normalized = String(sourceText || '').replace(/\r/g, '').trim();
+    if (!normalized) {
+      return '';
+    }
+
+    const rawParagraphs = normalized
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean);
+
+    const paragraphs = rawParagraphs.length
+      ? rawParagraphs
+      : normalized
+        .split(/(?<=[.!?])\s+(?=[A-Z])/)
+        .map((sentence) => sentence.trim())
+        .filter(Boolean);
+
+    const chapterChunks = [];
+    let currentChunk = [];
+    let currentWordCount = 0;
+
+    paragraphs.forEach((paragraph) => {
+      const words = paragraph.split(/\s+/).filter(Boolean).length;
+      const wouldOverflow = currentWordCount + words > 150 && currentChunk.length > 0;
+      if (wouldOverflow) {
+        chapterChunks.push(currentChunk.join('\n\n'));
+        currentChunk = [paragraph];
+        currentWordCount = words;
+      } else {
+        currentChunk.push(paragraph);
+        currentWordCount += words;
+      }
+    });
+
+    if (currentChunk.length) {
+      chapterChunks.push(currentChunk.join('\n\n'));
+    }
+
+    const limitedChunks = chapterChunks.slice(0, 8);
+    if (!limitedChunks.length) {
+      return '';
+    }
+
+    return limitedChunks.map((chunk, chapterIndex) => {
+      const chapterNumber = chapterIndex + 1;
+      const chapterTitle = deriveAcademicSectionTitle(chunk, `Core Theme ${chapterNumber}`);
+      const sentences = chunk
+        .split(/(?<=[.!?])\s+(?=[A-Z])/)
+        .map((sentence) => sentence.trim())
+        .filter(Boolean);
+
+      const subsectionBuckets = [];
+      const midpoint = Math.ceil(sentences.length / 2);
+      if (sentences.length > 6) {
+        subsectionBuckets.push(sentences.slice(0, midpoint).join(' '));
+        subsectionBuckets.push(sentences.slice(midpoint).join(' '));
+      } else {
+        subsectionBuckets.push(chunk);
+      }
+
+      const subsectionHtml = subsectionBuckets.map((bucket, bucketIndex) => {
+        const subNumber = `${chapterNumber}.${bucketIndex + 1}`;
+        const subTitle = deriveAcademicSectionTitle(bucket, `Section ${subNumber}`);
+        const paragraphHtml = String(bucket || '')
+          .split(/\n{2,}/)
+          .map((paragraph) => paragraph.trim())
+          .filter(Boolean)
+          .map((paragraph) => `<p style="font-size:17px;line-height:1.72;color:#334155;margin:0 0 10px;">${escapeHtml(paragraph)}</p>`)
+          .join('');
+
+        return `
+          <h2 style="font-size:29px;line-height:1.3;font-weight:600;color:#0f172a;margin:12px 0 8px;">${subNumber} ${escapeHtml(subTitle)}</h2>
+          ${paragraphHtml}
+        `;
+      }).join('');
+
+      return `
+        <section data-academic-chapter="true" style="margin:0 0 20px;">
+          <h1 style="font-size:42px;line-height:1.12;font-weight:700;color:#0f172a;margin:16px 0 12px;">Chapter ${chapterNumber}. ${escapeHtml(chapterTitle)}</h1>
+          ${subsectionHtml}
+        </section>
+      `;
+    }).join('');
+  }, [deriveAcademicSectionTitle]);
+
   const parseHeadingEntriesFromHtml = useCallback((html) => {
     if (typeof document === 'undefined') {
       return [];
@@ -2817,13 +2939,14 @@ export default function App() {
     const tocItems = headingEntries.map((entry, index) => {
       const indent = entry.level === 1 ? 0 : entry.level === 2 ? 20 : 38;
       const weight = entry.level === 1 ? 700 : 500;
+      const entrySize = entry.level === 1 ? 20 : entry.level === 2 ? 17 : 15;
       const pageNumber = index + 1;
       return `
         <li style="margin:0 0 7px ${indent}px;list-style:none;">
-          <div style="display:flex;align-items:flex-end;gap:8px;color:#0f172a;font-size:15px;line-height:1.35;font-weight:${weight};">
+          <div style="display:flex;align-items:flex-end;gap:8px;color:#0f172a;font-size:${entrySize}px;line-height:1.3;font-weight:${weight};">
             <span style="white-space:nowrap;">${escapeHtml(entry.text || `Section ${index + 1}`)}</span>
             <span aria-hidden="true" style="flex:1;align-self:center;height:1em;background-image:radial-gradient(circle at 1px 50%, #334155 1px, transparent 1.2px);background-size:5px 2px;background-repeat:repeat-x;background-position:left center;opacity:0.75;"></span>
-            <span style="min-width:14px;text-align:right;white-space:nowrap;">${pageNumber}</span>
+            <span style="min-width:18px;text-align:right;white-space:nowrap;">${pageNumber}</span>
           </div>
         </li>
       `;
@@ -2916,7 +3039,13 @@ export default function App() {
     }
 
     const baseHtml = String(docBodyHtml || '');
-    const normalizedBodyHtml = normalizeHeadingHierarchyForToc(baseHtml, sourceText);
+    const existingHeadingEntries = parseHeadingEntriesFromHtml(baseHtml)
+      .filter((entry) => !/^table of contents?$/i.test(entry.text || ''));
+    const needsAcademicStructure = existingHeadingEntries.length < 3;
+    const bodyWithAcademicHierarchy = needsAcademicStructure
+      ? buildAcademicDocumentBody(sourceText)
+      : baseHtml;
+    const normalizedBodyHtml = normalizeHeadingHierarchyForToc(bodyWithAcademicHierarchy, sourceText);
     const tocHtml = injectTocAtTopOfDocument(normalizedBodyHtml, sourceText);
     const plan = buildHeadingPlanFromText(sourceText, 3);
 
@@ -2935,6 +3064,7 @@ export default function App() {
     setTimeout(() => computeDocumentOutline(), 0);
     showToast('Table of contents generated from document headings');
   }, [
+    buildAcademicDocumentBody,
     buildHeadingPlanFromText,
     computeDocumentOutline,
     defaultSubtitle,
@@ -2944,6 +3074,7 @@ export default function App() {
     docTitle,
     injectTocAtTopOfDocument,
     normalizeHeadingHierarchyForToc,
+    parseHeadingEntriesFromHtml,
     selectedEditorText,
   ]);
 
