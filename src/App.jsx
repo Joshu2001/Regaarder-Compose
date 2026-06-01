@@ -3133,7 +3133,7 @@ export default function App() {
     const tocItems = headingEntries.map((entry, index) => {
       const indent = entry.level === 1 ? 0 : entry.level === 2 ? 20 : 38;
       const weight = entry.level === 1 ? 700 : 500;
-      const entrySize = entry.level === 1 ? 20 : entry.level === 2 ? 17 : 15;
+      const entrySize = entry.level === 1 ? 14 : 12;
       const pageNumber = index + 1;
       return `
         <li style="margin:0 0 7px ${indent}px;list-style:none;">
@@ -3148,7 +3148,7 @@ export default function App() {
 
     const tocHtml = `
       <section data-generated-toc="true" style="border:1px solid #dbeafe;background:#f8fbff;border-radius:16px;padding:16px 18px;margin:0 0 18px;">
-        <h1 style="font-size:42px;line-height:1.1;font-weight:700;color:#0f172a;margin:0 0 12px;">Table of Contents</h1>
+        <h1 style="font-size:14px;line-height:1.25;font-weight:700;color:#0f172a;margin:0 0 10px;">Table of Contents</h1>
         <ol style="margin:0;padding:0;">${tocItems}</ol>
       </section>
     `;
@@ -8802,18 +8802,44 @@ Rules:
     if (command === 'fontSize') {
       const parsedSize = Number(value);
       const safeSize = Number.isFinite(parsedSize) ? Math.min(72, Math.max(10, parsedSize)) : editorSize;
-      document.execCommand('styleWithCSS', false, true);
-      document.execCommand('fontSize', false, '7');
-      if (blankBodyRef.current) {
-        const fontNodes = blankBodyRef.current.querySelectorAll('font[size="7"]');
-        fontNodes.forEach((node) => {
-          node.removeAttribute('size');
-          node.style.fontSize = `${safeSize}px`;
-        });
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) {
+        return;
       }
-      const selectionAfterSize = window.getSelection();
-      if (selectionAfterSize && selectionAfterSize.rangeCount) {
-        savedSelectionRef.current = selectionAfterSize.getRangeAt(0).cloneRange();
+
+      const activeRange = selection.getRangeAt(0);
+      if (!isRangeInsideEditor(activeRange)) {
+        return;
+      }
+
+      if (activeRange.collapsed) {
+        const anchorNode = activeRange.startContainer;
+        const parentElement = anchorNode.nodeType === Node.ELEMENT_NODE
+          ? anchorNode
+          : anchorNode.parentElement;
+        if (parentElement && documentCardRef.current?.contains(parentElement)) {
+          parentElement.style.fontSize = `${safeSize}px`;
+        }
+      } else {
+        const wrapper = document.createElement('span');
+        wrapper.style.fontSize = `${safeSize}px`;
+
+        try {
+          activeRange.surroundContents(wrapper);
+        } catch (_error) {
+          const fragment = activeRange.extractContents();
+          wrapper.appendChild(fragment);
+          activeRange.insertNode(wrapper);
+        }
+
+        const nextRange = document.createRange();
+        nextRange.selectNodeContents(wrapper);
+        selection.removeAllRanges();
+        selection.addRange(nextRange);
+      }
+
+      if (selection.rangeCount) {
+        savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
       }
       if (blankBodyRef.current) {
         setDocBodyHtml(blankBodyRef.current.innerHTML);
