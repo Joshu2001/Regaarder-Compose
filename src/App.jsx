@@ -5679,7 +5679,10 @@ export default function App() {
     const applyInlineFormatting = (text) => String(text || '')
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/__(.+?)__/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>');
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/(^|\s)(\*\*|__)(?=\s|$)/g, '$1')
+      .replace(/(^|\s)\*(?=\s|$)/g, '$1')
+      .replace(/"""/g, '');
 
     return normalized
       .split(/\n{2,}/)
@@ -5825,9 +5828,14 @@ export default function App() {
 
   const buildComposeFallbackAction = ({ promptText, requestedFormat, preferredDocType, attachmentContext = '', requestedTone = 'normal', requestedLengthValue = 220, requestedLengthMode = 'words' }) => {
     const topic = String(promptText || 'the requested topic')
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/"""[\s\S]*?"""/g, ' ')
+      .replace(/\b(refine|rewrite|modify)\s+only\s+this\s+selected\s+excerpt[\s\S]*$/i, '')
+      .replace(/\*\*|__/g, ' ')
+      .replace(/`+/g, ' ')
+      .replace(/^user request:\s*/i, '')
       .replace(/\s+/g, ' ')
       .trim()
-      .replace(/^user request:\s*/i, '')
       .slice(0, 180);
     const sourceSummary = summarizeAttachmentContext(attachmentContext, promptText);
     const titleBase = preferredDocType === 'timeline'
@@ -5916,8 +5924,8 @@ export default function App() {
 
     const body = [
       requestedFormat === 'Article'
-        ? `This article examines ${topic}.`
-        : `This document is written for ${topic}.`,
+        ? `This article examines ${topic || 'the requested topic'}.`
+        : `This document addresses ${topic || 'the requested topic'}.`,
       sourceSentence,
       ...(sourceSummary.sentences.length > 1
         ? [`Key takeaways from the attached material include ${sourceSummary.sentences.slice(0, 2).join(' ')}`]
@@ -6929,7 +6937,18 @@ Rules:
       }
     }
 
-    if (!usedLiveModel) {
+    if (!usedLiveModel && shouldBuildDocument && (smartActionKey === 'toc' || smartActionKey === 'title-headers')) {
+      if (smartActionKey === 'toc') {
+        applyGeneratedTableOfContents();
+        aiResponseText = 'Generated table of contents using local fallback because live AI was unavailable.';
+      } else {
+        applyGeneratedTitleAndHeadings();
+        aiResponseText = 'Generated title and headers using local fallback because live AI was unavailable.';
+      }
+      usedLiveModel = false;
+    }
+
+    if (!usedLiveModel && !(shouldBuildDocument && (smartActionKey === 'toc' || smartActionKey === 'title-headers'))) {
       const failureReason = liveModelError || lastAiError || 'Check Vercel server env GEMINI_API_KEY or VITE_GEMINI_DEMO_API_KEY, billing, and model access.';
       aiResponseText = composeFallbackAction.paragraph || `Live AI request failed. ${failureReason}`;
       trackMemoryAction('ai', 'Live AI request failed', {
@@ -6986,11 +7005,16 @@ Rules:
           injectAsHtml: shouldInjectOutlineHtml,
         });
 
-        if (injectedToSelection && shouldInjectOutlineHtml) {
-          setLeftSidebarOpen(true);
-          setTimeout(() => {
-            computeDocumentOutline();
-          }, 0);
+        if (injectedToSelection) {
+          if (blankBodyRef.current) {
+            setDocBodyHtml(blankBodyRef.current.innerHTML);
+          }
+          if (shouldInjectOutlineHtml) {
+            setLeftSidebarOpen(true);
+            setTimeout(() => {
+              computeDocumentOutline();
+            }, 0);
+          }
         }
 
         if (!injectedToSelection) {
@@ -7132,11 +7156,6 @@ Rules:
       return;
     }
 
-    if (productMode === 'compose' && actionKey === 'title-headers') {
-      applyGeneratedTitleAndHeadings();
-      return;
-    }
-
     if (productMode === 'compose' && (actionKey === 'create-outline' || actionKey === 'outline')) {
       const selectedScope = selectedEditorTextRef.current || selectedEditorText;
       const hasSelection = requestedSelectionScope !== undefined ? requestedSelectionScope : Boolean(selectedScope);
@@ -7164,7 +7183,36 @@ Rules:
     if (productMode === 'compose' && (actionKey === 'generate-toc' || actionKey === 'toc' || actionKey === 'table-of-content')) {
       setRightSidebarOpen(false);
       setActiveRightTab('assistant');
-      applyGeneratedTableOfContents();
+      showToast('Compose AI is generating a table of contents...');
+      handleAISubmit(`${instruction}\n\nGenerate a polished table of contents from this document, then rewrite headings/content so hierarchy is clear and consistent.${documentContextBlock}`, {
+        source: 'compose',
+        forceDocBuild: true,
+        suppressChatEcho: true,
+        composeFormat: 'Plain Text',
+        selectionScoped: false,
+        smartActionKey: 'toc',
+        tone: promptTone,
+        lengthMode: promptLengthMode,
+        lengthValue: promptLengthValue,
+      });
+      return;
+    }
+
+    if (productMode === 'compose' && actionKey === 'title-headers') {
+      setRightSidebarOpen(false);
+      setActiveRightTab('assistant');
+      showToast('Compose AI is generating title and headers...');
+      handleAISubmit(`${instruction}\n\nGenerate a stronger title and cleaner section headers while preserving the document meaning.${documentContextBlock}`, {
+        source: 'compose',
+        forceDocBuild: true,
+        suppressChatEcho: true,
+        composeFormat: 'Plain Text',
+        selectionScoped: false,
+        smartActionKey: 'title-headers',
+        tone: promptTone,
+        lengthMode: promptLengthMode,
+        lengthValue: promptLengthValue,
+      });
       return;
     }
 
@@ -10100,6 +10148,8 @@ Rules:
       ]
       : [
         { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content to be more professional while preserving meaning.' },
+        { key: 'summarize', label: 'Summarize', detail: 'Condense without losing meaning', icon: Scissors, color: 'text-fuchsia-500', prompt: 'Summarize this content clearly while preserving key meaning and important context.' },
+        { key: 'proofread', label: 'Proofread', detail: 'Fix typos, repeats, and grammar', icon: ShieldAlert, color: 'text-amber-500', prompt: 'Proofread this content and return a corrected version that fixes typos, repeated sentences, grammar errors, and awkward phrasing while preserving intent.' },
         { key: 'create-outline', label: 'Create outline', detail: 'Structure messy notes into sections', icon: ListTodo, color: 'text-indigo-500', prompt: 'Create a clear outline from this content with logical section flow.' },
         { key: 'generate-toc', label: 'Generate table of content', detail: 'Build TOC and align headings', icon: BookOpen, color: 'text-cyan-500', prompt: 'Generate a table of contents for this document and align headings/content to it.' },
         { key: 'title-headers', label: 'Generate title/headers', detail: 'Auto-structure with strong headings', icon: Type, color: 'text-emerald-500', prompt: 'Generate a strong title and section headers for this document.' },
