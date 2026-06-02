@@ -12503,6 +12503,14 @@ Rules:
       { label: 'Completed', value: 14, note: 'This week', tone: 'text-emerald-600', bg: 'bg-emerald-50' },
       { label: 'Blocked', value: 2, note: 'Waiting on others', tone: 'text-blue-600', bg: 'bg-blue-50' },
     ];
+    const manageenBoardTabs = [
+      { label: 'Board', enabled: true },
+      { label: 'Timeline', enabled: false },
+      { label: 'Calendar', enabled: false },
+      { label: 'Workload', enabled: false },
+      { label: 'Files', enabled: false },
+      { label: 'Insights', enabled: false },
+    ];
     const manageenProjects = [
       { name: 'Engineering Delivery', progress: 79, status: 'At risk', statusTone: 'text-rose-600', milestone: '11 / 14 milestones', due: 'Due Jun 18' },
       { name: 'Marketing Launch', progress: 68, status: 'On track', statusTone: 'text-emerald-600', milestone: '6 / 8 milestones', due: 'Due May 28' },
@@ -12568,14 +12576,24 @@ Rules:
           {isManageenBoardsView && (
             <>
               <div className="mt-4 flex items-center gap-5 border-b border-slate-200 pb-3 text-[13px]">
-                {['Board', 'Timeline', 'Calendar', 'Workload', 'Files', 'Insights'].map((tab) => (
+                {manageenBoardTabs.map((tab) => (
                   <button
                     key={tab}
                     type="button"
-                    onClick={() => showToast(`${tab} opened`)}
-                    className={`${tab === 'Board' ? 'text-violet-700 font-semibold border-b-2 border-violet-600 pb-3 -mb-3' : 'text-slate-500 hover:text-slate-700'}`}
+                    disabled={!tab.enabled}
+                    onClick={() => tab.enabled && showToast(`${tab.label} opened`)}
+                    className={`${tab.enabled
+                      ? tab.label === 'Board'
+                        ? 'text-violet-700 font-semibold border-b-2 border-violet-600 pb-3 -mb-3'
+                        : 'text-slate-500 hover:text-slate-700 hover:-translate-y-0.5 transition-transform'
+                      : 'text-slate-300 cursor-not-allowed'
+                    }`}
+                    title={tab.enabled ? `${tab.label} view` : `${tab.label} coming soon`}
                   >
-                    {tab}
+                    <span className="inline-flex items-center gap-1.5">
+                      <span>{tab.label}</span>
+                      {!tab.enabled && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Soon</span>}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -12626,15 +12644,15 @@ Rules:
                             key={filter}
                             type="button"
                             onClick={() => showToast(`${filter} filter opened`)}
-                            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 hover:border-violet-300 hover:text-violet-700"
+                                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:text-violet-700 hover:shadow-sm"
                           >
                             {filter}
                           </button>
                         ))}
                       </div>
                       <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => showToast('Automations opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 hover:border-violet-300">Automations</button>
-                        <button type="button" onClick={() => showToast('Board settings opened')} className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-violet-700"><LayoutGrid size={14} className="mx-auto" /></button>
+                        <button type="button" onClick={() => showToast('Automations opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Automations</button>
+                        <button type="button" onClick={() => showToast('Board settings opened')} className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:text-violet-700 hover:shadow-sm"><LayoutGrid size={14} className="mx-auto" /></button>
                       </div>
                     </div>
 
@@ -12665,7 +12683,7 @@ Rules:
                                 onClick={() => setManageenSelectedTaskId(task.id)}
                                 onDragStart={() => handleManageenDragStart(task.id)}
                                 onDragEnd={handleManageenDragEnd}
-                                className={`rounded-2xl border bg-white p-3 text-left cursor-grab active:cursor-grabbing transition-colors ${manageenSelectedTaskId === task.id ? 'border-amber-300 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]' : 'border-slate-200 hover:border-violet-200'} ${manageenDraggingTaskId === task.id ? 'opacity-70' : ''}`}
+                                className={`rounded-2xl border bg-white p-3 text-left cursor-grab active:cursor-grabbing transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-20px_rgba(15,23,42,0.45)] ${manageenSelectedTaskId === task.id ? 'border-amber-300 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]' : 'border-slate-200 hover:border-violet-200'} ${manageenDraggingTaskId === task.id ? 'opacity-70 scale-[0.98]' : ''}`}
                               >
                                 <div className="text-[13px] font-semibold leading-5 text-slate-800">{task.title}</div>
                                 <div className="mt-2 inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">{task.tag}</div>
@@ -12683,7 +12701,7 @@ Rules:
                                 )}
                               </article>
                             ))}
-                            <button type="button" onClick={() => showToast(`Add task to ${column.title}`)} className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-2 py-2 text-xs text-violet-600 hover:border-violet-300">+ Add task</button>
+                            <button type="button" onClick={() => showToast(`Add task to ${column.title}`)} className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-2 py-2 text-xs text-violet-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40">+ Add task</button>
                           </div>
                         </div>
                       ))}
