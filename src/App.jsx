@@ -391,11 +391,26 @@ export default function App() {
   const [dmDirectMessages, setDmDirectMessages] = useState(['Sarah Johnson', 'Alex Morgan', 'Michael Chen']);
   const [dmTeamChannels, setDmTeamChannels] = useState(['Marketing', 'Engineering', 'Design', 'General']);
   const [dmAiConversations, setDmAiConversations] = useState(['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent']);
+  const [dmContactPickerOpen, setDmContactPickerOpen] = useState(false);
+  const [dmContactSearch, setDmContactSearch] = useState('');
+  const [dmTeamInputOpen, setDmTeamInputOpen] = useState(false);
+  const [dmTeamInputValue, setDmTeamInputValue] = useState('');
+  const [dmChannelInputOpen, setDmChannelInputOpen] = useState(false);
+  const [dmChannelInputValue, setDmChannelInputValue] = useState('');
+  const [dmAiChatOpen, setDmAiChatOpen] = useState(false);
+  const [dmAiChatInput, setDmAiChatInput] = useState('');
+  const [dmAiChatMessages, setDmAiChatMessages] = useState([
+    { id: 'dm-ai-welcome', role: 'assistant', text: 'Hi, I am Orb. Ask me anything about this workspace.' },
+  ]);
+  const [dmEditingThreadTitle, setDmEditingThreadTitle] = useState(false);
+  const [dmThreadTitleDraft, setDmThreadTitleDraft] = useState('');
+  const [dmEditingThreadDescription, setDmEditingThreadDescription] = useState(false);
+  const [dmThreadDescriptionDraft, setDmThreadDescriptionDraft] = useState('');
   const [dmMemberView, setDmMemberView] = useState('member');
   const [dmJoinedAt, setDmJoinedAt] = useState(null);
   const [dmActiveThreadId, setDmActiveThreadId] = useState('thread-beta-launch');
   const [dmThreads, setDmThreads] = useState([
-    { id: 'thread-beta-launch', title: 'Beta Launch', members: 12, unread: 1, pinned: true, description: 'Private project', lastMessageAt: Date.now() - 1000 * 60 * 8 },
+    { id: 'thread-beta-launch', title: 'Beta Launch', members: 12, unread: 1, pinned: true, description: '', lastMessageAt: Date.now() - 1000 * 60 * 8 },
     { id: 'thread-mobile-app', title: 'Mobile App', members: 9, unread: 0, pinned: false, description: 'Delivery squad', lastMessageAt: Date.now() - 1000 * 60 * 62 },
     { id: 'thread-compose-ai', title: 'Compose AI', members: 7, unread: 0, pinned: false, description: 'AI systems', lastMessageAt: Date.now() - 1000 * 60 * 120 },
   ]);
@@ -10785,6 +10800,13 @@ Rules:
   };
 
   const activeDmThread = dmThreads.find((thread) => thread.id === dmActiveThreadId) || dmThreads[0] || null;
+  useEffect(() => {
+    setDmThreadTitleDraft(activeDmThread?.title || '');
+    setDmThreadDescriptionDraft(activeDmThread?.description || '');
+    setDmEditingThreadTitle(false);
+    setDmEditingThreadDescription(false);
+  }, [activeDmThread?.id]);
+
   const activeDmMessages = useMemo(() => dmMessages
     .filter((message) => message.threadId === (activeDmThread?.id || ''))
     .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)), [dmMessages, activeDmThread?.id]);
@@ -11104,32 +11126,129 @@ Rules:
       setDmActiveParentMessageId(null);
       showToast('Start a new channel message');
     };
+    const dmContactDirectory = [
+      'Sarah Johnson',
+      'Alex Morgan',
+      'Michael Chen',
+      'Priya Patel',
+      'Daniel Kim',
+      'Maya Flores',
+      'Rami Hassan',
+      'Naomi Cruz',
+    ];
+    const filteredDmContacts = dmContactDirectory
+      .filter((name) => name.toLowerCase().includes(String(dmContactSearch || '').trim().toLowerCase()))
+      .filter((name) => !directMessages.includes(name));
+
     const handleDmAddDirectMessage = () => {
-      const name = window.prompt('Add direct message contact', 'New teammate');
-      if (!name || !String(name).trim()) {
+      setDmContactPickerOpen((prev) => !prev);
+      setDmTeamInputOpen(false);
+      setDmChannelInputOpen(false);
+    };
+    const addDirectMessageFromContact = (name) => {
+      const value = String(name || '').trim();
+      if (!value) {
         return;
       }
-      const value = String(name).trim();
       setDmDirectMessages((prev) => (prev.includes(value) ? prev : [...prev, value]));
+      setDmContactSearch('');
+      setDmContactPickerOpen(false);
       showToast(`${value} added`);
     };
     const handleDmAddTeam = () => {
-      const name = window.prompt('Add team', 'Product');
-      if (!name || !String(name).trim()) {
+      const value = String(dmTeamInputValue || '').trim();
+      if (!value) {
         return;
       }
-      const value = String(name).trim();
       setDmTeamChannels((prev) => (prev.includes(value) ? prev : [...prev, value]));
+      setDmTeamInputValue('');
+      setDmTeamInputOpen(false);
       showToast(`${value} team created`);
     };
-    const handleDmAddAiConversation = () => {
-      const name = window.prompt('Add AI conversation', 'Strategy Agent');
-      if (!name || !String(name).trim()) {
+    const toggleDmTeamInput = () => {
+      setDmTeamInputOpen((prev) => !prev);
+      setDmContactPickerOpen(false);
+      setDmChannelInputOpen(false);
+    };
+    const handleDmAddChannel = () => {
+      const value = String(dmChannelInputValue || '').trim();
+      if (!value) {
         return;
       }
-      const value = String(name).trim();
-      setDmAiConversations((prev) => (prev.includes(value) ? prev : [...prev, value]));
-      showToast(`${value} ready`);
+      const slug = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      const id = `thread-${slug || Date.now()}`;
+      setDmThreads((prev) => {
+        if (prev.some((thread) => thread.id === id || thread.title.toLowerCase() === value.toLowerCase())) {
+          return prev;
+        }
+        return [
+          ...prev,
+          {
+            id,
+            title: value,
+            members: 1,
+            unread: 0,
+            pinned: false,
+            description: '',
+            lastMessageAt: Date.now(),
+          },
+        ];
+      });
+      setDmChannelInputValue('');
+      setDmChannelInputOpen(false);
+      showToast(`#${slug || value} created`);
+    };
+    const toggleDmChannelInput = () => {
+      setDmChannelInputOpen((prev) => !prev);
+      setDmContactPickerOpen(false);
+      setDmTeamInputOpen(false);
+    };
+    const handleDmAddAiConversation = () => {
+      setDmAiChatOpen(true);
+      setDmContactPickerOpen(false);
+      setDmTeamInputOpen(false);
+      setDmChannelInputOpen(false);
+    };
+    const sendDmAiChatMessage = () => {
+      const text = String(dmAiChatInput || '').trim();
+      if (!text) {
+        return;
+      }
+      const now = Date.now();
+      const userMessage = { id: `dm-ai-user-${now}`, role: 'user', text };
+      const assistantMessage = {
+        id: `dm-ai-assistant-${now}`,
+        role: 'assistant',
+        text: `I can help with that. Here is a quick direction for: ${text}`,
+      };
+      setDmAiChatMessages((prev) => [...prev, userMessage, assistantMessage]);
+      setDmAiChatInput('');
+    };
+    const saveDmThreadTitle = () => {
+      const nextTitle = String(dmThreadTitleDraft || '').trim();
+      if (!nextTitle || !activeDmThread) {
+        setDmEditingThreadTitle(false);
+        setDmThreadTitleDraft(activeDmThread?.title || '');
+        return;
+      }
+      setDmThreads((prev) => prev.map((thread) => (
+        thread.id === activeDmThread.id
+          ? { ...thread, title: nextTitle }
+          : thread
+      )));
+      setDmEditingThreadTitle(false);
+    };
+    const saveDmThreadDescription = () => {
+      if (!activeDmThread) {
+        return;
+      }
+      const nextDescription = String(dmThreadDescriptionDraft || '').trim();
+      setDmThreads((prev) => prev.map((thread) => (
+        thread.id === activeDmThread.id
+          ? { ...thread, description: nextDescription }
+          : thread
+      )));
+      setDmEditingThreadDescription(false);
     };
     const handleDmQuickJump = (label) => {
       if (label === 'Threads') {
@@ -11256,6 +11375,31 @@ Rules:
                 <span>Direct Messages</span>
                 <button type="button" onClick={handleDmAddDirectMessage} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
               </div>
+              {dmContactPickerOpen && (
+                <div className="mb-2 rounded-lg border border-slate-200 bg-white p-2 space-y-1.5">
+                  <input
+                    value={dmContactSearch}
+                    onChange={(event) => setDmContactSearch(event.target.value)}
+                    placeholder="Search contacts"
+                    className="w-full h-8 rounded-md border border-slate-200 px-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                  />
+                  <div className="max-h-28 overflow-y-auto thin-scrollbar space-y-1">
+                    {filteredDmContacts.length === 0 && (
+                      <div className="text-[11px] text-slate-400 px-1 py-1">No matching contacts</div>
+                    )}
+                    {filteredDmContacts.map((contact) => (
+                      <button
+                        key={contact}
+                        type="button"
+                        onClick={() => addDirectMessageFromContact(contact)}
+                        className="w-full h-7 rounded-md px-2 text-xs text-slate-600 hover:bg-violet-50 hover:text-violet-700 text-left"
+                      >
+                        {contact}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="space-y-1 text-[14px]">
                 {directMessages.map((name) => (
                   <button key={name} type="button" onClick={() => showToast(`${name} conversation opened`)} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
@@ -11269,8 +11413,25 @@ Rules:
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-400/80 flex items-center justify-between">
                 <span>Teams</span>
-                <button type="button" onClick={handleDmAddTeam} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
+                <button type="button" onClick={toggleDmTeamInput} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
               </div>
+              {dmTeamInputOpen && (
+                <div className="mb-2 rounded-lg border border-slate-200 bg-white p-2 flex items-center gap-1.5">
+                  <input
+                    value={dmTeamInputValue}
+                    onChange={(event) => setDmTeamInputValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleDmAddTeam();
+                      }
+                    }}
+                    placeholder="Team name"
+                    className="flex-1 h-8 rounded-md border border-slate-200 px-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                  />
+                  <button type="button" onClick={handleDmAddTeam} className="h-8 px-2 rounded-md bg-violet-600 text-white text-xs font-medium hover:bg-violet-700">Add</button>
+                </div>
+              )}
               <div className="space-y-1 text-[14px]">
                 {teamChannels.map((team, index) => (
                   <button key={team} type="button" onClick={() => showToast(`${team} team opened`)} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
@@ -11284,8 +11445,25 @@ Rules:
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-400/80 flex items-center justify-between">
                 <span>Channels</span>
-                <button type="button" onClick={() => showToast('Create channel flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
+                <button type="button" onClick={toggleDmChannelInput} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
               </div>
+              {dmChannelInputOpen && (
+                <div className="mb-2 rounded-lg border border-slate-200 bg-white p-2 flex items-center gap-1.5">
+                  <input
+                    value={dmChannelInputValue}
+                    onChange={(event) => setDmChannelInputValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleDmAddChannel();
+                      }
+                    }}
+                    placeholder="Channel name"
+                    className="flex-1 h-8 rounded-md border border-slate-200 px-2 text-xs text-slate-700 outline-none focus:border-violet-300"
+                  />
+                  <button type="button" onClick={handleDmAddChannel} className="h-8 px-2 rounded-md bg-violet-600 text-white text-xs font-medium hover:bg-violet-700">Add</button>
+                </div>
+              )}
               <div className="space-y-1 text-[14px]">
                 {dmThreads.map((thread) => {
                   const active = activeDmThread?.id === thread.id;
@@ -11311,7 +11489,7 @@ Rules:
               </div>
               <div className="space-y-1 text-[14px]">
                 {aiConversations.map((item, index) => (
-                  <button key={item} type="button" onClick={() => showToast(`${item} opened`)} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center justify-between text-left">
+                  <button key={item} type="button" onClick={() => { setDmAiChatOpen(true); showToast(`${item} opened`); }} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center justify-between text-left">
                     <span className="truncate">{item}</span>
                     {index === 0 ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
                   </button>
@@ -11334,8 +11512,67 @@ Rules:
           <section className={`flex-1 min-w-0 flex flex-col bg-white ${!isDocumentImmersive ? 'border-r border-gray-200' : ''}`}>
             <div className="h-[74px] bg-white border-b border-gray-200 px-6 flex items-center justify-between gap-4">
               <div>
-                <div className="text-2xl font-semibold text-slate-900">{activeDmThread?.title || 'Beta Launch'}</div>
-                <div className="text-sm text-slate-400 mt-1">{activeDmThread?.members || 12} members | Add a description</div>
+                {dmEditingThreadTitle ? (
+                  <input
+                    value={dmThreadTitleDraft}
+                    onChange={(event) => setDmThreadTitleDraft(event.target.value)}
+                    onBlur={saveDmThreadTitle}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        saveDmThreadTitle();
+                      }
+                      if (event.key === 'Escape') {
+                        setDmEditingThreadTitle(false);
+                        setDmThreadTitleDraft(activeDmThread?.title || '');
+                      }
+                    }}
+                    autoFocus
+                    className="h-9 px-2 -mx-2 rounded-md border border-violet-200 bg-white text-2xl font-semibold text-slate-900 outline-none focus:border-violet-300"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setDmEditingThreadTitle(true)}
+                    className="text-2xl font-semibold text-slate-900 hover:text-violet-700 text-left"
+                    title="Edit channel title"
+                  >
+                    {activeDmThread?.title || 'Beta Launch'}
+                  </button>
+                )}
+                <div className="text-sm text-slate-400 mt-1 flex items-center gap-1.5">
+                  <span>{activeDmThread?.members || 12} members</span>
+                  <span>|</span>
+                  {dmEditingThreadDescription ? (
+                    <input
+                      value={dmThreadDescriptionDraft}
+                      onChange={(event) => setDmThreadDescriptionDraft(event.target.value)}
+                      onBlur={saveDmThreadDescription}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          saveDmThreadDescription();
+                        }
+                        if (event.key === 'Escape') {
+                          setDmEditingThreadDescription(false);
+                          setDmThreadDescriptionDraft(activeDmThread?.description || '');
+                        }
+                      }}
+                      autoFocus
+                      placeholder="Add a description"
+                      className="h-7 px-2 rounded-md border border-violet-200 bg-white text-sm text-slate-600 outline-none focus:border-violet-300"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setDmEditingThreadDescription(true)}
+                      className={`text-sm ${activeDmThread?.description ? 'text-slate-500 hover:text-slate-700' : 'text-slate-400 hover:text-violet-700'}`}
+                      title="Edit description"
+                    >
+                      {activeDmThread?.description || 'Add a description'}
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-3 w-[520px] max-w-[60%] justify-end">
                 {!dmProjectPanelOpen && (
@@ -11547,6 +11784,52 @@ Rules:
                 </div>
               )}
             </div>
+
+            {dmAiChatOpen && (
+              <div className="mx-6 mb-3 rounded-2xl border border-violet-200 bg-white shadow-[0_14px_36px_-24px_rgba(109,40,217,0.45)] overflow-hidden">
+                <div className="h-10 px-3 border-b border-violet-100 bg-violet-50/60 flex items-center justify-between">
+                  <div className="text-xs font-semibold text-violet-700">AI Conversation</div>
+                  <button
+                    type="button"
+                    onClick={() => setDmAiChatOpen(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                    title="Close AI chat"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="max-h-56 overflow-y-auto thin-scrollbar px-3 py-3 space-y-2 bg-white">
+                  {dmAiChatMessages.map((item) => (
+                    <div key={item.id} className={`flex ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${item.role === 'user' ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                        {item.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-slate-100 p-2.5 flex items-center gap-2 bg-white">
+                  <input
+                    value={dmAiChatInput}
+                    onChange={(event) => setDmAiChatInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        sendDmAiChatMessage();
+                      }
+                    }}
+                    placeholder="Ask AI..."
+                    className="flex-1 h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-violet-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={sendDmAiChatMessage}
+                    className="h-9 px-3 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="p-5 border-t border-gray-200 bg-white">
               <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
