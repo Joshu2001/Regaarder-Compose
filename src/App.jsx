@@ -5462,6 +5462,7 @@ export default function App() {
     { id: 4, text: 'Check analytics dashboard integration is live', completed: false, owner: 'agent' },
   ]);
   const [taskOwnerFilter, setTaskOwnerFilter] = useState('all');
+  const [manageenActiveNav, setManageenActiveNav] = useState('Boards');
   const [manageenBoardColumns, setManageenBoardColumns] = useState(MANAGEEN_BOARD_DEFAULT_COLUMNS);
   const [manageenDraggingTaskId, setManageenDraggingTaskId] = useState(null);
   const [manageenDropColumnId, setManageenDropColumnId] = useState(null);
@@ -8885,6 +8886,7 @@ Rules:
   const createManageenExperience = () => {
     setCreationPickerOpen(false);
     setProductMode('manageen');
+    setManageenActiveNav('Boards');
     setRightSidebarOpen(false);
     setLeftSidebarOpen(false);
     if (rightPanelMaximized) {
@@ -12467,6 +12469,7 @@ Rules:
       { name: 'Healthcare Onboarding', progress: 53, status: 'At risk', statusTone: 'text-amber-600', milestone: '3 / 5 milestones', due: 'Due Jun 30' },
       { name: 'Finance Planning', progress: 45, status: 'On track', statusTone: 'text-blue-600', milestone: '4 / 6 milestones', due: 'Due Jul 10' },
     ];
+    const isManageenBoardsView = manageenActiveNav === 'Boards';
     return (
       <div className={`flex h-screen bg-[#f5f6fb] text-slate-800 ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <aside className="w-[220px] shrink-0 border-r border-slate-200 bg-white flex flex-col">
@@ -12476,12 +12479,17 @@ Rules:
           </div>
 
           <div className="px-3 py-3 space-y-1 text-sm">
-            {['Home', 'My Work', 'Projects', 'Boards', 'Calendar', 'Reports', 'Goals', 'Workload', 'Requests'].map((label, index) => (
+            {['Home', 'My Work', 'Projects', 'Boards', 'Calendar', 'Reports', 'Goals', 'Workload', 'Requests'].map((label) => (
               <button
                 key={label}
                 type="button"
-                onClick={() => showToast(`${label} opened`)}
-                className={`w-full h-9 rounded-lg px-3 text-left ${index === 0 ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+                onClick={() => {
+                  setManageenActiveNav(label);
+                  if (label !== 'Boards') {
+                    showToast(`${label} opened`);
+                  }
+                }}
+                className={`w-full h-9 rounded-lg px-3 text-left ${manageenActiveNav === label ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
               >
                 {label}
               </button>
@@ -12502,8 +12510,8 @@ Rules:
         <main className="flex-1 overflow-y-auto thin-scrollbar p-5 md:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-[34px] leading-tight font-semibold text-slate-900">Good morning, Joshua</h1>
-              <p className="mt-1 text-sm text-slate-500">Here is what is happening with your projects today.</p>
+              <h1 className="text-[34px] leading-tight font-semibold text-slate-900">{isManageenBoardsView ? 'Board' : 'Good morning, Joshua'}</h1>
+              <p className="mt-1 text-sm text-slate-500">{isManageenBoardsView ? 'Move work between To Do, In Progress, and Done.' : 'Here is what is happening with your projects today.'}</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -12515,6 +12523,7 @@ Rules:
             </div>
           </div>
 
+          {!isManageenBoardsView && (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
             {manageenStats.map((item) => (
               <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-3.5">
@@ -12527,7 +12536,9 @@ Rules:
               </div>
             ))}
           </div>
+          )}
 
+          {!isManageenBoardsView && (
           <div className="mt-4 grid grid-cols-1 xl:grid-cols-[1.2fr_1.3fr_0.9fr] gap-4">
             <section className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between">
@@ -12599,12 +12610,27 @@ Rules:
               </div>
             </section>
           </div>
+          )}
 
-          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+          <div className={`rounded-2xl border border-slate-200 bg-white p-4 ${isManageenBoardsView ? 'mt-5' : 'mt-4'}`}>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-slate-900">Project Board</h2>
               <div className="text-xs text-slate-500">Drag tasks between columns to update status</div>
             </div>
+            {isManageenBoardsView && (
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                {['Quick filters', 'Assignee', 'Sprint'].map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => showToast(`${filter} filter opened`)}
+                    className="h-8 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-600 hover:border-violet-300 hover:text-violet-700"
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {manageenBoardColumns.map((column) => (
                 <div
