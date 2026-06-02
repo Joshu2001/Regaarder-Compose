@@ -13017,6 +13017,15 @@ Rules:
                 <input placeholder="Search" className="h-10 w-[220px] rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-violet-300" />
               </div>
               <button type="button" onClick={() => showToast('Create new Manageen item')} className="h-10 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 inline-flex items-center gap-1.5"><Plus size={14} /> New</button>
+              <button
+                type="button"
+                onClick={toggleDocumentImmersiveMode}
+                className={`h-10 w-10 rounded-xl border transition-colors ${isDocumentImmersive ? 'border-violet-200 bg-violet-50 text-violet-700' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                title={isDocumentImmersive ? 'Exit fullscreen' : 'Open fullscreen'}
+                aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Open fullscreen'}
+              >
+                {isDocumentImmersive ? <Minimize2 size={14} className="mx-auto" /> : <Maximize2 size={14} className="mx-auto" />}
+              </button>
               <button type="button" onClick={() => showToast('Notifications opened')} className="h-10 w-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-700"><Bell size={14} className="mx-auto" /></button>
             </div>
           </div>
