@@ -12555,6 +12555,22 @@ Rules:
       { name: 'Priya', role: 'Ops', load: 47, tone: 'bg-blue-500' },
       { name: 'Rami', role: 'DevOps', load: 33, tone: 'bg-rose-500' },
     ];
+    const manageenGoals = [
+      { title: 'Clarity first', copy: 'Every project has one owner, one next step, and one due date so no one has to guess what matters now.', progress: 92, tone: 'bg-violet-500' },
+      { title: 'Ship high-impact work', copy: 'Prioritize the work that removes blockers, increases throughput, or moves a customer-facing milestone forward.', progress: 81, tone: 'bg-emerald-500' },
+      { title: 'Stay ahead of risk', copy: 'Keep risks visible early so teams can adjust before a project starts slipping.', progress: 67, tone: 'bg-amber-500' },
+      { title: 'Keep momentum simple', copy: 'Minimize admin and keep updates short so the team spends time doing the work instead of tracking it.', progress: 74, tone: 'bg-blue-500' },
+    ];
+    const manageenWorkloadSummary = [
+      { label: 'Available capacity', value: '38%', note: 'Across the core team', tone: 'text-violet-700 bg-violet-50 border-violet-100' },
+      { label: 'Overloaded', value: '1', note: 'Needs a handoff', tone: 'text-rose-700 bg-rose-50 border-rose-100' },
+      { label: 'Balanced', value: '3', note: 'Within target load', tone: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+    ];
+    const manageenWorkloadGuidelines = [
+      'Keep each owner below 80% unless the work is already in review.',
+      'Move blocked work out of the active lane so capacity stays honest.',
+      'Reserve 15% of team time for unplanned support and follow-up.',
+    ];
     const manageenFiles = [
       { name: 'Engineering Delivery Brief', kind: 'doc', owner: 'Joshua', updated: '12m ago', link: 'Tied to selected task' },
       { name: 'Auth Flow Diagram', kind: 'diagram', owner: 'Alex', updated: '1h ago', link: 'Related to API integration' },
@@ -12984,8 +13000,16 @@ Rules:
         <main className="flex-1 overflow-y-auto thin-scrollbar p-5 md:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-[34px] leading-tight font-semibold text-slate-900">{isManageenBoardsView ? manageenBoardSummary.title : 'Good morning, Joshua'}</h1>
-              <p className="mt-1 text-sm text-slate-500">{isManageenBoardsView ? manageenBoardSummary.subtitle : 'Here is what is happening with your projects today.'}</p>
+              <h1 className="text-[34px] leading-tight font-semibold text-slate-900">{manageenActiveNav === 'Boards' ? manageenBoardSummary.title : manageenActiveNav}</h1>
+              <p className="mt-1 text-sm text-slate-500">
+                {manageenActiveNav === 'Boards'
+                  ? manageenBoardSummary.subtitle
+                  : manageenActiveNav === 'Goals'
+                    ? 'Outcomes, ownership, and the small set of priorities that should actually move the business.'
+                    : manageenActiveNav === 'Workload'
+                      ? 'A clear view of who is available, who is overloaded, and where work should flow next.'
+                      : 'Here is what is happening with your projects today.'}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -13024,7 +13048,108 @@ Rules:
             </>
           )}
 
-          {!isManageenBoardsView && (
+          {manageenActiveNav === 'Goals' && (
+            <div className="mt-5 grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+              <section className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900">Strategic Goals</h2>
+                    <p className="text-sm text-slate-500">Keep the team aligned on what matters most.</p>
+                  </div>
+                  <button type="button" onClick={() => showToast('Goals refreshed')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">Refresh</button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {manageenGoals.map((goal, goalIndex) => (
+                    <div key={goal.title} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3" style={{ animation: `manageenFadeIn 0.45s ease-out ${goalIndex * 60}ms both` }}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900">{goal.title}</div>
+                          <div className="mt-1 text-sm text-slate-600 leading-6">{goal.copy}</div>
+                        </div>
+                        <div className={`w-12 h-12 rounded-full ${goal.tone} text-white flex items-center justify-center text-sm font-semibold`}>{goal.progress}%</div>
+                      </div>
+                      <div className="mt-3 h-2 rounded-full bg-slate-200 overflow-hidden">
+                        <div className={`h-full ${goal.tone}`} style={{ width: `${goal.progress}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <aside className="space-y-3">
+                {manageenWorkloadSummary.map((item, itemIndex) => (
+                  <div key={item.label} className={`rounded-2xl border p-4 ${item.tone}`} style={{ animation: `manageenFadeIn 0.45s ease-out ${itemIndex * 60}ms both` }}>
+                    <div className="text-sm font-semibold text-slate-900">{item.label}</div>
+                    <div className="mt-2 text-3xl font-semibold text-slate-900">{item.value}</div>
+                    <div className="mt-1 text-sm text-slate-600">{item.note}</div>
+                  </div>
+                ))}
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-sm font-semibold text-slate-900">Goal rules</div>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600">
+                    {['One owner per goal', 'No more than five active goals', 'Review every Friday'].map((rule) => (
+                      <div key={rule} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">{rule}</div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          )}
+
+          {manageenActiveNav === 'Workload' && (
+            <div className="mt-5 grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+              <section className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900">Capacity by person</h2>
+                    <p className="text-sm text-slate-500">Keep work balanced so everyone knows what to work on next.</p>
+                  </div>
+                  <button type="button" onClick={() => showToast('Workload updated')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">Update</button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {manageenWorkload.map((person, personIndex) => (
+                    <div key={person.name} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3" style={{ animation: `manageenFadeIn 0.45s ease-out ${personIndex * 55}ms both` }}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900">{person.name}</div>
+                          <div className="text-xs text-slate-500">{person.role}</div>
+                        </div>
+                        <div className="text-sm font-semibold text-slate-700">{person.load}% load</div>
+                      </div>
+                      <div className="mt-3 h-2 rounded-full bg-slate-200 overflow-hidden">
+                        <div className={`h-full ${person.tone}`} style={{ width: `${person.load}%` }} />
+                      </div>
+                      <div className="mt-2 text-[11px] text-slate-500">
+                        {person.load > 80 ? 'At risk of overload' : person.load > 60 ? 'Healthy but busy' : 'Room for focused work'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <aside className="space-y-3">
+                {manageenWorkloadSummary.map((item, itemIndex) => (
+                  <div key={item.label} className={`rounded-2xl border p-4 ${item.tone}`} style={{ animation: `manageenFadeIn 0.45s ease-out ${itemIndex * 60}ms both` }}>
+                    <div className="text-sm font-semibold text-slate-900">{item.label}</div>
+                    <div className="mt-2 text-3xl font-semibold text-slate-900">{item.value}</div>
+                    <div className="mt-1 text-sm text-slate-600">{item.note}</div>
+                  </div>
+                ))}
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-sm font-semibold text-slate-900">Workload rules</div>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600">
+                    {manageenWorkloadGuidelines.map((rule) => (
+                      <div key={rule} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">{rule}</div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          )}
+
+          {manageenActiveNav !== 'Boards' && manageenActiveNav !== 'Goals' && manageenActiveNav !== 'Workload' && (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
             {manageenStats.map((item) => (
               <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-3.5">
@@ -13039,7 +13164,7 @@ Rules:
           </div>
           )}
 
-          {!isManageenBoardsView && (
+          {manageenActiveNav !== 'Boards' && manageenActiveNav !== 'Goals' && manageenActiveNav !== 'Workload' && (
           <div className="mt-4 grid grid-cols-1 xl:grid-cols-[1.2fr_1.3fr_0.9fr] gap-4">
             <section className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center justify-between">
@@ -13113,7 +13238,7 @@ Rules:
           </div>
           )}
 
-          {!isManageenBoardsView && (
+          {manageenActiveNav !== 'Boards' && manageenActiveNav !== 'Goals' && manageenActiveNav !== 'Workload' && (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 mt-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-slate-900">Project Board</h2>
