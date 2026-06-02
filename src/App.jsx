@@ -386,7 +386,7 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
       autoPlay
       muted
       playsInline
-      className="w-full h-full object-cover transform scale-x-[-1]"
+      className="w-full h-full object-cover"
     />
   );
 };
@@ -12726,6 +12726,7 @@ Rules:
             <aside className="rounded-2xl border border-slate-200 bg-white p-4 h-fit sticky top-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-violet-700">Task Details</div>
                   <div className="text-[22px] font-semibold leading-tight text-slate-900">{manageenSelectedTask?.title || 'Select a task'}</div>
                   <div className="mt-1 text-sm text-slate-500">{manageenSelectedTask?.project || 'Engineering Delivery'}</div>
                 </div>
@@ -13048,11 +13049,11 @@ Rules:
               <button
                 type="button"
                 onClick={toggleDocumentImmersiveMode}
-                className={`h-10 w-10 rounded-xl border transition-colors ${isDocumentImmersive ? 'border-violet-200 bg-violet-50 text-violet-700' : 'border-slate-200 bg-white text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
-                title={isDocumentImmersive ? 'Exit fullscreen' : 'Open fullscreen'}
-                aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Open fullscreen'}
+                className={`p-1.5 rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+                title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
+                aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
-                {isDocumentImmersive ? <Minimize2 size={14} className="mx-auto" /> : <Maximize2 size={14} className="mx-auto" />}
+                {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
               </button>
               <button type="button" onClick={() => showToast('Notifications opened')} className="h-10 w-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-700"><Bell size={14} className="mx-auto" /></button>
             </div>
