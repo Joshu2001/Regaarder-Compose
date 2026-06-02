@@ -12588,6 +12588,24 @@ Rules:
       { name: 'Healthcare Onboarding', progress: 53, status: 'At risk', statusTone: 'text-amber-600', milestone: '3 / 5 milestones', due: 'Due Jun 30' },
       { name: 'Finance Planning', progress: 45, status: 'On track', statusTone: 'text-blue-600', milestone: '4 / 6 milestones', due: 'Due Jul 10' },
     ];
+    const manageenMyWorkItems = manageenBoardColumns.flatMap((column) => (
+      column.tasks
+        .filter((task) => task.assignee === 'Joshua' || task.priority === 'High' || task.priority === 'Medium')
+        .slice(0, 2)
+        .map((task) => ({ ...task, columnTitle: column.title }))
+    )).slice(0, 6);
+    const manageenReports = [
+      { title: 'Delivery health', value: '79%', note: '2 projects need attention', tone: 'text-violet-700 bg-violet-50 border-violet-100' },
+      { title: 'On-time tasks', value: '86%', note: 'Up 4% from last week', tone: 'text-emerald-700 bg-emerald-50 border-emerald-100' },
+      { title: 'Blocked work', value: '2', note: 'Waiting on dependencies', tone: 'text-rose-700 bg-rose-50 border-rose-100' },
+      { title: 'Completed this week', value: '14', note: 'Steady throughput', tone: 'text-blue-700 bg-blue-50 border-blue-100' },
+    ];
+    const manageenReportTrends = [34, 38, 42, 47, 51, 56];
+    const manageenRequests = [
+      { title: 'Approve launch assets', type: 'Approval', owner: 'Maya', due: 'Today', status: 'Waiting', tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+      { title: 'Review API scope change', type: 'Decision', owner: 'Alex', due: 'Tomorrow', status: 'Needs input', tone: 'bg-violet-50 text-violet-700 border-violet-200' },
+      { title: 'Confirm release window', type: 'Coordination', owner: 'Priya', due: 'Jun 5', status: 'Pending', tone: 'bg-slate-50 text-slate-700 border-slate-200' },
+    ];
     const isManageenBoardsView = manageenActiveNav === 'Boards';
     const manageenBoardSummary = manageenBoardSummaries[manageenBoardView] || manageenBoardSummaries.Board;
     const manageenBoardCount = manageenBoardColumns.reduce((sum, column) => sum + column.tasks.length, 0);
@@ -13004,10 +13022,16 @@ Rules:
               <p className="mt-1 text-sm text-slate-500">
                 {manageenActiveNav === 'Boards'
                   ? manageenBoardSummary.subtitle
+                  : manageenActiveNav === 'My Work'
+                    ? 'Your active tasks, blockers, and next actions in one place.'
                   : manageenActiveNav === 'Goals'
                     ? 'Outcomes, ownership, and the small set of priorities that should actually move the business.'
                     : manageenActiveNav === 'Workload'
                       ? 'A clear view of who is available, who is overloaded, and where work should flow next.'
+                    : manageenActiveNav === 'Reports'
+                      ? 'Readable status, throughput, and risk summaries for quick decisions.'
+                      : manageenActiveNav === 'Requests'
+                        ? 'Incoming approvals and decisions that need a fast response.'
                       : 'Here is what is happening with your projects today.'}
               </p>
             </div>
@@ -13151,6 +13175,184 @@ Rules:
                   <div className="mt-3 space-y-2 text-sm text-slate-600">
                     {manageenWorkloadGuidelines.map((rule) => (
                       <div key={rule} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">{rule}</div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          )}
+
+          {manageenActiveNav === 'My Work' && (
+            <div className="mt-5 grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+              <section className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900">My current work</h2>
+                    <p className="text-sm text-slate-500">Only the tasks you own or need to move next.</p>
+                  </div>
+                  <button type="button" onClick={() => showToast('My Work refreshed')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">Refresh</button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {manageenMyWorkItems.map((task, taskIndex) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => {
+                        setManageenActiveNav('Boards');
+                        setManageenBoardView('Board');
+                        setManageenSelectedTaskId(task.id);
+                      }}
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm"
+                      style={{ animation: `manageenFadeIn 0.45s ease-out ${taskIndex * 55}ms both` }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900">{task.title}</div>
+                          <div className="mt-1 text-xs text-slate-500">{task.columnTitle} • {task.assignee || 'Joshua'}</div>
+                        </div>
+                        <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{task.due}</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                        <span>{task.priority || 'Medium'} priority</span>
+                        <span>{task.comments} comments</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <aside className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-sm font-semibold text-slate-900">Today&apos;s focus</div>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600">
+                    {['Clear the highest-risk blocker', 'Review the next handoff', 'Update due dates that moved'].map((item) => (
+                      <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">{item}</div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-sm font-semibold text-slate-900">My work summary</div>
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { label: 'Open', value: '6' },
+                      { label: 'Blocked', value: '1' },
+                      { label: 'Done', value: '4' },
+                    ].map((item) => (
+                      <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-3">
+                        <div className="text-lg font-semibold text-slate-900">{item.value}</div>
+                        <div className="text-[11px] text-slate-500">{item.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          )}
+
+          {manageenActiveNav === 'Reports' && (
+            <div className="mt-5 grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-4">
+              <section className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900">Project reports</h2>
+                    <p className="text-sm text-slate-500">Fast summaries for progress, risk, and throughput.</p>
+                  </div>
+                  <button type="button" onClick={() => showToast('Reports exported')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">Export</button>
+                </div>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {manageenReports.map((item, itemIndex) => (
+                    <div key={item.title} className={`rounded-2xl border p-4 ${item.tone}`} style={{ animation: `manageenFadeIn 0.45s ease-out ${itemIndex * 55}ms both` }}>
+                      <div className="text-sm font-semibold text-slate-900">{item.title}</div>
+                      <div className="mt-2 text-3xl font-semibold text-slate-900">{item.value}</div>
+                      <div className="mt-1 text-sm text-slate-600">{item.note}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <aside className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">Throughput trend</div>
+                      <div className="text-xs text-slate-500">Last six weeks</div>
+                    </div>
+                    <div className="text-sm font-semibold text-emerald-600">+8%</div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-6 gap-2 items-end h-24">
+                    {manageenReportTrends.map((bar, index) => (
+                      <div key={bar} className="flex flex-col items-center justify-end h-full" style={{ animation: `manageenFadeIn 0.45s ease-out ${index * 45}ms both` }}>
+                        <div className="w-full rounded-t-xl bg-violet-500/80" style={{ height: `${bar}%` }} />
+                        <div className="mt-2 text-[10px] text-slate-400">W{index + 1}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-sm font-semibold text-slate-900">Report notes</div>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600">
+                    {['Use these summaries in standups', 'Highlight blockers before they age', 'Keep the report readable in under 60 seconds'].map((item) => (
+                      <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">{item}</div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          )}
+
+          {manageenActiveNav === 'Requests' && (
+            <div className="mt-5 grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-4">
+              <section className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-base font-semibold text-slate-900">Requests inbox</h2>
+                    <p className="text-sm text-slate-500">Approvals and decisions that need a quick response.</p>
+                  </div>
+                  <button type="button" onClick={() => showToast('Requests reviewed')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">Mark reviewed</button>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {manageenRequests.map((request, requestIndex) => (
+                    <div key={request.title} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3" style={{ animation: `manageenFadeIn 0.45s ease-out ${requestIndex * 55}ms both` }}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-slate-900">{request.title}</div>
+                          <div className="mt-1 text-xs text-slate-500">{request.type} • {request.owner}</div>
+                        </div>
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${request.tone}`}>{request.status}</span>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                        <span>Due {request.due}</span>
+                        <div className="flex items-center gap-2">
+                          <button type="button" onClick={() => showToast(`${request.title} approved`)} className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100">Approve</button>
+                          <button type="button" onClick={() => showToast(`${request.title} sent back`)} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-50">Reply</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <aside className="space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-sm font-semibold text-slate-900">Request rules</div>
+                  <div className="mt-3 space-y-2 text-sm text-slate-600">
+                    {['Answer within one business day', 'Escalate blockers immediately', 'Keep approvals tied to a clear owner'].map((item) => (
+                      <div key={item} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">{item}</div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="text-sm font-semibold text-slate-900">Incoming balance</div>
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { label: 'Approvals', value: '4' },
+                      { label: 'Decisions', value: '2' },
+                      { label: 'Messages', value: '5' },
+                    ].map((item) => (
+                      <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-3">
+                        <div className="text-lg font-semibold text-slate-900">{item.value}</div>
+                        <div className="text-[11px] text-slate-500">{item.label}</div>
+                      </div>
                     ))}
                   </div>
                 </div>
