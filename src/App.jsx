@@ -2257,6 +2257,7 @@ export default function App() {
   const [editorHeading, setEditorHeading] = useState('Heading 1');
   const [editorFont, setEditorFont] = useState('Manrope');
   const [editorSize, setEditorSize] = useState(36);
+  const [subtitleSize, setSubtitleSize] = useState(17);
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
   const [isUnderlineActive, setIsUnderlineActive] = useState(false);
@@ -4563,7 +4564,7 @@ export default function App() {
     const insideBody = Boolean(bodyRoot && bodyRoot.contains(targetNode));
     const insideTitle = Boolean(titleEditableRef.current && titleEditableRef.current.contains(targetNode));
     const insideSubtitle = Boolean(subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
-    return insideBody && !insideTitle && !insideSubtitle;
+    return insideBody || insideTitle || insideSubtitle;
   };
   const stripMarkdownArtifacts = (value) => String(value || '')
     .replace(/```[\s\S]*?```/g, ' ')
@@ -9238,6 +9239,27 @@ Rules:
 
       const activeRange = selection.getRangeAt(0);
       if (!isRangeInsideEditor(activeRange)) {
+        return;
+      }
+
+      const ancestor = activeRange.commonAncestorContainer;
+      const targetNode = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+      const insideTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
+      const insideSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+
+      if (insideTitle) {
+        setEditorSize(safeSize);
+        if (selection.rangeCount) {
+          savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
+        }
+        return;
+      }
+
+      if (insideSubtitle) {
+        setSubtitleSize(safeSize);
+        if (selection.rangeCount) {
+          savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
+        }
         return;
       }
 
@@ -16863,7 +16885,7 @@ Rules:
               dir="ltr"
               data-doc-id={activeDocId || ''}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
-              style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docSubtitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.32 : 1) }}
+              style={{ fontFamily: editorFont, fontSize: `${subtitleSize}px`, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docSubtitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.32 : 1) }}
             >
               {docSubtitle || (showHeaderGhostPlaceholder ? AI_NATIVE_PLACEHOLDER : '')}
             </div>
