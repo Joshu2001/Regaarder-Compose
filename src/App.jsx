@@ -11156,6 +11156,7 @@ Rules:
           </div>
         )}
 
+        {!isDocumentImmersive && (
         <aside className="w-[250px] shrink-0 border-r border-slate-200/70 bg-white flex flex-col">
           <div className="px-4 py-3 border-b border-slate-100">
             <div className="flex items-center justify-between">
@@ -11225,9 +11226,9 @@ Rules:
                 <span>Direct Messages</span>
                 <button type="button" onClick={() => showToast('Invite teammate flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 text-[14px]">
                 {directMessages.map((name) => (
-                  <button key={name} type="button" onClick={() => showToast(`${name} conversation opened`)} className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
+                  <button key={name} type="button" onClick={() => showToast(`${name} conversation opened`)} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     <span className="truncate">{name}</span>
                   </button>
@@ -11240,9 +11241,9 @@ Rules:
                 <span>Teams</span>
                 <button type="button" onClick={() => showToast('Create team flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 text-[14px]">
                 {teamChannels.map((team, index) => (
-                  <button key={team} type="button" onClick={() => showToast(`${team} team opened`)} className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
+                  <button key={team} type="button" onClick={() => showToast(`${team} team opened`)} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center gap-2 text-left">
                     <span className="w-4 h-4 rounded-full bg-slate-200 text-violet-600 text-[9px] font-bold flex items-center justify-center">{team.charAt(0)}</span>
                     <span className="truncate">{team}</span>
                   </button>
@@ -11255,7 +11256,7 @@ Rules:
                 <span>Channels</span>
                 <button type="button" onClick={() => showToast('Create channel flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 text-[14px]">
                 {dmThreads.map((thread) => {
                   const active = activeDmThread?.id === thread.id;
                   return (
@@ -11263,7 +11264,7 @@ Rules:
                       key={thread.id}
                       type="button"
                       onClick={() => setDmActiveThreadId(thread.id)}
-                      className={`w-full h-8 px-2 rounded-lg flex items-center justify-between text-left ${active ? 'bg-slate-100 text-slate-800' : 'text-slate-700 hover:bg-slate-50'}`}
+                      className={`w-full h-8 px-2 rounded-lg flex items-center justify-between text-left text-[14px] ${active ? 'bg-slate-100 text-slate-800' : 'text-slate-700 hover:bg-slate-50'}`}
                     >
                       <span className="truncate"># {thread.title.replace(/\s+/g, '-').toLowerCase()}</span>
                       {thread.unread > 0 ? <span className="w-1.5 h-1.5 rounded-full bg-slate-400" /> : <span />}
@@ -11278,9 +11279,9 @@ Rules:
                 <span>AI Conversations</span>
                 <button type="button" onClick={() => showToast('New AI conversation flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 text-[14px]">
                 {aiConversations.map((item, index) => (
-                  <button key={item} type="button" onClick={() => showToast(`${item} opened`)} className="w-full h-8 px-2 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center justify-between text-left">
+                  <button key={item} type="button" onClick={() => showToast(`${item} opened`)} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center justify-between text-left">
                     <span className="truncate">{item}</span>
                     {index === 0 ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
                   </button>
@@ -11297,15 +11298,16 @@ Rules:
             </div>
           </div>
         </aside>
+        )}
 
         <main className="flex-1 min-w-0 flex bg-white">
-          <section className="flex-1 min-w-0 flex flex-col border-r border-gray-200 bg-white">
+          <section className={`flex-1 min-w-0 flex flex-col bg-white ${!isDocumentImmersive ? 'border-r border-gray-200' : ''}`}>
             <div className="h-[74px] bg-white border-b border-gray-200 px-6 flex items-center justify-between gap-4">
               <div>
                 <div className="text-2xl font-semibold text-slate-900">{activeDmThread?.title || 'Beta Launch'}</div>
                 <div className="text-sm text-slate-400 mt-1">{activeDmThread?.members || 12} members | Add a description</div>
               </div>
-              <div className="flex items-center gap-3 w-[440px] max-w-[48%]">
+              <div className="flex items-center gap-3 w-[520px] max-w-[60%] justify-end">
                 {!dmProjectPanelOpen && (
                   <button
                     type="button"
@@ -11324,6 +11326,15 @@ Rules:
                     className="w-full h-10 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-3 text-sm text-slate-700 outline-none focus:border-violet-300"
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={toggleDocumentImmersiveMode}
+                  className={`h-9 w-9 rounded-xl border transition-colors flex items-center justify-center ${isDocumentImmersive ? 'border-violet-200 bg-violet-50 text-violet-700' : 'border-slate-200 bg-white text-slate-500 hover:border-violet-200 hover:text-violet-700'}`}
+                  title={isDocumentImmersive ? 'Exit fullscreen' : 'Expand fullscreen'}
+                  aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Expand fullscreen'}
+                >
+                  {isDocumentImmersive ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                </button>
                 <button type="button" onClick={() => showToast('Huddle starting flow coming next')} className="text-slate-400 hover:text-slate-600"><Video size={16} /></button>
                 <button type="button" onClick={() => showToast('Member list opened')} className="text-slate-400 hover:text-slate-600"><Users size={16} /></button>
                 <button type="button" onClick={() => showToast('Channel actions opened')} className="text-slate-400 hover:text-slate-600"><MoreHorizontal size={16} /></button>
@@ -11412,15 +11423,17 @@ Rules:
                             {message.text}
 
                             {Array.isArray(message.files) && message.files.length > 0 && (
-                              <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 max-w-[290px] flex items-center justify-between">
+                              <div className="mt-3 rounded-xl border border-violet-200 bg-[linear-gradient(135deg,rgba(245,243,255,1)_0%,rgba(255,255,255,1)_55%,rgba(249,245,255,1)_100%)] px-3.5 py-2.5 max-w-[290px] flex items-center justify-between shadow-[0_10px_24px_-20px_rgba(124,58,237,0.55)]">
                                 <div className="flex items-center gap-2">
-                                  <FileText size={15} className="text-slate-500" />
+                                  <span className="h-8 w-8 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center shrink-0">
+                                    <FileText size={15} className="text-violet-700" />
+                                  </span>
                                   <div>
-                                    <div className="text-sm font-medium text-slate-700">{message.files[0].name}</div>
-                                    <div className="text-[11px] text-slate-400">Updated recently</div>
+                                    <div className="text-sm font-semibold text-slate-800">{message.files[0].name}</div>
+                                    <div className="text-[11px] text-violet-700/70">Updated recently</div>
                                   </div>
                                 </div>
-                                <button type="button" onClick={() => showToast(`Opened ${message.files[0].name}`)} className="text-xs text-slate-500 font-medium hover:text-slate-700">Open</button>
+                                <button type="button" onClick={() => showToast(`Opened ${message.files[0].name}`)} className="text-xs text-violet-700 font-semibold hover:text-violet-800">Open</button>
                               </div>
                             )}
 
@@ -11688,7 +11701,7 @@ Rules:
             </aside>
           )}
 
-          {dmProjectPanelOpen && (
+          {dmProjectPanelOpen && !isDocumentImmersive && (
           <aside className="w-[360px] shrink-0 bg-white p-4 overflow-y-auto thin-scrollbar">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-start justify-between">
@@ -11840,6 +11853,7 @@ Rules:
           )}
         </main>
 
+        {!isDocumentImmersive && (
         <div className="w-[64px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-5 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
           <div
             onClick={() => openDmWorkspaceTab('chat')}
@@ -11939,14 +11953,7 @@ Rules:
             <div className="p-2"><MoreHorizontal size={20} /></div>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={createComposeExperience}
-          className="absolute bottom-4 left-[270px] text-xs text-slate-500 hover:text-slate-700"
-        >
-          Back to Compose
-        </button>
+        )}
       </div>
     );
   }
