@@ -12316,6 +12316,14 @@ Rules:
           </div>
 
           <div
+            onClick={() => openDmWorkspaceTab('manageen')}
+            title="Manageen"
+            className="flex items-center justify-center cursor-pointer transition-colors text-gray-400 hover:text-slate-600"
+          >
+            <div className="p-2 rounded-xl transition-all"><ListTodo size={20} /></div>
+          </div>
+
+          <div
             onClick={() => openDmWorkspaceTab('room')}
             title="Room"
             className="flex items-center justify-center cursor-pointer transition-colors text-gray-400 hover:text-slate-600"
@@ -13832,6 +13840,14 @@ Rules:
           >
             <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Cloud size={20} /></div>
             <span className="text-[9px] font-semibold">Orb</span>
+          </div>
+
+          <div
+            onClick={() => handleMiniSidebarClick('manageen')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${activeRightTab === 'manageen' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+          >
+            <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'manageen' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><ListTodo size={20} /></div>
+            <span className="text-[9px] font-semibold">Manageen</span>
           </div>
 
           <div
@@ -17943,6 +17959,7 @@ Rules:
                 { key: 'assistant', label: 'AI Assistant' },
                 { key: 'whiteboard', label: 'Whiteboard' },
                 { key: 'tasks', label: `Tasks (${tasks.filter((t) => !t.completed).length})` },
+                { key: 'manageen', label: 'Manageen' },
                 { key: 'calendar', label: 'Schedule' },
                 { key: 'room', label: 'Room' },
                 { key: 'memory', label: 'Memory' },
@@ -18618,6 +18635,105 @@ Rules:
                     No tasks in this view yet.
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeRightTab === 'manageen' && (
+            <div className="flex-1 overflow-y-auto thin-scrollbar p-4 bg-[#fbfbfe]">
+              <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-[0_14px_32px_-30px_rgba(109,40,217,0.6)]">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-violet-500 font-semibold">Manageen</div>
+                    <h3 className="mt-1 text-[18px] leading-tight font-semibold text-slate-900">Project clarity without Jira complexity</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => showToast('Manageen project templates opening soon')}
+                    className="h-8 px-3 rounded-lg bg-violet-600 text-white text-[11px] font-semibold hover:bg-violet-700"
+                  >
+                    New plan
+                  </button>
+                </div>
+                <p className="mt-2 text-[12px] leading-5 text-slate-600">
+                  Beginner-friendly planning for marketing, finance, healthcare, and software teams. Keep everyone aligned on what to do next and how work is progressing.
+                </p>
+
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-400">In Progress</div>
+                    <div className="mt-0.5 text-lg font-semibold text-slate-900">{tasks.filter((task) => !task.completed).length}</div>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-400">Completed</div>
+                    <div className="mt-0.5 text-lg font-semibold text-slate-900">{tasks.filter((task) => task.completed).length}</div>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2">
+                    <div className="text-[10px] uppercase tracking-wide text-slate-400">On Track</div>
+                    <div className="mt-0.5 text-lg font-semibold text-emerald-600">82%</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold text-slate-800">Focus Streams</div>
+                  <button
+                    type="button"
+                    onClick={() => showToast('Stream settings opened')}
+                    className="text-[11px] font-medium text-violet-600 hover:text-violet-700"
+                  >
+                    Manage
+                  </button>
+                </div>
+                <div className="mt-2 space-y-1.5">
+                  {[
+                    { name: 'Marketing Launch', owner: 'Priya', progress: '6/8 milestones' },
+                    { name: 'Finance Planning', owner: 'Maya', progress: '4/6 milestones' },
+                    { name: 'Healthcare Onboarding', owner: 'Rami', progress: '3/5 milestones' },
+                    { name: 'Engineering Delivery', owner: 'Alex', progress: '11/14 milestones' },
+                  ].map((stream) => (
+                    <button
+                      key={stream.name}
+                      type="button"
+                      onClick={() => showToast(`${stream.name} opened in Manageen`) }
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-left hover:border-violet-200 hover:bg-violet-50/40"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-slate-800 truncate">{stream.name}</span>
+                        <span className="text-[10px] text-slate-500">Owner: {stream.owner}</span>
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-slate-500">{stream.progress}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-3">
+                <div className="text-xs font-semibold text-slate-800">Simple Board</div>
+                <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
+                  {[
+                    { title: 'Todo', items: ['Define scope', 'Assign owners'] },
+                    { title: 'Doing', items: ['Prepare campaign deck', 'Review budget'] },
+                    { title: 'Done', items: ['Kickoff complete', 'Stakeholders aligned'] },
+                  ].map((column) => (
+                    <div key={column.title} className="rounded-xl border border-slate-200 bg-slate-50 p-2">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{column.title}</div>
+                      <div className="mt-1.5 space-y-1.5">
+                        {column.items.map((item) => (
+                          <button
+                            key={item}
+                            type="button"
+                            onClick={() => showToast(`${item} opened`) }
+                            className="w-full rounded-md border border-slate-200 bg-white px-2 py-1.5 text-left text-[11px] text-slate-700 hover:border-violet-200"
+                          >
+                            {item}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -20216,6 +20332,18 @@ Rules:
         >
           <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Cloud size={20} /></div>
           <span className="text-[9px] font-semibold">Orb</span>
+        </div>
+
+        <div
+          onClick={() => handleMiniSidebarClick('manageen')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'manageen' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'manageen' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <ListTodo size={20} />
+          </div>
+          <span className="text-[9px] font-semibold">Manageen</span>
         </div>
 
         <div
