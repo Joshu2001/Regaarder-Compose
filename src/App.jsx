@@ -26,33 +26,61 @@ const ENTERPRISE_PAGE_WIDTH_PX = 794;
 const ENTERPRISE_PAGE_HEIGHT_PX = 1123;
 const MANAGEEN_BOARD_DEFAULT_COLUMNS = [
   {
-    id: 'todo',
-    title: 'To Do',
+    id: 'ideas',
+    title: 'Ideas',
     tone: 'text-slate-700',
     tasks: [
-      { id: 'mg-task-1', title: 'Competitor analysis', tag: 'Marketing Launch' },
-      { id: 'mg-task-2', title: 'Security audit', tag: 'Engineering Delivery' },
-      { id: 'mg-task-3', title: 'Financial model update', tag: 'Finance Planning' },
+      { id: 'mg-task-1', title: 'Improve mobile performance', tag: 'Enhancement', project: 'Engineering Delivery', due: 'May 25', comments: 2, assignee: 'Joshua', priority: 'Medium', status: 'Ideas', progress: 10, description: 'Reduce load time and improve responsiveness across the mobile app.' },
+      { id: 'mg-task-2', title: 'AI-powered search integration', tag: 'Enhancement', project: 'Engineering Delivery', due: 'May 28', comments: 1, assignee: 'Alex', priority: 'High', status: 'Ideas', progress: 5, description: 'Add semantic search experiences for faster internal knowledge retrieval.' },
+      { id: 'mg-task-3', title: 'Analytics dashboard v2', tag: 'Feature', project: 'Engineering Delivery', due: 'May 30', comments: 3, assignee: 'Priya', priority: 'Low', status: 'Ideas', progress: 0, description: 'Define a simpler executive reporting dashboard with clearer KPIs.' },
     ],
   },
   {
-    id: 'in-progress',
-    title: 'In Progress',
+    id: 'ready',
+    title: 'Ready',
+    tone: 'text-blue-700',
+    tasks: [
+      { id: 'mg-task-4', title: 'Design system update', tag: 'Design', project: 'Engineering Delivery', due: 'May 16', comments: 2, assignee: 'Maya', priority: 'Low', status: 'Ready', progress: 0, description: 'Refresh spacing, states, and patterns before the next delivery wave.' },
+      { id: 'mg-task-5', title: 'Create API specification', tag: 'Design', project: 'Engineering Delivery', due: 'May 18', comments: 1, assignee: 'Joshua', priority: 'Medium', status: 'Ready', progress: 0, description: 'Create the first detailed API spec for auth, session, and token flows.' },
+      { id: 'mg-task-6', title: 'Setup monitoring and alerts', tag: 'DevOps', project: 'Engineering Delivery', due: 'May 20', comments: 0, assignee: 'Rami', priority: 'Low', status: 'Ready', progress: 0, description: 'Prepare service monitoring and alerting baselines for launch.' },
+    ],
+  },
+  {
+    id: 'working',
+    title: 'Working',
+    tone: 'text-amber-700',
+    tasks: [
+      { id: 'mg-task-7', title: 'API integration - Authentication', tag: 'Backend', project: 'Engineering Delivery', due: 'May 18', comments: 2, assignee: 'Joshua', priority: 'High', status: 'Working', progress: 70, description: 'Implement OAuth 2.0 authentication flow including access tokens, refresh tokens, and secure session handling.', subtasks: ['Design auth flow', 'Implement login endpoint', 'Implement token refresh', 'Add logout endpoint'], attachments: [{ name: 'auth-flow-diagram.sketch', size: '2.4 MB' }] },
+      { id: 'mg-task-8', title: 'Database schema migration', tag: 'Migration', project: 'Engineering Delivery', due: 'May 20', comments: 1, assignee: 'Alex', priority: 'Medium', status: 'Working', progress: 40, description: 'Prepare schema updates and migrate authentication-related tables safely.' },
+      { id: 'mg-task-9', title: 'Payments gateway integration', tag: 'Finance', project: 'Finance Planning', due: 'May 22', comments: 0, assignee: 'Priya', priority: 'High', status: 'Working', progress: 30, description: 'Connect payment workflows for subscriptions and invoice handling.' },
+    ],
+  },
+  {
+    id: 'review',
+    title: 'Review',
     tone: 'text-violet-700',
     tasks: [
-      { id: 'mg-task-4', title: 'API integration', tag: 'Engineering Delivery' },
-      { id: 'mg-task-5', title: 'Landing page design', tag: 'Marketing Launch' },
-      { id: 'mg-task-6', title: 'Budget review', tag: 'Finance Planning' },
+      { id: 'mg-task-10', title: 'User dashboard layouts', tag: 'Review', project: 'Engineering Delivery', due: 'May 16', comments: 2, assignee: 'Maya', priority: 'Medium', status: 'Review', progress: 100, description: 'Validate the revised dashboard layouts with PM and design before release.' },
+      { id: 'mg-task-11', title: 'Email notification system', tag: 'Review', project: 'Engineering Delivery', due: 'May 17', comments: 1, assignee: 'Rami', priority: 'Low', status: 'Review', progress: 100, description: 'Review message timing, content, and fallback behavior.' },
     ],
   },
   {
-    id: 'done',
-    title: 'Done',
+    id: 'blocked',
+    title: 'Blocked',
+    tone: 'text-rose-700',
+    tasks: [
+      { id: 'mg-task-12', title: '3rd party analytics integration', tag: 'Blocked', project: 'Engineering Delivery', due: 'May 19', comments: 0, assignee: 'Alex', priority: 'Medium', status: 'Blocked', progress: 20, description: 'Waiting for API keys before implementation can continue.' },
+      { id: 'mg-task-13', title: 'Data export feature', tag: 'Blocked', project: 'Finance Planning', due: 'May 21', comments: 0, assignee: 'Joshua', priority: 'High', status: 'Blocked', progress: 15, description: 'Blocked pending legal review on export policy and retention rules.' },
+    ],
+  },
+  {
+    id: 'complete',
+    title: 'Complete',
     tone: 'text-emerald-700',
     tasks: [
-      { id: 'mg-task-7', title: 'Kickoff meeting', tag: 'Marketing Launch' },
-      { id: 'mg-task-8', title: 'Requirements doc', tag: 'Engineering Delivery' },
-      { id: 'mg-task-9', title: 'Market research', tag: 'Marketing Launch' },
+      { id: 'mg-task-14', title: 'Kickoff meeting', tag: 'Done', project: 'Marketing Launch', due: 'May 2', comments: 1, assignee: 'Joshua', priority: 'Low', status: 'Complete', progress: 100, description: 'Initial project kickoff completed successfully.' },
+      { id: 'mg-task-15', title: 'Requirements doc', tag: 'Done', project: 'Engineering Delivery', due: 'May 4', comments: 0, assignee: 'Alex', priority: 'Low', status: 'Complete', progress: 100, description: 'Core requirements agreed and documented.' },
+      { id: 'mg-task-16', title: 'Market research', tag: 'Done', project: 'Marketing Launch', due: 'May 6', comments: 0, assignee: 'Priya', priority: 'Low', status: 'Complete', progress: 100, description: 'Market and competitor analysis completed.' },
     ],
   },
 ];
@@ -5466,6 +5494,7 @@ export default function App() {
   const [manageenBoardColumns, setManageenBoardColumns] = useState(MANAGEEN_BOARD_DEFAULT_COLUMNS);
   const [manageenDraggingTaskId, setManageenDraggingTaskId] = useState(null);
   const [manageenDropColumnId, setManageenDropColumnId] = useState(null);
+  const [manageenSelectedTaskId, setManageenSelectedTaskId] = useState('mg-task-5');
 
   const visibleTasks = useMemo(() => {
     if (taskOwnerFilter === 'all') {
@@ -5473,6 +5502,16 @@ export default function App() {
     }
     return tasks.filter((task) => task.owner === taskOwnerFilter);
   }, [tasks, taskOwnerFilter]);
+
+  const manageenSelectedTask = useMemo(() => {
+    for (const column of manageenBoardColumns) {
+      const task = column.tasks.find((item) => item.id === manageenSelectedTaskId);
+      if (task) {
+        return { ...task, columnTitle: column.title };
+      }
+    }
+    return null;
+  }, [manageenBoardColumns, manageenSelectedTaskId]);
 
   const handleManageenDragStart = (taskId) => {
     setManageenDraggingTaskId(taskId);
@@ -5513,6 +5552,7 @@ export default function App() {
 
     setManageenDraggingTaskId(null);
     setManageenDropColumnId(null);
+    setManageenSelectedTaskId(draggedTaskId);
   };
 
   const handleManageenDragEnd = () => {
@@ -12470,6 +12510,8 @@ Rules:
       { name: 'Finance Planning', progress: 45, status: 'On track', statusTone: 'text-blue-600', milestone: '4 / 6 milestones', due: 'Due Jul 10' },
     ];
     const isManageenBoardsView = manageenActiveNav === 'Boards';
+    const manageenBoardCount = manageenBoardColumns.reduce((sum, column) => sum + column.tasks.length, 0);
+    const manageenDueThisWeekCount = manageenBoardColumns.reduce((sum, column) => sum + column.tasks.filter((task) => String(task.due || '').includes('May')).length, 0);
     return (
       <div className={`flex h-screen bg-[#f5f6fb] text-slate-800 ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <aside className="w-[220px] shrink-0 border-r border-slate-200 bg-white flex flex-col">
@@ -12510,8 +12552,8 @@ Rules:
         <main className="flex-1 overflow-y-auto thin-scrollbar p-5 md:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-[34px] leading-tight font-semibold text-slate-900">{isManageenBoardsView ? 'Board' : 'Good morning, Joshua'}</h1>
-              <p className="mt-1 text-sm text-slate-500">{isManageenBoardsView ? 'Move work between To Do, In Progress, and Done.' : 'Here is what is happening with your projects today.'}</p>
+              <h1 className="text-[34px] leading-tight font-semibold text-slate-900">{isManageenBoardsView ? 'Engineering Delivery' : 'Good morning, Joshua'}</h1>
+              <p className="mt-1 text-sm text-slate-500">{isManageenBoardsView ? 'Execution view for the current project board.' : 'Here is what is happening with your projects today.'}</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -12522,6 +12564,202 @@ Rules:
               <button type="button" onClick={() => showToast('Notifications opened')} className="h-10 w-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-700"><Bell size={14} className="mx-auto" /></button>
             </div>
           </div>
+
+          {isManageenBoardsView && (
+            <>
+              <div className="mt-4 flex items-center gap-5 border-b border-slate-200 pb-3 text-[13px]">
+                {['Board', 'Timeline', 'Calendar', 'Workload', 'Files', 'Insights'].map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => showToast(`${tab} opened`)}
+                    className={`${tab === 'Board' ? 'text-violet-700 font-semibold border-b-2 border-violet-600 pb-3 -mb-3' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.35)]">
+                <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
+                  <div>
+                    <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.7fr_0.7fr_0.7fr_1fr_1fr] gap-3 border-b border-slate-100 pb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-full border-[6px] border-emerald-500/20 border-t-emerald-500 flex items-center justify-center text-xs font-semibold text-slate-700">79%</div>
+                        <div>
+                          <div className="text-[28px] font-semibold leading-none text-slate-900">Engineering Delivery</div>
+                          <div className="mt-1 text-sm text-emerald-600 font-medium">On track</div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-semibold text-slate-900">{manageenBoardCount}</div>
+                        <div className="text-xs text-slate-500">Tasks</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-semibold text-slate-900">{manageenDueThisWeekCount}</div>
+                        <div className="text-xs text-slate-500">Due this week</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-semibold text-slate-900">2</div>
+                        <div className="text-xs text-slate-500">Blocked</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-slate-500">Members</div>
+                        <div className="mt-2 flex items-center -space-x-2">
+                          {['J', 'A', 'M', 'P', 'R'].map((person, index) => (
+                            <div key={person} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[11px] font-semibold ${index % 2 === 0 ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-700'}`}>{person}</div>
+                          ))}
+                          <div className="ml-2 text-xs text-slate-400">+8</div>
+                        </div>
+                      </div>
+                      <div className="rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3">
+                        <div className="text-xs font-semibold text-violet-700">AI Insight</div>
+                        <div className="mt-1 text-sm text-slate-700">2 tasks are at risk of delay due to dependencies.</div>
+                        <button type="button" onClick={() => showToast('AI insight opened')} className="mt-2 text-xs font-semibold text-violet-700 hover:text-violet-800">View</button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {['All tasks', 'Owner', 'Priority', 'Due date', 'Group by: Status'].map((filter) => (
+                          <button
+                            key={filter}
+                            type="button"
+                            onClick={() => showToast(`${filter} filter opened`)}
+                            className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 hover:border-violet-300 hover:text-violet-700"
+                          >
+                            {filter}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => showToast('Automations opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 hover:border-violet-300">Automations</button>
+                        <button type="button" onClick={() => showToast('Board settings opened')} className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-violet-700"><LayoutGrid size={14} className="mx-auto" /></button>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 overflow-x-auto">
+                      {manageenBoardColumns.map((column) => (
+                        <div
+                          key={column.id}
+                          onDragOver={(event) => {
+                            event.preventDefault();
+                            setManageenDropColumnId(column.id);
+                          }}
+                          onDragLeave={() => setManageenDropColumnId((prev) => (prev === column.id ? null : prev))}
+                          onDrop={(event) => {
+                            event.preventDefault();
+                            handleManageenDropColumn(column.id);
+                          }}
+                          className={`min-w-[190px] rounded-2xl border p-3 transition-colors ${manageenDropColumnId === column.id ? 'border-violet-300 bg-violet-50/40' : 'border-slate-200 bg-slate-50/70'}`}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className={`text-xs font-semibold ${column.tone}`}>{column.title}</div>
+                            <div className="text-xs text-slate-400">{column.tasks.length}</div>
+                          </div>
+                          <div className="space-y-2">
+                            {column.tasks.map((task) => (
+                              <article
+                                key={task.id}
+                                draggable
+                                onClick={() => setManageenSelectedTaskId(task.id)}
+                                onDragStart={() => handleManageenDragStart(task.id)}
+                                onDragEnd={handleManageenDragEnd}
+                                className={`rounded-2xl border bg-white p-3 text-left cursor-grab active:cursor-grabbing transition-colors ${manageenSelectedTaskId === task.id ? 'border-amber-300 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]' : 'border-slate-200 hover:border-violet-200'} ${manageenDraggingTaskId === task.id ? 'opacity-70' : ''}`}
+                              >
+                                <div className="text-[13px] font-semibold leading-5 text-slate-800">{task.title}</div>
+                                <div className="mt-2 inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">{task.tag}</div>
+                                <div className="mt-3 flex items-center justify-between text-[10px] text-slate-400">
+                                  <span>{task.due}</span>
+                                  <span>{task.comments} comments</span>
+                                </div>
+                                {'progress' in task && task.progress > 0 && task.progress < 100 && (
+                                  <div className="mt-2">
+                                    <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                                      <div className="h-full bg-amber-400" style={{ width: `${task.progress}%` }} />
+                                    </div>
+                                    <div className="mt-1 text-[10px] text-slate-500">{task.progress}%</div>
+                                  </div>
+                                )}
+                              </article>
+                            ))}
+                            <button type="button" onClick={() => showToast(`Add task to ${column.title}`)} className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-2 py-2 text-xs text-violet-600 hover:border-violet-300">+ Add task</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <aside className="rounded-2xl border border-slate-200 bg-white p-4 h-fit sticky top-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-[22px] font-semibold leading-tight text-slate-900">{manageenSelectedTask?.title || 'Select a task'}</div>
+                        <div className="mt-1 text-sm text-slate-500">{manageenSelectedTask?.project || 'Engineering Delivery'}</div>
+                      </div>
+                      <button type="button" onClick={() => showToast('Task menu opened')} className="text-slate-400 hover:text-slate-700"><MoreHorizontal size={16} /></button>
+                    </div>
+
+                    {manageenSelectedTask && (
+                      <>
+                        <div className="mt-4 space-y-3 text-sm">
+                          <div className="flex items-center justify-between"><span className="text-slate-500">Status</span><span className="font-medium text-amber-600">{manageenSelectedTask.columnTitle}</span></div>
+                          <div className="flex items-center justify-between"><span className="text-slate-500">Assignee</span><span className="font-medium text-slate-800">{manageenSelectedTask.assignee || 'Joshua'}</span></div>
+                          <div className="flex items-center justify-between"><span className="text-slate-500">Priority</span><span className="font-medium text-rose-600">{manageenSelectedTask.priority || 'High'}</span></div>
+                          <div className="flex items-center justify-between"><span className="text-slate-500">Due date</span><span className="font-medium text-slate-800">{manageenSelectedTask.due}</span></div>
+                        </div>
+
+                        {typeof manageenSelectedTask.progress === 'number' && (
+                          <div className="mt-4">
+                            <div className="flex items-center justify-between text-sm mb-1"><span className="text-slate-500">Progress</span><span className="font-medium text-slate-700">{manageenSelectedTask.progress}%</span></div>
+                            <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                              <div className="h-full bg-amber-400" style={{ width: `${manageenSelectedTask.progress}%` }} />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {[manageenSelectedTask.tag, manageenSelectedTask.project].filter(Boolean).map((chip) => (
+                            <span key={chip} className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700">{chip}</span>
+                          ))}
+                        </div>
+
+                        <div className="mt-5 border-t border-slate-100 pt-4">
+                          <div className="text-sm font-semibold text-slate-900">Description</div>
+                          <p className="mt-2 text-sm leading-6 text-slate-600">{manageenSelectedTask.description || 'No description yet.'}</p>
+                        </div>
+
+                        {Array.isArray(manageenSelectedTask.subtasks) && manageenSelectedTask.subtasks.length > 0 && (
+                          <div className="mt-5 border-t border-slate-100 pt-4">
+                            <div className="text-sm font-semibold text-slate-900">Subtasks</div>
+                            <div className="mt-2 space-y-2">
+                              {manageenSelectedTask.subtasks.map((subtask) => (
+                                <div key={subtask} className="flex items-center gap-2 text-sm text-slate-600">
+                                  <div className="w-4 h-4 rounded-full border border-slate-300" />
+                                  <span>{subtask}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {Array.isArray(manageenSelectedTask.attachments) && manageenSelectedTask.attachments.length > 0 && (
+                          <div className="mt-5 border-t border-slate-100 pt-4">
+                            <div className="text-sm font-semibold text-slate-900">Attachments</div>
+                            {manageenSelectedTask.attachments.map((attachment) => (
+                              <div key={attachment.name} className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                                <div className="text-sm font-medium text-slate-800">{attachment.name}</div>
+                                <div className="text-xs text-slate-500">{attachment.size}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </aside>
+                </div>
+              </div>
+            </>
+          )}
 
           {!isManageenBoardsView && (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
@@ -12612,25 +12850,12 @@ Rules:
           </div>
           )}
 
-          <div className={`rounded-2xl border border-slate-200 bg-white p-4 ${isManageenBoardsView ? 'mt-5' : 'mt-4'}`}>
+          {!isManageenBoardsView && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 mt-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-slate-900">Project Board</h2>
               <div className="text-xs text-slate-500">Drag tasks between columns to update status</div>
             </div>
-            {isManageenBoardsView && (
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                {['Quick filters', 'Assignee', 'Sprint'].map((filter) => (
-                  <button
-                    key={filter}
-                    type="button"
-                    onClick={() => showToast(`${filter} filter opened`)}
-                    className="h-8 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs text-slate-600 hover:border-violet-300 hover:text-violet-700"
-                  >
-                    {filter}
-                  </button>
-                ))}
-              </div>
-            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {manageenBoardColumns.map((column) => (
                 <div
@@ -12655,6 +12880,7 @@ Rules:
                       <article
                         key={task.id}
                         draggable
+                        onClick={() => setManageenSelectedTaskId(task.id)}
                         onDragStart={() => handleManageenDragStart(task.id)}
                         onDragEnd={handleManageenDragEnd}
                         className={`rounded-lg border bg-white px-2.5 py-2 cursor-grab active:cursor-grabbing ${manageenDraggingTaskId === task.id ? 'border-violet-300 opacity-70' : 'border-slate-200 hover:border-violet-200'}`}
@@ -12673,6 +12899,7 @@ Rules:
               ))}
             </div>
           </div>
+          )}
         </main>
       </div>
     );
