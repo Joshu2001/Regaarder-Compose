@@ -2149,6 +2149,7 @@ export default function App() {
   const dmAnyAttachmentInputRef = useRef(null);
   const dmImageAttachmentInputRef = useRef(null);
   const dmAudioAttachmentInputRef = useRef(null);
+  const dmMessagesViewportRef = useRef(null);
   const chatFileInputRef = useRef(null);
   const scheduleFileInputRef = useRef(null);
   const schedulePeopleMenuRef = useRef(null);
@@ -10851,6 +10852,18 @@ Rules:
     return activeDmMessages.filter((message) => (message.createdAt || 0) >= effectiveDmJoinedAt);
   }, [activeDmMessages, dmMemberView, effectiveDmJoinedAt]);
 
+  useEffect(() => {
+    if (productMode !== 'dm' || dmConversationTab !== 'chat') {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [productMode, dmConversationTab, activeDmThread?.id, visibleDmMessages.length]);
+
   const visibleDmSearchResults = useMemo(() => {
     if (dmMemberView !== 'new-member' || !effectiveDmJoinedAt) {
       return dmSearchResults;
@@ -11061,6 +11074,8 @@ Rules:
     const teamChannels = dmTeamChannels;
     const aiConversations = dmAiConversations;
     const activeThreadFiles = dmFiles.filter((file) => file.threadId === activeDmThread?.id).slice(0, 3);
+    const dmMentionsItems = activeDmMessages.filter((message) => message.role !== 'you').slice(-6);
+    const dmSavedItems = activeThreadFiles.slice(0, 6);
     const activeThreadDecisions = dmDecisions.filter((item) => item.threadId === activeDmThread?.id).slice(0, 3);
     const activeThreadTasks = activeDmThread?.id === 'thread-beta-launch'
       ? [
@@ -11171,7 +11186,8 @@ Rules:
       setDmChannelInputOpen(false);
     };
     const handleDmAddChannel = () => {
-      const value = String(dmChannelInputValue || '').trim();
+      const rawValue = String(dmChannelInputValue || '').trim();
+      const value = rawValue.replace(/^#+/, '').trim();
       if (!value) {
         return;
       }
@@ -11199,7 +11215,11 @@ Rules:
       showToast(`#${slug || value} created`);
     };
     const toggleDmChannelInput = () => {
-      setDmChannelInputOpen((prev) => !prev);
+      setDmChannelInputOpen((prev) => {
+        const nextOpen = !prev;
+        setDmChannelInputValue(nextOpen ? '#' : '');
+        return nextOpen;
+      });
       setDmContactPickerOpen(false);
       setDmTeamInputOpen(false);
     };
@@ -11255,8 +11275,10 @@ Rules:
         setDmConversationTab('threads');
       } else if (label === 'AI Summary') {
         setDmConversationTab('ai-summary');
-      } else if (label === 'Mentions' || label === 'Saved') {
-        setDmSearchQuery(label.toLowerCase());
+      } else if (label === 'Mentions') {
+        setDmConversationTab('mentions');
+      } else if (label === 'Saved') {
+        setDmConversationTab('saved');
       } else {
         setDmConversationTab('chat');
       }
@@ -11297,7 +11319,7 @@ Rules:
     };
 
     return (
-      <div ref={appShellRef} className={`flex h-screen bg-[#f8f8fa] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex h-screen bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
           <div className="absolute top-5 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
             <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
@@ -11305,8 +11327,7 @@ Rules:
           </div>
         )}
 
-        {!isDocumentImmersive && (
-        <aside className="w-[250px] shrink-0 border-r border-slate-200/70 bg-[#FAFAFC] flex flex-col">
+        <aside className="w-[250px] shrink-0 border-r border-slate-200/70 bg-[#fbfafc] flex flex-col">
           <div className="px-4 py-3 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="text-[19px] font-semibold text-slate-900">Regaarder</div>
@@ -11327,8 +11348,8 @@ Rules:
             {[
               { label: 'Inbox', count: 6 },
               { label: 'Threads', count: dmThreadSummaries.length },
-              { label: 'Mentions', count: 2 },
-              { label: 'Saved', count: 0 },
+              { label: 'Mentions', count: dmMentionsItems.length },
+              { label: 'Saved', count: dmSavedItems.length },
               { label: 'AI Summary', count: visibleDmSearchResults.filter((entry) => entry.type === 'decision').length },
             ].map((item) => (
               <button
@@ -11451,17 +11472,20 @@ Rules:
                 <div className="mb-2 rounded-lg border border-slate-200 bg-white p-2 flex items-center gap-1.5">
                   <input
                     value={dmChannelInputValue}
-                    onChange={(event) => setDmChannelInputValue(event.target.value)}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      setDmChannelInputValue(nextValue.startsWith('#') ? nextValue : `#${nextValue.replace(/^#+/, '')}`);
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === 'Enter') {
                         event.preventDefault();
                         handleDmAddChannel();
                       }
                     }}
-                    placeholder="Channel name"
+                    placeholder="# channel-name"
                     className="flex-1 h-8 rounded-md border border-slate-200 px-2 text-xs text-slate-700 outline-none focus:border-violet-300"
                   />
-                  <button type="button" onClick={handleDmAddChannel} className="h-8 px-2 rounded-md bg-violet-600 text-white text-xs font-medium hover:bg-violet-700">Add</button>
+                  <button type="button" onClick={handleDmAddChannel} className="h-8 px-2 rounded-md bg-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-300">Add</button>
                 </div>
               )}
               <div className="space-y-1 text-[14px]">
@@ -11498,18 +11522,25 @@ Rules:
             </div>
           </div>
 
-          <div className="border-t border-gray-100 p-3 flex items-center justify-between">
+          <div className="border-t border-gray-100 p-3 flex items-center justify-between bg-[#fbfafc]">
             <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-sm font-semibold flex items-center justify-center">{currentUserShort}</div>
             <div className="flex items-center gap-2 text-slate-400">
-              <Clock size={15} />
+              <button
+                type="button"
+                onClick={() => setIsDarkMode((prev) => !prev)}
+                className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${isDarkMode ? 'bg-violet-100 text-violet-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                title={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
+                aria-label={isDarkMode ? 'Disable dark mode' : 'Enable dark mode'}
+              >
+                {isDarkMode ? <Sun size={15} /> : <Moon size={15} />}
+              </button>
               <Settings size={15} />
             </div>
           </div>
         </aside>
-        )}
 
-        <main className="flex-1 min-w-0 flex bg-white">
-          <section className={`flex-1 min-w-0 flex flex-col bg-white ${!isDocumentImmersive ? 'border-r border-gray-200' : ''}`}>
+        <main className="flex-1 min-w-0 flex bg-white/80">
+          <section className="flex-1 min-w-0 flex flex-col bg-white border-r border-slate-200/80">
             <div className="h-[74px] bg-white border-b border-gray-200 px-6 flex items-center justify-between gap-4">
               <div>
                 {dmEditingThreadTitle ? (
@@ -11579,7 +11610,7 @@ Rules:
                   <button
                     type="button"
                     onClick={() => setDmProjectPanelOpen(true)}
-                    className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:border-slate-300"
+                    className="h-9 px-3 rounded-xl border border-slate-200 bg-slate-100 text-xs font-medium text-slate-700 hover:bg-slate-200"
                   >
                     Show project panel
                   </button>
@@ -11627,7 +11658,7 @@ Rules:
             </div>
 
             <div className="px-6 pt-3 pb-2 border-b border-gray-200 bg-white">
-              <div className="rounded-xl bg-slate-50 px-4 py-3 flex items-center justify-between gap-3">
+              <div className="rounded-xl bg-[#f7f6f9] px-4 py-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <Sparkles size={14} className="text-slate-400" />
                   <div>
@@ -11635,11 +11666,11 @@ Rules:
                     <div className="text-sm text-slate-700">Product Hunt launch is scheduled for May 15! Let&apos;s make it amazing 🚀</div>
                   </div>
                 </div>
-                <button type="button" onClick={() => setDmConversationTab('highlights')} className="h-8 px-1 text-xs font-medium text-slate-500 hover:text-slate-700">View details</button>
+                <button type="button" onClick={() => setDmConversationTab('highlights')} className="h-8 px-1 text-xs font-medium text-violet-600 hover:text-violet-700">View details</button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto thin-scrollbar px-6 pt-4 pb-5 space-y-4 bg-white">
+            <div ref={dmMessagesViewportRef} className="flex-1 overflow-y-auto thin-scrollbar px-6 pt-4 pb-5 space-y-4 bg-[#fcfbfd]">
               {dmMemberView === 'new-member' && effectiveDmJoinedAt && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                   New-member mode: viewing history since {new Date(effectiveDmJoinedAt).toLocaleString()}.
@@ -11648,7 +11679,7 @@ Rules:
 
               {dmConversationTab === 'chat' && (
                 <>
-                  <div className="w-fit mx-auto rounded-full bg-white border border-slate-200 px-3 py-1 text-xs text-slate-500">Today</div>
+                  <div className="w-fit mx-auto rounded-full bg-slate-200 px-3 py-1 text-xs text-slate-600">Today</div>
                   {visibleDmMessages.length === 0 && (
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-6 text-center">
                       <div className="text-sm font-semibold text-slate-700">No messages yet in this channel</div>
@@ -11731,7 +11762,52 @@ Rules:
                       </article>
                     );
                   })}
+                  <div ref={chatEndRef} />
                 </>
+              )}
+
+              {dmConversationTab === 'mentions' && (
+                <div className="space-y-3">
+                  {dmMentionsItems.length === 0 && (
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center">
+                      <div className="text-sm font-semibold text-slate-700">No mentions yet</div>
+                      <div className="mt-1 text-xs text-slate-500">When teammates mention you in this workspace, they will appear here with recent context.</div>
+                    </div>
+                  )}
+                  {dmMentionsItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setDmConversationTab('chat')}
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left hover:border-violet-300"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-sm font-semibold text-slate-800">{item.author}</div>
+                        <div className="text-xs text-slate-400">{formatDmRelative(item.createdAt)}</div>
+                      </div>
+                      <div className="mt-1 text-sm text-slate-600 line-clamp-2">{item.text}</div>
+                      <div className="mt-2 text-[11px] font-medium text-violet-600">Open in channel</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {dmConversationTab === 'saved' && (
+                <div className="space-y-3">
+                  {dmSavedItems.length === 0 && (
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-6 text-center">
+                      <div className="text-sm font-semibold text-slate-700">No saved items yet</div>
+                      <div className="mt-1 text-xs text-slate-500">Pin files or notes from this channel to build a quick handoff list for the team.</div>
+                    </div>
+                  )}
+                  {dmSavedItems.map((fileItem) => (
+                    <div key={fileItem.id} className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                      <div className="text-[10px] uppercase tracking-[0.12em] text-slate-400">Saved file</div>
+                      <div className="mt-1 text-sm font-semibold text-slate-800">{fileItem.name}</div>
+                      <div className="mt-1 text-xs text-slate-500">Updated {formatDmRelative(fileItem.updatedAt)}</div>
+                    </div>
+                  ))}
+                </div>
               )}
 
               {dmConversationTab === 'threads' && (
@@ -12014,8 +12090,8 @@ Rules:
             </aside>
           )}
 
-          {dmProjectPanelOpen && !isDocumentImmersive && (
-          <aside className="w-[360px] shrink-0 bg-white p-4 overflow-y-auto thin-scrollbar">
+          {dmProjectPanelOpen && (
+          <aside className="w-[360px] shrink-0 bg-[#fbfafc] p-4 overflow-y-auto thin-scrollbar border-l border-slate-200/70">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-start justify-between">
                 <div>
@@ -12166,8 +12242,7 @@ Rules:
           )}
         </main>
 
-        {!isDocumentImmersive && (
-        <div className="w-[64px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-5 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
+        <div className="w-[64px] border-l border-gray-100 bg-[#fbfafc] flex flex-col items-center py-4 gap-5 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
           <div
             onClick={() => openDmWorkspaceTab('chat')}
             title="Chat"
@@ -12266,7 +12341,6 @@ Rules:
             <div className="p-2"><MoreHorizontal size={20} /></div>
           </div>
         </div>
-        )}
       </div>
     );
   }
