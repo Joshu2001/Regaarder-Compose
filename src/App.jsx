@@ -11364,6 +11364,7 @@ Rules:
                   )}
                   {visibleDmMessages.map((message, index) => {
                     const isAssistant = message.role === 'assistant';
+                    const isOutgoing = message.role === 'you';
                     const initials = message.author.split(' ').map((part) => part.charAt(0)).join('').slice(0, 2).toUpperCase();
                     const bubbleColor = message.role === 'you'
                       ? 'bg-[#eef2ff] border-violet-200'
@@ -11373,17 +11374,19 @@ Rules:
                     const replyCount = activeDmThreadReplyMap.get(message.id) || 0;
 
                     return (
-                      <article key={message.id} className="flex items-start gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold ${isAssistant ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-700'}`}>
-                          {isAssistant ? 'Orb' : initials}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 text-sm">
+                      <article key={message.id} className={`flex items-start gap-3 ${isOutgoing ? 'justify-end' : ''}`}>
+                        {!isOutgoing && (
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold ${isAssistant ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-700'}`}>
+                            {isAssistant ? 'Orb' : initials}
+                          </div>
+                        )}
+                        <div className={`min-w-0 max-w-[76%] ${isOutgoing ? 'items-end text-right' : ''}`}>
+                          <div className={`flex items-center gap-2 text-sm ${isOutgoing ? 'justify-end' : ''}`}>
                             <span className="font-semibold text-slate-900">{message.author}</span>
                             {isAssistant ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600 font-semibold">APP</span> : null}
                             <span className="text-xs text-slate-400">{formatDmRelative(message.createdAt)}</span>
                           </div>
-                          <div className={`mt-1 rounded-xl border px-3 py-2.5 text-[15px] text-slate-700 ${bubbleColor}`}>
+                          <div className={`mt-1 inline-block rounded-2xl border px-3 py-2.5 text-[15px] text-slate-700 ${bubbleColor}`}>
                             {message.text}
 
                             {Array.isArray(message.files) && message.files.length > 0 && (
@@ -11410,7 +11413,7 @@ Rules:
                               </div>
                             )}
                           </div>
-                          <div className="mt-1.5 flex items-center gap-2 text-xs text-slate-400">
+                          <div className={`mt-1.5 flex items-center gap-2 text-xs text-slate-400 ${isOutgoing ? 'justify-end' : ''}`}>
                             <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🔥 {index === 0 ? 3 : 2}</button>
                             <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">🙌 {index === 0 ? 2 : 0}</button>
                             <button type="button" onClick={() => showToast('Reaction picker coming next')} className="rounded-full border border-slate-200 bg-white px-1.5 py-0.5">☺</button>
