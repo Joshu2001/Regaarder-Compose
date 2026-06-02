@@ -12987,7 +12987,7 @@ Rules:
           </div>
 
           <div className="px-3 py-3 space-y-1 text-sm">
-            {['Home', 'My Work', 'Projects', 'Boards', 'Calendar', 'Reports', 'Goals', 'Workload', 'Requests'].map((label) => (
+            {['Overview', 'My Work', 'Portfolio', 'Boards', 'Calendar', 'Reports', 'Goals', 'Workload', 'Requests'].map((label) => (
               <button
                 key={label}
                 type="button"
@@ -13022,8 +13022,12 @@ Rules:
               <p className="mt-1 text-sm text-slate-500">
                 {manageenActiveNav === 'Boards'
                   ? manageenBoardSummary.subtitle
+                  : manageenActiveNav === 'Overview'
+                    ? 'A concise view of current projects, risk, and the next actions that matter.'
                   : manageenActiveNav === 'My Work'
                     ? 'Your active tasks, blockers, and next actions in one place.'
+                    : manageenActiveNav === 'Portfolio'
+                      ? 'A clear portfolio lens on delivery, progress, and where work is moving.'
                   : manageenActiveNav === 'Goals'
                     ? 'Outcomes, ownership, and the small set of priorities that should actually move the business.'
                     : manageenActiveNav === 'Workload'
@@ -13360,7 +13364,7 @@ Rules:
             </div>
           )}
 
-          {manageenActiveNav !== 'Boards' && manageenActiveNav !== 'Goals' && manageenActiveNav !== 'Workload' && (
+          {manageenActiveNav === 'Overview' && (
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
             {manageenStats.map((item) => (
               <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-3.5">
@@ -13375,124 +13379,25 @@ Rules:
           </div>
           )}
 
-          {manageenActiveNav !== 'Boards' && manageenActiveNav !== 'Goals' && manageenActiveNav !== 'Workload' && (
-          <div className="mt-4 grid grid-cols-1 xl:grid-cols-[1.2fr_1.3fr_0.9fr] gap-4">
-            <section className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-slate-900">My Work</h2>
-                <button type="button" onClick={() => showToast('My Work list opened')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">View all</button>
-              </div>
-              <div className="mt-3 space-y-1.5">
-                {[
-                  'Review budget proposal',
-                  'Approve marketing assets',
-                  'API integration - Phase 2',
-                  'User testing feedback',
-                  'Prepare stakeholder update',
-                ].map((task, index) => (
-                  <button key={task} type="button" onClick={() => showToast(`${task} opened`)} className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-left hover:border-violet-200 hover:bg-violet-50/40">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-slate-800">{task}</span>
-                      <span className="text-xs text-slate-400">May {12 + index}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-slate-200 bg-white p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-slate-900">Projects Overview</h2>
-                <button type="button" onClick={() => showToast('Project list opened')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">View all projects</button>
-              </div>
-              <div className="mt-3 space-y-3">
-                {manageenProjects.map((project) => (
-                  <div key={project.name} className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-sm font-semibold text-slate-800">{project.name}</div>
-                      <div className="text-xs font-semibold text-slate-700">{project.progress}%</div>
-                    </div>
-                    <div className="mt-2 h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                      <div className="h-full bg-violet-500" style={{ width: `${project.progress}%` }} />
-                    </div>
-                    <div className="mt-1.5 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500">{project.milestone} • {project.due}</span>
-                      <span className={project.statusTone}>{project.status}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-3">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold text-slate-900">AI Assistant</h2>
-                  <button type="button" onClick={() => showToast('AI recommendations opened')} className="text-xs text-violet-600 hover:text-violet-700">View details</button>
-                </div>
-                <div className="mt-2.5 space-y-2 text-sm">
-                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700">Engineering delivery is behind schedule by 5 days.</div>
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">Budget approval is overdue.</div>
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">Marketing launch is on track.</div>
-                </div>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                <h2 className="text-base font-semibold text-slate-900">Project Health</h2>
-                <div className="mt-3 rounded-full w-28 h-28 border-8 border-emerald-400 text-center flex items-center justify-center mx-auto">
-                  <div>
-                    <div className="text-2xl font-semibold text-slate-900">72%</div>
-                    <div className="text-xs text-slate-500">Overall</div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-          )}
-
-          {manageenActiveNav !== 'Boards' && manageenActiveNav !== 'Goals' && manageenActiveNav !== 'Workload' && (
+          {manageenActiveNav === 'Portfolio' && (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 mt-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base font-semibold text-slate-900">Project Board</h2>
-              <div className="text-xs text-slate-500">Drag tasks between columns to update status</div>
+              <h2 className="text-base font-semibold text-slate-900">Portfolio Overview</h2>
+              <div className="text-xs text-slate-500">High-level delivery health across active projects</div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {manageenBoardColumns.map((column) => (
-                <div
-                  key={column.id}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    setManageenDropColumnId(column.id);
-                  }}
-                  onDragLeave={() => setManageenDropColumnId((prev) => (prev === column.id ? null : prev))}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    handleManageenDropColumn(column.id);
-                  }}
-                  className={`rounded-xl border bg-slate-50 p-2.5 min-h-[240px] transition-colors ${manageenDropColumnId === column.id ? 'border-violet-300' : 'border-slate-200'}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className={`text-[11px] font-semibold uppercase tracking-wide ${column.tone}`}>{column.title}</div>
-                    <span className="text-[11px] text-slate-500">{column.tasks.length}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+              {manageenProjects.map((project, index) => (
+                <div key={project.name} className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5" style={{ animation: `manageenFadeIn 0.45s ease-out ${index * 55}ms both` }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm font-semibold text-slate-800">{project.name}</div>
+                    <div className="text-xs font-semibold text-slate-700">{project.progress}%</div>
                   </div>
-                  <div className="mt-2 space-y-2">
-                    {column.tasks.map((task) => (
-                      <article
-                        key={task.id}
-                        draggable
-                        onClick={() => setManageenSelectedTaskId(task.id)}
-                        onDragStart={() => handleManageenDragStart(task.id)}
-                        onDragEnd={handleManageenDragEnd}
-                        className={`rounded-lg border bg-white px-2.5 py-2 cursor-grab active:cursor-grabbing ${manageenDraggingTaskId === task.id ? 'border-violet-300 opacity-70' : 'border-slate-200 hover:border-violet-200'}`}
-                      >
-                        <div className="text-xs font-medium text-slate-800">{task.title}</div>
-                        <div className="mt-1 text-[10px] text-slate-500">{task.tag}</div>
-                      </article>
-                    ))}
-                    {column.tasks.length === 0 && (
-                      <div className="rounded-lg border border-dashed border-slate-300 bg-white px-2.5 py-3 text-[11px] text-slate-400 text-center">
-                        Drop task here
-                      </div>
-                    )}
+                  <div className="mt-2 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                    <div className="h-full bg-violet-500" style={{ width: `${project.progress}%` }} />
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                    <span className="text-slate-500">{project.milestone}</span>
+                    <span className={project.statusTone}>{project.status}</span>
                   </div>
                 </div>
               ))}
