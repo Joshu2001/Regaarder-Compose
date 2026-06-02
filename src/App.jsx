@@ -438,6 +438,7 @@ export default function App() {
     { id: 'dm-decision-2', threadId: 'thread-beta-launch', summary: 'Final copy review due tomorrow 10:00 AM', createdAt: Date.now() - 1000 * 60 * 32, by: 'Orb (AI Assistant)' },
   ]);
   const [dmArchive, setDmArchive] = useState([]);
+  const [dmProjectPanelOpen, setDmProjectPanelOpen] = useState(true);
   const [dmThreadReplies, setDmThreadReplies] = useState([
     {
       id: 'dm-thread-reply-1',
@@ -8772,6 +8773,7 @@ Rules:
     setDmThreadComposerValue('');
     setDmActiveParentMessageId(null);
     setDmActiveThreadId((prev) => prev || 'thread-beta-launch');
+    setDmProjectPanelOpen(true);
     showToast('DM workspace ready');
   };
 
@@ -11013,6 +11015,42 @@ Rules:
     const aiConversations = ['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent'];
     const activeThreadFiles = dmFiles.filter((file) => file.threadId === activeDmThread?.id).slice(0, 3);
     const activeThreadDecisions = dmDecisions.filter((item) => item.threadId === activeDmThread?.id).slice(0, 3);
+    const activeThreadTasks = activeDmThread?.id === 'thread-beta-launch'
+      ? [
+        { name: 'Review landing page', tag: 'High', when: 'Today' },
+        { name: 'Finalize Product Hunt copy', tag: 'Medium', when: 'Tomorrow' },
+        { name: 'Create launch video', tag: 'Medium', when: 'May 14' },
+      ]
+      : [];
+    const activeThreadMeetings = activeDmThread?.id === 'thread-beta-launch'
+      ? [{ name: 'Launch Planning Meeting', when: 'Tomorrow, 10:00 AM' }]
+      : [];
+    const activeThreadPeople = (() => {
+      const names = new Set();
+      activeDmMessages.forEach((message) => {
+        if (message?.author) {
+          names.add(String(message.author));
+        }
+      });
+      activeThreadDecisions.forEach((decision) => {
+        if (decision?.by) {
+          names.add(String(decision.by));
+        }
+      });
+
+      return Array.from(names)
+        .slice(0, 6)
+        .map((name) => {
+          const initials = name
+            .split(/\s+/)
+            .filter(Boolean)
+            .map((part) => part.charAt(0).toUpperCase())
+            .join('')
+            .slice(0, 2) || 'U';
+          return { name, initials };
+        });
+    })();
+    const panelHasContent = activeThreadTasks.length > 0 || activeThreadFiles.length > 0 || activeThreadMeetings.length > 0 || activeThreadPeople.length > 0 || activeThreadDecisions.length > 0;
     const currentUserShort = 'J';
     const openDmWorkspaceTab = (tabKey, options = {}) => {
       if (tabKey === 'dm') {
@@ -11246,6 +11284,15 @@ Rules:
                 <div className="text-sm text-slate-400 mt-1">{activeDmThread?.members || 12} members | Add a description</div>
               </div>
               <div className="flex items-center gap-3 w-[440px] max-w-[48%]">
+                {!dmProjectPanelOpen && (
+                  <button
+                    type="button"
+                    onClick={() => setDmProjectPanelOpen(true)}
+                    className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:border-slate-300"
+                  >
+                    Show project panel
+                  </button>
+                )}
                 <div className="relative flex-1">
                   <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -11616,6 +11663,7 @@ Rules:
             </aside>
           )}
 
+          {dmProjectPanelOpen && (
           <aside className="w-[360px] shrink-0 bg-white p-4 overflow-y-auto thin-scrollbar">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-start justify-between">
@@ -11623,7 +11671,18 @@ Rules:
                   <div className="text-[28px] font-semibold tracking-tight text-slate-900">{activeDmThread?.title || 'Beta Launch'}</div>
                   <div className="mt-1 text-xs text-slate-400">Private project</div>
                 </div>
-                <button type="button" onClick={() => showToast('Project panel collapsed')} className="text-slate-400 hover:text-slate-600"><X size={14} /></button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDmProjectPanelOpen(false);
+                    showToast('Project panel hidden');
+                  }}
+                  className="text-slate-400 hover:text-slate-600"
+                  title="Hide project panel"
+                  aria-label="Hide project panel"
+                >
+                  <X size={14} />
+                </button>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-5 text-[11px] text-slate-500">
@@ -11646,17 +11705,34 @@ Rules:
               </div>
             </div>
 
+            {!panelHasContent && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 mb-3">
+                <div className="text-sm font-medium text-slate-800">Nothing here yet</div>
+                <p className="mt-1 text-xs leading-5 text-slate-500">
+                  This channel has no project artifacts yet. Add a task, upload a file, or log a decision to populate this panel.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setDmComposerValue('Shared first project update and action items.')}
+                  className="mt-3 h-8 px-3 rounded-lg border border-slate-300 bg-white text-xs font-medium text-slate-700 hover:border-slate-400"
+                >
+                  Draft first update
+                </button>
+              </div>
+            )}
+
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-center justify-between">
                 <div className="text-sm font-medium text-slate-900">Tasks</div>
                 <button type="button" onClick={() => openDmWorkspaceTab('tasks')} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
               </div>
               <div className="mt-4 space-y-3 text-sm text-slate-700">
-                {[
-                  { name: 'Review landing page', tag: 'High', when: 'Today' },
-                  { name: 'Finalize Product Hunt copy', tag: 'Medium', when: 'Tomorrow' },
-                  { name: 'Create launch video', tag: 'Medium', when: 'May 14' },
-                ].map((task) => (
+                {activeThreadTasks.length === 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                    No tasks yet for this channel.
+                  </div>
+                )}
+                {activeThreadTasks.map((task) => (
                   <div key={task.name} className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <span className="block truncate text-slate-700">{task.name}</span>
@@ -11697,10 +11773,14 @@ Rules:
                 <button type="button" onClick={() => openDmWorkspaceTab('calendar')} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
               </div>
               <div className="mt-4 rounded-2xl border border-slate-200 p-3 flex items-center justify-between bg-slate-50/50">
-                <div>
-                  <div className="text-sm text-slate-700">Launch Planning Meeting</div>
-                  <div className="text-xs text-slate-400">Tomorrow, 10:00 AM</div>
-                </div>
+                {activeThreadMeetings.length > 0 ? (
+                  <div>
+                    <div className="text-sm text-slate-700">{activeThreadMeetings[0].name}</div>
+                    <div className="text-xs text-slate-400">{activeThreadMeetings[0].when}</div>
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-500">No upcoming meetings for this channel.</div>
+                )}
               </div>
             </div>
 
@@ -11710,8 +11790,13 @@ Rules:
                 <button type="button" onClick={() => openDmWorkspaceTab('people')} className="text-xs text-slate-500 hover:text-slate-900">View all</button>
               </div>
               <div className="mt-4 flex items-center gap-2 flex-wrap">
-                {['SJ', 'JD', 'AM', 'MC', 'OR'].map((name) => (
-                  <div key={name} className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center justify-center">{name}</div>
+                {activeThreadPeople.length === 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                    No people activity yet in this channel.
+                  </div>
+                )}
+                {activeThreadPeople.map((person) => (
+                  <div key={person.name} className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center justify-center" title={person.name}>{person.initials}</div>
                 ))}
               </div>
               {activeThreadDecisions.length > 0 && (
@@ -11727,6 +11812,7 @@ Rules:
               )}
             </div>
           </aside>
+          )}
         </main>
 
         <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
