@@ -388,6 +388,9 @@ export default function App() {
   const [dmConversationTab, setDmConversationTab] = useState('chat');
   const [dmActiveParentMessageId, setDmActiveParentMessageId] = useState(null);
   const [dmThreadComposerValue, setDmThreadComposerValue] = useState('');
+  const [dmDirectMessages, setDmDirectMessages] = useState(['Sarah Johnson', 'Alex Morgan', 'Michael Chen']);
+  const [dmTeamChannels, setDmTeamChannels] = useState(['Marketing', 'Engineering', 'Design', 'General']);
+  const [dmAiConversations, setDmAiConversations] = useState(['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent']);
   const [dmMemberView, setDmMemberView] = useState('member');
   const [dmJoinedAt, setDmJoinedAt] = useState(null);
   const [dmActiveThreadId, setDmActiveThreadId] = useState('thread-beta-launch');
@@ -11032,9 +11035,9 @@ Rules:
   };
 
   if (productMode === 'dm') {
-    const directMessages = ['Sarah Johnson', 'Alex Morgan', 'Michael Chen'];
-    const teamChannels = ['Marketing', 'Engineering', 'Design', 'General'];
-    const aiConversations = ['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent'];
+    const directMessages = dmDirectMessages;
+    const teamChannels = dmTeamChannels;
+    const aiConversations = dmAiConversations;
     const activeThreadFiles = dmFiles.filter((file) => file.threadId === activeDmThread?.id).slice(0, 3);
     const activeThreadDecisions = dmDecisions.filter((item) => item.threadId === activeDmThread?.id).slice(0, 3);
     const activeThreadTasks = activeDmThread?.id === 'thread-beta-launch'
@@ -11101,6 +11104,33 @@ Rules:
       setDmActiveParentMessageId(null);
       showToast('Start a new channel message');
     };
+    const handleDmAddDirectMessage = () => {
+      const name = window.prompt('Add direct message contact', 'New teammate');
+      if (!name || !String(name).trim()) {
+        return;
+      }
+      const value = String(name).trim();
+      setDmDirectMessages((prev) => (prev.includes(value) ? prev : [...prev, value]));
+      showToast(`${value} added`);
+    };
+    const handleDmAddTeam = () => {
+      const name = window.prompt('Add team', 'Product');
+      if (!name || !String(name).trim()) {
+        return;
+      }
+      const value = String(name).trim();
+      setDmTeamChannels((prev) => (prev.includes(value) ? prev : [...prev, value]));
+      showToast(`${value} team created`);
+    };
+    const handleDmAddAiConversation = () => {
+      const name = window.prompt('Add AI conversation', 'Strategy Agent');
+      if (!name || !String(name).trim()) {
+        return;
+      }
+      const value = String(name).trim();
+      setDmAiConversations((prev) => (prev.includes(value) ? prev : [...prev, value]));
+      showToast(`${value} ready`);
+    };
     const handleDmQuickJump = (label) => {
       if (label === 'Threads') {
         setDmConversationTab('threads');
@@ -11157,7 +11187,7 @@ Rules:
         )}
 
         {!isDocumentImmersive && (
-        <aside className="w-[250px] shrink-0 border-r border-slate-200/70 bg-white flex flex-col">
+        <aside className="w-[250px] shrink-0 border-r border-slate-200/70 bg-[#FAFAFC] flex flex-col">
           <div className="px-4 py-3 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="text-[19px] font-semibold text-slate-900">Regaarder</div>
@@ -11168,9 +11198,9 @@ Rules:
           </div>
 
           <div className="px-4 pt-4 pb-3">
-            <button type="button" onClick={handleDmStartNewMessage} className="w-full h-9 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-medium flex items-center justify-between px-3 hover:bg-slate-50">
+            <button type="button" onClick={handleDmStartNewMessage} className="w-full h-9 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium flex items-center gap-2 px-3 hover:bg-slate-50">
+              <Plus size={13} className="text-blue-500" />
               <span>New message</span>
-              <KeyRound size={14} className="text-violet-500" />
             </button>
           </div>
 
@@ -11224,7 +11254,7 @@ Rules:
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-400/80 flex items-center justify-between">
                 <span>Direct Messages</span>
-                <button type="button" onClick={() => showToast('Invite teammate flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
+                <button type="button" onClick={handleDmAddDirectMessage} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
               </div>
               <div className="space-y-1 text-[14px]">
                 {directMessages.map((name) => (
@@ -11239,7 +11269,7 @@ Rules:
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-400/80 flex items-center justify-between">
                 <span>Teams</span>
-                <button type="button" onClick={() => showToast('Create team flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
+                <button type="button" onClick={handleDmAddTeam} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
               </div>
               <div className="space-y-1 text-[14px]">
                 {teamChannels.map((team, index) => (
@@ -11277,7 +11307,7 @@ Rules:
             <div>
               <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-slate-400/80 flex items-center justify-between">
                 <span>AI Conversations</span>
-                <button type="button" onClick={() => showToast('New AI conversation flow coming next')} className="text-slate-400 hover:text-slate-600"><Plus size={14} /></button>
+                <button type="button" onClick={handleDmAddAiConversation} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
               </div>
               <div className="space-y-1 text-[14px]">
                 {aiConversations.map((item, index) => (
@@ -11329,11 +11359,11 @@ Rules:
                 <button
                   type="button"
                   onClick={toggleDocumentImmersiveMode}
-                  className={`h-9 w-9 rounded-xl border transition-colors flex items-center justify-center ${isDocumentImmersive ? 'border-violet-200 bg-violet-50 text-violet-700' : 'border-slate-200 bg-white text-slate-500 hover:border-violet-200 hover:text-violet-700'}`}
-                  title={isDocumentImmersive ? 'Exit fullscreen' : 'Expand fullscreen'}
-                  aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Expand fullscreen'}
+                  className={`p-1.5 rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+                  title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
+                  aria-label={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
                 >
-                  {isDocumentImmersive ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                  {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
                 </button>
                 <button type="button" onClick={() => showToast('Huddle starting flow coming next')} className="text-slate-400 hover:text-slate-600"><Video size={16} /></button>
                 <button type="button" onClick={() => showToast('Member list opened')} className="text-slate-400 hover:text-slate-600"><Users size={16} /></button>
