@@ -24,6 +24,38 @@ const UNTITLED_WHITEBOARD_LABEL = 'Untitled whiteboard';
 const SAVED_DRAFT_LABEL = 'Saved Drafts';
 const ENTERPRISE_PAGE_WIDTH_PX = 794;
 const ENTERPRISE_PAGE_HEIGHT_PX = 1123;
+const MANAGEEN_BOARD_DEFAULT_COLUMNS = [
+  {
+    id: 'todo',
+    title: 'To Do',
+    tone: 'text-slate-700',
+    tasks: [
+      { id: 'mg-task-1', title: 'Competitor analysis', tag: 'Marketing Launch' },
+      { id: 'mg-task-2', title: 'Security audit', tag: 'Engineering Delivery' },
+      { id: 'mg-task-3', title: 'Financial model update', tag: 'Finance Planning' },
+    ],
+  },
+  {
+    id: 'in-progress',
+    title: 'In Progress',
+    tone: 'text-violet-700',
+    tasks: [
+      { id: 'mg-task-4', title: 'API integration', tag: 'Engineering Delivery' },
+      { id: 'mg-task-5', title: 'Landing page design', tag: 'Marketing Launch' },
+      { id: 'mg-task-6', title: 'Budget review', tag: 'Finance Planning' },
+    ],
+  },
+  {
+    id: 'done',
+    title: 'Done',
+    tone: 'text-emerald-700',
+    tasks: [
+      { id: 'mg-task-7', title: 'Kickoff meeting', tag: 'Marketing Launch' },
+      { id: 'mg-task-8', title: 'Requirements doc', tag: 'Engineering Delivery' },
+      { id: 'mg-task-9', title: 'Market research', tag: 'Marketing Launch' },
+    ],
+  },
+];
 const LassoLoopIcon = ({ size = 12, className = '', style = {} }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -5430,6 +5462,9 @@ export default function App() {
     { id: 4, text: 'Check analytics dashboard integration is live', completed: false, owner: 'agent' },
   ]);
   const [taskOwnerFilter, setTaskOwnerFilter] = useState('all');
+  const [manageenBoardColumns, setManageenBoardColumns] = useState(MANAGEEN_BOARD_DEFAULT_COLUMNS);
+  const [manageenDraggingTaskId, setManageenDraggingTaskId] = useState(null);
+  const [manageenDropColumnId, setManageenDropColumnId] = useState(null);
 
   const visibleTasks = useMemo(() => {
     if (taskOwnerFilter === 'all') {
@@ -5437,6 +5472,52 @@ export default function App() {
     }
     return tasks.filter((task) => task.owner === taskOwnerFilter);
   }, [tasks, taskOwnerFilter]);
+
+  const handleManageenDragStart = (taskId) => {
+    setManageenDraggingTaskId(taskId);
+  };
+
+  const handleManageenDropColumn = (targetColumnId) => {
+    const draggedTaskId = manageenDraggingTaskId;
+    if (!draggedTaskId) {
+      return;
+    }
+
+    setManageenBoardColumns((prev) => {
+      let draggedTask = null;
+      let sourceColumnId = null;
+
+      const withoutDragged = prev.map((column) => {
+        const remainingTasks = column.tasks.filter((task) => {
+          if (task.id === draggedTaskId) {
+            draggedTask = task;
+            sourceColumnId = column.id;
+            return false;
+          }
+          return true;
+        });
+        return { ...column, tasks: remainingTasks };
+      });
+
+      if (!draggedTask || !sourceColumnId || sourceColumnId === targetColumnId) {
+        return prev;
+      }
+
+      return withoutDragged.map((column) => (
+        column.id === targetColumnId
+          ? { ...column, tasks: [draggedTask, ...column.tasks] }
+          : column
+      ));
+    });
+
+    setManageenDraggingTaskId(null);
+    setManageenDropColumnId(null);
+  };
+
+  const handleManageenDragEnd = () => {
+    setManageenDraggingTaskId(null);
+    setManageenDropColumnId(null);
+  };
 
   // Conversational state with pre-loaded AI response cards
   const [chatMessages, setChatMessages] = useState([
@@ -12386,15 +12467,6 @@ Rules:
       { name: 'Healthcare Onboarding', progress: 53, status: 'At risk', statusTone: 'text-amber-600', milestone: '3 / 5 milestones', due: 'Due Jun 30' },
       { name: 'Finance Planning', progress: 45, status: 'On track', statusTone: 'text-blue-600', milestone: '4 / 6 milestones', due: 'Due Jul 10' },
     ];
-    const manageenBoard = [
-      { title: 'Backlog', items: ['Competitor analysis', 'Security audit', 'Financial model update'] },
-      { title: 'Ready', items: ['Design system update', 'Create ad copy', 'Prepare Q2 report'] },
-      { title: 'In Progress', items: ['API integration', 'Landing page design', 'Budget review'] },
-      { title: 'Review', items: ['User flow review', 'Campaign assets review', 'Compliance review'] },
-      { title: 'Blocked', items: ['Data migration', 'Vendor contract'] },
-      { title: 'Done', items: ['Kickoff meeting', 'Requirements doc', 'Market research'] },
-    ];
-
     return (
       <div className={`flex h-screen bg-[#f5f6fb] text-slate-800 ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <aside className="w-[220px] shrink-0 border-r border-slate-200 bg-white flex flex-col">
@@ -12531,16 +12603,45 @@ Rules:
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-slate-900">Project Board</h2>
-              <button type="button" onClick={() => showToast('Board timeline opened')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">Timeline</button>
+              <div className="text-xs text-slate-500">Drag tasks between columns to update status</div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2.5">
-              {manageenBoard.map((column) => (
-                <div key={column.title} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{column.title}</div>
-                  <div className="mt-2 space-y-1.5">
-                    {column.items.map((item) => (
-                      <button key={item} type="button" onClick={() => showToast(`${item} opened`)} className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-left text-xs text-slate-700 hover:border-violet-200">{item}</button>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {manageenBoardColumns.map((column) => (
+                <div
+                  key={column.id}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setManageenDropColumnId(column.id);
+                  }}
+                  onDragLeave={() => setManageenDropColumnId((prev) => (prev === column.id ? null : prev))}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    handleManageenDropColumn(column.id);
+                  }}
+                  className={`rounded-xl border bg-slate-50 p-2.5 min-h-[240px] transition-colors ${manageenDropColumnId === column.id ? 'border-violet-300' : 'border-slate-200'}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className={`text-[11px] font-semibold uppercase tracking-wide ${column.tone}`}>{column.title}</div>
+                    <span className="text-[11px] text-slate-500">{column.tasks.length}</span>
+                  </div>
+                  <div className="mt-2 space-y-2">
+                    {column.tasks.map((task) => (
+                      <article
+                        key={task.id}
+                        draggable
+                        onDragStart={() => handleManageenDragStart(task.id)}
+                        onDragEnd={handleManageenDragEnd}
+                        className={`rounded-lg border bg-white px-2.5 py-2 cursor-grab active:cursor-grabbing ${manageenDraggingTaskId === task.id ? 'border-violet-300 opacity-70' : 'border-slate-200 hover:border-violet-200'}`}
+                      >
+                        <div className="text-xs font-medium text-slate-800">{task.title}</div>
+                        <div className="mt-1 text-[10px] text-slate-500">{task.tag}</div>
+                      </article>
                     ))}
+                    {column.tasks.length === 0 && (
+                      <div className="rounded-lg border border-dashed border-slate-300 bg-white px-2.5 py-3 text-[11px] text-slate-400 text-center">
+                        Drop task here
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
