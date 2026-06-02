@@ -7984,6 +7984,10 @@ Rules:
       createDmExperience();
       return;
     }
+    if (tabKey === 'manageen') {
+      createManageenExperience();
+      return;
+    }
     // If panel was maximized, un-maximize when switching
     if (rightPanelMaximized) setRightPanelMaximized(false);
     if (rightSidebarOpen && activeRightTab === tabKey) {
@@ -8795,6 +8799,17 @@ Rules:
     setDmActiveThreadId((prev) => prev || 'thread-beta-launch');
     setDmProjectPanelOpen(true);
     showToast('DM workspace ready');
+  };
+
+  const createManageenExperience = () => {
+    setCreationPickerOpen(false);
+    setProductMode('manageen');
+    setRightSidebarOpen(false);
+    setLeftSidebarOpen(false);
+    if (rightPanelMaximized) {
+      setRightPanelMaximized(false);
+    }
+    showToast('Manageen workspace ready');
   };
 
   const openLandingWorkspace = (destination) => {
@@ -11119,6 +11134,10 @@ Rules:
         createDmExperience();
         return;
       }
+      if (tabKey === 'manageen') {
+        createManageenExperience();
+        return;
+      }
 
       setProductMode('compose');
       setLeftSidebarOpen(true);
@@ -12349,6 +12368,185 @@ Rules:
             <div className="p-2"><MoreHorizontal size={20} /></div>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (productMode === 'manageen') {
+    const manageenStats = [
+      { label: 'Due Today', value: 5, note: '2 high priority', tone: 'text-violet-600', bg: 'bg-violet-50' },
+      { label: 'In Progress', value: 12, note: 'Across 4 projects', tone: 'text-amber-600', bg: 'bg-amber-50' },
+      { label: 'At Risk', value: 3, note: 'Needs attention', tone: 'text-rose-600', bg: 'bg-rose-50' },
+      { label: 'Completed', value: 14, note: 'This week', tone: 'text-emerald-600', bg: 'bg-emerald-50' },
+      { label: 'Blocked', value: 2, note: 'Waiting on others', tone: 'text-blue-600', bg: 'bg-blue-50' },
+    ];
+    const manageenProjects = [
+      { name: 'Engineering Delivery', progress: 79, status: 'At risk', statusTone: 'text-rose-600', milestone: '11 / 14 milestones', due: 'Due Jun 18' },
+      { name: 'Marketing Launch', progress: 68, status: 'On track', statusTone: 'text-emerald-600', milestone: '6 / 8 milestones', due: 'Due May 28' },
+      { name: 'Healthcare Onboarding', progress: 53, status: 'At risk', statusTone: 'text-amber-600', milestone: '3 / 5 milestones', due: 'Due Jun 30' },
+      { name: 'Finance Planning', progress: 45, status: 'On track', statusTone: 'text-blue-600', milestone: '4 / 6 milestones', due: 'Due Jul 10' },
+    ];
+    const manageenBoard = [
+      { title: 'Backlog', items: ['Competitor analysis', 'Security audit', 'Financial model update'] },
+      { title: 'Ready', items: ['Design system update', 'Create ad copy', 'Prepare Q2 report'] },
+      { title: 'In Progress', items: ['API integration', 'Landing page design', 'Budget review'] },
+      { title: 'Review', items: ['User flow review', 'Campaign assets review', 'Compliance review'] },
+      { title: 'Blocked', items: ['Data migration', 'Vendor contract'] },
+      { title: 'Done', items: ['Kickoff meeting', 'Requirements doc', 'Market research'] },
+    ];
+
+    return (
+      <div className={`flex h-screen bg-[#f5f6fb] text-slate-800 ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+        <aside className="w-[220px] shrink-0 border-r border-slate-200 bg-white flex flex-col">
+          <div className="px-5 h-16 border-b border-slate-100 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-violet-600 text-white text-sm font-bold flex items-center justify-center">M</div>
+            <div className="text-[22px] font-semibold tracking-tight text-slate-900">Manageen</div>
+          </div>
+
+          <div className="px-3 py-3 space-y-1 text-sm">
+            {['Home', 'My Work', 'Projects', 'Boards', 'Calendar', 'Reports', 'Goals', 'Workload', 'Requests'].map((label, index) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => showToast(`${label} opened`)}
+                className={`w-full h-9 rounded-lg px-3 text-left ${index === 0 ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-auto p-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => setProductMode('compose')}
+              className="w-full h-10 rounded-lg border border-slate-200 bg-white text-slate-700 text-sm font-medium hover:bg-slate-50"
+            >
+              Back to Compose
+            </button>
+          </div>
+        </aside>
+
+        <main className="flex-1 overflow-y-auto thin-scrollbar p-5 md:p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-[34px] leading-tight font-semibold text-slate-900">Good morning, Joshua</h1>
+              <p className="mt-1 text-sm text-slate-500">Here is what is happening with your projects today.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input placeholder="Search" className="h-10 w-[220px] rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-violet-300" />
+              </div>
+              <button type="button" onClick={() => showToast('Create new Manageen item')} className="h-10 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 inline-flex items-center gap-1.5"><Plus size={14} /> New</button>
+              <button type="button" onClick={() => showToast('Notifications opened')} className="h-10 w-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-700"><Bell size={14} className="mx-auto" /></button>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+            {manageenStats.map((item) => (
+              <div key={item.label} className="rounded-2xl border border-slate-200 bg-white p-3.5">
+                <div className={`w-8 h-8 rounded-full ${item.bg} ${item.tone} flex items-center justify-center mb-2`}>
+                  <CheckSquare size={14} />
+                </div>
+                <div className="text-sm text-slate-500">{item.label}</div>
+                <div className="mt-0.5 text-3xl font-semibold text-slate-900">{item.value}</div>
+                <div className={`mt-1 text-[11px] font-medium ${item.tone}`}>{item.note}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 xl:grid-cols-[1.2fr_1.3fr_0.9fr] gap-4">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-slate-900">My Work</h2>
+                <button type="button" onClick={() => showToast('My Work list opened')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">View all</button>
+              </div>
+              <div className="mt-3 space-y-1.5">
+                {[
+                  'Review budget proposal',
+                  'Approve marketing assets',
+                  'API integration - Phase 2',
+                  'User testing feedback',
+                  'Prepare stakeholder update',
+                ].map((task, index) => (
+                  <button key={task} type="button" onClick={() => showToast(`${task} opened`)} className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2 text-left hover:border-violet-200 hover:bg-violet-50/40">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-slate-800">{task}</span>
+                      <span className="text-xs text-slate-400">May {12 + index}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-semibold text-slate-900">Projects Overview</h2>
+                <button type="button" onClick={() => showToast('Project list opened')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">View all projects</button>
+              </div>
+              <div className="mt-3 space-y-3">
+                {manageenProjects.map((project) => (
+                  <div key={project.name} className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-semibold text-slate-800">{project.name}</div>
+                      <div className="text-xs font-semibold text-slate-700">{project.progress}%</div>
+                    </div>
+                    <div className="mt-2 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                      <div className="h-full bg-violet-500" style={{ width: `${project.progress}%` }} />
+                    </div>
+                    <div className="mt-1.5 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500">{project.milestone} • {project.due}</span>
+                      <span className={project.statusTone}>{project.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="space-y-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold text-slate-900">AI Assistant</h2>
+                  <button type="button" onClick={() => showToast('AI recommendations opened')} className="text-xs text-violet-600 hover:text-violet-700">View details</button>
+                </div>
+                <div className="mt-2.5 space-y-2 text-sm">
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700">Engineering delivery is behind schedule by 5 days.</div>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">Budget approval is overdue.</div>
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">Marketing launch is on track.</div>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <h2 className="text-base font-semibold text-slate-900">Project Health</h2>
+                <div className="mt-3 rounded-full w-28 h-28 border-8 border-emerald-400 text-center flex items-center justify-center mx-auto">
+                  <div>
+                    <div className="text-2xl font-semibold text-slate-900">72%</div>
+                    <div className="text-xs text-slate-500">Overall</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-slate-900">Project Board</h2>
+              <button type="button" onClick={() => showToast('Board timeline opened')} className="text-xs font-semibold text-violet-600 hover:text-violet-700">Timeline</button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-2.5">
+              {manageenBoard.map((column) => (
+                <div key={column.title} className="rounded-xl border border-slate-200 bg-slate-50 p-2.5">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{column.title}</div>
+                  <div className="mt-2 space-y-1.5">
+                    {column.items.map((item) => (
+                      <button key={item} type="button" onClick={() => showToast(`${item} opened`)} className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-left text-xs text-slate-700 hover:border-violet-200">{item}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -17968,7 +18166,13 @@ Rules:
                 <button
                   key={tab.key}
                   className={`shrink-0 px-3 py-4 transition-all border-b-2 ${activeRightTab === tab.key ? 'text-violet-600 border-violet-600 bg-white' : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'}`}
-                  onClick={() => setActiveRightTab(tab.key)}
+                  onClick={() => {
+                    if (tab.key === 'manageen') {
+                      createManageenExperience();
+                      return;
+                    }
+                    setActiveRightTab(tab.key);
+                  }}
                 >
                   {tab.label}
                 </button>
