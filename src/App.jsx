@@ -5495,6 +5495,7 @@ export default function App() {
   const [manageenDraggingTaskId, setManageenDraggingTaskId] = useState(null);
   const [manageenDropColumnId, setManageenDropColumnId] = useState(null);
   const [manageenSelectedTaskId, setManageenSelectedTaskId] = useState('mg-task-5');
+  const [manageenBoardView, setManageenBoardView] = useState('Board');
 
   const visibleTasks = useMemo(() => {
     if (taskOwnerFilter === 'all') {
@@ -12503,13 +12504,67 @@ Rules:
       { label: 'Completed', value: 14, note: 'This week', tone: 'text-emerald-600', bg: 'bg-emerald-50' },
       { label: 'Blocked', value: 2, note: 'Waiting on others', tone: 'text-blue-600', bg: 'bg-blue-50' },
     ];
-    const manageenBoardTabs = [
-      { label: 'Board', enabled: true },
-      { label: 'Timeline', enabled: false },
-      { label: 'Calendar', enabled: false },
-      { label: 'Workload', enabled: false },
-      { label: 'Files', enabled: false },
-      { label: 'Insights', enabled: false },
+    const manageenBoardTabs = ['Board', 'Timeline', 'Calendar', 'Workload', 'Files', 'Insights'];
+    const manageenBoardSummaries = {
+      Board: {
+        title: 'Engineering Delivery',
+        subtitle: 'Execution view for the current project board.',
+      },
+      Timeline: {
+        title: 'Project Timeline',
+        subtitle: 'Compact dependency lanes with milestone dates and blocker risk.',
+      },
+      Calendar: {
+        title: 'Milestone Calendar',
+        subtitle: 'Due-date heat and launch checkpoints at a glance.',
+      },
+      Workload: {
+        title: 'Team Workload',
+        subtitle: 'Capacity by person, kept intentionally simple for fast scanning.',
+      },
+      Files: {
+        title: 'Linked Files',
+        subtitle: 'Project docs and attachments tied to active work.',
+      },
+      Insights: {
+        title: 'Project Insights',
+        subtitle: 'Short risk, overdue, and velocity summaries.',
+      },
+    };
+    const manageenTimelineLanes = [
+      { name: 'Engineering Delivery', due: 'Jun 18', blocker: 'API keys', phases: ['Plan', 'Build', 'Review', 'Ship'] },
+      { name: 'Marketing Launch', due: 'May 28', blocker: 'Creative approvals', phases: ['Campaign', 'QA', 'Review', 'Launch'] },
+      { name: 'Healthcare Onboarding', due: 'Jun 30', blocker: 'Legal sign-off', phases: ['Draft', 'Validate', 'Approve', 'Rollout'] },
+    ];
+    const manageenCalendarDays = [
+      { day: 3, label: 'Plan review', intensity: 'low' },
+      { day: 5, label: 'Launch QA', intensity: 'medium' },
+      { day: 8, label: 'Stakeholder update', intensity: 'high' },
+      { day: 11, label: 'Design lock', intensity: 'medium' },
+      { day: 14, label: 'Release window', intensity: 'high' },
+      { day: 18, label: 'Milestone check', intensity: 'medium' },
+      { day: 21, label: 'Dependency review', intensity: 'low' },
+      { day: 24, label: 'QA cut-off', intensity: 'medium' },
+      { day: 27, label: 'Launch prep', intensity: 'high' },
+      { day: 30, label: 'Retro', intensity: 'low' },
+    ];
+    const manageenWorkload = [
+      { name: 'Joshua', role: 'PM', load: 92, tone: 'bg-violet-500' },
+      { name: 'Alex', role: 'Engineering', load: 74, tone: 'bg-amber-500' },
+      { name: 'Maya', role: 'Design', load: 58, tone: 'bg-emerald-500' },
+      { name: 'Priya', role: 'Ops', load: 47, tone: 'bg-blue-500' },
+      { name: 'Rami', role: 'DevOps', load: 33, tone: 'bg-rose-500' },
+    ];
+    const manageenFiles = [
+      { name: 'Engineering Delivery Brief', kind: 'doc', owner: 'Joshua', updated: '12m ago', link: 'Tied to selected task' },
+      { name: 'Auth Flow Diagram', kind: 'diagram', owner: 'Alex', updated: '1h ago', link: 'Related to API integration' },
+      { name: 'Launch Checklist', kind: 'sheet', owner: 'Maya', updated: '3h ago', link: 'Used by Marketing Launch' },
+      { name: 'Risk Register', kind: 'doc', owner: 'Priya', updated: 'Today', link: 'Tracks blockers' },
+    ];
+    const manageenInsights = [
+      { title: 'Risks', copy: '2 tasks are at risk because review work is waiting on dependencies.', tone: 'text-rose-700 bg-rose-50 border-rose-200' },
+      { title: 'Overdue', copy: '1 item slipped yesterday; the owner is already assigned.', tone: 'text-amber-700 bg-amber-50 border-amber-200' },
+      { title: 'Velocity', copy: 'This team is trending 8% above last sprint after the latest handoffs.', tone: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
     ];
     const manageenProjects = [
       { name: 'Engineering Delivery', progress: 79, status: 'At risk', statusTone: 'text-rose-600', milestone: '11 / 14 milestones', due: 'Due Jun 18' },
@@ -12518,10 +12573,379 @@ Rules:
       { name: 'Finance Planning', progress: 45, status: 'On track', statusTone: 'text-blue-600', milestone: '4 / 6 milestones', due: 'Due Jul 10' },
     ];
     const isManageenBoardsView = manageenActiveNav === 'Boards';
+    const manageenBoardSummary = manageenBoardSummaries[manageenBoardView] || manageenBoardSummaries.Board;
     const manageenBoardCount = manageenBoardColumns.reduce((sum, column) => sum + column.tasks.length, 0);
     const manageenDueThisWeekCount = manageenBoardColumns.reduce((sum, column) => sum + column.tasks.filter((task) => String(task.due || '').includes('May')).length, 0);
+    const manageenWorkspaceContent = (() => {
+      if (manageenBoardView === 'Board') {
+        return (
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
+            <div>
+              <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.7fr_0.7fr_0.7fr_1fr_1fr] gap-3 border-b border-slate-100 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-full border-[6px] border-emerald-500/20 border-t-emerald-500 flex items-center justify-center text-xs font-semibold text-slate-700">79%</div>
+                  <div>
+                    <div className="text-[28px] font-semibold leading-none text-slate-900">Engineering Delivery</div>
+                    <div className="mt-1 text-sm text-emerald-600 font-medium">On track</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-2xl font-semibold text-slate-900">{manageenBoardCount}</div>
+                  <div className="text-xs text-slate-500">Tasks</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-semibold text-slate-900">{manageenDueThisWeekCount}</div>
+                  <div className="text-xs text-slate-500">Due this week</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-semibold text-slate-900">2</div>
+                  <div className="text-xs text-slate-500">Blocked</div>
+                </div>
+                <div>
+                  <div className="text-xs text-slate-500">Members</div>
+                  <div className="mt-2 flex items-center -space-x-2">
+                    {['J', 'A', 'M', 'P', 'R'].map((person, index) => (
+                      <div key={person} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[11px] font-semibold ${index % 2 === 0 ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-700'}`}>{person}</div>
+                    ))}
+                    <div className="ml-2 text-xs text-slate-400">+8</div>
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3">
+                  <div className="text-xs font-semibold text-violet-700">AI Insight</div>
+                  <div className="mt-1 text-sm text-slate-700">2 tasks are at risk of delay due to dependencies.</div>
+                  <button type="button" onClick={() => showToast('AI insight opened')} className="mt-2 text-xs font-semibold text-violet-700 hover:text-violet-800">View</button>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {['All tasks', 'Owner', 'Priority', 'Due date', 'Group by: Status'].map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => showToast(`${filter} filter opened`)}
+                      className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:text-violet-700 hover:shadow-sm"
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => showToast('Automations opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Automations</button>
+                  <button type="button" onClick={() => showToast('Board settings opened')} className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:text-violet-700 hover:shadow-sm"><LayoutGrid size={14} className="mx-auto" /></button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 overflow-x-auto">
+                {manageenBoardColumns.map((column, columnIndex) => (
+                  <div
+                    key={column.id}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setManageenDropColumnId(column.id);
+                    }}
+                    onDragLeave={() => setManageenDropColumnId((prev) => (prev === column.id ? null : prev))}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      handleManageenDropColumn(column.id);
+                    }}
+                    className={`min-w-[190px] rounded-2xl border p-3 transition-colors ${manageenDropColumnId === column.id ? 'border-violet-300 bg-violet-50/40' : 'border-slate-200 bg-slate-50/70'}`}
+                    style={{ animation: `manageenFadeIn 0.45s ease-out ${columnIndex * 55}ms both` }}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`text-xs font-semibold ${column.tone}`}>{column.title}</div>
+                      <div className="text-xs text-slate-400">{column.tasks.length}</div>
+                    </div>
+                    <div className="space-y-2">
+                      {column.tasks.map((task) => (
+                        <article
+                          key={task.id}
+                          draggable
+                          onClick={() => setManageenSelectedTaskId(task.id)}
+                          onDragStart={() => handleManageenDragStart(task.id)}
+                          onDragEnd={handleManageenDragEnd}
+                          className={`rounded-2xl border bg-white p-3 text-left cursor-grab active:cursor-grabbing transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-20px_rgba(15,23,42,0.45)] ${manageenSelectedTaskId === task.id ? 'border-amber-300 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]' : 'border-slate-200 hover:border-violet-200'} ${manageenDraggingTaskId === task.id ? 'opacity-70 scale-[0.98]' : ''}`}
+                        >
+                          <div className="text-[13px] font-semibold leading-5 text-slate-800">{task.title}</div>
+                          <div className="mt-2 inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">{task.tag}</div>
+                          <div className="mt-3 flex items-center justify-between text-[10px] text-slate-400">
+                            <span>{task.due}</span>
+                            <span>{task.comments} comments</span>
+                          </div>
+                          {'progress' in task && task.progress > 0 && task.progress < 100 && (
+                            <div className="mt-2">
+                              <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                                <div className="h-full bg-amber-400" style={{ width: `${task.progress}%` }} />
+                              </div>
+                              <div className="mt-1 text-[10px] text-slate-500">{task.progress}%</div>
+                            </div>
+                          )}
+                        </article>
+                      ))}
+                      <button type="button" onClick={() => showToast(`Add task to ${column.title}`)} className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-2 py-2 text-xs text-violet-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40">+ Add task</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <aside className="rounded-2xl border border-slate-200 bg-white p-4 h-fit sticky top-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[22px] font-semibold leading-tight text-slate-900">{manageenSelectedTask?.title || 'Select a task'}</div>
+                  <div className="mt-1 text-sm text-slate-500">{manageenSelectedTask?.project || 'Engineering Delivery'}</div>
+                </div>
+                <button type="button" onClick={() => showToast('Task menu opened')} className="text-slate-400 hover:text-slate-700"><MoreHorizontal size={16} /></button>
+              </div>
+
+              {manageenSelectedTask && (
+                <>
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="flex items-center justify-between"><span className="text-slate-500">Status</span><span className="font-medium text-amber-600">{manageenSelectedTask.columnTitle}</span></div>
+                    <div className="flex items-center justify-between"><span className="text-slate-500">Assignee</span><span className="font-medium text-slate-800">{manageenSelectedTask.assignee || 'Joshua'}</span></div>
+                    <div className="flex items-center justify-between"><span className="text-slate-500">Priority</span><span className="font-medium text-rose-600">{manageenSelectedTask.priority || 'High'}</span></div>
+                    <div className="flex items-center justify-between"><span className="text-slate-500">Due date</span><span className="font-medium text-slate-800">{manageenSelectedTask.due}</span></div>
+                  </div>
+
+                  {typeof manageenSelectedTask.progress === 'number' && (
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between text-sm mb-1"><span className="text-slate-500">Progress</span><span className="font-medium text-slate-700">{manageenSelectedTask.progress}%</span></div>
+                      <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                        <div className="h-full bg-amber-400" style={{ width: `${manageenSelectedTask.progress}%` }} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {[manageenSelectedTask.tag, manageenSelectedTask.project].filter(Boolean).map((chip) => (
+                      <span key={chip} className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700">{chip}</span>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 border-t border-slate-100 pt-4">
+                    <div className="text-sm font-semibold text-slate-900">Description</div>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{manageenSelectedTask.description || 'No description yet.'}</p>
+                  </div>
+
+                  {Array.isArray(manageenSelectedTask.subtasks) && manageenSelectedTask.subtasks.length > 0 && (
+                    <div className="mt-5 border-t border-slate-100 pt-4">
+                      <div className="text-sm font-semibold text-slate-900">Subtasks</div>
+                      <div className="mt-2 space-y-2">
+                        {manageenSelectedTask.subtasks.map((subtask) => (
+                          <div key={subtask} className="flex items-center gap-2 text-sm text-slate-600">
+                            <div className="w-4 h-4 rounded-full border border-slate-300" />
+                            <span>{subtask}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {Array.isArray(manageenSelectedTask.attachments) && manageenSelectedTask.attachments.length > 0 && (
+                    <div className="mt-5 border-t border-slate-100 pt-4">
+                      <div className="text-sm font-semibold text-slate-900">Attachments</div>
+                      {manageenSelectedTask.attachments.map((attachment) => (
+                        <div key={attachment.name} className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                          <div className="text-sm font-medium text-slate-800">{attachment.name}</div>
+                          <div className="text-xs text-slate-500">{attachment.size}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </aside>
+          </div>
+        );
+      }
+
+      if (manageenBoardView === 'Timeline') {
+        return (
+          <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.35)]">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div className="text-sm font-semibold text-violet-700">Timeline</div>
+                <div className="text-sm text-slate-500">Dependency lanes, blockers, and milestone timing.</div>
+              </div>
+              <button type="button" onClick={() => showToast('Timeline filters opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Filters</button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {manageenTimelineLanes.map((lane, laneIndex) => (
+                <div key={lane.name} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3" style={{ animation: `manageenFadeIn 0.45s ease-out ${laneIndex * 60}ms both` }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{lane.name}</div>
+                      <div className="text-xs text-slate-500">Due {lane.due}</div>
+                    </div>
+                    <div className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">Blocker: {lane.blocker}</div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-4 gap-2">
+                    {lane.phases.map((phase, phaseIndex) => (
+                      <div key={phase} className={`rounded-xl px-3 py-2 text-xs font-medium ${phaseIndex < 2 ? 'bg-violet-50 text-violet-700' : phaseIndex === 2 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>
+                        <div>{phase}</div>
+                        <div className="mt-1 text-[10px] opacity-75">{phaseIndex === 0 ? 'Start' : phaseIndex === 3 ? 'Delivery' : 'Active'}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      if (manageenBoardView === 'Calendar') {
+        return (
+          <div className="mt-4 grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+            <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.35)]">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <div className="text-sm font-semibold text-violet-700">Calendar</div>
+                  <div className="text-sm text-slate-500">Due-date heat and milestone density.</div>
+                </div>
+                <button type="button" onClick={() => showToast('Calendar sync opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Sync</button>
+              </div>
+              <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
+                {manageenCalendarDays.map((day, dayIndex) => (
+                  <button
+                    key={day.day}
+                    type="button"
+                    onClick={() => showToast(`${day.label} on day ${day.day}`)}
+                    className={`rounded-2xl border p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${day.intensity === 'high' ? 'border-rose-200 bg-rose-50' : day.intensity === 'medium' ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}
+                    style={{ animation: `manageenFadeIn 0.45s ease-out ${dayIndex * 45}ms both` }}
+                  >
+                    <div className="text-[11px] uppercase tracking-wide text-slate-400">Jun {day.day}</div>
+                    <div className="mt-3 text-sm font-semibold text-slate-900">{day.label}</div>
+                    <div className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${day.intensity === 'high' ? 'bg-rose-100 text-rose-700' : day.intensity === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>{day.intensity} load</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-3">
+              {manageenProjects.slice(0, 3).map((project, projectIndex) => (
+                <div key={project.name} className="rounded-2xl border border-slate-200 bg-white p-4" style={{ animation: `manageenFadeIn 0.45s ease-out ${projectIndex * 60}ms both` }}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm font-semibold text-slate-900">{project.name}</div>
+                    <div className={`text-xs font-semibold ${project.statusTone}`}>{project.status}</div>
+                  </div>
+                  <div className="mt-3 h-2 rounded-full bg-slate-200 overflow-hidden">
+                    <div className="h-full bg-violet-500" style={{ width: `${project.progress}%` }} />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+                    <span>{project.milestone}</span>
+                    <span>{project.due}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      if (manageenBoardView === 'Workload') {
+        return (
+          <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.35)]">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div className="text-sm font-semibold text-violet-700">Workload</div>
+                <div className="text-sm text-slate-500">Simple capacity bars for quick balance checks.</div>
+              </div>
+              <button type="button" onClick={() => showToast('Capacity rules opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Capacity rules</button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {manageenWorkload.map((person, personIndex) => (
+                <div key={person.name} className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3" style={{ animation: `manageenFadeIn 0.45s ease-out ${personIndex * 55}ms both` }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{person.name}</div>
+                      <div className="text-xs text-slate-500">{person.role}</div>
+                    </div>
+                    <div className="text-sm font-semibold text-slate-700">{person.load}%</div>
+                  </div>
+                  <div className="mt-3 h-2 rounded-full bg-slate-200 overflow-hidden">
+                    <div className={`h-full ${person.tone}`} style={{ width: `${person.load}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      if (manageenBoardView === 'Files') {
+        return (
+          <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.35)]">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <div className="text-sm font-semibold text-violet-700">Files</div>
+                <div className="text-sm text-slate-500">Linked docs and attachments tied to the selected work.</div>
+              </div>
+              <button type="button" onClick={() => showToast('Upload file opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Upload</button>
+            </div>
+            <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {manageenFiles.map((file, fileIndex) => (
+                <button
+                  key={file.name}
+                  type="button"
+                  onClick={() => showToast(`${file.name} opened`)}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40 hover:shadow-sm"
+                  style={{ animation: `manageenFadeIn 0.45s ease-out ${fileIndex * 55}ms both` }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{file.name}</div>
+                      <div className="mt-1 text-xs text-slate-500">{file.kind} • {file.owner}</div>
+                    </div>
+                    <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{file.updated}</span>
+                  </div>
+                  <div className="mt-3 text-xs font-medium text-violet-700">{file.link}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.35)]">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <div className="text-sm font-semibold text-violet-700">Insights</div>
+              <div className="text-sm text-slate-500">A short summary of risk, overdue work, and velocity.</div>
+            </div>
+            <button type="button" onClick={() => showToast('Insights refresh opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Refresh</button>
+          </div>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+            {manageenInsights.map((insight, insightIndex) => (
+              <div key={insight.title} className={`rounded-2xl border p-4 ${insight.tone}`} style={{ animation: `manageenFadeIn 0.45s ease-out ${insightIndex * 60}ms both` }}>
+                <div className="text-sm font-semibold">{insight.title}</div>
+                <div className="mt-2 text-sm leading-6 text-slate-700">{insight.copy}</div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-slate-900">Velocity trend</div>
+                <div className="text-xs text-slate-500">The last three cycles are improving.</div>
+              </div>
+              <div className="text-sm font-semibold text-emerald-600">+8%</div>
+            </div>
+            <div className="mt-3 grid grid-cols-6 gap-2 items-end h-24">
+              {[34, 38, 42, 47, 51, 56].map((bar, index) => (
+                <div key={bar} className="flex flex-col items-center justify-end h-full" style={{ animation: `manageenFadeIn 0.45s ease-out ${index * 45}ms both` }}>
+                  <div className="w-full rounded-t-xl bg-violet-500/80" style={{ height: `${bar}%` }} />
+                  <div className="mt-2 text-[10px] text-slate-400">W{index + 1}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    })();
     return (
       <div className={`flex h-screen bg-[#f5f6fb] text-slate-800 ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+        <style>{`@keyframes manageenFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
         <aside className="w-[220px] shrink-0 border-r border-slate-200 bg-white flex flex-col">
           <div className="px-5 h-16 border-b border-slate-100 flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-violet-600 text-white text-sm font-bold flex items-center justify-center">M</div>
@@ -12560,8 +12984,8 @@ Rules:
         <main className="flex-1 overflow-y-auto thin-scrollbar p-5 md:p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-[34px] leading-tight font-semibold text-slate-900">{isManageenBoardsView ? 'Engineering Delivery' : 'Good morning, Joshua'}</h1>
-              <p className="mt-1 text-sm text-slate-500">{isManageenBoardsView ? 'Execution view for the current project board.' : 'Here is what is happening with your projects today.'}</p>
+              <h1 className="text-[34px] leading-tight font-semibold text-slate-900">{isManageenBoardsView ? manageenBoardSummary.title : 'Good morning, Joshua'}</h1>
+              <p className="mt-1 text-sm text-slate-500">{isManageenBoardsView ? manageenBoardSummary.subtitle : 'Here is what is happening with your projects today.'}</p>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -12580,201 +13004,22 @@ Rules:
                   <button
                     key={tab}
                     type="button"
-                    disabled={!tab.enabled}
-                    onClick={() => tab.enabled && showToast(`${tab.label} opened`)}
-                    className={`${tab.enabled
-                      ? tab.label === 'Board'
-                        ? 'text-violet-700 font-semibold border-b-2 border-violet-600 pb-3 -mb-3'
-                        : 'text-slate-500 hover:text-slate-700 hover:-translate-y-0.5 transition-transform'
-                      : 'text-slate-300 cursor-not-allowed'
+                    onClick={() => setManageenBoardView(tab)}
+                    className={`${manageenBoardView === tab
+                      ? 'text-violet-700 font-semibold border-b-2 border-violet-600 pb-3 -mb-3'
+                      : 'text-slate-500 hover:text-slate-700 hover:-translate-y-0.5 transition-transform'
                     }`}
-                    title={tab.enabled ? `${tab.label} view` : `${tab.label} coming soon`}
+                    title={`${tab} view`}
                   >
                     <span className="inline-flex items-center gap-1.5">
-                      <span>{tab.label}</span>
-                      {!tab.enabled && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Soon</span>}
+                      <span>{tab}</span>
                     </span>
                   </button>
                 ))}
               </div>
 
               <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_20px_45px_-38px_rgba(15,23,42,0.35)]">
-                <div className="grid grid-cols-1 xl:grid-cols-[1fr_340px] gap-4">
-                  <div>
-                    <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.7fr_0.7fr_0.7fr_1fr_1fr] gap-3 border-b border-slate-100 pb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-14 h-14 rounded-full border-[6px] border-emerald-500/20 border-t-emerald-500 flex items-center justify-center text-xs font-semibold text-slate-700">79%</div>
-                        <div>
-                          <div className="text-[28px] font-semibold leading-none text-slate-900">Engineering Delivery</div>
-                          <div className="mt-1 text-sm text-emerald-600 font-medium">On track</div>
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-semibold text-slate-900">{manageenBoardCount}</div>
-                        <div className="text-xs text-slate-500">Tasks</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-semibold text-slate-900">{manageenDueThisWeekCount}</div>
-                        <div className="text-xs text-slate-500">Due this week</div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-semibold text-slate-900">2</div>
-                        <div className="text-xs text-slate-500">Blocked</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-slate-500">Members</div>
-                        <div className="mt-2 flex items-center -space-x-2">
-                          {['J', 'A', 'M', 'P', 'R'].map((person, index) => (
-                            <div key={person} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[11px] font-semibold ${index % 2 === 0 ? 'bg-violet-100 text-violet-700' : 'bg-slate-200 text-slate-700'}`}>{person}</div>
-                          ))}
-                          <div className="ml-2 text-xs text-slate-400">+8</div>
-                        </div>
-                      </div>
-                      <div className="rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3">
-                        <div className="text-xs font-semibold text-violet-700">AI Insight</div>
-                        <div className="mt-1 text-sm text-slate-700">2 tasks are at risk of delay due to dependencies.</div>
-                        <button type="button" onClick={() => showToast('AI insight opened')} className="mt-2 text-xs font-semibold text-violet-700 hover:text-violet-800">View</button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        {['All tasks', 'Owner', 'Priority', 'Due date', 'Group by: Status'].map((filter) => (
-                          <button
-                            key={filter}
-                            type="button"
-                            onClick={() => showToast(`${filter} filter opened`)}
-                                className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:text-violet-700 hover:shadow-sm"
-                          >
-                            {filter}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => showToast('Automations opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Automations</button>
-                        <button type="button" onClick={() => showToast('Board settings opened')} className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:text-violet-700 hover:shadow-sm"><LayoutGrid size={14} className="mx-auto" /></button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 overflow-x-auto">
-                      {manageenBoardColumns.map((column) => (
-                        <div
-                          key={column.id}
-                          onDragOver={(event) => {
-                            event.preventDefault();
-                            setManageenDropColumnId(column.id);
-                          }}
-                          onDragLeave={() => setManageenDropColumnId((prev) => (prev === column.id ? null : prev))}
-                          onDrop={(event) => {
-                            event.preventDefault();
-                            handleManageenDropColumn(column.id);
-                          }}
-                          className={`min-w-[190px] rounded-2xl border p-3 transition-colors ${manageenDropColumnId === column.id ? 'border-violet-300 bg-violet-50/40' : 'border-slate-200 bg-slate-50/70'}`}
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <div className={`text-xs font-semibold ${column.tone}`}>{column.title}</div>
-                            <div className="text-xs text-slate-400">{column.tasks.length}</div>
-                          </div>
-                          <div className="space-y-2">
-                            {column.tasks.map((task) => (
-                              <article
-                                key={task.id}
-                                draggable
-                                onClick={() => setManageenSelectedTaskId(task.id)}
-                                onDragStart={() => handleManageenDragStart(task.id)}
-                                onDragEnd={handleManageenDragEnd}
-                                className={`rounded-2xl border bg-white p-3 text-left cursor-grab active:cursor-grabbing transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-20px_rgba(15,23,42,0.45)] ${manageenSelectedTaskId === task.id ? 'border-amber-300 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]' : 'border-slate-200 hover:border-violet-200'} ${manageenDraggingTaskId === task.id ? 'opacity-70 scale-[0.98]' : ''}`}
-                              >
-                                <div className="text-[13px] font-semibold leading-5 text-slate-800">{task.title}</div>
-                                <div className="mt-2 inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">{task.tag}</div>
-                                <div className="mt-3 flex items-center justify-between text-[10px] text-slate-400">
-                                  <span>{task.due}</span>
-                                  <span>{task.comments} comments</span>
-                                </div>
-                                {'progress' in task && task.progress > 0 && task.progress < 100 && (
-                                  <div className="mt-2">
-                                    <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                                      <div className="h-full bg-amber-400" style={{ width: `${task.progress}%` }} />
-                                    </div>
-                                    <div className="mt-1 text-[10px] text-slate-500">{task.progress}%</div>
-                                  </div>
-                                )}
-                              </article>
-                            ))}
-                            <button type="button" onClick={() => showToast(`Add task to ${column.title}`)} className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-2 py-2 text-xs text-violet-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40">+ Add task</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <aside className="rounded-2xl border border-slate-200 bg-white p-4 h-fit sticky top-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-[22px] font-semibold leading-tight text-slate-900">{manageenSelectedTask?.title || 'Select a task'}</div>
-                        <div className="mt-1 text-sm text-slate-500">{manageenSelectedTask?.project || 'Engineering Delivery'}</div>
-                      </div>
-                      <button type="button" onClick={() => showToast('Task menu opened')} className="text-slate-400 hover:text-slate-700"><MoreHorizontal size={16} /></button>
-                    </div>
-
-                    {manageenSelectedTask && (
-                      <>
-                        <div className="mt-4 space-y-3 text-sm">
-                          <div className="flex items-center justify-between"><span className="text-slate-500">Status</span><span className="font-medium text-amber-600">{manageenSelectedTask.columnTitle}</span></div>
-                          <div className="flex items-center justify-between"><span className="text-slate-500">Assignee</span><span className="font-medium text-slate-800">{manageenSelectedTask.assignee || 'Joshua'}</span></div>
-                          <div className="flex items-center justify-between"><span className="text-slate-500">Priority</span><span className="font-medium text-rose-600">{manageenSelectedTask.priority || 'High'}</span></div>
-                          <div className="flex items-center justify-between"><span className="text-slate-500">Due date</span><span className="font-medium text-slate-800">{manageenSelectedTask.due}</span></div>
-                        </div>
-
-                        {typeof manageenSelectedTask.progress === 'number' && (
-                          <div className="mt-4">
-                            <div className="flex items-center justify-between text-sm mb-1"><span className="text-slate-500">Progress</span><span className="font-medium text-slate-700">{manageenSelectedTask.progress}%</span></div>
-                            <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
-                              <div className="h-full bg-amber-400" style={{ width: `${manageenSelectedTask.progress}%` }} />
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {[manageenSelectedTask.tag, manageenSelectedTask.project].filter(Boolean).map((chip) => (
-                            <span key={chip} className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700">{chip}</span>
-                          ))}
-                        </div>
-
-                        <div className="mt-5 border-t border-slate-100 pt-4">
-                          <div className="text-sm font-semibold text-slate-900">Description</div>
-                          <p className="mt-2 text-sm leading-6 text-slate-600">{manageenSelectedTask.description || 'No description yet.'}</p>
-                        </div>
-
-                        {Array.isArray(manageenSelectedTask.subtasks) && manageenSelectedTask.subtasks.length > 0 && (
-                          <div className="mt-5 border-t border-slate-100 pt-4">
-                            <div className="text-sm font-semibold text-slate-900">Subtasks</div>
-                            <div className="mt-2 space-y-2">
-                              {manageenSelectedTask.subtasks.map((subtask) => (
-                                <div key={subtask} className="flex items-center gap-2 text-sm text-slate-600">
-                                  <div className="w-4 h-4 rounded-full border border-slate-300" />
-                                  <span>{subtask}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {Array.isArray(manageenSelectedTask.attachments) && manageenSelectedTask.attachments.length > 0 && (
-                          <div className="mt-5 border-t border-slate-100 pt-4">
-                            <div className="text-sm font-semibold text-slate-900">Attachments</div>
-                            {manageenSelectedTask.attachments.map((attachment) => (
-                              <div key={attachment.name} className="mt-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                                <div className="text-sm font-medium text-slate-800">{attachment.name}</div>
-                                <div className="text-xs text-slate-500">{attachment.size}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </aside>
-                </div>
+                {manageenWorkspaceContent}
               </div>
             </>
           )}
