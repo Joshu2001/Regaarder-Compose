@@ -224,9 +224,8 @@ body { margin: 0; background: #ffffff; }
 .slash-menu-container::-webkit-scrollbar-thumb:hover {
   background: rgba(139, 92, 246, 0.5);
 }
-.slash-menu-container {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+.slash-menu-container::-webkit-scrollbar-button {
+  display: none !important;
 }
 .inline-ai-prompt-box {
 	animation: fadeIn 200ms ease-out;
@@ -254,6 +253,10 @@ body { margin: 0; background: #ffffff; }
   display: flex;
   flex-direction: column;
   gap: 2px;
+  max-height: 380px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
 }
 .slash-menu-option {
   width: 100%;

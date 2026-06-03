@@ -22905,9 +22905,7 @@ Rules:
           className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
           style={{ 
             left: `${slashMenu.left}px`, 
-            top: `${slashMenu.top}px`,
-            maxHeight: '200px',
-            overflowY: 'auto'
+            top: `${slashMenu.top}px`
           }}
         >
           {SLASH_OPTIONS
@@ -22918,6 +22916,7 @@ Rules:
                 <button
                   key={opt.key}
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => executeSlashCommand(opt.key)}
                   className={`slash-menu-option ${isActive ? 'active' : ''}`}
                 >
