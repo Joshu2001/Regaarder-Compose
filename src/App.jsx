@@ -13068,7 +13068,26 @@ Rules:
                 <input placeholder="Search" className="h-10 w-[220px] rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-violet-300" />
               </div>
               <button type="button" onClick={() => openManageenTaskComposer('ideas')} className="h-10 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 inline-flex items-center gap-1.5"><Plus size={14} /> New task</button>
-              <button type="button" onClick={quickManageenGrantAccess} className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:border-violet-200 hover:text-violet-700 inline-flex items-center gap-1.5"><ShieldCheck size={14} /> Team access</button>
+              <button type="button" onClick={() => {
+                const name = String(window.prompt('Team member name') || '').trim();
+                const email = String(window.prompt('Team member email') || '').trim();
+                if (!name || !email) {
+                  return;
+                }
+                const access = String(window.prompt('Access level (Owner, Editor, Commenter, Viewer, Security)', 'Editor') || 'Editor').trim() || 'Editor';
+                const role = String(window.prompt('Role', 'Security') || 'Security').trim() || 'Security';
+                setManageenAccessMembers((prev) => [
+                  {
+                    id: `member-${Date.now()}`,
+                    name,
+                    email,
+                    role,
+                    access,
+                  },
+                  ...prev,
+                ]);
+                showToast('Team access granted');
+              }} className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:border-violet-200 hover:text-violet-700 inline-flex items-center gap-1.5"><ShieldCheck size={14} /> Team access</button>
               <button
                 type="button"
                 onClick={toggleDocumentImmersiveMode}
@@ -21827,3 +21846,4 @@ Rules:
     </div>
   );
 }
+
