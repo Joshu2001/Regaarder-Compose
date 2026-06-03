@@ -5495,6 +5495,7 @@ export default function App() {
   const [manageenDraggingTaskId, setManageenDraggingTaskId] = useState(null);
   const [manageenDropColumnId, setManageenDropColumnId] = useState(null);
   const [manageenSelectedTaskId, setManageenSelectedTaskId] = useState('mg-task-5');
+  const [manageenTaskPanelOpen, setManageenTaskPanelOpen] = useState(false);
   const [manageenBoardView, setManageenBoardView] = useState('Board');
 
   const visibleTasks = useMemo(() => {
@@ -21859,6 +21860,7 @@ Rules:
     </div>
   );
 }
+
 
 
 
