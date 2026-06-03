@@ -12738,7 +12738,7 @@ Rules:
                           )}
                         </article>
                       ))}
-                      <button type="button" onClick={() => showToast(`Add task to ${column.title}`)} className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-2 py-2 text-xs text-violet-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40">+ Add task</button>
+                      <button type="button" onClick={() => openManageenTaskComposer(column.id)} className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-2 py-2 text-xs text-violet-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40">+ Add task</button>
                     </div>
                   </div>
                 ))}
@@ -13067,7 +13067,8 @@ Rules:
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input placeholder="Search" className="h-10 w-[220px] rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-violet-300" />
               </div>
-              <button type="button" onClick={() => showToast('Create new Manageen item')} className="h-10 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 inline-flex items-center gap-1.5"><Plus size={14} /> New</button>
+              <button type="button" onClick={() => openManageenTaskComposer('ideas')} className="h-10 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 inline-flex items-center gap-1.5"><Plus size={14} /> New task</button>
+              <button type="button" onClick={quickManageenGrantAccess} className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:border-violet-200 hover:text-violet-700 inline-flex items-center gap-1.5"><ShieldCheck size={14} /> Team access</button>
               <button
                 type="button"
                 onClick={toggleDocumentImmersiveMode}
