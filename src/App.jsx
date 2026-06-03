@@ -7416,12 +7416,25 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const selection = window.getSelection();
       if (selection && selection.rangeCount) {
         const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
+        
+        // Foolproof cursor rect calculation
+        let rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          const dummy = document.createElement('span');
+          dummy.innerHTML = '&#8203;'; // zero-width space
+          range.insertNode(dummy);
+          rect = dummy.getBoundingClientRect();
+          dummy.parentNode.removeChild(dummy);
+        }
+        
+        // Fallback to center if coords are invalid
+        const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
+        const topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
         
         setSlashMenu({
           open: true,
-          left: rect.left + window.scrollX,
-          top: rect.bottom + window.scrollY,
+          left: leftCoord,
+          top: topCoord,
           filterText: '',
           activeIndex: 0,
           range: range.cloneRange()
@@ -19169,6 +19182,7 @@ Rules:
           <div
             ref={documentCardRef}
             onKeyDownCapture={(event) => {
+              handleEditorKeyDown(event);
               if (event.key !== 'Enter' || event.shiftKey) {
                 return;
               }
