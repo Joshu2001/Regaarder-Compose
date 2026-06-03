@@ -13001,7 +13001,7 @@ Rules:
       );
     })();
     return (
-      <div className={`flex h-screen bg-[#f5f6fb] text-slate-800 ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex bg-[#f5f6fb] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <style>{`@keyframes manageenFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
         <aside className="w-[220px] shrink-0 border-r border-slate-200 bg-white flex flex-col">
           <div className="px-5 h-16 border-b border-slate-100 flex items-center gap-2.5">
@@ -21846,5 +21846,6 @@ Rules:
     </div>
   );
 }
+
 
 
