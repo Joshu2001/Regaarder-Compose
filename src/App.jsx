@@ -7892,13 +7892,10 @@ Rules:
   };
 
   const processAudioWithGemini = async () => {
-    if (pendingAudioProcessingRef.current) return;
-    const chunks = audioChunksRef.current;
+    const chunks = audioChunksRef.current.splice(0);
     if (chunks.length === 0) return;
     
-    pendingAudioProcessingRef.current = true;
     const blob = new Blob(chunks, { type: chunks[0].type || 'audio/webm' });
-    audioChunksRef.current = []; // Clear chunks for next recording
 
     // Skip tiny blobs (silence / no real audio)
     if (blob.size < 500) {
@@ -7952,17 +7949,18 @@ Rules:
         }
       } else {
         console.warn('Gemini transcription failed:', result.error || 'unknown error');
+        showToast('Transcription error: ' + String(result.error || 'API returned no text'));
         if (isVoiceActiveRef.current) {
           setLiveSpeechInterimText('Listening... start speaking');
         }
       }
     } catch (e) {
       console.error('Audio processing failed', e);
+      showToast('Audio processing error: ' + String(e?.message || 'unknown'));
       if (isVoiceActiveRef.current) {
         setLiveSpeechInterimText('Listening... start speaking');
       }
     } finally {
-      pendingAudioProcessingRef.current = false;
     }
   };
 
