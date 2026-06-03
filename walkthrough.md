@@ -4,8 +4,9 @@ This walkthrough details the visual improvements, event-handler corrections, and
 
 ---
 
-## 1. Vertical Scrollbar/Scroller styling
-- **Max Height & Overflow**: Added a maximum height constraint (`maxHeight: '200px'`) and vertical scroll containment (`overflowY: 'auto'`) to the floating slash menu popover. This resolves cases where an extensive set of commands overflows the viewport.
+## 1. Vertical Scrollbar/Scroller styling & Dropdown Dimensions
+- **Natural Heights & Max Constraints**: Increased the dropdown's maximum height from `200px` to `380px` (`max-height: 380px`). This displays the full set of 8 menu items naturally without unnecessary truncation, but still triggers scrolling if the screen is constrained.
+- **Removing Scrollbar Arrows**: Added `display: none !important` to `.slash-menu-container::-webkit-scrollbar-button`. This eliminates the default Windows up/down arrow buttons on the scrollbar track, leaving a clean, modern aesthetic.
 - **Vanilla CSS Scrollbar Aesthetics**: Appended customized scrollbar styles to `src/styles.css` for `.slash-menu-container`. The scrollbar is styled as a thin, semi-transparent violet indicator matching the application's premium aesthetic:
   ```css
   .slash-menu-container::-webkit-scrollbar {
@@ -27,7 +28,14 @@ This walkthrough details the visual improvements, event-handler corrections, and
 
 ---
 
-## 3. DOM-Tree Preservation & Full HTML Restoration
+## 3. Focus Retention on Dropdown Option Interaction
+- **MouseDown PreventDefault**: Added `onMouseDown={(e) => e.preventDefault()}` to all buttons inside the slash menu dropdown.
+- **Selection Safety**: This prevents the editor from losing focus (blurring) when the user clicks down on an item in the menu. Focus remains inside the editor, maintaining the active range exactly where it needs to be.
+- **Execution Fixes**: Keeping focus inside the editor fixes the issue where formatting commands (like bullet points) or AI prompt insertions failed because the editor lost its selection.
+
+---
+
+## 4. DOM-Tree Preservation & Full HTML Restoration
 - **Cloning Instead of Plain Strings**:
   - Replaced plain text string extractions (`targetRange.toString()`) with standard DOM clones (`targetRange.cloneContents()`) inside `insertInlinePromptBox` and `applyDirectSelectionAIAction`.
   - Serializes and stores the complete HTML hierarchy (including bold, italic, lists, paragraphs, links) inside the container's `data-original-html` attribute before clearing the range.
@@ -44,7 +52,7 @@ This walkthrough details the visual improvements, event-handler corrections, and
 
 ---
 
-## 4. Text-routing Fallback Resolver & Error Toast
+## 5. Text-routing Fallback Resolver & Error Toast
 - **Targeting Block Containers**:
   - Implemented `findNearestBlockElement`, a DOM traversal helper that crawls up the DOM tree from the collapsed cursor coordinates to locate the closest block element (`P`, `DIV`, `LI`, `H1`-`H6`, etc.) containing the selection.
   - If a user triggers a text-refinement command (like *Translate* or *Proofread*) without any text highlighted, the system auto-routes the action to the entire enclosing paragraph block.
@@ -54,12 +62,12 @@ This walkthrough details the visual improvements, event-handler corrections, and
 
 ---
 
-## 5. Universal Markdown Cleaning
+## 6. Universal Markdown Cleaning
 - **Code-Fence Removal**: Normalized parsing of text generation. All text responses returned by Gemini (for `translate`, `proofread`, `table`, and `schedule` features) undergo code-fence sanitization to strip unwanted markdown wrappers (e.g. ` ```html ` or ` ``` `) before rendering.
 
 ---
 
-## 6. Build Verification & Deliverables
+## 7. Build Verification & Deliverables
 - **Compilation**: Successfully ran `npm run build` locally to confirm the application bundle compiles flawlessly.
 - **Files updated**:
   - [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx)
