@@ -2246,6 +2246,7 @@ export default function App() {
   const micPermissionGrantedRef = useRef(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const chunkIntervalRef = useRef(null);
   const pendingAudioProcessingRef = useRef(false);
   const audioStreamRef = useRef(null);
   const mockDictationTimeoutRef = useRef(null);
@@ -5396,14 +5397,12 @@ export default function App() {
 
       // Match attached behavior: do not hard-stop on recognizer errors.
       const recoverableErrors = ['not-allowed', 'service-not-allowed', 'audio-capture', 'aborted', 'network'];
-      if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && recoverableErrors.includes(errorCode) && !mockIntervalRef.current) {
-        showToast('Speech Recognition unavailable. Using Gemini Audio-Reasoning fallback.');
+      if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && recoverableErrors.includes(errorCode)) {
         try {
           recognition.stop();
         } catch (_error) {
           // noop
         }
-        // Fallback removed. MediaRecorder will continue recording audio in background.
       }
     };
 
@@ -7962,6 +7961,10 @@ Rules:
         } catch (_error) {
           // noop
         }
+        if (chunkIntervalRef.current) {
+          clearTimeout(chunkIntervalRef.current);
+          chunkIntervalRef.current = null;
+        }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
           mediaRecorderRef.current.stop();
           const tracks = audioStreamRef.current?.getTracks();
@@ -7973,6 +7976,10 @@ Rules:
           speechRecognitionRef.current?.stop();
         } catch (_error) {
           // noop
+        }
+        if (chunkIntervalRef.current) {
+          clearTimeout(chunkIntervalRef.current);
+          chunkIntervalRef.current = null;
         }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
           mediaRecorderRef.current.stop();
@@ -8036,22 +8043,38 @@ Rules:
       if (mockDictationTimeoutRef.current) {
         clearTimeout(mockDictationTimeoutRef.current);
       }
-      // Fallback dictate timeout removed. Relying strictly on MediaRecorder for Gemini transcription.
+      // Relying strictly on MediaRecorder for Gemini continuous transcription.
       if (audioStreamRef.current) {
-        const mediaRecorder = new MediaRecorder(audioStreamRef.current);
-        mediaRecorderRef.current = mediaRecorder;
-        
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) {
-            audioChunksRef.current.push(e.data);
+        const startChunk = () => {
+          if (!isVoiceActiveRef.current) return;
+          const mediaRecorder = new MediaRecorder(audioStreamRef.current);
+          mediaRecorderRef.current = mediaRecorder;
+          
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+              audioChunksRef.current.push(e.data);
+            }
+          };
+          
+          mediaRecorder.onstop = () => {
+            processAudioWithGemini();
+            if (isVoiceActiveRef.current) {
+              startChunk();
+            }
+          };
+          
+          mediaRecorder.start();
+          
+          if (chunkIntervalRef.current) {
+            clearTimeout(chunkIntervalRef.current);
           }
+          chunkIntervalRef.current = setTimeout(() => {
+            if (mediaRecorder.state === 'recording') {
+              mediaRecorder.stop();
+            }
+          }, 3500);
         };
-        
-        mediaRecorder.onstop = () => {
-          processAudioWithGemini();
-        };
-        
-        mediaRecorder.start();
+        startChunk();
       }
     } catch (_error) {
       setIsVoiceActive(false);
@@ -8076,6 +8099,10 @@ Rules:
           speechRecognitionRef.current?.stop();
         } catch (_error) {
           // noop
+        }
+        if (chunkIntervalRef.current) {
+          clearTimeout(chunkIntervalRef.current);
+          chunkIntervalRef.current = null;
         }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
           mediaRecorderRef.current.stop();
