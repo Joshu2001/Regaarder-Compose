@@ -8161,25 +8161,34 @@ Rules:
     try {
       if (entering) {
         setIsFocusMode(true);
-        if (appShellRef.current?.requestFullscreen && document.fullscreenElement !== appShellRef.current) {
-          await appShellRef.current.requestFullscreen();
-        }
         setIsDocumentImmersive(true);
-        showToast('Immersive mode enabled');
+        
+        // Try native fullscreen API
+        if (appShellRef.current?.requestFullscreen) {
+          try {
+            await appShellRef.current.requestFullscreen();
+          } catch (fsError) {
+            console.log('Fullscreen API failed, using CSS fullscreen', fsError);
+          }
+        }
+        showToast('Fullscreen mode enabled');
         return;
       }
 
-      if (document.fullscreenElement && document.exitFullscreen) {
+      // Exit fullscreen
+      if (document.fullscreenElement) {
         await document.exitFullscreen();
       }
       setIsDocumentImmersive(false);
       setIsFocusMode(false);
-      showToast('Immersive mode disabled');
+      showToast('Fullscreen mode disabled');
     } catch (_error) {
+      console.error('Fullscreen toggle error:', _error);
       if (entering) {
         setIsFocusMode(false);
+        setIsDocumentImmersive(false);
       }
-      showToast('Fullscreen is unavailable in this browser context');
+      showToast('Could not toggle fullscreen');
     }
   };
 
@@ -8195,6 +8204,19 @@ Rules:
       setLeftSidebarOpen(false);
     }
   }, [rightSidebarOpen]);
+
+  // Listen for fullscreen changes and sync state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isDocumentImmersive) {
+        setIsDocumentImmersive(false);
+        setIsFocusMode(false);
+      }
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [isDocumentImmersive]);
 
   const formatMeetingElapsed = useCallback((startedAt) => {
     if (!startedAt) {
@@ -11462,7 +11484,7 @@ Rules:
     };
 
     return (
-      <div ref={appShellRef} className={`flex h-screen bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
           <div className="absolute top-5 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
             <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
@@ -14936,7 +14958,7 @@ Rules:
   }
 
   return (
-    <div ref={appShellRef} className={`flex h-screen bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+    <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
       
       {/* Dynamic Toast System */}
       {toastMessage && (
