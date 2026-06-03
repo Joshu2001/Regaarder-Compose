@@ -2342,6 +2342,7 @@ export default function App() {
   const [editorFont, setEditorFont] = useState('Manrope');
   const [editorSize, setEditorSize] = useState(36);
   const [subtitleSize, setSubtitleSize] = useState(17);
+  const [activeFontSize, setActiveFontSize] = useState(36);
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
   const [isUnderlineActive, setIsUnderlineActive] = useState(false);
@@ -3697,6 +3698,7 @@ export default function App() {
           const parsedSize = Number(parsedPrefs.editorSize);
           if (!Number.isNaN(parsedSize) && parsedSize >= 10 && parsedSize <= 72) {
             setEditorSize(parsedSize);
+            setActiveFontSize(parsedSize);
           }
           if (typeof parsedPrefs.alignMode === 'string' && ['left', 'center', 'right'].includes(parsedPrefs.alignMode)) {
             setAlignMode(parsedPrefs.alignMode);
@@ -4798,6 +4800,20 @@ export default function App() {
       setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
       setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
       setIsListActive(Boolean(document.queryCommandState('insertUnorderedList')));
+      
+      const ancestor = range.commonAncestorContainer;
+      const element = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+      if (element) {
+        if (titleEditableRef.current && titleEditableRef.current.contains(element)) {
+          setActiveFontSize(editorSize);
+        } else if (subtitleEditableRef.current && subtitleEditableRef.current.contains(element)) {
+          setActiveFontSize(subtitleSize);
+        } else {
+          const style = window.getComputedStyle(element);
+          const size = parseInt(style.fontSize, 10);
+          setActiveFontSize(size || 14);
+        }
+      }
     } catch (_error) {
       // noop
     }
@@ -5004,13 +5020,7 @@ export default function App() {
 
     let target = activeEditable;
     if (!target) {
-      if (!docTitle.trim() || docTitle === AI_NATIVE_PLACEHOLDER) {
-        target = titleEditableRef.current;
-      } else if (!docSubtitle.trim() || docSubtitle === AI_NATIVE_PLACEHOLDER) {
-        target = subtitleEditableRef.current;
-      } else {
-        target = getFallbackDocumentTarget();
-      }
+      target = getFallbackDocumentTarget();
     }
 
     if (!target) {
@@ -9509,7 +9519,25 @@ Rules:
           ? anchorNode
           : anchorNode.parentElement;
         if (parentElement && documentCardRef.current?.contains(parentElement)) {
-          parentElement.style.fontSize = `${safeSize}px`;
+          const isContainer = parentElement === blankBodyRef.current || 
+                              parentElement.tagName === 'P' || 
+                              parentElement.tagName === 'DIV' || 
+                              parentElement.tagName === 'TD' ||
+                              parentElement.tagName === 'LI';
+          if (isContainer) {
+            const span = document.createElement('span');
+            span.style.fontSize = `${safeSize}px`;
+            span.appendChild(document.createTextNode('\u200B')); // zero-width space
+            activeRange.insertNode(span);
+            
+            const nextRange = document.createRange();
+            nextRange.setStart(span.firstChild, 1);
+            nextRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(nextRange);
+          } else {
+            parentElement.style.fontSize = `${safeSize}px`;
+          }
         }
       } else {
         const wrapper = document.createElement('span');
@@ -9555,6 +9583,20 @@ Rules:
       setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
       setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
       setIsListActive(Boolean(document.queryCommandState('insertUnorderedList')));
+      
+      const ancestor = range.commonAncestorContainer;
+      const element = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+      if (element) {
+        if (titleEditableRef.current && titleEditableRef.current.contains(element)) {
+          setActiveFontSize(editorSize);
+        } else if (subtitleEditableRef.current && subtitleEditableRef.current.contains(element)) {
+          setActiveFontSize(subtitleSize);
+        } else {
+          const style = window.getComputedStyle(element);
+          const size = parseInt(style.fontSize, 10);
+          setActiveFontSize(size || 14);
+        }
+      }
     } catch (_error) {
       // noop
     }
@@ -16041,7 +16083,20 @@ Rules:
                         onClick={() => {
                           const nextHeading = headingMeta[option] || headingMeta.Paragraph;
                           setEditorHeading(option);
-                          setEditorSize(nextHeading.size);
+                          
+                          const range = getEditorSelectionRange();
+                          const ancestor = range?.commonAncestorContainer;
+                          const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+                          const isTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
+                          const isSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+                          
+                          if (isTitle) {
+                            setEditorSize(nextHeading.size);
+                          } else if (isSubtitle) {
+                            setSubtitleSize(nextHeading.size);
+                          }
+                          setActiveFontSize(nextHeading.size);
+                          
                           applyFormatCommand('formatBlock', nextHeading.tag);
                           applyFormatCommand('fontSize', String(nextHeading.size));
                           setOpenDropdown(null);
@@ -16168,10 +16223,23 @@ Rules:
               type="number"
               min={10}
               max={72}
-              value={editorSize}
+              value={activeFontSize}
               onChange={(e) => {
-                const nextSize = Number(e.target.value) || 32;
-                setEditorSize(nextSize);
+                const nextSize = Number(e.target.value) || 14;
+                setActiveFontSize(nextSize);
+                
+                const range = getEditorSelectionRange();
+                const ancestor = range?.commonAncestorContainer;
+                const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+                const isTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
+                const isSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+                
+                if (isTitle) {
+                  setEditorSize(nextSize);
+                } else if (isSubtitle) {
+                  setSubtitleSize(nextSize);
+                }
+                
                 applyFormatCommand('fontSize', String(nextSize));
               }}
               className="w-14 bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
@@ -16199,7 +16267,20 @@ Rules:
                       <button
                         key={option}
                         onClick={() => {
-                          setEditorSize(option);
+                          setActiveFontSize(option);
+                          
+                          const range = getEditorSelectionRange();
+                          const ancestor = range?.commonAncestorContainer;
+                          const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+                          const isTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
+                          const isSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+                          
+                          if (isTitle) {
+                            setEditorSize(option);
+                          } else if (isSubtitle) {
+                            setSubtitleSize(option);
+                          }
+                          
                           applyFormatCommand('fontSize', String(option));
                           setOpenDropdown(null);
                         }}
