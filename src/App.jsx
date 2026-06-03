@@ -13087,7 +13087,7 @@ Rules:
                   ...prev,
                 ]);
                 showToast('Team access granted');
-              }} className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:border-violet-200 hover:text-violet-700 inline-flex items-center gap-1.5"><ShieldCheck size={14} /> Team access</button>
+              }} className="h-10 px-4 rounded-xl border border-slate-200 bg-white text-slate-700 text-sm font-semibold hover:border-violet-200 hover:text-violet-700 inline-flex items-center gap-1.5"><ShieldAlert size={14} /> Team access</button>
               <button
                 type="button"
                 onClick={toggleDocumentImmersiveMode}
@@ -21846,4 +21846,5 @@ Rules:
     </div>
   );
 }
+
 
