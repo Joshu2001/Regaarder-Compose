@@ -2048,6 +2048,10 @@ export default function App() {
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
+  const [isVoiceCommandMode, setIsVoiceCommandMode] = useState(false);
+  const isVoiceCommandModeRef = useRef(false);
+  const [voiceCommandBuffer, setVoiceCommandBuffer] = useState('');
+  const voiceCommandBufferRef = useRef('');
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
   const [roomState, setRoomState] = useState('lobby');
@@ -7901,6 +7905,48 @@ Rules:
     return true;
   };
 
+  const COMMAND_PREFIXES = [
+    'ai prompt',
+    'ai command',
+    'hey ai',
+    'hey gemini',
+    'format',
+    'insert',
+    'execute'
+  ];
+
+  const ESCAPE_PREFIXES = [
+    'write',
+    'dictate',
+    'record normally'
+  ];
+
+  const cleanTranscriptText = (text) => {
+    return text.trim().replace(/^[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+  };
+
+  const detectCommandPrefix = (text) => {
+    const cleaned = cleanTranscriptText(text);
+    for (const prefix of COMMAND_PREFIXES) {
+      if (cleaned.toLowerCase().startsWith(prefix)) {
+        const remaining = cleaned.slice(prefix.length).replace(/^[:\s,.-]+/, "").trim();
+        return { matched: true, prefix, remaining };
+      }
+    }
+    return { matched: false };
+  };
+
+  const detectEscapePrefix = (text) => {
+    const cleaned = cleanTranscriptText(text);
+    for (const prefix of ESCAPE_PREFIXES) {
+      if (cleaned.toLowerCase().startsWith(prefix)) {
+        const remaining = cleaned.slice(prefix.length).replace(/^[:\s,.-]+/, "").trim();
+        return { matched: true, prefix, remaining };
+      }
+    }
+    return { matched: false };
+  };
+
   const processAudioWithGemini = async () => {
     const chunks = audioChunksRef.current.splice(0);
     if (chunks.length === 0) return;
@@ -7938,23 +7984,83 @@ Rules:
       if (result.ok && result.text) {
         const cleanedText = result.text.trim();
         if (cleanedText && cleanedText !== '[SILENCE]' && !cleanedText.toLowerCase().includes('[silence]')) {
-          setLiveSpeechInterimText(cleanedText);
-          if (voiceTargetRef.current === 'document') {
-            insertTranscriptIntoDocumentRef.current?.(cleanedText + ' ', { forceAppendToEnd: true });
-          } else if (voiceTargetRef.current === 'schedule') {
-            setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
-          } else {
-            setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
+          
+          // Check for spoken cancellation
+          const lowerText = cleanedText.toLowerCase().replace(/[.,!?]/g, '').trim();
+          if (lowerText === 'cancel prompt' || lowerText === 'cancel command' || lowerText === 'cancel') {
+            setIsVoiceCommandMode(false);
+            isVoiceCommandModeRef.current = false;
+            setVoiceCommandBuffer('');
+            voiceCommandBufferRef.current = '';
+            setLiveSpeechInterimText('Command cancelled');
+            showToast('Voice command cancelled');
+            setTimeout(() => {
+              if (isVoiceActiveRef.current) {
+                setLiveSpeechInterimText('Listening... start speaking');
+              }
+            }, 1200);
+            return;
           }
+
+          // Check if user spoke an escape prefix
+          const escapeCheck = detectEscapePrefix(cleanedText);
+          
+          if (escapeCheck.matched) {
+            const textToInsert = escapeCheck.remaining;
+            setLiveSpeechInterimText(textToInsert);
+            if (voiceTargetRef.current === 'document') {
+              insertTranscriptIntoDocumentRef.current?.(textToInsert + ' ', { forceAppendToEnd: true });
+            } else if (voiceTargetRef.current === 'schedule') {
+              setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+            } else {
+              setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+            }
+          } else {
+            // Check command triggers
+            const commandCheck = detectCommandPrefix(cleanedText);
+            
+            if (commandCheck.matched || isVoiceCommandModeRef.current) {
+              if (!isVoiceCommandModeRef.current) {
+                setIsVoiceCommandMode(true);
+                isVoiceCommandModeRef.current = true;
+              }
+              const newInstruction = commandCheck.matched ? commandCheck.remaining : cleanedText;
+              setVoiceCommandBuffer((prev) => {
+                const combined = `${prev}${prev ? ' ' : ''}${newInstruction}`;
+                voiceCommandBufferRef.current = combined;
+                return combined;
+              });
+              setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || newInstruction}`);
+            } else {
+              // Normal transcription
+              setLiveSpeechInterimText(cleanedText);
+              if (voiceTargetRef.current === 'document') {
+                insertTranscriptIntoDocumentRef.current?.(cleanedText + ' ', { forceAppendToEnd: true });
+              } else if (voiceTargetRef.current === 'schedule') {
+                setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
+              } else {
+                setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
+              }
+            }
+          }
+
           // Clear the interim text after a short delay
           setTimeout(() => {
             if (isVoiceActiveRef.current) {
-              setLiveSpeechInterimText('Listening...');
+              if (isVoiceCommandModeRef.current) {
+                setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current}`);
+              } else {
+                setLiveSpeechInterimText('Listening...');
+              }
             }
           }, 800);
         } else {
           if (isVoiceActiveRef.current) {
-            setLiveSpeechInterimText('Listening... start speaking');
+            if (isVoiceCommandModeRef.current) {
+              setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || 'speak instructions...'}`);
+            } else {
+              setLiveSpeechInterimText('Listening... start speaking');
+            }
           }
         }
       } else {
@@ -7971,6 +8077,17 @@ Rules:
         setLiveSpeechInterimText('Listening... start speaking');
       }
     } finally {
+      if (!isVoiceActiveRef.current && isVoiceCommandModeRef.current) {
+        const finalCommand = voiceCommandBufferRef.current.trim();
+        if (finalCommand) {
+          showToast('Executing AI voice command...');
+          handleAISubmit(finalCommand, { source: 'compose' });
+        }
+        setIsVoiceCommandMode(false);
+        isVoiceCommandModeRef.current = false;
+        setVoiceCommandBuffer('');
+        voiceCommandBufferRef.current = '';
+      }
     }
   };
 
@@ -19041,14 +19158,20 @@ Rules:
                 onClick={async () => {
                   await toggleVoiceRecording('document');
                 }}
-                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${isVoiceActive && voiceTarget === 'document' ? 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]' : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'}`}
+                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${
+                  isVoiceActive && voiceTarget === 'document' 
+                    ? (isVoiceCommandMode 
+                        ? 'border-indigo-400 bg-indigo-50 shadow-[0_0_0_6px_rgba(99,102,241,0.22),0_0_35px_rgba(99,102,241,0.65)] animate-pulse' 
+                        : 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]') 
+                    : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'
+                }`}
                 title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
               >
                 <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
                 {isVoiceActive && voiceTarget === 'document' && (
                   <>
-                    <span className="absolute inset-0 rounded-full border-2 border-violet-300 animate-ping"></span>
-                    <span className="absolute -inset-2 rounded-full border border-violet-200/80 animate-pulse"></span>
+                    <span className={`absolute inset-0 rounded-full border-2 animate-ping ${isVoiceCommandMode ? 'border-indigo-300' : 'border-violet-300'}`}></span>
+                    <span className={`absolute -inset-2 rounded-full border animate-pulse ${isVoiceCommandMode ? 'border-indigo-200/80' : 'border-violet-200/80'}`}></span>
                   </>
                 )}
               </button>
@@ -19067,6 +19190,10 @@ Rules:
                     audioStreamRef.current = null;
                     setIsVoiceActive(false);
                     setLiveSpeechInterimText('');
+                    setIsVoiceCommandMode(false);
+                    isVoiceCommandModeRef.current = false;
+                    setVoiceCommandBuffer('');
+                    voiceCommandBufferRef.current = '';
                   }}
                   onPointerDown={(event) => {
                     event.preventDefault();
@@ -19079,10 +19206,14 @@ Rules:
                     audioStreamRef.current = null;
                     setIsVoiceActive(false);
                     setLiveSpeechInterimText('');
+                    setIsVoiceCommandMode(false);
+                    isVoiceCommandModeRef.current = false;
+                    setVoiceCommandBuffer('');
+                    voiceCommandBufferRef.current = '';
                   }}
                   className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
                 >
-                  Dismiss
+                  {isVoiceCommandMode ? 'Cancel AI Prompt' : 'Dismiss'}
                 </button>
               )}
             </div>
