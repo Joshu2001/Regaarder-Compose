@@ -1,96 +1,96 @@
-# Intelligent Voice Commands and Formatting via Dictation
+# Rich Editor Slash Commands (/) and AI Preview Banners
 
-This plan outlines how to make the voice dictation tool more intelligent by allowing users to speak commands (e.g., `"AI Prompt: add a table"`, `"AI Command: make the last line a title"`) to execute editing actions on the document, rather than just transcribing literal text.
-
----
-
-## Proposed Concepts & Architectures
-
-We propose a **Hybrid Semantic Command Router** that combines client-side prefix matching with semantic processing from the Gemini audio-reasoning model.
-
-### 1. Spoken Command Triggers (Keywords)
-To trigger a command, the user begins their speech with any of the following prefix keywords:
-- **Command mode prefixes**: `"AI prompt"`, `"AI command"`, `"Hey AI"`, `"Hey Gemini"`, `"Format"`, `"Insert"`, or `"Execute"`.
-- **Fuzzy matching (homophones)**: The client and API will account for mispronunciations/homophones like `"eye prompt"`, `"aye command"`, `"hey I"`, or `"hay AI"`.
-- **Escape / Normal dictation prefixes**: If a user wants to write the literal words of a prefix, they can prefix it with `"Write"` or `"Dictate"` (e.g., `"Write: AI prompt is the future"` will output literal text).
-
-### 2. The Command Execution Pipeline
-
-We can implement this using a **Stateful Command Buffer**:
-```mermaid
-graph TD
-    A[User speaks audio chunk] --> B[Gemini processes audio]
-    B --> C{Contains Command prefix?}
-    C -- Yes --> D[Set isVoiceCommandMode = true]
-    D --> E[Append instruction text to commandBuffer]
-    D --> F[Show UI feedback: 'Recording AI prompt...']
-    C -- No --> G{Already in isVoiceCommandMode?}
-    G -- Yes --> E
-    G -- No --> H[Insert text literally into document]
-    E --> I[User stops speaking / clicks Done]
-    I --> J{isVoiceCommandMode is active?}
-    J -- Yes --> K[Call handleAISubmit with accumulated commandBuffer]
-    J -- No --> L[Finish dictation]
-    K --> M[Reset command states & UI]
-```
+This implementation plan outlines the design and integration of slash commands (`/`), inline AI prompt inputs, dynamic image/chart generation, and an inline review banner allowing users to **Accept**, **Retry**, **Delete**, or **Export** AI changes.
 
 ---
 
-## Edge Cases and Failure Points
+## Technical Specifications & UI Design
 
-### 1. Chunk Boundary Segmentation
-- **Problem**: Dictation is processed in 4-second audio chunks. If a user says `"AI Prompt... [pause] ...add a table"`, the trigger `"AI Prompt"` is in Chunk 1, but `"add a table"` is in Chunk 2.
-- **Solution**: Once a command prefix is detected in *any* chunk, the application shifts into a persistent state `isVoiceCommandRef.current = true`. All subsequent chunks are treated as command instructions and appended to a `voiceCommandBufferRef` until the user finishes the recording session.
+### 1. The Slash Command Popover (`/`)
+- When the user presses the `/` key inside the editor (`blankBodyRef`), a floating popover menu appears at the cursor coordinates.
+- **Menu Options**:
+  - `Table`: Insert an AI-generated or blank table.
+  - `Bullet points`: Insert bullet lists.
+  - `Graph / Chart`: Generate a styled SVG graph.
+  - `Image`: Generate an Unsplash image based on search keywords.
+  - `Proofread / Improve`: Proofread selection or block.
+  - `Translate`: Translate text to another language.
+  - `Schedule / Timeline`: Create a checklist or timeline.
+  - `Icon`: Insert a Lucide icon or emoji.
+- Keyboard navigation (Up/Down arrows, Enter to select, Escape to close).
 
-### 2. Homophones & Accidental Triggers (False Positives)
-- **Problem**: The user says something like `"I prompt my students every day"`, and the AI incorrectly triggers a command.
-- **Solution**: 
-  - Strict prefix rule: The trigger keyword must appear at the *very beginning* of the dictation session (or immediately after a period/new sentence).
-  - Explicit Normal Mode prefix: Users can prefix text with `"Write"` or `"Dictate"` to bypass commands.
-  - Client-side fuzzy matching: Include a fallback regex to catch common homophones: `/\b(ai|i|eye|aye|hey|hay)\s*(prompt|command|gemini|helper)\b/i`.
+### 2. Inline Prompt Input
+- When selecting an AI generator (Table, Graph, Image, Translate, Proofread), instead of opening a sidebar, a styled block-level input box is inserted at the cursor:
+  ```html
+  <div class="inline-ai-prompt-box" contenteditable="false">
+    <span>Generate Table:</span>
+    <input type="text" placeholder="Describe the table to generate (e.g. Sales figures for Q2)..." />
+    <button class="ai-generate-btn">Generate</button>
+  </div>
+  ```
+- Pressing Enter triggers the AI generation.
 
-### 3. Latency & User Interface Feedback
-- **Problem**: When executing a command, there is a delay while Gemini generates the changes (e.g., creating a table). If the UI doesn't provide feedback, the user might think the app is frozen.
-- **Solution**:
-  - Show a clear status in the dictation overlay (e.g., `"AI is generating your table..."` with a spinner).
-  - Highlight the text or play a typing animation in the editor while the AI is modifying the document.
+### 3. Review/Preview Blocks & Inline Action Banners
+- When the AI returns generated content (or when a voice command finishes), the HTML is inserted inside a temporary preview container:
+  ```html
+  <div class="ai-preview-block" data-preview-id="prev_1234">
+    <!-- Generated content (table, graph, text, etc.) -->
+    <div class="ai-preview-action-banner" contenteditable="false">
+      <span class="banner-title">AI Preview</span>
+      <div class="banner-actions">
+        <button class="btn-accept">Accept</button>
+        <button class="btn-retry">Retry / Edit</button>
+        <button class="btn-delete">Delete</button>
+        <button class="btn-export">Export Block</button>
+      </div>
+      <div class="banner-refinement-input" style="display:none;">
+        <input type="text" placeholder="Type refinement instruction (e.g., add a column)..." />
+        <button class="btn-submit-refinement">Apply</button>
+      </div>
+    </div>
+  </div>
+  ```
+- **Accept**: Strips the wrapper `div.ai-preview-block` and `div.ai-preview-action-banner` from the document HTML, leaving the clean generated content permanently.
+- **Retry/Edit**: Displays a text input in the banner to refine the block with a follow-up prompt.
+- **Delete**: Completely removes the generated preview block from the document.
+- **Export**: Exports that specific block's HTML to markdown/text.
 
-### 4. Canceling a Command Mid-Speech
-- **Problem**: The user starts a command but changes their mind or misspoke.
-- **Solution**:
-  - Spoken cancel command: Saying `"cancel"` or `"cancel prompt"` will immediately abort the command mode and clear the buffer.
-  - UI Button: Add a "Cancel" button on the voice dictation card during command mode to clear the buffer.
+### 4. Dynamic Asset Generation
+- **Images**: Rendered as `<img src="https://images.unsplash.com/photo-...?auto=format&fit=crop&w=800&q=80" alt="[AI Generated]" />` with search keywords generated by Gemini.
+- **Graphs**: Gemini generates JSON data (e.g. labels, datasets), and the client renders responsive SVG bar, line, or pie charts on the fly.
+
+### 5. Export Sanitization
+- Prior to exporting to PDF, HTML, MD, or DOC, the document serializer will strip all `.ai-preview-action-banner` and `.inline-ai-prompt-box` elements so the output files are completely clean.
 
 ---
 
 ## Proposed Changes
 
-### [Component Name]
-We will implement these changes within the existing backend API and the frontend application `src/App.jsx`.
-
-#### [MODIFY] [gemini.js](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/api/gemini.js) (Optional)
-- We will update the system prompt for transcription to recognize command prefixes and format them using a standardized tag `[COMMAND] <instruction>`, making it simple for the frontend to classify the intent.
+### [Frontend Component]
 
 #### [MODIFY] [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx)
-- **State Additions**:
-  - `isVoiceCommandMode`: Tracks if the active dictation is a command.
-  - `voiceCommandBuffer`: Accumulates the spoken command instructions.
-- **Logic Updates in `processAudioWithGemini`**:
-  - Check if the incoming transcript starts with a command prefix or `[COMMAND]`.
-  - If yes, set `isVoiceCommandMode = true` and append the instructions to the command buffer.
-  - Update the dictation overlay UI to display the pending command text.
-  - On stop/done, if `isVoiceCommandMode` is active, call `handleAISubmit(voiceCommandBuffer, { source: 'compose' })`.
+- **New States**:
+  - `slashMenu`: `{ open: boolean, left: number, top: number, filterText: string }`
+  - `activePreviewBlocks`: List of currently un-accepted block IDs.
+- **Logic Functions**:
+  - `handleEditorKeyDown`: Catch `/` input, arrow navigation, and enter selections.
+  - `insertInlinePromptBox(type)`: Insert inline prompt input block.
+  - `renderSvgChart(type, data)`: Helper to generate inline responsive SVG graphs based on data returned from Gemini.
+  - `handleAIBlockSubmit(prompt, type, parentNode)`: Execute AI call for a specific in-line prompt and replace input box with the preview block.
+  - `handlePreviewAction(action, previewId, refinementText)`: Handle Accept, Retry (refinement), Delete, and Export.
+- **Export Sanitization**:
+  - Update export handlers to sanitize/strip preview UI tags before download.
 
 ---
 
 ## Verification Plan
 
 ### Automated Tests
-- Run `npm run build` to verify compiling succeeds.
+- Build verification via `npm run build`.
 
 ### Manual Verification
-1. **Start Dictation**: Click the microphone icon.
-2. **Literal Text Test**: Dictate `"Hello world, this is a test document."` -> Verify text is inserted literally chunk-by-chunk.
-3. **Voice Command Test**: Dictate `"AI Prompt: add a table of marketing metrics with 3 columns."` -> Verify the UI displays `"Recording AI Prompt..."`, does *not* write text to the document immediately, and upon stopping, triggers the table creation.
-4. **Fuzzy Matching Test**: Dictate `"eye prompt: make the last line a heading 1"` -> Verify it enters command mode correctly.
-5. **Cancel Command Test**: Dictate `"AI Prompt: make this bold... cancel prompt"` -> Verify command mode resets without applying changes.
+1. **Slash Menu Trigger**: Press `/` in the empty editor. Navigate options with arrows, select `Table` with Enter.
+2. **Inline Prompt Generation**: Type `"Q2 revenue summary by region"` in the inline prompt input and hit Enter. Verify the input is replaced with a styled table and an AI review banner.
+3. **Accept Action**: Click **Accept** on the table. Verify the purple border and review banner disappear, leaving a clean, editable table.
+4. **Retry/Refine Action**: Insert a Graph, click **Retry/Edit** in the banner, type `"convert to bar chart"`, and hit Apply. Verify the chart regenerates.
+5. **Clean Export**: With an active preview banner visible, export the page to PDF or HTML. Open the exported file and verify that the review banner/buttons are completely omitted.
