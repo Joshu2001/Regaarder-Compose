@@ -38,6 +38,11 @@ This walkthrough summarizes the changes made to improve the voice recognition sy
   - Added a floating command menu popover triggered by typing `/` in the editor.
   - Displays options: *Table*, *Bullet points*, *Graph / Chart*, *Image*, *Proofread*, *Translate*, *Schedule*, and *Icon*.
   - Full keyboard navigation support (Up/Down arrow keys to browse, Enter to select, Escape to close).
+- **Universal Capture Handler**:
+  - Bound the keydown handler using `onKeyDownCapture` globally on the `documentCardRef` container. This guarantees the slash menu triggers universally anywhere you type (titles, subtitles, template paragraphs, tables, or blank text blocks).
+- **Foolproof Cursor Positioning**:
+  - Replaced viewport coordinate calculation. If `range.getBoundingClientRect()` returns empty values (common on collapsed selections or line ends), the system temporarily inserts a dummy zero-width space span (`\u8203`), measures its layout position, and instantly removes it.
+  - Cleared `window.scrollX` / `window.scrollY` offset addition to ensure precise `fixed` viewport matching regardless of page scroll.
 - **Inline Prompt Box**:
   - Selecting a slash menu action inserts a styled block-level prompt input box (`inline-ai-prompt-box`) at the cursor coordinates.
   - Users can describe what they want to generate (e.g., `"Generate Table: Sales figures for Q2"`) and hit Enter to compose inline.
