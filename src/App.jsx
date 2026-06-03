@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
@@ -104,9 +104,9 @@ const LassoLoopIcon = ({ size = 12, className = '', style = {} }) => (
 );
 
 const WHITEBOARD_EMOJI_LIBRARY = [
-  '🙂', '🔥', '✨', '🎯', '👍', '👏', '💡', '✅', '❤️', '🚀',
-  '📌', '🤝', '😄', '🙌', '⚡', '🧠', '🌟', '🪄', '📝', '📎',
-  '🔔', '👀', '💭', '😍', '🤍', '🏷️', '🎉', '🙋', '🔍', '🗂️',
+  '??', '??', '?', '??', '??', '??', '??', '?', '??', '??',
+  '??', '??', '??', '??', '?', '??', '??', '??', '??', '??',
+  '??', '??', '??', '??', '??', '???', '??', '??', '??', '???',
 ];
 const WHITEBOARD_EMOJI_STORAGE_KEY = 'rc.whiteboardEmojiUsage';
 
@@ -357,7 +357,7 @@ const createBlankDeckSlide = (id = 1) => ({
   keyMetric: '',
   speakerNotes: '',
   section: '',
-  footer: 'Original design 繚 Editable',
+  footer: 'Original design · Editable',
 });
 
 // Sub-component to cleanly handle the local video stream without cluttering the main render
@@ -1377,8 +1377,8 @@ export default function App() {
             item.dueLabel ? `Due: ${item.dueLabel}` : '',
             item.dependencies?.length ? `Depends on: ${item.dependencies.join(', ')}` : '',
             item.subtasks?.length ? `Subtasks: ${item.subtasks.join(' | ')}` : '',
-          ].filter(Boolean).join(' • ');
-          const text = `[${segments.join(' • ')}] ${item.title}${meta ? ` — ${meta}` : ''}`;
+          ].filter(Boolean).join(' �E ');
+          const text = `[${segments.join(' �E ')}] ${item.title}${meta ? ` �X ${meta}` : ''}`;
           return {
             id: Date.now() + index,
             text,
@@ -1436,19 +1436,19 @@ export default function App() {
       return;
     }
     if (toolKey === 'select') {
-      showToast('Select tool — tap widgets to select, drag to move');
+      showToast('Select tool �X tap widgets to select, drag to move');
       return;
     }
     if (toolKey === 'hand') {
-      showToast('Hand tool — drag to pan canvas');
+      showToast('Hand tool �X drag to pan canvas');
       return;
     }
     if (toolKey === 'eraser') {
-      showToast('Eraser tool — draw over strokes to erase');
+      showToast('Eraser tool �X draw over strokes to erase');
       return;
     }
     if (toolKey === 'comment') {
-      showToast('Comment tool — click to place a comment');
+      showToast('Comment tool �X click to place a comment');
       return;
     }
     showToast(`${toolKey.charAt(0).toUpperCase()}${toolKey.slice(1)} tool active`);
@@ -1853,7 +1853,7 @@ export default function App() {
     }
   };
 
-  const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*•]\s+|\d+\.\s+)/, '');
+  const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*�E]\s+|\d+\.\s+)/, '');
 
   const toggleWidgetList = (widgetId, nextType) => {
     setWhiteboardWidgets((prev) => prev.map((w) => {
@@ -1868,7 +1868,7 @@ export default function App() {
       if (nextType === 'numbered') {
         return { ...w, hasList: true, listType: 'numbered', text: normalized.map((line, i) => `${i + 1}. ${line}`).join('\n') };
       }
-      return { ...w, hasList: true, listType: 'bullet', text: normalized.map((line) => `• ${line}`).join('\n') };
+      return { ...w, hasList: true, listType: 'bullet', text: normalized.map((line) => `�E ${line}`).join('\n') };
     }));
   };
 
@@ -2852,7 +2852,7 @@ export default function App() {
 
     // Split inline numbered sections into standalone blocks.
     normalized = normalized
-      .replace(/([.!?"”'])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
+      .replace(/([.!?"��'])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
       .replace(/([a-zA-Z])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
       .replace(/(\d+)\.(\S)/g, '$1. $2')
       .replace(/[ \t]+/g, ' ')
@@ -4698,7 +4698,7 @@ export default function App() {
     };
 
     lines.forEach((line, index) => {
-      const bulletMatch = line.match(/^(?:[-*?兡|\d+[.)])\s+(.+)$/);
+      const bulletMatch = line.match(/^(?:[-*?�]|\d+[.)])\s+(.+)$/);
       if (bulletMatch) {
         if (!listOpen) {
           html.push('<ul style="margin:0 0 10px 18px;padding:0;list-style:disc;color:#334155;line-height:1.7;">');
@@ -6068,7 +6068,7 @@ export default function App() {
         keyMetric: '',
         speakerNotes: `Frame this ${section.toLowerCase()} point clearly, then transition to the next narrative beat.`,
         section,
-        footer: 'Original design 繚 Editable',
+        footer: 'Original design · Editable',
       };
     };
 
@@ -6091,7 +6091,7 @@ export default function App() {
             keyMetric: String(slide.keyMetric || ''),
             speakerNotes: String(slide.speakerNotes || ''),
             section: String(slide.section || inferDeckStorySection(slide, index, sourceSlides.length)),
-            footer: 'Original design 繚 Editable',
+            footer: 'Original design · Editable',
           };
         });
 
@@ -7306,7 +7306,7 @@ Rules:
                   keyMetric: String(slide?.keyMetric || ''),
                   speakerNotes: String(slide?.speakerNotes || ''),
                   section: String(slide?.section || ''),
-                  footer: 'Original design 繚 Editable',
+                  footer: 'Original design · Editable',
                 };
               })
               .slice(0, 20);
@@ -10173,7 +10173,7 @@ Rules:
       keyMetric: activeDeckSlide.keyMetric || '',
       speakerNotes: activeDeckSlide.speakerNotes || '',
       section: activeDeckSlide.section || inferDeckStorySection(activeDeckSlide, Math.max(0, activeDeckSlide.id - 1), Math.max(1, deckSlides.length)),
-      footer: activeDeckSlide.footer || 'Original design 繚 Editable',
+      footer: activeDeckSlide.footer || 'Original design · Editable',
     };
   }, [activeDeckSlide, deckSlides.length]);
 
@@ -10256,7 +10256,7 @@ Rules:
         designPresetKey: randomPreset.key,
         headline,
         blurb,
-        footer: `Original concept 繚 ${new Date().toLocaleDateString()}`,
+        footer: `Original concept · ${new Date().toLocaleDateString()}`,
       };
     }));
     showToast('Generated original slide design. You can edit headline and body directly.');
@@ -10274,7 +10274,7 @@ Rules:
       layoutStyle: template.layoutStyle,
       motionCue: template.motionCue,
       section: slide.section || inferDeckStorySection(slide, index, total),
-      footer: `${template.label} 繚 Editable`,
+      footer: `${template.label} · Editable`,
     });
 
     if (scope === 'deck') {
@@ -10309,7 +10309,7 @@ Rules:
       keyMetric: '',
       speakerNotes: '',
       section: inferDeckStorySection({ title: `Slide ${nextId}` }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
-      footer: 'Original design 繚 Editable',
+      footer: 'Original design · Editable',
     };
     setDeckSlidesData((prev) => [...prev, newSlide]);
     setActiveDeckSlideId(nextId);
@@ -11828,7 +11828,7 @@ Rules:
                   <Sparkles size={14} className="text-slate-400" />
                   <div>
                     <div className="text-xs text-slate-500">Pinned by Sarah</div>
-                    <div className="text-sm text-slate-700">Product Hunt launch is scheduled for May 15! Let&apos;s make it amazing 🚀</div>
+                    <div className="text-sm text-slate-700">Product Hunt launch is scheduled for May 15! Let&apos;s make it amazing ??</div>
                   </div>
                 </div>
                 <button type="button" onClick={() => setDmConversationTab('highlights')} className="h-8 px-1 text-xs font-medium text-violet-600 hover:text-violet-700">View details</button>
@@ -11912,9 +11912,9 @@ Rules:
                             )}
                           </div>
                           <div className={`mt-1.5 flex items-center gap-2 text-xs text-slate-400 ${isOutgoing ? 'justify-end' : ''}`}>
-                            <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200/70 bg-white px-1.5 py-[1px]">🔥 {index === 0 ? 3 : 2}</button>
-                            <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200/70 bg-white px-1.5 py-[1px]">🙌 {index === 0 ? 2 : 0}</button>
-                            <button type="button" onClick={() => showToast('Reaction picker coming next')} className="rounded-full border border-slate-200/70 bg-white px-1.5 py-[1px]">☺</button>
+                            <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200/70 bg-white px-1.5 py-[1px]">?? {index === 0 ? 3 : 2}</button>
+                            <button type="button" onClick={() => showToast('Reaction added')} className="rounded-full border border-slate-200/70 bg-white px-1.5 py-[1px]">?? {index === 0 ? 2 : 0}</button>
+                            <button type="button" onClick={() => showToast('Reaction picker coming next')} className="rounded-full border border-slate-200/70 bg-white px-1.5 py-[1px]">?</button>
                             <button
                               type="button"
                               onClick={() => openDmMessageThread(message.id)}
@@ -11989,7 +11989,7 @@ Rules:
                     >
                       <div className="text-sm font-semibold text-slate-800">{item.author}</div>
                       <div className="text-sm text-slate-600 mt-0.5 line-clamp-2">{item.text}</div>
-                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies • Open thread</div>
+                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies �E Open thread</div>
                     </button>
                   ))}
                 </div>
@@ -12004,7 +12004,7 @@ Rules:
                     <div key={decision.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                       <div className="text-sm font-semibold text-amber-900">Decision</div>
                       <div className="text-sm text-amber-800 mt-0.5">{decision.summary}</div>
-                      <div className="text-xs text-amber-700 mt-1">{decision.by} • {formatDmRelative(decision.createdAt)}</div>
+                      <div className="text-xs text-amber-700 mt-1">{decision.by} �E {formatDmRelative(decision.createdAt)}</div>
                     </div>
                   ))}
                 </div>
@@ -12144,7 +12144,7 @@ Rules:
 
                 {dmEmojiPickerOpen && (
                   <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 flex flex-wrap gap-1.5 text-lg">
-                    {['🙂', '🔥', '✅', '🎯', '🚀', '👏', '🎉', '💡', '📌', '🤝', '❤️', '😄'].map((emoji) => (
+                    {['??', '??', '?', '??', '??', '??', '??', '??', '??', '??', '??', '??'].map((emoji) => (
                       <button
                         key={emoji}
                         type="button"
@@ -12717,7 +12717,10 @@ Rules:
                         <article
                           key={task.id}
                           draggable
-                          onClick={() => setManageenSelectedTaskId(task.id)}
+                          onClick={() => {
+                            setManageenSelectedTaskId(task.id);
+                            setManageenTaskPanelOpen(true);
+                          }}
                           onDragStart={() => handleManageenDragStart(task.id)}
                           onDragEnd={handleManageenDragEnd}
                           className={`rounded-2xl border bg-white p-3 text-left cursor-grab active:cursor-grabbing transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_26px_-20px_rgba(15,23,42,0.45)] ${manageenSelectedTaskId === task.id ? 'border-amber-300 shadow-[0_0_0_1px_rgba(251,191,36,0.35)]' : 'border-slate-200 hover:border-violet-200'} ${manageenDraggingTaskId === task.id ? 'opacity-70 scale-[0.98]' : ''}`}
@@ -12745,19 +12748,29 @@ Rules:
               </div>
             </div>
 
-            <aside className="rounded-2xl border border-slate-200 bg-white p-4 h-fit sticky top-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-violet-700">Task Details</div>
-                  <div className="text-[22px] font-semibold leading-tight text-slate-900">{manageenSelectedTask?.title || 'Select a task'}</div>
-                  <div className="mt-1 text-sm text-slate-500">{manageenSelectedTask?.project || 'Engineering Delivery'}</div>
-                </div>
-                <button type="button" onClick={() => showToast('Task menu opened')} className="text-slate-400 hover:text-slate-700"><MoreHorizontal size={16} /></button>
-              </div>
+                        {manageenTaskPanelOpen && manageenSelectedTask && (
+              <div className="fixed inset-0 z-[120] flex items-start justify-center bg-slate-950/35 px-4 py-8" onClick={() => setManageenTaskPanelOpen(false)}>
+                <div
+                  className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_24px_70px_-35px_rgba(15,23,42,0.55)]"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-violet-700">Task Details</div>
+                      <div className="text-[24px] font-semibold leading-tight text-slate-900">{manageenSelectedTask.title}</div>
+                      <div className="mt-1 text-sm text-slate-500">{manageenSelectedTask.project || 'Engineering Delivery'}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setManageenTaskPanelOpen(false)}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
+                      aria-label="Close task details"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
 
-              {manageenSelectedTask && (
-                <>
-                  <div className="mt-4 space-y-3 text-sm">
+                  <div className="mt-5 space-y-3 text-sm">
                     <div className="flex items-center justify-between"><span className="text-slate-500">Status</span><span className="font-medium text-amber-600">{manageenSelectedTask.columnTitle}</span></div>
                     <div className="flex items-center justify-between"><span className="text-slate-500">Assignee</span><span className="font-medium text-slate-800">{manageenSelectedTask.assignee || 'Joshua'}</span></div>
                     <div className="flex items-center justify-between"><span className="text-slate-500">Priority</span><span className="font-medium text-rose-600">{manageenSelectedTask.priority || 'High'}</span></div>
@@ -12766,8 +12779,8 @@ Rules:
 
                   {typeof manageenSelectedTask.progress === 'number' && (
                     <div className="mt-4">
-                      <div className="flex items-center justify-between text-sm mb-1"><span className="text-slate-500">Progress</span><span className="font-medium text-slate-700">{manageenSelectedTask.progress}%</span></div>
-                      <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                      <div className="mb-1 flex items-center justify-between text-sm"><span className="text-slate-500">Progress</span><span className="font-medium text-slate-700">{manageenSelectedTask.progress}%</span></div>
+                      <div className="h-2 overflow-hidden rounded-full bg-slate-200">
                         <div className="h-full bg-amber-400" style={{ width: `${manageenSelectedTask.progress}%` }} />
                       </div>
                     </div>
@@ -12790,7 +12803,7 @@ Rules:
                       <div className="mt-2 space-y-2">
                         {manageenSelectedTask.subtasks.map((subtask) => (
                           <div key={subtask} className="flex items-center gap-2 text-sm text-slate-600">
-                            <div className="w-4 h-4 rounded-full border border-slate-300" />
+                            <div className="h-4 w-4 rounded-full border border-slate-300" />
                             <span>{subtask}</span>
                           </div>
                         ))}
@@ -12809,9 +12822,9 @@ Rules:
                       ))}
                     </div>
                   )}
-                </>
-              )}
-            </aside>
+                </div>
+              </div>
+            )}
           </div>
         );
       }
@@ -12951,7 +12964,7 @@ Rules:
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-slate-900">{file.name}</div>
-                      <div className="mt-1 text-xs text-slate-500">{file.kind} • {file.owner}</div>
+                      <div className="mt-1 text-xs text-slate-500">{file.kind} �E {file.owner}</div>
                     </div>
                     <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{file.updated}</span>
                   </div>
@@ -13255,7 +13268,7 @@ Rules:
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-slate-900">{task.title}</div>
-                          <div className="mt-1 text-xs text-slate-500">{task.columnTitle} • {task.assignee || 'Joshua'}</div>
+                          <div className="mt-1 text-xs text-slate-500">{task.columnTitle} �E {task.assignee || 'Joshua'}</div>
                         </div>
                         <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{task.due}</span>
                       </div>
@@ -13363,7 +13376,7 @@ Rules:
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-slate-900">{request.title}</div>
-                          <div className="mt-1 text-xs text-slate-500">{request.type} • {request.owner}</div>
+                          <div className="mt-1 text-xs text-slate-500">{request.type} �E {request.owner}</div>
                         </div>
                         <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${request.tone}`}>{request.status}</span>
                       </div>
@@ -14210,7 +14223,7 @@ Rules:
                                 <div className={`h-16 rounded-lg ${preset.background} border border-white/20`} />
                                 <div className="mt-2 text-xs font-semibold text-gray-900">{template.label}</div>
                                 <div className="text-[11px] text-gray-500">{template.detail}</div>
-                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} 繚 {template.motionCue}</div>
+                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} · {template.motionCue}</div>
                                 <div className="mt-2 flex items-center gap-1.5">
                                   <button
                                     type="button"
@@ -14282,7 +14295,7 @@ Rules:
                           onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
                           className="text-sm text-indigo-100/80 outline-none rounded-md focus:ring-2 focus:ring-white/20"
                         >
-                          {resolvedDeckSlideDesign.footer} 繚 Slide {activeDeckSlide.id}: {activeDeckSlide.title}
+                          {resolvedDeckSlideDesign.footer} · Slide {activeDeckSlide.id}: {activeDeckSlide.title}
                         </div>
                       </div>
                     </div>
@@ -15596,7 +15609,7 @@ Rules:
                 <div className="text-[13px] font-semibold text-slate-900">Edit replay</div>
                 <div className="mt-1 text-[12px] text-slate-500">
                   {replayTimeline.length
-                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps 繚 ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
+                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps · ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
                     : 'Start typing or editing to build a replay history'}
                 </div>
               </div>
@@ -16915,10 +16928,10 @@ Rules:
                     const showWidgetReactionControls = (isWidgetHovered || isSelected || isWidgetReactionMenuOpen) && !isWidgetEditing && !['hand', 'eraser'].includes(whiteboardTool);
                     const showWidgetAnchorDots = (isWidgetHovered || isSelected) && !['hand', 'eraser'].includes(whiteboardTool);
                     const widgetAnchorPoints = [
-                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '↑', kind: 'resize' },
-                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'pointer', icon: '→', kind: 'connect' },
-                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '↓', kind: 'resize' },
-                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '←', kind: 'resize' },
+                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '��', kind: 'resize' },
+                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'pointer', icon: '��', kind: 'connect' },
+                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '��', kind: 'resize' },
+                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '��', kind: 'resize' },
                     ];
                     return (
                     <div
@@ -17014,7 +17027,7 @@ Rules:
                             className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
                             title="Quick reactions"
                           >
-                            <span className="text-[14px] leading-none">☺</span>
+                            <span className="text-[14px] leading-none">?</span>
                             <span className="absolute -top-1 -right-1 text-[9px] text-slate-500">+</span>
                           </button>
                           {isWidgetReactionMenuOpen && (
@@ -17054,7 +17067,7 @@ Rules:
                                 className="h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 text-[18px]"
                                 title="More"
                               >
-                                ˅
+                                ?
                               </button>
                             </div>
                           )}
@@ -17597,7 +17610,7 @@ Rules:
                               className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
                               title="Quick reactions"
                             >
-                              <span className="text-[14px] leading-none">☺</span>
+                              <span className="text-[14px] leading-none">?</span>
                               <span className="absolute -top-1 -right-1 text-[9px] text-slate-500">+</span>
                             </button>
                             {isShapeReactionMenuOpen && (
@@ -17637,7 +17650,7 @@ Rules:
                                   className="h-8 w-8 rounded-lg text-slate-500 hover:bg-slate-100 text-[18px]"
                                   title="More"
                                 >
-                                  ˅
+                                  ?
                                 </button>
                               </div>
                             )}
@@ -17891,7 +17904,7 @@ Rules:
                           className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-gray-200 rounded-full text-gray-400 hover:text-red-500 items-center justify-center hidden group-hover:flex"
                           title="Remove comment"
                         >
-                          ×
+                          ��
                         </button>
                       </div>
                     </div>
@@ -17929,19 +17942,19 @@ Rules:
                               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                               title="Clear"
                             >
-                              ×
+                              ��
                             </button>
                           </div>
                           <div className="mt-2 flex items-center gap-2 text-slate-500 overflow-x-auto thin-scrollbar pb-1">
-                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Recent">🕘</button>
-                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Smileys">🙂</button>
-                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Animals">🐻</button>
-                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Gestures">👍</button>
-                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Ideas">💡</button>
-                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Objects">🏷️</button>
-                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Stars">✨</button>
-                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Hearts">❤️</button>
-                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Rocket">🚀</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Recent">??</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Smileys">??</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Animals">??</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Gestures">??</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Ideas">??</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Objects">???</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Stars">?</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Hearts">??</button>
+                            <button type="button" className="h-8 w-8 rounded-full border border-slate-200 hover:bg-slate-100" title="Rocket">??</button>
                           </div>
                           <div className="mt-2 text-[11px] font-semibold text-slate-500">Recent</div>
                           <div className="mt-1 grid grid-cols-8 gap-1.5 max-h-[260px] overflow-y-auto thin-scrollbar pr-1">
@@ -17951,7 +17964,7 @@ Rules:
                                 type="button"
                                 onClick={() => applyWhiteboardReaction(item.emoji)}
                                 className="h-8 rounded-lg border border-slate-100 text-lg hover:bg-slate-100"
-                                title={`${item.emoji} · ${item.count || 0} uses`}
+                                title={`${item.emoji} �P ${item.count || 0} uses`}
                               >
                                 {item.emoji}
                               </button>
@@ -18082,7 +18095,7 @@ Rules:
                             { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
-                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow — coming soon'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow �X coming soon'); setWhiteboardAddMenuOpen(false); } },
                           ].map((item) => (
                             <button
                               key={item.label}
@@ -21136,7 +21149,7 @@ Rules:
                       placeholder="Search Orb..."
                       className="w-full rounded-xl bg-gray-100 py-2 pl-8 pr-14 text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border-0"
                     />
-                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">⌘K</span>
+                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">?K</span>
                   </div>
                 </div>
 
@@ -21163,7 +21176,7 @@ Rules:
                       { name: 'Competitive Analysis.pdf', ext: 'PDF', iconBg: 'bg-red-100', iconText: 'text-red-600', meta: 'Mentioned: pricing, positioning, bundling', ago: '2h ago' },
                       { name: 'Creator Pricing Model.xlsx', ext: 'XLS', iconBg: 'bg-green-100', iconText: 'text-green-700', meta: 'Related to: monetization strategy', ago: '4h ago' },
                       { name: 'Market Entry Strategy.docx', ext: 'DOC', iconBg: 'bg-blue-100', iconText: 'text-blue-600', meta: 'Related to: go-to-market, verticals', ago: '1d ago' },
-                      { name: 'Strategy Call Recording.mp4', ext: '▶', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync · May 10', ago: '2d ago' },
+                      { name: 'Strategy Call Recording.mp4', ext: '?', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync �P May 10', ago: '2d ago' },
                     ].map((asset) => (
                       <div key={asset.name} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-white hover:border-gray-200 transition-colors cursor-pointer">
                         <div className="flex items-start gap-2.5">
@@ -21205,7 +21218,7 @@ Rules:
                       </div>
                     ))}
                   </div>
-                  <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more →</button>
+                  <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more ��</button>
                 </div>
 
                 <div className="mx-4 border-t border-gray-100" />
@@ -21778,7 +21791,7 @@ Rules:
 
               <div className="rounded-2xl border border-violet-100 bg-violet-50/50 px-3 py-2.5">
                 <div className="text-[12px] font-semibold inline-flex items-center gap-1.5"><Sparkles size={12} className="text-violet-500" />AI Assistant <span className="text-[10px] text-violet-600">BETA</span></div>
-                <div className="mt-2 text-[11px] text-slate-600">I’m listening and will capture key points, decisions, and action items.</div>
+                <div className="mt-2 text-[11px] text-slate-600">I��m listening and will capture key points, decisions, and action items.</div>
                 <button type="button" className="mt-2 w-full rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-50">View live summary</button>
               </div>
 
@@ -21846,6 +21859,8 @@ Rules:
     </div>
   );
 }
+
+
 
 
 
