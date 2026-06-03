@@ -7125,23 +7125,28 @@ export default function App() {
     const container = document.getElementById(previewId);
     if (!container) return;
     
+    const originalHtmlAttr = container.getAttribute('data-original-html') 
+      ? `data-original-html="${container.getAttribute('data-original-html').replace(/"/g, '&quot;')}"` 
+      : '';
+    
+    container.className = 'ai-preview-block';
     container.innerHTML = `
       <div class="ai-preview-content">${contentHtml}</div>
-      <div class="ai-preview-action-banner mt-4 p-3 bg-violet-50 rounded-xl flex items-center justify-between flex-wrap gap-2" contenteditable="false">
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-violet-600 text-white text-[10px] font-bold animate-pulse">AI</span>
-          <span class="text-xs font-semibold text-violet-900">AI Preview</span>
+      <div class="ai-preview-action-banner" contenteditable="false">
+        <div class="ai-preview-banner-left">
+          <span class="ai-preview-banner-badge">AI</span>
+          <span class="ai-preview-banner-label">AI Preview</span>
         </div>
-        <div class="flex items-center gap-1.5">
-          <button type="button" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-medium shadow-sm transition-all" onclick="acceptAiPreview('${previewId}')">Accept</button>
-          <button type="button" class="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-xs font-medium shadow-sm transition-all" onclick="toggleRetryInput('${previewId}')">Retry / Edit</button>
-          <button type="button" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-medium transition-all" onclick="deleteAiPreview('${previewId}')">Delete</button>
-          <button type="button" class="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-xs font-medium shadow-sm transition-all" onclick="exportAiBlock('${previewId}')">Export</button>
+        <div class="ai-preview-banner-actions">
+          <button type="button" class="ai-preview-btn-accept" onclick="acceptAiPreview('${previewId}')">Accept</button>
+          <button type="button" class="ai-preview-btn-secondary" onclick="toggleRetryInput('${previewId}')">Retry / Edit</button>
+          <button type="button" class="ai-preview-btn-delete" onclick="deleteAiPreview('${previewId}')">Delete</button>
+          <button type="button" class="ai-preview-btn-secondary" onclick="exportAiBlock('${previewId}')">Export</button>
         </div>
-        <div class="w-full mt-2 hidden" id="retry_input_container_${previewId}">
-          <div class="flex gap-2">
-            <input type="text" placeholder="Type instructions to change this block..." class="flex-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-violet-400 transition-all" id="retry_text_${previewId}" />
-            <button type="button" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold transition-all" onclick="submitRetry('${previewId}')">Apply</button>
+        <div class="ai-preview-retry-container hidden" id="retry_input_container_${previewId}">
+          <div class="ai-preview-retry-row">
+            <input type="text" placeholder="Type instructions to change this block..." class="inline-ai-prompt-input" id="retry_text_${previewId}" />
+            <button type="button" class="inline-ai-prompt-btn" onclick="submitRetry('${previewId}')">Apply</button>
           </div>
         </div>
       </div>
@@ -7172,17 +7177,21 @@ export default function App() {
         finalHtml = parseImageOutput(rawOutput);
       } else if (type === 'graph') {
         finalHtml = parseGraphOutput(rawOutput);
-      } else if (type === 'table' || type === 'schedule') {
+      } else {
         finalHtml = rawOutput.trim();
         if (finalHtml.startsWith('```')) {
-          finalHtml = finalHtml.replace(/^```(html|xml)?\n/, '').replace(/\n```$/, '');
+          finalHtml = finalHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
         }
       }
       
       const previewId = `prev_${Date.now()}`;
-      container.className = 'ai-preview-block border border-violet-300 rounded-2xl p-4 my-4 relative';
+      const originalHtml = container.getAttribute('data-original-html') || '';
+      container.className = 'ai-preview-block';
       container.setAttribute('id', previewId);
       container.setAttribute('data-block-type', type);
+      if (originalHtml) {
+        container.setAttribute('data-original-html', originalHtml);
+      }
       
       renderBlockInPreview(previewId, type, finalHtml);
       
@@ -7231,10 +7240,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
         newHtml = parseImageOutput(rawOutput);
       } else if (type === 'graph') {
         newHtml = parseGraphOutput(rawOutput);
-      } else if (type === 'table' || type === 'schedule') {
+      } else {
         newHtml = rawOutput.trim();
         if (newHtml.startsWith('```')) {
-          newHtml = newHtml.replace(/^```(html|xml)?\n/, '').replace(/\n```$/, '');
+          newHtml = newHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
         }
       }
       
@@ -7313,41 +7322,54 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }, 100);
   };
 
-  const insertInlinePromptBox = (type) => {
+  const insertInlinePromptBox = (type, prefilledPrompt = '', originalHtml = '') => {
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) return;
     
     const range = selection.getRangeAt(0);
+    
+    let htmlToStore = originalHtml;
+    if (!htmlToStore && !range.collapsed) {
+      const clone = range.cloneContents();
+      const div = document.createElement('div');
+      div.appendChild(clone);
+      htmlToStore = div.innerHTML;
+    }
+    
     range.deleteContents();
     
     const boxId = `prompt_box_${Date.now()}`;
     const container = document.createElement('div');
-    container.className = 'inline-ai-prompt-box my-4 p-4 border border-violet-200 bg-violet-50/50 rounded-2xl flex flex-col gap-3';
+    container.className = 'inline-ai-prompt-box';
     container.setAttribute('contenteditable', 'false');
     container.setAttribute('id', boxId);
     
     const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    if (htmlToStore) {
+      container.setAttribute('data-original-html', htmlToStore);
+    }
     
     container.innerHTML = `
-      <div class="flex items-center justify-between">
-        <span class="text-xs font-semibold uppercase tracking-wider text-violet-700 flex items-center gap-1.5">
+      <div class="inline-ai-prompt-header">
+        <span class="inline-ai-prompt-title">
           <span class="w-2 h-2 rounded-full bg-violet-600 animate-ping"></span>
           Generate ${typeLabel} with AI
         </span>
-        <button type="button" class="text-xs text-gray-400 hover:text-gray-600 transition-colors" onclick="document.getElementById('${boxId}').remove()">
+        <button type="button" class="inline-ai-prompt-cancel" onclick="cancelInlinePrompt('${boxId}')">
           Cancel
         </button>
       </div>
-      <div class="flex gap-2">
+      <div class="inline-ai-prompt-input-row">
         <input 
           type="text" 
-          placeholder="Describe what you want (e.g., 'Q2 sales table with 4 columns' or 'Line graph of stock price')..." 
-          class="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-violet-400 transition-all shadow-sm"
+          placeholder="Describe what you want..." 
+          class="inline-ai-prompt-input"
           id="${boxId}_input"
+          value="${prefilledPrompt.replace(/"/g, '&quot;')}"
         />
         <button 
           type="button" 
-          class="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-4 py-2 text-xs font-semibold shadow-sm transition-all flex items-center gap-1"
+          class="inline-ai-prompt-btn"
           id="${boxId}_btn"
         >
           Generate
@@ -7364,6 +7386,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     setTimeout(() => {
       const input = document.getElementById(`${boxId}_input`);
       input?.focus();
+      input?.select();
       
       const btn = document.getElementById(`${boxId}_btn`);
       const handleGenerateClick = () => {
@@ -7383,22 +7406,126 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }, 100);
   };
 
+  const applyDirectSelectionAIAction = async (type, textToProcess, targetRange, targetElement = null) => {
+    const previewId = `prev_${Date.now()}`;
+    const container = document.createElement('div');
+    container.className = 'ai-preview-block';
+    container.setAttribute('id', previewId);
+    container.setAttribute('data-block-type', type);
+    
+    if (targetElement && blankBodyRef.current?.contains(targetElement)) {
+      targetElement.parentNode.insertBefore(container, targetElement);
+      container.setAttribute('data-original-html', targetElement.outerHTML);
+      targetElement.remove();
+    } else if (targetRange) {
+      const clone = targetRange.cloneContents();
+      const div = document.createElement('div');
+      div.appendChild(clone);
+      container.setAttribute('data-original-html', div.innerHTML);
+      targetRange.deleteContents();
+      targetRange.insertNode(container);
+      
+      const spacer = document.createElement('p');
+      spacer.innerHTML = '<br>';
+      container.parentNode.insertBefore(spacer, container.nextSibling);
+    } else {
+      blankBodyRef.current?.appendChild(container);
+    }
+    
+    container.innerHTML = `
+      <div class="flex items-center justify-center gap-2 p-4">
+        <span class="w-4 h-4 rounded-full border-2 border-violet-600 border-t-transparent animate-spin"></span>
+        <span class="text-xs font-semibold text-violet-700">AI is ${type === 'translate' ? 'translating' : 'proofreading'}...</span>
+      </div>
+    `;
+    
+    try {
+      const systemPrompt = getSystemPromptForType(type);
+      if (type === 'proofread') {
+        const userPrompt = `Proofread and improve this text: "${textToProcess}"`;
+        const res = await callGemini({ userPrompt, systemPrompt });
+        const rawOutput = res?.text || '';
+        
+        let finalHtml = rawOutput.trim();
+        if (finalHtml.startsWith('```')) {
+          finalHtml = finalHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+        }
+        renderBlockInPreview(previewId, type, finalHtml);
+      } else {
+        const originalHtml = container.getAttribute('data-original-html') || '';
+        container.remove();
+        insertInlinePromptBox('translate', `Translate to French: "${textToProcess}"`, originalHtml);
+      }
+    } catch (e) {
+      console.error(e);
+      showToast('AI action failed');
+      const originalHtml = container.getAttribute('data-original-html');
+      if (originalHtml) {
+        const temp = document.createElement('div');
+        temp.innerHTML = originalHtml;
+        while (temp.firstChild) {
+          container.parentNode.insertBefore(temp.firstChild, container);
+        }
+      }
+      container.remove();
+    }
+  };
+
   const executeSlashCommand = (key) => {
     setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
     
     const selection = window.getSelection();
-    if (selection && slashMenuRef.current?.range) {
+    let targetRange = slashMenuRef.current?.range;
+    
+    if (selection && targetRange) {
       selection.removeAllRanges();
-      selection.addRange(slashMenuRef.current.range);
+      selection.addRange(targetRange);
       
-      document.execCommand('delete', false, null);
-      for (let i = 0; i < slashMenuRef.current.filterText.length; i++) {
+      if (targetRange.collapsed) {
         document.execCommand('delete', false, null);
+        for (let i = 0; i < slashMenuRef.current.filterText.length; i++) {
+          document.execCommand('delete', false, null);
+        }
       }
     }
     
+    const findNearestBlockElement = (node) => {
+      let curr = node;
+      while (curr && curr !== blankBodyRef.current) {
+        if (curr.nodeType === 1) {
+          const tag = curr.tagName.toUpperCase();
+          if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'PRE', 'BLOCKQUOTE', 'TD', 'TH'].includes(tag)) {
+            return curr;
+          }
+        }
+        curr = curr.parentNode;
+      }
+      return null;
+    };
+    
     if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule'].includes(key)) {
-      insertInlinePromptBox(key);
+      const selectedText = targetRange ? targetRange.toString().trim() : '';
+      if (selectedText) {
+        if (key === 'translate' || key === 'proofread') {
+          applyDirectSelectionAIAction(key, selectedText, targetRange);
+        } else {
+          insertInlinePromptBox(key, selectedText);
+        }
+      } else {
+        const fullText = blankBodyRef.current ? blankBodyRef.current.innerText.trim() : '';
+        if (key === 'translate' || key === 'proofread') {
+          if (fullText) {
+            const blockEl = findNearestBlockElement(targetRange?.commonAncestorContainer);
+            const paragraphText = blockEl ? blockEl.textContent.trim() : '';
+            const textToTarget = paragraphText || fullText;
+            applyDirectSelectionAIAction(key, textToTarget, targetRange, blockEl);
+          } else {
+            showToast(`Error: Write or select some text first to ${key}!`);
+          }
+        } else {
+          insertInlinePromptBox(key);
+        }
+      }
     } else if (key === 'bullets') {
       applyFormatCommand('insertUnorderedList');
     } else if (key === 'icon') {
@@ -7417,6 +7544,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (selection && selection.rangeCount) {
         const range = selection.getRangeAt(0);
         
+        // Preserve selection text if highlighted (prevent browser deletion of selection)
+        if (!range.collapsed) {
+          event.preventDefault();
+        }
+        
         // Foolproof cursor rect calculation
         let rect = range.getBoundingClientRect();
         if (rect.width === 0 && rect.height === 0) {
@@ -7427,7 +7559,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
           dummy.parentNode.removeChild(dummy);
         }
         
-        // Fallback to center if coords are invalid
         const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
         const topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
         
@@ -7481,6 +7612,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       
       if (event.key === 'Backspace') {
+        if (slashMenuRef.current.range && !slashMenuRef.current.range.collapsed) {
+          event.preventDefault();
+        }
         if (slashMenuRef.current.filterText.length === 0) {
           setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
         } else {
@@ -7494,6 +7628,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       
       if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        if (slashMenuRef.current.range && !slashMenuRef.current.range.collapsed) {
+          event.preventDefault();
+        }
         setSlashMenu(prev => ({
           ...prev,
           filterText: prev.filterText + event.key,
@@ -7526,11 +7663,37 @@ Generate the updated output according to the instruction. Preserve layout and ta
     window.deleteAiPreview = (previewId) => {
       const container = document.getElementById(previewId);
       if (container) {
+        const originalHtml = container.getAttribute('data-original-html');
+        if (originalHtml) {
+          const temp = document.createElement('div');
+          temp.innerHTML = originalHtml;
+          while (temp.firstChild) {
+            container.parentNode.insertBefore(temp.firstChild, container);
+          }
+        }
         container.remove();
         if (blankBodyRef.current) {
           setDocBodyHtml(blankBodyRef.current.innerHTML);
         }
         showToast('AI preview deleted');
+      }
+    };
+    
+    window.cancelInlinePrompt = (boxId) => {
+      const container = document.getElementById(boxId);
+      if (container) {
+        const originalHtml = container.getAttribute('data-original-html');
+        if (originalHtml) {
+          const temp = document.createElement('div');
+          temp.innerHTML = originalHtml;
+          while (temp.firstChild) {
+            container.parentNode.insertBefore(temp.firstChild, container);
+          }
+        }
+        container.remove();
+        if (blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+        }
       }
     };
     
@@ -7575,6 +7738,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     return () => {
       delete window.acceptAiPreview;
       delete window.deleteAiPreview;
+      delete window.cancelInlinePrompt;
       delete window.toggleRetryInput;
       delete window.submitRetry;
       delete window.exportAiBlock;
@@ -22738,11 +22902,12 @@ Rules:
 
       {slashMenu.open && (
         <div 
-          className="fixed z-[400] w-56 bg-white border border-gray-100 rounded-2xl shadow-[0_8px_32px_rgba(139,92,246,0.15)] backdrop-blur-md p-1.5 flex flex-col focus:outline-none"
+          className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
           style={{ 
             left: `${slashMenu.left}px`, 
             top: `${slashMenu.top}px`,
-            transform: 'translate(-5px, 5px)'
+            maxHeight: '200px',
+            overflowY: 'auto'
           }}
         >
           {SLASH_OPTIONS
@@ -22754,12 +22919,10 @@ Rules:
                   key={opt.key}
                   type="button"
                   onClick={() => executeSlashCommand(opt.key)}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs flex flex-col transition-all ${
-                    isActive ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'
-                  }`}
+                  className={`slash-menu-option ${isActive ? 'active' : ''}`}
                 >
-                  <span>{opt.label}</span>
-                  <span className="text-[10px] text-gray-400 mt-0.5 font-normal">{opt.desc}</span>
+                  <span className="slash-menu-option-label">{opt.label}</span>
+                  <span className="slash-menu-option-desc">{opt.desc}</span>
                 </button>
               );
             })}
