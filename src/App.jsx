@@ -2244,6 +2244,10 @@ export default function App() {
   const wholeDocSelectionRef = useRef(false);
   const replayLoadedFromUrlRef = useRef(false);
   const micPermissionGrantedRef = useRef(false);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const pendingAudioProcessingRef = useRef(false);
+  const audioStreamRef = useRef(null);
   const mockDictationTimeoutRef = useRef(null);
   const mockIntervalRef = useRef(null);
   const interimTranscriptRef = useRef('');
@@ -5393,42 +5397,13 @@ export default function App() {
       // Match attached behavior: do not hard-stop on recognizer errors.
       const recoverableErrors = ['not-allowed', 'service-not-allowed', 'audio-capture', 'aborted', 'network'];
       if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && recoverableErrors.includes(errorCode) && !mockIntervalRef.current) {
-        showToast('Microphone stream interrupted. Switching to fallback dictation.');
-        const phrases = [''];
-        const fullText = phrases.join('');
-        let currentIndex = 0;
+        showToast('Speech Recognition unavailable. Using Gemini Audio-Reasoning fallback.');
         try {
           recognition.stop();
         } catch (_error) {
           // noop
         }
-        mockIntervalRef.current = setInterval(() => {
-          if (!isVoiceActiveRef.current || isMicMutedRef.current) {
-            clearInterval(mockIntervalRef.current);
-            mockIntervalRef.current = null;
-            return;
-          }
-          currentIndex += Math.floor(Math.random() * 3) + 2;
-          if (currentIndex > fullText.length) {
-            currentIndex = fullText.length;
-          }
-          const chunk = fullText.substring(0, currentIndex).trim();
-          interimTranscriptRef.current = chunk;
-          setLiveSpeechInterimText(chunk);
-
-          if (currentIndex === fullText.length) {
-            clearInterval(mockIntervalRef.current);
-            mockIntervalRef.current = null;
-            setTimeout(() => {
-              if (isVoiceActiveRef.current && chunk) {
-                insertTranscriptIntoDocumentRef.current?.(chunk, { forceAppendToEnd: true });
-              }
-              interimTranscriptRef.current = '';
-              setLiveSpeechInterimText('');
-              setIsVoiceActive(false);
-            }, 1000);
-          }
-        }, 40);
+        // Fallback removed. MediaRecorder will continue recording audio in background.
       }
     };
 
@@ -7924,6 +7899,45 @@ Rules:
     return true;
   };
 
+  const processAudioWithGemini = async () => {
+    if (pendingAudioProcessingRef.current) return;
+    const chunks = audioChunksRef.current;
+    if (chunks.length === 0) return;
+    
+    pendingAudioProcessingRef.current = true;
+    const blob = new Blob(chunks, { type: chunks[0].type || 'audio/webm' });
+    audioChunksRef.current = []; // Clear chunks for next recording
+    
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(blob);
+      const base64data = await base64Promise;
+
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userPrompt: 'Transcribe this audio accurately.',
+          systemPrompt: 'You are an expert audio transcription tool. Filter out all filler words like "umms", "uhs", and stutters. Output only the cleaned, well-formatted text without any additional commentary. Ensure proper capitalization and punctuation.',
+          attachments: [{ name: 'audio.webm', mimeType: blob.type || 'audio/webm', data: base64data }]
+        })
+      });
+      
+      const result = await response.json();
+      if (result.ok && result.text) {
+        insertTranscriptIntoDocumentRef.current?.(result.text.trim() + ' ', { forceAppendToEnd: true });
+      }
+    } catch (e) {
+      console.error('Audio processing failed', e);
+    } finally {
+      pendingAudioProcessingRef.current = false;
+    }
+  };
+
   const toggleVoiceRecording = async (targetMode = voiceTarget) => {
     if (!speechSupported) {
       showToast('Speech recognition is not supported in this browser');
@@ -7948,12 +7962,22 @@ Rules:
         } catch (_error) {
           // noop
         }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          const tracks = audioStreamRef.current?.getTracks();
+          if (tracks) tracks.forEach(track => track.stop());
+        }
         setIsVoiceActive(false);
       } else {
         try {
           speechRecognitionRef.current?.stop();
         } catch (_error) {
           // noop
+        }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          const tracks = audioStreamRef.current?.getTracks();
+          if (tracks) tracks.forEach(track => track.stop());
         }
         if (mockDictationTimeoutRef.current) {
           clearTimeout(mockDictationTimeoutRef.current);
@@ -7976,6 +8000,8 @@ Rules:
 
     try {
       await ensureMicrophonePermission();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioStreamRef.current = stream;
       const recognition = speechRecognitionRef.current;
       if (!recognition) {
         showToast('Voice engine is initializing. Please tap mic again in a moment.');
@@ -8010,42 +8036,23 @@ Rules:
       if (mockDictationTimeoutRef.current) {
         clearTimeout(mockDictationTimeoutRef.current);
       }
-      // Match attached behavior: fallback simulate if sandbox blocks real mic input.
-      mockDictationTimeoutRef.current = setTimeout(() => {
-        const noRealTranscript = !interimTranscriptRef.current.trim() && !pendingInterimTranscriptRef.current.trim();
-        if (isVoiceActiveRef.current && voiceTargetRef.current === 'document' && noRealTranscript && !mockIntervalRef.current) {
-          showToast('No live mic input yet. Switching to fallback dictation.');
-          const phrases = [''];
-          const fullText = phrases.join('');
-          let currentIndex = 0;
-          mockIntervalRef.current = setInterval(() => {
-            if (!isVoiceActiveRef.current || isMicMutedRef.current) {
-              clearInterval(mockIntervalRef.current);
-              mockIntervalRef.current = null;
-              return;
-            }
-            currentIndex += Math.floor(Math.random() * 3) + 2;
-            if (currentIndex > fullText.length) {
-              currentIndex = fullText.length;
-            }
-            const chunk = fullText.substring(0, currentIndex).trim();
-            interimTranscriptRef.current = chunk;
-            setLiveSpeechInterimText(chunk);
-            if (currentIndex === fullText.length) {
-              clearInterval(mockIntervalRef.current);
-              mockIntervalRef.current = null;
-              setTimeout(() => {
-                if (isVoiceActiveRef.current && chunk) {
-                  insertTranscriptIntoDocumentRef.current?.(chunk, { forceAppendToEnd: true });
-                }
-                interimTranscriptRef.current = '';
-                setLiveSpeechInterimText('');
-                setIsVoiceActive(false);
-              }, 1000);
-            }
-          }, 40);
-        }
-      }, 2500);
+      // Fallback dictate timeout removed. Relying strictly on MediaRecorder for Gemini transcription.
+      if (audioStreamRef.current) {
+        const mediaRecorder = new MediaRecorder(audioStreamRef.current);
+        mediaRecorderRef.current = mediaRecorder;
+        
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+        
+        mediaRecorder.onstop = () => {
+          processAudioWithGemini();
+        };
+        
+        mediaRecorder.start();
+      }
     } catch (_error) {
       setIsVoiceActive(false);
       const errorName = String(_error?.name || '').toLowerCase();
@@ -8069,6 +8076,11 @@ Rules:
           speechRecognitionRef.current?.stop();
         } catch (_error) {
           // noop
+        }
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+          mediaRecorderRef.current.stop();
+          const tracks = audioStreamRef.current?.getTracks();
+          if (tracks) tracks.forEach(track => track.stop());
         }
         if (mockDictationTimeoutRef.current) {
           clearTimeout(mockDictationTimeoutRef.current);
