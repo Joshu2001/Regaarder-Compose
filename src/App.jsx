@@ -5394,16 +5394,9 @@ export default function App() {
     recognition.onerror = (event) => {
       const errorCode = String(event?.error || 'unknown');
       console.warn('Speech recognition error:', errorCode);
-
-      // Match attached behavior: do not hard-stop on recognizer errors.
-      const recoverableErrors = ['not-allowed', 'service-not-allowed', 'audio-capture', 'aborted', 'network'];
-      if (voiceTargetRef.current === 'document' && isVoiceActiveRef.current && recoverableErrors.includes(errorCode)) {
-        try {
-          recognition.stop();
-        } catch (_error) {
-          // noop
-        }
-      }
+      // SpeechRecognition errors are non-fatal. MediaRecorder + Gemini is the primary path.
+      // Don't call recognition.stop() here - it triggers onend which tries to restart,
+      // creating an error loop. Just let onend handle it naturally.
     };
 
     recognition.onend = () => {
@@ -7906,8 +7899,16 @@ Rules:
     pendingAudioProcessingRef.current = true;
     const blob = new Blob(chunks, { type: chunks[0].type || 'audio/webm' });
     audioChunksRef.current = []; // Clear chunks for next recording
+
+    // Skip tiny blobs (silence / no real audio)
+    if (blob.size < 500) {
+      pendingAudioProcessingRef.current = false;
+      return;
+    }
     
     try {
+      setLiveSpeechInterimText('Processing audio...');
+
       const reader = new FileReader();
       const base64Promise = new Promise((resolve, reject) => {
         reader.onloadend = () => resolve(reader.result.split(',')[1]);
@@ -7920,18 +7921,46 @@ Rules:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userPrompt: 'Transcribe this audio accurately.',
-          systemPrompt: 'You are an expert audio transcription tool. Filter out all filler words like "umms", "uhs", and stutters. Output only the cleaned, well-formatted text without any additional commentary. Ensure proper capitalization and punctuation.',
+          userPrompt: 'Transcribe this audio accurately. If the audio is silent or contains no speech, respond with exactly: [SILENCE]',
+          systemPrompt: 'You are an expert audio transcription tool. Filter out all filler words like "umm", "uh", "um", "like", "you know", and stutters. Output only the cleaned, well-formatted text without any additional commentary. Ensure proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE]',
           attachments: [{ name: 'audio.webm', mimeType: blob.type || 'audio/webm', data: base64data }]
         })
       });
       
       const result = await response.json();
       if (result.ok && result.text) {
-        insertTranscriptIntoDocumentRef.current?.(result.text.trim() + ' ', { forceAppendToEnd: true });
+        const cleanedText = result.text.trim();
+        if (cleanedText && cleanedText !== '[SILENCE]' && !cleanedText.toLowerCase().includes('[silence]')) {
+          setLiveSpeechInterimText(cleanedText);
+          if (voiceTargetRef.current === 'document') {
+            insertTranscriptIntoDocumentRef.current?.(cleanedText + ' ', { forceAppendToEnd: true });
+          } else if (voiceTargetRef.current === 'schedule') {
+            setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
+          } else {
+            setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
+          }
+          // Clear the interim text after a short delay
+          setTimeout(() => {
+            if (isVoiceActiveRef.current) {
+              setLiveSpeechInterimText('Listening...');
+            }
+          }, 800);
+        } else {
+          if (isVoiceActiveRef.current) {
+            setLiveSpeechInterimText('Listening... start speaking');
+          }
+        }
+      } else {
+        console.warn('Gemini transcription failed:', result.error || 'unknown error');
+        if (isVoiceActiveRef.current) {
+          setLiveSpeechInterimText('Listening... start speaking');
+        }
       }
     } catch (e) {
       console.error('Audio processing failed', e);
+      if (isVoiceActiveRef.current) {
+        setLiveSpeechInterimText('Listening... start speaking');
+      }
     } finally {
       pendingAudioProcessingRef.current = false;
     }
@@ -7972,6 +8001,8 @@ Rules:
         }
         setIsVoiceActive(false);
       } else {
+        // Stop everything
+        isVoiceActiveRef.current = false;
         try {
           speechRecognitionRef.current?.stop();
         } catch (_error) {
@@ -7982,19 +8013,13 @@ Rules:
           chunkIntervalRef.current = null;
         }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-          mediaRecorderRef.current.stop();
-          const tracks = audioStreamRef.current?.getTracks();
-          if (tracks) tracks.forEach(track => track.stop());
+          try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ }
         }
-        if (mockDictationTimeoutRef.current) {
-          clearTimeout(mockDictationTimeoutRef.current);
-          mockDictationTimeoutRef.current = null;
-        }
-        if (mockIntervalRef.current) {
-          clearInterval(mockIntervalRef.current);
-          mockIntervalRef.current = null;
-        }
+        const tracks = audioStreamRef.current?.getTracks();
+        if (tracks) tracks.forEach(track => track.stop());
+        audioStreamRef.current = null;
         interimTranscriptRef.current = '';
+        setLiveSpeechInterimText('');
         setIsVoiceActive(false);
         showToast('Voice transcription stopped');
         return;
@@ -8007,72 +8032,69 @@ Rules:
 
     try {
       await ensureMicrophonePermission();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioStreamRef.current = stream;
-      const recognition = speechRecognitionRef.current;
-      if (!recognition) {
-        showToast('Voice engine is initializing. Please tap mic again in a moment.');
-        return;
-      }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStreamRef.current = stream;
 
-      recognition.lang = resolveSpeechLocale(currentLanguage);
-      try {
-        recognition.start();
-      } catch (startError) {
-        const startName = String(startError?.name || '').toLowerCase();
-        if (startName.includes('invalidstate')) {
-          try {
-            recognition.stop();
-          } catch (_stopError) {
-            // noop
+      // Set voice active immediately so startChunk doesn't bail
+      setIsVoiceActive(true);
+      isVoiceActiveRef.current = true;
+
+      // Try to start browser SpeechRecognition for interim text display
+      const recognition = speechRecognitionRef.current;
+      if (recognition) {
+        recognition.lang = resolveSpeechLocale(currentLanguage);
+        try {
+          recognition.start();
+        } catch (startError) {
+          const startName = String(startError?.name || '').toLowerCase();
+          if (startName.includes('invalidstate')) {
+            try { recognition.stop(); } catch (_e) { /* noop */ }
+            setTimeout(() => {
+              try { recognition.start(); } catch (_e) { /* noop - MediaRecorder is primary */ }
+            }, 120);
           }
-          setTimeout(() => {
-            try {
-              recognition.start();
-            } catch (_retryError) {
-              setIsVoiceActive(false);
-              showToast('Microphone could not restart. Please tap once more.');
-            }
-          }, 120);
-        } else {
-          throw startError;
+          // Don't throw - MediaRecorder is the primary transcription path
         }
       }
+
       showToast('Voice transcription started');
 
-      if (mockDictationTimeoutRef.current) {
-        clearTimeout(mockDictationTimeoutRef.current);
-      }
-      // Relying strictly on MediaRecorder for Gemini continuous transcription.
+      // Start continuous MediaRecorder chunking for Gemini transcription
       if (audioStreamRef.current) {
         const startChunk = () => {
           if (!isVoiceActiveRef.current) return;
-          const mediaRecorder = new MediaRecorder(audioStreamRef.current);
-          mediaRecorderRef.current = mediaRecorder;
-          
-          mediaRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) {
-              audioChunksRef.current.push(e.data);
+          try {
+            const mediaRecorder = new MediaRecorder(audioStreamRef.current);
+            mediaRecorderRef.current = mediaRecorder;
+            
+            mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0) {
+                audioChunksRef.current.push(e.data);
+              }
+            };
+            
+            mediaRecorder.onstop = () => {
+              processAudioWithGemini();
+              if (isVoiceActiveRef.current) {
+                startChunk();
+              }
+            };
+            
+            mediaRecorder.start();
+            
+            if (chunkIntervalRef.current) {
+              clearTimeout(chunkIntervalRef.current);
             }
-          };
-          
-          mediaRecorder.onstop = () => {
-            processAudioWithGemini();
-            if (isVoiceActiveRef.current) {
-              startChunk();
-            }
-          };
-          
-          mediaRecorder.start();
-          
-          if (chunkIntervalRef.current) {
-            clearTimeout(chunkIntervalRef.current);
+            chunkIntervalRef.current = setTimeout(() => {
+              try {
+                if (mediaRecorder.state === 'recording') {
+                  mediaRecorder.stop();
+                }
+              } catch (_e) { /* noop */ }
+            }, 4000);
+          } catch (recErr) {
+            console.error('MediaRecorder chunk error:', recErr);
           }
-          chunkIntervalRef.current = setTimeout(() => {
-            if (mediaRecorder.state === 'recording') {
-              mediaRecorder.stop();
-            }
-          }, 3500);
         };
         startChunk();
       }
