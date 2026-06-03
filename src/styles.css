@@ -173,3 +173,29 @@ body { margin: 0; background: #ffffff; }
 	background: rgba(139, 92, 246, 0.4);
 	border-radius: 6px;
 }
+
+/* AI Preview block and Slash Menu styles */
+.ai-preview-block {
+	transition: all 250ms ease-out;
+}
+.ai-preview-block:hover {
+	border-color: #8b5cf6;
+	box-shadow: 0 4px 20px -4px rgba(139, 92, 246, 0.15);
+}
+.ai-preview-action-banner {
+	user-select: none;
+	backdrop-filter: blur(8px);
+	border: 1px solid rgba(139, 92, 246, 0.15);
+	animation: slideIn 200ms ease-out;
+}
+.inline-ai-prompt-box {
+	animation: fadeIn 200ms ease-out;
+}
+@keyframes slideIn {
+	from { opacity: 0; transform: translateY(4px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+	from { opacity: 0; }
+	to { opacity: 1; }
+}

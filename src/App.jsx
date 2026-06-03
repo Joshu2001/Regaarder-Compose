@@ -414,6 +414,17 @@ const RoomStageFeed = ({ stream, placeholder }) => {
   return <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />;
 };
 
+const SLASH_OPTIONS = [
+  { key: 'table', label: 'Table', desc: 'Insert an AI table' },
+  { key: 'bullets', label: 'Bullet points', desc: 'Insert bullet list' },
+  { key: 'graph', label: 'Graph / Chart', desc: 'Generate styled SVG graph' },
+  { key: 'image', label: 'Image', desc: 'Insert an AI image' },
+  { key: 'proofread', label: 'Proofread', desc: 'Improve spelling & style' },
+  { key: 'translate', label: 'Translate', desc: 'Translate text' },
+  { key: 'schedule', label: 'Schedule', desc: 'Create timeline or checklist' },
+  { key: 'icon', label: 'Icon', desc: 'Insert an emoji or icon' }
+];
+
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
   const defaultSubtitle = 'A strategic plan to successfully launch Regaarder Compose and drive adoption, engagement, and growth.';
@@ -1377,8 +1388,8 @@ export default function App() {
             item.dueLabel ? `Due: ${item.dueLabel}` : '',
             item.dependencies?.length ? `Depends on: ${item.dependencies.join(', ')}` : '',
             item.subtasks?.length ? `Subtasks: ${item.subtasks.join(' | ')}` : '',
-          ].filter(Boolean).join(' ¡E ');
-          const text = `[${segments.join(' ¡E ')}] ${item.title}${meta ? ` ¡X ${meta}` : ''}`;
+          ].filter(Boolean).join(' ï¿½E ');
+          const text = `[${segments.join(' ï¿½E ')}] ${item.title}${meta ? ` ï¿½X ${meta}` : ''}`;
           return {
             id: Date.now() + index,
             text,
@@ -1436,19 +1447,19 @@ export default function App() {
       return;
     }
     if (toolKey === 'select') {
-      showToast('Select tool ¡X tap widgets to select, drag to move');
+      showToast('Select tool ï¿½X tap widgets to select, drag to move');
       return;
     }
     if (toolKey === 'hand') {
-      showToast('Hand tool ¡X drag to pan canvas');
+      showToast('Hand tool ï¿½X drag to pan canvas');
       return;
     }
     if (toolKey === 'eraser') {
-      showToast('Eraser tool ¡X draw over strokes to erase');
+      showToast('Eraser tool ï¿½X draw over strokes to erase');
       return;
     }
     if (toolKey === 'comment') {
-      showToast('Comment tool ¡X click to place a comment');
+      showToast('Comment tool ï¿½X click to place a comment');
       return;
     }
     showToast(`${toolKey.charAt(0).toUpperCase()}${toolKey.slice(1)} tool active`);
@@ -1853,7 +1864,7 @@ export default function App() {
     }
   };
 
-  const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*¡E]\s+|\d+\.\s+)/, '');
+  const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*ï¿½E]\s+|\d+\.\s+)/, '');
 
   const toggleWidgetList = (widgetId, nextType) => {
     setWhiteboardWidgets((prev) => prev.map((w) => {
@@ -1868,7 +1879,7 @@ export default function App() {
       if (nextType === 'numbered') {
         return { ...w, hasList: true, listType: 'numbered', text: normalized.map((line, i) => `${i + 1}. ${line}`).join('\n') };
       }
-      return { ...w, hasList: true, listType: 'bullet', text: normalized.map((line) => `¡E ${line}`).join('\n') };
+      return { ...w, hasList: true, listType: 'bullet', text: normalized.map((line) => `ï¿½E ${line}`).join('\n') };
     }));
   };
 
@@ -2052,6 +2063,7 @@ export default function App() {
   const isVoiceCommandModeRef = useRef(false);
   const [voiceCommandBuffer, setVoiceCommandBuffer] = useState('');
   const voiceCommandBufferRef = useRef('');
+  const [slashMenu, setSlashMenu] = useState({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
   const [roomState, setRoomState] = useState('lobby');
@@ -2862,7 +2874,7 @@ export default function App() {
 
     // Split inline numbered sections into standalone blocks.
     normalized = normalized
-      .replace(/([.!?"¡¨'])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
+      .replace(/([.!?"ï¿½ï¿½'])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
       .replace(/([a-zA-Z])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
       .replace(/(\d+)\.(\S)/g, '$1. $2')
       .replace(/[ \t]+/g, ' ')
@@ -4709,7 +4721,7 @@ export default function App() {
     };
 
     lines.forEach((line, index) => {
-      const bulletMatch = line.match(/^(?:[-*?¢]|\d+[.)])\s+(.+)$/);
+      const bulletMatch = line.match(/^(?:[-*?ï¿½]|\d+[.)])\s+(.+)$/);
       if (bulletMatch) {
         if (!listOpen) {
           html.push('<ul style="margin:0 0 10px 18px;padding:0;list-style:disc;color:#334155;line-height:1.7;">');
@@ -7044,6 +7056,518 @@ export default function App() {
     return source === 'chat' && taskLikeAction && docHasMeaningfulContent;
   };
 
+  const sanitizeHtmlForExport = (htmlString) => {
+    if (!htmlString) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlString;
+    
+    // Remove banners
+    tempDiv.querySelectorAll('.ai-preview-action-banner').forEach(el => el.remove());
+    
+    // Replace preview blocks with content
+    tempDiv.querySelectorAll('.ai-preview-block').forEach(el => {
+      const contentEl = el.querySelector('.ai-preview-content');
+      if (contentEl) {
+        const parent = el.parentNode;
+        while (contentEl.firstChild) {
+          parent.insertBefore(contentEl.firstChild, el);
+        }
+        el.remove();
+      } else {
+        el.remove();
+      }
+    });
+    
+    // Remove inline prompt boxes
+    tempDiv.querySelectorAll('.inline-ai-prompt-box').forEach(el => el.remove());
+    tempDiv.querySelectorAll('.inline-ai-icon-box').forEach(el => el.remove());
+    
+    return tempDiv.innerHTML;
+  };
+
+  const getSystemPromptForType = (type) => {
+    if (type === 'table') {
+      return `You are an expert AI editor. Create an HTML table (using <table>, <thead>, <tbody>, <tr>, <th>, <td> tags) populated with the requested data. Style the table beautifully with minimal in-line styles (e.g. borders, paddings, alternating backgrounds #FAFAFC). Return only the raw HTML code without markdown blocks or fences.`;
+    }
+    if (type === 'graph') {
+      return `You are an expert data visualization designer. Analyze the prompt and generate an inline responsive SVG chart (e.g. a bar chart, line chart, or pie chart). Return only the raw SVG XML string. Ensure it uses beautiful curated colors (like violet #8B5CF6, indigo #6366F1, emerald #10B981), clean modern typography, grid lines, and is fully self-contained within an <svg> tag. Return only the raw XML without markdown blocks or fences.`;
+    }
+    if (type === 'image') {
+      return `You are an expert image selection tool. Based on the user's description, generate a single Unsplash search keyword that matches. Return only the keyword (a few words) without any punctuation or wrapper.`;
+    }
+    if (type === 'proofread') {
+      return `You are an expert copywriter. Proofread and improve the writing of the text. Fix grammar, style, and flow. Preserve original HTML formatting tags if present. Output only the refined text.`;
+    }
+    if (type === 'translate') {
+      return `Translate the text into the requested language. Output only the translated text, preserving formatting and HTML tags.`;
+    }
+    if (type === 'schedule') {
+      return `Create a project timeline or checklist as requested. Use clean HTML layout (e.g. list, details blocks). Output only the raw HTML.`;
+    }
+    return `Generate clean HTML or text for the document.`;
+  };
+
+  const parseImageOutput = (rawOutput) => {
+    const keyword = rawOutput.trim().replace(/['"\(\)\[\]]/g, '');
+    const imgUrl = `https://loremflickr.com/800/600/${encodeURIComponent(keyword)}`;
+    return `<img src="${imgUrl}" style="max-width:100%; border-radius:12px; margin: 12px 0; border: 1px solid #e2e8f0;" alt="${keyword}" />`;
+  };
+
+  const parseGraphOutput = (rawOutput) => {
+    let clean = rawOutput.trim();
+    if (clean.startsWith('```')) {
+      clean = clean.replace(/^```(xml|svg|html)?\n/, '').replace(/\n```$/, '');
+    }
+    return clean;
+  };
+
+  const renderBlockInPreview = (previewId, type, contentHtml) => {
+    const container = document.getElementById(previewId);
+    if (!container) return;
+    
+    container.innerHTML = `
+      <div class="ai-preview-content">${contentHtml}</div>
+      <div class="ai-preview-action-banner mt-4 p-3 bg-violet-50 rounded-xl flex items-center justify-between flex-wrap gap-2" contenteditable="false">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-violet-600 text-white text-[10px] font-bold animate-pulse">AI</span>
+          <span class="text-xs font-semibold text-violet-900">AI Preview</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button type="button" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-medium shadow-sm transition-all" onclick="acceptAiPreview('${previewId}')">Accept</button>
+          <button type="button" class="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-xs font-medium shadow-sm transition-all" onclick="toggleRetryInput('${previewId}')">Retry / Edit</button>
+          <button type="button" class="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-medium transition-all" onclick="deleteAiPreview('${previewId}')">Delete</button>
+          <button type="button" class="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-lg text-xs font-medium shadow-sm transition-all" onclick="exportAiBlock('${previewId}')">Export</button>
+        </div>
+        <div class="w-full mt-2 hidden" id="retry_input_container_${previewId}">
+          <div class="flex gap-2">
+            <input type="text" placeholder="Type instructions to change this block..." class="flex-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-violet-400 transition-all" id="retry_text_${previewId}" />
+            <button type="button" class="px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-semibold transition-all" onclick="submitRetry('${previewId}')">Apply</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+  };
+
+  const handleAIBlockSubmit = async (prompt, type, container) => {
+    container.innerHTML = `
+      <div class="flex items-center justify-center gap-2 p-4">
+        <span class="w-4 h-4 rounded-full border-2 border-violet-600 border-t-transparent animate-spin"></span>
+        <span class="text-xs font-semibold text-violet-700">AI is composing your ${type}...</span>
+      </div>
+    `;
+    
+    try {
+      const systemPrompt = getSystemPromptForType(type);
+      const userPrompt = prompt;
+      
+      const res = await callGemini({ userPrompt, systemPrompt });
+      const rawOutput = res?.text || '';
+      
+      let finalHtml = rawOutput;
+      if (type === 'image') {
+        finalHtml = parseImageOutput(rawOutput);
+      } else if (type === 'graph') {
+        finalHtml = parseGraphOutput(rawOutput);
+      } else if (type === 'table' || type === 'schedule') {
+        finalHtml = rawOutput.trim();
+        if (finalHtml.startsWith('```')) {
+          finalHtml = finalHtml.replace(/^```(html|xml)?\n/, '').replace(/\n```$/, '');
+        }
+      }
+      
+      const previewId = `prev_${Date.now()}`;
+      container.className = 'ai-preview-block border border-violet-300 rounded-2xl p-4 my-4 relative';
+      container.setAttribute('id', previewId);
+      container.setAttribute('data-block-type', type);
+      
+      renderBlockInPreview(previewId, type, finalHtml);
+      
+    } catch (e) {
+      console.error(e);
+      showToast('AI generation failed');
+      container.remove();
+    }
+  };
+
+  const handleAIRetrySubmit = async (previewId, prompt) => {
+    const container = document.getElementById(previewId);
+    if (!container) return;
+    
+    const type = container.getAttribute('data-block-type') || 'text';
+    const clone = container.cloneNode(true);
+    clone.querySelector('.ai-preview-action-banner')?.remove();
+    const currentContent = clone.innerHTML;
+    
+    const banner = container.querySelector('.ai-preview-action-banner');
+    if (banner) {
+      banner.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-violet-600 text-white text-[10px] font-bold animate-pulse">AI</span>
+          <span class="text-xs font-semibold text-violet-900 animate-pulse">Regenerating block...</span>
+        </div>
+      `;
+    }
+    
+    try {
+      const systemPrompt = getSystemPromptForType(type);
+      const userPrompt = `You are refining an existing document block.
+Current block content:
+${currentContent}
+
+Refinement Instruction:
+${prompt}
+
+Generate the updated output according to the instruction. Preserve layout and tags. Output only the updated raw code or text.`;
+
+      const res = await callGemini({ userPrompt, systemPrompt });
+      const rawOutput = res?.text || '';
+      
+      let newHtml = rawOutput;
+      if (type === 'image') {
+        newHtml = parseImageOutput(rawOutput);
+      } else if (type === 'graph') {
+        newHtml = parseGraphOutput(rawOutput);
+      } else if (type === 'table' || type === 'schedule') {
+        newHtml = rawOutput.trim();
+        if (newHtml.startsWith('```')) {
+          newHtml = newHtml.replace(/^```(html|xml)?\n/, '').replace(/\n```$/, '');
+        }
+      }
+      
+      renderBlockInPreview(previewId, type, newHtml);
+      
+    } catch (e) {
+      console.error(e);
+      showToast('Regeneration failed');
+      renderBlockInPreview(previewId, type, currentContent);
+    }
+  };
+
+  const insertInlineIconSelector = () => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
+    
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    
+    const boxId = `icon_box_${Date.now()}`;
+    const container = document.createElement('div');
+    container.className = 'inline-ai-icon-box p-3 border border-violet-200 bg-violet-50/50 rounded-xl flex items-center gap-3 w-72';
+    container.setAttribute('contenteditable', 'false');
+    container.setAttribute('id', boxId);
+    
+    container.innerHTML = `
+      <input 
+        type="text" 
+        placeholder="Type emoji or icon name (e.g., rocket, target)..." 
+        class="flex-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-violet-400"
+        id="${boxId}_input"
+      />
+      <button type="button" class="bg-violet-600 text-white rounded-lg px-2 py-1 text-xs font-semibold" id="${boxId}_btn">Insert</button>
+    `;
+    
+    range.insertNode(container);
+    
+    setTimeout(() => {
+      const input = document.getElementById(`${boxId}_input`);
+      input?.focus();
+      
+      const btn = document.getElementById(`${boxId}_btn`);
+      const handleInsert = async () => {
+        const query = input.value.trim();
+        if (query) {
+          container.innerHTML = `<span class="text-xs text-gray-500">Searching...</span>`;
+          try {
+            const userPrompt = `Translate this keyword/icon name to a single Unicode Emoji that represents it best: "${query}". Return ONLY the single emoji character.`;
+            const systemPrompt = `You are a helper that outputs exactly one Unicode Emoji character corresponding to the description.`;
+            const res = await callGemini({ userPrompt, systemPrompt });
+            const emoji = res?.text?.trim() || '\u2B50';
+            
+            const parent = container.parentNode;
+            const textNode = document.createTextNode(emoji);
+            parent.insertBefore(textNode, container);
+            container.remove();
+            
+            if (blankBodyRef.current) {
+              setDocBodyHtml(blankBodyRef.current.innerHTML);
+            }
+          } catch (e) {
+            container.remove();
+          }
+        } else {
+          container.remove();
+        }
+      };
+      
+      btn?.addEventListener('click', handleInsert);
+      input?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleInsert();
+        }
+      });
+    }, 100);
+  };
+
+  const insertInlinePromptBox = (type) => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
+    
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    
+    const boxId = `prompt_box_${Date.now()}`;
+    const container = document.createElement('div');
+    container.className = 'inline-ai-prompt-box my-4 p-4 border border-violet-200 bg-violet-50/50 rounded-2xl flex flex-col gap-3';
+    container.setAttribute('contenteditable', 'false');
+    container.setAttribute('id', boxId);
+    
+    const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    
+    container.innerHTML = `
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-semibold uppercase tracking-wider text-violet-700 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-violet-600 animate-ping"></span>
+          Generate ${typeLabel} with AI
+        </span>
+        <button type="button" class="text-xs text-gray-400 hover:text-gray-600 transition-colors" onclick="document.getElementById('${boxId}').remove()">
+          Cancel
+        </button>
+      </div>
+      <div class="flex gap-2">
+        <input 
+          type="text" 
+          placeholder="Describe what you want (e.g., 'Q2 sales table with 4 columns' or 'Line graph of stock price')..." 
+          class="flex-1 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-violet-400 transition-all shadow-sm"
+          id="${boxId}_input"
+        />
+        <button 
+          type="button" 
+          class="bg-violet-600 hover:bg-violet-700 text-white rounded-xl px-4 py-2 text-xs font-semibold shadow-sm transition-all flex items-center gap-1"
+          id="${boxId}_btn"
+        >
+          Generate
+        </button>
+      </div>
+    `;
+    
+    range.insertNode(container);
+    
+    const spacer = document.createElement('p');
+    spacer.innerHTML = '<br>';
+    container.parentNode.insertBefore(spacer, container.nextSibling);
+    
+    setTimeout(() => {
+      const input = document.getElementById(`${boxId}_input`);
+      input?.focus();
+      
+      const btn = document.getElementById(`${boxId}_btn`);
+      const handleGenerateClick = () => {
+        const prompt = input.value.trim();
+        if (prompt) {
+          handleAIBlockSubmit(prompt, type, container);
+        }
+      };
+      
+      btn?.addEventListener('click', handleGenerateClick);
+      input?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleGenerateClick();
+        }
+      });
+    }, 100);
+  };
+
+  const executeSlashCommand = (key) => {
+    setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
+    
+    const selection = window.getSelection();
+    if (selection && slashMenuRef.current?.range) {
+      selection.removeAllRanges();
+      selection.addRange(slashMenuRef.current.range);
+      
+      document.execCommand('delete', false, null);
+      for (let i = 0; i < slashMenuRef.current.filterText.length; i++) {
+        document.execCommand('delete', false, null);
+      }
+    }
+    
+    if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule'].includes(key)) {
+      insertInlinePromptBox(key);
+    } else if (key === 'bullets') {
+      applyFormatCommand('insertUnorderedList');
+    } else if (key === 'icon') {
+      insertInlineIconSelector();
+    }
+  };
+
+  const slashMenuRef = useRef(null);
+  useEffect(() => {
+    slashMenuRef.current = slashMenu;
+  }, [slashMenu]);
+
+  const handleEditorKeyDown = (event) => {
+    if (event.key === '/') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        
+        setSlashMenu({
+          open: true,
+          left: rect.left + window.scrollX,
+          top: rect.bottom + window.scrollY,
+          filterText: '',
+          activeIndex: 0,
+          range: range.cloneRange()
+        });
+      }
+    }
+    
+    if (slashMenuRef.current?.open) {
+      const filteredOptions = SLASH_OPTIONS.filter(opt => 
+        opt.label.toLowerCase().includes(slashMenuRef.current.filterText.toLowerCase())
+      );
+      
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setSlashMenu(prev => ({
+          ...prev,
+          activeIndex: (prev.activeIndex + 1) % Math.max(1, filteredOptions.length)
+        }));
+        return;
+      }
+      
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setSlashMenu(prev => ({
+          ...prev,
+          activeIndex: (prev.activeIndex - 1 + filteredOptions.length) % Math.max(1, filteredOptions.length)
+        }));
+        return;
+      }
+      
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const selected = filteredOptions[slashMenuRef.current.activeIndex];
+        if (selected) {
+          executeSlashCommand(selected.key);
+        }
+        return;
+      }
+      
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
+        return;
+      }
+      
+      if (event.key === 'Backspace') {
+        if (slashMenuRef.current.filterText.length === 0) {
+          setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
+        } else {
+          setSlashMenu(prev => ({
+            ...prev,
+            filterText: prev.filterText.slice(0, -1),
+            activeIndex: 0
+          }));
+        }
+        return;
+      }
+      
+      if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        setSlashMenu(prev => ({
+          ...prev,
+          filterText: prev.filterText + event.key,
+          activeIndex: 0
+        }));
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.acceptAiPreview = (previewId) => {
+      const container = document.getElementById(previewId);
+      if (container) {
+        const banner = container.querySelector('.ai-preview-action-banner');
+        if (banner) banner.remove();
+        
+        const parent = container.parentNode;
+        while (container.firstChild) {
+          parent.insertBefore(container.firstChild, container);
+        }
+        container.remove();
+        
+        if (blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+        }
+        showToast('AI preview accepted');
+      }
+    };
+    
+    window.deleteAiPreview = (previewId) => {
+      const container = document.getElementById(previewId);
+      if (container) {
+        container.remove();
+        if (blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+        }
+        showToast('AI preview deleted');
+      }
+    };
+    
+    window.toggleRetryInput = (previewId) => {
+      const el = document.getElementById(`retry_input_container_${previewId}`);
+      if (el) {
+        el.classList.toggle('hidden');
+        if (!el.classList.contains('hidden')) {
+          document.getElementById(`retry_text_${previewId}`)?.focus();
+        }
+      }
+    };
+    
+    window.submitRetry = (previewId) => {
+      const textEl = document.getElementById(`retry_text_${previewId}`);
+      const prompt = textEl?.value?.trim();
+      if (prompt) {
+        handleAIRetrySubmit(previewId, prompt);
+      }
+    };
+    
+    window.exportAiBlock = (previewId) => {
+      const container = document.getElementById(previewId);
+      if (container) {
+        const clone = container.cloneNode(true);
+        clone.querySelector('.ai-preview-action-banner')?.remove();
+        const html = clone.innerHTML;
+        
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ai-block-${previewId}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('AI block exported as HTML');
+      }
+    };
+    
+    return () => {
+      delete window.acceptAiPreview;
+      delete window.deleteAiPreview;
+      delete window.toggleRetryInput;
+      delete window.submitRetry;
+      delete window.exportAiBlock;
+    };
+  }, []);
+
   // Function to process AI prompt and generate structured output
   const handleAISubmit = async (promptText, options = {}) => {
     if (!promptText.trim()) return;
@@ -7078,6 +7602,48 @@ export default function App() {
       lengthMode: requestedLengthMode,
       lengthValue: requestedLengthValue,
     });
+
+    // Check if the promptText represents a block-level action (voice/canvas command routing)
+    const lowerPrompt = promptText.toLowerCase();
+    let detectedBlockType = null;
+    
+    if (lowerPrompt.includes('table')) detectedBlockType = 'table';
+    else if (lowerPrompt.includes('graph') || lowerPrompt.includes('chart') || lowerPrompt.includes('plot')) detectedBlockType = 'graph';
+    else if (lowerPrompt.includes('image') || lowerPrompt.includes('picture') || lowerPrompt.includes('photo')) detectedBlockType = 'image';
+    else if (lowerPrompt.includes('bullet') || lowerPrompt.includes('list')) detectedBlockType = 'bullets';
+    else if (lowerPrompt.includes('proofread') || lowerPrompt.includes('improve') || lowerPrompt.includes('polish')) detectedBlockType = 'proofread';
+    else if (lowerPrompt.includes('translate')) detectedBlockType = 'translate';
+    else if (lowerPrompt.includes('schedule') || lowerPrompt.includes('timeline') || lowerPrompt.includes('checklist')) detectedBlockType = 'schedule';
+    else if (lowerPrompt.includes('icon') || lowerPrompt.includes('emoji')) detectedBlockType = 'icon';
+
+    if (source === 'compose' && detectedBlockType) {
+      const selection = window.getSelection();
+      let range = getEditorSelectionRange();
+      if (!range && restoreSavedSelection()) {
+        range = getEditorSelectionRange();
+      }
+      
+      const targetNode = range?.commonAncestorContainer;
+      const insideEditor = targetNode && blankBodyRef.current?.contains(targetNode);
+      
+      if (insideEditor) {
+        const previewId = `prev_${Date.now()}`;
+        const container = document.createElement('div');
+        container.className = 'ai-preview-block border border-violet-300 rounded-2xl p-4 my-4 relative';
+        container.setAttribute('id', previewId);
+        container.setAttribute('data-block-type', detectedBlockType);
+        
+        range.deleteContents();
+        range.insertNode(container);
+        
+        const spacer = document.createElement('p');
+        spacer.innerHTML = '<br>';
+        container.parentNode.insertBefore(spacer, container.nextSibling);
+        
+        handleAIBlockSubmit(promptText, detectedBlockType, container);
+        return;
+      }
+    }
 
     setIsComposing(true);
     if (shouldBuildDocument && activeDocIdRef.current) {
@@ -9328,11 +9894,12 @@ Rules:
   };
 
   const getDocumentPayload = (docId = activeDocId) => {
+    const cleanBodyHtml = sanitizeHtmlForExport(docBodyHtml);
     const fallback = {
       title: docTitle,
       subtitle: docSubtitle,
       initiatives,
-      bodyHtml: docBodyHtml,
+      bodyHtml: cleanBodyHtml,
       appendedSections,
       isBlank: isBlankDocument,
     };
@@ -9342,7 +9909,13 @@ Rules:
     }
 
     const target = documents.find((doc) => doc.id === docId);
-    return target || fallback;
+    if (target) {
+      return {
+        ...target,
+        bodyHtml: sanitizeHtmlForExport(target.bodyHtml)
+      };
+    }
+    return fallback;
   };
 
   const sanitizeFileName = (value) => {
@@ -9382,6 +9955,24 @@ Rules:
       printContainer.style.padding = '24px';
 
       const clonedCard = documentCardRef.current.cloneNode(true);
+      
+      // Clean up preview banners from export
+      clonedCard.querySelectorAll('.ai-preview-action-banner').forEach(el => el.remove());
+      clonedCard.querySelectorAll('.ai-preview-block').forEach(el => {
+        const contentEl = el.querySelector('.ai-preview-content');
+        if (contentEl) {
+          const parent = el.parentNode;
+          while (contentEl.firstChild) {
+            parent.insertBefore(contentEl.firstChild, el);
+          }
+          el.remove();
+        } else {
+          el.remove();
+        }
+      });
+      clonedCard.querySelectorAll('.inline-ai-prompt-box').forEach(el => el.remove());
+      clonedCard.querySelectorAll('.inline-ai-icon-box').forEach(el => el.remove());
+
       printContainer.appendChild(clonedCard);
       document.body.appendChild(printContainer);
 
@@ -12208,7 +12799,7 @@ Rules:
                     >
                       <div className="text-sm font-semibold text-slate-800">{item.author}</div>
                       <div className="text-sm text-slate-600 mt-0.5 line-clamp-2">{item.text}</div>
-                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies ¡E Open thread</div>
+                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies ï¿½E Open thread</div>
                     </button>
                   ))}
                 </div>
@@ -12223,7 +12814,7 @@ Rules:
                     <div key={decision.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                       <div className="text-sm font-semibold text-amber-900">Decision</div>
                       <div className="text-sm text-amber-800 mt-0.5">{decision.summary}</div>
-                      <div className="text-xs text-amber-700 mt-1">{decision.by} ¡E {formatDmRelative(decision.createdAt)}</div>
+                      <div className="text-xs text-amber-700 mt-1">{decision.by} ï¿½E {formatDmRelative(decision.createdAt)}</div>
                     </div>
                   ))}
                 </div>
@@ -13183,7 +13774,7 @@ Rules:
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-slate-900">{file.name}</div>
-                      <div className="mt-1 text-xs text-slate-500">{file.kind} ¡E {file.owner}</div>
+                      <div className="mt-1 text-xs text-slate-500">{file.kind} ï¿½E {file.owner}</div>
                     </div>
                     <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{file.updated}</span>
                   </div>
@@ -13487,7 +14078,7 @@ Rules:
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-slate-900">{task.title}</div>
-                          <div className="mt-1 text-xs text-slate-500">{task.columnTitle} ¡E {task.assignee || 'Joshua'}</div>
+                          <div className="mt-1 text-xs text-slate-500">{task.columnTitle} ï¿½E {task.assignee || 'Joshua'}</div>
                         </div>
                         <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{task.due}</span>
                       </div>
@@ -13595,7 +14186,7 @@ Rules:
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-slate-900">{request.title}</div>
-                          <div className="mt-1 text-xs text-slate-500">{request.type} ¡E {request.owner}</div>
+                          <div className="mt-1 text-xs text-slate-500">{request.type} ï¿½E {request.owner}</div>
                         </div>
                         <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${request.tone}`}>{request.status}</span>
                       </div>
@@ -17186,10 +17777,10 @@ Rules:
                     const showWidgetReactionControls = (isWidgetHovered || isSelected || isWidgetReactionMenuOpen) && !isWidgetEditing && !['hand', 'eraser'].includes(whiteboardTool);
                     const showWidgetAnchorDots = (isWidgetHovered || isSelected) && !['hand', 'eraser'].includes(whiteboardTool);
                     const widgetAnchorPoints = [
-                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '¡ô', kind: 'resize' },
-                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'pointer', icon: '¡÷', kind: 'connect' },
-                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '¡õ', kind: 'resize' },
-                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '¡ö', kind: 'resize' },
+                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: 'ï¿½ï¿½', kind: 'resize' },
+                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'pointer', icon: 'ï¿½ï¿½', kind: 'connect' },
+                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: 'ï¿½ï¿½', kind: 'resize' },
+                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: 'ï¿½ï¿½', kind: 'resize' },
                     ];
                     return (
                     <div
@@ -18162,7 +18753,7 @@ Rules:
                           className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-gray-200 rounded-full text-gray-400 hover:text-red-500 items-center justify-center hidden group-hover:flex"
                           title="Remove comment"
                         >
-                          ¡Ñ
+                          ï¿½ï¿½
                         </button>
                       </div>
                     </div>
@@ -18200,7 +18791,7 @@ Rules:
                               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                               title="Clear"
                             >
-                              ¡Ñ
+                              ï¿½ï¿½
                             </button>
                           </div>
                           <div className="mt-2 flex items-center gap-2 text-slate-500 overflow-x-auto thin-scrollbar pb-1">
@@ -18222,7 +18813,7 @@ Rules:
                                 type="button"
                                 onClick={() => applyWhiteboardReaction(item.emoji)}
                                 className="h-8 rounded-lg border border-slate-100 text-lg hover:bg-slate-100"
-                                title={`${item.emoji} ¡P ${item.count || 0} uses`}
+                                title={`${item.emoji} ï¿½P ${item.count || 0} uses`}
                               >
                                 {item.emoji}
                               </button>
@@ -18353,7 +18944,7 @@ Rules:
                             { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
-                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow ¡X coming soon'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow ï¿½X coming soon'); setWhiteboardAddMenuOpen(false); } },
                           ].map((item) => (
                             <button
                               key={item.label}
@@ -18676,6 +19267,7 @@ Rules:
                   ref={blankBodyRef}
                   contentEditable
                   suppressContentEditableWarning
+                  onKeyDown={handleEditorKeyDown}
                   onInput={(e) => normalizeEditableDirection(e.currentTarget)}
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
                   onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml)}
@@ -21450,7 +22042,7 @@ Rules:
                       { name: 'Competitive Analysis.pdf', ext: 'PDF', iconBg: 'bg-red-100', iconText: 'text-red-600', meta: 'Mentioned: pricing, positioning, bundling', ago: '2h ago' },
                       { name: 'Creator Pricing Model.xlsx', ext: 'XLS', iconBg: 'bg-green-100', iconText: 'text-green-700', meta: 'Related to: monetization strategy', ago: '4h ago' },
                       { name: 'Market Entry Strategy.docx', ext: 'DOC', iconBg: 'bg-blue-100', iconText: 'text-blue-600', meta: 'Related to: go-to-market, verticals', ago: '1d ago' },
-                      { name: 'Strategy Call Recording.mp4', ext: '?', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync ¡P May 10', ago: '2d ago' },
+                      { name: 'Strategy Call Recording.mp4', ext: '?', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync ï¿½P May 10', ago: '2d ago' },
                     ].map((asset) => (
                       <div key={asset.name} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-white hover:border-gray-200 transition-colors cursor-pointer">
                         <div className="flex items-start gap-2.5">
@@ -21492,7 +22084,7 @@ Rules:
                       </div>
                     ))}
                   </div>
-                  <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more ¡÷</button>
+                  <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more ï¿½ï¿½</button>
                 </div>
 
                 <div className="mx-4 border-t border-gray-100" />
@@ -22065,7 +22657,7 @@ Rules:
 
               <div className="rounded-2xl border border-violet-100 bg-violet-50/50 px-3 py-2.5">
                 <div className="text-[12px] font-semibold inline-flex items-center gap-1.5"><Sparkles size={12} className="text-violet-500" />AI Assistant <span className="text-[10px] text-violet-600">BETA</span></div>
-                <div className="mt-2 text-[11px] text-slate-600">I¡¦m listening and will capture key points, decisions, and action items.</div>
+                <div className="mt-2 text-[11px] text-slate-600">Iï¿½ï¿½m listening and will capture key points, decisions, and action items.</div>
                 <button type="button" className="mt-2 w-full rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-50">View live summary</button>
               </div>
 
@@ -22129,6 +22721,36 @@ Rules:
           event.target.value = '';
         }}
       />
+
+      {slashMenu.open && (
+        <div 
+          className="fixed z-[400] w-56 bg-white border border-gray-100 rounded-2xl shadow-[0_8px_32px_rgba(139,92,246,0.15)] backdrop-blur-md p-1.5 flex flex-col focus:outline-none"
+          style={{ 
+            left: `${slashMenu.left}px`, 
+            top: `${slashMenu.top}px`,
+            transform: 'translate(-5px, 5px)'
+          }}
+        >
+          {SLASH_OPTIONS
+            .filter(opt => opt.label.toLowerCase().includes(slashMenu.filterText.toLowerCase()))
+            .map((opt, idx) => {
+              const isActive = idx === slashMenu.activeIndex;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => executeSlashCommand(opt.key)}
+                  className={`w-full text-left px-3 py-2 rounded-xl text-xs flex flex-col transition-all ${
+                    isActive ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  <span className="text-[10px] text-gray-400 mt-0.5 font-normal">{opt.desc}</span>
+                </button>
+              );
+            })}
+        </div>
+      )}
 
     </div>
   );
