@@ -13003,7 +13003,7 @@ Rules:
     return (
       <div ref={appShellRef} className={`flex bg-[#f5f6fb] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <style>{`@keyframes manageenFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-        <aside className="w-[220px] shrink-0 border-r border-slate-200 bg-white flex flex-col">
+        <aside className={`${isDocumentImmersive ? 'hidden' : 'w-[220px]'} shrink-0 border-r border-slate-200 bg-white flex flex-col`}>
           <div className="px-5 h-16 border-b border-slate-100 flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-violet-600 text-white text-sm font-bold flex items-center justify-center">M</div>
             <div className="text-[22px] font-semibold tracking-tight text-slate-900">Manageen</div>
@@ -13038,7 +13038,7 @@ Rules:
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto thin-scrollbar p-5 md:p-6">
+        <main className={`flex-1 overflow-y-auto thin-scrollbar ${isDocumentImmersive ? 'p-3 md:p-4' : 'p-5 md:p-6'}`}>
           <div className="flex items-center justify-between gap-4">
             <div>
               <h1 className="text-[34px] leading-tight font-semibold text-slate-900">{manageenActiveNav === 'Boards' ? manageenBoardSummary.title : manageenActiveNav}</h1>
@@ -21846,6 +21846,7 @@ Rules:
     </div>
   );
 }
+
 
 
 
