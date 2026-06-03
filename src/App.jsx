@@ -18980,22 +18980,24 @@ Rules:
                 <button
                   type="button"
                   onClick={() => {
-                    try {
-                      speechRecognitionRef.current?.stop();
-                    } catch (_error) {
-                      // noop
-                    }
+                    isVoiceActiveRef.current = false;
+                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
+                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
+                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
+                    const tracks = audioStreamRef.current?.getTracks(); if (tracks) tracks.forEach(t => t.stop());
+                    audioStreamRef.current = null;
                     setIsVoiceActive(false);
                     setLiveSpeechInterimText('');
                   }}
                   onPointerDown={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    try {
-                      speechRecognitionRef.current?.stop();
-                    } catch (_error) {
-                      // noop
-                    }
+                    isVoiceActiveRef.current = false;
+                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
+                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
+                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
+                    const trk = audioStreamRef.current?.getTracks(); if (trk) trk.forEach(t => t.stop());
+                    audioStreamRef.current = null;
                     setIsVoiceActive(false);
                     setLiveSpeechInterimText('');
                   }}
