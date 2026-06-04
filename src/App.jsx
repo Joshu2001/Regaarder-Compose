@@ -2566,6 +2566,8 @@ export default function App() {
   const [docSearchSummary, setDocSearchSummary] = useState('');
   const [outlineLevelMenuOpen, setOutlineLevelMenuOpen] = useState(false);
   const [outlineLevels, setOutlineLevels] = useState(3);
+  const [shapesModalOpen, setShapesModalOpen] = useState(false);
+  const [chartsModalOpen, setChartsModalOpen] = useState(false);
 
   const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
   const headingMeta = {
@@ -7310,6 +7312,12 @@ export default function App() {
 
   const parseChartSyntax = (text) => {
     const cleanText = text.trim();
+    try {
+      const data = JSON.parse(cleanText);
+      return { type: data.type || 'line', data: data.data || null, title: data.title };
+    } catch (e) {
+      // Ignore
+    }
     if (!cleanText.startsWith('/chart') && !cleanText.startsWith('/graph')) {
       return { type: 'line', data: null };
     }
@@ -7449,7 +7457,7 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
   const parseGraphOutput = (rawOutput) => {
     let clean = rawOutput.trim();
     if (clean.startsWith('```')) {
-      clean = clean.replace(/^```(xml|svg|html)?\n/, '').replace(/\n```$/, '');
+      clean = clean.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
     }
     return clean;
   };
@@ -7489,6 +7497,26 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
     if (blankBodyRef.current) {
       setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
+  };
+
+  const insertInlineShapeBoxWithType = (shapeType) => {
+    if (blankBodyRef.current) blankBodyRef.current.focus();
+    const boxId = 'shape-' + Date.now();
+    const htmlText = `<div id="${boxId}" class="inline-ai-block ai-block-loading" contenteditable="false"><div class="ai-block-shimmer"></div><div class="ai-block-content" style="padding:16px;text-align:center;color:#6b7280;font-size:14px;font-family:sans-serif;">Generating ${shapeType} shape...</div></div><p><br></p>`;
+    document.execCommand('insertHTML', false, htmlText);
+    const prmpt = `Generate a ${shapeType} shape using SVG.`;
+    handleAIBlockSubmit(prmpt, 'shape', boxId);
+    setShapesModalOpen(false);
+  };
+
+  const insertInlineChartBoxWithType = (chartType) => {
+    if (blankBodyRef.current) blankBodyRef.current.focus();
+    const boxId = 'chart-' + Date.now();
+    const htmlText = `<div id="${boxId}" class="inline-ai-block ai-block-loading" contenteditable="false"><div class="ai-block-shimmer"></div><div class="ai-block-content" style="padding:16px;text-align:center;color:#6b7280;font-size:14px;font-family:sans-serif;">Generating ${chartType}...</div></div><p><br></p>`;
+    document.execCommand('insertHTML', false, htmlText);
+    const prmpt = `Generate a ${chartType} for a presentation.`;
+    handleAIBlockSubmit(prmpt, 'graph', boxId);
+    setChartsModalOpen(false);
   };
 
   const handleAIBlockSubmit = async (prompt, type, containerOrId) => {
@@ -13099,6 +13127,8 @@ Rules:
         { key: 'speaker-notes', label: 'Speaker Notes', detail: 'Create persuasive talking tracks', icon: FileText, color: 'text-cyan-500', prompt: 'Generate speaker notes for each slide with transitions and anticipated audience questions.' },
       ]
       : [
+        { key: 'insert-shapes', label: 'Insert Shapes', detail: 'Add diagrams and flowchart shapes', icon: Shapes, color: 'text-rose-500', prompt: '' },
+        { key: 'insert-chart', label: 'Insert Chart', detail: 'Add data visualizations', icon: LayoutGrid, color: 'text-orange-500', prompt: '' },
         { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content while preserving meaning and key facts.' },
         { key: 'summarize', label: 'Summarize', detail: 'Condense without losing meaning', icon: Scissors, color: 'text-fuchsia-500', prompt: 'Summarize this content clearly while preserving key meaning and important context.' },
         { key: 'proofread', label: 'Proofread', detail: 'Fix typos, repeats, and grammar', icon: ShieldAlert, color: 'text-amber-500', prompt: 'Proofread this content and return a corrected version that fixes typos, repeated sentences, grammar errors, and awkward phrasing while preserving intent.' },
@@ -17037,6 +17067,14 @@ Rules:
                                     }
                                     if (option.key === 'create-outline') {
                                       setOutlineLevelMenuOpen((prev) => !prev);
+                                      return;
+                                    }
+                                    if (option.key === 'insert-shapes') {
+                                      setShapesModalOpen(true);
+                                      return;
+                                    }
+                                    if (option.key === 'insert-chart') {
+                                      setChartsModalOpen(true);
                                       return;
                                     }
                                     runSmartAssistAction(option.prompt, { actionKey: option.key });
@@ -22030,6 +22068,14 @@ Rules:
                             setOutlineLevelMenuOpen((prev) => !prev);
                             return;
                           }
+                          if (option.key === 'insert-shapes') {
+                            setShapesModalOpen(true);
+                            return;
+                          }
+                          if (option.key === 'insert-chart') {
+                            setChartsModalOpen(true);
+                            return;
+                          }
                           runSmartAssistAction(option.prompt, { actionKey: option.key });
                         }}
                         className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm transition-colors text-left ${isLiveAiReady ? `${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'} text-gray-700 hover:border-violet-200 hover:bg-violet-50` : 'text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50'}`}
@@ -22774,6 +22820,74 @@ Rules:
                   </div>
                 )}
 
+                </div>
+              </div>
+            </div>
+          )}
+
+          {shapesModalOpen && (
+            <div className="fixed inset-0 z-[1400] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+              <div className="w-[420px] rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95">
+                <h2 className="mb-4 text-xl font-bold text-slate-800">Insert Shape</h2>
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {[
+                    { type: 'Flowchart', icon: 'M4 4h16v16H4z', label: 'Process Box' },
+                    { type: 'Decision', icon: 'M12 2l10 10-10 10L2 12z', label: 'Decision Diamond' },
+                    { type: 'Database', icon: 'M12 2C6.48 2 2 4.24 2 7v10c0 2.76 4.48 5 10 5s10-2.24 10-5V7c0-2.76-4.48-5-10-5zm0 8c-4.42 0-8-1.79-8-4s3.58-4 8-4 8 1.79 8 4-3.58 4-8 4z', label: 'Database Storage' },
+                    { type: 'Cloud', icon: 'M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.36 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z', label: 'Cloud System' }
+                  ].map((item) => (
+                    <button
+                      key={item.type}
+                      onClick={() => insertInlineShapeBoxWithType(item.type)}
+                      className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 p-4 hover:border-violet-300 hover:bg-violet-50 transition-colors"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-8 w-8 fill-slate-500" stroke="currentColor" strokeWidth="1"><path d={item.icon}/></svg>
+                      <span className="text-xs font-semibold text-slate-700">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShapesModalOpen(false)}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {chartsModalOpen && (
+            <div className="fixed inset-0 z-[1400] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+              <div className="w-[420px] rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95">
+                <h2 className="mb-4 text-xl font-bold text-slate-800">Insert Chart</h2>
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {[
+                    { type: 'Bar Chart', icon: 'M4 20h16V4H4v16zm2-14h3v12H6V6zm5 4h3v8h-3v-8zm5-7h3v15h-3V3z', label: 'Bar Graph' },
+                    { type: 'Line Chart', icon: 'M3 3v18h18M16 8l4-4M10 14l6-6M4 18l6-4', label: 'Line Graph', isStroke: true },
+                    { type: 'Pie Chart', icon: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 3.09C7.61 5.56 5.09 8.08 4.6 11.5h6.4V5.09zM12 20c-4.41 0-8-3.59-8-8h9V4c4.41 0 8 3.59 8 8s-3.59 8-8 8z', label: 'Pie Graph' },
+                    { type: 'Scatter Plot', icon: 'M4 4v16h16M8 16a2 2 0 100-4 2 2 0 000 4zm4-6a2 2 0 100-4 2 2 0 000 4zm4 2a2 2 0 100-4 2 2 0 000 4zm4-8a2 2 0 100-4 2 2 0 000 4z', label: 'Scatter Plot', isStroke: true }
+                  ].map((item) => (
+                    <button
+                      key={item.type}
+                      onClick={() => insertInlineChartBoxWithType(item.type)}
+                      className="flex flex-col items-center gap-2 rounded-xl border border-slate-200 p-4 hover:border-orange-300 hover:bg-orange-50 transition-colors"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-8 w-8 fill-slate-500" stroke={item.isStroke ? "currentColor" : "none"} strokeWidth={item.isStroke ? "2" : "0"} fill={item.isStroke ? "none" : "currentColor"}><path d={item.icon}/></svg>
+                      <span className="text-xs font-semibold text-slate-700">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setChartsModalOpen(false)}
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
             </div>
