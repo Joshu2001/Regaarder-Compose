@@ -447,6 +447,7 @@ export default function App() {
 
   // Sidebar states
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
+  const [imageToolbar, setImageToolbar] = useState({ open: false, top: 0, left: 0, node: null });
   const [tableToolbar, setTableToolbar] = useState({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
   const tableToolbarRef = useRef(null);
 
@@ -2536,6 +2537,8 @@ export default function App() {
   const [workspaceLauncherIconSize, setWorkspaceLauncherIconSize] = useState('md');
   const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
+  const [textColorMenuOpen, setTextColorMenuOpen] = useState(false);
+  const [highlightMenuOpen, setHighlightMenuOpen] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
   const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
@@ -2567,6 +2570,7 @@ export default function App() {
   const [outlineLevelMenuOpen, setOutlineLevelMenuOpen] = useState(false);
   const [outlineLevels, setOutlineLevels] = useState(3);
   const [shapesModalOpen, setShapesModalOpen] = useState(false);
+  const [pageCoverModalOpen, setPageCoverModalOpen] = useState(false);
   const [chartsModalOpen, setChartsModalOpen] = useState(false);
 
   const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
@@ -8385,6 +8389,85 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
     };
     
+    
+    const handleDocumentClick = (e) => {
+      const imgBlock = e.target.closest('.interactive-image-block');
+      if (imgBlock) {
+        const rect = imgBlock.getBoundingClientRect();
+        setImageToolbar({ open: true, top: rect.top + window.scrollY - 50, left: rect.left + window.scrollX, node: imgBlock });
+      } else if (!e.target.closest('.image-toolbar-container') && !e.target.closest('.interactive-image-block')) {
+        setImageToolbar({ open: false, node: null, top: 0, left: 0 });
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
+
+    window.resizeImageBlock = (node, size) => {
+      if (!node) return;
+      const sizes = { sm: '30%', md: '60%', lg: '100%' };
+      node.style.width = sizes[size];
+    };
+
+    window.addImageTextLayer = (node) => {
+      if (!node) return;
+      const layersContainer = node.querySelector('.image-text-layers');
+      if (!layersContainer) return;
+      const layer = document.createElement('div');
+      layer.className = 'absolute bg-white/80 p-2 rounded shadow cursor-move';
+      layer.contentEditable = "true";
+      layer.style.top = '20px';
+      layer.style.left = '20px';
+      layer.style.zIndex = '10';
+      layer.style.pointerEvents = 'auto';
+      layer.style.border = '1px dashed #cbd5e1';
+      layer.style.minWidth = '50px';
+      layer.innerHTML = 'New Text';
+      
+      let zIndex = 10;
+      
+      layer.onmousedown = (e) => {
+        if (e.target !== layer) return; // allow text selection
+        e.preventDefault();
+        zIndex++;
+        layer.style.zIndex = zIndex.toString();
+        let startX = e.clientX, startY = e.clientY;
+        let startLeft = parseInt(layer.style.left || 0, 10);
+        let startTop = parseInt(layer.style.top || 0, 10);
+        const onMouseMove = (ev) => {
+          layer.style.left = (startLeft + ev.clientX - startX) + 'px';
+          layer.style.top = (startTop + ev.clientY - startY) + 'px';
+        };
+        const onMouseUp = () => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      };
+      layersContainer.appendChild(layer);
+    };
+
+    window.sendImageTextLayerToBack = (node) => {
+      if (!node) return;
+      const layersContainer = node.querySelector('.image-text-layers');
+      if (!layersContainer) return;
+      const layers = Array.from(layersContainer.children);
+      layers.forEach(l => { l.style.zIndex = Math.max(1, parseInt(l.style.zIndex || 10, 10) - 1).toString(); });
+    };
+
+    window.applyAIImageCommand = (node, command) => {
+      if (!node) return;
+      const cmd = command.toLowerCase();
+      if (cmd.includes('small')) window.resizeImageBlock(node, 'sm');
+      else if (cmd.includes('large') || cmd.includes('big')) window.resizeImageBlock(node, 'lg');
+      else if (cmd.includes('text') || cmd.includes('overlay')) window.addImageTextLayer(node);
+      else if (cmd.includes('caption')) {
+        const caption = node.querySelector('.image-caption');
+        if (caption) caption.innerText = command.replace(/.*caption/i, '').trim() || 'A generated caption';
+      } else if (cmd.includes('back')) {
+        window.sendImageTextLayerToBack(node);
+      }
+    };
+
     window.togglePromptChartMenu = (boxId) => {
       const menu = document.getElementById(`${boxId}_chart_menu`);
       if (menu) {
@@ -9150,6 +9233,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.deleteChartCol;
       delete window.sortChartBlockTable;
       delete window.exportChartBlock;
+      document.removeEventListener('click', handleDocumentClick);
+      delete window.resizeImageBlock;
+      delete window.addImageTextLayer;
+      delete window.applyAIImageCommand;
+      delete window.sendImageTextLayerToBack;
       delete window.togglePromptChartMenu;
       delete window.selectPromptChartType;
       delete window.generateShapeSVG;
@@ -13147,6 +13235,7 @@ Rules:
         { key: 'speaker-notes', label: 'Speaker Notes', detail: 'Create persuasive talking tracks', icon: FileText, color: 'text-cyan-500', prompt: 'Generate speaker notes for each slide with transitions and anticipated audience questions.' },
       ]
       : [
+        { key: 'insert-page-cover', label: 'Insert Page Cover', detail: 'Add a styled cover page', icon: BookOpen, color: 'text-indigo-500', prompt: '' },
         { key: 'insert-shapes', label: 'Insert Shapes', detail: 'Add diagrams and flowchart shapes', icon: Shapes, color: 'text-rose-500', prompt: '' },
         { key: 'insert-chart', label: 'Insert Chart', detail: 'Add data visualizations', icon: LayoutGrid, color: 'text-orange-500', prompt: '' },
         { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content while preserving meaning and key facts.' },
@@ -17089,6 +17178,11 @@ Rules:
                                       setOutlineLevelMenuOpen((prev) => !prev);
                                       return;
                                     }
+                                    if (option.key === 'insert-page-cover') {
+                                      setPageCoverModalOpen(true);
+                                      return;
+                                    }
+                                    if (option.key === 'insert-page-cover') { setPageCoverModalOpen(true); return; }
                                     if (option.key === 'insert-shapes') {
                                       setShapesModalOpen(true);
                                       return;
@@ -18284,7 +18378,24 @@ Rules:
           </div>
         )}
 
-        {tableToolbar.open && (
+        
+      {imageToolbar.open && (
+        <div className="image-toolbar-container absolute z-[250] bg-white border border-gray-200 rounded-lg shadow-xl p-2 flex gap-2 items-center" style={{ top: imageToolbar.top, left: imageToolbar.left }}>
+          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'sm')} className="p-1 hover:bg-slate-100 rounded" title="Small Width"><ImageIcon size={14}/></button>
+          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'md')} className="p-1 hover:bg-slate-100 rounded" title="Medium Width"><ImageIcon size={18}/></button>
+          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'lg')} className="p-1 hover:bg-slate-100 rounded" title="Full Width"><ImageIcon size={22}/></button>
+          <div className="w-px h-4 bg-gray-200 mx-1"></div>
+          <button onClick={() => window.addImageTextLayer(imageToolbar.node)} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Add floating text"><Type size={16}/> Text</button>
+          <button onClick={() => window.sendImageTextLayerToBack(imageToolbar.node)} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Send texts to back"><Layers size={16}/> To Back</button>
+          <div className="w-px h-4 bg-gray-200 mx-1"></div>
+          <div className="relative flex items-center">
+            <Sparkles size={14} className="absolute left-2 text-violet-500" />
+            <input type="text" placeholder="AI Command (e.g. resize, add text)" onKeyDown={(e) => { if(e.key === 'Enter') { window.applyAIImageCommand(imageToolbar.node, e.target.value); e.target.value = ''; } }} className="text-xs pl-7 pr-2 py-1 border border-violet-200 rounded-full w-48 focus:outline-none focus:ring-2 focus:ring-violet-400 bg-violet-50/50" />
+          </div>
+        </div>
+      )}
+
+      {tableToolbar.open && (
           <div
             ref={tableToolbarRef}
             className="fixed z-[290] flex items-center gap-1.5 p-1.5 bg-white/95 border border-[#e6e3fb] rounded-[14px] shadow-[0_12px_30px_-6px_rgba(76,29,149,0.15)] backdrop-blur-sm"
@@ -18833,6 +18944,40 @@ Rules:
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="relative" onMouseLeave={() => setTextColorMenuOpen(false)}>
+                  <button onClick={() => { setTextColorMenuOpen(!textColorMenuOpen); setHighlightMenuOpen(false); setOpenDropdown(null); }} className="flex items-center gap-1 hover:text-gray-900 cursor-pointer p-1 rounded hover:bg-gray-100" title="Text Color">
+                    <div className="w-4 h-4 rounded-full bg-slate-800 border border-slate-300 flex items-center justify-center"><Type size={10} className="text-white" /></div> <ChevronDown size={12} className="text-gray-400" />
+                  </button>
+                  {textColorMenuOpen && (
+                    <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3">
+                      <div className="text-xs font-semibold text-slate-500 mb-2">Text Color</div>
+                      <div className="grid grid-cols-5 gap-2">
+                        {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
+                          <button key={c} onClick={() => { applyFormatCommand('foreColor', c); setTextColorMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }}></button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="relative" onMouseLeave={() => setHighlightMenuOpen(false)}>
+                  <button onClick={() => { setHighlightMenuOpen(!highlightMenuOpen); setTextColorMenuOpen(false); setOpenDropdown(null); }} className="flex items-center gap-1 hover:text-gray-900 cursor-pointer p-1 rounded hover:bg-gray-100" title="Highlight Color">
+                    <div className="w-4 h-4 rounded bg-yellow-200 border border-yellow-300 flex items-center justify-center"><Highlighter size={10} className="text-yellow-700" /></div> <ChevronDown size={12} className="text-gray-400" />
+                  </button>
+                  {highlightMenuOpen && (
+                    <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3">
+                      <div className="text-xs font-semibold text-slate-500 mb-2">Highlight Color</div>
+                      <div className="grid grid-cols-5 gap-2">
+                        <button onClick={() => { applyFormatCommand('hiliteColor', 'transparent'); setHighlightMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-110 transition-transform flex items-center justify-center"><X size={12} className="text-slate-400"/></button>
+                        {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
+                          <button key={c} onClick={() => { applyFormatCommand('hiliteColor', c); setHighlightMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }}></button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="w-px h-4 bg-gray-200"></div>
             <button onClick={() => applyFormatCommand('bold')} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
             <button onClick={() => applyFormatCommand('italic')} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
             <button onClick={() => applyFormatCommand('underline')} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
@@ -22089,7 +22234,12 @@ Rules:
                             setOutlineLevelMenuOpen((prev) => !prev);
                             return;
                           }
-                          if (option.key === 'insert-shapes') {
+                          if (option.key === 'insert-page-cover') {
+                                      setPageCoverModalOpen(true);
+                                      return;
+                                    }
+                                    if (option.key === 'insert-page-cover') { setPageCoverModalOpen(true); return; }
+                                    if (option.key === 'insert-shapes') {
                             setShapesModalOpen(true);
                             return;
                           }
@@ -22881,6 +23031,75 @@ Rules:
             </div>
           )}
 
+          {pageCoverModalOpen && (
+            <div className="fixed inset-0 z-[1400] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+              <div className="w-[500px] rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <BookOpen className="text-indigo-500" size={20} />
+                    Insert Page Cover
+                  </h3>
+                  <button onClick={() => setPageCoverModalOpen(false)} className="text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 p-1">
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  {[
+                    { id: 'academic', name: 'Academic', desc: 'Formal, centered serif typography' },
+                    { id: 'writer', name: 'Writer', desc: 'Creative, elegant, spacious' },
+                    { id: 'enterprise', name: 'Enterprise', desc: 'Modern, brand-focused layout' }
+                  ].map(template => (
+                    <button
+                      key={template.id}
+                      onClick={() => {
+                        const title = docTitle || 'Untitled Document';
+                        let coverHtml = '';
+                        if (template.id === 'academic') {
+                          coverHtml = `<div contenteditable="false" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Times New Roman', serif; padding: 40px; border: 4px double #cbd5e1; margin-bottom: 40px; page-break-after: always;"><h1 style="font-size: 42px; margin-bottom: 20px; color: #1e293b;">${title}</h1><h3 style="font-size: 24px; color: #475569; font-weight: normal;">Author Name</h3><p style="margin-top: 60px; font-style: italic; color: #64748b;">${new Date().toLocaleDateString()}</p></div>`;
+                        } else if (template.id === 'writer') {
+                          coverHtml = `<div contenteditable="false" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; text-align: left; font-family: Georgia, serif; padding: 60px; background-color: #fdfbf7; margin-bottom: 40px; page-break-after: always; border-left: 8px solid #d4a373;"><h1 style="font-size: 48px; margin-bottom: 16px; color: #283618; letter-spacing: -1px;">${title}</h1><div style="width: 60px; height: 4px; background-color: #dda15e; margin-bottom: 30px;"></div><h3 style="font-size: 20px; color: #606c38; font-weight: normal; font-style: italic;">A Novel Approach</h3></div>`;
+                        } else if (template.id === 'enterprise') {
+                          coverHtml = `<div contenteditable="false" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; text-align: left; font-family: 'Inter', sans-serif; padding: 60px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white; margin-bottom: 40px; page-break-after: always;"><div style="font-size: 24px; font-weight: bold; color: #38bdf8;">Enterprise Inc.</div><div style="margin-top: auto; margin-bottom: auto;"><h1 style="font-size: 56px; margin-bottom: 20px; font-weight: 800; line-height: 1.1;">${title}</h1><h3 style="font-size: 24px; color: #94a3b8; font-weight: 400;">Q3 Executive Summary</h3></div><div style="width: 100%; border-top: 1px solid #334155; padding-top: 20px; display: flex; justify-content: space-between; color: #64748b; font-size: 14px;"><span>CONFIDENTIAL</span><span>${new Date().toLocaleDateString()}</span></div></div>`;
+                        }
+                        
+                        // Insert at top
+                        if (blankBodyRef.current) {
+                          blankBodyRef.current.innerHTML = coverHtml + blankBodyRef.current.innerHTML;
+                          setDocBodyHtml(blankBodyRef.current.innerHTML);
+                        }
+                        setPageCoverModalOpen(false);
+                        setOpenDropdown(null);
+                      }}
+                      className="p-4 border border-slate-200 rounded-xl hover:border-indigo-300 hover:bg-indigo-50 transition-colors text-left"
+                    >
+                      <div className="font-semibold text-slate-800 mb-1">{template.name}</div>
+                      <div className="text-xs text-slate-500">{template.desc}</div>
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => {
+                      const prmpt = prompt("Describe your custom cover page:");
+                      if (prmpt) {
+                        const boxId = 'cover-' + Date.now();
+                        const htmlText = `<div id="${boxId}" class="inline-ai-block ai-block-loading" contenteditable="false" style="min-height:50vh; display:flex; align-items:center; justify-content:center;"><div class="ai-block-shimmer"></div><div class="ai-block-content" style="color:#6b7280;">Generating custom cover...</div></div>`;
+                        if (blankBodyRef.current) {
+                          blankBodyRef.current.innerHTML = htmlText + blankBodyRef.current.innerHTML;
+                          setDocBodyHtml(blankBodyRef.current.innerHTML);
+                        }
+                        handleAIBlockSubmit(`Generate an inline styled HTML cover page based on: ${prmpt}. Make it min-height 80vh and visually striking.`, 'html', boxId);
+                      }
+                      setPageCoverModalOpen(false);
+                      setOpenDropdown(null);
+                    }}
+                    className="p-4 border border-violet-200 bg-violet-50 rounded-xl hover:border-violet-400 hover:bg-violet-100 transition-colors text-left flex flex-col justify-center"
+                  >
+                    <div className="font-semibold text-violet-800 mb-1 flex items-center gap-1"><Sparkles size={14}/> Custom AI Cover</div>
+                    <div className="text-xs text-violet-600">Prompt Gemini to design it</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {chartsModalOpen && (
             <div className="fixed inset-0 z-[1400] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
               <div className="w-[420px] rounded-2xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95">
