@@ -238,6 +238,14 @@ body { margin: 0; background: #ffffff; }
 	from { opacity: 0; }
 	to { opacity: 1; }
 }
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+@keyframes pulse {
+	0%, 100% { opacity: 1; }
+	50% { opacity: 0.5; }
+}
 
 /* Slash popover scroller, selection-safe styles, and inline prompt styling */
 .slash-menu-container {
@@ -298,7 +306,7 @@ body { margin: 0; background: #ffffff; }
 .inline-ai-prompt-header {
   display: flex;
   align-items: center;
-  justify-content: justify;
+  justify-content: space-between;
 }
 .inline-ai-prompt-title {
   font-size: 11px;

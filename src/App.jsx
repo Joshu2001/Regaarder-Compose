@@ -7159,9 +7159,9 @@ export default function App() {
 
   const handleAIBlockSubmit = async (prompt, type, container) => {
     container.innerHTML = `
-      <div class="flex items-center justify-center gap-2 p-4">
-        <span class="w-4 h-4 rounded-full border-2 border-violet-600 border-t-transparent animate-spin"></span>
-        <span class="text-xs font-semibold text-violet-700">AI is composing your ${type}...</span>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
+        <span style="width:16px;height:16px;border-radius:50%;border:2px solid #7c3aed;border-top-color:transparent;animation:spin 1s linear infinite;display:inline-block;"></span>
+        <span style="font-size:12px;font-weight:600;color:#6d28d9;">AI is composing your ${type}...</span>
       </div>
     `;
     
@@ -7214,9 +7214,9 @@ export default function App() {
     const banner = container.querySelector('.ai-preview-action-banner');
     if (banner) {
       banner.innerHTML = `
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-violet-600 text-white text-[10px] font-bold animate-pulse">AI</span>
-          <span class="text-xs font-semibold text-violet-900 animate-pulse">Regenerating block...</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="ai-preview-banner-badge" style="animation:pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;">AI</span>
+          <span class="ai-preview-banner-label" style="animation:pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;">Regenerating block...</span>
         </div>
       `;
     }
@@ -7265,7 +7265,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     const boxId = `icon_box_${Date.now()}`;
     const container = document.createElement('div');
-    container.className = 'inline-ai-icon-box p-3 border border-violet-200 bg-violet-50/50 rounded-xl flex items-center gap-3 w-72';
+    container.className = 'inline-ai-icon-box';
     container.setAttribute('contenteditable', 'false');
     container.setAttribute('id', boxId);
     
@@ -7273,10 +7273,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
       <input 
         type="text" 
         placeholder="Type emoji or icon name (e.g., rocket, target)..." 
-        class="flex-1 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs outline-none focus:border-violet-400"
+        class="inline-ai-prompt-input"
         id="${boxId}_input"
       />
-      <button type="button" class="bg-violet-600 text-white rounded-lg px-2 py-1 text-xs font-semibold" id="${boxId}_btn">Insert</button>
+      <button type="button" class="inline-ai-prompt-btn" id="${boxId}_btn">Insert</button>
     `;
     
     range.insertNode(container);
@@ -7289,7 +7289,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const handleInsert = async () => {
         const query = input.value.trim();
         if (query) {
-          container.innerHTML = `<span class="text-xs text-gray-500">Searching...</span>`;
+          container.innerHTML = `<span style="font-size:12px;color:#6b7280;">Searching...</span>`;
           try {
             const userPrompt = `Translate this keyword/icon name to a single Unicode Emoji that represents it best: "${query}". Return ONLY the single emoji character.`;
             const systemPrompt = `You are a helper that outputs exactly one Unicode Emoji character corresponding to the description.`;
@@ -7352,7 +7352,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     container.innerHTML = `
       <div class="inline-ai-prompt-header">
         <span class="inline-ai-prompt-title">
-          <span class="w-2 h-2 rounded-full bg-violet-600 animate-ping"></span>
+          <span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;display:inline-block;animation:pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;"></span>
           Generate ${typeLabel} with AI
         </span>
         <button type="button" class="inline-ai-prompt-cancel" onclick="cancelInlinePrompt('${boxId}')">
@@ -7382,6 +7382,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
     const spacer = document.createElement('p');
     spacer.innerHTML = '<br>';
     container.parentNode.insertBefore(spacer, container.nextSibling);
+    
+    // Sync DOM back to React state so re-renders don't overwrite
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
     
     setTimeout(() => {
       const input = document.getElementById(`${boxId}_input`);
@@ -7433,9 +7438,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
     
     container.innerHTML = `
-      <div class="flex items-center justify-center gap-2 p-4">
-        <span class="w-4 h-4 rounded-full border-2 border-violet-600 border-t-transparent animate-spin"></span>
-        <span class="text-xs font-semibold text-violet-700">AI is ${type === 'translate' ? 'translating' : 'proofreading'}...</span>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
+        <span style="width:16px;height:16px;border-radius:50%;border:2px solid #7c3aed;border-top-color:transparent;animation:spin 1s linear infinite;display:inline-block;"></span>
+        <span style="font-size:12px;font-weight:600;color:#6d28d9;">AI is ${type === 'translate' ? 'translating' : 'proofreading'}...</span>
       </div>
     `;
     
@@ -7472,19 +7477,44 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const executeSlashCommand = (key) => {
+    const savedRange = slashMenuRef.current?.range;
+    const savedFilterText = slashMenuRef.current?.filterText || '';
+    
     setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
     
+    // CRITICAL: Focus the editor FIRST so all DOM commands work
+    blankBodyRef.current?.focus();
+    
     const selection = window.getSelection();
-    let targetRange = slashMenuRef.current?.range;
+    let targetRange = savedRange;
     
     if (selection && targetRange) {
       selection.removeAllRanges();
       selection.addRange(targetRange);
       
+      // Clean up the "/" character and any filter text typed into the editor
       if (targetRange.collapsed) {
-        document.execCommand('delete', false, null);
-        for (let i = 0; i < slashMenuRef.current.filterText.length; i++) {
-          document.execCommand('delete', false, null);
+        try {
+          const textNode = targetRange.startContainer;
+          if (textNode.nodeType === Node.TEXT_NODE) {
+            const offset = targetRange.startOffset;
+            // The "/" was typed at offset, filter text follows it
+            // Total chars to remove = 1 ("/") + filterText.length
+            const charsToRemove = 1 + savedFilterText.length;
+            const textContent = textNode.textContent;
+            if (offset <= textContent.length && textContent.charAt(offset) === '/') {
+              textNode.textContent = textContent.slice(0, offset) + textContent.slice(offset + charsToRemove);
+              // Reposition cursor
+              const newRange = document.createRange();
+              newRange.setStart(textNode, Math.min(offset, textNode.textContent.length));
+              newRange.collapse(true);
+              selection.removeAllRanges();
+              selection.addRange(newRange);
+            }
+          }
+        } catch (e) {
+          // Fallback: just position cursor
+          console.warn('Slash cleanup fallback:', e);
         }
       }
     }
@@ -7504,7 +7534,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     };
     
     if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule'].includes(key)) {
-      const selectedText = targetRange ? targetRange.toString().trim() : '';
+      const selectedText = targetRange && !targetRange.collapsed ? targetRange.toString().trim() : '';
       if (selectedText) {
         if (key === 'translate' || key === 'proofread') {
           applyDirectSelectionAIAction(key, selectedText, targetRange);
@@ -7530,6 +7560,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
       applyFormatCommand('insertUnorderedList');
     } else if (key === 'icon') {
       insertInlineIconSelector();
+    }
+    
+    // Sync DOM back to React state
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
   };
 
@@ -7612,9 +7647,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       
       if (event.key === 'Backspace') {
-        if (slashMenuRef.current.range && !slashMenuRef.current.range.collapsed) {
-          event.preventDefault();
-        }
+        event.preventDefault();
         if (slashMenuRef.current.filterText.length === 0) {
           setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
         } else {
@@ -7628,9 +7661,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       
       if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-        if (slashMenuRef.current.range && !slashMenuRef.current.range.collapsed) {
-          event.preventDefault();
-        }
+        event.preventDefault();
         setSlashMenu(prev => ({
           ...prev,
           filterText: prev.filterText + event.key,
