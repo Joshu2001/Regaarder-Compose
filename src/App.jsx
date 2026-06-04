@@ -424,6 +424,7 @@ const SLASH_OPTIONS = [
   { key: 'schedule', label: 'Schedule', desc: 'Create timeline or checklist' },
   { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text' },
   { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark/anchor' },
+  { key: 'shapes', label: 'Shapes', desc: 'Insert interactive shapes' },
   { key: 'icon', label: 'Icon', desc: 'Insert an emoji or icon' }
 ];
 
@@ -7858,6 +7859,19 @@ Generate the updated output according to the instruction. Preserve layout and ta
           Generate
         </button>
       </div>
+      ${type === 'graph' ? `
+      <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
+        <button type="button" class="inline-ai-prompt-btn" onclick="window.togglePromptChartMenu('${boxId}')" style="background:#7c3aed; color:#ffffff; font-size:11px; padding:4px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px; animation: pulse 1.5s infinite;">
+          <span>📊 Select Chart Type</span>
+          <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:100;">
+          ${['line', 'bar', 'pie', 'heatmap', 'table'].map(t => `
+            <button type="button" onclick="window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
     `;
     
     range.insertNode(container);
@@ -7962,6 +7976,37 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
   };
 
+  const insertInlineShapeBox = () => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
+    
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    
+    const previewId = `prev_shape_${Date.now()}`;
+    const container = document.createElement('div');
+    container.className = 'ai-preview-block';
+    container.setAttribute('contenteditable', 'false');
+    container.setAttribute('id', previewId);
+    container.setAttribute('data-block-type', 'shapes');
+    
+    const defaultState = {
+      type: 'rectangle',
+      color: 'lavender',
+      scale: 1.0
+    };
+    container.setAttribute('data-shape-data', JSON.stringify(defaultState));
+    
+    range.insertNode(container);
+    
+    const spacer = document.createElement('p');
+    spacer.innerHTML = '<br>';
+    container.parentNode.insertBefore(spacer, container.nextSibling);
+    
+    renderBlockInPreview(previewId, 'shapes', '');
+    window.refreshShapeBlock(previewId);
+  };
+
   const executeSlashCommand = (key) => {
     const savedRange = slashMenuRef.current?.range;
     
@@ -8019,7 +8064,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       return null;
     };
     
-    if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule', 'hyperlink', 'bookmark'].includes(key)) {
+    if (key === 'shapes') {
+      insertInlineShapeBox();
+    } else if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule', 'hyperlink', 'bookmark'].includes(key)) {
       const selectedText = targetRange && !targetRange.collapsed ? targetRange.toString().trim() : '';
       if (selectedText) {
         if (key === 'translate' || key === 'proofread') {
@@ -8187,22 +8234,31 @@ Generate the updated output according to the instruction. Preserve layout and ta
         if (blockType === 'graph') {
           container.className = 'interactive-chart-block';
           container.removeAttribute('contenteditable');
+        } else if (blockType === 'shapes') {
+          container.className = 'interactive-shape-block';
+          container.removeAttribute('contenteditable');
         } else if (blockType === 'schedule') {
           const dataStr = container.getAttribute('data-schedule-data');
           if (dataStr) {
             try {
               const parsed = JSON.parse(dataStr);
+              const eventDateStr = parsed.startDate || new Date().toISOString().split('T')[0];
               const newEvent = {
                 id: Date.now() + Math.floor(Math.random() * 1000),
                 title: parsed.title || 'Scheduled Meeting',
                 slot: parsed.startTime || '10:00',
-                dueDate: parsed.startDate || new Date().toISOString().split('T')[0],
+                dueDate: eventDateStr,
                 category: parsed.category || 'Meeting',
                 urgency: parsed.urgency || 'medium',
                 durationMinutes: parsed.durationMinutes || 60,
-                slotLabel: `${parsed.startDate || ''} - ${parsed.startTime || ''}`
+                slotLabel: `${eventDateStr} - ${parsed.startTime || ''}`
               };
               setUpcomingEvents(existing => [newEvent, ...existing]);
+              try {
+                setSelectedCalendarDate(new Date(eventDateStr + 'T00:00:00'));
+              } catch (err) {
+                console.error(err);
+              }
               setActiveRightTab('calendar');
               setRightSidebarOpen(true);
               showToast(`Scheduled: ${newEvent.title}`);
@@ -8278,6 +8334,25 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const prompt = textEl?.value?.trim();
       if (prompt) {
         handleAIRetrySubmit(previewId, prompt);
+      }
+    };
+    
+    window.togglePromptChartMenu = (boxId) => {
+      const menu = document.getElementById(`${boxId}_chart_menu`);
+      if (menu) {
+        menu.classList.toggle('hidden');
+      }
+    };
+    
+    window.selectPromptChartType = (boxId, chartType) => {
+      const input = document.getElementById(`${boxId}_input`);
+      const menu = document.getElementById(`${boxId}_chart_menu`);
+      if (input) {
+        input.value = `type:${chartType} `;
+        input.focus();
+      }
+      if (menu) {
+        menu.classList.add('hidden');
       }
     };
     
@@ -8377,6 +8452,123 @@ Generate the updated output according to the instruction. Preserve layout and ta
           ${gridHtml}
         </div>
       `;
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.generateShapeSVG = (state) => {
+      const { type, color, scale = 1.0 } = state;
+      const baseWidth = 160;
+      const baseHeight = 160;
+      const width = baseWidth * scale;
+      const height = baseHeight * scale;
+      
+      const colorMap = {
+        lavender: { fill: '#e0e7ff', stroke: '#6366f1' },
+        red: { fill: '#fee2e2', stroke: '#ef4444' },
+        yellow: { fill: '#fef3c7', stroke: '#f59e0b' },
+        green: { fill: '#dcfce7', stroke: '#10b981' },
+        blue: { fill: '#dbeafe', stroke: '#3b82f6' },
+        purple: { fill: '#f3e8ff', stroke: '#8b5cf6' }
+      };
+      
+      const colors = colorMap[color] || colorMap.lavender;
+      
+      const sharedProps = `stroke="${colors.stroke}" stroke-width="3" fill="${colors.fill}" stroke-linecap="round" stroke-linejoin="round" style="transition: all 0.2s;"`;
+      
+      let shapeMarkup = '';
+      if (type === 'circle') {
+        shapeMarkup = `<circle cx="${width/2}" cy="${height/2}" r="${(Math.min(width, height) / 2) - 4}" ${sharedProps} />`;
+      } else if (type === 'triangle') {
+        shapeMarkup = `<polygon points="${width/2},4 ${width - 4},${height - 4} 4,${height - 4}" ${sharedProps} />`;
+      } else if (type === 'diamond') {
+        shapeMarkup = `<polygon points="${width/2},4 ${width - 4},${height/2} ${width/2},${height - 4} 4,${height/2}" ${sharedProps} />`;
+      } else {
+        shapeMarkup = `<rect x="4" y="4" width="${width - 8}" height="${height - 8}" rx="8" ry="8" ${sharedProps} />`;
+      }
+      
+      return `
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="max-width:100%; display:block; margin:0 auto; transition:all 0.2s;">
+          ${shapeMarkup}
+        </svg>
+      `;
+    };
+
+    window.refreshShapeBlock = (containerId) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data'));
+      const svgHtml = window.generateShapeSVG(state);
+      const previewContent = container.querySelector('.ai-preview-content');
+      const target = previewContent || container;
+      
+      const colorsList = ['lavender', 'red', 'yellow', 'green', 'blue', 'purple'];
+      const colorsHex = {
+        lavender: '#e0e7ff',
+        red: '#fee2e2',
+        yellow: '#fef3c7',
+        green: '#dcfce7',
+        blue: '#dbeafe',
+        purple: '#f3e8ff'
+      };
+      
+      target.innerHTML = `
+        <div class="shape-block-header" style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 16px; border-bottom:1px solid #e2e8f0; border-top-left-radius:16px; border-top-right-radius:16px; font-family:sans-serif; user-select:none;">
+          <div style="font-weight:600; color:#475569; font-size:12px; display:flex; align-items:center; gap:8px;">
+            <span style="background:#8b5cf6; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px;">SHAPE</span>
+          </div>
+          <div class="shape-type-selector" style="display:flex; gap:4px;">
+            ${['rectangle', 'circle', 'triangle', 'diamond'].map(s => `
+              <button type="button" onclick="window.changeShapeType('${containerId}', '${s}')" style="background:${state.type === s ? '#8b5cf6' : '#ffffff'}; color:${state.type === s ? '#ffffff' : '#475569'}; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:500; transition:all 100ms;">${s.charAt(0).toUpperCase() + s.slice(1)}</button>
+            `).join('')}
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <button type="button" onclick="window.adjustShapeScale('${containerId}', 1)" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; width:24px; height:24px; font-size:14px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center;" title="Expand">+</button>
+            <button type="button" onclick="window.adjustShapeScale('${containerId}', -1)" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; width:24px; height:24px; font-size:14px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center;" title="Minimize">-</button>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            ${colorsList.map(c => `
+              <button type="button" onclick="window.changeShapeColor('${containerId}', '${c}')" style="background:${colorsHex[c]}; width:16px; height:16px; border-radius:50%; border:${state.color === c ? '2px solid #475569' : '1px solid #cbd5e1'}; cursor:pointer; padding:0; outline:none;" title="${c}"></button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="shape-svg-container" style="padding:24px; background:#ffffff; display:flex; justify-content:center; align-items:center; min-height:180px; border-bottom-left-radius:16px; border-bottom-right-radius:16px;">
+          ${svgHtml}
+        </div>
+      `;
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.changeShapeType = (containerId, newType) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data'));
+      state.type = newType;
+      container.setAttribute('data-shape-data', JSON.stringify(state));
+      window.refreshShapeBlock(containerId);
+    };
+    
+    window.changeShapeColor = (containerId, newColor) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data'));
+      state.color = newColor;
+      container.setAttribute('data-shape-data', JSON.stringify(state));
+      window.refreshShapeBlock(containerId);
+    };
+    
+    window.adjustShapeScale = (containerId, direction) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data'));
+      const currentScale = state.scale || 1.0;
+      const nextScale = direction > 0 ? Math.min(2.5, currentScale + 0.15) : Math.max(0.4, currentScale - 0.15);
+      state.scale = parseFloat(nextScale.toFixed(2));
+      container.setAttribute('data-shape-data', JSON.stringify(state));
+      window.refreshShapeBlock(containerId);
     };
 
     window.generateChartSVG = (state) => {
@@ -8910,6 +9102,13 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.deleteChartCol;
       delete window.sortChartBlockTable;
       delete window.exportChartBlock;
+      delete window.togglePromptChartMenu;
+      delete window.selectPromptChartType;
+      delete window.generateShapeSVG;
+      delete window.refreshShapeBlock;
+      delete window.changeShapeType;
+      delete window.changeShapeColor;
+      delete window.adjustShapeScale;
     };
   }, []);
 

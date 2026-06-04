@@ -569,3 +569,26 @@ body { margin: 0; background: #ffffff; }
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
+/* Interactive Shape Block styling */
+.interactive-shape-block {
+  margin: 24px 0;
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(139, 92, 246, 0.05);
+  overflow: hidden;
+  position: relative;
+  transition: all 250ms ease;
+  user-select: none;
+}
+
+.interactive-shape-block:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 10px 30px -4px rgba(139, 92, 246, 0.08);
+}
+
+.shape-type-selector button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
