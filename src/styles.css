@@ -482,3 +482,90 @@ body { margin: 0; background: #ffffff; }
   background: rgba(139, 92, 246, 0.25);
   border-color: rgba(139, 92, 246, 0.5);
 }
+
+/* Interactive Table Toolbar Overlay */
+.table-floating-toolbar {
+  font-family: 'Outfit', 'DM Sans', sans-serif;
+  animation: slideIn 150ms ease-out;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+/* Interactive Chart Block */
+.interactive-chart-block {
+  margin: 24px 0;
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px -2px rgba(139, 92, 246, 0.05);
+  overflow: hidden;
+  position: relative;
+  transition: all 250ms ease;
+  user-select: none;
+}
+
+.interactive-chart-block:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 10px 30px -4px rgba(139, 92, 246, 0.08);
+}
+
+.chart-svg-container {
+  min-height: 240px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.chart-data-table th, .chart-data-table td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 10px;
+}
+
+/* Custom Table Editing and Sizing Styles */
+.compose-editor-surface table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.compose-editor-surface th, .compose-editor-surface td {
+  border: 1px solid #e2e8f0;
+  padding: 10px 14px;
+  font-size: 13px;
+  min-width: 80px;
+  height: 35px;
+  position: relative;
+  outline: none;
+  transition: background-color 100ms;
+}
+
+.compose-editor-surface th {
+  background-color: #f1f5f9;
+  font-weight: 600;
+  color: #334155;
+  text-align: left;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.compose-editor-surface tr:nth-child(even) td {
+  background-color: #f8fafc;
+}
+
+.compose-editor-surface td:hover, .compose-editor-surface th:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Float styling for Table Tooltip and Color buttons */
+.table-floating-toolbar button {
+  transition: all 150ms ease;
+}
+
+/* Style for interactive chart elements */
+.chart-type-selector button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+

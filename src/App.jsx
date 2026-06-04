@@ -417,7 +417,7 @@ const RoomStageFeed = ({ stream, placeholder }) => {
 const SLASH_OPTIONS = [
   { key: 'table', label: 'Table', desc: 'Insert an AI table' },
   { key: 'bullets', label: 'Bullet points', desc: 'Insert bullet list' },
-  { key: 'graph', label: 'Graph / Chart', desc: 'Generate styled SVG graph' },
+  { key: 'graph', label: 'Chart / Graph', desc: 'Insert an interactive SVG chart & grid' },
   { key: 'image', label: 'Image', desc: 'Insert an AI image' },
   { key: 'proofread', label: 'Proofread', desc: 'Improve spelling & style' },
   { key: 'translate', label: 'Translate', desc: 'Translate text' },
@@ -446,6 +446,181 @@ export default function App() {
 
   // Sidebar states
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
+  const [tableToolbar, setTableToolbar] = useState({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+  const tableToolbarRef = useRef(null);
+
+  const syncEditorHtml = () => {
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+  };
+
+  const addRowAbove = (table, cell) => {
+    if (!table || !cell) return;
+    const rowIndex = cell.parentNode.rowIndex;
+    const newRow = table.insertRow(rowIndex);
+    const colCount = cell.parentNode.cells.length;
+    for (let i = 0; i < colCount; i++) {
+      const newCell = newRow.insertCell(i);
+      newCell.innerHTML = '';
+      newCell.style.cssText = cell.parentNode.cells[i].style.cssText;
+    }
+    syncEditorHtml();
+  };
+
+  const addRowBelow = (table, cell) => {
+    if (!table || !cell) return;
+    const rowIndex = cell.parentNode.rowIndex;
+    const newRow = table.insertRow(rowIndex + 1);
+    const colCount = cell.parentNode.cells.length;
+    for (let i = 0; i < colCount; i++) {
+      const newCell = newRow.insertCell(i);
+      newCell.innerHTML = '';
+      newCell.style.cssText = cell.parentNode.cells[i].style.cssText;
+    }
+    syncEditorHtml();
+  };
+
+  const deleteRow = (table, cell) => {
+    if (!table || !cell) return;
+    const rowIndex = cell.parentNode.rowIndex;
+    if (table.rows.length > 1) {
+      table.deleteRow(rowIndex);
+    } else {
+      table.remove();
+    }
+    setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+    syncEditorHtml();
+  };
+
+  const addColLeft = (table, cell) => {
+    if (!table || !cell) return;
+    const colIndex = cell.cellIndex;
+    for (let i = 0; i < table.rows.length; i++) {
+      const row = table.rows[i];
+      const isHeader = row.parentNode?.tagName === 'THEAD' || row.cells[colIndex].tagName === 'TH';
+      const newCell = isHeader ? document.createElement('th') : row.insertCell(colIndex);
+      if (isHeader) {
+        row.insertBefore(newCell, row.cells[colIndex]);
+      }
+      newCell.innerHTML = '';
+      newCell.style.cssText = row.cells[colIndex + 1] ? row.cells[colIndex + 1].style.cssText : row.cells[colIndex].style.cssText;
+    }
+    syncEditorHtml();
+  };
+
+  const addColRight = (table, cell) => {
+    if (!table || !cell) return;
+    const colIndex = cell.cellIndex;
+    for (let i = 0; i < table.rows.length; i++) {
+      const row = table.rows[i];
+      const isHeader = row.parentNode?.tagName === 'THEAD' || row.cells[colIndex].tagName === 'TH';
+      const newCell = isHeader ? document.createElement('th') : row.insertCell(colIndex + 1);
+      if (isHeader) {
+        row.insertBefore(newCell, row.cells[colIndex + 1]);
+      }
+      newCell.innerHTML = '';
+      newCell.style.cssText = row.cells[colIndex].style.cssText;
+    }
+    syncEditorHtml();
+  };
+
+  const deleteCol = (table, cell) => {
+    if (!table || !cell) return;
+    const colIndex = cell.cellIndex;
+    const colCount = cell.parentNode.cells.length;
+    if (colCount > 1) {
+      for (let i = 0; i < table.rows.length; i++) {
+        table.rows[i].deleteCell(colIndex);
+      }
+    } else {
+      table.remove();
+    }
+    setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+    syncEditorHtml();
+  };
+
+  const updateTableToolbarPosition = () => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) {
+      setTableToolbar(prev => {
+        if (prev.open) return { ...prev, open: false };
+        return prev;
+      });
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    const node = range.commonAncestorContainer;
+    const element = node.nodeType === Node.TEXT_NODE ? node.parentNode : node;
+    const cell = element?.closest?.('td, th');
+    const table = element?.closest?.('table');
+    
+    const insideEditor = blankBodyRef.current && blankBodyRef.current.contains(table);
+    const insideChartBlock = table && table.closest('.interactive-chart-block');
+    
+    if (cell && table && insideEditor && !insideChartBlock) {
+      const rect = cell.getBoundingClientRect();
+      setTableToolbar({
+        open: true,
+        left: rect.left + window.scrollX,
+        top: rect.top + window.scrollY - 45,
+        tableEl: table,
+        cellEl: cell
+      });
+    } else {
+      setTableToolbar(prev => {
+        if (prev.open) return { ...prev, open: false };
+        return prev;
+      });
+    }
+  };
+
+  const adjustColWidth = (table, cell, amount) => {
+    if (!table || !cell) return;
+    const colIndex = cell.cellIndex;
+    const currentWidth = cell.offsetWidth;
+    const nextWidth = Math.max(40, currentWidth + amount);
+    for (let i = 0; i < table.rows.length; i++) {
+      const c = table.rows[i].cells[colIndex];
+      if (c) c.style.width = `${nextWidth}px`;
+    }
+    syncEditorHtml();
+    setTimeout(updateTableToolbarPosition, 50);
+  };
+
+  const adjustRowHeight = (table, cell, amount) => {
+    if (!table || !cell) return;
+    const row = cell.parentNode;
+    const currentHeight = row.offsetHeight;
+    const nextHeight = Math.max(25, currentHeight + amount);
+    row.style.height = `${nextHeight}px`;
+    syncEditorHtml();
+    setTimeout(updateTableToolbarPosition, 50);
+  };
+
+  const changeCellColor = (cell, color) => {
+    if (cell) {
+      cell.style.backgroundColor = color;
+      syncEditorHtml();
+    }
+  };
+
+  useEffect(() => {
+    const handleEvents = () => {
+      updateTableToolbarPosition();
+    };
+    document.addEventListener('selectionchange', handleEvents);
+    document.addEventListener('click', handleEvents);
+    window.addEventListener('resize', handleEvents);
+    document.addEventListener('scroll', handleEvents, true);
+    return () => {
+      document.removeEventListener('selectionchange', handleEvents);
+      document.removeEventListener('click', handleEvents);
+      window.removeEventListener('resize', handleEvents);
+      document.removeEventListener('scroll', handleEvents, true);
+    };
+  }, []);
+
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
@@ -7132,18 +7307,106 @@ export default function App() {
     return tempDiv.innerHTML;
   };
 
+  const parseChartSyntax = (text) => {
+    const cleanText = text.trim();
+    if (!cleanText.startsWith('/chart') && !cleanText.startsWith('/graph')) {
+      return { type: 'line', data: null };
+    }
+    const typeMatch = cleanText.match(/type\s*:\s*([a-zA-Z]+)/i);
+    const type = typeMatch ? typeMatch[1].toLowerCase() : 'line';
+    const dataIndex = cleanText.indexOf('data:');
+    if (dataIndex === -1) {
+      return { type, data: null };
+    }
+    const dataStr = cleanText.slice(dataIndex + 5).trim();
+    let data = null;
+    try {
+      let jsonStr = dataStr.replace(/'/g, '"');
+      jsonStr = jsonStr.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+      data = JSON.parse(jsonStr);
+    } catch (e) {
+      try {
+        const pairs = dataStr.match(/\[([^\]]+)\]/g);
+        if (pairs) {
+          data = pairs.map(p => {
+            const parts = p.replace(/[\[\]]/g, '').split(',');
+            const label = parts[0].trim().replace(/['"]/g, '');
+            const val = parts[1] ? parts[1].trim() : '0';
+            return { Label: label, Value: isNaN(val) ? val : Number(val) };
+          });
+        } else {
+          const parts = dataStr.split(',');
+          data = [];
+          for (let i = 0; i < parts.length; i += 2) {
+            if (parts[i] && parts[i+1]) {
+              const label = parts[i].trim().replace(/['"]/g, '');
+              const val = parts[i+1].trim();
+              data.push({ Label: label, Value: isNaN(val) ? val : Number(val) });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed fuzzy parse:", err);
+      }
+    }
+    return { type, data };
+  };
+
+  const standardizeChartData = (type, rawData, defaultTitle = 'Chart') => {
+    let headers = ['Label', 'Value'];
+    let data = [['Jan', 10], ['Feb', 20], ['Mar', 30]];
+    if (Array.isArray(rawData) && rawData.length > 0) {
+      const firstItem = rawData[0];
+      if (Array.isArray(firstItem)) {
+        data = rawData;
+        headers = firstItem.map((_, i) => i === 0 ? 'Label' : `Value ${i}`);
+      } else if (typeof firstItem === 'object' && firstItem !== null) {
+        headers = Object.keys(firstItem);
+        data = rawData.map(item => headers.map(h => {
+          const v = item[h];
+          return isNaN(v) || v === '' ? v : Number(v);
+        }));
+      }
+    }
+    return {
+      type: ['line', 'bar', 'pie', 'heatmap', 'table'].includes(type) ? type : 'line',
+      title: defaultTitle,
+      headers,
+      data
+    };
+  };
+
   const getSystemPromptForType = (type) => {
     if (type === 'table') {
-      return `You are an expert AI editor. Create an HTML table populated with realistic sample data. IMPORTANT REQUIREMENTS:
+      return `You are an expert AI editor. Create an HTML table.
+IMPORTANT POPULATION RULE:
+- If the user highlighted a text, or specified precisely what data/topics should be in the table (e.g. "product sales", "grade tracking table for class A"), populate the table with realistic sample data relevant to that description.
+- Otherwise, if the prompt is generic (e.g., just "table", "create a table", "table 3x3", "empty table"), the table columns MUST have headers (like Column 1, Column 2, etc.), but the data cells (tbody cells) MUST be empty (i.e. empty td tags like <td></td> or containing only a single space for typing) so the user can fill them in manually.
+
+STRUCTURAL REQUIREMENTS:
 - ALWAYS include a <thead> with <th> column headers.
-- ALWAYS include a <tbody> with AT LEAST 5 data rows, each with AT LEAST 3 columns (more is better).
+- ALWAYS include a <tbody>. If the user specifies the number of rows or columns, follow that exactly. If not specified, create 5 rows and 3 columns.
 - Use <table>, <thead>, <tbody>, <tr>, <th>, <td> tags.
-- If the user specifies the number of rows or columns, follow that exactly.
-- Style the table with inline styles: border-collapse: collapse; width: 100%; and cells with border: 1px solid #e2e8f0; padding: 10px 14px; font-size: 13px;. Use alternating row backgrounds (#ffffff and #f8fafc). Header row: background #f1f5f9; font-weight: 600; color: #334155;.
+- Style the table with inline styles: border-collapse: collapse; width: 100%; border: 1px solid #e2e8f0; margin: 16px 0;
+- Cells style: border: 1px solid #e2e8f0; padding: 10px 14px; font-size: 13px; min-width: 80px; height: 35px;
+- Alternating row backgrounds (#ffffff and #f8fafc).
+- Header row: background #f1f5f9; font-weight: 600; color: #334155; border-bottom: 2px solid #cbd5e1;
 - Return only the raw HTML code without markdown code blocks or fences.`;
     }
-    if (type === 'graph') {
-      return `You are an expert data visualization designer. Analyze the prompt and generate an inline responsive SVG chart (e.g. a bar chart, line chart, or pie chart). Return only the raw SVG XML string. Ensure it uses beautiful curated colors (like violet #8B5CF6, indigo #6366F1, emerald #10B981), clean modern typography, grid lines, and is fully self-contained within an <svg> tag. Return only the raw XML without markdown blocks or fences.`;
+    if (type === 'graph' || type === 'chart') {
+      return `You are a chart data extraction AI. Based on the user's prompt, extract the data and title, and select the best chart type.
+Supported types are: "line", "bar", "pie", "heatmap", "table".
+Respond ONLY with a JSON object in this format (no markdown code blocks, no other text):
+{
+  "type": "line|bar|pie|heatmap|table",
+  "title": "Chart Title",
+  "headers": ["Label", "Value 1", "Value 2"],
+  "data": [
+    ["Row 1 Label", 10, 20],
+    ["Row 2 Label", 15, 25]
+  ]
+}
+Ensure headers array matches the columns, and data is a 2D array of rows. Numeric values should be numbers, not strings. Use only the specified chart types.`;
     }
     if (type === 'image') {
       return `You are an expert image selection tool. Based on the user's description, generate a single Unsplash search keyword that matches. Return only the keyword (a few words) without any punctuation or wrapper.`;
@@ -7233,6 +7496,27 @@ export default function App() {
       setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
     
+    const previewId = `prev_${Date.now()}`;
+    
+    if (type === 'graph') {
+      const parsed = parseChartSyntax(prompt);
+      if (parsed && parsed.data) {
+        const chartState = standardizeChartData(parsed.type, parsed.data, 'Custom Chart');
+        const liveContainer = document.getElementById(containerId);
+        if (liveContainer) {
+          liveContainer.className = 'ai-preview-block';
+          liveContainer.setAttribute('contenteditable', 'false');
+          liveContainer.setAttribute('id', previewId);
+          liveContainer.setAttribute('data-block-type', type);
+          liveContainer.setAttribute('data-chart-data', JSON.stringify(chartState));
+          
+          renderBlockInPreview(previewId, type, '');
+          window.refreshChartBlock(previewId);
+        }
+        return;
+      }
+    }
+    
     try {
       const systemPrompt = getSystemPromptForType(type);
       const userPrompt = prompt;
@@ -7252,11 +7536,20 @@ export default function App() {
       if (!liveContainer) return;
       const rawOutput = res?.text || '';
       
-      let finalHtml = rawOutput;
+      let finalHtml = '';
+      let chartState = null;
+      
       if (type === 'image') {
         finalHtml = parseImageOutput(rawOutput);
       } else if (type === 'graph') {
-        finalHtml = parseGraphOutput(rawOutput);
+        try {
+          const cleanJson = parseGraphOutput(rawOutput);
+          const parsedData = JSON.parse(cleanJson);
+          chartState = standardizeChartData(parsedData.type, parsedData.data, parsedData.title);
+        } catch (e) {
+          console.error("Failed to parse Gemini chart JSON, rendering fallback:", e);
+          chartState = standardizeChartData('line', [['Jan', 10], ['Feb', 20], ['Mar', 15]], 'Sample Chart');
+        }
       } else {
         finalHtml = rawOutput.trim();
         if (finalHtml.startsWith('```')) {
@@ -7264,17 +7557,23 @@ export default function App() {
         }
       }
       
-      const previewId = `prev_${Date.now()}`;
       const originalHtml = liveContainer.getAttribute('data-original-html') || '';
       liveContainer.className = 'ai-preview-block';
       liveContainer.setAttribute('contenteditable', 'false');
       liveContainer.setAttribute('id', previewId);
       liveContainer.setAttribute('data-block-type', type);
+      if (chartState) {
+        liveContainer.setAttribute('data-chart-data', JSON.stringify(chartState));
+      }
       if (originalHtml) {
         liveContainer.setAttribute('data-original-html', originalHtml);
       }
       
       renderBlockInPreview(previewId, type, finalHtml);
+      
+      if (type === 'graph' && chartState) {
+        window.refreshChartBlock(previewId);
+      }
       
     } catch (e) {
       console.error(e);
@@ -7294,9 +7593,18 @@ export default function App() {
     if (!container) return;
     
     const type = container.getAttribute('data-block-type') || 'text';
-    const clone = container.cloneNode(true);
-    clone.querySelector('.ai-preview-action-banner')?.remove();
-    const currentContent = clone.innerHTML;
+    const isChart = type === 'graph';
+    
+    let currentContent = '';
+    let currentChartData = '';
+    
+    if (isChart) {
+      currentChartData = container.getAttribute('data-chart-data') || '';
+    } else {
+      const clone = container.cloneNode(true);
+      clone.querySelector('.ai-preview-action-banner')?.remove();
+      currentContent = clone.innerHTML;
+    }
     
     const banner = container.querySelector('.ai-preview-action-banner');
     if (banner) {
@@ -7314,7 +7622,18 @@ export default function App() {
     
     try {
       const systemPrompt = getSystemPromptForType(type);
-      const userPrompt = `You are refining an existing document block.
+      let userPrompt = '';
+      if (isChart) {
+        userPrompt = `You are refining an existing chart dataset.
+Current chart data (JSON):
+${currentChartData}
+
+Refinement Instruction:
+${prompt}
+
+Based on the instructions, update the chart type, title, headers, or data values. Return ONLY a valid JSON object in the exact same schema. Output no other text.`;
+      } else {
+        userPrompt = `You are refining an existing document block.
 Current block content:
 ${currentContent}
 
@@ -7322,6 +7641,7 @@ Refinement Instruction:
 ${prompt}
 
 Generate the updated output according to the instruction. Preserve layout and tags. Output only the updated raw code or text.`;
+      }
 
       const res = await callGemini({ userPrompt, systemPrompt });
       if (res?.error) {
@@ -7330,10 +7650,21 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const rawOutput = res?.text || '';
       
       let newHtml = rawOutput;
+      let chartState = null;
+      
       if (type === 'image') {
         newHtml = parseImageOutput(rawOutput);
-      } else if (type === 'graph') {
-        newHtml = parseGraphOutput(rawOutput);
+      } else if (isChart) {
+        try {
+          const cleanJson = parseGraphOutput(rawOutput);
+          const parsedData = JSON.parse(cleanJson);
+          chartState = standardizeChartData(parsedData.type, parsedData.data, parsedData.title);
+          container.setAttribute('data-chart-data', JSON.stringify(chartState));
+          newHtml = '';
+        } catch (e) {
+          console.error("Failed to parse refined chart JSON:", e);
+          newHtml = currentContent;
+        }
       } else {
         newHtml = rawOutput.trim();
         if (newHtml.startsWith('```')) {
@@ -7343,10 +7674,17 @@ Generate the updated output according to the instruction. Preserve layout and ta
       
       renderBlockInPreview(previewId, type, newHtml);
       
+      if (isChart && chartState) {
+        window.refreshChartBlock(previewId);
+      }
+      
     } catch (e) {
       console.error(e);
       showToast('Regeneration failed');
-      renderBlockInPreview(previewId, type, currentContent);
+      renderBlockInPreview(previewId, type, isChart ? '' : currentContent);
+      if (isChart) {
+        window.refreshChartBlock(previewId);
+      }
     }
   };
 
@@ -7428,7 +7766,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       <div class="inline-ai-prompt-input-row">
         <input 
           type="text" 
-          placeholder="Describe what you want..." 
+          placeholder="${type === 'graph' ? 'e.g. type:line data:[Jan:10, Feb:20] or describe chart topic...' : type === 'table' ? 'e.g. 5x3 or describe table topic...' : 'Describe what you want...'}" 
           class="inline-ai-prompt-input"
           id="${boxId}_input"
           value="${prefilledPrompt.replace(/"/g, '&quot;')}"
@@ -7768,11 +8106,17 @@ Generate the updated output according to the instruction. Preserve layout and ta
         const banner = container.querySelector('.ai-preview-action-banner');
         if (banner) banner.remove();
         
-        const parent = container.parentNode;
-        while (container.firstChild) {
-          parent.insertBefore(container.firstChild, container);
+        const blockType = container.getAttribute('data-block-type');
+        if (blockType === 'graph') {
+          container.className = 'interactive-chart-block';
+          container.removeAttribute('contenteditable');
+        } else {
+          const parent = container.parentNode;
+          while (container.firstChild) {
+            parent.insertBefore(container.firstChild, container);
+          }
+          container.remove();
         }
-        container.remove();
         
         if (blankBodyRef.current) {
           setDocBodyHtml(blankBodyRef.current.innerHTML);
@@ -7899,7 +8243,550 @@ Generate the updated output according to the instruction. Preserve layout and ta
         if (liveContainer) liveContainer.remove();
       }
     };
-    
+
+    window.refreshChartBlock = (containerId) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      const svgHtml = window.generateChartSVG(state);
+      const gridHtml = window.generateChartGrid(containerId, state);
+      const previewContent = container.querySelector('.ai-preview-content');
+      const target = previewContent || container;
+      target.innerHTML = `
+        <div class="chart-block-header" style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 16px; border-bottom:1px solid #e2e8f0; border-top-left-radius:16px; border-top-right-radius:16px; font-family:sans-serif;">
+          <div style="font-weight:600; color:#475569; font-size:12px; display:flex; align-items:center; gap:8px;">
+            <span style="background:#7c3aed; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px;">CHART</span>
+            <span id="chart_title_${containerId}" contenteditable="true" onblur="window.updateChartTitle('${containerId}', this.innerText)" style="outline:none; border-bottom:1px dashed #cbd5e1; padding:2px 4px;">${state.title || 'Chart'}</span>
+          </div>
+          <div class="chart-type-selector" style="display:flex; gap:4px;">
+            ${['line', 'bar', 'pie', 'heatmap', 'table'].map(t => `
+              <button type="button" onclick="window.changeChartType('${containerId}', '${t}')" style="background:${state.type === t ? '#7c3aed' : '#ffffff'}; color:${state.type === t ? '#ffffff' : '#475569'}; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:500; transition:all 100ms;">${t.charAt(0).toUpperCase() + t.slice(1)}</button>
+            `).join('')}
+          </div>
+          <div style="display:flex; gap:4px; align-items:center;">
+            <button type="button" onclick="window.exportChartBlock('${containerId}', 'png')" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;">PNG</button>
+            <button type="button" onclick="window.exportChartBlock('${containerId}', 'svg')" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;">SVG</button>
+            <button type="button" onclick="window.exportChartBlock('${containerId}', 'pdf')" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer;">PDF</button>
+          </div>
+        </div>
+        <div class="chart-svg-container" style="padding:16px; background:#ffffff; display:flex; justify-content:center; align-items:center; border-bottom:1px solid #e2e8f0;">
+          ${svgHtml}
+        </div>
+        <div class="chart-grid-container" style="padding:16px; background:#f8fafc; border-bottom-left-radius:16px; border-bottom-right-radius:16px;">
+          ${gridHtml}
+        </div>
+      `;
+    };
+
+    window.generateChartSVG = (state) => {
+      const { type, data, headers } = state;
+      if (!data || data.length === 0) return '<div style="color:#64748b; font-size:12px; padding:20px; font-family:sans-serif;">No data available to display chart.</div>';
+      const width = 600;
+      const height = 300;
+      const padding = { top: 30, right: 30, bottom: 40, left: 50 };
+      const colors = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6'];
+      
+      if (type === 'table') {
+        return `<div style="font-family:sans-serif; width:100%; overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; background:#ffffff; border-radius:8px; overflow:hidden; font-size:13px; border:1px solid #e2e8f0;">
+            <thead>
+              <tr style="background:#f1f5f9; text-align:left; border-bottom:2px solid #cbd5e1;">
+                ${headers.map((h, i) => `<th onclick="window.sortChartBlockTable('${state.id || ''}', ${i})" style="padding:10px 12px; font-weight:600; color:#334155; cursor:pointer; user-select:none;">${h} ↕</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map((row, r) => `
+                <tr style="border-bottom:1px solid #e2e8f0; background:${r % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+                  ${row.map(val => `<td style="padding:10px 12px; color:#475569;">${val}</td>`).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      }
+      
+      if (type === 'pie') {
+        const values = data.map(r => Number(r[1]) || 0);
+        const labels = data.map(r => r[0]);
+        const total = values.reduce((a, b) => a + b, 0);
+        if (total === 0) return '<div style="color:#64748b; font-size:12px; padding:20px; font-family:sans-serif;">Sum of pie values is 0.</div>';
+        
+        const cx = width / 2;
+        const cy = height / 2;
+        const radius = Math.min(width, height) / 2 - 30;
+        let currentAngle = 0;
+        const paths = [];
+        const legend = [];
+        
+        for (let i = 0; i < data.length; i++) {
+          const val = values[i];
+          const label = labels[i];
+          const sliceAngle = (val / total) * 2 * Math.PI;
+          const percentage = ((val / total) * 100).toFixed(1);
+          const x1 = cx + radius * Math.sin(currentAngle);
+          const y1 = cy - radius * Math.cos(currentAngle);
+          currentAngle += sliceAngle;
+          const x2 = cx + radius * Math.sin(currentAngle);
+          const y2 = cy - radius * Math.cos(currentAngle);
+          const largeArc = sliceAngle > Math.PI ? 1 : 0;
+          const color = colors[i % colors.length];
+          
+          paths.push(`
+            <path d="M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z" 
+                  fill="${color}" 
+                  stroke="#ffffff" 
+                  stroke-width="2"
+                  style="transition: transform 0.2s; transform-origin: ${cx}px ${cy}px;"
+                  onmouseover="this.style.transform='scale(1.05)'"
+                  onmouseout="this.style.transform='scale(1)'">
+              <title>${label}: ${val} (${percentage}%)</title>
+            </path>
+          `);
+          legend.push(`
+            <div style="display:flex; align-items:center; gap:6px; font-size:11px; color:#475569; margin:4px 8px;">
+              <span style="width:10px; height:10px; background:${color}; border-radius:50%; display:inline-block;"></span>
+              <span>${label}: ${val} (${percentage}%)</span>
+            </div>
+          `);
+        }
+        
+        return `
+          <div style="display:flex; align-items:center; justify-content:center; width:100%; gap:24px; font-family:sans-serif; flex-wrap:wrap;">
+            <svg width="240" height="240" viewBox="0 0 ${width} ${height}" style="width:240px; height:240px;">
+              ${paths.join('')}
+            </svg>
+            <div style="display:flex; flex-direction:column; max-height:220px; overflow-y:auto; padding:8px; justify-content:center;">
+              ${legend.join('')}
+            </div>
+          </div>
+        `;
+      }
+      
+      if (type === 'heatmap') {
+        const numRows = data.length;
+        const numCols = headers.length - 1;
+        let maxVal = -Infinity;
+        let minVal = Infinity;
+        for (let r = 0; r < numRows; r++) {
+          for (let c = 1; c < headers.length; c++) {
+            const v = Number(data[r][c]) || 0;
+            if (v > maxVal) maxVal = v;
+            if (v < minVal) minVal = v;
+          }
+        }
+        if (minVal === Infinity) { minVal = 0; maxVal = 100; }
+        const range = maxVal - minVal || 1;
+        const cellWidth = Math.floor((width - padding.left - padding.right) / numCols);
+        const cellHeight = Math.floor((height - padding.top - padding.bottom) / numRows);
+        const cells = [];
+        const labels = [];
+        
+        for (let r = 0; r < numRows; r++) {
+          const y = padding.top + r * cellHeight + cellHeight / 2;
+          labels.push(`<text x="${padding.left - 10}" y="${y + 4}" text-anchor="end" fill="#64748b" font-size="11" font-weight="500">${data[r][0]}</text>`);
+          for (let c = 0; c < numCols; c++) {
+            const val = Number(data[r][c + 1]) || 0;
+            const ratio = (val - minVal) / range;
+            const red = Math.floor(245 - (245 - 109) * ratio);
+            const green = Math.floor(243 - (243 - 40) * ratio);
+            const blue = Math.floor(255 - (255 - 217) * ratio);
+            const color = `rgb(${red}, ${green}, ${blue})`;
+            const cellX = padding.left + c * cellWidth;
+            const cellY = padding.top + r * cellHeight;
+            cells.push(`
+              <rect x="${cellX}" y="${cellY}" width="${cellWidth - 2}" height="${cellHeight - 2}" fill="${color}" rx="4">
+                <title>${data[r][0]} - ${headers[c + 1]}: ${val}</title>
+              </rect>
+              <text x="${cellX + cellWidth/2}" y="${cellY + cellHeight/2 + 4}" text-anchor="middle" fill="${ratio > 0.5 ? '#ffffff' : '#1e293b'}" font-size="10" font-weight="600">${val}</text>
+            `);
+          }
+        }
+        for (let c = 0; c < numCols; c++) {
+          const x = padding.left + c * cellWidth + cellWidth / 2;
+          labels.push(`<text x="${x}" y="${height - padding.bottom + 16}" text-anchor="middle" fill="#64748b" font-size="10" font-weight="500">${headers[c + 1]}</text>`);
+        }
+        return `
+          <svg width="100%" height="100%" viewBox="0 0 ${width} ${height}" style="font-family:sans-serif; background:#ffffff;">
+            ${labels.join('')}
+            ${cells.join('')}
+          </svg>
+        `;
+      }
+      
+      const numSeries = headers.length - 1;
+      let yMax = -Infinity;
+      let yMin = 0;
+      data.forEach(row => {
+        for (let i = 1; i < row.length; i++) {
+          const v = Number(row[i]) || 0;
+          if (v > yMax) yMax = v;
+          if (v < yMin) yMin = v;
+        }
+      });
+      if (yMax === -Infinity) yMax = 100;
+      const order = Math.pow(10, Math.floor(Math.log10(yMax - yMin))) || 10;
+      const yUpperLimit = Math.ceil(yMax / (order / 2)) * (order / 2);
+      const yLowerLimit = Math.floor(yMin / (order / 2)) * (order / 2);
+      const yRange = yUpperLimit - yLowerLimit || 1;
+      
+      const getX = (index) => {
+        const space = (width - padding.left - padding.right) / Math.max(1, data.length - 1);
+        if (type === 'bar') {
+          const barSpace = (width - padding.left - padding.right) / data.length;
+          return padding.left + index * barSpace + barSpace / 2;
+        }
+        return padding.left + index * space;
+      };
+      
+      const getY = (val) => {
+        const scale = (height - padding.top - padding.bottom) / yRange;
+        return height - padding.bottom - (val - yLowerLimit) * scale;
+      };
+      
+      const gridHtml = [];
+      const ticksCount = 5;
+      for (let i = 0; i <= ticksCount; i++) {
+        const val = yLowerLimit + (yRange * i) / ticksCount;
+        const y = getY(val);
+        gridHtml.push(`
+          <line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#f1f5f9" stroke-width="1" />
+          <text x="${padding.left - 10}" y="${y + 4}" text-anchor="end" fill="#94a3b8" font-size="10">${val.toFixed(0)}</text>
+        `);
+      }
+      
+      const xLabelsHtml = [];
+      data.forEach((row, index) => {
+        const x = getX(index);
+        xLabelsHtml.push(`
+          <text x="${x}" y="${height - padding.bottom + 18}" text-anchor="middle" fill="#94a3b8" font-size="10">${row[0]}</text>
+        `);
+      });
+      
+      const contentHtml = [];
+      if (type === 'line') {
+        for (let s = 0; s < numSeries; s++) {
+          const points = data.map((row, index) => ({
+            x: getX(index),
+            y: getY(Number(row[s + 1]) || 0),
+            val: Number(row[s + 1]) || 0,
+            label: row[0]
+          }));
+          const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+          const color = colors[s % colors.length];
+          contentHtml.push(`
+            <path d="${pathD}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          `);
+          points.forEach(p => {
+            contentHtml.push(`
+              <circle cx="${p.x}" cy="${p.y}" r="5" fill="#ffffff" stroke="${color}" stroke-width="2" style="cursor:pointer; transition: r 0.1s;" onmouseover="this.setAttribute('r', '8')" onmouseout="this.setAttribute('r', '5')">
+                <title>${p.label} - ${headers[s + 1]}: ${p.val}</title>
+              </circle>
+            `);
+          });
+        }
+      } else if (type === 'bar') {
+        const barGroupWidth = (width - padding.left - padding.right) / data.length;
+        const barWidth = (barGroupWidth - 10) / numSeries;
+        data.forEach((row, rowIndex) => {
+          const groupX = padding.left + rowIndex * barGroupWidth + 5;
+          for (let s = 0; s < numSeries; s++) {
+            const val = Number(row[s + 1]) || 0;
+            const barY = getY(val);
+            const baselineY = getY(0);
+            const barHeight = Math.abs(baselineY - barY);
+            const color = colors[s % colors.length];
+            const barX = groupX + s * barWidth;
+            contentHtml.push(`
+              <rect x="${barX}" y="${val >= 0 ? barY : baselineY}" width="${barWidth - 2}" height="${barHeight || 1}" fill="${color}" rx="2" style="transition: opacity 0.1s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                <title>${row[0]} - ${headers[s + 1]}: ${val}</title>
+              </rect>
+            `);
+          }
+        });
+      }
+      
+      const legendHtml = [];
+      for (let s = 0; s < numSeries; s++) {
+        const color = colors[s % colors.length];
+        legendHtml.push(`
+          <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:#475569;">
+            <span style="width:8px; height:8px; background:${color}; border-radius:2px; display:inline-block;"></span>
+            <span>${headers[s + 1]}</span>
+          </div>
+        `);
+      }
+      
+      return `
+        <div style="display:flex; flex-direction:column; width:100%; font-family:sans-serif; background:#ffffff;">
+          <svg width="100%" height="240" viewBox="0 0 ${width} ${height}">
+            ${gridHtml.join('')}
+            ${xLabelsHtml.join('')}
+            <line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${height - padding.bottom}" stroke="#cbd5e1" stroke-width="1.5" />
+            ${contentHtml.join('')}
+          </svg>
+          <div style="display:flex; gap:16px; justify-content:center; padding:8px; flex-wrap:wrap; border-top:1px solid #f1f5f9;">
+            ${legendHtml.join('')}
+          </div>
+        </div>
+      `;
+    };
+
+    window.generateChartGrid = (containerId, state) => {
+      const { headers, data } = state;
+      return `
+        <div style="font-family:sans-serif; overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; background:#ffffff; font-size:12px; border:1px solid #e2e8f0; border-radius:8px;">
+            <thead>
+              <tr style="background:#f8fafc; border-bottom:1px solid #e2e8f0;">
+                ${headers.map((h, i) => `
+                  <th style="padding:6px 8px; font-weight:600; color:#475569; border-right:1px solid #e2e8f0; position:relative;">
+                    <span contenteditable="true" onblur="window.updateChartBlockHeader('${containerId}', ${i}, this.innerText)" style="outline:none; display:inline-block; min-width:40px;">${h}</span>
+                    <button type="button" onclick="window.deleteChartCol('${containerId}', ${i})" style="position:absolute; right:2px; top:2px; background:none; border:none; color:#94a3b8; cursor:pointer; font-size:8px;">×</button>
+                  </th>
+                `).join('')}
+                <th style="padding:6px; width:40px;"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${data.map((row, r) => `
+                <tr style="border-bottom:1px solid #e2e8f0;">
+                  ${row.map((val, c) => `
+                    <td style="padding:6px 8px; border-right:1px solid #e2e8f0;">
+                      <span contenteditable="true" oninput="window.updateChartBlockCell(this, '${containerId}', ${r}, ${c})" style="outline:none; display:inline-block; width:100%; min-height:16px;">${val}</span>
+                    </td>
+                  `).join('')}
+                  <td style="padding:4px; text-align:center;">
+                    <button type="button" onclick="window.deleteChartRow('${containerId}', ${r})" style="background:#fee2e2; color:#ef4444; border:none; border-radius:4px; width:20px; height:20px; cursor:pointer; font-weight:bold; font-size:10px;">-</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div style="margin-top:8px; display:flex; gap:8px;">
+            <button type="button" onclick="window.addChartRow('${containerId}')" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; font-size:11px; color:#475569; cursor:pointer; font-weight:500;">+ Add Row</button>
+            <button type="button" onclick="window.addChartCol('${containerId}')" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:4px 10px; font-size:11px; color:#475569; cursor:pointer; font-weight:500;">+ Add Column</button>
+          </div>
+        </div>
+      `;
+    };
+
+    window.updateChartBlockCell = (element, containerId, rowIndex, colIndex) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      const val = element.innerText.trim();
+      state.data[rowIndex][colIndex] = isNaN(val) || val === '' ? val : Number(val);
+      container.setAttribute('data-chart-data', JSON.stringify(state));
+      
+      const svgContainer = container.querySelector('.chart-svg-container');
+      if (svgContainer) {
+        svgContainer.innerHTML = window.generateChartSVG(state);
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.updateChartBlockHeader = (containerId, colIndex, value) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      state.headers[colIndex] = value.trim();
+      container.setAttribute('data-chart-data', JSON.stringify(state));
+      window.refreshChartBlock(containerId);
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.updateChartTitle = (containerId, value) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      state.title = value.trim();
+      container.setAttribute('data-chart-data', JSON.stringify(state));
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.changeChartType = (containerId, newType) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      state.type = newType;
+      container.setAttribute('data-chart-data', JSON.stringify(state));
+      window.refreshChartBlock(containerId);
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.addChartRow = (containerId) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      const newRow = [`Item ${state.data.length + 1}`];
+      for (let i = 1; i < state.headers.length; i++) {
+        newRow.push(0);
+      }
+      state.data.push(newRow);
+      container.setAttribute('data-chart-data', JSON.stringify(state));
+      window.refreshChartBlock(containerId);
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.deleteChartRow = (containerId, rowIndex) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      if (state.data.length > 1) {
+        state.data.splice(rowIndex, 1);
+        container.setAttribute('data-chart-data', JSON.stringify(state));
+        window.refreshChartBlock(containerId);
+      } else {
+        showToast('Cannot delete the last row.');
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.addChartCol = (containerId) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      const newColName = `Series ${state.headers.length}`;
+      state.headers.push(newColName);
+      state.data.forEach(row => row.push(0));
+      container.setAttribute('data-chart-data', JSON.stringify(state));
+      window.refreshChartBlock(containerId);
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.deleteChartCol = (containerId, colIndex) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      if (colIndex === 0) {
+        showToast('Cannot delete the label column.');
+        return;
+      }
+      if (state.headers.length > 2) {
+        state.headers.splice(colIndex, 1);
+        state.data.forEach(row => row.splice(colIndex, 1));
+        container.setAttribute('data-chart-data', JSON.stringify(state));
+        window.refreshChartBlock(containerId);
+      } else {
+        showToast('Cannot delete the last data series.');
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.sortChartBlockTable = (containerId, colIndex) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      const currentDir = container.getAttribute('data-sort-dir') || 'asc';
+      const nextDir = currentDir === 'asc' ? 'desc' : 'asc';
+      container.setAttribute('data-sort-dir', nextDir);
+      state.data.sort((a, b) => {
+        const valA = a[colIndex];
+        const valB = b[colIndex];
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return nextDir === 'asc' ? valA - valB : valB - valA;
+        }
+        return nextDir === 'asc' 
+          ? String(valA).localeCompare(String(valB)) 
+          : String(valB).localeCompare(String(valA));
+      });
+      container.setAttribute('data-chart-data', JSON.stringify(state));
+      window.refreshChartBlock(containerId);
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.exportChartBlock = (containerId, format) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-chart-data'));
+      const svgEl = container.querySelector('.chart-svg-container svg');
+      if (!svgEl) {
+        showToast('No chart SVG found to export.');
+        return;
+      }
+      if (format === 'svg') {
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(svgEl);
+        const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${state.title || 'chart'}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Exported as SVG');
+      } else if (format === 'png') {
+        const serializer = new XMLSerializer();
+        const source = serializer.serializeToString(svgEl);
+        const img = new Image();
+        const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = svgEl.clientWidth || 600;
+          canvas.height = svgEl.clientHeight || 300;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          const pngUrl = canvas.toDataURL('image/png');
+          const a = document.createElement('a');
+          a.href = pngUrl;
+          a.download = `${state.title || 'chart'}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast('Exported as PNG');
+        };
+        img.src = url;
+      } else if (format === 'pdf') {
+        const printWindow = window.open('', '_blank');
+        const svgHtml = svgEl.outerHTML;
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>${state.title || 'Chart Export'}</title>
+              <style>
+                body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+                h1 { font-size: 24px; color: #334155; margin-bottom: 20px; }
+                .svg-container { width: 100%; max-width: 600px; }
+              </style>
+            </head>
+            <body>
+              <h1>${state.title || 'Chart'}</h1>
+              <div class="svg-container">${svgHtml}</div>
+              <script>
+                window.onload = () => { window.print(); window.close(); };
+              </script>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+      }
+    };
+
     return () => {
       delete window.acceptAiPreview;
       delete window.deleteAiPreview;
@@ -7909,6 +8796,19 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.exportAiBlock;
       delete window.submitInlinePrompt;
       delete window.submitInlineIcon;
+      delete window.refreshChartBlock;
+      delete window.generateChartSVG;
+      delete window.generateChartGrid;
+      delete window.updateChartBlockCell;
+      delete window.updateChartBlockHeader;
+      delete window.updateChartTitle;
+      delete window.changeChartType;
+      delete window.addChartRow;
+      delete window.deleteChartRow;
+      delete window.addChartCol;
+      delete window.deleteChartCol;
+      delete window.sortChartBlockTable;
+      delete window.exportChartBlock;
     };
   }, []);
 
@@ -17022,6 +17922,147 @@ Rules:
                 <ChevronRight size={16} className="text-slate-400" />
               </button>
             </div>
+          </div>
+        )}
+
+        {tableToolbar.open && (
+          <div
+            ref={tableToolbarRef}
+            className="fixed z-[290] flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-lg shadow-xl"
+            style={{
+              left: `${tableToolbar.left}px`,
+              top: `${tableToolbar.top}px`,
+              transform: 'translate(-50%, -100%)',
+              marginTop: '-8px'
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+          >
+            <div className="flex items-center border-r border-slate-100 pr-1 mr-1 gap-0.5">
+              <button
+                type="button"
+                onClick={() => addRowAbove(tableToolbar.tableEl, tableToolbar.cellEl)}
+                title="Add Row Above"
+                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-medium text-[11px]"
+              >
+                +Row ⬆
+              </button>
+              <button
+                type="button"
+                onClick={() => addRowBelow(tableToolbar.tableEl, tableToolbar.cellEl)}
+                title="Add Row Below"
+                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-medium text-[11px]"
+              >
+                +Row ⬇
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteRow(tableToolbar.tableEl, tableToolbar.cellEl)}
+                title="Delete Row"
+                className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-600 font-medium text-[11px]"
+              >
+                -Row
+              </button>
+            </div>
+            
+            <div className="flex items-center border-r border-slate-100 pr-1 mr-1 gap-0.5">
+              <button
+                type="button"
+                onClick={() => addColLeft(tableToolbar.tableEl, tableToolbar.cellEl)}
+                title="Add Column Left"
+                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-medium text-[11px]"
+              >
+                +Col ⬅
+              </button>
+              <button
+                type="button"
+                onClick={() => addColRight(tableToolbar.tableEl, tableToolbar.cellEl)}
+                title="Add Column Right"
+                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-medium text-[11px]"
+              >
+                +Col ➡
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteCol(tableToolbar.tableEl, tableToolbar.cellEl)}
+                title="Delete Column"
+                className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-600 font-medium text-[11px]"
+              >
+                -Col
+              </button>
+            </div>
+
+            <div className="flex items-center border-r border-slate-100 pr-1 mr-1 gap-0.5">
+              <button
+                type="button"
+                onClick={() => adjustColWidth(tableToolbar.tableEl, tableToolbar.cellEl, 20)}
+                title="Make Column Wider"
+                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-semibold text-xs"
+              >
+                W+
+              </button>
+              <button
+                type="button"
+                onClick={() => adjustColWidth(tableToolbar.tableEl, tableToolbar.cellEl, -20)}
+                title="Make Column Narrower"
+                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-semibold text-xs"
+              >
+                W-
+              </button>
+              <button
+                type="button"
+                onClick={() => adjustRowHeight(tableToolbar.tableEl, tableToolbar.cellEl, 10)}
+                title="Make Row Taller"
+                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-semibold text-xs"
+              >
+                H+
+              </button>
+              <button
+                type="button"
+                onClick={() => adjustRowHeight(tableToolbar.tableEl, tableToolbar.cellEl, -10)}
+                title="Make Row Shorter"
+                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-semibold text-xs"
+              >
+                H-
+              </button>
+            </div>
+            
+            <div className="relative group flex items-center">
+              <button
+                type="button"
+                className="p-1 hover:bg-slate-100 rounded text-slate-600 text-xs"
+                title="Cell Color"
+              >
+                🎨
+              </button>
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:grid grid-cols-4 gap-1 p-1.5 bg-white border border-slate-200 rounded shadow-lg z-50">
+                {['#ffffff', '#f1f5f9', '#fee2e2', '#fef3c7', '#dcfce7', '#dbeafe', '#e0e7ff', '#f3e8ff'].map(color => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => changeCellColor(tableToolbar.cellEl, color)}
+                    style={{ backgroundColor: color }}
+                    className="w-5 h-5 rounded border border-slate-300 hover:scale-110 transition-transform"
+                    title={color}
+                  />
+                ))}
+              </div>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => {
+                tableToolbar.tableEl.remove();
+                setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+                syncEditorHtml();
+              }}
+              title="Delete Table"
+              className="p-1 hover:bg-red-100 hover:text-red-700 rounded text-red-600 font-semibold text-xs"
+            >
+              🗑️
+            </button>
           </div>
         )}
 
