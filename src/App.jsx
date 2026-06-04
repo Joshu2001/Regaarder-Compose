@@ -422,6 +422,8 @@ const SLASH_OPTIONS = [
   { key: 'proofread', label: 'Proofread', desc: 'Improve spelling & style' },
   { key: 'translate', label: 'Translate', desc: 'Translate text' },
   { key: 'schedule', label: 'Schedule', desc: 'Create timeline or checklist' },
+  { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text' },
+  { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark/anchor' },
   { key: 'icon', label: 'Icon', desc: 'Insert an emoji or icon' }
 ];
 
@@ -2206,6 +2208,8 @@ export default function App() {
   const formattingMenuRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const speechRecognitionRef = useRef(null);
+  const voiceSilenceTimerRef = useRef(null);
+  const toggleVoiceRecordingRef = useRef(null);
   const promptAudioInputRef = useRef(null);
   const floatingPromptRef = useRef(null);
   const chatInputRef = useRef(null);
@@ -5321,6 +5325,11 @@ export default function App() {
         return;
       }
 
+      if (voiceSilenceTimerRef.current) {
+        clearTimeout(voiceSilenceTimerRef.current);
+        voiceSilenceTimerRef.current = null;
+      }
+
       if (mockDictationTimeoutRef.current) {
         clearTimeout(mockDictationTimeoutRef.current);
         mockDictationTimeoutRef.current = null;
@@ -5415,6 +5424,22 @@ export default function App() {
             }
             interimCommitTimerRef.current = null;
           }, 850);
+        }
+      }
+
+      const fullSpeechText = (finalTranscript + interimTranscript).trim();
+      if (fullSpeechText) {
+        const commandCheck = detectCommandPrefix(fullSpeechText);
+        if (commandCheck.matched || isVoiceCommandModeRef.current) {
+          if (!isVoiceCommandModeRef.current) {
+            setIsVoiceCommandMode(true);
+            isVoiceCommandModeRef.current = true;
+          }
+          voiceSilenceTimerRef.current = setTimeout(() => {
+            if (isVoiceActiveRef.current) {
+              toggleVoiceRecordingRef.current?.();
+            }
+          }, 1500);
         }
       }
     };
@@ -7110,6 +7135,12 @@ export default function App() {
     if (type === 'schedule') {
       return `Create a project timeline or checklist as requested. Use clean HTML layout (e.g. list, details blocks). Output only the raw HTML.`;
     }
+    if (type === 'hyperlink') {
+      return `You are an expert AI editor. Create an HTML hyperlink anchor <a> based on the user's prompt and any selected text. Wrap the selected text or a relevant word inside the anchor tag. Set the 'href' attribute to the appropriate URL or target. Style the link with inline styles for premium aesthetics: e.g. color: #6366f1; text-decoration: underline; font-weight: 500;. Do not output any markdown blocks or fences, return only the raw HTML.`;
+    }
+    if (type === 'bookmark') {
+      return `You are an expert AI editor. Create an HTML anchor/bookmark element with a unique descriptive ID (e.g. id="section-name" or id="bookmark-name") and clean styling. Design it to look like a premium inline bookmark tag: e.g. using a background, a link color like #4f46e5, a tiny pin/bookmark emoji (e.g. 📌), and the bookmark name. Return only the raw HTML element, no markdown fences or code block wrappers.`;
+    }
     return `Generate clean HTML or text for the document.`;
   };
 
@@ -7180,6 +7211,11 @@ export default function App() {
       const userPrompt = prompt;
       
       const res = await callGemini({ userPrompt, systemPrompt });
+      if (res?.error) {
+        showToast(`AI generation failed: ${res.error}`);
+        container.remove();
+        return;
+      }
       const rawOutput = res?.text || '';
       
       let finalHtml = rawOutput;
@@ -7247,6 +7283,9 @@ ${prompt}
 Generate the updated output according to the instruction. Preserve layout and tags. Output only the updated raw code or text.`;
 
       const res = await callGemini({ userPrompt, systemPrompt });
+      if (res?.error) {
+        throw new Error(res.error);
+      }
       const rawOutput = res?.text || '';
       
       let newHtml = rawOutput;
@@ -7463,6 +7502,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (type === 'proofread') {
         const userPrompt = `Proofread and improve this text: "${textToProcess}"`;
         const res = await callGemini({ userPrompt, systemPrompt });
+        if (res?.error) {
+          throw new Error(res.error);
+        }
         const rawOutput = res?.text || '';
         
         let finalHtml = rawOutput.trim();
@@ -7547,7 +7589,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       return null;
     };
     
-    if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule'].includes(key)) {
+    if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule', 'hyperlink', 'bookmark'].includes(key)) {
       const selectedText = targetRange && !targetRange.collapsed ? targetRange.toString().trim() : '';
       if (selectedText) {
         if (key === 'translate' || key === 'proofread') {
@@ -8700,7 +8742,8 @@ Rules:
     'hey gemini',
     'format',
     'insert',
-    'execute'
+    'execute',
+    'command'
   ];
 
   const ESCAPE_PREFIXES = [
@@ -8896,6 +8939,10 @@ Rules:
     }
 
     if (isVoiceActive) {
+      if (voiceSilenceTimerRef.current) {
+        clearTimeout(voiceSilenceTimerRef.current);
+        voiceSilenceTimerRef.current = null;
+      }
       // If a different voice surface is requested, restart with the new target.
       if (voiceTarget !== nextTarget) {
         try {
@@ -9025,6 +9072,7 @@ Rules:
       }
     }
   };
+  toggleVoiceRecordingRef.current = toggleVoiceRecording;
 
   const toggleMicMute = () => {
     setIsMicMuted((prev) => {
@@ -19999,6 +20047,7 @@ Rules:
                   onClick={() => {
                     isVoiceActiveRef.current = false;
                     try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
+                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
                     if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
                     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
                     const tracks = audioStreamRef.current?.getTracks(); if (tracks) tracks.forEach(t => t.stop());
@@ -20015,6 +20064,7 @@ Rules:
                     event.stopPropagation();
                     isVoiceActiveRef.current = false;
                     try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
+                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
                     if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
                     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
                     const trk = audioStreamRef.current?.getTracks(); if (trk) trk.forEach(t => t.stop());

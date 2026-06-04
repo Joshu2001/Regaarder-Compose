@@ -450,3 +450,35 @@ body { margin: 0; background: #ffffff; }
   display: flex;
   gap: 6px;
 }
+
+/* Bookmark Anchor Styling */
+.bookmark-anchor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(99, 102, 241, 0.08);
+  color: #6366f1;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none !important;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  cursor: pointer;
+  transition: all 150ms ease;
+  user-select: none;
+}
+.bookmark-anchor:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 2px 8px -2px rgba(99, 102, 241, 0.25);
+}
+.app-dark .bookmark-anchor {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+  border-color: rgba(139, 92, 246, 0.3);
+}
+.app-dark .bookmark-anchor:hover {
+  background: rgba(139, 92, 246, 0.25);
+  border-color: rgba(139, 92, 246, 0.5);
+}
