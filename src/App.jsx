@@ -7194,7 +7194,11 @@ export default function App() {
     }
   };
 
-  const handleAIBlockSubmit = async (prompt, type, container) => {
+  const handleAIBlockSubmit = async (prompt, type, containerOrId) => {
+    const containerId = typeof containerOrId === 'string' ? containerOrId : containerOrId.getAttribute('id');
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
     container.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
         <span style="width:16px;height:16px;border-radius:50%;border:2px solid #7c3aed;border-top-color:transparent;animation:spin 1s linear infinite;display:inline-block;"></span>
@@ -7211,11 +7215,18 @@ export default function App() {
       const userPrompt = prompt;
       
       const res = await callGemini({ userPrompt, systemPrompt });
+      const liveContainer = document.getElementById(containerId);
       if (res?.error) {
         showToast(`AI generation failed: ${res.error}`);
-        container.remove();
+        if (liveContainer) {
+          liveContainer.remove();
+          if (blankBodyRef.current) {
+            setDocBodyHtml(blankBodyRef.current.innerHTML);
+          }
+        }
         return;
       }
+      if (!liveContainer) return;
       const rawOutput = res?.text || '';
       
       let finalHtml = rawOutput;
@@ -7231,12 +7242,12 @@ export default function App() {
       }
       
       const previewId = `prev_${Date.now()}`;
-      const originalHtml = container.getAttribute('data-original-html') || '';
-      container.className = 'ai-preview-block';
-      container.setAttribute('id', previewId);
-      container.setAttribute('data-block-type', type);
+      const originalHtml = liveContainer.getAttribute('data-original-html') || '';
+      liveContainer.className = 'ai-preview-block';
+      liveContainer.setAttribute('id', previewId);
+      liveContainer.setAttribute('data-block-type', type);
       if (originalHtml) {
-        container.setAttribute('data-original-html', originalHtml);
+        liveContainer.setAttribute('data-original-html', originalHtml);
       }
       
       renderBlockInPreview(previewId, type, finalHtml);
@@ -7244,7 +7255,13 @@ export default function App() {
     } catch (e) {
       console.error(e);
       showToast('AI generation failed');
-      container.remove();
+      const liveContainer = document.getElementById(containerId);
+      if (liveContainer) {
+        liveContainer.remove();
+        if (blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+        }
+      }
     }
   };
 
@@ -7497,14 +7514,20 @@ Generate the updated output according to the instruction. Preserve layout and ta
       </div>
     `;
     
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+    
     try {
       const systemPrompt = getSystemPromptForType(type);
       if (type === 'proofread') {
         const userPrompt = `Proofread and improve this text: "${textToProcess}"`;
         const res = await callGemini({ userPrompt, systemPrompt });
+        const liveContainer = document.getElementById(previewId);
         if (res?.error) {
           throw new Error(res.error);
         }
+        if (!liveContainer) return;
         const rawOutput = res?.text || '';
         
         let finalHtml = rawOutput.trim();
@@ -7513,22 +7536,31 @@ Generate the updated output according to the instruction. Preserve layout and ta
         }
         renderBlockInPreview(previewId, type, finalHtml);
       } else {
-        const originalHtml = container.getAttribute('data-original-html') || '';
-        container.remove();
+        const liveContainer = document.getElementById(previewId);
+        const originalHtml = liveContainer ? liveContainer.getAttribute('data-original-html') : (container.getAttribute('data-original-html') || '');
+        if (liveContainer) {
+          liveContainer.remove();
+        } else {
+          container.remove();
+        }
         insertInlinePromptBox('translate', `Translate to French: "${textToProcess}"`, originalHtml);
       }
     } catch (e) {
       console.error(e);
       showToast('AI action failed');
-      const originalHtml = container.getAttribute('data-original-html');
-      if (originalHtml) {
+      const liveContainer = document.getElementById(previewId) || container;
+      const originalHtml = liveContainer.getAttribute('data-original-html');
+      if (originalHtml && liveContainer.parentNode) {
         const temp = document.createElement('div');
         temp.innerHTML = originalHtml;
         while (temp.firstChild) {
-          container.parentNode.insertBefore(temp.firstChild, container);
+          liveContainer.parentNode.insertBefore(temp.firstChild, liveContainer);
         }
       }
-      container.remove();
+      liveContainer.remove();
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
     }
   };
 
@@ -7630,6 +7662,20 @@ Generate the updated output according to the instruction. Preserve layout and ta
   }, [slashMenu]);
 
   const handleEditorKeyDown = (event) => {
+    if (event._editorHandled) return;
+    event._editorHandled = true;
+    
+    const target = event.target;
+    if (target && (
+      target.tagName === 'INPUT' || 
+      target.tagName === 'TEXTAREA' || 
+      target.tagName === 'BUTTON' ||
+      target.closest('.inline-ai-prompt-box') ||
+      target.closest('.ai-preview-action-banner')
+    )) {
+      return;
+    }
+
     if (event.key === '/') {
       const selection = window.getSelection();
       if (selection && selection.rangeCount) {
