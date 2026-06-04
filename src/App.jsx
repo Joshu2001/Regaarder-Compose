@@ -562,8 +562,8 @@ export default function App() {
       const rect = cell.getBoundingClientRect();
       setTableToolbar({
         open: true,
-        left: rect.left + window.scrollX,
-        top: rect.top + window.scrollY - 45,
+        left: rect.left + rect.width / 2,
+        top: rect.top,
         tableEl: table,
         cellEl: cell
       });
@@ -7418,7 +7418,17 @@ Ensure headers array matches the columns, and data is a 2D array of rows. Numeri
       return `Translate the text into the requested language. Output only the translated text, preserving formatting and HTML tags.`;
     }
     if (type === 'schedule') {
-      return `Create a project timeline or checklist as requested. Use clean HTML layout (e.g. list, details blocks). Output only the raw HTML.`;
+      return `You are a calendar scheduling AI. Based on the user's description, extract the meeting or event details.
+Respond ONLY with a JSON object in this format (no markdown code blocks, no other text):
+{
+  "title": "Meeting / Event Title",
+  "startDate": "YYYY-MM-DD",
+  "startTime": "HH:MM",
+  "durationMinutes": 60,
+  "category": "Meeting|Milestone|Task",
+  "urgency": "high|medium|low"
+}
+Ensure the startDate is calculated relative to today (${new Date().toISOString().split('T')[0]}, which is a ${new Date().toLocaleDateString(undefined, {weekday: 'long'})}).`;
     }
     if (type === 'hyperlink') {
       return `You are an expert AI editor. Create an HTML hyperlink anchor <a> based on the user's prompt and any selected text. Wrap the selected text or a relevant word inside the anchor tag. Set the 'href' attribute to the appropriate URL or target. Style the link with inline styles for premium aesthetics: e.g. color: #6366f1; text-decoration: underline; font-weight: 500;. Do not output any markdown blocks or fences, return only the raw HTML.`;
@@ -7430,9 +7440,9 @@ Ensure headers array matches the columns, and data is a 2D array of rows. Numeri
   };
 
   const parseImageOutput = (rawOutput) => {
-    const keyword = rawOutput.trim().replace(/['"\(\)\[\]]/g, '');
+    const keyword = rawOutput.trim().replace(/['"\(\)\[\]]/g, '').replace(/\s+/g, ',');
     const imgUrl = `https://loremflickr.com/800/600/${encodeURIComponent(keyword)}`;
-    return `<img src="${imgUrl}" style="max-width:100%; border-radius:12px; margin: 12px 0; border: 1px solid #e2e8f0;" alt="${keyword}" />`;
+    return `<img src="${imgUrl}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800';" style="max-width:100%; border-radius:12px; margin: 12px 0; border: 1px solid #e2e8f0;" alt="${keyword}" />`;
   };
 
   const parseGraphOutput = (rawOutput) => {
@@ -7538,6 +7548,7 @@ Ensure headers array matches the columns, and data is a 2D array of rows. Numeri
       
       let finalHtml = '';
       let chartState = null;
+      let scheduleState = null;
       
       if (type === 'image') {
         finalHtml = parseImageOutput(rawOutput);
@@ -7549,6 +7560,31 @@ Ensure headers array matches the columns, and data is a 2D array of rows. Numeri
         } catch (e) {
           console.error("Failed to parse Gemini chart JSON, rendering fallback:", e);
           chartState = standardizeChartData('line', [['Jan', 10], ['Feb', 20], ['Mar', 15]], 'Sample Chart');
+        }
+      } else if (type === 'schedule') {
+        try {
+          const cleanJson = rawOutput.trim().replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+          const parsed = JSON.parse(cleanJson);
+          scheduleState = parsed;
+          finalHtml = `
+            <div class="schedule-preview-card" style="font-family:sans-serif; background:#fbfaff; border:1px solid #e6e3fb; border-radius:12px; padding:16px; margin:8px 0; max-width:400px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                <span style="font-size:20px;">📅</span>
+                <span style="font-weight:700; color:#1e293b; font-size:15px;">Confirm Schedule Event</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:#475569;">
+                <div><strong>Title:</strong> ${parsed.title || 'Meeting'}</div>
+                <div><strong>Date:</strong> ${parsed.startDate || ''}</div>
+                <div><strong>Time:</strong> ${parsed.startTime || ''}</div>
+                <div><strong>Duration:</strong> ${parsed.durationMinutes || 60} mins</div>
+                <div><strong>Category:</strong> ${parsed.category || 'Meeting'}</div>
+              </div>
+            </div>
+          `;
+        } catch (e) {
+          console.error("Failed to parse Gemini schedule JSON:", e);
+          scheduleState = { title: prompt, startDate: new Date().toISOString().split('T')[0], startTime: '10:00', durationMinutes: 60, category: 'Meeting' };
+          finalHtml = `<div style="padding:12px; color:#dc2626;">Error parsing schedule JSON. Click Retry / Edit to refine.</div>`;
         }
       } else {
         finalHtml = rawOutput.trim();
@@ -7564,6 +7600,9 @@ Ensure headers array matches the columns, and data is a 2D array of rows. Numeri
       liveContainer.setAttribute('data-block-type', type);
       if (chartState) {
         liveContainer.setAttribute('data-chart-data', JSON.stringify(chartState));
+      }
+      if (scheduleState) {
+        liveContainer.setAttribute('data-schedule-data', JSON.stringify(scheduleState));
       }
       if (originalHtml) {
         liveContainer.setAttribute('data-original-html', originalHtml);
@@ -7597,9 +7636,12 @@ Ensure headers array matches the columns, and data is a 2D array of rows. Numeri
     
     let currentContent = '';
     let currentChartData = '';
+    let currentScheduleData = '';
     
     if (isChart) {
       currentChartData = container.getAttribute('data-chart-data') || '';
+    } else if (type === 'schedule') {
+      currentScheduleData = container.getAttribute('data-schedule-data') || '';
     } else {
       const clone = container.cloneNode(true);
       clone.querySelector('.ai-preview-action-banner')?.remove();
@@ -7632,6 +7674,15 @@ Refinement Instruction:
 ${prompt}
 
 Based on the instructions, update the chart type, title, headers, or data values. Return ONLY a valid JSON object in the exact same schema. Output no other text.`;
+      } else if (type === 'schedule') {
+        userPrompt = `You are refining an event details dataset.
+Current event data (JSON):
+${currentScheduleData}
+
+Refinement Instruction:
+${prompt}
+
+Based on the instructions, update the event details (title, date, time, duration, category). Return ONLY a valid JSON object in the exact same schema. Output no other text.`;
       } else {
         userPrompt = `You are refining an existing document block.
 Current block content:
@@ -7651,6 +7702,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       
       let newHtml = rawOutput;
       let chartState = null;
+      let scheduleState = null;
       
       if (type === 'image') {
         newHtml = parseImageOutput(rawOutput);
@@ -7663,6 +7715,31 @@ Generate the updated output according to the instruction. Preserve layout and ta
           newHtml = '';
         } catch (e) {
           console.error("Failed to parse refined chart JSON:", e);
+          newHtml = currentContent;
+        }
+      } else if (type === 'schedule') {
+        try {
+          const cleanJson = rawOutput.trim().replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+          const parsed = JSON.parse(cleanJson);
+          scheduleState = parsed;
+          container.setAttribute('data-schedule-data', JSON.stringify(parsed));
+          newHtml = `
+            <div class="schedule-preview-card" style="font-family:sans-serif; background:#fbfaff; border:1px solid #e6e3fb; border-radius:12px; padding:16px; margin:8px 0; max-width:400px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
+                <span style="font-size:20px;">📅</span>
+                <span style="font-weight:700; color:#1e293b; font-size:15px;">Confirm Schedule Event</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:#475569;">
+                <div><strong>Title:</strong> ${parsed.title || 'Meeting'}</div>
+                <div><strong>Date:</strong> ${parsed.startDate || ''}</div>
+                <div><strong>Time:</strong> ${parsed.startTime || ''}</div>
+                <div><strong>Duration:</strong> ${parsed.durationMinutes || 60} mins</div>
+                <div><strong>Category:</strong> ${parsed.category || 'Meeting'}</div>
+              </div>
+            </div>
+          `;
+        } catch (e) {
+          console.error("Failed to parse refined schedule JSON:", e);
           newHtml = currentContent;
         }
       } else {
@@ -7887,7 +7964,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
 
   const executeSlashCommand = (key) => {
     const savedRange = slashMenuRef.current?.range;
-    const savedFilterText = slashMenuRef.current?.filterText || '';
     
     setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
     
@@ -7901,30 +7977,31 @@ Generate the updated output according to the instruction. Preserve layout and ta
       selection.removeAllRanges();
       selection.addRange(targetRange);
       
-      // Clean up the "/" character and any filter text typed into the editor
-      if (targetRange.collapsed) {
-        try {
-          const textNode = targetRange.startContainer;
-          if (textNode.nodeType === Node.TEXT_NODE) {
-            const offset = targetRange.startOffset;
-            // The "/" was typed at offset, filter text follows it
-            // Total chars to remove = 1 ("/") + filterText.length
-            const charsToRemove = 1 + savedFilterText.length;
-            const textContent = textNode.textContent;
-            if (offset <= textContent.length && textContent.charAt(offset) === '/') {
-              textNode.textContent = textContent.slice(0, offset) + textContent.slice(offset + charsToRemove);
-              // Reposition cursor
-              const newRange = document.createRange();
-              newRange.setStart(textNode, Math.min(offset, textNode.textContent.length));
-              newRange.collapse(true);
-              selection.removeAllRanges();
-              selection.addRange(newRange);
-            }
+      // Clean up the "/" character that was typed in the editor
+      const deleteRange = targetRange.cloneRange();
+      try {
+        const startNode = deleteRange.startContainer;
+        const startOffset = deleteRange.startOffset;
+        
+        if (startNode.nodeType === Node.TEXT_NODE) {
+          if (startNode.textContent.charAt(startOffset) === '/') {
+            deleteRange.setEnd(startNode, startOffset + 1);
+            selection.removeAllRanges();
+            selection.addRange(deleteRange);
+            document.execCommand('delete', false, null);
           }
-        } catch (e) {
-          // Fallback: just position cursor
-          console.warn('Slash cleanup fallback:', e);
+        } else {
+          const childNode = startNode.childNodes[startOffset];
+          if (childNode && childNode.nodeType === Node.TEXT_NODE && childNode.textContent.startsWith('/')) {
+            deleteRange.setStart(childNode, 0);
+            deleteRange.setEnd(childNode, 1);
+            selection.removeAllRanges();
+            selection.addRange(deleteRange);
+            document.execCommand('delete', false, null);
+          }
         }
+      } catch (e) {
+        console.warn('Slash cleanup failed:', e);
       }
     }
     
@@ -8110,6 +8187,30 @@ Generate the updated output according to the instruction. Preserve layout and ta
         if (blockType === 'graph') {
           container.className = 'interactive-chart-block';
           container.removeAttribute('contenteditable');
+        } else if (blockType === 'schedule') {
+          const dataStr = container.getAttribute('data-schedule-data');
+          if (dataStr) {
+            try {
+              const parsed = JSON.parse(dataStr);
+              const newEvent = {
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                title: parsed.title || 'Scheduled Meeting',
+                slot: parsed.startTime || '10:00',
+                dueDate: parsed.startDate || new Date().toISOString().split('T')[0],
+                category: parsed.category || 'Meeting',
+                urgency: parsed.urgency || 'medium',
+                durationMinutes: parsed.durationMinutes || 60,
+                slotLabel: `${parsed.startDate || ''} - ${parsed.startTime || ''}`
+              };
+              setUpcomingEvents(existing => [newEvent, ...existing]);
+              setActiveRightTab('calendar');
+              setRightSidebarOpen(true);
+              showToast(`Scheduled: ${newEvent.title}`);
+            } catch (e) {
+              console.error(e);
+            }
+          }
+          container.remove();
         } else {
           const parent = container.parentNode;
           while (container.firstChild) {
@@ -17928,7 +18029,7 @@ Rules:
         {tableToolbar.open && (
           <div
             ref={tableToolbarRef}
-            className="fixed z-[290] flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-lg shadow-xl"
+            className="fixed z-[290] flex items-center gap-1.5 p-1.5 bg-white/95 border border-[#e6e3fb] rounded-[14px] shadow-[0_12px_30px_-6px_rgba(76,29,149,0.15)] backdrop-blur-sm"
             style={{
               left: `${tableToolbar.left}px`,
               top: `${tableToolbar.top}px`,
@@ -17940,117 +18041,186 @@ Rules:
               e.stopPropagation();
             }}
           >
-            <div className="flex items-center border-r border-slate-100 pr-1 mr-1 gap-0.5">
+            {/* Rows Group */}
+            <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
               <button
                 type="button"
                 onClick={() => addRowAbove(tableToolbar.tableEl, tableToolbar.cellEl)}
-                title="Add Row Above"
-                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-medium text-[11px]"
+                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
               >
-                +Row ⬆
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="10" rx="2"/>
+                  <line x1="3" y1="16" x2="21" y2="16"/>
+                  <path d="M12 2v6M9 5l3-3 3 3"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Insert Row Above
+                </span>
               </button>
+              
               <button
                 type="button"
                 onClick={() => addRowBelow(tableToolbar.tableEl, tableToolbar.cellEl)}
-                title="Add Row Below"
-                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-medium text-[11px]"
+                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
               >
-                +Row ⬇
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="10" rx="2"/>
+                  <line x1="3" y1="8" x2="21" y2="8"/>
+                  <path d="M12 21v-6M9 18l3 3 3-3"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Insert Row Below
+                </span>
               </button>
+
               <button
                 type="button"
                 onClick={() => deleteRow(tableToolbar.tableEl, tableToolbar.cellEl)}
-                title="Delete Row"
-                className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-600 font-medium text-[11px]"
+                className="group relative p-1.5 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-md transition-all duration-150 active:scale-90"
               >
-                -Row
-              </button>
-            </div>
-            
-            <div className="flex items-center border-r border-slate-100 pr-1 mr-1 gap-0.5">
-              <button
-                type="button"
-                onClick={() => addColLeft(tableToolbar.tableEl, tableToolbar.cellEl)}
-                title="Add Column Left"
-                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-medium text-[11px]"
-              >
-                +Col ⬅
-              </button>
-              <button
-                type="button"
-                onClick={() => addColRight(tableToolbar.tableEl, tableToolbar.cellEl)}
-                title="Add Column Right"
-                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-medium text-[11px]"
-              >
-                +Col ➡
-              </button>
-              <button
-                type="button"
-                onClick={() => deleteCol(tableToolbar.tableEl, tableToolbar.cellEl)}
-                title="Delete Column"
-                className="p-1 hover:bg-red-50 hover:text-red-600 rounded text-slate-600 font-medium text-[11px]"
-              >
-                -Col
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <line x1="3" y1="12" x2="21" y2="12"/>
+                  <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Delete Row
+                </span>
               </button>
             </div>
 
-            <div className="flex items-center border-r border-slate-100 pr-1 mr-1 gap-0.5">
+            {/* Columns Group */}
+            <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
+              <button
+                type="button"
+                onClick={() => addColLeft(tableToolbar.tableEl, tableToolbar.cellEl)}
+                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="11" y="3" width="10" height="18" rx="2"/>
+                  <line x1="16" y1="3" x2="16" y2="21"/>
+                  <path d="M2 12h6M5 9l-3 3 3 3"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Insert Column Left
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => addColRight(tableToolbar.tableEl, tableToolbar.cellEl)}
+                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="10" height="18" rx="2"/>
+                  <line x1="8" y1="3" x2="8" y2="21"/>
+                  <path d="M22 12h-6M19 9l3 3-3 3"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Insert Column Right
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => deleteCol(tableToolbar.tableEl, tableToolbar.cellEl)}
+                className="group relative p-1.5 hover:bg-red-50 text-slate-500 hover:text-red-600 rounded-md transition-all duration-150 active:scale-90"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <line x1="12" y1="3" x2="12" y2="21"/>
+                  <line x1="12" y1="8" x2="12" y2="16" stroke="currentColor" strokeWidth="2"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Delete Column
+                </span>
+              </button>
+            </div>
+
+            {/* Sizing Group */}
+            <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
               <button
                 type="button"
                 onClick={() => adjustColWidth(tableToolbar.tableEl, tableToolbar.cellEl, 20)}
-                title="Make Column Wider"
-                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-semibold text-xs"
+                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
               >
-                W+
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M5 12l3-3M5 12l3 3M19 12l-3-3M19 12l-3 3"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Increase Width
+                </span>
               </button>
+
               <button
                 type="button"
                 onClick={() => adjustColWidth(tableToolbar.tableEl, tableToolbar.cellEl, -20)}
-                title="Make Column Narrower"
-                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-semibold text-xs"
+                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
               >
-                W-
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 5l-3 3 3 3M12 19l-3-3 3-3"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Decrease Width
+                </span>
               </button>
+
               <button
                 type="button"
                 onClick={() => adjustRowHeight(tableToolbar.tableEl, tableToolbar.cellEl, 10)}
-                title="Make Row Taller"
-                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-semibold text-xs"
+                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
               >
-                H+
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M12 5l-3 3 3-3M12 19l-3-3 3 3"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Increase Height
+                </span>
               </button>
+
               <button
                 type="button"
                 onClick={() => adjustRowHeight(tableToolbar.tableEl, tableToolbar.cellEl, -10)}
-                title="Make Row Shorter"
-                className="p-1 hover:bg-slate-100 rounded text-slate-600 font-semibold text-xs"
+                className="group relative p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
               >
-                H-
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 19V5M5 12l3-3 3 3M19 12l-3-3 3 3"/>
+                </svg>
+                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                  Decrease Height
+                </span>
               </button>
             </div>
-            
-            <div className="relative group flex items-center">
+
+            {/* Colors Picker */}
+            <div className="relative group flex items-center border-r border-[#f0eefc] pr-1.5">
               <button
                 type="button"
-                className="p-1 hover:bg-slate-100 rounded text-slate-600 text-xs"
-                title="Cell Color"
+                className="p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
               >
-                🎨
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.36424 19.5108 5.61707 19.7662 5.61707 20C5.61707 20.4853 5.21443 21 4.71707 21C4.46747 21 4.22557 20.89 3.99307 20.76C3.01323 20.2114 2 19 2 12C2 5 7 2 12 2C17 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22Z"/>
+                  <circle cx="7.5" cy="10.5" r="1.5" fill="currentColor"/>
+                  <circle cx="11.5" cy="7.5" r="1.5" fill="currentColor"/>
+                  <circle cx="16.5" cy="9.5" r="1.5" fill="currentColor"/>
+                  <circle cx="15.5" cy="14.5" r="1.5" fill="currentColor"/>
+                </svg>
               </button>
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:grid grid-cols-4 gap-1 p-1.5 bg-white border border-slate-200 rounded shadow-lg z-50">
-                {['#ffffff', '#f1f5f9', '#fee2e2', '#fef3c7', '#dcfce7', '#dbeafe', '#e0e7ff', '#f3e8ff'].map(color => (
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:grid grid-cols-4 gap-1 p-1.5 bg-white border border-[#e6e3fb] rounded-lg shadow-lg z-[300]">
+                {['#ffffff', '#f8fafc', '#fee2e2', '#fef3c7', '#dcfce7', '#dbeafe', '#e0e7ff', '#f3e8ff'].map(color => (
                   <button
                     key={color}
                     type="button"
                     onClick={() => changeCellColor(tableToolbar.cellEl, color)}
                     style={{ backgroundColor: color }}
-                    className="w-5 h-5 rounded border border-slate-300 hover:scale-110 transition-transform"
+                    className="w-5 h-5 rounded border border-[#e6e3fb] hover:scale-110 transition-transform active:scale-95"
                     title={color}
                   />
                 ))}
               </div>
             </div>
-            
+
+            {/* Trash Action */}
             <button
               type="button"
               onClick={() => {
@@ -18058,10 +18228,15 @@ Rules:
                 setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
                 syncEditorHtml();
               }}
-              title="Delete Table"
-              className="p-1 hover:bg-red-100 hover:text-red-700 rounded text-red-600 font-semibold text-xs"
+              className="group relative p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-md transition-all duration-150 active:scale-90"
             >
-              🗑️
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Delete Table
+              </span>
             </button>
           </div>
         )}
