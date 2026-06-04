@@ -2284,8 +2284,11 @@ export default function App() {
   const roomJoinInputRef = useRef(null);
   const meetingShareFileInputRef = useRef(null);
 
-  const commitEditableTextForActiveDoc = (target, setter) => {
+  const commitEditableTextForActiveDoc = (target, setter, event) => {
     if (!target || typeof setter !== 'function') {
+      return;
+    }
+    if (event && event.relatedTarget && target.contains(event.relatedTarget)) {
       return;
     }
     const sourceDocId = Number(target.dataset.docId || 0);
@@ -2296,8 +2299,11 @@ export default function App() {
     setter(target.textContent || '');
   };
 
-  const commitEditableHtmlForActiveDoc = (target, setter) => {
+  const commitEditableHtmlForActiveDoc = (target, setter, event) => {
     if (!target || typeof setter !== 'function') {
+      return;
+    }
+    if (event && event.relatedTarget && target.contains(event.relatedTarget)) {
       return;
     }
     const sourceDocId = Number(target.dataset.docId || 0);
@@ -7165,6 +7171,10 @@ export default function App() {
       </div>
     `;
     
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+    
     try {
       const systemPrompt = getSystemPromptForType(type);
       const userPrompt = prompt;
@@ -7219,6 +7229,10 @@ export default function App() {
           <span class="ai-preview-banner-label" style="animation:pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;">Regenerating block...</span>
         </div>
       `;
+    }
+    
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
     
     try {
@@ -19444,7 +19458,7 @@ Rules:
               onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocTitle(target.textContent || ''))}
-              onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocTitle)}
+              onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocTitle, e)}
               dir="ltr"
               data-doc-id={activeDocId || ''}
               className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
@@ -19461,7 +19475,7 @@ Rules:
               onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocSubtitle(target.textContent || ''))}
-              onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocSubtitle)}
+              onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocSubtitle, e)}
               dir="ltr"
               data-doc-id={activeDocId || ''}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
@@ -19479,7 +19493,7 @@ Rules:
                   onKeyDown={handleEditorKeyDown}
                   onInput={(e) => normalizeEditableDirection(e.currentTarget)}
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
-                  onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml)}
+                  onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}
                   dir="ltr"
                   data-doc-id={activeDocId || ''}
                   className="mb-4 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed relative"
