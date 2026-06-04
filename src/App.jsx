@@ -7851,7 +7851,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (insideEditor) {
         const previewId = `prev_${Date.now()}`;
         const container = document.createElement('div');
-        container.className = 'ai-preview-block border border-violet-300 rounded-2xl p-4 my-4 relative';
+        container.className = 'ai-preview-block';
         container.setAttribute('id', previewId);
         container.setAttribute('data-block-type', detectedBlockType);
         
