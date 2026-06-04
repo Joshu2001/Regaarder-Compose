@@ -7502,21 +7502,41 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
   const insertInlineShapeBoxWithType = (shapeType) => {
     if (blankBodyRef.current) blankBodyRef.current.focus();
     const boxId = 'shape-' + Date.now();
-    const htmlText = `<div id="${boxId}" class="inline-ai-block ai-block-loading" contenteditable="false"><div class="ai-block-shimmer"></div><div class="ai-block-content" style="padding:16px;text-align:center;color:#6b7280;font-size:14px;font-family:sans-serif;">Generating ${shapeType} shape...</div></div><p><br></p>`;
+    let svgHtml = '';
+    if (shapeType === 'Flowchart') {
+      svgHtml = '<svg width="120" height="80" viewBox="0 0 120 80" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="110" height="70" rx="8" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/><text x="60" y="45" font-family="sans-serif" font-size="14" fill="#1e293b" text-anchor="middle">Process</text></svg>';
+    } else if (shapeType === 'Decision') {
+      svgHtml = '<svg width="120" height="80" viewBox="0 0 120 80" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><polygon points="60,5 115,40 60,75 5,40" fill="#f8fafc" stroke="#8b5cf6" stroke-width="2"/><text x="60" y="45" font-family="sans-serif" font-size="14" fill="#1e293b" text-anchor="middle">Decision</text></svg>';
+    } else if (shapeType === 'Database') {
+      svgHtml = '<svg width="80" height="100" viewBox="0 0 80 100" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><path d="M5,25 C5,10 75,10 75,25 L75,75 C75,90 5,90 5,75 Z" fill="#f8fafc" stroke="#10b981" stroke-width="2"/><path d="M5,25 C5,40 75,40 75,25" fill="none" stroke="#10b981" stroke-width="2"/><text x="40" y="60" font-family="sans-serif" font-size="14" fill="#1e293b" text-anchor="middle">Data</text></svg>';
+    } else if (shapeType === 'Cloud') {
+      svgHtml = '<svg width="130" height="90" viewBox="0 0 130 90" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><path d="M 40 40 C 40 20 75 20 85 30 C 100 25 125 35 120 60 C 125 80 95 85 85 80 C 75 95 40 95 35 80 C 15 85 5 65 15 50 C 5 35 25 25 40 40 Z" fill="#f8fafc" stroke="#0ea5e9" stroke-width="2"/><text x="65" y="60" font-family="sans-serif" font-size="14" fill="#1e293b" text-anchor="middle">Cloud</text></svg>';
+    }
+
+    const htmlText = `<div id="${boxId}" contenteditable="false" style="display:inline-block; cursor:pointer;">${svgHtml}</div><p><br></p>`;
     document.execCommand('insertHTML', false, htmlText);
-    const prmpt = `Generate a ${shapeType} shape using SVG.`;
-    handleAIBlockSubmit(prmpt, 'shape', boxId);
     setShapesModalOpen(false);
+    setOpenDropdown(null);
   };
 
   const insertInlineChartBoxWithType = (chartType) => {
     if (blankBodyRef.current) blankBodyRef.current.focus();
     const boxId = 'chart-' + Date.now();
-    const htmlText = `<div id="${boxId}" class="inline-ai-block ai-block-loading" contenteditable="false"><div class="ai-block-shimmer"></div><div class="ai-block-content" style="padding:16px;text-align:center;color:#6b7280;font-size:14px;font-family:sans-serif;">Generating ${chartType}...</div></div><p><br></p>`;
+    let svgHtml = '';
+    if (chartType === 'Bar Chart') {
+      svgHtml = '<svg width="200" height="150" viewBox="0 0 200 150" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="10" width="2" height="120" fill="#94a3b8"/><rect x="20" y="130" width="160" height="2" fill="#94a3b8"/><rect x="40" y="70" width="30" height="60" fill="#3b82f6" rx="2"/><rect x="90" y="30" width="30" height="100" fill="#8b5cf6" rx="2"/><rect x="140" y="90" width="30" height="40" fill="#10b981" rx="2"/></svg>';
+    } else if (chartType === 'Line Chart') {
+      svgHtml = '<svg width="200" height="150" viewBox="0 0 200 150" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="10" width="2" height="120" fill="#94a3b8"/><rect x="20" y="130" width="160" height="2" fill="#94a3b8"/><polyline points="30,110 80,50 130,80 180,20" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="110" r="4" fill="#f59e0b"/><circle cx="80" cy="50" r="4" fill="#f59e0b"/><circle cx="130" cy="80" r="4" fill="#f59e0b"/><circle cx="180" cy="20" r="4" fill="#f59e0b"/></svg>';
+    } else if (chartType === 'Pie Chart') {
+      svgHtml = '<svg width="150" height="150" viewBox="0 0 150 150" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><path d="M75,75 L75,10 A65,65 0 0,1 140,75 Z" fill="#3b82f6"/><path d="M75,75 L140,75 A65,65 0 0,1 30,125 Z" fill="#8b5cf6"/><path d="M75,75 L30,125 A65,65 0 0,1 75,10 Z" fill="#10b981"/></svg>';
+    } else if (chartType === 'Scatter Plot') {
+      svgHtml = '<svg width="200" height="150" viewBox="0 0 200 150" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="10" width="2" height="120" fill="#94a3b8"/><rect x="20" y="130" width="160" height="2" fill="#94a3b8"/><circle cx="50" cy="90" r="5" fill="#ec4899"/><circle cx="80" cy="60" r="5" fill="#ec4899"/><circle cx="110" cy="100" r="5" fill="#ec4899"/><circle cx="140" cy="40" r="5" fill="#ec4899"/><circle cx="160" cy="70" r="5" fill="#ec4899"/><circle cx="70" cy="110" r="5" fill="#ec4899"/></svg>';
+    }
+
+    const htmlText = `<div id="${boxId}" contenteditable="false" style="display:inline-block; cursor:pointer;">${svgHtml}</div><p><br></p>`;
     document.execCommand('insertHTML', false, htmlText);
-    const prmpt = `Generate a ${chartType} for a presentation.`;
-    handleAIBlockSubmit(prmpt, 'graph', boxId);
     setChartsModalOpen(false);
+    setOpenDropdown(null);
   };
 
   const handleAIBlockSubmit = async (prompt, type, containerOrId) => {
@@ -17077,6 +17097,7 @@ Rules:
                                       setChartsModalOpen(true);
                                       return;
                                     }
+                                    setOpenDropdown(null);
                                     runSmartAssistAction(option.prompt, { actionKey: option.key });
                                   }}
                                   className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm transition-colors text-left ${isLiveAiReady ? 'text-gray-700 hover:border-violet-200 hover:bg-violet-50 border-gray-100' : 'text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50'}`}
@@ -22076,6 +22097,7 @@ Rules:
                             setChartsModalOpen(true);
                             return;
                           }
+                          setOpenDropdown(null);
                           runSmartAssistAction(option.prompt, { actionKey: option.key });
                         }}
                         className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm transition-colors text-left ${isLiveAiReady ? `${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'} text-gray-700 hover:border-violet-200 hover:bg-violet-50` : 'text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50'}`}
