@@ -5473,6 +5473,22 @@ export default function App() {
         }
       }
 
+      // When in command mode, do NOT auto-restart recognition.
+      // Let the silence timer handle the final stop and submission.
+      // Auto-restarting causes onresult to fire again with stale transcripts,
+      // which clears the silence timer in an infinite reset loop.
+      if (isVoiceCommandModeRef.current) {
+        // If the silence timer is not running, fire it now since recognition ended
+        if (!voiceSilenceTimerRef.current && isVoiceActiveRef.current) {
+          voiceSilenceTimerRef.current = setTimeout(() => {
+            if (isVoiceActiveRef.current) {
+              toggleVoiceRecordingRef.current?.();
+            }
+          }, 500);
+        }
+        return;
+      }
+
       if (isVoiceActiveRef.current && !isMicMutedRef.current && !mockIntervalRef.current) {
         try {
           recognition.start();
@@ -7118,7 +7134,13 @@ export default function App() {
 
   const getSystemPromptForType = (type) => {
     if (type === 'table') {
-      return `You are an expert AI editor. Create an HTML table (using <table>, <thead>, <tbody>, <tr>, <th>, <td> tags) populated with the requested data. Style the table beautifully with minimal in-line styles (e.g. borders, paddings, alternating backgrounds #FAFAFC). Return only the raw HTML code without markdown blocks or fences.`;
+      return `You are an expert AI editor. Create an HTML table populated with realistic sample data. IMPORTANT REQUIREMENTS:
+- ALWAYS include a <thead> with <th> column headers.
+- ALWAYS include a <tbody> with AT LEAST 5 data rows, each with AT LEAST 3 columns (more is better).
+- Use <table>, <thead>, <tbody>, <tr>, <th>, <td> tags.
+- If the user specifies the number of rows or columns, follow that exactly.
+- Style the table with inline styles: border-collapse: collapse; width: 100%; and cells with border: 1px solid #e2e8f0; padding: 10px 14px; font-size: 13px;. Use alternating row backgrounds (#ffffff and #f8fafc). Header row: background #f1f5f9; font-weight: 600; color: #334155;.
+- Return only the raw HTML code without markdown code blocks or fences.`;
     }
     if (type === 'graph') {
       return `You are an expert data visualization designer. Analyze the prompt and generate an inline responsive SVG chart (e.g. a bar chart, line chart, or pie chart). Return only the raw SVG XML string. Ensure it uses beautiful curated colors (like violet #8B5CF6, indigo #6366F1, emerald #10B981), clean modern typography, grid lines, and is fully self-contained within an <svg> tag. Return only the raw XML without markdown blocks or fences.`;
@@ -7359,26 +7381,33 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const handleInsert = async () => {
         const query = input.value.trim();
         if (query) {
-          container.innerHTML = `<span style="font-size:12px;color:#6b7280;">Searching...</span>`;
+          const liveBox = document.getElementById(boxId);
+          if (liveBox) {
+            liveBox.innerHTML = `<span style="font-size:12px;color:#6b7280;">Searching...</span>`;
+          }
           try {
             const userPrompt = `Translate this keyword/icon name to a single Unicode Emoji that represents it best: "${query}". Return ONLY the single emoji character.`;
             const systemPrompt = `You are a helper that outputs exactly one Unicode Emoji character corresponding to the description.`;
             const res = await callGemini({ userPrompt, systemPrompt });
             const emoji = res?.text?.trim() || '\u2B50';
             
-            const parent = container.parentNode;
-            const textNode = document.createTextNode(emoji);
-            parent.insertBefore(textNode, container);
-            container.remove();
+            const liveContainer = document.getElementById(boxId);
+            if (liveContainer && liveContainer.parentNode) {
+              const textNode = document.createTextNode(emoji);
+              liveContainer.parentNode.insertBefore(textNode, liveContainer);
+              liveContainer.remove();
+            }
             
             if (blankBodyRef.current) {
               setDocBodyHtml(blankBodyRef.current.innerHTML);
             }
           } catch (e) {
-            container.remove();
+            const liveContainer = document.getElementById(boxId);
+            if (liveContainer) liveContainer.remove();
           }
         } else {
-          container.remove();
+          const liveContainer = document.getElementById(boxId);
+          if (liveContainer) liveContainer.remove();
         }
       };
       
@@ -7467,7 +7496,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const handleGenerateClick = () => {
         const prompt = input.value.trim();
         if (prompt) {
-          handleAIBlockSubmit(prompt, type, container);
+          handleAIBlockSubmit(prompt, type, boxId);
         }
       };
       
@@ -7662,8 +7691,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
   }, [slashMenu]);
 
   const handleEditorKeyDown = (event) => {
-    if (event._editorHandled) return;
-    event._editorHandled = true;
+    // Use nativeEvent for dedup flag — React 18 creates separate SyntheticEvent
+    // objects for capture vs bubble handlers, so we must tag the native event.
+    if (event.nativeEvent._editorHandled) return;
+    event.nativeEvent._editorHandled = true;
     
     const target = event.target;
     if (target && (
@@ -7676,41 +7707,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
       return;
     }
 
-    if (event.key === '/') {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount) {
-        const range = selection.getRangeAt(0);
-        
-        // Preserve selection text if highlighted (prevent browser deletion of selection)
-        if (!range.collapsed) {
-          event.preventDefault();
-        }
-        
-        // Foolproof cursor rect calculation
-        let rect = range.getBoundingClientRect();
-        if (rect.width === 0 && rect.height === 0) {
-          const dummy = document.createElement('span');
-          dummy.innerHTML = '&#8203;'; // zero-width space
-          range.insertNode(dummy);
-          rect = dummy.getBoundingClientRect();
-          dummy.parentNode.removeChild(dummy);
-        }
-        
-        const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
-        const topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
-        
-        setSlashMenu({
-          open: true,
-          left: leftCoord,
-          top: topCoord,
-          filterText: '',
-          activeIndex: 0,
-          range: range.cloneRange()
-        });
-      }
-    }
-    
-    if (slashMenuRef.current?.open) {
+    // Handle slash menu key interactions FIRST (before opening a new menu)
+    if (slashMenuRef.current?.open && event.key !== '/') {
       const filteredOptions = SLASH_OPTIONS.filter(opt => 
         opt.label.toLowerCase().includes(slashMenuRef.current.filterText.toLowerCase())
       );
@@ -7769,6 +7767,42 @@ Generate the updated output according to the instruction. Preserve layout and ta
           filterText: prev.filterText + event.key,
           activeIndex: 0
         }));
+      }
+      return;
+    }
+
+    // Open slash menu when '/' is typed
+    if (event.key === '/') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        
+        // Preserve selection text if highlighted (prevent browser deletion of selection)
+        if (!range.collapsed) {
+          event.preventDefault();
+        }
+        
+        // Foolproof cursor rect calculation
+        let rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          const dummy = document.createElement('span');
+          dummy.innerHTML = '&#8203;'; // zero-width space
+          range.insertNode(dummy);
+          rect = dummy.getBoundingClientRect();
+          dummy.parentNode.removeChild(dummy);
+        }
+        
+        const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
+        const topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
+        
+        setSlashMenu({
+          open: true,
+          left: leftCoord,
+          top: topCoord,
+          filterText: '',
+          activeIndex: 0,
+          range: range.cloneRange()
+        });
       }
     }
   };
@@ -7936,19 +7970,24 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const targetNode = range?.commonAncestorContainer;
       const insideEditor = targetNode && blankBodyRef.current?.contains(targetNode);
       
-      if (insideEditor) {
+      if (blankBodyRef.current) {
         const previewId = `prev_${Date.now()}`;
         const container = document.createElement('div');
         container.className = 'ai-preview-block';
         container.setAttribute('id', previewId);
         container.setAttribute('data-block-type', detectedBlockType);
         
-        range.deleteContents();
-        range.insertNode(container);
+        // Always append at the END of the editor body for voice commands.
+        // The cursor position during voice recording is unreliable.
+        blankBodyRef.current.appendChild(container);
         
         const spacer = document.createElement('p');
         spacer.innerHTML = '<br>';
-        container.parentNode.insertBefore(spacer, container.nextSibling);
+        blankBodyRef.current.appendChild(spacer);
+        
+        if (blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+        }
         
         handleAIBlockSubmit(promptText, detectedBlockType, container);
         return;
@@ -19490,6 +19529,16 @@ Rules:
                 return;
               }
               const target = event.target;
+              // Skip page-insert logic for inputs/buttons/prompt boxes inside the editor
+              if (target && (
+                target.tagName === 'INPUT' || 
+                target.tagName === 'TEXTAREA' || 
+                target.tagName === 'BUTTON' ||
+                target.closest('.inline-ai-prompt-box') ||
+                target.closest('.ai-preview-action-banner')
+              )) {
+                return;
+              }
               const isBodyTarget = Boolean(blankBodyRef.current && (target === blankBodyRef.current || blankBodyRef.current.contains(target)));
               if (!isBodyTarget) {
                 return;
