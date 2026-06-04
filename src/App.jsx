@@ -7189,6 +7189,7 @@ export default function App() {
       : '';
     
     container.className = 'ai-preview-block';
+    container.setAttribute('contenteditable', 'false');
     container.innerHTML = `
       <div class="ai-preview-content">${contentHtml}</div>
       <div class="ai-preview-action-banner" contenteditable="false">
@@ -7204,7 +7205,7 @@ export default function App() {
         </div>
         <div class="ai-preview-retry-container hidden" id="retry_input_container_${previewId}">
           <div class="ai-preview-retry-row">
-            <input type="text" placeholder="Type instructions to change this block..." class="inline-ai-prompt-input" id="retry_text_${previewId}" />
+            <input type="text" placeholder="Type instructions to change this block..." class="inline-ai-prompt-input" id="retry_text_${previewId}" onkeydown="if(event.key==='Enter'){event.preventDefault();submitRetry('${previewId}');}" />
             <button type="button" class="inline-ai-prompt-btn" onclick="submitRetry('${previewId}')">Apply</button>
           </div>
         </div>
@@ -7266,6 +7267,7 @@ export default function App() {
       const previewId = `prev_${Date.now()}`;
       const originalHtml = liveContainer.getAttribute('data-original-html') || '';
       liveContainer.className = 'ai-preview-block';
+      liveContainer.setAttribute('contenteditable', 'false');
       liveContainer.setAttribute('id', previewId);
       liveContainer.setAttribute('data-block-type', type);
       if (originalHtml) {
@@ -7367,57 +7369,21 @@ Generate the updated output according to the instruction. Preserve layout and ta
         placeholder="Type emoji or icon name (e.g., rocket, target)..." 
         class="inline-ai-prompt-input"
         id="${boxId}_input"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();submitInlineIcon('${boxId}');}"
       />
-      <button type="button" class="inline-ai-prompt-btn" id="${boxId}_btn">Insert</button>
+      <button type="button" class="inline-ai-prompt-btn" id="${boxId}_btn" onclick="submitInlineIcon('${boxId}')">Insert</button>
     `;
     
     range.insertNode(container);
     
+    // Sync DOM back to React state
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+    
     setTimeout(() => {
       const input = document.getElementById(`${boxId}_input`);
       input?.focus();
-      
-      const btn = document.getElementById(`${boxId}_btn`);
-      const handleInsert = async () => {
-        const query = input.value.trim();
-        if (query) {
-          const liveBox = document.getElementById(boxId);
-          if (liveBox) {
-            liveBox.innerHTML = `<span style="font-size:12px;color:#6b7280;">Searching...</span>`;
-          }
-          try {
-            const userPrompt = `Translate this keyword/icon name to a single Unicode Emoji that represents it best: "${query}". Return ONLY the single emoji character.`;
-            const systemPrompt = `You are a helper that outputs exactly one Unicode Emoji character corresponding to the description.`;
-            const res = await callGemini({ userPrompt, systemPrompt });
-            const emoji = res?.text?.trim() || '\u2B50';
-            
-            const liveContainer = document.getElementById(boxId);
-            if (liveContainer && liveContainer.parentNode) {
-              const textNode = document.createTextNode(emoji);
-              liveContainer.parentNode.insertBefore(textNode, liveContainer);
-              liveContainer.remove();
-            }
-            
-            if (blankBodyRef.current) {
-              setDocBodyHtml(blankBodyRef.current.innerHTML);
-            }
-          } catch (e) {
-            const liveContainer = document.getElementById(boxId);
-            if (liveContainer) liveContainer.remove();
-          }
-        } else {
-          const liveContainer = document.getElementById(boxId);
-          if (liveContainer) liveContainer.remove();
-        }
-      };
-      
-      btn?.addEventListener('click', handleInsert);
-      input?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          handleInsert();
-        }
-      });
     }, 100);
   };
 
@@ -7442,6 +7408,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     container.className = 'inline-ai-prompt-box';
     container.setAttribute('contenteditable', 'false');
     container.setAttribute('id', boxId);
+    container.setAttribute('data-block-type', type);
     
     const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
     if (htmlToStore) {
@@ -7465,11 +7432,13 @@ Generate the updated output according to the instruction. Preserve layout and ta
           class="inline-ai-prompt-input"
           id="${boxId}_input"
           value="${prefilledPrompt.replace(/"/g, '&quot;')}"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();submitInlinePrompt('${boxId}');}"
         />
         <button 
           type="button" 
           class="inline-ai-prompt-btn"
           id="${boxId}_btn"
+          onclick="submitInlinePrompt('${boxId}')"
         >
           Generate
         </button>
@@ -7491,22 +7460,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const input = document.getElementById(`${boxId}_input`);
       input?.focus();
       input?.select();
-      
-      const btn = document.getElementById(`${boxId}_btn`);
-      const handleGenerateClick = () => {
-        const prompt = input.value.trim();
-        if (prompt) {
-          handleAIBlockSubmit(prompt, type, boxId);
-        }
-      };
-      
-      btn?.addEventListener('click', handleGenerateClick);
-      input?.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          handleGenerateClick();
-        }
-      });
     }, 100);
   };
 
@@ -7516,6 +7469,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     container.className = 'ai-preview-block';
     container.setAttribute('id', previewId);
     container.setAttribute('data-block-type', type);
+    container.setAttribute('contenteditable', 'false');
     
     if (targetElement && blankBodyRef.current?.contains(targetElement)) {
       targetElement.parentNode.insertBefore(container, targetElement);
@@ -7902,6 +7856,50 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
     };
     
+    window.submitInlinePrompt = (boxId) => {
+      const input = document.getElementById(`${boxId}_input`);
+      const container = document.getElementById(boxId);
+      const prompt = input?.value?.trim();
+      const type = container?.getAttribute('data-block-type') || 'table';
+      if (prompt) {
+        handleAIBlockSubmit(prompt, type, boxId);
+      }
+    };
+    
+    window.submitInlineIcon = async (boxId) => {
+      const input = document.getElementById(`${boxId}_input`);
+      const query = input?.value?.trim();
+      if (!query) {
+        const liveContainer = document.getElementById(boxId);
+        if (liveContainer) liveContainer.remove();
+        return;
+      }
+      const liveBox = document.getElementById(boxId);
+      if (liveBox) {
+        liveBox.innerHTML = `<span style="font-size:12px;color:#6b7280;">Searching...</span>`;
+      }
+      try {
+        const userPrompt = `Translate this keyword/icon name to a single Unicode Emoji that represents it best: "${query}". Return ONLY the single emoji character.`;
+        const systemPrompt = `You are a helper that outputs exactly one Unicode Emoji character corresponding to the description.`;
+        const res = await callGemini({ userPrompt, systemPrompt });
+        const emoji = res?.text?.trim() || '\u2B50';
+        
+        const liveContainer = document.getElementById(boxId);
+        if (liveContainer && liveContainer.parentNode) {
+          const textNode = document.createTextNode(emoji);
+          liveContainer.parentNode.insertBefore(textNode, liveContainer);
+          liveContainer.remove();
+        }
+        
+        if (blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+        }
+      } catch (e) {
+        const liveContainer = document.getElementById(boxId);
+        if (liveContainer) liveContainer.remove();
+      }
+    };
+    
     return () => {
       delete window.acceptAiPreview;
       delete window.deleteAiPreview;
@@ -7909,6 +7907,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.toggleRetryInput;
       delete window.submitRetry;
       delete window.exportAiBlock;
+      delete window.submitInlinePrompt;
+      delete window.submitInlineIcon;
     };
   }, []);
 
@@ -7976,6 +7976,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         container.className = 'ai-preview-block';
         container.setAttribute('id', previewId);
         container.setAttribute('data-block-type', detectedBlockType);
+        container.setAttribute('contenteditable', 'false');
         
         // Always append at the END of the editor body for voice commands.
         // The cursor position during voice recording is unreliable.
