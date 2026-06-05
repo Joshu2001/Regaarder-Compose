@@ -1,4 +1,4 @@
-const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-pro', 'gemini-1.5-pro'];
+const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
 const ENV_KEY_CANDIDATES = ['GEMINI_API_KEY', 'VITE_GEMINI_DEMO_API_KEY'];
 
 const resolveApiKey = () => {
@@ -33,8 +33,37 @@ const parseJsonSafely = (rawText) => {
 };
 
 const resolveModelCandidates = async (apiKey) => {
-  // Return the static prioritized list to avoid extra network latency and API failures
-  return FALLBACK_MODELS;
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+    if (!response.ok) {
+      return FALLBACK_MODELS;
+    }
+
+    const payload = await response.json();
+    const models = Array.isArray(payload?.models) ? payload.models : [];
+
+    const candidates = models
+      .filter((model) => {
+        const name = model?.name || '';
+        const methods = Array.isArray(model?.supportedGenerationMethods) ? model.supportedGenerationMethods : [];
+        return name.includes('models/gemini-2.5') && methods.includes('generateContent');
+      })
+      .map((model) => String(model?.name || '').replace('models/', ''))
+      .filter(Boolean)
+      .filter((model, index, arr) => arr.indexOf(model) === index)
+      .sort((a, b) => {
+        const score = (name) => {
+          if (name.includes('flash')) return 0;
+          if (name.includes('pro')) return 1;
+          return 2;
+        };
+        return score(a) - score(b);
+      });
+
+    return candidates.length ? candidates : FALLBACK_MODELS;
+  } catch (_error) {
+    return FALLBACK_MODELS;
+  }
 };
 
 const readBody = (req) => {
