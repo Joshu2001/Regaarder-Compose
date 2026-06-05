@@ -4587,6 +4587,7 @@ export default function App() {
     const observer = new MutationObserver(() => {
       computeDocumentStats();
       computeDocumentOutline();
+      window.refreshImageCaptions?.();
     });
 
     observer.observe(documentCardRef.current, {
@@ -7491,7 +7492,7 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
     }
 
     const seed = Math.floor(Math.random() * 1000000);
-    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=800&height=600&nologo=true&seed=${seed}`;
+    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=800&height=600&nologo=true&enhance=false&seed=${seed}`;
     return `
       <div contenteditable="false" class="interactive-image-block" onclick="window.selectImageBlock(this)" style="position:relative; display:block; width:60%; margin:16px auto; cursor:pointer;">
         <img src="${imgUrl}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800';" style="width:100%; height:auto; border-radius:8px; display:block; z-index:1;" />
@@ -7707,16 +7708,16 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
       const userPrompt = prompt;
       
       const schema = type === 'graph' ? {
-        type: 'OBJECT',
+        type: 'object',
         properties: {
-          type: { type: 'STRING', description: 'Chart type: line, bar, pie, heatmap, table' },
-          title: { type: 'STRING', description: 'Title of the chart' },
-          headers: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Headers for the columns, e.g. ["Country", "Crime Rate"]' },
+          type: { type: 'string', description: 'Chart type: line, bar, pie, heatmap, table' },
+          title: { type: 'string', description: 'Title of the chart' },
+          headers: { type: 'array', items: { type: 'string' }, description: 'Headers for the columns, e.g. ["Country", "Crime Rate"]' },
           data: {
-            type: 'ARRAY',
+            type: 'array',
             items: {
-              type: 'ARRAY',
-              items: { type: 'STRING', description: 'Cell value as a string' }
+              type: 'array',
+              items: { type: 'string', description: 'Cell value as a string' }
             },
             description: '2D array of rows, e.g. [["Venezuela", "83.76"], ["Papua New Guinea", "80.79"]]'
           }
@@ -7890,16 +7891,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
 
       const schema = isChart ? {
-        type: 'OBJECT',
+        type: 'object',
         properties: {
-          type: { type: 'STRING', description: 'Chart type: line, bar, pie, heatmap, table' },
-          title: { type: 'STRING', description: 'Title of the chart' },
-          headers: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Headers for the columns, e.g. ["Country", "Crime Rate"]' },
+          type: { type: 'string', description: 'Chart type: line, bar, pie, heatmap, table' },
+          title: { type: 'string', description: 'Title of the chart' },
+          headers: { type: 'array', items: { type: 'string' }, description: 'Headers for the columns, e.g. ["Country", "Crime Rate"]' },
           data: {
-            type: 'ARRAY',
+            type: 'array',
             items: {
-              type: 'ARRAY',
-              items: { type: 'STRING', description: 'Cell value as a string' }
+              type: 'array',
+              items: { type: 'string', description: 'Cell value as a string' }
             },
             description: '2D array of rows, e.g. [["Venezuela", "83.76"], ["Papua New Guinea", "80.79"]]'
           }
@@ -9158,6 +9159,43 @@ Generate the updated output according to the instruction. Preserve layout and ta
       window.refreshShapeBlock(containerId);
     };
 
+    window.refreshImageCaptions = () => {
+      const editor = blankBodyRef.current || document.querySelector('.compose-editor-surface');
+      if (!editor) return;
+      
+      const imageBlocks = Array.from(editor.querySelectorAll('.interactive-image-block'));
+      const counters = { figure: 0, image: 0, fig: 0 };
+      
+      imageBlocks.forEach(block => {
+        const prefix = block.getAttribute('data-caption-prefix') || 'none';
+        const captionEl = block.querySelector('.image-caption');
+        if (!captionEl) return;
+        
+        let currentText = captionEl.innerText.trim();
+        const textWithoutPrefix = currentText.replace(/^(Figure|Image|Fig\.)\s+\d+:\s*/i, '');
+        
+        if (prefix === 'none') {
+          captionEl.innerText = textWithoutPrefix || 'Add a caption...';
+        } else {
+          counters[prefix]++;
+          const num = counters[prefix];
+          const prefixLabel = prefix === 'figure' ? 'Figure' : prefix === 'image' ? 'Image' : 'Fig.';
+          const cleanText = (textWithoutPrefix === 'Add a caption...' || !textWithoutPrefix) ? '' : textWithoutPrefix;
+          captionEl.innerText = `${prefixLabel} ${num}: ${cleanText}`;
+        }
+      });
+    };
+
+    window.updateImageCaptionPrefix = (containerId, prefix) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.setAttribute('data-caption-prefix', prefix);
+      window.refreshImageCaptions();
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
     window.generateChartSVG = (state) => {
       const { type, data, headers } = state;
       if (!data || data.length === 0) return '<div style="color:#64748b; font-size:12px; padding:20px; font-family:sans-serif;">No data available to display chart.</div>';
@@ -9709,6 +9747,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.changeShapeDash;
       delete window.changeShapeWrap;
       delete window.toggleShapeEffect;
+      delete window.refreshImageCaptions;
+      delete window.updateImageCaptionPrefix;
     };
   }, []);
 
@@ -9842,60 +9882,60 @@ Generate the updated output according to the instruction. Preserve layout and ta
     let didGenerateDeckSlides = false;
 
     const actionSchema = {
-      type: 'OBJECT',
+      type: 'object',
       properties: {
-        aiResponseText: { type: 'STRING' },
-        hasAction: { type: 'BOOLEAN' },
+        aiResponseText: { type: 'string' },
+        hasAction: { type: 'boolean' },
         docAction: {
-          type: 'OBJECT',
+          type: 'object',
           properties: {
-            title: { type: 'STRING' },
-            type: { type: 'STRING' },
+            title: { type: 'string' },
+            type: { type: 'string' },
             deckSlides: {
-              type: 'ARRAY',
+              type: 'array',
               items: {
-                type: 'OBJECT',
+                type: 'object',
                 properties: {
-                  title: { type: 'STRING' },
-                  subtitle: { type: 'STRING' },
-                  headline: { type: 'STRING' },
-                  blurb: { type: 'STRING' },
-                  visualType: { type: 'STRING' },
-                  layoutStyle: { type: 'STRING' },
-                  motionCue: { type: 'STRING' },
-                  keyMetric: { type: 'STRING' },
-                  speakerNotes: { type: 'STRING' },
-                  section: { type: 'STRING' },
+                  title: { type: 'string' },
+                  subtitle: { type: 'string' },
+                  headline: { type: 'string' },
+                  blurb: { type: 'string' },
+                  visualType: { type: 'string' },
+                  layoutStyle: { type: 'string' },
+                  motionCue: { type: 'string' },
+                  keyMetric: { type: 'string' },
+                  speakerNotes: { type: 'string' },
+                  section: { type: 'string' },
                 },
               },
             },
             timelineItems: {
-              type: 'ARRAY',
+              type: 'array',
               items: {
-                type: 'OBJECT',
+                type: 'object',
                 properties: {
-                  phase: { type: 'STRING' },
-                  dates: { type: 'STRING' },
-                  detail: { type: 'STRING' },
+                  phase: { type: 'string' },
+                  dates: { type: 'string' },
+                  detail: { type: 'string' },
                 },
               },
             },
             taskItems: {
-              type: 'ARRAY',
-              items: { type: 'STRING' },
+              type: 'array',
+              items: { type: 'string' },
             },
             riskItems: {
-              type: 'ARRAY',
+              type: 'array',
               items: {
-                type: 'OBJECT',
+                type: 'object',
                 properties: {
-                  threat: { type: 'STRING' },
-                  impact: { type: 'STRING' },
-                  fix: { type: 'STRING' },
+                  threat: { type: 'string' },
+                  impact: { type: 'string' },
+                  fix: { type: 'string' },
                 },
               },
             },
-            textParagraph: { type: 'STRING' },
+            textParagraph: { type: 'string' },
           },
         },
       },
@@ -12660,21 +12700,21 @@ Rules:
 
   const enrichScheduleItemsWithAI = async (rawItems, fallbackItems) => {
     const schema = {
-      type: 'OBJECT',
+      type: 'object',
       properties: {
         items: {
-          type: 'ARRAY',
+          type: 'array',
           items: {
-            type: 'OBJECT',
+            type: 'object',
             properties: {
-              title: { type: 'STRING' },
-              slot: { type: 'STRING' },
-              dueDateISO: { type: 'STRING' },
-              durationMinutes: { type: 'NUMBER' },
-              category: { type: 'STRING' },
-              urgency: { type: 'STRING' },
-              summary: { type: 'STRING' },
-              steps: { type: 'ARRAY', items: { type: 'STRING' } },
+              title: { type: 'string' },
+              slot: { type: 'string' },
+              dueDateISO: { type: 'string' },
+              durationMinutes: { type: 'number' },
+              category: { type: 'string' },
+              urgency: { type: 'string' },
+              summary: { type: 'string' },
+              steps: { type: 'array', items: { type: 'string' } },
             },
           },
         },
@@ -18868,6 +18908,20 @@ Rules:
           <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'wrap-right')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Float Right / Wrap Left"><AlignRight size={14}/> Wrap Right</button>
           <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'behind')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Send Behind Document Text"><Layers size={14} className="text-gray-400"/> Behind</button>
           <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'front')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Bring in Front of Document Text"><Layers size={14} className="text-violet-600"/> In Front</button>
+          <div className="w-px h-4 bg-gray-200 mx-1"></div>
+          <div className="flex items-center gap-1.5 px-1">
+            <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Prefix:</span>
+            <select
+              value={imageToolbar.node ? (imageToolbar.node.getAttribute('data-caption-prefix') || 'none') : 'none'}
+              onChange={(e) => window.updateImageCaptionPrefix(imageToolbar.node, e.target.value)}
+              className="text-xs border border-slate-200 rounded-md bg-slate-50 hover:bg-slate-100 px-1.5 py-0.5 outline-none focus:border-violet-400 focus:bg-white cursor-pointer font-medium text-slate-700 transition-colors"
+            >
+              <option value="none">None</option>
+              <option value="figure">Figure X</option>
+              <option value="image">Image X</option>
+              <option value="fig">Fig. X</option>
+            </select>
+          </div>
           <div className="w-px h-4 bg-gray-200 mx-1"></div>
           <div className="relative flex items-center">
             <Sparkles size={14} className="absolute left-2 text-violet-500" />
