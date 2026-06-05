@@ -7469,8 +7469,29 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
   };
 
   const parseImageOutput = (rawOutput) => {
-    const cleanPrompt = rawOutput.trim().replace(/['"“”]/g, '');
-    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=800&height=600&nologo=true`;
+    let cleanPrompt = rawOutput.trim();
+    if (cleanPrompt.startsWith('```')) {
+      cleanPrompt = cleanPrompt.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+    }
+    // Handle multi-line responses from the model to find the actual prompt line
+    const lines = cleanPrompt.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length > 1) {
+      const promptLine = lines.find(l => l.toLowerCase().startsWith('prompt:') || l.toLowerCase().startsWith('optimized prompt:'));
+      if (promptLine) {
+        cleanPrompt = promptLine.replace(/^prompt:\s*/i, '').replace(/^optimized prompt:\s*/i, '');
+      } else {
+        // Fall back to taking the longest line (which is usually the descriptive prompt)
+        cleanPrompt = lines.reduce((a, b) => a.length > b.length ? a : b, '');
+      }
+    }
+    // Remove enclosing quotes and trim
+    cleanPrompt = cleanPrompt.replace(/^['"“\s]+|['"”\s]+$/g, '').trim();
+    if (!cleanPrompt) {
+      cleanPrompt = 'beautiful landscape Yosemite Valley';
+    }
+
+    const seed = Math.floor(Math.random() * 1000000);
+    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=800&height=600&nologo=true&seed=${seed}`;
     return `
       <div contenteditable="false" class="interactive-image-block" onclick="window.selectImageBlock(this)" style="position:relative; display:block; width:60%; margin:16px auto; cursor:pointer;">
         <img src="${imgUrl}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800';" style="width:100%; height:auto; border-radius:8px; display:block; z-index:1;" />
@@ -8608,6 +8629,41 @@ Generate the updated output according to the instruction. Preserve layout and ta
       } else if (!e.target.closest('.image-toolbar-container') && !e.target.closest('.interactive-image-block')) {
         setImageToolbar({ open: false, node: null, top: 0, left: 0 });
       }
+
+      // Chart Editing Mode Toggle
+      const chartBlock = e.target.closest('.interactive-chart-block');
+      if (chartBlock) {
+        if (!chartBlock.classList.contains('editing')) {
+          document.querySelectorAll('.interactive-chart-block.editing').forEach(c => {
+            if (c !== chartBlock) c.classList.remove('editing');
+          });
+          chartBlock.classList.add('editing');
+        }
+      } else {
+        document.querySelectorAll('.interactive-chart-block.editing').forEach(c => {
+          c.classList.remove('editing');
+        });
+      }
+
+      // Shape Editing Mode Toggle
+      const shapeBlock = e.target.closest('.interactive-shape-block');
+      if (shapeBlock) {
+        if (!shapeBlock.classList.contains('editing')) {
+          document.querySelectorAll('.interactive-shape-block.editing').forEach(s => {
+            if (s !== shapeBlock) s.classList.remove('editing');
+          });
+          shapeBlock.classList.add('editing');
+        }
+      } else {
+        document.querySelectorAll('.interactive-shape-block.editing').forEach(s => {
+          s.classList.remove('editing');
+        });
+      }
+
+      // Sync changes to React state if we clicked outside
+      if (!chartBlock && !shapeBlock && blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
     };
     document.addEventListener('click', handleDocumentClick);
 
@@ -8861,7 +8917,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     };
 
     window.generateShapeSVG = (state) => {
-      const { type, color, scale = 1.0 } = state;
+      const { type, color, scale = 1.0, weight = 3, dash = 'none', effects = {} } = state;
       const baseWidth = 160;
       const baseHeight = 160;
       const width = baseWidth * scale;
@@ -8878,30 +8934,90 @@ Generate the updated output according to the instruction. Preserve layout and ta
       
       const colors = colorMap[color] || colorMap.lavender;
       
-      const sharedProps = `stroke="${colors.stroke}" stroke-width="3" fill="${colors.fill}" stroke-linecap="round" stroke-linejoin="round" style="transition: all 0.2s;"`;
+      // Calculate offset so borders don't get clipped by the SVG boundary
+      const offset = Math.max(4, Math.ceil(weight / 2) + 2);
+      
+      let filters = [];
+      if (effects.shadow) {
+        filters.push('drop-shadow(3px 5px 6px rgba(0, 0, 0, 0.25))');
+      }
+      if (effects.softEdges) {
+        filters.push('blur(4px)');
+      }
+      const filterStyle = filters.length > 0 ? `filter: ${filters.join(' ')};` : '';
+      const dashProp = dash && dash !== 'none' ? `stroke-dasharray="${dash}"` : '';
+      
+      const sharedProps = `stroke="${colors.stroke}" stroke-width="${weight}" ${dashProp} fill="${colors.fill}" stroke-linecap="round" stroke-linejoin="round" style="transition: all 0.2s; ${filterStyle}"`;
       
       let shapeMarkup = '';
       if (type === 'circle') {
-        shapeMarkup = `<circle cx="${width/2}" cy="${height/2}" r="${(Math.min(width, height) / 2) - 4}" ${sharedProps} />`;
+        shapeMarkup = `<circle cx="${width/2}" cy="${height/2}" r="${Math.max(4, (Math.min(width, height) / 2) - offset)}" ${sharedProps} />`;
       } else if (type === 'triangle') {
-        shapeMarkup = `<polygon points="${width/2},4 ${width - 4},${height - 4} 4,${height - 4}" ${sharedProps} />`;
+        shapeMarkup = `<polygon points="${width/2},${offset} ${width - offset},${height - offset} ${offset},${height - offset}" ${sharedProps} />`;
       } else if (type === 'diamond') {
-        shapeMarkup = `<polygon points="${width/2},4 ${width - 4},${height/2} ${width/2},${height - 4} 4,${height/2}" ${sharedProps} />`;
+        shapeMarkup = `<polygon points="${width/2},${offset} ${width - offset},${height/2} ${width/2},${height - offset} ${offset},${height/2}" ${sharedProps} />`;
       } else {
-        shapeMarkup = `<rect x="4" y="4" width="${width - 8}" height="${height - 8}" rx="8" ry="8" ${sharedProps} />`;
+        shapeMarkup = `<rect x="${offset}" y="${offset}" width="${Math.max(4, width - offset * 2)}" height="${Math.max(4, height - offset * 2)}" rx="8" ry="8" ${sharedProps} />`;
       }
       
-      return `
-        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="max-width:100%; display:block; margin:0 auto; transition:all 0.2s;">
+      const svgCode = `
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="max-width:100%; display:block; margin:0 auto; transition:all 0.2s; overflow:visible;">
           ${shapeMarkup}
         </svg>
       `;
+
+      if (effects.reflection) {
+        return `
+          <div style="display:flex; flex-direction:column; align-items:center; position:relative;">
+            <div>${svgCode}</div>
+            <div style="transform: scaleY(-1) translateY(4px); opacity: 0.25; filter: blur(1.5px); pointer-events:none; mask-image: linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,0.8)); -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0), rgba(0,0,0,0.8));">
+              ${svgCode}
+            </div>
+          </div>
+        `;
+      }
+      return svgCode;
     };
 
     window.refreshShapeBlock = (containerId) => {
       const container = document.getElementById(containerId);
       if (!container) return;
       const state = JSON.parse(container.getAttribute('data-shape-data'));
+      
+      // Apply wrapText layout styles to parent wrapper container
+      const wrapText = state.wrapText || 'inline';
+      if (wrapText === 'behind') {
+        container.style.position = 'relative';
+        container.style.zIndex = '-1';
+        container.style.float = 'none';
+        container.style.display = 'block';
+        container.style.margin = '16px auto';
+      } else if (wrapText === 'front') {
+        container.style.position = 'relative';
+        container.style.zIndex = '10';
+        container.style.float = 'none';
+        container.style.display = 'block';
+        container.style.margin = '16px auto';
+      } else if (wrapText === 'wrap-left') {
+        container.style.position = 'relative';
+        container.style.zIndex = '1';
+        container.style.float = 'left';
+        container.style.margin = '8px 16px 8px 0';
+        container.style.display = 'inline-block';
+      } else if (wrapText === 'wrap-right') {
+        container.style.position = 'relative';
+        container.style.zIndex = '1';
+        container.style.float = 'right';
+        container.style.margin = '8px 0 8px 16px';
+        container.style.display = 'inline-block';
+      } else { // inline
+        container.style.position = 'relative';
+        container.style.zIndex = '1';
+        container.style.float = 'none';
+        container.style.display = 'block';
+        container.style.margin = '16px auto';
+      }
+
       const svgHtml = window.generateShapeSVG(state);
       const previewContent = container.querySelector('.ai-preview-content');
       const target = previewContent || container;
@@ -8916,8 +9032,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
         purple: '#f3e8ff'
       };
       
+      const effects = state.effects || {};
+      
       target.innerHTML = `
-        <div class="shape-block-header" style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 16px; border-bottom:1px solid #e2e8f0; border-top-left-radius:16px; border-top-right-radius:16px; font-family:sans-serif; user-select:none;">
+        <div class="shape-block-header" style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 16px; border-bottom:1px solid #e2e8f0; border-top-left-radius:16px; border-top-right-radius:16px; font-family:sans-serif; user-select:none; gap:8px; flex-wrap:wrap;">
           <div style="font-weight:600; color:#475569; font-size:12px; display:flex; align-items:center; gap:8px;">
             <span style="background:#8b5cf6; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px;">SHAPE</span>
           </div>
@@ -8934,6 +9052,35 @@ Generate the updated output according to the instruction. Preserve layout and ta
             ${colorsList.map(c => `
               <button type="button" onclick="window.changeShapeColor('${containerId}', '${c}')" style="background:${colorsHex[c]}; width:16px; height:16px; border-radius:50%; border:${state.color === c ? '2px solid #475569' : '1px solid #cbd5e1'}; cursor:pointer; padding:0; outline:none;" title="${c}"></button>
             `).join('')}
+          </div>
+          
+          <!-- Shape styling dropdowns & toggles -->
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <select onchange="window.changeShapeWeight('${containerId}', this.value)" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:4px 6px; font-size:11px; cursor:pointer; color:#475569; outline:none;" title="Border Weight">
+              <option value="1" ${state.weight === 1 ? 'selected' : ''}>1px</option>
+              <option value="2" ${state.weight === 2 ? 'selected' : ''}>2px</option>
+              <option value="3" ${state.weight === 3 || !state.weight ? 'selected' : ''}>3px</option>
+              <option value="5" ${state.weight === 5 ? 'selected' : ''}>5px</option>
+              <option value="8" ${state.weight === 8 ? 'selected' : ''}>8px</option>
+            </select>
+            
+            <select onchange="window.changeShapeDash('${containerId}', this.value)" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:4px 6px; font-size:11px; cursor:pointer; color:#475569; outline:none;" title="Border style">
+              <option value="none" ${state.dash === 'none' || !state.dash ? 'selected' : ''}>Solid</option>
+              <option value="5,5" ${state.dash === '5,5' ? 'selected' : ''}>Dashed</option>
+              <option value="2,2" ${state.dash === '2,2' ? 'selected' : ''}>Dotted</option>
+            </select>
+            
+            <select onchange="window.changeShapeWrap('${containerId}', this.value)" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:4px 6px; font-size:11px; cursor:pointer; color:#475569; outline:none;" title="Text wrapping mode">
+              <option value="inline" ${state.wrapText === 'inline' || !state.wrapText ? 'selected' : ''}>Inline</option>
+              <option value="wrap-left" ${state.wrapText === 'wrap-left' ? 'selected' : ''}>Wrap Left</option>
+              <option value="wrap-right" ${state.wrapText === 'wrap-right' ? 'selected' : ''}>Wrap Right</option>
+              <option value="behind" ${state.wrapText === 'behind' ? 'selected' : ''}>Behind Text</option>
+              <option value="front" ${state.wrapText === 'front' ? 'selected' : ''}>In Front</option>
+            </select>
+            
+            <button type="button" onclick="window.toggleShapeEffect('${containerId}', 'shadow')" style="background:${effects.shadow ? '#8b5cf6' : '#ffffff'}; color:${effects.shadow ? '#ffffff' : '#475569'}; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:500; transition:all 100ms;" title="Shadow Effect">Shadow</button>
+            <button type="button" onclick="window.toggleShapeEffect('${containerId}', 'softEdges')" style="background:${effects.softEdges ? '#8b5cf6' : '#ffffff'}; color:${effects.softEdges ? '#ffffff' : '#475569'}; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:500; transition:all 100ms;" title="Soft Edges Blur">Soft Edges</button>
+            <button type="button" onclick="window.toggleShapeEffect('${containerId}', 'reflection')" style="background:${effects.reflection ? '#8b5cf6' : '#ffffff'}; color:${effects.reflection ? '#ffffff' : '#475569'}; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:500; transition:all 100ms;" title="Reflection Mirror">Reflection</button>
           </div>
         </div>
         <div class="shape-svg-container" style="padding:24px; background:#ffffff; display:flex; justify-content:center; align-items:center; min-height:180px; border-bottom-left-radius:16px; border-bottom-right-radius:16px;">
@@ -8970,6 +9117,43 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const currentScale = state.scale || 1.0;
       const nextScale = direction > 0 ? Math.min(2.5, currentScale + 0.15) : Math.max(0.4, currentScale - 0.15);
       state.scale = parseFloat(nextScale.toFixed(2));
+      container.setAttribute('data-shape-data', JSON.stringify(state));
+      window.refreshShapeBlock(containerId);
+    };
+
+    window.changeShapeWeight = (containerId, weight) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data'));
+      state.weight = Number(weight);
+      container.setAttribute('data-shape-data', JSON.stringify(state));
+      window.refreshShapeBlock(containerId);
+    };
+
+    window.changeShapeDash = (containerId, dash) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data'));
+      state.dash = dash;
+      container.setAttribute('data-shape-data', JSON.stringify(state));
+      window.refreshShapeBlock(containerId);
+    };
+
+    window.changeShapeWrap = (containerId, wrap) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data'));
+      state.wrapText = wrap;
+      container.setAttribute('data-shape-data', JSON.stringify(state));
+      window.refreshShapeBlock(containerId);
+    };
+
+    window.toggleShapeEffect = (containerId, effect) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data'));
+      if (!state.effects) state.effects = {};
+      state.effects[effect] = !state.effects[effect];
       container.setAttribute('data-shape-data', JSON.stringify(state));
       window.refreshShapeBlock(containerId);
     };
@@ -9521,6 +9705,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.changeShapeType;
       delete window.changeShapeColor;
       delete window.adjustShapeScale;
+      delete window.changeShapeWeight;
+      delete window.changeShapeDash;
+      delete window.changeShapeWrap;
+      delete window.toggleShapeEffect;
     };
   }, []);
 
