@@ -7365,19 +7365,29 @@ export default function App() {
     return { type, data };
   };
 
-  const standardizeChartData = (type, rawData, defaultTitle = 'Chart') => {
-    let headers = ['Label', 'Value'];
+  const standardizeChartData = (type, rawData, defaultTitle = 'Chart', rawHeaders = null) => {
+    let headers = rawHeaders || ['Label', 'Value'];
     let data = [['Jan', 10], ['Feb', 20], ['Mar', 30]];
     if (Array.isArray(rawData) && rawData.length > 0) {
       const firstItem = rawData[0];
       if (Array.isArray(firstItem)) {
-        data = rawData;
-        headers = firstItem.map((_, i) => i === 0 ? 'Label' : `Value ${i}`);
+        data = rawData.map(row => row.map((val, idx) => {
+          if (idx === 0) return String(val);
+          const num = Number(val);
+          return isNaN(num) || val === '' ? val : num;
+        }));
+        if (!rawHeaders) {
+          headers = firstItem.map((_, i) => i === 0 ? 'Label' : `Value ${i}`);
+        }
       } else if (typeof firstItem === 'object' && firstItem !== null) {
-        headers = Object.keys(firstItem);
-        data = rawData.map(item => headers.map(h => {
+        if (!rawHeaders) {
+          headers = Object.keys(firstItem);
+        }
+        data = rawData.map(item => headers.map((h, idx) => {
           const v = item[h];
-          return isNaN(v) || v === '' ? v : Number(v);
+          if (idx === 0) return String(v);
+          const num = Number(v);
+          return isNaN(num) || v === '' ? v : num;
         }));
       }
     }
@@ -7422,7 +7432,13 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
 Ensure headers array matches the columns, and data is a 2D array of rows. Numeric values should be numbers, not strings. Use only the specified chart types.`;
     }
     if (type === 'image') {
-      return `You are an expert image selection tool. Based on the user's description, generate a single Unsplash search keyword that matches. Return only the keyword (a few words) without any punctuation or wrapper.`;
+      return `You are an expert AI image prompt generator. Based on the user's description, optimize and expand the description into a highly detailed, descriptive prompt for an AI image generator. The prompt should be in English, descriptive, and focus on visual elements. Return ONLY the optimized prompt text without any introductory text, quotes, or formatting.`;
+    }
+    if (type === 'bullets') {
+      return `You are an expert editor. Convert the text into a clean HTML unordered list (<ul> with <li> tags). Fix typos (e.g. "Cnada" -> "Canada"), capitalize proper nouns, and format list items intelligently. Respond ONLY with the raw HTML code without markdown code blocks or formatting.`;
+    }
+    if (type === 'numbered_list') {
+      return `You are an expert editor. Convert the text into a clean HTML ordered list (<ol> with <li> tags). Fix typos, capitalize proper nouns, and format list items intelligently. Respond ONLY with the raw HTML code without markdown code blocks or formatting.`;
     }
     if (type === 'proofread') {
       return `You are an expert copywriter. Proofread and improve the writing of the text. Fix grammar, style, and flow. Preserve original HTML formatting tags if present. Output only the refined text.`;
@@ -7453,14 +7469,37 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
   };
 
   const parseImageOutput = (rawOutput) => {
-    const keyword = rawOutput.trim().replace(/['"\(\)\[\]]/g, '').replace(/\s+/g, ',');
-    const imgUrl = `https://loremflickr.com/800/600/${encodeURIComponent(keyword)}`;
-    return `<img src="${imgUrl}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800';" style="max-width:100%; border-radius:12px; margin: 12px 0; border: 1px solid #e2e8f0;" alt="${keyword}" />`;
+    const cleanPrompt = rawOutput.trim().replace(/['"“”]/g, '');
+    const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=800&height=600&nologo=true`;
+    return `
+      <div contenteditable="false" class="interactive-image-block" onclick="window.selectImageBlock(this)" style="position:relative; display:block; width:60%; margin:16px auto; cursor:pointer;">
+        <img src="${imgUrl}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800';" style="width:100%; height:auto; border-radius:8px; display:block; z-index:1;" />
+        <div class="image-text-layers" style="position:absolute; inset:0; pointer-events:none;"></div>
+        <div contenteditable="true" class="image-caption" style="text-align:center; color:#64748b; font-size:13px; margin-top:8px; padding:4px;">Add a caption...</div>
+      </div><p><br></p>
+    `.trim().replace(/\n/g, '');
   };
 
   const parseGraphOutput = (rawOutput) => {
     let clean = rawOutput.trim();
-    if (clean.startsWith('```')) {
+    
+    // Find first JSON block start
+    const firstBrace = clean.indexOf('{');
+    const firstBracket = clean.indexOf('[');
+    let startIdx = -1;
+    let endIdx = -1;
+    
+    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+      startIdx = firstBrace;
+      endIdx = clean.lastIndexOf('}');
+    } else if (firstBracket !== -1) {
+      startIdx = firstBracket;
+      endIdx = clean.lastIndexOf(']');
+    }
+    
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      clean = clean.substring(startIdx, endIdx + 1);
+    } else if (clean.startsWith('```')) {
       clean = clean.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
     }
     return clean;
@@ -7485,7 +7524,8 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
         </div>
         <div class="ai-preview-banner-actions">
           <button type="button" class="ai-preview-btn-accept" onclick="acceptAiPreview('${previewId}')">Accept</button>
-          <button type="button" class="ai-preview-btn-secondary" onclick="toggleRetryInput('${previewId}')">Retry / Edit</button>
+          <button type="button" class="ai-preview-btn-secondary" onclick="runImmediateRetry('${previewId}')">Retry</button>
+          <button type="button" class="ai-preview-btn-secondary" onclick="showEditPromptInput('${previewId}')">Edit</button>
           <button type="button" class="ai-preview-btn-delete" onclick="deleteAiPreview('${previewId}')">Delete</button>
           <button type="button" class="ai-preview-btn-secondary" onclick="exportAiBlock('${previewId}')">Export</button>
         </div>
@@ -7543,10 +7583,70 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
     setOpenDropdown(null);
   };
 
+
   const handleAIBlockSubmit = async (prompt, type, containerOrId) => {
     const containerId = typeof containerOrId === 'string' ? containerOrId : containerOrId.getAttribute('id');
     const container = document.getElementById(containerId);
     if (!container) return;
+
+    if (['proofread', 'translate', 'bullets', 'numbered_list'].includes(type)) {
+      const liveContainer = document.getElementById(containerId);
+      if (!liveContainer) return;
+      
+      const originalHtml = liveContainer.getAttribute('data-original-html') || '';
+      
+      liveContainer.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
+          <span style="width:16px;height:16px;border-radius:50%;border:2px solid #7c3aed;border-top-color:transparent;animation:spin 1s linear infinite;display:inline-block;"></span>
+          <span style="font-size:12px;font-weight:600;color:#6d28d9;">AI is updating...</span>
+        </div>
+      `;
+      
+      try {
+        const systemPrompt = getSystemPromptForType(type);
+        let userPrompt = '';
+        if (type === 'proofread') {
+          userPrompt = `Proofread and improve this text: "${prompt}"`;
+        } else if (type === 'bullets') {
+          userPrompt = `Convert the following text/list into a clean, typo-corrected HTML bulleted list (using <ul> and <li> tags). Correct any typos (like "Cnada" -> "Canada") and format each entry as its own bullet point. Keep formatting clean. Text:\n"""${prompt}"""`;
+        } else if (type === 'numbered_list') {
+          userPrompt = `Convert the following text/list into a clean, typo-corrected HTML numbered list (using <ol> and <li> tags). Correct any typos (like "Cnada" -> "Canada") and format each entry as its own item. Keep formatting clean. Text:\n"""${prompt}"""`;
+        } else if (type === 'translate') {
+          userPrompt = prompt.toLowerCase().includes('translate') ? prompt : `Translate to French: "${prompt}"`;
+        }
+        
+        const res = await callGemini({ userPrompt, systemPrompt });
+        const targetContainer = document.getElementById(containerId);
+        if (res?.error) {
+          throw new Error(res.error);
+        }
+        if (!targetContainer) return;
+        const rawOutput = res?.text || '';
+        
+        let finalHtml = rawOutput.trim();
+        if (finalHtml.startsWith('```')) {
+          finalHtml = finalHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+        }
+        
+        targetContainer.setAttribute('data-original-prompt', prompt);
+        renderBlockInPreview(containerId, type, finalHtml);
+      } catch (e) {
+        console.error(e);
+        showToast('AI update failed');
+        const targetContainer = document.getElementById(containerId);
+        if (targetContainer) {
+          if (originalHtml) {
+            const temp = document.createElement('div');
+            temp.innerHTML = originalHtml;
+            while (temp.firstChild) {
+              targetContainer.parentNode.insertBefore(temp.firstChild, targetContainer);
+            }
+          }
+          targetContainer.remove();
+        }
+      }
+      return;
+    }
     
     container.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
@@ -7572,6 +7672,7 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
           liveContainer.setAttribute('id', previewId);
           liveContainer.setAttribute('data-block-type', type);
           liveContainer.setAttribute('data-chart-data', JSON.stringify(chartState));
+          liveContainer.setAttribute('data-original-prompt', prompt);
           
           renderBlockInPreview(previewId, type, '');
           window.refreshChartBlock(previewId);
@@ -7584,7 +7685,25 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
       const systemPrompt = getSystemPromptForType(type);
       const userPrompt = prompt;
       
-      const res = await callGemini({ userPrompt, systemPrompt });
+      const schema = type === 'graph' ? {
+        type: 'OBJECT',
+        properties: {
+          type: { type: 'STRING', description: 'Chart type: line, bar, pie, heatmap, table' },
+          title: { type: 'STRING', description: 'Title of the chart' },
+          headers: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Headers for the columns, e.g. ["Country", "Crime Rate"]' },
+          data: {
+            type: 'ARRAY',
+            items: {
+              type: 'ARRAY',
+              items: { type: 'STRING', description: 'Cell value as a string' }
+            },
+            description: '2D array of rows, e.g. [["Venezuela", "83.76"], ["Papua New Guinea", "80.79"]]'
+          }
+        },
+        required: ['type', 'title', 'headers', 'data']
+      } : undefined;
+
+      const res = await callGemini({ userPrompt, systemPrompt, schema });
       const liveContainer = document.getElementById(containerId);
       if (res?.error) {
         showToast(`AI generation failed: ${res.error}`);
@@ -7607,9 +7726,8 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
         finalHtml = parseImageOutput(rawOutput);
       } else if (type === 'graph') {
         try {
-          const cleanJson = parseGraphOutput(rawOutput);
-          const parsedData = JSON.parse(cleanJson);
-          chartState = standardizeChartData(parsedData.type, parsedData.data, parsedData.title);
+          const parsedData = res.parsed || JSON.parse(parseGraphOutput(rawOutput));
+          chartState = standardizeChartData(parsedData.type, parsedData.data, parsedData.title, parsedData.headers);
         } catch (e) {
           console.error("Failed to parse Gemini chart JSON, rendering fallback:", e);
           chartState = standardizeChartData('line', [['Jan', 10], ['Feb', 20], ['Mar', 15]], 'Sample Chart');
@@ -7651,6 +7769,7 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
       liveContainer.setAttribute('contenteditable', 'false');
       liveContainer.setAttribute('id', previewId);
       liveContainer.setAttribute('data-block-type', type);
+      liveContainer.setAttribute('data-original-prompt', prompt);
       if (chartState) {
         liveContainer.setAttribute('data-chart-data', JSON.stringify(chartState));
       }
@@ -7683,6 +7802,8 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
   const handleAIRetrySubmit = async (previewId, prompt) => {
     const container = document.getElementById(previewId);
     if (!container) return;
+    
+    container.setAttribute('data-original-prompt', prompt);
     
     const type = container.getAttribute('data-block-type') || 'text';
     const isChart = type === 'graph';
@@ -7747,7 +7868,25 @@ ${prompt}
 Generate the updated output according to the instruction. Preserve layout and tags. Output only the updated raw code or text.`;
       }
 
-      const res = await callGemini({ userPrompt, systemPrompt });
+      const schema = isChart ? {
+        type: 'OBJECT',
+        properties: {
+          type: { type: 'STRING', description: 'Chart type: line, bar, pie, heatmap, table' },
+          title: { type: 'STRING', description: 'Title of the chart' },
+          headers: { type: 'ARRAY', items: { type: 'STRING' }, description: 'Headers for the columns, e.g. ["Country", "Crime Rate"]' },
+          data: {
+            type: 'ARRAY',
+            items: {
+              type: 'ARRAY',
+              items: { type: 'STRING', description: 'Cell value as a string' }
+            },
+            description: '2D array of rows, e.g. [["Venezuela", "83.76"], ["Papua New Guinea", "80.79"]]'
+          }
+        },
+        required: ['type', 'title', 'headers', 'data']
+      } : undefined;
+
+      const res = await callGemini({ userPrompt, systemPrompt, schema });
       if (res?.error) {
         throw new Error(res.error);
       }
@@ -7761,9 +7900,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
         newHtml = parseImageOutput(rawOutput);
       } else if (isChart) {
         try {
-          const cleanJson = parseGraphOutput(rawOutput);
-          const parsedData = JSON.parse(cleanJson);
-          chartState = standardizeChartData(parsedData.type, parsedData.data, parsedData.title);
+          const parsedData = res.parsed || JSON.parse(parseGraphOutput(rawOutput));
+          chartState = standardizeChartData(parsedData.type, parsedData.data, parsedData.title, parsedData.headers);
           container.setAttribute('data-chart-data', JSON.stringify(chartState));
           newHtml = '';
         } catch (e) {
@@ -7971,10 +8109,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
       blankBodyRef.current?.appendChild(container);
     }
     
+    const loadingText = type === 'bullets' || type === 'numbered_list' 
+      ? 'formatting list...' 
+      : type === 'translate' 
+        ? 'translating...' 
+        : 'proofreading...';
+        
     container.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
         <span style="width:16px;height:16px;border-radius:50%;border:2px solid #7c3aed;border-top-color:transparent;animation:spin 1s linear infinite;display:inline-block;"></span>
-        <span style="font-size:12px;font-weight:600;color:#6d28d9;">AI is ${type === 'translate' ? 'translating' : 'proofreading'}...</span>
+        <span style="font-size:12px;font-weight:600;color:#6d28d9;">AI is ${loadingText}</span>
       </div>
     `;
     
@@ -7984,31 +8128,42 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     try {
       const systemPrompt = getSystemPromptForType(type);
+      let userPrompt = '';
+      let originalPromptText = '';
       if (type === 'proofread') {
-        const userPrompt = `Proofread and improve this text: "${textToProcess}"`;
-        const res = await callGemini({ userPrompt, systemPrompt });
-        const liveContainer = document.getElementById(previewId);
-        if (res?.error) {
-          throw new Error(res.error);
-        }
-        if (!liveContainer) return;
-        const rawOutput = res?.text || '';
-        
-        let finalHtml = rawOutput.trim();
-        if (finalHtml.startsWith('```')) {
-          finalHtml = finalHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
-        }
-        renderBlockInPreview(previewId, type, finalHtml);
-      } else {
-        const liveContainer = document.getElementById(previewId);
-        const originalHtml = liveContainer ? liveContainer.getAttribute('data-original-html') : (container.getAttribute('data-original-html') || '');
-        if (liveContainer) {
-          liveContainer.remove();
-        } else {
-          container.remove();
-        }
-        insertInlinePromptBox('translate', `Translate to French: "${textToProcess}"`, originalHtml);
+        userPrompt = `Proofread and improve this text: "${textToProcess}"`;
+        originalPromptText = `Proofread and improve this text: "${textToProcess}"`;
+      } else if (type === 'bullets') {
+        userPrompt = `Convert the following text/list into a clean, typo-corrected HTML bulleted list (using <ul> and <li> tags). Correct any typos (like "Cnada" -> "Canada") and format each entry as its own bullet point. Keep formatting clean. Text:\n"""${textToProcess}"""`;
+        originalPromptText = `Convert to bulleted list: "${textToProcess}"`;
+      } else if (type === 'numbered_list') {
+        userPrompt = `Convert the following text/list into a clean, typo-corrected HTML numbered list (using <ol> and <li> tags). Correct any typos (like "Cnada" -> "Canada") and format each entry as its own item. Keep formatting clean. Text:\n"""${textToProcess}"""`;
+        originalPromptText = `Convert to numbered list: "${textToProcess}"`;
+      } else if (type === 'translate') {
+        userPrompt = textToProcess.toLowerCase().includes('translate') ? textToProcess : `Translate to French: "${textToProcess}"`;
+        originalPromptText = userPrompt;
       }
+      
+      const liveContainer = document.getElementById(previewId);
+      if (liveContainer) {
+        liveContainer.setAttribute('data-original-prompt', originalPromptText);
+      } else {
+        container.setAttribute('data-original-prompt', originalPromptText);
+      }
+      
+      const res = await callGemini({ userPrompt, systemPrompt });
+      const currentLiveContainer = document.getElementById(previewId);
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+      if (!currentLiveContainer) return;
+      const rawOutput = res?.text || '';
+      
+      let finalHtml = rawOutput.trim();
+      if (finalHtml.startsWith('```')) {
+        finalHtml = finalHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+      }
+      renderBlockInPreview(previewId, type, finalHtml);
     } catch (e) {
       console.error(e);
       showToast('AI action failed');
@@ -8289,6 +8444,26 @@ Generate the updated output according to the instruction. Preserve layout and ta
         } else if (blockType === 'shapes') {
           container.className = 'interactive-shape-block';
           container.removeAttribute('contenteditable');
+        } else if (blockType === 'image') {
+          const imgBlock = container.querySelector('.interactive-image-block');
+          if (imgBlock) {
+            container.parentNode.insertBefore(imgBlock, container);
+          } else {
+            const parent = container.parentNode;
+            while (container.firstChild) {
+              parent.insertBefore(container.firstChild, container);
+            }
+          }
+          container.remove();
+        } else if (['bullets', 'numbered_list', 'proofread', 'translate'].includes(blockType)) {
+          const contentEl = container.querySelector('.ai-preview-content');
+          if (contentEl) {
+            const parent = container.parentNode;
+            while (contentEl.firstChild) {
+              parent.insertBefore(contentEl.firstChild, container);
+            }
+          }
+          container.remove();
         } else if (blockType === 'schedule') {
           const dataStr = container.getAttribute('data-schedule-data');
           if (dataStr) {
@@ -8388,6 +8563,41 @@ Generate the updated output according to the instruction. Preserve layout and ta
         handleAIRetrySubmit(previewId, prompt);
       }
     };
+
+    window.runImmediateRetry = (previewId) => {
+      const container = document.getElementById(previewId);
+      if (container) {
+        const originalPrompt = container.getAttribute('data-original-prompt') || '';
+        handleAIRetrySubmit(previewId, originalPrompt);
+      }
+    };
+
+    window.showEditPromptInput = (previewId) => {
+      const container = document.getElementById(previewId);
+      if (container) {
+        const originalPrompt = container.getAttribute('data-original-prompt') || '';
+        const textEl = document.getElementById(`retry_text_${previewId}`);
+        if (textEl) {
+          textEl.value = originalPrompt;
+        }
+        const el = document.getElementById(`retry_input_container_${previewId}`);
+        if (el) {
+          el.classList.remove('hidden');
+          textEl?.focus();
+        }
+      }
+    };
+
+    window.selectImageBlock = (node) => {
+      if (!node) return;
+      const rect = node.getBoundingClientRect();
+      setImageToolbar({
+        open: true,
+        top: rect.top + window.scrollY - 55,
+        left: rect.left + window.scrollX,
+        node: node
+      });
+    };
     
     
     const handleDocumentClick = (e) => {
@@ -8405,6 +8615,40 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (!node) return;
       const sizes = { sm: '30%', md: '60%', lg: '100%' };
       node.style.width = sizes[size];
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+    };
+
+    window.arrangeImageBlock = (node, mode) => {
+      if (!node) return;
+      if (mode === 'behind') {
+        node.style.position = 'relative';
+        node.style.zIndex = '-1';
+        showToast('Image sent behind text');
+      } else if (mode === 'front') {
+        node.style.position = 'relative';
+        node.style.zIndex = '10';
+        showToast('Image brought in front of text');
+      } else if (mode === 'wrap-left') {
+        node.style.float = 'left';
+        node.style.margin = '8px 16px 8px 0';
+        node.style.display = 'inline-block';
+        showToast('Text wrapped on right');
+      } else if (mode === 'wrap-right') {
+        node.style.float = 'right';
+        node.style.margin = '8px 0 8px 16px';
+        node.style.display = 'inline-block';
+        showToast('Text wrapped on left');
+      } else if (mode === 'center') {
+        node.style.float = 'none';
+        node.style.margin = '16px auto';
+        node.style.display = 'block';
+        showToast('Image centered');
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
     };
 
     window.addImageTextLayer = (node) => {
@@ -8435,6 +8679,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
         const onMouseMove = (ev) => {
           layer.style.left = (startLeft + ev.clientX - startX) + 'px';
           layer.style.top = (startTop + ev.clientY - startY) + 'px';
+          if (blankBodyRef.current) {
+            setDocBodyHtml(blankBodyRef.current.innerHTML);
+          }
         };
         const onMouseUp = () => {
           document.removeEventListener('mousemove', onMouseMove);
@@ -8443,7 +8690,17 @@ Generate the updated output according to the instruction. Preserve layout and ta
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
       };
+      
+      layer.addEventListener('input', () => {
+        if (blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+        }
+      });
+
       layersContainer.appendChild(layer);
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
     };
 
     window.sendImageTextLayerToBack = (node) => {
@@ -8452,19 +8709,34 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (!layersContainer) return;
       const layers = Array.from(layersContainer.children);
       layers.forEach(l => { l.style.zIndex = Math.max(1, parseInt(l.style.zIndex || 10, 10) - 1).toString(); });
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
     };
 
     window.applyAIImageCommand = (node, command) => {
       if (!node) return;
       const cmd = command.toLowerCase();
       if (cmd.includes('small')) window.resizeImageBlock(node, 'sm');
+      else if (cmd.includes('medium')) window.resizeImageBlock(node, 'md');
       else if (cmd.includes('large') || cmd.includes('big')) window.resizeImageBlock(node, 'lg');
       else if (cmd.includes('text') || cmd.includes('overlay')) window.addImageTextLayer(node);
       else if (cmd.includes('caption')) {
         const caption = node.querySelector('.image-caption');
         if (caption) caption.innerText = command.replace(/.*caption/i, '').trim() || 'A generated caption';
-      } else if (cmd.includes('back')) {
-        window.sendImageTextLayerToBack(node);
+      } else if (cmd.includes('back') || cmd.includes('behind') || cmd.includes('send to back')) {
+        window.arrangeImageBlock(node, 'behind');
+      } else if (cmd.includes('front') || cmd.includes('bring to front')) {
+        window.arrangeImageBlock(node, 'front');
+      } else if (cmd.includes('left')) {
+        window.arrangeImageBlock(node, 'wrap-left');
+      } else if (cmd.includes('right')) {
+        window.arrangeImageBlock(node, 'wrap-right');
+      } else if (cmd.includes('center')) {
+        window.arrangeImageBlock(node, 'center');
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
       }
     };
 
@@ -9217,6 +9489,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.cancelInlinePrompt;
       delete window.toggleRetryInput;
       delete window.submitRetry;
+      delete window.runImmediateRetry;
+      delete window.showEditPromptInput;
+      delete window.selectImageBlock;
+      delete window.arrangeImageBlock;
       delete window.exportAiBlock;
       delete window.submitInlinePrompt;
       delete window.submitInlineIcon;
@@ -11877,6 +12153,17 @@ Rules:
     if (!range) {
       blankBodyRef.current?.focus();
       return;
+    }
+
+    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
+      if (range && !range.collapsed) {
+        const selectedText = range.toString().trim();
+        if (selectedText) {
+          const type = command === 'insertUnorderedList' ? 'bullets' : 'numbered_list';
+          applyDirectSelectionAIAction(type, selectedText, range);
+          return;
+        }
+      }
     }
 
     if (command === 'fontSize') {
@@ -18381,16 +18668,22 @@ Rules:
         
       {imageToolbar.open && (
         <div className="image-toolbar-container absolute z-[250] bg-white border border-gray-200 rounded-lg shadow-xl p-2 flex gap-2 items-center" style={{ top: imageToolbar.top, left: imageToolbar.left }}>
-          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'sm')} className="p-1 hover:bg-slate-100 rounded" title="Small Width"><ImageIcon size={14}/></button>
-          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'md')} className="p-1 hover:bg-slate-100 rounded" title="Medium Width"><ImageIcon size={18}/></button>
-          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'lg')} className="p-1 hover:bg-slate-100 rounded" title="Full Width"><ImageIcon size={22}/></button>
+          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'sm')} className="p-1 hover:bg-slate-100 rounded" title="Small Width (30%)"><ImageIcon size={14}/></button>
+          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'md')} className="p-1 hover:bg-slate-100 rounded" title="Medium Width (60%)"><ImageIcon size={18}/></button>
+          <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'lg')} className="p-1 hover:bg-slate-100 rounded" title="Full Width (100%)"><ImageIcon size={22}/></button>
           <div className="w-px h-4 bg-gray-200 mx-1"></div>
           <button onClick={() => window.addImageTextLayer(imageToolbar.node)} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Add floating text"><Type size={16}/> Text</button>
           <button onClick={() => window.sendImageTextLayerToBack(imageToolbar.node)} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Send texts to back"><Layers size={16}/> To Back</button>
           <div className="w-px h-4 bg-gray-200 mx-1"></div>
+          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'center')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Center Image"><AlignCenter size={14}/> Center</button>
+          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'wrap-left')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Float Left / Wrap Right"><AlignLeft size={14}/> Wrap Left</button>
+          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'wrap-right')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Float Right / Wrap Left"><AlignRight size={14}/> Wrap Right</button>
+          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'behind')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Send Behind Document Text"><Layers size={14} className="text-gray-400"/> Behind</button>
+          <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'front')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Bring in Front of Document Text"><Layers size={14} className="text-violet-600"/> In Front</button>
+          <div className="w-px h-4 bg-gray-200 mx-1"></div>
           <div className="relative flex items-center">
             <Sparkles size={14} className="absolute left-2 text-violet-500" />
-            <input type="text" placeholder="AI Command (e.g. resize, add text)" onKeyDown={(e) => { if(e.key === 'Enter') { window.applyAIImageCommand(imageToolbar.node, e.target.value); e.target.value = ''; } }} className="text-xs pl-7 pr-2 py-1 border border-violet-200 rounded-full w-48 focus:outline-none focus:ring-2 focus:ring-violet-400 bg-violet-50/50" />
+            <input type="text" placeholder="AI Command (e.g. resize, wrap left)" onKeyDown={(e) => { if(e.key === 'Enter') { window.applyAIImageCommand(imageToolbar.node, e.target.value); e.target.value = ''; } }} className="text-xs pl-7 pr-2 py-1 border border-violet-200 rounded-full w-48 focus:outline-none focus:ring-2 focus:ring-violet-400 bg-violet-50/50" />
           </div>
         </div>
       )}
