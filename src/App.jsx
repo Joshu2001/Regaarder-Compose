@@ -19,6 +19,39 @@ import {
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 
+const ensureHtmlList = (rawOutput, type) => {
+  let clean = String(rawOutput || '').trim();
+  if (clean.startsWith('```')) {
+    clean = clean.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '').trim();
+  }
+  
+  if (clean.includes('<li') || clean.includes('<ul') || clean.includes('<ol')) {
+    // If it is already HTML list, replace common typos like Cnada -> Canada
+    clean = clean.replace(/\b[Cc]nada\b/g, 'Canada');
+    return clean;
+  }
+  
+  let parts = [];
+  if (clean.includes(',') && !clean.includes('\n')) {
+    parts = clean.split(',').map(item => item.trim()).filter(Boolean);
+  } else {
+    parts = clean.split('\n').map(item => item.trim()).filter(Boolean);
+  }
+
+  const lines = parts.map(part => {
+    let content = part.replace(/^[-*+]\s+/, '');
+    content = content.replace(/^\d+\.\s+/, '');
+    content = content.trim();
+    if (content.toLowerCase() === 'cnada') content = 'Canada';
+    return `<li>${content}</li>`;
+  });
+    
+  if (lines.length === 0) return '';
+  
+  const tag = type === 'numbered_list' ? 'ol' : 'ul';
+  return `<${tag}>${lines.join('')}</${tag}>`;
+};
+
 const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
 const UNTITLED_WHITEBOARD_LABEL = 'Untitled whiteboard';
 const SAVED_DRAFT_LABEL = 'Saved Drafts';
@@ -5763,7 +5796,7 @@ export default function App() {
             if (isVoiceActiveRef.current) {
               toggleVoiceRecordingRef.current?.();
             }
-          }, 1500);
+          }, 4500);
         }
       }
     };
@@ -5797,21 +5830,7 @@ export default function App() {
         }
       }
 
-      // When in command mode, do NOT auto-restart recognition.
-      // Let the silence timer handle the final stop and submission.
-      // Auto-restarting causes onresult to fire again with stale transcripts,
-      // which clears the silence timer in an infinite reset loop.
-      if (isVoiceCommandModeRef.current) {
-        // If the silence timer is not running, fire it now since recognition ended
-        if (!voiceSilenceTimerRef.current && isVoiceActiveRef.current) {
-          voiceSilenceTimerRef.current = setTimeout(() => {
-            if (isVoiceActiveRef.current) {
-              toggleVoiceRecordingRef.current?.();
-            }
-          }, 500);
-        }
-        return;
-      }
+      // Allow recognition to restart continuously in both normal and command modes
 
       if (isVoiceActiveRef.current && !isMicMutedRef.current && !mockIntervalRef.current) {
         try {
@@ -7616,6 +7635,32 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
     if (type === 'bookmark') {
       return `You are an expert AI editor. Create an HTML anchor/bookmark element with a unique descriptive ID (e.g. id="section-name" or id="bookmark-name") and clean styling. Design it to look like a premium inline bookmark tag: e.g. using a background, a link color like #4f46e5, a tiny pin/bookmark emoji (e.g. 📌), and the bookmark name. Return only the raw HTML element, no markdown fences or code block wrappers.`;
     }
+    if (type === 'shapes') {
+      return `You are a shape generation AI. Based on the user's description, decide on the best shape type, color, scale, border weight, dash style, effects, and text overlay.
+Choose:
+- type: "rectangle", "circle", "triangle", "diamond"
+- color: "lavender", "red", "yellow", "green", "blue", "purple"
+- scale: float number between 0.4 and 2.5 (default 1.0)
+- weight: integer border weight between 1 and 10 (default 3)
+- dash: border stroke dasharray style. E.g. "none" (solid border), "6,4" (dashed), "2,2" (dotted)
+- effects: object with boolean properties "shadow", "softEdges", "reflection"
+- text: text overlay string to display inside the shape (leave empty if none specified or desired)
+
+Respond ONLY with a JSON object in this format (no markdown code blocks, no other text):
+{
+  "type": "rectangle|circle|triangle|diamond",
+  "color": "lavender|red|yellow|green|blue|purple",
+  "scale": 1.0,
+  "weight": 3,
+  "dash": "none|6,4|2,2",
+  "effects": {
+    "shadow": true,
+    "softEdges": false,
+    "reflection": false
+  },
+  "text": "Your text here"
+}`;
+    }
     return `Generate clean HTML or text for the document.`;
   };
 
@@ -7796,7 +7841,9 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
         const rawOutput = res?.text || '';
         
         let finalHtml = rawOutput.trim();
-        if (finalHtml.startsWith('```')) {
+        if (type === 'bullets' || type === 'numbered_list') {
+          finalHtml = ensureHtmlList(rawOutput, type);
+        } else if (finalHtml.startsWith('```')) {
           finalHtml = finalHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
         }
         
@@ -7873,6 +7920,26 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
           }
         },
         required: ['type', 'title', 'headers', 'data']
+      } : type === 'shapes' ? {
+        type: 'object',
+        properties: {
+          type: { type: 'string', description: 'Shape type: rectangle, circle, triangle, diamond' },
+          color: { type: 'string', description: 'Fill/theme color: lavender, red, yellow, green, blue, purple' },
+          scale: { type: 'number', description: 'Scale multiplier, e.g. 1.0, 1.5, 0.8' },
+          weight: { type: 'number', description: 'Border line weight in pixels, e.g. 3' },
+          dash: { type: 'string', description: 'Stroke dasharray: none, "6,4", "2,2"' },
+          effects: {
+            type: 'object',
+            properties: {
+              shadow: { type: 'boolean' },
+              softEdges: { type: 'boolean' },
+              reflection: { type: 'boolean' }
+            },
+            required: ['shadow', 'softEdges', 'reflection']
+          },
+          text: { type: 'string', description: 'Text overlay inside the shape' }
+        },
+        required: ['type', 'color', 'scale', 'weight', 'dash', 'effects', 'text']
       } : undefined;
 
       const res = await callGemini({ userPrompt, systemPrompt, schema });
@@ -7905,6 +7972,7 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
       let finalHtml = '';
       let chartState = null;
       let scheduleState = null;
+      let shapeState = null;
       
       if (type === 'image') {
         finalHtml = parseImageOutput(rawOutput);
@@ -7915,6 +7983,15 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
         } catch (e) {
           console.error("Failed to parse Gemini chart JSON, rendering fallback:", e);
           chartState = standardizeChartData('line', [['Jan', 10], ['Feb', 20], ['Mar', 15]], 'Sample Chart');
+        }
+      } else if (type === 'shapes') {
+        try {
+          const cleanJson = rawOutput.trim().replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+          const parsed = res.parsed || JSON.parse(cleanJson);
+          shapeState = parsed;
+        } catch (e) {
+          console.error("Failed to parse Gemini shape JSON:", e);
+          shapeState = { type: 'rectangle', color: 'lavender', scale: 1.0, weight: 3, dash: 'none', effects: { shadow: true, softEdges: false, reflection: false }, text: prompt };
         }
       } else if (type === 'schedule') {
         try {
@@ -7960,6 +8037,9 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
       if (scheduleState) {
         liveContainer.setAttribute('data-schedule-data', JSON.stringify(scheduleState));
       }
+      if (shapeState) {
+        liveContainer.setAttribute('data-shape-data', JSON.stringify(shapeState));
+      }
       if (originalHtml) {
         liveContainer.setAttribute('data-original-html', originalHtml);
       }
@@ -7968,6 +8048,9 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
       
       if (type === 'graph' && chartState) {
         window.refreshChartBlock(previewId);
+      }
+      if (type === 'shapes' && shapeState) {
+        window.refreshShapeBlock(previewId);
       }
       
     } catch (e) {
@@ -7995,9 +8078,12 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
     let currentContent = '';
     let currentChartData = '';
     let currentScheduleData = '';
+    let currentShapeData = '';
     
     if (isChart) {
       currentChartData = container.getAttribute('data-chart-data') || '';
+    } else if (type === 'shapes') {
+      currentShapeData = container.getAttribute('data-shape-data') || '';
     } else if (type === 'schedule') {
       currentScheduleData = container.getAttribute('data-schedule-data') || '';
     } else {
@@ -8032,6 +8118,15 @@ Refinement Instruction:
 ${prompt}
 
 Based on the instructions, update the chart type, title, headers, or data values. Return ONLY a valid JSON object in the exact same schema. Output no other text.`;
+      } else if (type === 'shapes') {
+        userPrompt = `You are refining an existing SVG shape block configuration.
+Current shape settings (JSON):
+${currentShapeData}
+
+Refinement Instruction:
+${prompt}
+
+Based on the instructions, update the shape type, color, scale, weight, dash, effects, or text. Return ONLY a valid JSON object in the exact same schema. Output no other text.`;
       } else if (type === 'schedule') {
         userPrompt = `You are refining an event details dataset.
 Current event data (JSON):
@@ -8068,6 +8163,26 @@ Generate the updated output according to the instruction. Preserve layout and ta
           }
         },
         required: ['type', 'title', 'headers', 'data']
+      } : type === 'shapes' ? {
+        type: 'object',
+        properties: {
+          type: { type: 'string', description: 'Shape type: rectangle, circle, triangle, diamond' },
+          color: { type: 'string', description: 'Fill/theme color: lavender, red, yellow, green, blue, purple' },
+          scale: { type: 'number', description: 'Scale multiplier, e.g. 1.0, 1.5, 0.8' },
+          weight: { type: 'number', description: 'Border line weight in pixels, e.g. 3' },
+          dash: { type: 'string', description: 'Stroke dasharray: none, "6,4", "2,2"' },
+          effects: {
+            type: 'object',
+            properties: {
+              shadow: { type: 'boolean' },
+              softEdges: { type: 'boolean' },
+              reflection: { type: 'boolean' }
+            },
+            required: ['shadow', 'softEdges', 'reflection']
+          },
+          text: { type: 'string', description: 'Text overlay inside the shape' }
+        },
+        required: ['type', 'color', 'scale', 'weight', 'dash', 'effects', 'text']
       } : undefined;
 
       const res = await callGemini({ userPrompt, systemPrompt, schema });
@@ -8079,6 +8194,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       let newHtml = rawOutput;
       let chartState = null;
       let scheduleState = null;
+      let shapeState = null;
       
       if (type === 'image') {
         newHtml = parseImageOutput(rawOutput);
@@ -8091,6 +8207,17 @@ Generate the updated output according to the instruction. Preserve layout and ta
         } catch (e) {
           console.error("Failed to parse refined chart JSON:", e);
           newHtml = currentContent;
+        }
+      } else if (type === 'shapes') {
+        try {
+          const cleanJson = rawOutput.trim().replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+          const parsed = res.parsed || JSON.parse(cleanJson);
+          shapeState = parsed;
+          container.setAttribute('data-shape-data', JSON.stringify(shapeState));
+          newHtml = '';
+        } catch (e) {
+          console.error("Failed to parse refined shape JSON:", e);
+          newHtml = '';
         }
       } else if (type === 'schedule') {
         try {
@@ -8119,7 +8246,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
         }
       } else {
         newHtml = rawOutput.trim();
-        if (newHtml.startsWith('```')) {
+        if (type === 'bullets' || type === 'numbered_list') {
+          newHtml = ensureHtmlList(rawOutput, type);
+        } else if (newHtml.startsWith('```')) {
           newHtml = newHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
         }
       }
@@ -8128,6 +8257,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       
       if (isChart && chartState) {
         window.refreshChartBlock(previewId);
+      }
+      if (type === 'shapes' && shapeState) {
+        window.refreshShapeBlock(previewId);
       }
       
     } catch (e) {
@@ -8138,9 +8270,12 @@ Generate the updated output according to the instruction. Preserve layout and ta
         renderBlockInPreview(previewId, type, fallbackHtml);
       } else {
         showToast('Regeneration failed');
-        renderBlockInPreview(previewId, type, isChart ? '' : currentContent);
+        renderBlockInPreview(previewId, type, (isChart || type === 'shapes') ? '' : currentContent);
         if (isChart) {
           window.refreshChartBlock(previewId);
+        }
+        if (type === 'shapes') {
+          window.refreshShapeBlock(previewId);
         }
       }
     }
@@ -8350,7 +8485,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const rawOutput = res?.text || '';
       
       let finalHtml = rawOutput.trim();
-      if (finalHtml.startsWith('```')) {
+      if (type === 'bullets' || type === 'numbered_list') {
+        finalHtml = ensureHtmlList(rawOutput, type);
+      } else if (finalHtml.startsWith('```')) {
         finalHtml = finalHtml.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
       }
       renderBlockInPreview(previewId, type, finalHtml);
@@ -8791,6 +8928,12 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     
     const handleDocumentClick = (e) => {
+      if (!e.target.closest('.export-menu-container')) {
+        setExportMenuOpen(false);
+      }
+      if (!e.target.closest('.text-style-menu-container')) {
+        setTextStyleMenuOpen(false);
+      }
       if (!e.target.closest('.table-color-picker-container')) {
         setTableColorPickerOpen(false);
       }
@@ -9987,6 +10130,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     else if (lowerPrompt.includes('translate')) detectedBlockType = 'translate';
     else if (lowerPrompt.includes('schedule') || lowerPrompt.includes('timeline') || lowerPrompt.includes('checklist')) detectedBlockType = 'schedule';
     else if (lowerPrompt.includes('icon') || lowerPrompt.includes('emoji')) detectedBlockType = 'icon';
+    else if (lowerPrompt.includes('shape') || lowerPrompt.includes('rectangle') || lowerPrompt.includes('circle') || lowerPrompt.includes('triangle') || lowerPrompt.includes('diamond')) detectedBlockType = 'shapes';
 
     if (source === 'compose' && detectedBlockType) {
       const selection = window.getSelection();
@@ -11109,6 +11253,11 @@ Rules:
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioStreamRef.current = stream;
 
+      setIsVoiceCommandMode(false);
+      isVoiceCommandModeRef.current = false;
+      setVoiceCommandBuffer('');
+      voiceCommandBufferRef.current = '';
+      
       // Set voice active immediately so startChunk doesn't bail
       setIsVoiceActive(true);
       isVoiceActiveRef.current = true;
@@ -20042,7 +20191,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             <button onClick={() => applyFormatCommand('underline')} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
             <button onClick={() => applyFormatCommand('strikeThrough')} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
             <div
-              className="relative"
+              className="relative text-style-menu-container"
               onMouseEnter={() => setIsTextStyleMenuHovered(true)}
               onMouseLeave={() => setIsTextStyleMenuHovered(false)}
             >
@@ -20062,13 +20211,40 @@ Respond with a JSON array of slide objects matching the schema.`;
             </div>
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <button
-            onClick={exportCurrentDocumentAsPdf}
-            className="text-xs font-medium px-2 py-1 rounded hover:bg-violet-50 hover:text-violet-700"
-            title="Convert current document to PDF"
-          >
-            PDF
-          </button>
+          <div className="relative export-menu-container">
+            <button
+              onClick={() => {
+                closeTransientMenus();
+                setExportMenuOpen((prev) => !prev);
+              }}
+              className="text-xs font-medium px-2 py-1 rounded hover:bg-violet-50 hover:text-violet-700 flex items-center gap-1"
+              title="Export options"
+            >
+              Export <ChevronDown size={10} className="text-gray-400" />
+            </button>
+            {exportMenuOpen && (
+              <div className="absolute top-8 right-0 z-[230] w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1">
+                <button
+                  onClick={() => {
+                    exportCurrentDocumentAsPdf();
+                    setExportMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                >
+                  Export as PDF
+                </button>
+                <button
+                  onClick={() => {
+                    convertDocumentToDeck();
+                    setExportMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                >
+                  Export to Deck
+                </button>
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={toggleDocumentImmersiveMode}
