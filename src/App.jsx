@@ -449,6 +449,10 @@ export default function App() {
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
   const [imageToolbar, setImageToolbar] = useState({ open: false, top: 0, left: 0, node: null });
   const [tableToolbar, setTableToolbar] = useState({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+  const [tableColorPickerOpen, setTableColorPickerOpen] = useState(false);
+  const [shapeToolbar, setShapeToolbar] = useState({ open: false, top: 0, left: 0, node: null });
+  const [shapeColorMenu, setShapeColorMenu] = useState({ open: false, top: 0, left: 0, containerId: null });
+  const [shapeBorderMenu, setShapeBorderMenu] = useState({ open: false, top: 0, left: 0, containerId: null });
   const tableToolbarRef = useRef(null);
 
   const syncEditorHtml = () => {
@@ -602,7 +606,12 @@ export default function App() {
 
   const changeCellColor = (cell, color) => {
     if (cell) {
-      cell.style.backgroundColor = color;
+      if (color.startsWith('linear-gradient')) {
+        cell.style.background = color;
+      } else {
+        cell.style.background = '';
+        cell.style.backgroundColor = color;
+      }
       syncEditorHtml();
     }
   };
@@ -610,6 +619,28 @@ export default function App() {
   useEffect(() => {
     const handleEvents = () => {
       updateTableToolbarPosition();
+      setImageToolbar(prev => {
+        if (prev.open && prev.node) {
+          const rect = prev.node.getBoundingClientRect();
+          return {
+            ...prev,
+            top: rect.top + window.scrollY - 55,
+            left: rect.left + window.scrollX
+          };
+        }
+        return prev;
+      });
+      setShapeToolbar(prev => {
+        if (prev.open && prev.node) {
+          const rect = prev.node.getBoundingClientRect();
+          return {
+            ...prev,
+            top: rect.top + window.scrollY - 55,
+            left: rect.left + window.scrollX
+          };
+        }
+        return prev;
+      });
     };
     document.addEventListener('selectionchange', handleEvents);
     document.addEventListener('click', handleEvents);
@@ -5432,6 +5463,115 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const handleScrollResize = () => {
+      if (imageToolbar.open && imageToolbar.node) {
+        const rect = imageToolbar.node.getBoundingClientRect();
+        setImageToolbar(prev => ({
+          ...prev,
+          top: rect.top + window.scrollY - 50,
+          left: rect.left + window.scrollX
+        }));
+      }
+      if (tableToolbar.open && tableToolbar.cellEl) {
+        const rect = tableToolbar.cellEl.getBoundingClientRect();
+        setTableToolbar(prev => ({
+          ...prev,
+          left: rect.left + rect.width / 2,
+          top: rect.top
+        }));
+      }
+      if (shapeToolbar.open && shapeToolbar.containerId) {
+        const el = document.getElementById(shapeToolbar.containerId);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          setShapeToolbar(prev => ({
+            ...prev,
+            top: rect.top + window.scrollY - 50,
+            left: rect.left + window.scrollX
+          }));
+        }
+      }
+    };
+
+    const handleShapeResizeMouseDown = (e, handle, containerId) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data') || '{}');
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startScale = state.scale || 1.0;
+      
+      const onMouseMove = (moveEvent) => {
+        const deltaX = moveEvent.clientX - startX;
+        const deltaY = moveEvent.clientY - startY;
+        
+        let deltaScale = 0;
+        if (handle === 'br') {
+          deltaScale = (deltaX + deltaY) / 320;
+        } else if (handle === 'tl') {
+          deltaScale = -(deltaX + deltaY) / 320;
+        } else if (handle === 'tr') {
+          deltaScale = (deltaX - deltaY) / 320;
+        } else if (handle === 'bl') {
+          deltaScale = (-deltaX + deltaY) / 320;
+        }
+        
+        const newScale = Math.max(0.4, Math.min(2.5, startScale + deltaScale));
+        state.scale = parseFloat(newScale.toFixed(2));
+        container.setAttribute('data-shape-data', JSON.stringify(state));
+        window.refreshShapeBlock(containerId);
+        
+        const rect = container.getBoundingClientRect();
+        setShapeToolbar(prev => {
+          if (prev.open && prev.containerId === containerId) {
+            return {
+              ...prev,
+              top: rect.top + window.scrollY - 50,
+              left: rect.left + window.scrollX
+            };
+          }
+          return prev;
+        });
+      };
+      
+      const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        if (blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+        }
+      };
+      
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    };
+
+    const handleMouseDownDelegation = (e) => {
+      const resizeHandle = e.target.closest('.shape-resize-handle');
+      if (resizeHandle) {
+        const handle = resizeHandle.getAttribute('data-handle');
+        const shapeBlock = resizeHandle.closest('.interactive-shape-block') || resizeHandle.closest('.ai-preview-block');
+        if (shapeBlock) {
+          const containerId = shapeBlock.getAttribute('id');
+          handleShapeResizeMouseDown(e, handle, containerId);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScrollResize, true);
+    window.addEventListener('resize', handleScrollResize, true);
+    document.addEventListener('mousedown', handleMouseDownDelegation);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScrollResize, true);
+      window.removeEventListener('resize', handleScrollResize, true);
+      document.removeEventListener('mousedown', handleMouseDownDelegation);
+    };
+  }, [imageToolbar.open, imageToolbar.node, tableToolbar.open, tableToolbar.cellEl, shapeToolbar.open, shapeToolbar.containerId]);
+
+  useEffect(() => {
     const handleSelectionChange = () => {
       const range = getEditorSelectionRange();
       if (!range) {
@@ -7122,6 +7262,8 @@ export default function App() {
   };
 
   const callGemini = async ({ userPrompt, systemPrompt, schema, attachments = [] }) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     try {
       setLastAiError('');
       const encodedAttachments = await encodePromptAttachments(attachments);
@@ -7136,8 +7278,10 @@ export default function App() {
           schema,
           attachments: encodedAttachments,
         }),
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload?.ok) {
         const reason = payload?.error || `HTTP ${response.status}`;
@@ -7169,7 +7313,11 @@ export default function App() {
         modelName: payload?.modelName || 'server-proxy',
       };
     } catch (_error) {
-      const reason = 'Failed to reach /api/gemini. In local development, run via `vercel dev` or deploy to Vercel.';
+      clearTimeout(timeoutId);
+      const isTimeout = _error.name === 'AbortError';
+      const reason = isTimeout 
+        ? 'AI request timed out after 15 seconds.' 
+        : 'Failed to reach /api/gemini. In local development, run via `vercel dev` or deploy to Vercel.';
       setLastAiError(reason);
       return { error: reason };
     }
@@ -7728,6 +7876,18 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
       const res = await callGemini({ userPrompt, systemPrompt, schema });
       const liveContainer = document.getElementById(containerId);
       if (res?.error) {
+        if (type === 'image') {
+          console.warn("Gemini image generation failed, falling back to raw prompt:", res.error);
+          if (liveContainer) {
+            const finalHtml = parseImageOutput(prompt);
+            liveContainer.className = 'ai-preview-block';
+            liveContainer.setAttribute('contenteditable', 'false');
+            liveContainer.setAttribute('data-block-type', type);
+            liveContainer.setAttribute('data-original-prompt', prompt);
+            renderBlockInPreview(containerId, type, finalHtml);
+          }
+          return;
+        }
         showToast(`AI generation failed: ${res.error}`);
         if (liveContainer) {
           liveContainer.remove();
@@ -7970,10 +8130,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
       
     } catch (e) {
       console.error(e);
-      showToast('Regeneration failed');
-      renderBlockInPreview(previewId, type, isChart ? '' : currentContent);
-      if (isChart) {
-        window.refreshChartBlock(previewId);
+      if (type === 'image') {
+        console.warn("Gemini image regeneration failed, falling back to raw prompt:", e.message);
+        const fallbackHtml = parseImageOutput(prompt);
+        renderBlockInPreview(previewId, type, fallbackHtml);
+      } else {
+        showToast('Regeneration failed');
+        renderBlockInPreview(previewId, type, isChart ? '' : currentContent);
+        if (isChart) {
+          window.refreshChartBlock(previewId);
+        }
       }
     }
   };
@@ -8623,6 +8789,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     
     const handleDocumentClick = (e) => {
+      if (!e.target.closest('.table-color-picker-container')) {
+        setTableColorPickerOpen(false);
+      }
+      if (!e.target.closest('.shape-color-menu-container')) {
+        setShapeColorMenu({ open: false, top: 0, left: 0, containerId: null });
+      }
+      if (!e.target.closest('.shape-border-menu-container')) {
+        setShapeBorderMenu({ open: false, top: 0, left: 0, containerId: null });
+      }
+
       const imgBlock = e.target.closest('.interactive-image-block');
       if (imgBlock) {
         const rect = imgBlock.getBoundingClientRect();
@@ -8647,21 +8823,46 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
 
       // Shape Editing Mode Toggle
-      const shapeBlock = e.target.closest('.interactive-shape-block');
+      const shapeBlock = e.target.closest('.interactive-shape-block') || e.target.closest('.ai-preview-block[data-block-type="shapes"]');
       if (shapeBlock) {
-        if (!shapeBlock.classList.contains('editing')) {
-          document.querySelectorAll('.interactive-shape-block.editing').forEach(s => {
-            if (s !== shapeBlock) s.classList.remove('editing');
+        const containerId = shapeBlock.getAttribute('id');
+        const isOuterClick = e.target.closest('.shape-outer-stroke') || (e.target.closest('.shape-svg-container') && !e.target.closest('.shape-inner-fill') && !e.target.closest('.shape-text-overlay'));
+        
+        if (isOuterClick) {
+          const rect = shapeBlock.getBoundingClientRect();
+          setShapeToolbar({
+            open: true,
+            top: rect.top + window.scrollY - 50,
+            left: rect.left + window.scrollX,
+            containerId
           });
-          shapeBlock.classList.add('editing');
+          
+          if (!shapeBlock.classList.contains('editing')) {
+            document.querySelectorAll('.interactive-shape-block.editing, .ai-preview-block.editing').forEach(s => {
+              if (s !== shapeBlock) s.classList.remove('editing');
+            });
+            shapeBlock.classList.add('editing');
+          }
+        } else {
+          setShapeToolbar({ open: false, top: 0, left: 0, containerId: null });
+          const textOverlay = shapeBlock.querySelector('.shape-text-overlay');
+          if (textOverlay) {
+            textOverlay.focus();
+          }
+          if (!shapeBlock.classList.contains('editing')) {
+            document.querySelectorAll('.interactive-shape-block.editing, .ai-preview-block.editing').forEach(s => {
+              if (s !== shapeBlock) s.classList.remove('editing');
+            });
+            shapeBlock.classList.add('editing');
+          }
         }
-      } else {
-        document.querySelectorAll('.interactive-shape-block.editing').forEach(s => {
+      } else if (!e.target.closest('.shape-toolbar-container') && !e.target.closest('.shape-color-menu-container') && !e.target.closest('.shape-border-menu-container')) {
+        setShapeToolbar({ open: false, top: 0, left: 0, containerId: null });
+        document.querySelectorAll('.interactive-shape-block.editing, .ai-preview-block.editing').forEach(s => {
           s.classList.remove('editing');
         });
       }
 
-      // Sync changes to React state if we clicked outside
       if (!chartBlock && !shapeBlock && blankBodyRef.current) {
         setDocBodyHtml(blankBodyRef.current.innerHTML);
       }
@@ -8948,17 +9149,35 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const filterStyle = filters.length > 0 ? `filter: ${filters.join(' ')};` : '';
       const dashProp = dash && dash !== 'none' ? `stroke-dasharray="${dash}"` : '';
       
-      const sharedProps = `stroke="${colors.stroke}" stroke-width="${weight}" ${dashProp} fill="${colors.fill}" stroke-linecap="round" stroke-linejoin="round" style="transition: all 0.2s; ${filterStyle}"`;
-      
       let shapeMarkup = '';
+      const hitWidth = Math.max(16, weight + 10);
       if (type === 'circle') {
-        shapeMarkup = `<circle cx="${width/2}" cy="${height/2}" r="${Math.max(4, (Math.min(width, height) / 2) - offset)}" ${sharedProps} />`;
+        const r = Math.max(4, (Math.min(width, height) / 2) - offset);
+        shapeMarkup = `
+          <circle cx="${width/2}" cy="${height/2}" r="${r}" fill="${colors.fill}" class="shape-inner-fill" style="cursor:text; transition:all 0.2s; ${filterStyle}" />
+          <circle cx="${width/2}" cy="${height/2}" r="${r}" fill="none" stroke="${colors.stroke}" stroke-width="${weight}" ${dashProp} stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none; transition:all 0.2s; ${filterStyle}" />
+          <circle cx="${width/2}" cy="${height/2}" r="${r}" fill="none" stroke="transparent" stroke-width="${hitWidth}" class="shape-outer-stroke" style="cursor:pointer;" />
+        `;
       } else if (type === 'triangle') {
-        shapeMarkup = `<polygon points="${width/2},${offset} ${width - offset},${height - offset} ${offset},${height - offset}" ${sharedProps} />`;
+        shapeMarkup = `
+          <polygon points="${width/2},${offset} ${width - offset},${height - offset} ${offset},${height - offset}" fill="${colors.fill}" class="shape-inner-fill" style="cursor:text; transition:all 0.2s; ${filterStyle}" />
+          <polygon points="${width/2},${offset} ${width - offset},${height - offset} ${offset},${height - offset}" fill="none" stroke="${colors.stroke}" stroke-width="${weight}" ${dashProp} stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none; transition:all 0.2s; ${filterStyle}" />
+          <polygon points="${width/2},${offset} ${width - offset},${height - offset} ${offset},${height - offset}" fill="none" stroke="transparent" stroke-width="${hitWidth}" class="shape-outer-stroke" style="cursor:pointer;" />
+        `;
       } else if (type === 'diamond') {
-        shapeMarkup = `<polygon points="${width/2},${offset} ${width - offset},${height/2} ${width/2},${height - offset} ${offset},${height/2}" ${sharedProps} />`;
+        shapeMarkup = `
+          <polygon points="${width/2},${offset} ${width - offset},${height/2} ${width/2},${height - offset} ${offset},${height/2}" fill="${colors.fill}" class="shape-inner-fill" style="cursor:text; transition:all 0.2s; ${filterStyle}" />
+          <polygon points="${width/2},${offset} ${width - offset},${height/2} ${width/2},${height - offset} ${offset},${height/2}" fill="none" stroke="${colors.stroke}" stroke-width="${weight}" ${dashProp} stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none; transition:all 0.2s; ${filterStyle}" />
+          <polygon points="${width/2},${offset} ${width - offset},${height/2} ${width/2},${height - offset} ${offset},${height/2}" fill="none" stroke="transparent" stroke-width="${hitWidth}" class="shape-outer-stroke" style="cursor:pointer;" />
+        `;
       } else {
-        shapeMarkup = `<rect x="${offset}" y="${offset}" width="${Math.max(4, width - offset * 2)}" height="${Math.max(4, height - offset * 2)}" rx="8" ry="8" ${sharedProps} />`;
+        const w = Math.max(4, width - offset * 2);
+        const h = Math.max(4, height - offset * 2);
+        shapeMarkup = `
+          <rect x="${offset}" y="${offset}" width="${w}" height="${h}" rx="8" ry="8" fill="${colors.fill}" class="shape-inner-fill" style="cursor:text; transition:all 0.2s; ${filterStyle}" />
+          <rect x="${offset}" y="${offset}" width="${w}" height="${h}" rx="8" ry="8" fill="none" stroke="${colors.stroke}" stroke-width="${weight}" ${dashProp} stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none; transition:all 0.2s; ${filterStyle}" />
+          <rect x="${offset}" y="${offset}" width="${w}" height="${h}" rx="8" ry="8" fill="none" stroke="transparent" stroke-width="${hitWidth}" class="shape-outer-stroke" style="cursor:pointer;" />
+        `;
       }
       
       const svgCode = `
@@ -9023,69 +9242,25 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const previewContent = container.querySelector('.ai-preview-content');
       const target = previewContent || container;
       
-      const colorsList = ['lavender', 'red', 'yellow', 'green', 'blue', 'purple'];
-      const colorsHex = {
-        lavender: '#e0e7ff',
-        red: '#fee2e2',
-        yellow: '#fef3c7',
-        green: '#dcfce7',
-        blue: '#dbeafe',
-        purple: '#f3e8ff'
-      };
-      
-      const effects = state.effects || {};
+      const baseWidth = 160;
+      const baseHeight = 160;
+      const scale = state.scale || 1.0;
+      const width = baseWidth * scale;
+      const height = baseHeight * scale;
+      const offset = Math.max(4, Math.ceil((state.weight || 3) / 2) + 2);
       
       target.innerHTML = `
-        <div class="shape-block-header" style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:8px 16px; border-bottom:1px solid #e2e8f0; border-top-left-radius:16px; border-top-right-radius:16px; font-family:sans-serif; user-select:none; gap:8px; flex-wrap:wrap;">
-          <div style="font-weight:600; color:#475569; font-size:12px; display:flex; align-items:center; gap:8px;">
-            <span style="background:#8b5cf6; color:#fff; padding:2px 6px; border-radius:4px; font-size:10px;">SHAPE</span>
-          </div>
-          <div class="shape-type-selector" style="display:flex; gap:4px;">
-            ${['rectangle', 'circle', 'triangle', 'diamond'].map(s => `
-              <button type="button" onclick="window.changeShapeType('${containerId}', '${s}')" style="background:${state.type === s ? '#8b5cf6' : '#ffffff'}; color:${state.type === s ? '#ffffff' : '#475569'}; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:500; transition:all 100ms;">${s.charAt(0).toUpperCase() + s.slice(1)}</button>
-            `).join('')}
-          </div>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <button type="button" onclick="window.adjustShapeScale('${containerId}', 1)" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; width:24px; height:24px; font-size:14px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center;" title="Expand">+</button>
-            <button type="button" onclick="window.adjustShapeScale('${containerId}', -1)" style="background:#ffffff; color:#334155; border:1px solid #cbd5e1; border-radius:6px; width:24px; height:24px; font-size:14px; cursor:pointer; font-weight:bold; display:flex; align-items:center; justify-content:center;" title="Minimize">-</button>
-          </div>
-          <div style="display:flex; gap:6px; align-items:center;">
-            ${colorsList.map(c => `
-              <button type="button" onclick="window.changeShapeColor('${containerId}', '${c}')" style="background:${colorsHex[c]}; width:16px; height:16px; border-radius:50%; border:${state.color === c ? '2px solid #475569' : '1px solid #cbd5e1'}; cursor:pointer; padding:0; outline:none;" title="${c}"></button>
-            `).join('')}
-          </div>
-          
-          <!-- Shape styling dropdowns & toggles -->
-          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-            <select onchange="window.changeShapeWeight('${containerId}', this.value)" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:4px 6px; font-size:11px; cursor:pointer; color:#475569; outline:none;" title="Border Weight">
-              <option value="1" ${state.weight === 1 ? 'selected' : ''}>1px</option>
-              <option value="2" ${state.weight === 2 ? 'selected' : ''}>2px</option>
-              <option value="3" ${state.weight === 3 || !state.weight ? 'selected' : ''}>3px</option>
-              <option value="5" ${state.weight === 5 ? 'selected' : ''}>5px</option>
-              <option value="8" ${state.weight === 8 ? 'selected' : ''}>8px</option>
-            </select>
-            
-            <select onchange="window.changeShapeDash('${containerId}', this.value)" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:4px 6px; font-size:11px; cursor:pointer; color:#475569; outline:none;" title="Border style">
-              <option value="none" ${state.dash === 'none' || !state.dash ? 'selected' : ''}>Solid</option>
-              <option value="5,5" ${state.dash === '5,5' ? 'selected' : ''}>Dashed</option>
-              <option value="2,2" ${state.dash === '2,2' ? 'selected' : ''}>Dotted</option>
-            </select>
-            
-            <select onchange="window.changeShapeWrap('${containerId}', this.value)" style="background:#ffffff; border:1px solid #cbd5e1; border-radius:6px; padding:4px 6px; font-size:11px; cursor:pointer; color:#475569; outline:none;" title="Text wrapping mode">
-              <option value="inline" ${state.wrapText === 'inline' || !state.wrapText ? 'selected' : ''}>Inline</option>
-              <option value="wrap-left" ${state.wrapText === 'wrap-left' ? 'selected' : ''}>Wrap Left</option>
-              <option value="wrap-right" ${state.wrapText === 'wrap-right' ? 'selected' : ''}>Wrap Right</option>
-              <option value="behind" ${state.wrapText === 'behind' ? 'selected' : ''}>Behind Text</option>
-              <option value="front" ${state.wrapText === 'front' ? 'selected' : ''}>In Front</option>
-            </select>
-            
-            <button type="button" onclick="window.toggleShapeEffect('${containerId}', 'shadow')" style="background:${effects.shadow ? '#8b5cf6' : '#ffffff'}; color:${effects.shadow ? '#ffffff' : '#475569'}; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:500; transition:all 100ms;" title="Shadow Effect">Shadow</button>
-            <button type="button" onclick="window.toggleShapeEffect('${containerId}', 'softEdges')" style="background:${effects.softEdges ? '#8b5cf6' : '#ffffff'}; color:${effects.softEdges ? '#ffffff' : '#475569'}; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:500; transition:all 100ms;" title="Soft Edges Blur">Soft Edges</button>
-            <button type="button" onclick="window.toggleShapeEffect('${containerId}', 'reflection')" style="background:${effects.reflection ? '#8b5cf6' : '#ffffff'}; color:${effects.reflection ? '#ffffff' : '#475569'}; border:1px solid #cbd5e1; border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-weight:500; transition:all 100ms;" title="Reflection Mirror">Reflection</button>
-          </div>
-        </div>
-        <div class="shape-svg-container" style="padding:24px; background:#ffffff; display:flex; justify-content:center; align-items:center; min-height:180px; border-bottom-left-radius:16px; border-bottom-right-radius:16px;">
+        <div class="shape-svg-container" style="padding:24px; background:transparent; display:flex; justify-content:center; align-items:center; min-height:180px; position:relative; overflow:visible; user-select:none;">
           ${svgHtml}
+          <!-- Text overlay centered on the shape -->
+          <div contenteditable="true" class="shape-text-overlay" data-placeholder="Type inside shape..." oninput="window.updateShapeText('${containerId}', this.innerText)" style="position:absolute; width:${Math.max(40, width - offset*2 - 20)}px; height:${Math.max(40, height - offset*2 - 20)}px; display:flex; align-items:center; justify-content:center; text-align:center; outline:none; font-family:sans-serif; font-size:14px; font-weight:500; color:#1e293b; overflow:hidden; word-break:break-word; pointer-events:auto; z-index:2; border:none; background:transparent; line-height:1.2;">
+            ${state.text || ''}
+          </div>
+          <!-- Resize Handles -->
+          <div class="shape-resize-handle shape-resize-tl" data-handle="tl" style="position:absolute; left:calc(50% - ${width/2}px - 6px); top:calc(50% - ${height/2}px - 6px); width:12px; height:12px; border-radius:50%; background:#7c3aed; border:2px solid #ffffff; cursor:nwse-resize; z-index:10; display:none; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
+          <div class="shape-resize-handle shape-resize-tr" data-handle="tr" style="position:absolute; left:calc(50% + ${width/2}px - 6px); top:calc(50% - ${height/2}px - 6px); width:12px; height:12px; border-radius:50%; background:#7c3aed; border:2px solid #ffffff; cursor:nesw-resize; z-index:10; display:none; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
+          <div class="shape-resize-handle shape-resize-bl" data-handle="bl" style="position:absolute; left:calc(50% - ${width/2}px - 6px); top:calc(50% + ${height/2}px - 6px); width:12px; height:12px; border-radius:50%; background:#7c3aed; border:2px solid #ffffff; cursor:nesw-resize; z-index:10; display:none; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
+          <div class="shape-resize-handle shape-resize-br" data-handle="br" style="position:absolute; left:calc(50% + ${width/2}px - 6px); top:calc(50% + ${height/2}px - 6px); width:12px; height:12px; border-radius:50%; background:#7c3aed; border:2px solid #ffffff; cursor:nwse-resize; z-index:10; display:none; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
         </div>
       `;
       if (blankBodyRef.current) {
@@ -9157,6 +9332,17 @@ Generate the updated output according to the instruction. Preserve layout and ta
       state.effects[effect] = !state.effects[effect];
       container.setAttribute('data-shape-data', JSON.stringify(state));
       window.refreshShapeBlock(containerId);
+    };
+
+    window.updateShapeText = (containerId, text) => {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      const state = JSON.parse(container.getAttribute('data-shape-data'));
+      state.text = text;
+      container.setAttribute('data-shape-data', JSON.stringify(state));
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
     };
 
     window.refreshImageCaptions = () => {
@@ -19097,10 +19283,11 @@ Rules:
             </div>
 
             {/* Colors Picker */}
-            <div className="relative group flex items-center border-r border-[#f0eefc] pr-1.5">
+            <div className="relative table-color-picker-container flex items-center border-r border-[#f0eefc] pr-1.5">
               <button
                 type="button"
-                className="p-1.5 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-md transition-all duration-150 active:scale-90"
+                onClick={() => setTableColorPickerOpen(!tableColorPickerOpen)}
+                className={`p-1.5 hover:bg-violet-50 rounded-md transition-all duration-150 active:scale-90 ${tableColorPickerOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-500 hover:text-violet-600'}`}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.36424 19.5108 5.61707 19.7662 5.61707 20C5.61707 20.4853 5.21443 21 4.71707 21C4.46747 21 4.22557 20.89 3.99307 20.76C3.01323 20.2114 2 19 2 12C2 5 7 2 12 2C17 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22Z"/>
@@ -19110,18 +19297,44 @@ Rules:
                   <circle cx="15.5" cy="14.5" r="1.5" fill="currentColor"/>
                 </svg>
               </button>
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:grid grid-cols-4 gap-1 p-1.5 bg-white border border-[#e6e3fb] rounded-lg shadow-lg z-[300]">
-                {['#ffffff', '#f8fafc', '#fee2e2', '#fef3c7', '#dcfce7', '#dbeafe', '#e0e7ff', '#f3e8ff'].map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => changeCellColor(tableToolbar.cellEl, color)}
-                    style={{ backgroundColor: color }}
-                    className="w-5 h-5 rounded border border-[#e6e3fb] hover:scale-110 transition-transform active:scale-95"
-                    title={color}
-                  />
-                ))}
-              </div>
+              {tableColorPickerOpen && (
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2.5 bg-white border border-[#e6e3fb] rounded-xl shadow-xl z-[300] min-w-[200px]">
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 px-1 text-left">Solid Colors</div>
+                  <div className="grid grid-cols-4 gap-1.5 mb-3">
+                    {['#ffffff', '#f8fafc', '#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#ccfbf1', '#dbeafe', '#e0e7ff', '#f3e8ff', '#fae8ff'].map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => { changeCellColor(tableToolbar.cellEl, color); setTableColorPickerOpen(false); }}
+                        style={{ backgroundColor: color }}
+                        className="w-6 h-6 rounded border border-gray-200 hover:scale-110 hover:border-violet-400 transition-all active:scale-95 cursor-pointer"
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                  
+                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 px-1 text-left">Gradients</div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)',
+                      'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                      'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
+                      'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                      'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)',
+                      'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
+                    ].map(grad => (
+                      <button
+                        key={grad}
+                        type="button"
+                        onClick={() => { changeCellColor(tableToolbar.cellEl, grad); setTableColorPickerOpen(false); }}
+                        style={{ background: grad }}
+                        className="h-6 rounded border border-gray-200 hover:scale-110 hover:border-violet-400 transition-all active:scale-95 cursor-pointer"
+                        title="Gradient background"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Trash Action */}
@@ -19144,6 +19357,214 @@ Rules:
             </button>
           </div>
         )}
+
+      {shapeToolbar.open && (
+        <div
+          className="shape-toolbar-container absolute z-[250] bg-white/95 border border-[#e6e3fb] rounded-xl shadow-xl p-1.5 flex gap-1.5 items-center backdrop-blur-sm"
+          style={{
+            top: shapeToolbar.top,
+            left: shapeToolbar.left,
+            transform: 'translateY(-10%)'
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
+          {/* Shape type selector group */}
+          <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
+            {['rectangle', 'circle', 'triangle', 'diamond'].map(type => {
+              const active = shapeToolbar.containerId && (() => {
+                const el = document.getElementById(shapeToolbar.containerId);
+                if (!el) return false;
+                const state = JSON.parse(el.getAttribute('data-shape-data') || '{}');
+                return state.type === type;
+              })();
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => window.changeShapeType(shapeToolbar.containerId, type)}
+                  className={`px-2 py-1 text-xs font-semibold rounded-md transition-all active:scale-95 ${active ? 'bg-violet-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Background color picker */}
+          <div className="relative shape-color-menu-container flex items-center border-r border-[#f0eefc] pr-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setShapeBorderMenu({ open: false, top: 0, left: 0, containerId: null });
+                setShapeColorMenu(prev => ({
+                  open: !prev.open,
+                  containerId: shapeToolbar.containerId
+                }));
+              }}
+              className={`p-1.5 hover:bg-violet-50 rounded-md transition-all duration-150 active:scale-90 ${shapeColorMenu.open ? 'bg-violet-100 text-violet-600' : 'text-slate-500 hover:text-violet-600'}`}
+              title="Shape Color"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 14.7255 3.09032 17.1962 4.85857 19C5.36424 19.5108 5.61707 19.7662 5.61707 20C5.61707 20.4853 5.21443 21 4.71707 21C4.46747 21 4.22557 20.89 3.99307 20.76C3.01323 20.2114 2 19 2 12C2 5 7 2 12 2C17 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22Z"/>
+                <circle cx="7.5" cy="10.5" r="1.5" fill="currentColor"/>
+                <circle cx="11.5" cy="7.5" r="1.5" fill="currentColor"/>
+                <circle cx="16.5" cy="9.5" r="1.5" fill="currentColor"/>
+                <circle cx="15.5" cy="14.5" r="1.5" fill="currentColor"/>
+              </svg>
+            </button>
+            {shapeColorMenu.open && (
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2 bg-white border border-[#e6e3fb] rounded-xl shadow-xl z-[300] flex gap-1.5 items-center">
+                {['lavender', 'red', 'yellow', 'green', 'blue', 'purple'].map(color => {
+                  const colorsHex = {
+                    lavender: '#e0e7ff',
+                    red: '#fee2e2',
+                    yellow: '#fef3c7',
+                    green: '#dcfce7',
+                    blue: '#dbeafe',
+                    purple: '#f3e8ff'
+                  };
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => {
+                        window.changeShapeColor(shapeToolbar.containerId, color);
+                        setShapeColorMenu({ open: false, top: 0, left: 0, containerId: null });
+                      }}
+                      style={{ backgroundColor: colorsHex[color] }}
+                      className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 hover:border-violet-500 transition-all active:scale-90 cursor-pointer"
+                      title={color}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Border Settings dropdown */}
+          <div className="relative shape-border-menu-container flex items-center border-r border-[#f0eefc] pr-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setShapeColorMenu({ open: false, top: 0, left: 0, containerId: null });
+                setShapeBorderMenu(prev => ({
+                  open: !prev.open,
+                  containerId: shapeToolbar.containerId
+                }));
+              }}
+              className={`p-1.5 hover:bg-violet-50 rounded-md transition-all duration-150 active:scale-90 ${shapeBorderMenu.open ? 'bg-violet-100 text-violet-600' : 'text-slate-500 hover:text-violet-600'}`}
+              title="Shape Border"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" strokeDasharray="4 2"/>
+              </svg>
+            </button>
+            {shapeBorderMenu.open && (() => {
+              const el = document.getElementById(shapeToolbar.containerId);
+              const state = el ? JSON.parse(el.getAttribute('data-shape-data') || '{}') : {};
+              return (
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 p-2.5 bg-white border border-[#e6e3fb] rounded-xl shadow-xl z-[300] min-w-[150px] flex flex-col gap-2">
+                  <div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-left">Weight</div>
+                    <select
+                      value={state.weight || 3}
+                      onChange={(e) => {
+                        window.changeShapeWeight(shapeToolbar.containerId, e.target.value);
+                        setShapeBorderMenu({ open: false, top: 0, left: 0, containerId: null });
+                      }}
+                      className="w-full text-xs border border-slate-200 rounded p-1 outline-none bg-slate-50"
+                    >
+                      <option value="1">1px</option>
+                      <option value="2">2px</option>
+                      <option value="3">3px</option>
+                      <option value="5">5px</option>
+                      <option value="8">8px</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-left">Style</div>
+                    <select
+                      value={state.dash || 'none'}
+                      onChange={(e) => {
+                        window.changeShapeDash(shapeToolbar.containerId, e.target.value);
+                        setShapeBorderMenu({ open: false, top: 0, left: 0, containerId: null });
+                      }}
+                      className="w-full text-xs border border-slate-200 rounded p-1 outline-none bg-slate-50"
+                    >
+                      <option value="none">Solid</option>
+                      <option value="5,5">Dashed</option>
+                      <option value="2,2">Dotted</option>
+                    </select>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Effects Buttons */}
+          <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
+            {['shadow', 'softEdges', 'reflection'].map(effect => {
+              const el = document.getElementById(shapeToolbar.containerId);
+              const state = el ? JSON.parse(el.getAttribute('data-shape-data') || '{}') : {};
+              const active = state.effects && state.effects[effect];
+              const labels = { shadow: 'Shadow', softEdges: 'Soft Edges', reflection: 'Reflection' };
+              return (
+                <button
+                  key={effect}
+                  type="button"
+                  onClick={() => window.toggleShapeEffect(shapeToolbar.containerId, effect)}
+                  className={`px-1.5 py-1 text-[11px] font-semibold rounded-md transition-all active:scale-95 ${active ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                >
+                  {labels[effect]}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Text wrapping (Layout) */}
+          <div className="flex items-center gap-0.5 border-r border-[#f0eefc] pr-1.5">
+            <select
+              value={(() => {
+                const el = document.getElementById(shapeToolbar.containerId);
+                if (!el) return 'inline';
+                const state = JSON.parse(el.getAttribute('data-shape-data') || '{}');
+                return state.wrapText || 'inline';
+              })()}
+              onChange={(e) => window.changeShapeWrap(shapeToolbar.containerId, e.target.value)}
+              className="text-[11px] border border-slate-200 rounded bg-slate-50 px-1 py-0.5 outline-none font-medium cursor-pointer"
+            >
+              <option value="inline">Inline</option>
+              <option value="wrap-left">Wrap Left</option>
+              <option value="wrap-right">Wrap Right</option>
+              <option value="behind">Behind Text</option>
+              <option value="front">In Front</option>
+            </select>
+          </div>
+
+          {/* Delete Button */}
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById(shapeToolbar.containerId);
+              if (el) el.remove();
+              setShapeToolbar({ open: false, top: 0, left: 0, containerId: null });
+              if (blankBodyRef.current) {
+                setDocBodyHtml(blankBodyRef.current.innerHTML);
+              }
+            }}
+            className="p-1 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-md transition-all duration-150 active:scale-90"
+            title="Delete Shape"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
         <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-[140]">
           {orderedDocuments.map((doc, docIndex) => {
@@ -21956,21 +22377,19 @@ Rules:
               </div>
             )}
 
-            {/* Composing / Analyzing State Glow */}
+            {/* Composing / Analyzing State Glow - Non-blocking floating status */}
             {isComposing && (
-              <div className="absolute inset-0 z-30 bg-white/85 backdrop-blur-[2px] flex items-start justify-center px-6 pt-24 md:pt-28">
-                <div className="w-full max-w-xl rounded-2xl border border-violet-100 bg-white shadow-[0_20px_50px_-20px_rgba(109,40,217,0.35)] p-5">
-                  <div className="flex items-center gap-2 text-violet-700 mb-3">
-                    <Loader2 className="animate-spin" size={16} />
-                    <span className="text-xs font-semibold tracking-wide">Provisioning your composition</span>
+              <div className="fixed bottom-24 right-8 z-[1000] animate-in fade-in slide-in-from-bottom-5 duration-300 pointer-events-auto">
+                <div className="w-80 rounded-2xl border border-violet-100 bg-white/95 backdrop-blur-md shadow-[0_12px_30px_rgba(109,40,217,0.18)] p-4">
+                  <div className="flex items-center gap-2.5 text-violet-700 mb-2">
+                    <Loader2 className="animate-spin text-violet-600" size={16} />
+                    <span className="text-xs font-semibold tracking-wide">AI is composing...</span>
                   </div>
-                  <div className="space-y-2">
-                    <div className="h-3 rounded bg-violet-100/70 animate-pulse w-4/5"></div>
-                    <div className="h-3 rounded bg-violet-100/70 animate-pulse w-full"></div>
-                    <div className="h-3 rounded bg-violet-100/70 animate-pulse w-3/4"></div>
-                    <div className="h-3 rounded bg-violet-100/70 animate-pulse w-5/6"></div>
+                  <div className="space-y-1.5">
+                    <div className="h-1.5 rounded bg-violet-100/70 animate-pulse w-4/5"></div>
+                    <div className="h-1.5 rounded bg-violet-100/70 animate-pulse w-full"></div>
                   </div>
-                  <p className="mt-3 text-[11px] text-gray-500">Structuring headings, sections, and action-ready blocks.</p>
+                  <p className="mt-2 text-[10px] text-slate-500 font-medium">You can continue editing while AI generates.</p>
                 </div>
               </div>
             )}
