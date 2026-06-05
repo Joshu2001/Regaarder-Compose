@@ -2568,6 +2568,7 @@ export default function App() {
   const [workspaceLauncherIconSize, setWorkspaceLauncherIconSize] = useState('md');
   const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [textColorMenuOpen, setTextColorMenuOpen] = useState(false);
   const [highlightMenuOpen, setHighlightMenuOpen] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
@@ -5487,7 +5488,7 @@ export default function App() {
           setShapeToolbar(prev => ({
             ...prev,
             top: rect.top + window.scrollY - 50,
-            left: rect.left + window.scrollX
+            left: rect.left + rect.width / 2 + window.scrollX
           }));
         }
       }
@@ -5529,7 +5530,7 @@ export default function App() {
             return {
               ...prev,
               top: rect.top + window.scrollY - 50,
-              left: rect.left + window.scrollX
+              left: rect.left + rect.width / 2 + window.scrollX
             };
           }
           return prev;
@@ -6256,6 +6257,7 @@ export default function App() {
   const closeTransientMenus = () => {
     setOpenDropdown(null);
     setTextStyleMenuOpen(false);
+    setExportMenuOpen(false);
     setOpenDocMenuId(null);
     setIsPromptMenuOpen(false);
     setPromptTuneMenuOpen(false);
@@ -8833,7 +8835,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           setShapeToolbar({
             open: true,
             top: rect.top + window.scrollY - 50,
-            left: rect.left + window.scrollX,
+            left: rect.left + rect.width / 2 + window.scrollX,
             containerId
           });
           
@@ -12400,6 +12402,107 @@ Rules:
       if (printContainer && printContainer.parentNode) {
         printContainer.parentNode.removeChild(printContainer);
       }
+    }
+  };
+
+  const convertDocumentToDeck = async () => {
+    if (!blankBodyRef.current) return;
+    const docText = blankBodyRef.current.innerText;
+    if (!docText.trim()) {
+      showToast('Document is empty. Write some content first.');
+      return;
+    }
+
+    setIsComposing(true);
+    showToast('Converting document to presentation deck...');
+
+    const systemPrompt = `You are a Presentation Design Expert. Convert the provided document content into a structured slide presentation deck.
+Create slides representing a coherent story narrative flow (such as Intro, Problem, Solution, Market, Product, Business Model, Traction, Team, Financials, Outro).
+For each slide, fill in:
+- title: concise, slide title
+- subtitle: optional context/subtitle
+- headline: powerful take-away statement
+- blurb: 1-3 sentences or bullet points of narrative content explaining the slide detail
+- visualType: e.g. "hero statement", "data-backed narrative", "comparison grid", "metric callout"
+- layoutStyle: e.g. "cinematic split", "timeline flow", "contrast grid", "key metrics list"
+- motionCue: e.g. "Soft fade and stagger reveal", "slide in from right"
+- keyMetric: e.g. "85% conversion", "$1.2M ARR" or empty string
+- speakerNotes: optional presenter cues/notes
+- section: e.g. "Intro", "Problem", "Solution", "Market", "Product", "Business Model", "Traction", "Team", "Financials", "Outro"
+Respond with a JSON array of slide objects matching the schema.`;
+
+    const schema = {
+      type: 'object',
+      properties: {
+        slides: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              subtitle: { type: 'string' },
+              headline: { type: 'string' },
+              blurb: { type: 'string' },
+              visualType: { type: 'string' },
+              layoutStyle: { type: 'string' },
+              motionCue: { type: 'string' },
+              keyMetric: { type: 'string' },
+              speakerNotes: { type: 'string' },
+              section: { type: 'string' }
+            },
+            required: ['title', 'headline', 'blurb', 'visualType', 'layoutStyle', 'section']
+          }
+        }
+      },
+      required: ['slides']
+    };
+
+    try {
+      const response = await callGemini({
+        userPrompt: `Document content:\n${docText}`,
+        systemPrompt,
+        schema
+      });
+
+      if (response?.parsed?.slides) {
+        const slides = response.parsed.slides.map((slide, index) => {
+          const id = index + 1;
+          return {
+            id,
+            title: slide.title || `Slide ${id}`,
+            subtitle: slide.subtitle || '',
+            accent: 'from-indigo-500 to-violet-500',
+            designPresetKey: DECK_DESIGN_PRESETS[(id - 1) % DECK_DESIGN_PRESETS.length]?.key || DECK_DESIGN_PRESETS[0].key,
+            headline: slide.headline || '',
+            blurb: slide.blurb || '',
+            visualType: slide.visualType || 'hero statement',
+            layoutStyle: slide.layoutStyle || 'cinematic split',
+            motionCue: slide.motionCue || 'Soft fade and stagger reveal',
+            keyMetric: slide.keyMetric || '',
+            speakerNotes: slide.speakerNotes || '',
+            section: slide.section || '',
+            footer: 'AI Generated · Convert to Deck'
+          };
+        });
+
+        setProductMode('deck');
+        setDeckTitle(docTitle || 'Converted Deck');
+        setDeckSlidesData(slides);
+        setActiveDeckSlideId(1);
+        setDeckZoomLevel(100);
+        setDeckToolbarFont('Inter');
+        setDeckSlidesPanelOpen(true);
+        setRightSidebarOpen(true);
+        setActiveRightTab('assistant');
+        showToast('Converted document to Deck successfully!');
+      } else {
+        showToast('Failed to convert: ' + (response?.error || 'Gemini returned invalid response.'));
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error converting to Deck.');
+    } finally {
+      setIsComposing(false);
     }
   };
 
@@ -19364,7 +19467,7 @@ Rules:
           style={{
             top: shapeToolbar.top,
             left: shapeToolbar.left,
-            transform: 'translateY(-10%)'
+            transform: 'translate(-50%, -20%)'
           }}
           onMouseDown={(e) => {
             e.preventDefault();
@@ -19516,7 +19619,7 @@ Rules:
                   key={effect}
                   type="button"
                   onClick={() => window.toggleShapeEffect(shapeToolbar.containerId, effect)}
-                  className={`px-1.5 py-1 text-[11px] font-semibold rounded-md transition-all active:scale-95 ${active ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                  className={`px-1.5 py-1 text-[11px] font-semibold rounded-md transition-all active:scale-95 whitespace-nowrap ${active ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}
                 >
                   {labels[effect]}
                 </button>
