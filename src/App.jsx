@@ -2449,6 +2449,7 @@ export default function App() {
   const formattingMenuRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const speechRecognitionRef = useRef(null);
+  const lastSpeechTimeRef = useRef(Date.now());
   const voiceSilenceTimerRef = useRef(null);
   const toggleVoiceRecordingRef = useRef(null);
   const promptAudioInputRef = useRef(null);
@@ -5682,6 +5683,8 @@ export default function App() {
         return;
       }
 
+      lastSpeechTimeRef.current = Date.now();
+
       if (voiceSilenceTimerRef.current) {
         clearTimeout(voiceSilenceTimerRef.current);
         voiceSilenceTimerRef.current = null;
@@ -5792,11 +5795,6 @@ export default function App() {
             setIsVoiceCommandMode(true);
             isVoiceCommandModeRef.current = true;
           }
-          voiceSilenceTimerRef.current = setTimeout(() => {
-            if (isVoiceActiveRef.current) {
-              toggleVoiceRecordingRef.current?.();
-            }
-          }, 4500);
         }
       }
     };
@@ -7829,7 +7827,9 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
         } else if (type === 'numbered_list') {
           userPrompt = `Convert the following text/list into a clean, typo-corrected HTML numbered list (using <ol> and <li> tags). Correct any typos (like "Cnada" -> "Canada") and format each entry as its own item. Keep formatting clean. Text:\n"""${prompt}"""`;
         } else if (type === 'translate') {
-          userPrompt = prompt.toLowerCase().includes('translate') ? prompt : `Translate to French: "${prompt}"`;
+          const textToTranslate = originalHtml || prompt;
+          const targetLanguage = originalHtml ? prompt : 'French';
+          userPrompt = `Translate the following text to ${targetLanguage}. Preserve any HTML tags if present. Text:\n"""${textToTranslate}"""`;
         }
         
         const res = await callGemini({ userPrompt, systemPrompt });
@@ -8341,7 +8341,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     container.setAttribute('id', boxId);
     container.setAttribute('data-block-type', type);
     
-    const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    const typeLabel = type === 'translate' ? 'Translation' : type.charAt(0).toUpperCase() + type.slice(1);
     if (htmlToStore) {
       container.setAttribute('data-original-html', htmlToStore);
     }
@@ -8350,16 +8350,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
       <div class="inline-ai-prompt-header">
         <span class="inline-ai-prompt-title">
           <span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;display:inline-block;animation:pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;"></span>
-          Generate ${typeLabel} with AI
+          ${type === 'translate' ? 'Translate text' : `Generate ${typeLabel}`} with AI
         </span>
-        <button type="button" class="inline-ai-prompt-cancel" onclick="cancelInlinePrompt('${boxId}')">
+        <button type="button" class="inline-ai-prompt-cancel" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="cancelInlinePrompt('${boxId}')">
           Cancel
         </button>
       </div>
       <div class="inline-ai-prompt-input-row">
         <input 
           type="text" 
-          placeholder="${type === 'graph' ? 'e.g. type:line data:[Jan:10, Feb:20] or describe chart topic...' : type === 'table' ? 'e.g. 5x3 or describe table topic...' : 'Describe what you want...'}" 
+          placeholder="${type === 'translate' ? 'Enter target language (e.g. Spanish, German, Japanese)...' : type === 'graph' ? 'e.g. type:line data:[Jan:10, Feb:20] or describe chart topic...' : type === 'table' ? 'e.g. 5x3 or describe table topic...' : 'Describe what you want...'}" 
           class="inline-ai-prompt-input"
           id="${boxId}_input"
           value="${prefilledPrompt.replace(/"/g, '&quot;')}"
@@ -8369,20 +8369,34 @@ Generate the updated output according to the instruction. Preserve layout and ta
           type="button" 
           class="inline-ai-prompt-btn"
           id="${boxId}_btn"
+          onmousedown="event.preventDefault(); event.stopPropagation();"
           onclick="submitInlinePrompt('${boxId}')"
         >
-          Generate
+          ${type === 'translate' ? 'Translate' : 'Generate'}
         </button>
       </div>
       ${type === 'graph' ? `
       <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
-        <button type="button" class="inline-ai-prompt-btn" onclick="window.togglePromptChartMenu('${boxId}')" style="background:#7c3aed; color:#ffffff; font-size:11px; padding:4px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px; animation: pulse 1.5s infinite;">
+        <button type="button" class="inline-ai-prompt-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptChartMenu('${boxId}')" style="background:#7c3aed; color:#ffffff; font-size:11px; padding:4px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px; animation: pulse 1.5s infinite;">
           <span>📊 Select Chart Type</span>
           <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:100;">
           ${['line', 'bar', 'pie', 'heatmap', 'table'].map(t => `
-            <button type="button" onclick="window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
+      ${type === 'translate' ? `
+      <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
+        <button type="button" class="inline-ai-prompt-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptLanguageMenu('${boxId}')" style="background:#7c3aed; color:#ffffff; font-size:11px; padding:4px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px;">
+          <span>🌐 Select Language</span>
+          <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:100; max-height: 200px; overflow-y: auto;">
+          ${['French', 'Spanish', 'German', 'Chinese', 'Japanese', 'Italian', 'Portuguese', 'Arabic', 'Russian', 'Hindi', 'Swedish'].map(lang => `
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
           `).join('')}
         </div>
       </div>
@@ -8603,19 +8617,30 @@ Generate the updated output according to the instruction. Preserve layout and ta
     } else if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule', 'hyperlink', 'bookmark'].includes(key)) {
       const selectedText = targetRange && !targetRange.collapsed ? targetRange.toString().trim() : '';
       if (selectedText) {
-        if (key === 'translate' || key === 'proofread') {
+        if (key === 'proofread') {
           applyDirectSelectionAIAction(key, selectedText, targetRange);
+        } else if (key === 'translate') {
+          insertInlinePromptBox(key, 'French', selectedText);
         } else {
           insertInlinePromptBox(key, selectedText);
         }
       } else {
         const fullText = blankBodyRef.current ? blankBodyRef.current.innerText.trim() : '';
-        if (key === 'translate' || key === 'proofread') {
+        if (key === 'proofread') {
           if (fullText) {
             const blockEl = findNearestBlockElement(targetRange?.commonAncestorContainer);
             const paragraphText = blockEl ? blockEl.textContent.trim() : '';
             const textToTarget = paragraphText || fullText;
             applyDirectSelectionAIAction(key, textToTarget, targetRange, blockEl);
+          } else {
+            showToast(`Error: Write or select some text first to ${key}!`);
+          }
+        } else if (key === 'translate') {
+          if (fullText) {
+            const blockEl = findNearestBlockElement(targetRange?.commonAncestorContainer);
+            const paragraphText = blockEl ? blockEl.textContent.trim() : '';
+            const textToTarget = paragraphText || fullText;
+            insertInlinePromptBox(key, 'French', textToTarget);
           } else {
             showToast(`Error: Write or select some text first to ${key}!`);
           }
@@ -9155,6 +9180,25 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const menu = document.getElementById(`${boxId}_chart_menu`);
       if (input) {
         input.value = `type:${chartType} `;
+        input.focus();
+      }
+      if (menu) {
+        menu.classList.add('hidden');
+      }
+    };
+
+    window.togglePromptLanguageMenu = (boxId) => {
+      const menu = document.getElementById(`${boxId}_language_menu`);
+      if (menu) {
+        menu.classList.toggle('hidden');
+      }
+    };
+    
+    window.selectPromptLanguage = (boxId, lang) => {
+      const input = document.getElementById(`${boxId}_input`);
+      const menu = document.getElementById(`${boxId}_language_menu`);
+      if (input) {
+        input.value = lang;
         input.focus();
       }
       if (menu) {
@@ -10069,6 +10113,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.sendImageTextLayerToBack;
       delete window.togglePromptChartMenu;
       delete window.selectPromptChartType;
+      delete window.togglePromptLanguageMenu;
+      delete window.selectPromptLanguage;
       delete window.generateShapeSVG;
       delete window.refreshShapeBlock;
       delete window.changeShapeType;
@@ -11073,6 +11119,7 @@ Rules:
       if (result.ok && result.text) {
         const cleanedText = result.text.trim();
         if (cleanedText && cleanedText !== '[SILENCE]' && !cleanedText.toLowerCase().includes('[silence]')) {
+          lastSpeechTimeRef.current = Date.now();
           
           // Check for spoken cancellation
           const lowerText = cleanedText.toLowerCase().replace(/[.,!?]/g, '').trim();

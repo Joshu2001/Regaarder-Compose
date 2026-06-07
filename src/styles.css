@@ -640,4 +640,10 @@ body { margin: 0; background: #ffffff; }
   font-style: italic;
 }
 
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0;
+  height: 0;
+}
+
 
