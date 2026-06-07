@@ -7738,16 +7738,16 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
           <span class="ai-preview-banner-label">AI Preview</span>
         </div>
         <div class="ai-preview-banner-actions">
-          <button type="button" class="ai-preview-btn-accept" onclick="acceptAiPreview('${previewId}')">Accept</button>
-          <button type="button" class="ai-preview-btn-secondary" onclick="runImmediateRetry('${previewId}')">Retry</button>
-          <button type="button" class="ai-preview-btn-secondary" onclick="showEditPromptInput('${previewId}')">Edit</button>
-          <button type="button" class="ai-preview-btn-delete" onclick="deleteAiPreview('${previewId}')">Delete</button>
-          <button type="button" class="ai-preview-btn-secondary" onclick="exportAiBlock('${previewId}')">Export</button>
+          <button type="button" class="ai-preview-btn-accept" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="acceptAiPreview('${previewId}')">Accept</button>
+          <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="runImmediateRetry('${previewId}')">Retry</button>
+          <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="showEditPromptInput('${previewId}')">Edit</button>
+          <button type="button" class="ai-preview-btn-delete" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="deleteAiPreview('${previewId}')">Delete</button>
+          <button type="button" class="ai-preview-btn-secondary" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="exportAiBlock('${previewId}')">Export</button>
         </div>
         <div class="ai-preview-retry-container hidden" id="retry_input_container_${previewId}">
           <div class="ai-preview-retry-row">
             <input type="text" placeholder="Type instructions to change this block..." class="inline-ai-prompt-input" id="retry_text_${previewId}" onkeydown="if(event.key==='Enter'){event.preventDefault();submitRetry('${previewId}');}" />
-            <button type="button" class="inline-ai-prompt-btn" onclick="submitRetry('${previewId}')">Apply</button>
+            <button type="button" class="inline-ai-prompt-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="submitRetry('${previewId}')">Apply</button>
           </div>
         </div>
       </div>
@@ -8357,6 +8357,26 @@ Generate the updated output according to the instruction. Preserve layout and ta
         </button>
       </div>
       <div class="inline-ai-prompt-input-row">
+        ${(type === 'table' || type === 'graph') ? `
+          <input 
+            type="file" 
+            id="${boxId}_file" 
+            style="display:none;" 
+            multiple 
+            accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" 
+            onchange="window.handlePromptFileAdded('${boxId}', this)" 
+          />
+          <button 
+            type="button" 
+            class="inline-ai-prompt-btn" 
+            onmousedown="event.preventDefault(); event.stopPropagation();" 
+            onclick="document.getElementById('${boxId}_file').click()" 
+            style="background:#f1f5f9; border:1px solid #e2e8f0; color:#475569; padding:8px 12px; display:flex; align-items:center; justify-content:center; border-radius:10px; cursor:pointer;" 
+            title="Add image, document, or audio context"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          </button>
+        ` : ''}
         <input 
           type="text" 
           placeholder="${type === 'translate' ? 'Enter target language (e.g. Spanish, German, Japanese)...' : type === 'graph' ? 'e.g. type:line data:[Jan:10, Feb:20] or describe chart topic...' : type === 'table' ? 'e.g. 5x3 or describe table topic...' : 'Describe what you want...'}" 
@@ -8375,10 +8395,14 @@ Generate the updated output according to the instruction. Preserve layout and ta
           ${type === 'translate' ? 'Translate' : 'Generate'}
         </button>
       </div>
+      <div id="${boxId}_files_preview" class="hidden" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
       ${type === 'graph' ? `
       <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
         <button type="button" class="inline-ai-prompt-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptChartMenu('${boxId}')" style="background:#7c3aed; color:#ffffff; font-size:11px; padding:4px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px; animation: pulse 1.5s infinite;">
-          <span>📊 Select Chart Type</span>
+          <span id="${boxId}_chart_btn_label" style="display:flex; align-items:center; gap:4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="14" y="6" width="4" height="12" rx="1"/></svg>
+            Select Chart Type
+          </span>
           <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:100;">
@@ -8391,7 +8415,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
       ${type === 'translate' ? `
       <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
         <button type="button" class="inline-ai-prompt-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptLanguageMenu('${boxId}')" style="background:#7c3aed; color:#ffffff; font-size:11px; padding:4px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px;">
-          <span>🌐 Select Language</span>
+          <span id="${boxId}_language_btn_label" style="display:flex; align-items:center; gap:4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/><path d="M14 14a8 8 0 0 1-2.2-6"/></svg>
+            Select Language
+          </span>
           <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:100; max-height: 200px; overflow-y: auto;">
@@ -9033,7 +9060,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         });
       }
 
-      if (!chartBlock && !shapeBlock && blankBodyRef.current) {
+      if (!chartBlock && !shapeBlock && !e.target.closest('.ai-preview-block') && !e.target.closest('.inline-ai-prompt-box') && blankBodyRef.current) {
         setDocBodyHtml(blankBodyRef.current.innerHTML);
       }
     };
@@ -9178,9 +9205,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
     window.selectPromptChartType = (boxId, chartType) => {
       const input = document.getElementById(`${boxId}_input`);
       const menu = document.getElementById(`${boxId}_chart_menu`);
+      const label = document.getElementById(`${boxId}_chart_btn_label`);
       if (input) {
         input.value = `type:${chartType} `;
         input.focus();
+      }
+      if (label) {
+        label.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="14" y="6" width="4" height="12" rx="1"/></svg>
+          ${chartType.charAt(0).toUpperCase() + chartType.slice(1)} Chart
+        `;
       }
       if (menu) {
         menu.classList.add('hidden');
@@ -9197,9 +9231,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
     window.selectPromptLanguage = (boxId, lang) => {
       const input = document.getElementById(`${boxId}_input`);
       const menu = document.getElementById(`${boxId}_language_menu`);
+      const label = document.getElementById(`${boxId}_language_btn_label`);
       if (input) {
         input.value = lang;
         input.focus();
+      }
+      if (label) {
+        label.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/><path d="M14 14a8 8 0 0 1-2.2-6"/></svg>
+          ${lang}
+        `;
       }
       if (menu) {
         menu.classList.add('hidden');
@@ -9226,12 +9267,64 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
     };
     
+    window.handlePromptFileAdded = (boxId, inputEl) => {
+      const files = Array.from(inputEl.files);
+      if (files.length === 0) return;
+      
+      const container = document.getElementById(`${boxId}_files_preview`);
+      if (!container) return;
+      
+      const mainBox = document.getElementById(boxId);
+      if (!mainBox) return;
+      
+      const existingFiles = JSON.parse(mainBox.getAttribute('data-attached-files') || '[]');
+      const newFiles = files.map(f => ({ name: f.name, type: f.type, size: f.size }));
+      const updatedFiles = [...existingFiles, ...newFiles];
+      mainBox.setAttribute('data-attached-files', JSON.stringify(updatedFiles));
+      
+      container.innerHTML = updatedFiles.map((file, idx) => `
+        <div style="display:inline-flex; align-items:center; gap:6px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 8px; font-size:11px; color:#475569; margin:2px;">
+          <span>${file.type.startsWith('image/') ? '🖼️' : file.type.startsWith('audio/') ? '🎵' : '📄'} ${file.name}</span>
+          <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.removePromptFile('${boxId}', ${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold; padding:0 2px; line-height:1;">×</button>
+        </div>
+      `).join('');
+      container.classList.remove('hidden');
+    };
+    
+    window.removePromptFile = (boxId, index) => {
+      const mainBox = document.getElementById(boxId);
+      if (!mainBox) return;
+      const existingFiles = JSON.parse(mainBox.getAttribute('data-attached-files') || '[]');
+      existingFiles.splice(index, 1);
+      mainBox.setAttribute('data-attached-files', JSON.stringify(existingFiles));
+      
+      const container = document.getElementById(`${boxId}_files_preview`);
+      if (!container) return;
+      
+      if (existingFiles.length === 0) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+      } else {
+        container.innerHTML = existingFiles.map((file, idx) => `
+          <div style="display:inline-flex; align-items:center; gap:6px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 8px; font-size:11px; color:#475569; margin:2px;">
+            <span>${file.type.startsWith('image/') ? '🖼️' : file.type.startsWith('audio/') ? '🎵' : '📄'} ${file.name}</span>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.removePromptFile('${boxId}', ${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold; padding:0 2px; line-height:1;">×</button>
+          </div>
+        `).join('');
+      }
+    };
+
     window.submitInlinePrompt = (boxId) => {
       const input = document.getElementById(`${boxId}_input`);
       const container = document.getElementById(boxId);
-      const prompt = input?.value?.trim();
+      let prompt = input?.value?.trim();
       const type = container?.getAttribute('data-block-type') || 'table';
       if (prompt) {
+        const attachedFiles = JSON.parse(container?.getAttribute('data-attached-files') || '[]');
+        if (attachedFiles.length > 0) {
+          const filesList = attachedFiles.map(f => f.name).join(', ');
+          prompt = `${prompt} [Attached Context Files: ${filesList}]`;
+        }
         handleAIBlockSubmit(prompt, type, boxId);
       }
     };
@@ -10115,6 +10208,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
       delete window.selectPromptChartType;
       delete window.togglePromptLanguageMenu;
       delete window.selectPromptLanguage;
+      delete window.handlePromptFileAdded;
+      delete window.removePromptFile;
       delete window.generateShapeSVG;
       delete window.refreshShapeBlock;
       delete window.changeShapeType;
