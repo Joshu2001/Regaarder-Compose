@@ -72,3 +72,11 @@ This walkthrough details the visual improvements, event-handler corrections, and
 - **Files updated**:
   - [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx)
   - [styles.css](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/styles.css)
+
+---
+
+## 8. Select Chart Type & Language Dropdown Fixes
+- **Unclickable/Unresponsive Fix**: Added direct execution of dropdown toggles and select options on the `mousedown` event (with `event.preventDefault()` and `event.stopPropagation()`). This ensures that selection clicks are processed immediately before the browser changes focus or intercepts selection inside the `contenteditable` surface.
+- **Typing Retention & React Syncing**: 
+  - Added `oninput="this.setAttribute('value', this.value)"` to the text input elements. This ensures that whatever the user types is synced to the DOM attribute, preventing it from being lost during React re-renders.
+  - Added real-time DOM-to-React updates (`setDocBodyHtml(blankBodyRef.current.innerHTML)`) to the dropdown select handlers (`selectPromptChartType`, `selectPromptLanguage`, `togglePromptChartMenu`, and `togglePromptLanguageMenu`). This synchronizes the chosen values and toggle status back into React state instantly.
