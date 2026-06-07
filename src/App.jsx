@@ -8368,10 +8368,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
           />
           <button 
             type="button" 
-            class="inline-ai-prompt-btn" 
+            class="inline-ai-prompt-icon-btn" 
             onmousedown="event.preventDefault(); event.stopPropagation();" 
             onclick="document.getElementById('${boxId}_file').click()" 
-            style="background:#f1f5f9; border:1px solid #e2e8f0; color:#475569; padding:8px 12px; display:flex; align-items:center; justify-content:center; border-radius:10px; cursor:pointer;" 
             title="Add image, document, or audio context"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -8398,7 +8397,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       <div id="${boxId}_files_preview" class="hidden" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
       ${type === 'graph' ? `
       <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
-        <button type="button" class="inline-ai-prompt-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptChartMenu('${boxId}')" style="background:#7c3aed; color:#ffffff; font-size:11px; padding:4px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px; animation: pulse 1.5s infinite;">
+        <button type="button" class="inline-ai-prompt-secondary-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptChartMenu('${boxId}')">
           <span id="${boxId}_chart_btn_label" style="display:flex; align-items:center; gap:4px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="14" y="6" width="4" height="12" rx="1"/></svg>
             Select Chart Type
@@ -8414,7 +8413,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       ` : ''}
       ${type === 'translate' ? `
       <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
-        <button type="button" class="inline-ai-prompt-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptLanguageMenu('${boxId}')" style="background:#7c3aed; color:#ffffff; font-size:11px; padding:4px 10px; border-radius:6px; border:none; cursor:pointer; font-weight:600; display:flex; align-items:center; gap:6px;">
+        <button type="button" class="inline-ai-prompt-secondary-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptLanguageMenu('${boxId}')">
           <span id="${boxId}_language_btn_label" style="display:flex; align-items:center; gap:4px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/><path d="M14 14a8 8 0 0 1-2.2-6"/></svg>
             Select Language
