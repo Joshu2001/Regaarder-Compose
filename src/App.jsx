@@ -8300,9 +8300,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
         placeholder="Type emoji or icon name (e.g., rocket, target)..." 
         class="inline-ai-prompt-input"
         id="${boxId}_input"
+        oninput="this.setAttribute('value', this.value)"
         onkeydown="if(event.key==='Enter'){event.preventDefault();submitInlineIcon('${boxId}');}"
       />
-      <button type="button" class="inline-ai-prompt-btn" id="${boxId}_btn" onclick="submitInlineIcon('${boxId}')">Insert</button>
+      <button type="button" class="inline-ai-prompt-btn" id="${boxId}_btn" onmousedown="event.preventDefault(); event.stopPropagation(); submitInlineIcon('${boxId}')">Insert</button>
     `;
     
     range.insertNode(container);
@@ -8352,7 +8353,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           <span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;display:inline-block;animation:pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;"></span>
           ${type === 'translate' ? 'Translate text' : `Generate ${typeLabel}`} with AI
         </span>
-        <button type="button" class="inline-ai-prompt-cancel" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="cancelInlinePrompt('${boxId}')">
+        <button type="button" class="inline-ai-prompt-cancel" onmousedown="event.preventDefault(); event.stopPropagation(); cancelInlinePrompt('${boxId}')">
           Cancel
         </button>
       </div>
@@ -8369,8 +8370,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           <button 
             type="button" 
             class="inline-ai-prompt-icon-btn" 
-            onmousedown="event.preventDefault(); event.stopPropagation();" 
-            onclick="document.getElementById('${boxId}_file').click()" 
+            onmousedown="event.preventDefault(); event.stopPropagation(); document.getElementById('${boxId}_file').click();" 
             title="Add image, document, or audio context"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
@@ -8382,14 +8382,14 @@ Generate the updated output according to the instruction. Preserve layout and ta
           class="inline-ai-prompt-input"
           id="${boxId}_input"
           value="${prefilledPrompt.replace(/"/g, '&quot;')}"
+          oninput="this.setAttribute('value', this.value)"
           onkeydown="if(event.key==='Enter'){event.preventDefault();submitInlinePrompt('${boxId}');}"
         />
         <button 
           type="button" 
           class="inline-ai-prompt-btn"
           id="${boxId}_btn"
-          onmousedown="event.preventDefault(); event.stopPropagation();"
-          onclick="submitInlinePrompt('${boxId}')"
+          onmousedown="event.preventDefault(); event.stopPropagation(); submitInlinePrompt('${boxId}')"
         >
           ${type === 'translate' ? 'Translate' : 'Generate'}
         </button>
@@ -8397,7 +8397,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       <div id="${boxId}_files_preview" class="hidden" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
       ${type === 'graph' ? `
       <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
-        <button type="button" class="inline-ai-prompt-secondary-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptChartMenu('${boxId}')">
+        <button type="button" class="inline-ai-prompt-secondary-btn" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptChartMenu('${boxId}')">
           <span id="${boxId}_chart_btn_label" style="display:flex; align-items:center; gap:4px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="14" y="6" width="4" height="12" rx="1"/></svg>
             Select Chart Type
@@ -8406,14 +8406,14 @@ Generate the updated output according to the instruction. Preserve layout and ta
         </button>
         <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:100;">
           ${['line', 'bar', 'pie', 'heatmap', 'table'].map(t => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
           `).join('')}
         </div>
       </div>
       ` : ''}
       ${type === 'translate' ? `
       <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
-        <button type="button" class="inline-ai-prompt-secondary-btn" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.togglePromptLanguageMenu('${boxId}')">
+        <button type="button" class="inline-ai-prompt-secondary-btn" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptLanguageMenu('${boxId}')">
           <span id="${boxId}_language_btn_label" style="display:flex; align-items:center; gap:4px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/><path d="M14 14a8 8 0 0 1-2.2-6"/></svg>
             Select Language
@@ -8422,7 +8422,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         </button>
         <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:100; max-height: 200px; overflow-y: auto;">
           ${['French', 'Spanish', 'German', 'Chinese', 'Japanese', 'Italian', 'Portuguese', 'Arabic', 'Russian', 'Hindi', 'Swedish'].map(lang => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
           `).join('')}
         </div>
       </div>
@@ -9199,6 +9199,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (menu) {
         menu.classList.toggle('hidden');
       }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
     };
     
     window.selectPromptChartType = (boxId, chartType) => {
@@ -9207,6 +9210,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const label = document.getElementById(`${boxId}_chart_btn_label`);
       if (input) {
         input.value = `type:${chartType} `;
+        input.setAttribute('value', `type:${chartType} `);
         input.focus();
       }
       if (label) {
@@ -9218,12 +9222,18 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (menu) {
         menu.classList.add('hidden');
       }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
     };
 
     window.togglePromptLanguageMenu = (boxId) => {
       const menu = document.getElementById(`${boxId}_language_menu`);
       if (menu) {
         menu.classList.toggle('hidden');
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
       }
     };
     
@@ -9233,6 +9243,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const label = document.getElementById(`${boxId}_language_btn_label`);
       if (input) {
         input.value = lang;
+        input.setAttribute('value', lang);
         input.focus();
       }
       if (label) {
@@ -9243,6 +9254,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       if (menu) {
         menu.classList.add('hidden');
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
       }
     };
     
