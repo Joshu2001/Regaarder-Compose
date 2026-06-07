@@ -7799,7 +7799,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
   };
 
 
-  const handleAIBlockSubmit = async (prompt, type, containerOrId) => {
+  const handleAIBlockSubmit = async (prompt, type, containerOrId, attachments = []) => {
     const containerId = typeof containerOrId === 'string' ? containerOrId : containerOrId.getAttribute('id');
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -7832,7 +7832,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
           userPrompt = `Translate the following text to ${targetLanguage}. Preserve any HTML tags if present. Text:\n"""${textToTranslate}"""`;
         }
         
-        const res = await callGemini({ userPrompt, systemPrompt });
+        const res = await callGemini({ userPrompt, systemPrompt, attachments });
         const targetContainer = document.getElementById(containerId);
         if (res?.error) {
           throw new Error(res.error);
@@ -7942,7 +7942,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
         required: ['type', 'color', 'scale', 'weight', 'dash', 'effects', 'text']
       } : undefined;
 
-      const res = await callGemini({ userPrompt, systemPrompt, schema });
+      const res = await callGemini({ userPrompt, systemPrompt, schema, attachments });
       const liveContainer = document.getElementById(containerId);
       if (res?.error) {
         if (type === 'image') {
@@ -9277,14 +9277,15 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const mainBox = document.getElementById(boxId);
       if (!mainBox) return;
       
-      const existingFiles = JSON.parse(mainBox.getAttribute('data-attached-files') || '[]');
-      const newFiles = files.map(f => ({ name: f.name, type: f.type, size: f.size }));
+      window.__promptAttachments = window.__promptAttachments || {};
+      const existingFiles = window.__promptAttachments[boxId] || [];
+      const newFiles = files.map(f => ({ file: f, name: f.name, type: f.type, size: f.size }));
       const updatedFiles = [...existingFiles, ...newFiles];
-      mainBox.setAttribute('data-attached-files', JSON.stringify(updatedFiles));
+      window.__promptAttachments[boxId] = updatedFiles;
       
-      container.innerHTML = updatedFiles.map((file, idx) => `
+      container.innerHTML = updatedFiles.map((item, idx) => `
         <div style="display:inline-flex; align-items:center; gap:6px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 8px; font-size:11px; color:#475569; margin:2px;">
-          <span>${file.type.startsWith('image/') ? '🖼️' : file.type.startsWith('audio/') ? '🎵' : '📄'} ${file.name}</span>
+          <span>${item.type.startsWith('image/') ? '🖼️' : item.type.startsWith('audio/') ? '🎵' : '📄'} ${item.name}</span>
           <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.removePromptFile('${boxId}', ${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold; padding:0 2px; line-height:1;">×</button>
         </div>
       `).join('');
@@ -9294,9 +9295,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
     window.removePromptFile = (boxId, index) => {
       const mainBox = document.getElementById(boxId);
       if (!mainBox) return;
-      const existingFiles = JSON.parse(mainBox.getAttribute('data-attached-files') || '[]');
+      
+      window.__promptAttachments = window.__promptAttachments || {};
+      const existingFiles = window.__promptAttachments[boxId] || [];
       existingFiles.splice(index, 1);
-      mainBox.setAttribute('data-attached-files', JSON.stringify(existingFiles));
+      window.__promptAttachments[boxId] = existingFiles;
       
       const container = document.getElementById(`${boxId}_files_preview`);
       if (!container) return;
@@ -9305,9 +9308,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
         container.innerHTML = '';
         container.classList.add('hidden');
       } else {
-        container.innerHTML = existingFiles.map((file, idx) => `
+        container.innerHTML = existingFiles.map((item, idx) => `
           <div style="display:inline-flex; align-items:center; gap:6px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 8px; font-size:11px; color:#475569; margin:2px;">
-            <span>${file.type.startsWith('image/') ? '🖼️' : file.type.startsWith('audio/') ? '🎵' : '📄'} ${file.name}</span>
+            <span>${item.type.startsWith('image/') ? '🖼️' : item.type.startsWith('audio/') ? '🎵' : '📄'} ${item.name}</span>
             <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.removePromptFile('${boxId}', ${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold; padding:0 2px; line-height:1;">×</button>
           </div>
         `).join('');
@@ -9320,12 +9323,13 @@ Generate the updated output according to the instruction. Preserve layout and ta
       let prompt = input?.value?.trim();
       const type = container?.getAttribute('data-block-type') || 'table';
       if (prompt) {
-        const attachedFiles = JSON.parse(container?.getAttribute('data-attached-files') || '[]');
+        window.__promptAttachments = window.__promptAttachments || {};
+        const attachedFiles = window.__promptAttachments[boxId] || [];
         if (attachedFiles.length > 0) {
           const filesList = attachedFiles.map(f => f.name).join(', ');
           prompt = `${prompt} [Attached Context Files: ${filesList}]`;
         }
-        handleAIBlockSubmit(prompt, type, boxId);
+        handleAIBlockSubmit(prompt, type, boxId, attachedFiles);
       }
     };
     
