@@ -739,4 +739,16 @@ body { margin: 0; background: #ffffff; }
   display: none !important;
 }
 
-
+/* Voice Call waveform animations */
+@keyframes barPulse {
+  0% { height: 4px; }
+  100% { height: 28px; }
+}
+@keyframes barPulseActive {
+  0% { height: 6px; }
+  100% { height: 44px; }
+}
+@keyframes barPulseSlow {
+  0% { height: 4px; }
+  100% { height: 16px; }
+}

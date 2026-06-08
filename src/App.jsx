@@ -10,7 +10,7 @@ import {
   List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown,
   LayoutGrid, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, PhoneOff,
+  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
@@ -704,7 +704,7 @@ export default function App() {
   const [dmThreadComposerValue, setDmThreadComposerValue] = useState('');
   const [dmDirectMessages, setDmDirectMessages] = useState(['Sarah Johnson', 'Alex Morgan', 'Michael Chen']);
   const [dmTeamChannels, setDmTeamChannels] = useState(['Marketing', 'Engineering', 'Design', 'General']);
-  const [dmAiConversations, setDmAiConversations] = useState(['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent']);
+  const [dmAiConversations, setDmAiConversations] = useState(['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent', 'Data Analyst Agent']);
   const [dmContactPickerOpen, setDmContactPickerOpen] = useState(false);
   const [dmContactSearch, setDmContactSearch] = useState('');
   const [dmTeamInputOpen, setDmTeamInputOpen] = useState(false);
@@ -713,9 +713,57 @@ export default function App() {
   const [dmChannelInputValue, setDmChannelInputValue] = useState('');
   const [dmAiChatOpen, setDmAiChatOpen] = useState(false);
   const [dmAiChatInput, setDmAiChatInput] = useState('');
-  const [dmAiChatMessages, setDmAiChatMessages] = useState([
-    { id: 'dm-ai-welcome', role: 'assistant', text: 'Hi, I am Orb. Ask me anything about this workspace.' },
+  
+  const [activeAiAgent, setActiveAiAgent] = useState('Orb (AI Assistant)');
+  const [dmAgentHistories, setDmAgentHistories] = useState({
+    'Orb (AI Assistant)': [
+      { id: 'dm-ai-welcome-orb', role: 'assistant', text: 'Hi, I am Orb. Ask me anything about this workspace.' }
+    ],
+    'Marketing Agent': [
+      { id: 'dm-ai-welcome-mktg', role: 'assistant', text: 'Hello! I am your Marketing Agent. Ask me to draft presentation slides or write copy blocks.' }
+    ],
+    'Research Agent': [
+      { id: 'dm-ai-welcome-rsch', role: 'assistant', text: 'Hello! I am your Research Agent. Ask me to lookup terms, compile summaries, or check trends.' }
+    ],
+    'Data Analyst Agent': [
+      { id: 'dm-ai-welcome-data', role: 'assistant', text: 'Hi! I am the Data Analyst Agent. Attach Excel/CSV files, or ask me to calculate stats, update spreadsheet cells, or build SVG graphs.' }
+    ]
+  });
+  const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
+  const [voiceCallState, setVoiceCallState] = useState('connecting'); // connecting, connected, speaking, listening
+  const [voiceCallText, setVoiceCallText] = useState('');
+  const [isVoiceCallMuted, setIsVoiceCallMuted] = useState(false);
+  const [coPilotActive, setCoPilotActive] = useState(false);
+  const [workspaceMemory, setWorkspaceMemory] = useState([
+    {
+      id: 'mem-1',
+      timestamp: Date.now() - 1000 * 60 * 120,
+      event: "Decision: Launch date held for May 15",
+      source: "Sarah Johnson in thread 'Beta Launch'",
+      links: ["Beta Launch Thread"]
+    },
+    {
+      id: 'mem-2',
+      timestamp: Date.now() - 1000 * 60 * 60,
+      event: "Document created: Product Launch Plan",
+      source: "Joshua David in Compose Editor",
+      links: ["Product Launch Plan Document"]
+    }
   ]);
+
+  const addWorkspaceMemory = (event, source, links = []) => {
+    setWorkspaceMemory(prev => [
+      {
+        id: `mem-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        timestamp: Date.now(),
+        event,
+        source,
+        links
+      },
+      ...prev
+    ].slice(0, 100));
+  };
+  const [orbActiveTab, setOrbActiveTab] = useState('context');
   const [dmEditingThreadTitle, setDmEditingThreadTitle] = useState(false);
   const [dmThreadTitleDraft, setDmThreadTitleDraft] = useState('');
   const [dmEditingThreadDescription, setDmEditingThreadDescription] = useState(false);
@@ -8831,13 +8879,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
       return;
     }
 
-    if (target && (
-      titleEditableRef.current?.contains(target) ||
-      subtitleEditableRef.current?.contains(target)
-    )) {
-      return;
-    }
-
     if (event.key === 'ArrowUp' && isSelectionAtStartOfNode(blankBodyRef.current)) {
       event.preventDefault();
       focusEditableNode(subtitleEditableRef.current, true);
@@ -11404,6 +11445,10 @@ Rules:
               insertTranscriptIntoDocumentRef.current?.(textToInsert + ' ', { forceAppendToEnd: true });
             } else if (voiceTargetRef.current === 'schedule') {
               setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+            } else if (voiceTargetRef.current === 'chat') {
+              setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
+            } else if (voiceTargetRef.current === 'agent-chat') {
+              setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
             } else {
               setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${textToInsert}`);
             }
@@ -11430,6 +11475,10 @@ Rules:
                 insertTranscriptIntoDocumentRef.current?.(cleanedText + ' ', { forceAppendToEnd: true });
               } else if (voiceTargetRef.current === 'schedule') {
                 setScheduleInput((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
+              } else if (voiceTargetRef.current === 'chat') {
+                setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
+              } else if (voiceTargetRef.current === 'agent-chat') {
+                setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
               } else {
                 setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${cleanedText}`);
               }
@@ -15155,20 +15204,478 @@ Respond with a JSON array of slide objects matching the schema.`;
       setDmTeamInputOpen(false);
       setDmChannelInputOpen(false);
     };
-    const sendDmAiChatMessage = () => {
-      const text = String(dmAiChatInput || '').trim();
-      if (!text) {
+
+    const speakAgentResponse = (text, callback) => {
+      if (!window.speechSynthesis) {
+        if (callback) callback();
         return;
       }
+      window.speechSynthesis.cancel();
+      const cleanText = text.replace(/[*_#`\[\]]/g, '').trim();
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.onend = () => {
+        if (callback) callback();
+      };
+      utterance.onerror = (e) => {
+        console.error('SpeechSynthesis error:', e);
+        if (callback) callback();
+      };
+      window.speechSynthesis.speak(utterance);
+    };
+
+    const startVoiceCall = () => {
+      setIsVoiceCallActive(true);
+      setVoiceCallState('connecting');
+      setVoiceCallText('Establishing connection...');
+      
+      setTimeout(() => {
+        setVoiceCallState('speaking');
+        const welcome = dmAgentHistories[activeAiAgent]?.[0]?.text || 'Hello, I am connected and ready.';
+        setVoiceCallText(welcome);
+        speakAgentResponse(welcome, () => {
+          setVoiceCallState('listening');
+          setVoiceCallText('Listening...');
+          startCallSpeechRecognition();
+        });
+      }, 1500);
+    };
+
+    const stopVoiceCall = () => {
+      setIsVoiceCallActive(false);
+      setVoiceCallState('disconnected');
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (callRecognitionRef.current) {
+        try { callRecognitionRef.current.stop(); } catch (_e) {}
+      }
+      showToast('Voice call ended');
+    };
+
+    const toggleVoiceCallMute = () => {
+      setIsVoiceCallMuted(prev => {
+        const next = !prev;
+        showToast(next ? 'Mic muted' : 'Mic unmuted');
+        if (next && callRecognitionRef.current) {
+          try { callRecognitionRef.current.stop(); } catch (_e) {}
+        } else if (!next && isVoiceCallActive) {
+          startCallSpeechRecognition();
+        }
+        return next;
+      });
+    };
+
+    const callRecognitionRef = useRef(null);
+    
+    const startCallSpeechRecognition = () => {
+      if (isVoiceCallMuted || !isVoiceCallActive) return;
+      
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+      
+      const rec = new SpeechRecognition();
+      callRecognitionRef.current = rec;
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'en-US';
+      
+      rec.onresult = (e) => {
+        const transcript = e.results[0]?.[0]?.transcript;
+        if (transcript && isVoiceCallActive) {
+          setVoiceCallText(`You said: "${transcript}"`);
+          processCallResponse(transcript);
+        }
+      };
+      
+      rec.onend = () => {
+        if (isVoiceCallActive && voiceCallState === 'listening' && !isVoiceCallMuted) {
+          try { rec.start(); } catch (_e) {}
+        }
+      };
+      
+      try { rec.start(); } catch (_e) {}
+    };
+
+    const processCallResponse = async (userText) => {
+      setVoiceCallState('connecting');
+      setVoiceCallText('Thinking...');
+      
+      const userMessage = { id: `dm-ai-user-call-${Date.now()}`, role: 'user', text: userText };
+      setDmAgentHistories(prev => ({
+        ...prev,
+        [activeAiAgent]: [...(prev[activeAiAgent] || []), userMessage]
+      }));
+
+      try {
+        let systemPrompt = `You are ${activeAiAgent} on a voice call. Answer the user in 1-2 short, conversational sentences suitable for speech synthesis. Keep it concise.`;
+        
+        const response = await fetch('/api/gemini', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userPrompt: userText,
+            systemPrompt
+          })
+        });
+        
+        const result = await response.json();
+        if (result.ok && result.text) {
+          const replyText = result.text.trim();
+          
+          const assistantMessage = { id: `dm-ai-assistant-call-${Date.now()}`, role: 'assistant', text: replyText };
+          setDmAgentHistories(prev => ({
+            ...prev,
+            [activeAiAgent]: [...(prev[activeAiAgent] || []), assistantMessage]
+          }));
+          
+          setVoiceCallState('speaking');
+          setVoiceCallText(replyText);
+          speakAgentResponse(replyText, () => {
+            setVoiceCallState('listening');
+            setVoiceCallText('Listening...');
+            startCallSpeechRecognition();
+          });
+        } else {
+          throw new Error();
+        }
+      } catch (_err) {
+        const errReply = 'Sorry, I encountered an error. Please try again.';
+        setVoiceCallState('speaking');
+        setVoiceCallText(errReply);
+        speakAgentResponse(errReply, () => {
+          setVoiceCallState('listening');
+          setVoiceCallText('Listening...');
+          startCallSpeechRecognition();
+        });
+      }
+    };
+
+    const coPilotRecognitionRef = useRef(null);
+    
+    const toggleMeetingCoPilot = () => {
+      setCoPilotActive(prev => {
+        const next = !prev;
+        if (next) {
+          showToast('Meeting Co-pilot activated');
+          setTimeout(() => startCoPilotListening(), 300);
+        } else {
+          showToast('Meeting Co-pilot deactivated');
+          if (coPilotRecognitionRef.current) {
+            try { coPilotRecognitionRef.current.stop(); } catch (_e) {}
+          }
+        }
+        return next;
+      });
+    };
+
+    const startCoPilotListening = () => {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+      
+      const rec = new SpeechRecognition();
+      coPilotRecognitionRef.current = rec;
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'en-US';
+      
+      rec.onresult = (e) => {
+        const transcript = e.results[0]?.[0]?.transcript;
+        if (transcript) {
+          logMeetingLine('Joshua (You)', transcript);
+        }
+      };
+      
+      rec.onend = () => {
+        if (coPilotRecognitionRef.current && coPilotActive) {
+          try { rec.start(); } catch (_e) {}
+        }
+      };
+      
+      try { rec.start(); } catch (_e) {}
+    };
+
+    const simulateColleagueSpeaking = () => {
+      if (!coPilotActive) {
+        showToast('Please start the Meeting Co-pilot first');
+        return;
+      }
+      const phrases = [
+        { author: 'Sarah Johnson', text: 'Let’s finalize the marketing launch copy by tomorrow morning.' },
+        { author: 'Alex Morgan', text: 'I decided to start engineering sprint MVP planning on Monday.' },
+        { author: 'Michael Chen', text: 'We will draft the Q2 operating budget outline for review.' },
+        { author: 'Sarah Johnson', text: 'I approve the new landing page dashboard layouts.' }
+      ];
+      const chosen = phrases[Math.floor(Math.random() * phrases.length)];
+      logMeetingLine(chosen.author, chosen.text);
+    };
+
+    const logMeetingLine = (author, text) => {
+      const now = Date.now();
+      
+      setChatMessages(prev => [...prev, { id: now, sender: author === 'Joshua (You)' ? 'user' : 'assistant', text: `${author}: ${text}` }]);
+      addWorkspaceMemory(`Meeting dialogue transcribed: "${author}: ${text.substring(0, 30)}..."`, "Meeting Co-pilot", ["Meeting Room", "Transcript"]);
+      
+      const lower = text.toLowerCase();
+      if (lower.includes('decide') || lower.includes('finalize') || lower.includes('approve') || lower.includes('agree')) {
+        const decision = {
+          id: `dm-decision-copilot-${now}`,
+          threadId: activeDmThread?.id || 'thread-beta-launch',
+          summary: `${author}: ${text}`,
+          createdAt: now,
+          by: author
+        };
+        setDmDecisions(prev => [decision, ...prev].slice(0, 200));
+        showToast(`Co-pilot logged decision: "${text.substring(0, 30)}..."`);
+        addWorkspaceMemory(`Decision logged: "${text}"`, "Meeting Co-pilot", ["Meeting Room", "Decision Log"]);
+      }
+      
+      if (lower.includes('will') || lower.includes('start') || lower.includes('draft') || lower.includes('create')) {
+        const newTask = {
+          id: `mg-task-copilot-${now}`,
+          title: text,
+          tag: 'Co-pilot Task',
+          project: 'Engineering Delivery',
+          due: 'Jun 20',
+          comments: 0,
+          assignee: author,
+          priority: 'High',
+          status: 'Ideas',
+          progress: 0,
+          description: 'Automatically extracted from live meeting speech by Co-pilot.'
+        };
+        setManageenBoardColumns((prev) => {
+          return prev.map(col => {
+            if (col.id === 'ideas') {
+              return { ...col, tasks: [...col.tasks, newTask] };
+            }
+            return col;
+          });
+        });
+        showToast(`Co-pilot added task: "${text.substring(0, 30)}..."`);
+        addWorkspaceMemory(`Task card added: "${text}"`, "Meeting Co-pilot", ["Meeting Room", "Kanban Board"]);
+      }
+    };
+
+    const handleAgentActionTriggers = (agentName, userPromptText, replyText) => {
+      const userLower = userPromptText.toLowerCase();
+      
+      // Look for structured action tag: [ACTION: ...]
+      const actionRegex = /\[ACTION:\s*({.*?})\]/s;
+      const match = replyText.match(actionRegex);
+      
+      if (match && match[1]) {
+        try {
+          const actionPayload = JSON.parse(match[1]);
+          if (actionPayload.type === 'insert_chart') {
+            const chartType = actionPayload.chartType || 'bar';
+            const labels = actionPayload.labels || ['Jan', 'Feb', 'Mar'];
+            const dataValues = actionPayload.data || [10, 20, 30];
+            
+            if (blankBodyRef.current) {
+              const previewId = `prev_analyst_${Date.now()}`;
+              const container = document.createElement('div');
+              container.className = 'ai-preview-block';
+              container.setAttribute('id', previewId);
+              container.setAttribute('data-block-type', 'graph');
+              container.setAttribute('contenteditable', 'false');
+              
+              blankBodyRef.current.appendChild(container);
+              
+              const spacer = document.createElement('p');
+              spacer.innerHTML = '<br>';
+              blankBodyRef.current.appendChild(spacer);
+              
+              setDocBodyHtml(blankBodyRef.current.innerHTML);
+              
+              handleAIBlockSubmit(`Generate a ${chartType} chart for values ${dataValues.join(', ')} with labels ${labels.join(', ')}`, 'graph', container);
+              showToast('Data Analyst inserted a chart into your document');
+              addWorkspaceMemory('Data Analyst generated and inserted a chart in the document', 'Data Analyst Agent', ['Document Editor', 'AI Chat']);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse structured action JSON:", e);
+        }
+      } else {
+        // Fallback for keyword matching if structured output fails
+        if (agentName.includes('Analyst') && (userLower.includes('chart') || userLower.includes('graph') || userLower.includes('plot'))) {
+          const sampleLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May'];
+          const sampleValues = [45, 60, 85, 110, 150];
+          
+          const matches = [...userPromptText.matchAll(/\b\d+\b/g)].map(m => Number(m[0]));
+          const dataValues = matches.length >= 3 ? matches.slice(0, 5) : sampleValues;
+          
+          if (blankBodyRef.current) {
+            const previewId = `prev_analyst_${Date.now()}`;
+            const container = document.createElement('div');
+            container.className = 'ai-preview-block';
+            container.setAttribute('id', previewId);
+            container.setAttribute('data-block-type', 'graph');
+            container.setAttribute('contenteditable', 'false');
+            
+            blankBodyRef.current.appendChild(container);
+            
+            const spacer = document.createElement('p');
+            spacer.innerHTML = '<br>';
+            blankBodyRef.current.appendChild(spacer);
+            
+            setDocBodyHtml(blankBodyRef.current.innerHTML);
+            
+            handleAIBlockSubmit(`Generate a bar chart for values ${dataValues.join(', ')}`, 'graph', container);
+            showToast('Data Analyst inserted a chart into your document');
+            addWorkspaceMemory('Data Analyst generated and inserted a chart in the document', 'Data Analyst Agent', ['Document Editor', 'AI Chat']);
+          }
+        }
+      }
+      
+      if (agentName.includes('Orb') && (userLower.includes('task') || userLower.includes('todo') || userLower.includes('add board'))) {
+        let taskTitle = 'New Task from Orb';
+        const taskMatch = userPromptText.match(/(?:create|add|new)\s+task\s+["']?([^"'\n]+)["']?/i) 
+                       || userPromptText.match(/(?:task|todo)\s+to\s+["']?([^"'\n]+)["']?/i);
+        if (taskMatch?.[1]) {
+          taskTitle = taskMatch[1].trim();
+        }
+        
+        const newTask = {
+          id: `mg-task-orb-${Date.now()}`,
+          title: taskTitle,
+          tag: 'AI Task',
+          project: 'Engineering Delivery',
+          due: 'Jun 15',
+          comments: 0,
+          assignee: 'Orb',
+          priority: 'Medium',
+          status: 'Ideas',
+          progress: 0,
+          description: 'Automatically created by Orb Workspace Assistant.'
+        };
+        
+        setManageenBoardColumns((prev) => {
+          return prev.map(col => {
+            if (col.id === 'ideas') {
+              return {
+                ...col,
+                tasks: [...col.tasks, newTask]
+              };
+            }
+            return col;
+          });
+        });
+        showToast(`Orb added task to board: "${taskTitle}"`);
+        addWorkspaceMemory(`Created task card: "${taskTitle}"`, "Orb Assistant", ["Kanban Board", "AI Chat"]);
+      }
+    };
+
+    const sendDmAiChatMessage = async (overrideText = '') => {
+      const text = (overrideText || String(dmAiChatInput || '')).trim();
+      if (!text) return;
+      
       const now = Date.now();
       const userMessage = { id: `dm-ai-user-${now}`, role: 'user', text };
-      const assistantMessage = {
-        id: `dm-ai-assistant-${now}`,
-        role: 'assistant',
-        text: `I can help with that. Here is a quick direction for: ${text}`,
-      };
-      setDmAiChatMessages((prev) => [...prev, userMessage, assistantMessage]);
-      setDmAiChatInput('');
+      
+      setDmAgentHistories((prev) => ({
+        ...prev,
+        [activeAiAgent]: [...(prev[activeAiAgent] || []), userMessage]
+      }));
+      if (!overrideText) {
+        setDmAiChatInput('');
+      }
+
+      const tempAssistantId = `dm-ai-assistant-loading-${now}`;
+      const loadingMessage = { id: tempAssistantId, role: 'assistant', text: 'Thinking...' };
+      
+      setDmAgentHistories((prev) => ({
+        ...prev,
+        [activeAiAgent]: [...(prev[activeAiAgent] || []), loadingMessage]
+      }));
+
+      setIsComposing(true);
+
+      // Perform specialist routing if user is talking to Orb coordinator
+      let routedAgent = activeAiAgent;
+      if (activeAiAgent === 'Orb (AI Assistant)') {
+        const lowerText = text.toLowerCase();
+        if (lowerText.includes('chart') || lowerText.includes('graph') || lowerText.includes('plot') || lowerText.includes('calculate') || lowerText.includes('stats') || lowerText.includes('spreadsheet')) {
+          routedAgent = 'Data Analyst Agent';
+        } else if (lowerText.includes('slide') || lowerText.includes('presentation') || lowerText.includes('pitch deck') || lowerText.includes('branding') || lowerText.includes('copywrite')) {
+          routedAgent = 'Marketing Agent';
+        } else if (lowerText.includes('lookup') || lowerText.includes('research') || lowerText.includes('explain') || lowerText.includes('search')) {
+          routedAgent = 'Research Agent';
+        }
+      }
+
+      try {
+        let systemPrompt = '';
+        let documentContext = '';
+        if (blankBodyRef.current) {
+          documentContext = `\n\nActive Document Context:\n${blankBodyRef.current.innerText}`;
+        }
+
+        if (routedAgent.includes('Marketing')) {
+          systemPrompt = `You are the Marketing Agent for Regaarder Compose. Specialized in copy editing, branding, and generating slide decks.
+Return direct, concise marketing suggestions. If requested to generate slides, formulate slide metadata.`;
+        } else if (routedAgent.includes('Analyst')) {
+          systemPrompt = `You are the Data Analyst Agent. You analyze tabular data, spreadsheets, and files. 
+If requested to draw a chart or graph, do NOT generate raw SVG or HTML tags. Instead, append a structured action JSON block at the very end of your message in exactly this format:
+[ACTION: {"type": "insert_chart", "chartType": "bar", "labels": ["Jan", "Feb", "Mar"], "data": [45, 60, 85]}]`;
+        } else if (routedAgent.includes('Research')) {
+          systemPrompt = `You are the Research Agent. You lookup information, search context, and generate detailed reports.`;
+        } else {
+          systemPrompt = `You are Orb, the central workspace coordinator. Assist the user with navigating documents, tracking tasks, and scheduling.
+You can recommend task creations on the board.`;
+        }
+
+        const response = await fetch('/api/gemini', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userPrompt: `${text}${documentContext}`,
+            systemPrompt
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.ok && result.text) {
+          let replyText = result.text.trim();
+          
+          handleAgentActionTriggers(routedAgent, text, replyText);
+
+          // Add visual routed routing badge if Orb forwarded the request
+          if (activeAiAgent === 'Orb (AI Assistant)' && routedAgent !== 'Orb (AI Assistant)') {
+            replyText = `*(Routed to ${routedAgent})*\n\n${replyText}`;
+          }
+
+          setDmAgentHistories((prev) => {
+            const currentHistory = prev[activeAiAgent] || [];
+            const filtered = currentHistory.filter(msg => msg.id !== tempAssistantId);
+            return {
+              ...prev,
+              [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-${Date.now()}`, role: 'assistant', text: replyText }]
+            };
+          });
+
+          // Log event to Workspace Memory Decision Graph
+          addWorkspaceMemory(
+            `Orb coordinator processed query: "${text.substring(0, 30)}..."`,
+            routedAgent !== 'Orb (AI Assistant)' ? `Orb ➔ ${routedAgent.split(' ')[0]}` : 'Orb Assistant',
+            ["AI Chat"]
+          );
+        } else {
+          throw new Error(result.error || 'Gemini error');
+        }
+      } catch (err) {
+        console.error('Agent chat failed:', err);
+        setDmAgentHistories((prev) => {
+          const currentHistory = prev[activeAiAgent] || [];
+          const filtered = currentHistory.filter(msg => msg.id !== tempAssistantId);
+          return {
+            ...prev,
+            [activeAiAgent]: [...filtered, { id: `dm-ai-assistant-err-${Date.now()}`, role: 'assistant', text: `Error: ${err.message || 'Unable to connect to Gemini API.'}` }]
+          };
+        });
+      } finally {
+        setIsComposing(false);
+      }
     };
     const saveDmThreadTitle = () => {
       const nextTitle = String(dmThreadTitleDraft || '').trim();
@@ -15438,12 +15945,24 @@ Respond with a JSON array of slide objects matching the schema.`;
                 <button type="button" onClick={handleDmAddAiConversation} className="text-slate-400 hover:text-violet-600"><Plus size={14} /></button>
               </div>
               <div className="space-y-1 text-[14px]">
-                {aiConversations.map((item, index) => (
-                  <button key={item} type="button" onClick={() => { setDmAiChatOpen(true); showToast(`${item} opened`); }} className="w-full h-8 px-2 rounded-lg text-[14px] text-slate-700 hover:bg-slate-50 flex items-center justify-between text-left">
-                    <span className="truncate">{item}</span>
-                    {index === 0 ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
-                  </button>
-                ))}
+                {aiConversations.map((item, index) => {
+                  const active = activeAiAgent === item && dmAiChatOpen;
+                  return (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => {
+                        setDmAiChatOpen(true);
+                        setActiveAiAgent(item);
+                        showToast(`${item} opened`);
+                      }}
+                      className={`w-full h-8 px-2 rounded-lg text-[14px] flex items-center justify-between text-left ${active ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'}`}
+                    >
+                      <span className="truncate">{item}</span>
+                      {index === 0 ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -15790,46 +16309,132 @@ Respond with a JSON array of slide objects matching the schema.`;
             {dmAiChatOpen && (
               <div className="mx-6 mb-3 rounded-2xl border border-violet-200 bg-white shadow-[0_14px_36px_-24px_rgba(109,40,217,0.45)] overflow-hidden">
                 <div className="h-10 px-3 border-b border-violet-100 bg-violet-50/60 flex items-center justify-between">
-                  <div className="text-xs font-semibold text-violet-700">AI Conversation</div>
-                  <button
-                    type="button"
-                    onClick={() => setDmAiChatOpen(false)}
-                    className="text-slate-400 hover:text-slate-600"
-                    title="Close AI chat"
-                  >
-                    <X size={14} />
-                  </button>
+                  <div className="text-xs font-semibold text-violet-700 flex items-center gap-1.5">
+                    <Sparkles size={12} className="text-violet-500" />
+                    <span>{activeAiAgent}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={isVoiceCallActive ? stopVoiceCall : startVoiceCall}
+                      className={`p-1 rounded transition-colors ${isVoiceCallActive ? 'text-red-500 hover:bg-red-50' : 'text-violet-500 hover:bg-violet-100/50'}`}
+                      title={isVoiceCallActive ? 'End Call' : 'Start Voice Call'}
+                    >
+                      <Phone size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDmAiChatOpen(false)}
+                      className="text-slate-400 hover:text-slate-600 p-1 rounded"
+                      title="Close AI chat"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 </div>
-                <div className="max-h-56 overflow-y-auto thin-scrollbar px-3 py-3 space-y-2 bg-white">
-                  {dmAiChatMessages.map((item) => (
-                    <div key={item.id} className={`flex ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${item.role === 'user' ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
-                        {item.text}
+
+                {isVoiceCallActive ? (
+                  <div className="h-56 bg-slate-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+                    <div className="absolute -inset-10 opacity-30 pointer-events-none">
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-violet-600 blur-3xl animate-pulse"></div>
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full bg-fuchsia-600 blur-2xl"></div>
+                    </div>
+                    
+                    <div className="z-10 text-center space-y-4 w-full">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[10px] uppercase tracking-widest text-violet-300 font-bold">Voice Call</span>
+                        <span className="text-xs font-semibold text-white truncate max-w-[200px]">{activeAiAgent}</span>
+                        <span className="text-[9px] text-slate-400 capitalize">{voiceCallState}...</span>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-1 h-10">
+                        {[...Array(9)].map((_, i) => {
+                          let animStyle = {};
+                          if (voiceCallState === 'listening') {
+                            animStyle = { animation: `barPulse 1.2s ease-in-out infinite alternate`, animationDelay: `${i * 0.1}s` };
+                          } else if (voiceCallState === 'speaking') {
+                            animStyle = { animation: `barPulseActive 0.8s ease-in-out infinite alternate`, animationDelay: `${i * 0.08}s` };
+                          } else if (voiceCallState === 'connecting') {
+                            animStyle = { animation: `barPulseSlow 2s ease-in-out infinite alternate`, animationDelay: `${i * 0.2}s` };
+                          } else {
+                            animStyle = { height: '4px' };
+                          }
+                          return (
+                            <div
+                              key={i}
+                              className="w-1 bg-gradient-to-t from-violet-500 to-fuchsia-400 rounded-full transition-all duration-300"
+                              style={animStyle}
+                            />
+                          );
+                        })}
+                      </div>
+
+                      <div className="text-[10px] text-slate-300 italic px-4 truncate w-full">
+                        {voiceCallState === 'speaking' ? voiceCallText : (voiceCallState === 'listening' ? 'Listening... speak now' : 'Connecting...')}
+                      </div>
+
+                      <div className="flex items-center justify-center gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={toggleVoiceCallMute}
+                          className={`p-1.5 rounded-full transition-all ${isVoiceCallMuted ? 'bg-red-500/80 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+                          title={isVoiceCallMuted ? 'Unmute microphone' : 'Mute microphone'}
+                        >
+                          {isVoiceCallMuted ? <MicOff size={13} /> : <Mic size={13} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={stopVoiceCall}
+                          className="p-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all shadow-md"
+                          title="End call"
+                        >
+                          <PhoneOff size={13} />
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
-                <div className="border-t border-slate-100 p-2.5 flex items-center gap-2 bg-white">
-                  <input
-                    value={dmAiChatInput}
-                    onChange={(event) => setDmAiChatInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        sendDmAiChatMessage();
-                      }
-                    }}
-                    placeholder="Ask AI..."
-                    className="flex-1 h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-violet-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={sendDmAiChatMessage}
-                    className="h-9 px-3 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700"
-                  >
-                    Send
-                  </button>
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="max-h-56 overflow-y-auto thin-scrollbar px-3 py-3 space-y-2 bg-white min-h-[120px]">
+                      {(dmAgentHistories[activeAiAgent] || []).map((item) => (
+                        <div key={item.id} className={`flex ${item.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${item.role === 'user' ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                            {item.text}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t border-slate-100 p-2.5 flex items-center gap-2 bg-white">
+                      <input
+                        value={dmAiChatInput}
+                        onChange={(event) => setDmAiChatInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            sendDmAiChatMessage();
+                          }
+                        }}
+                        placeholder={`Ask ${activeAiAgent.split(' ')[0]}...`}
+                        className="flex-1 h-9 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 outline-none focus:border-violet-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => toggleVoiceRecording('agent-chat')}
+                        className={`h-9 w-9 rounded-lg flex items-center justify-center border transition-all ${isVoiceActive && voiceTarget === 'agent-chat' ? 'bg-red-500 border-red-600 text-white animate-pulse' : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100'}`}
+                        title={isVoiceActive && voiceTarget === 'agent-chat' ? 'Stop voice dictation' : 'Start voice dictation'}
+                      >
+                        <Mic size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => sendDmAiChatMessage()}
+                        className="h-9 px-3 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700"
+                      >
+                        Send
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -25692,77 +26297,130 @@ Respond with a JSON array of slide objects matching the schema.`;
                       placeholder="Search Orb..."
                       className="w-full rounded-xl bg-gray-100 py-2 pl-8 pr-14 text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border-0"
                     />
-                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">?K</span>
+                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">⌘K</span>
                   </div>
                 </div>
-
-                {/* Tabs */}
                 <div className="flex items-center gap-5 px-4 text-xs font-semibold border-b border-gray-100">
-                  <button className="pb-2.5 border-b-2 border-violet-500 text-violet-600">Context</button>
-                  <button className="pb-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-600">Recent</button>
-                  <button className="pb-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-600">Favorites</button>
+                  <button 
+                    type="button"
+                    onClick={() => setOrbActiveTab('context')}
+                    className={`pb-2.5 border-b-2 transition-all ${orbActiveTab === 'context' ? 'border-violet-500 text-violet-600 font-bold' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Context
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setOrbActiveTab('memory')}
+                    className={`pb-2.5 border-b-2 transition-all ${orbActiveTab === 'memory' ? 'border-violet-500 text-violet-600 font-bold' : 'border-transparent text-slate-400 hover:text-slate-600'}`}
+                  >
+                    Workspace Memory
+                  </button>
                 </div>
 
-                {/* Related to this document */}
-                <div className="px-4 pt-4 pb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <Sparkles size={12} className="text-violet-500" />
-                      <span className="text-[13px] font-semibold text-slate-900">Related to this document</span>
-                      <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">AI</span>
+                {orbActiveTab === 'memory' ? (
+                  <div className="px-4 pt-4 pb-3 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Database size={13} className="text-violet-500" />
+                      <span className="text-[13px] font-semibold text-slate-900">Workspace Decision Graph</span>
                     </div>
-                    <button className="text-[11px] font-semibold text-violet-600 hover:text-violet-700">View all</button>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mb-3">Based on content and workspace context</p>
-                  <div className="space-y-2">
-                    {[
-                      { name: 'Competitive Analysis.pdf', ext: 'PDF', iconBg: 'bg-red-100', iconText: 'text-red-600', meta: 'Mentioned: pricing, positioning, bundling', ago: '2h ago' },
-                      { name: 'Creator Pricing Model.xlsx', ext: 'XLS', iconBg: 'bg-green-100', iconText: 'text-green-700', meta: 'Related to: monetization strategy', ago: '4h ago' },
-                      { name: 'Market Entry Strategy.docx', ext: 'DOC', iconBg: 'bg-blue-100', iconText: 'text-blue-600', meta: 'Related to: go-to-market, verticals', ago: '1d ago' },
-                      { name: 'Strategy Call Recording.mp4', ext: '?', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync �P May 10', ago: '2d ago' },
-                    ].map((asset) => (
-                      <div key={asset.name} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-white hover:border-gray-200 transition-colors cursor-pointer">
-                        <div className="flex items-start gap-2.5">
-                          <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${asset.iconBg} ${asset.iconText} text-[9px] font-bold flex-shrink-0 mt-0.5`}>{asset.ext}</span>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="text-[12px] font-semibold text-slate-800 truncate">{asset.name}</div>
-                              <div className="text-[10px] text-slate-400 whitespace-nowrap">{asset.ago}</div>
+                    <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Orb maps decisions, whiteboard cards, spreadsheet values, and meeting transcripts to keep team workspace context completely unified.
+                    </p>
+                    
+                    <div className="relative border-l border-violet-100 pl-4 ml-2 space-y-3 mt-2">
+                      {workspaceMemory.length === 0 ? (
+                        <div className="text-xs text-slate-400 py-4 text-center">No decisions recorded yet.</div>
+                      ) : (
+                        workspaceMemory.map((item) => (
+                          <div key={item.id} className="relative">
+                            <span className="absolute -left-[21px] top-1.5 w-2 h-2 rounded-full border border-white bg-violet-600 shadow-[0_0_6px_rgba(124,58,237,0.5)]"></span>
+                            <div className="rounded-xl border border-gray-100 bg-gray-50 p-2.5 hover:bg-white hover:border-violet-200 transition-all duration-300">
+                              <div className="text-[9px] text-slate-400 flex items-center justify-between">
+                                <span className="font-semibold text-violet-600">{item.source}</span>
+                                <span>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              </div>
+                              <div className="text-[11px] text-slate-700 mt-1 leading-relaxed">
+                                {item.event}
+                              </div>
+                              {item.links && item.links.length > 0 && (
+                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                  {item.links.map((link) => (
+                                    <span key={link} className="inline-flex items-center gap-0.5 rounded bg-violet-50 px-1 py-0.2 text-[8px] font-medium text-violet-700 border border-violet-100">
+                                      <Link size={8} /> {link}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                            <div className="text-[10px] text-slate-500 mt-0.5">{asset.meta}</div>
                           </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mx-4 border-t border-gray-100" />
-
-                {/* AI Suggestions */}
-                <div className="px-4 pt-3 pb-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Sparkles size={12} className="text-violet-500" />
-                      <span className="text-[13px] font-semibold text-slate-900">AI Suggestions</span>
-                      <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">New</span>
+                        ))
+                      )}
                     </div>
-                    <button className="text-slate-400 hover:text-slate-600"><RefreshCcw size={12} /></button>
                   </div>
-                  <div className="space-y-2">
-                    {[
-                      { icon: Sparkles, text: 'This document mentions "creator monetization". Found 8 related assets.' },
-                      { icon: Sparkles, text: 'Extracted 6 potential tasks from related assets.' },
-                      { icon: Sparkles, text: 'Investor deck v5.pdf is often referenced in this context.' },
-                    ].map(({ icon: Icon, text }) => (
-                      <div key={text} className="flex items-start gap-2.5 py-1">
-                        <Icon size={11} className="text-violet-400 mt-0.5 flex-shrink-0" />
-                        <span className="text-[11px] text-slate-600 leading-relaxed">{text}</span>
+                ) : (
+                  <>
+                    {/* Related to this document */}
+                    <div className="px-4 pt-4 pb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2">
+                          <Sparkles size={12} className="text-violet-500" />
+                          <span className="text-[13px] font-semibold text-slate-900">Related to this document</span>
+                          <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">AI</span>
+                        </div>
+                        <button className="text-[11px] font-semibold text-violet-600 hover:text-violet-700">View all</button>
                       </div>
-                    ))}
-                  </div>
-                  <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more ��</button>
-                </div>
+                      <p className="text-[10px] text-slate-400 mb-3">Based on content and workspace context</p>
+                      <div className="space-y-2">
+                        {[
+                          { name: 'Competitive Analysis.pdf', ext: 'PDF', iconBg: 'bg-red-100', iconText: 'text-red-600', meta: 'Mentioned: pricing, positioning, bundling', ago: '2h ago' },
+                          { name: 'Creator Pricing Model.xlsx', ext: 'XLS', iconBg: 'bg-green-100', iconText: 'text-green-700', meta: 'Related to: monetization strategy', ago: '4h ago' },
+                          { name: 'Market Entry Strategy.docx', ext: 'DOC', iconBg: 'bg-blue-100', iconText: 'text-blue-600', meta: 'Related to: go-to-market, verticals', ago: '1d ago' },
+                          { name: 'Strategy Call Recording.mp4', ext: '?', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync – May 10', ago: '2d ago' },
+                        ].map((asset) => (
+                          <div key={asset.name} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-white hover:border-gray-200 transition-colors cursor-pointer">
+                            <div className="flex items-start gap-2.5">
+                              <span className={`inline-flex items-center justify-center w-7 h-7 rounded-lg ${asset.iconBg} ${asset.iconText} text-[9px] font-bold flex-shrink-0 mt-0.5`}>{asset.ext}</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="text-[12px] font-semibold text-slate-800 truncate">{asset.name}</div>
+                                  <div className="text-[10px] text-slate-400 whitespace-nowrap">{asset.ago}</div>
+                                </div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">{asset.meta}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mx-4 border-t border-gray-100" />
+
+                    {/* AI Suggestions */}
+                    <div className="px-4 pt-3 pb-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Sparkles size={12} className="text-violet-500" />
+                          <span className="text-[13px] font-semibold text-slate-900">AI Suggestions</span>
+                          <span className="text-[9px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-1.5 py-0.5">New</span>
+                        </div>
+                        <button className="text-slate-400 hover:text-slate-600"><RefreshCcw size={12} /></button>
+                      </div>
+                      <div className="space-y-2">
+                        {[
+                          { icon: Sparkles, text: 'This document mentions "creator monetization". Found 8 related assets.' },
+                          { icon: Sparkles, text: 'Extracted 6 potential tasks from related assets.' },
+                          { icon: Sparkles, text: 'Investor deck v5.pdf is often referenced in this context.' },
+                        ].map(({ icon: Icon, text }) => (
+                          <div key={text} className="flex items-start gap-2.5 py-1">
+                            <Icon size={11} className="text-violet-400 mt-0.5 flex-shrink-0" />
+                            <span className="text-[11px] text-slate-600 leading-relaxed">{text}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more →</button>
+                    </div>
+                  </>
+                )}
 
                 <div className="mx-4 border-t border-gray-100" />
 
@@ -26334,8 +26992,27 @@ Respond with a JSON array of slide objects matching the schema.`;
 
               <div className="rounded-2xl border border-violet-100 bg-violet-50/50 px-3 py-2.5">
                 <div className="text-[12px] font-semibold inline-flex items-center gap-1.5"><Sparkles size={12} className="text-violet-500" />AI Assistant <span className="text-[10px] text-violet-600">BETA</span></div>
-                <div className="mt-2 text-[11px] text-slate-600">I��m listening and will capture key points, decisions, and action items.</div>
-                <button type="button" className="mt-2 w-full rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-violet-700 hover:bg-violet-50">View live summary</button>
+                <div className="mt-2 text-[11px] text-slate-600">
+                  {coPilotActive 
+                    ? "Co-pilot active: listening to microphone & transcribing meeting dialogue..." 
+                    : "I’m listening and will capture key points, decisions, and action items."}
+                </div>
+                <button 
+                  type="button" 
+                  onClick={toggleMeetingCoPilot}
+                  className={`mt-2 w-full rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-all ${coPilotActive ? 'bg-red-500 border-red-600 text-white hover:bg-red-600' : 'border-violet-200 bg-white text-violet-700 hover:bg-violet-50'}`}
+                >
+                  {coPilotActive ? "Stop Meeting Co-pilot" : "Start Meeting Co-pilot"}
+                </button>
+                {coPilotActive && (
+                  <button 
+                    type="button" 
+                    onClick={simulateColleagueSpeaking}
+                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-2.5 py-1 text-[10px] font-medium text-slate-600 transition-colors"
+                  >
+                    Simulate Colleague Speech (Demo)
+                  </button>
+                )}
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
