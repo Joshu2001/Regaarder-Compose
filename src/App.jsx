@@ -8431,7 +8431,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       <div id="${boxId}_files_preview" class="hidden" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
       ${type === 'graph' ? `
       <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative; pointer-events:auto !important;">
-        <button type="button" class="inline-ai-prompt-secondary-btn" style="pointer-events:auto !important;" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptChartMenu('${boxId}')" onclick="event.preventDefault(); event.stopPropagation(); window.togglePromptChartMenu('${boxId}')">
+        <button type="button" class="inline-ai-prompt-secondary-btn" style="pointer-events:auto !important;" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptChartMenu('${boxId}')">
           <span id="${boxId}_chart_btn_label" style="display:flex; align-items:center; gap:4px; pointer-events:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="14" y="6" width="4" height="12" rx="1"/></svg>
             Select Chart Type
@@ -8440,14 +8440,14 @@ Generate the updated output according to the instruction. Preserve layout and ta
         </button>
         <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:100000; pointer-events:auto !important;">
           ${['line', 'bar', 'pie', 'heatmap', 'table'].map(t => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
           `).join('')}
         </div>
       </div>
       ` : ''}
       ${type === 'translate' ? `
       <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative; pointer-events:auto !important;">
-        <button type="button" class="inline-ai-prompt-secondary-btn" style="pointer-events:auto !important;" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptLanguageMenu('${boxId}')" onclick="event.preventDefault(); event.stopPropagation(); window.togglePromptLanguageMenu('${boxId}')">
+        <button type="button" class="inline-ai-prompt-secondary-btn" style="pointer-events:auto !important;" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptLanguageMenu('${boxId}')">
           <span id="${boxId}_language_btn_label" style="display:flex; align-items:center; gap:4px; pointer-events:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/><path d="M14 14a8 8 0 0 1-2.2-6"/></svg>
             Select Language
@@ -8456,7 +8456,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         </button>
         <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:100000; max-height: 200px; overflow-y: auto; pointer-events:auto !important;">
           ${['French', 'Spanish', 'German', 'Chinese', 'Japanese', 'Italian', 'Portuguese', 'Arabic', 'Russian', 'Hindi', 'Swedish'].map(lang => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
           `).join('')}
         </div>
       </div>
