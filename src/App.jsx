@@ -2318,6 +2318,18 @@ export default function App() {
       slashMenuContainerRef.current.scrollTop = 0;
     }
   }, [slashMenu.open]);
+
+  useEffect(() => {
+    if (titleEditableRef.current && titleEditableRef.current.textContent !== docTitle) {
+      titleEditableRef.current.textContent = docTitle;
+    }
+  }, [docTitle]);
+
+  useEffect(() => {
+    if (subtitleEditableRef.current && subtitleEditableRef.current.textContent !== docSubtitle) {
+      subtitleEditableRef.current.textContent = docSubtitle;
+    }
+  }, [docSubtitle]);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
   const [roomState, setRoomState] = useState('lobby');
@@ -8751,6 +8763,55 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
   };
 
+  const focusEditableNode = (node, atEnd = true) => {
+    if (!node) return;
+    node.focus();
+    const selection = window.getSelection();
+    if (selection) {
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      range.collapse(!atEnd);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  };
+
+  const isSelectionAtStartOfNode = (node) => {
+    if (!node) return false;
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return false;
+    const range = selection.getRangeAt(0);
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(node);
+    preCaretRange.setEnd(range.startContainer, range.startOffset);
+    return preCaretRange.toString().length === 0;
+  };
+
+  const handleTitleKeyDown = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      focusEditableNode(subtitleEditableRef.current, false);
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      focusEditableNode(subtitleEditableRef.current, false);
+    }
+  };
+
+  const handleSubtitleKeyDown = (event) => {
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      focusEditableNode(titleEditableRef.current, true);
+    } else if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'ArrowDown') {
+      event.preventDefault();
+      focusEditableNode(blankBodyRef.current, false);
+    } else if (event.key === 'Backspace') {
+      if (isSelectionAtStartOfNode(subtitleEditableRef.current)) {
+        event.preventDefault();
+        focusEditableNode(titleEditableRef.current, true);
+      }
+    }
+  };
+
   const handleEditorKeyDown = (event) => {
     // Use nativeEvent for dedup flag — React 18 creates separate SyntheticEvent
     // objects for capture vs bubble handlers, so we must tag the native event.
@@ -8765,6 +8826,24 @@ Generate the updated output according to the instruction. Preserve layout and ta
       target.closest('.inline-ai-prompt-box') ||
       target.closest('.ai-preview-action-banner')
     )) {
+      return;
+    }
+
+    if (target && (
+      titleEditableRef.current?.contains(target) ||
+      subtitleEditableRef.current?.contains(target)
+    )) {
+      return;
+    }
+
+    if (event.key === 'ArrowUp' && isSelectionAtStartOfNode(blankBodyRef.current)) {
+      event.preventDefault();
+      focusEditableNode(subtitleEditableRef.current, true);
+      return;
+    }
+    if (event.key === 'Backspace' && isSelectionAtStartOfNode(blankBodyRef.current)) {
+      event.preventDefault();
+      focusEditableNode(subtitleEditableRef.current, true);
       return;
     }
 
@@ -22664,30 +22743,36 @@ Respond with a JSON array of slide objects matching the schema.`;
               ref={titleEditableRef}
               contentEditable
               suppressContentEditableWarning
-              onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+              onInput={(e) => {
+                normalizeEditableDirection(e.currentTarget);
+                setDocTitle(e.currentTarget.textContent || '');
+              }}
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocTitle(target.textContent || ''))}
               onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocTitle, e)}
+              onKeyDown={handleTitleKeyDown}
               dir="ltr"
               data-doc-id={activeDocId || ''}
               className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold title-editable"
               style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
               data-placeholder={AI_NATIVE_PLACEHOLDER}
-              dangerouslySetInnerHTML={{ __html: docTitle }}
             />
             
             <div
               ref={subtitleEditableRef}
               contentEditable
               suppressContentEditableWarning
-              onInput={(e) => normalizeEditableDirection(e.currentTarget)}
+              onInput={(e) => {
+                normalizeEditableDirection(e.currentTarget);
+                setDocSubtitle(e.currentTarget.textContent || '');
+              }}
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocSubtitle(target.textContent || ''))}
               onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocSubtitle, e)}
+              onKeyDown={handleSubtitleKeyDown}
               dir="ltr"
               data-doc-id={activeDocId || ''}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14 subtitle-editable"
               style={{ fontFamily: editorFont, fontSize: `${subtitleSize}px`, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
               data-placeholder={AI_NATIVE_PLACEHOLDER}
-              dangerouslySetInnerHTML={{ __html: docSubtitle }}
             />
 
             {isBlankDocument && (
