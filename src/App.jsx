@@ -2307,6 +2307,10 @@ export default function App() {
   const [voiceCommandBuffer, setVoiceCommandBuffer] = useState('');
   const voiceCommandBufferRef = useRef('');
   const [slashMenu, setSlashMenu] = useState({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
+  const slashMenuRef = useRef(null);
+  useEffect(() => {
+    slashMenuRef.current = slashMenu;
+  }, [slashMenu]);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
   const [roomState, setRoomState] = useState('lobby');
@@ -2603,8 +2607,6 @@ export default function App() {
   const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
-  const [textColorMenuOpen, setTextColorMenuOpen] = useState(false);
-  const [highlightMenuOpen, setHighlightMenuOpen] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
   const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
@@ -5526,6 +5528,19 @@ export default function App() {
           }));
         }
       }
+      const activeSlashMenu = slashMenuRef.current;
+      if (activeSlashMenu && activeSlashMenu.open && activeSlashMenu.range) {
+        const rect = activeSlashMenu.range.getBoundingClientRect();
+        if (rect.width !== 0 || rect.height !== 0) {
+          const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
+          const topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
+          setSlashMenu(prev => ({
+            ...prev,
+            left: leftCoord,
+            top: topCoord
+          }));
+        }
+      }
     };
 
     const handleShapeResizeMouseDown = (e, handle, containerId) => {
@@ -5604,7 +5619,7 @@ export default function App() {
       window.removeEventListener('resize', handleScrollResize, true);
       document.removeEventListener('mousedown', handleMouseDownDelegation);
     };
-  }, [imageToolbar.open, imageToolbar.node, tableToolbar.open, tableToolbar.cellEl, shapeToolbar.open, shapeToolbar.containerId]);
+  }, [imageToolbar.open, imageToolbar.node, tableToolbar.open, tableToolbar.cellEl, shapeToolbar.open, shapeToolbar.containerId, slashMenuRef]);
 
   useEffect(() => {
     const handleSelectionChange = () => {
@@ -8281,7 +8296,23 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
   };
 
+  const isSelectionInHeader = () => {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return false;
+    const range = selection.getRangeAt(0);
+    const ancestor = range.commonAncestorContainer;
+    const targetNode = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+    return Boolean(targetNode && (
+      titleEditableRef.current?.contains(targetNode) ||
+      subtitleEditableRef.current?.contains(targetNode)
+    ));
+  };
+
   const insertInlineIconSelector = () => {
+    if (isSelectionInHeader()) {
+      showToast('Cannot insert icons inside title or subtitle');
+      return;
+    }
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) return;
     
@@ -8320,6 +8351,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const insertInlinePromptBox = (type, prefilledPrompt = '', originalHtml = '') => {
+    if (isSelectionInHeader()) {
+      showToast('Cannot insert AI block inside title or subtitle');
+      return;
+    }
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) return;
     
@@ -8364,14 +8399,13 @@ Generate the updated output according to the instruction. Preserve layout and ta
             id="${boxId}_file" 
             style="display:none;" 
             multiple 
-            accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt" 
-            onchange="window.handlePromptFileAdded('${boxId}', this)" 
+            onchange="window.handlePromptFileAdded('${boxId}', this.files)"
           />
           <button 
             type="button" 
             class="inline-ai-prompt-icon-btn" 
-            onmousedown="event.preventDefault(); event.stopPropagation(); document.getElementById('${boxId}_file').click();" 
-            title="Add image, document, or audio context"
+            title="Attach context files"
+            onmousedown="event.preventDefault(); event.stopPropagation(); document.getElementById('${boxId}_file').click();"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
           </button>
@@ -8396,33 +8430,33 @@ Generate the updated output according to the instruction. Preserve layout and ta
       </div>
       <div id="${boxId}_files_preview" class="hidden" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
       ${type === 'graph' ? `
-      <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
-        <button type="button" class="inline-ai-prompt-secondary-btn" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptChartMenu('${boxId}')">
-          <span id="${boxId}_chart_btn_label" style="display:flex; align-items:center; gap:4px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative; pointer-events:auto !important;">
+        <button type="button" class="inline-ai-prompt-secondary-btn" style="pointer-events:auto !important;" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptChartMenu('${boxId}')" onclick="event.preventDefault(); event.stopPropagation(); window.togglePromptChartMenu('${boxId}')">
+          <span id="${boxId}_chart_btn_label" style="display:flex; align-items:center; gap:4px; pointer-events:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="14" y="6" width="4" height="12" rx="1"/></svg>
             Select Chart Type
           </span>
-          <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none;"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:10000;">
+        <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:100000; pointer-events:auto !important;">
           ${['line', 'bar', 'pie', 'heatmap', 'table'].map(t => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
           `).join('')}
         </div>
       </div>
       ` : ''}
       ${type === 'translate' ? `
-      <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative;">
-        <button type="button" class="inline-ai-prompt-secondary-btn" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptLanguageMenu('${boxId}')">
-          <span id="${boxId}_language_btn_label" style="display:flex; align-items:center; gap:4px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-top:8px; position:relative; pointer-events:auto !important;">
+        <button type="button" class="inline-ai-prompt-secondary-btn" style="pointer-events:auto !important;" onmousedown="event.preventDefault(); event.stopPropagation(); window.togglePromptLanguageMenu('${boxId}')" onclick="event.preventDefault(); event.stopPropagation(); window.togglePromptLanguageMenu('${boxId}')">
+          <span id="${boxId}_language_btn_label" style="display:flex; align-items:center; gap:4px; pointer-events:none;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle;"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/><path d="M14 14a8 8 0 0 1-2.2-6"/></svg>
             Select Language
           </span>
-          <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none;"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:10000; max-height: 200px; overflow-y: auto;">
+        <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:100000; max-height: 200px; overflow-y: auto; pointer-events:auto !important;">
           ${['French', 'Spanish', 'German', 'Chinese', 'Japanese', 'Italian', 'Portuguese', 'Arabic', 'Russian', 'Hindi', 'Swedish'].map(lang => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
           `).join('')}
         </div>
       </div>
@@ -8448,6 +8482,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const applyDirectSelectionAIAction = async (type, textToProcess, targetRange, targetElement = null) => {
+    if (isSelectionInHeader()) {
+      showToast('Cannot apply AI actions inside title or subtitle');
+      return;
+    }
     const previewId = `prev_${Date.now()}`;
     const container = document.createElement('div');
     container.className = 'ai-preview-block';
@@ -8551,6 +8589,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const insertInlineShapeBox = () => {
+    if (isSelectionInHeader()) {
+      showToast('Cannot insert shapes inside title or subtitle');
+      return;
+    }
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) return;
     
@@ -8686,11 +8728,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
   };
 
-  const slashMenuRef = useRef(null);
-  useEffect(() => {
-    slashMenuRef.current = slashMenu;
-  }, [slashMenu]);
-
   const handleEditorKeyDown = (event) => {
     // Use nativeEvent for dedup flag — React 18 creates separate SyntheticEvent
     // objects for capture vs bubble handlers, so we must tag the native event.
@@ -8703,7 +8740,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
       target.tagName === 'TEXTAREA' || 
       target.tagName === 'BUTTON' ||
       target.closest('.inline-ai-prompt-box') ||
-      target.closest('.ai-preview-action-banner')
+      target.closest('.ai-preview-action-banner') ||
+      titleEditableRef.current?.contains(target) ||
+      subtitleEditableRef.current?.contains(target)
     )) {
       return;
     }
@@ -9199,9 +9238,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (menu) {
         menu.classList.toggle('hidden');
       }
-      if (blankBodyRef.current) {
-        setDocBodyHtml(blankBodyRef.current.innerHTML);
-      }
     };
     
     window.selectPromptChartType = (boxId, chartType) => {
@@ -9222,18 +9258,12 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (menu) {
         menu.classList.add('hidden');
       }
-      if (blankBodyRef.current) {
-        setDocBodyHtml(blankBodyRef.current.innerHTML);
-      }
     };
 
     window.togglePromptLanguageMenu = (boxId) => {
       const menu = document.getElementById(`${boxId}_language_menu`);
       if (menu) {
         menu.classList.toggle('hidden');
-      }
-      if (blankBodyRef.current) {
-        setDocBodyHtml(blankBodyRef.current.innerHTML);
       }
     };
     
@@ -9254,9 +9284,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       if (menu) {
         menu.classList.add('hidden');
-      }
-      if (blankBodyRef.current) {
-        setDocBodyHtml(blankBodyRef.current.innerHTML);
       }
     };
     
@@ -20311,40 +20338,6 @@ Respond with a JSON array of slide objects matching the schema.`;
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="relative" onMouseLeave={() => setTextColorMenuOpen(false)}>
-                  <button onClick={() => { setTextColorMenuOpen(!textColorMenuOpen); setHighlightMenuOpen(false); setOpenDropdown(null); }} className="flex items-center gap-1 hover:text-gray-900 cursor-pointer p-1 rounded hover:bg-gray-100" title="Text Color">
-                    <div className="w-4 h-4 rounded-full bg-slate-800 border border-slate-300 flex items-center justify-center"><Type size={10} className="text-white" /></div> <ChevronDown size={12} className="text-gray-400" />
-                  </button>
-                  {textColorMenuOpen && (
-                    <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3">
-                      <div className="text-xs font-semibold text-slate-500 mb-2">Text Color</div>
-                      <div className="grid grid-cols-5 gap-2">
-                        {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
-                          <button key={c} onClick={() => { applyFormatCommand('foreColor', c); setTextColorMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }}></button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="relative" onMouseLeave={() => setHighlightMenuOpen(false)}>
-                  <button onClick={() => { setHighlightMenuOpen(!highlightMenuOpen); setTextColorMenuOpen(false); setOpenDropdown(null); }} className="flex items-center gap-1 hover:text-gray-900 cursor-pointer p-1 rounded hover:bg-gray-100" title="Highlight Color">
-                    <div className="w-4 h-4 rounded bg-yellow-200 border border-yellow-300 flex items-center justify-center"><Highlighter size={10} className="text-yellow-700" /></div> <ChevronDown size={12} className="text-gray-400" />
-                  </button>
-                  {highlightMenuOpen && (
-                    <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3">
-                      <div className="text-xs font-semibold text-slate-500 mb-2">Highlight Color</div>
-                      <div className="grid grid-cols-5 gap-2">
-                        <button onClick={() => { applyFormatCommand('hiliteColor', 'transparent'); setHighlightMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-110 transition-transform flex items-center justify-center"><X size={12} className="text-slate-400"/></button>
-                        {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
-                          <button key={c} onClick={() => { applyFormatCommand('hiliteColor', c); setHighlightMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }}></button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="w-px h-4 bg-gray-200"></div>
             <button onClick={() => applyFormatCommand('bold')} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
             <button onClick={() => applyFormatCommand('italic')} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
             <button onClick={() => applyFormatCommand('underline')} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
@@ -20357,14 +20350,37 @@ Respond with a JSON array of slide objects matching the schema.`;
               <button
                 onClick={() => setTextStyleMenuOpen((prev) => !prev)}
                 className="flex items-center gap-1.5 hover:text-gray-900 cursor-pointer pl-0.5"
+                title="Format options (Style & Colors)"
               >
                 <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
               </button>
               {textStyleMenuOpen && (
-                <div className="absolute top-8 left-0 z-[230] w-32 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1">
-                  <button onClick={() => { applyFormatCommand('formatBlock', 'P'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Body</button>
-                  <button onClick={() => { applyFormatCommand('formatBlock', 'BLOCKQUOTE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Quote</button>
-                  <button onClick={() => { applyFormatCommand('formatBlock', 'PRE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Code</button>
+                <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
+                  <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1">Block Style</span>
+                    <button onClick={() => { applyFormatCommand('formatBlock', 'P'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-[#f5f3ff] hover:text-[#7c3aed]">Body Text</button>
+                    <button onClick={() => { applyFormatCommand('formatBlock', 'BLOCKQUOTE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-[#f5f3ff] hover:text-[#7c3aed]">Quote Block</button>
+                    <button onClick={() => { applyFormatCommand('formatBlock', 'PRE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-[#f5f3ff] hover:text-[#7c3aed]">Code Block</button>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
+                    <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                      {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
+                        <button key={c} onClick={() => { applyFormatCommand('foreColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
+                    <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                      <button onClick={() => { applyFormatCommand('hiliteColor', 'transparent'); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
+                      {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
+                        <button key={c} onClick={() => { applyFormatCommand('hiliteColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -22612,34 +22628,31 @@ Respond with a JSON array of slide objects matching the schema.`;
               ref={titleEditableRef}
               contentEditable
               suppressContentEditableWarning
-              onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocTitle(target.textContent || ''))}
               onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocTitle, e)}
               dir="ltr"
               data-doc-id={activeDocId || ''}
-              className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
-              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docTitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.48 : 1) }}
+              className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold title-editable"
+              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
               data-placeholder={AI_NATIVE_PLACEHOLDER}
-            >
-              {docTitle || (showHeaderGhostPlaceholder ? AI_NATIVE_PLACEHOLDER : '')}
-            </div>
+              dangerouslySetInnerHTML={{ __html: docTitle }}
+            />
             
             <div
               ref={subtitleEditableRef}
               contentEditable
               suppressContentEditableWarning
-              onFocus={(e) => clearPlaceholderOnFocus(e, AI_NATIVE_PLACEHOLDER)}
               onInput={(e) => normalizeEditableDirection(e.currentTarget)}
               onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocSubtitle(target.textContent || ''))}
               onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocSubtitle, e)}
               dir="ltr"
               data-doc-id={activeDocId || ''}
-              className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
-              style={{ fontFamily: editorFont, fontSize: `${subtitleSize}px`, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docSubtitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.48 : 1) }}
-            >
-              {docSubtitle || (showHeaderGhostPlaceholder ? AI_NATIVE_PLACEHOLDER : '')}
-            </div>
+              className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14 subtitle-editable"
+              style={{ fontFamily: editorFont, fontSize: `${subtitleSize}px`, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
+              data-placeholder={AI_NATIVE_PLACEHOLDER}
+              dangerouslySetInnerHTML={{ __html: docSubtitle }}
+            />
 
             {isBlankDocument && (
               <>
@@ -22845,18 +22858,28 @@ Respond with a JSON array of slide objects matching the schema.`;
               left: `${blurLeftInset}px`,
               right: `${blurRightInset}px`,
             }}
-            className="pointer-events-none fixed top-0 bottom-0 z-[300] hidden md:block"
+            className="pointer-events-none fixed top-0 bottom-0 z-[1200] hidden md:block"
           >
             <div
-              style={{ width: '100%', height: '100%' }}
-              className="backdrop-blur-[6px] bg-white/10 w-full h-full"
+              style={{
+                width: '100%',
+                height: '100%',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)'
+              }}
+              className="w-full h-full"
             />
           </div>
         )}
         {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
         <div
-          className={`pointer-events-none absolute inset-x-0 bottom-14 z-[320] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
-          style={{ transform: `translateY(${promptOffset.y}px)` }}
+          className={`pointer-events-none fixed bottom-14 z-[1210] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
+          style={{
+            left: `${blurLeftInset}px`,
+            right: `${blurRightInset}px`,
+            transform: `translateY(${promptOffset.y}px)`
+          }}
         >
           <div className={`max-w-[1600px] mx-auto px-6 md:px-10 flex ${alignMode === 'left' ? 'justify-start' : alignMode === 'right' ? 'justify-end' : 'justify-center'}`} style={{ transform: `translateX(${promptOffset.x}px)` }}>
             <form
@@ -22891,7 +22914,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               />
 
               {isPromptExpanded ? (
-                <div className="rounded-[34px] border border-[#ebe7f8] bg-white/95 shadow-[0_30px_80px_-34px_rgba(91,33,182,0.45)] px-6 py-6 md:px-7 md:py-7">
+                <div className="rounded-[34px] border border-[#ebe7f8] bg-white/95 shadow-[0_30px_80px_-34px_rgba(91,33,182,0.45)] px-6 py-6 md:px-7 md:py-7 max-h-[calc(100vh-160px)] overflow-y-auto thin-scrollbar">
                   <div className="text-center px-2">
                     <Sparkles size={18} className="mx-auto text-violet-500" />
                     <h3 className="mt-3 text-[38px] leading-[1.06] font-semibold text-slate-900">What would you like to create?</h3>

@@ -1,5 +1,11 @@
 # Slash Commands (/) and AI Preview Blocks Implementation
 
+- `[x]` Update `src/styles.css` with fixed position for `.slash-menu-container` and placeholder rules for `.title-editable` / `.subtitle-editable`.
+- `[x]` Update `src/App.jsx` title/subtitle editors to use `dangerouslySetInnerHTML` for rendering.
+- `[x]` Update `src/App.jsx` with `isSelectionInHeader` guardrail checks.
+- `[x]` Update `src/App.jsx` prompt bar modal z-indices (z-[1200] and z-[1210]).
+- `[x]` Update `src/App.jsx` inline chart dropdown menus to have `pointer-events: auto !important` and dual mouse handlers.
+- `[x]` Build the bundle and verify compilation.
 - `[x]` Define slash menu popover state and UI in `src/App.jsx`
 - `[x]` Implement editor event listener for keydown `/` and popover rendering coordinates
 - `[x]` Implement popover list navigation (Up/Down arrow keys, Enter to select, Escape to close)

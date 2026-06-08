@@ -249,8 +249,8 @@ body { margin: 0; background: #ffffff; }
 
 /* Slash popover scroller, selection-safe styles, and inline prompt styling */
 .slash-menu-container {
-  position: absolute;
-  z-index: 400;
+  position: fixed;
+  z-index: 1500;
   width: 240px;
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(226, 232, 240, 0.9);
@@ -695,6 +695,40 @@ body { margin: 0; background: #ffffff; }
   display: none !important;
   width: 0;
   height: 0;
+}
+
+.title-editable, .subtitle-editable {
+  position: relative;
+}
+.title-editable:empty::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.title-editable {
+  opacity: 1 !important;
+}
+.title-editable:empty {
+  opacity: 0.28 !important;
+}
+.subtitle-editable:empty::before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.subtitle-editable {
+  opacity: 1 !important;
+}
+.subtitle-editable:empty {
+  opacity: 0.32 !important;
 }
 
 
