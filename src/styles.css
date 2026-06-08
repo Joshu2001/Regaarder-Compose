@@ -249,7 +249,7 @@ body { margin: 0; background: #ffffff; }
 
 /* Slash popover scroller, selection-safe styles, and inline prompt styling */
 .slash-menu-container {
-  position: fixed;
+  position: absolute;
   z-index: 400;
   width: 240px;
   background: rgba(255, 255, 255, 0.98);

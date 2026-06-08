@@ -8404,7 +8404,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           </span>
           <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:100;">
+        <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:10000;">
           ${['line', 'bar', 'pie', 'heatmap', 'table'].map(t => `
             <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
           `).join('')}
@@ -8420,7 +8420,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           </span>
           <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:100; max-height: 200px; overflow-y: auto;">
+        <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:10000; max-height: 200px; overflow-y: auto;">
           ${['French', 'Spanish', 'German', 'Chinese', 'Japanese', 'Italian', 'Portuguese', 'Arabic', 'Russian', 'Hindi', 'Swedish'].map(lang => `
             <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
           `).join('')}
@@ -17102,7 +17102,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         )}
 
         {creationPickerOpen && (
-          <div className="absolute inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="w-[680px] max-w-[95vw] rounded-2xl bg-white border border-gray-200 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.8)] p-6">
               <div className="flex items-start justify-between gap-4 mb-5">
                 <div>
@@ -17173,7 +17173,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         )}
 
         {shareModalOpen && (
-          <div className="absolute inset-0 z-[520] bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[520] bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4">
             <div className="w-[640px] max-w-[95vw] rounded-2xl bg-white border border-slate-200 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.65)] p-6">
               <div className="flex items-start justify-between gap-4 mb-5">
                 <div>
@@ -18633,7 +18633,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       {creationPickerOpen && (
-        <div className="absolute inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[620] bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-[680px] max-w-[95vw] rounded-2xl bg-white border border-gray-200 shadow-[0_30px_80px_-45px_rgba(15,23,42,0.8)] p-6">
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
@@ -18704,7 +18704,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       {closeConfirmDocId && (
-        <div className="absolute inset-0 z-50 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
           <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">Close this document?</h3>
             <p className="text-xs text-gray-500 mb-4">You can still create a new one after closing. This action will remove the selected tab.</p>
@@ -18727,7 +18727,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       {workspaceModalOpen && (
-        <div className="absolute inset-0 z-50 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
+        <div className="fixed inset-0 z-50 bg-black/20 backdrop-blur-[1px] flex items-center justify-center">
           <div className="w-[420px] max-w-[90vw] rounded-xl bg-white border border-gray-100 shadow-xl p-5">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">
               {workspaceModalMode === 'create' ? 'Create workspace' : 'Rename workspace'}
@@ -18769,7 +18769,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       {shareModalOpen && (
-        <div className="absolute inset-0 z-[520] bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[520] bg-slate-900/30 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-[640px] max-w-[95vw] rounded-2xl bg-white border border-slate-200 shadow-[0_30px_90px_-45px_rgba(15,23,42,0.65)] p-6">
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
@@ -18862,7 +18862,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       {previewAttachment && (
-        <div className="absolute inset-0 z-[130] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[130] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-[640px] max-w-[95vw] max-h-[90vh] overflow-auto rounded-2xl bg-white border border-gray-200 shadow-2xl p-4">
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="min-w-0">
@@ -22367,7 +22367,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
 
                   {whiteboardTaskPreviewOpen && (
-                    <div className="absolute inset-0 z-30 bg-slate-950/28 backdrop-blur-[2px] flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-30 bg-slate-950/28 backdrop-blur-[2px] flex items-center justify-center p-4">
                       <div className="w-[920px] max-w-[96vw] max-h-[88vh] overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_30px_90px_-40px_rgba(15,23,42,0.55)] flex flex-col">
                         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
                           <div>
@@ -22619,7 +22619,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               dir="ltr"
               data-doc-id={activeDocId || ''}
               className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold"
-              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docTitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.28 : 1) }}
+              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docTitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.48 : 1) }}
               data-placeholder={AI_NATIVE_PLACEHOLDER}
             >
               {docTitle || (showHeaderGhostPlaceholder ? AI_NATIVE_PLACEHOLDER : '')}
@@ -22636,7 +22636,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               dir="ltr"
               data-doc-id={activeDocId || ''}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14"
-              style={{ fontFamily: editorFont, fontSize: `${subtitleSize}px`, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docSubtitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.32 : 1) }}
+              style={{ fontFamily: editorFont, fontSize: `${subtitleSize}px`, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext', opacity: docSubtitle?.trim() ? 1 : (showHeaderGhostPlaceholder ? 0.48 : 1) }}
             >
               {docSubtitle || (showHeaderGhostPlaceholder ? AI_NATIVE_PLACEHOLDER : '')}
             </div>
