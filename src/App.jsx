@@ -8862,6 +8862,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) return false;
     const range = selection.getRangeAt(0);
+    if (!node.contains(range.startContainer)) {
+      return false;
+    }
     const preCaretRange = range.cloneRange();
     preCaretRange.selectNodeContents(node);
     preCaretRange.setEnd(range.startContainer, range.startOffset);
