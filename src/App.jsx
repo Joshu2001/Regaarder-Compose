@@ -2306,11 +2306,18 @@ export default function App() {
   const isVoiceCommandModeRef = useRef(false);
   const [voiceCommandBuffer, setVoiceCommandBuffer] = useState('');
   const voiceCommandBufferRef = useRef('');
-  const [slashMenu, setSlashMenu] = useState({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
+  const [slashMenu, setSlashMenu] = useState({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
   const slashMenuRef = useRef(null);
+  const slashMenuContainerRef = useRef(null);
   useEffect(() => {
     slashMenuRef.current = slashMenu;
   }, [slashMenu]);
+
+  useEffect(() => {
+    if (slashMenu.open && slashMenuContainerRef.current) {
+      slashMenuContainerRef.current.scrollTop = 0;
+    }
+  }, [slashMenu.open]);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
   const [roomState, setRoomState] = useState('lobby');
@@ -5533,11 +5540,27 @@ export default function App() {
         const rect = activeSlashMenu.range.getBoundingClientRect();
         if (rect.width !== 0 || rect.height !== 0) {
           const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
-          const topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
+          let topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
+          let bottomCoord = 'auto';
+          
+          const menuHeight = 380;
+          if (topCoord + menuHeight > window.innerHeight) {
+            if (rect.top - menuHeight > 10) {
+              bottomCoord = `${window.innerHeight - rect.top + 4}px`;
+              topCoord = 'auto';
+            } else {
+              topCoord = `${Math.max(10, window.innerHeight - menuHeight - 15)}px`;
+              bottomCoord = 'auto';
+            }
+          } else {
+            topCoord = `${topCoord}px`;
+          }
+          
           setSlashMenu(prev => ({
             ...prev,
             left: leftCoord,
-            top: topCoord
+            top: topCoord,
+            bottom: bottomCoord
           }));
         }
       }
@@ -8440,7 +8463,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         </button>
         <div id="${boxId}_chart_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:120px; z-index:100000; pointer-events:auto !important;">
           ${['line', 'bar', 'pie', 'heatmap', 'table'].map(t => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptChartType('${boxId}', '${t}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${t.charAt(0).toUpperCase() + t.slice(1)} Chart</button>
           `).join('')}
         </div>
       </div>
@@ -8456,7 +8479,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         </button>
         <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:100000; max-height: 200px; overflow-y: auto; pointer-events:auto !important;">
           ${['French', 'Spanish', 'German', 'Chinese', 'Japanese', 'Italian', 'Portuguese', 'Arabic', 'Russian', 'Hindi', 'Swedish'].map(lang => `
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
           `).join('')}
         </div>
       </div>
@@ -8626,7 +8649,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
   const executeSlashCommand = (key) => {
     const savedRange = slashMenuRef.current?.range;
     
-    setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
+    setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
     
     // CRITICAL: Focus the editor FIRST so all DOM commands work
     blankBodyRef.current?.focus();
@@ -8740,9 +8763,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       target.tagName === 'TEXTAREA' || 
       target.tagName === 'BUTTON' ||
       target.closest('.inline-ai-prompt-box') ||
-      target.closest('.ai-preview-action-banner') ||
-      titleEditableRef.current?.contains(target) ||
-      subtitleEditableRef.current?.contains(target)
+      target.closest('.ai-preview-action-banner')
     )) {
       return;
     }
@@ -8782,14 +8803,14 @@ Generate the updated output according to the instruction. Preserve layout and ta
       
       if (event.key === 'Escape') {
         event.preventDefault();
-        setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
+        setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
         return;
       }
       
       if (event.key === 'Backspace') {
         event.preventDefault();
         if (slashMenuRef.current.filterText.length === 0) {
-          setSlashMenu({ open: false, left: 0, top: 0, filterText: '', activeIndex: 0, range: null });
+          setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
         } else {
           setSlashMenu(prev => ({
             ...prev,
@@ -8833,12 +8854,27 @@ Generate the updated output according to the instruction. Preserve layout and ta
         }
         
         const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
-        const topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
+        let topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
+        let bottomCoord = 'auto';
+        
+        const menuHeight = 380;
+        if (topCoord + menuHeight > window.innerHeight) {
+          if (rect.top - menuHeight > 10) {
+            bottomCoord = `${window.innerHeight - rect.top + 4}px`;
+            topCoord = 'auto';
+          } else {
+            topCoord = `${Math.max(10, window.innerHeight - menuHeight - 15)}px`;
+            bottomCoord = 'auto';
+          }
+        } else {
+          topCoord = `${topCoord}px`;
+        }
         
         setSlashMenu({
           open: true,
           left: leftCoord,
           top: topCoord,
+          bottom: bottomCoord,
           filterText: '',
           activeIndex: 0,
           range: range.cloneRange()
@@ -26278,10 +26314,12 @@ Respond with a JSON array of slide objects matching the schema.`;
 
       {slashMenu.open && (
         <div 
+          ref={slashMenuContainerRef}
           className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
           style={{ 
             left: `${slashMenu.left}px`, 
-            top: `${slashMenu.top}px`
+            top: slashMenu.top,
+            bottom: slashMenu.bottom
           }}
         >
           {SLASH_OPTIONS

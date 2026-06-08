@@ -699,10 +699,11 @@ body { margin: 0; background: #ffffff; }
 
 .title-editable, .subtitle-editable {
   position: relative;
+  color: #0f172a !important;
 }
 .title-editable:empty::before {
   content: attr(data-placeholder);
-  color: #94a3b8;
+  color: #94a3b8 !important;
   pointer-events: none;
   display: inline-block;
   position: absolute;
@@ -717,7 +718,7 @@ body { margin: 0; background: #ffffff; }
 }
 .subtitle-editable:empty::before {
   content: attr(data-placeholder);
-  color: #94a3b8;
+  color: #94a3b8 !important;
   pointer-events: none;
   display: inline-block;
   position: absolute;
@@ -729,6 +730,13 @@ body { margin: 0; background: #ffffff; }
 }
 .subtitle-editable:empty {
   opacity: 0.32 !important;
+}
+.title-editable:focus::before,
+.subtitle-editable:focus::before,
+.has-content .title-editable::before,
+.has-content .subtitle-editable::before {
+  content: "" !important;
+  display: none !important;
 }
 
 
