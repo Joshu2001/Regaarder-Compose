@@ -704,7 +704,7 @@ export default function App() {
   const [dmThreadComposerValue, setDmThreadComposerValue] = useState('');
   const [dmDirectMessages, setDmDirectMessages] = useState(['Sarah Johnson', 'Alex Morgan', 'Michael Chen']);
   const [dmTeamChannels, setDmTeamChannels] = useState(['Marketing', 'Engineering', 'Design', 'General']);
-  const [dmAiConversations, setDmAiConversations] = useState(['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent', 'Data Analyst Agent']);
+  const [dmAiConversations, setDmAiConversations] = useState(['Orb (AI Assistant)', 'Marketing Agent', 'Research Agent', 'Data Analyst Agent', 'Presentation Agent']);
   const [dmContactPickerOpen, setDmContactPickerOpen] = useState(false);
   const [dmContactSearch, setDmContactSearch] = useState('');
   const [dmTeamInputOpen, setDmTeamInputOpen] = useState(false);
@@ -720,13 +720,16 @@ export default function App() {
       { id: 'dm-ai-welcome-orb', role: 'assistant', text: 'Hi, I am Orb. Ask me anything about this workspace.' }
     ],
     'Marketing Agent': [
-      { id: 'dm-ai-welcome-mktg', role: 'assistant', text: 'Hello! I am your Marketing Agent. Ask me to draft presentation slides or write copy blocks.' }
+      { id: 'dm-ai-welcome-mktg', role: 'assistant', text: 'Hello! I am your Marketing Agent. Ask me to draft copy blocks or plan branding.' }
     ],
     'Research Agent': [
       { id: 'dm-ai-welcome-rsch', role: 'assistant', text: 'Hello! I am your Research Agent. Ask me to lookup terms, compile summaries, or check trends.' }
     ],
     'Data Analyst Agent': [
       { id: 'dm-ai-welcome-data', role: 'assistant', text: 'Hi! I am the Data Analyst Agent. Attach Excel/CSV files, or ask me to calculate stats, update spreadsheet cells, or build SVG graphs.' }
+    ],
+    'Presentation Agent': [
+      { id: 'dm-ai-welcome-pres', role: 'assistant', text: 'Hello! I am your Presentation Agent. I specialize in converting document drafts into structured visual slide decks using React. Ask me to convert this document to a deck!' }
     ]
   });
   const [isVoiceCallActive, setIsVoiceCallActive] = useState(false);
@@ -15667,6 +15670,10 @@ Respond with a JSON array of slide objects matching the schema.`;
               showToast('Data Analyst inserted a chart into your document');
               addWorkspaceMemory('Data Analyst generated and inserted a chart in the document', 'Data Analyst Agent', ['Document Editor', 'AI Chat']);
             }
+          } else if (actionPayload.type === 'convert_to_deck') {
+            setTimeout(() => {
+              convertDocumentToDeck();
+            }, 500);
           }
         } catch (e) {
           console.error("Failed to parse structured action JSON:", e);
@@ -15700,6 +15707,10 @@ Respond with a JSON array of slide objects matching the schema.`;
             showToast('Data Analyst inserted a chart into your document');
             addWorkspaceMemory('Data Analyst generated and inserted a chart in the document', 'Data Analyst Agent', ['Document Editor', 'AI Chat']);
           }
+        } else if ((agentName.includes('Presentation') || agentName.includes('Deck')) && (userLower.includes('convert') || userLower.includes('generate') || userLower.includes('deck') || userLower.includes('slide'))) {
+          setTimeout(() => {
+            convertDocumentToDeck();
+          }, 500);
         }
       }
       
@@ -15772,7 +15783,9 @@ Respond with a JSON array of slide objects matching the schema.`;
         const lowerText = text.toLowerCase();
         if (lowerText.includes('chart') || lowerText.includes('graph') || lowerText.includes('plot') || lowerText.includes('calculate') || lowerText.includes('stats') || lowerText.includes('spreadsheet')) {
           routedAgent = 'Data Analyst Agent';
-        } else if (lowerText.includes('slide') || lowerText.includes('presentation') || lowerText.includes('pitch deck') || lowerText.includes('branding') || lowerText.includes('copywrite')) {
+        } else if (lowerText.includes('slide') || lowerText.includes('presentation') || lowerText.includes('pitch deck') || lowerText.includes('deck') || lowerText.includes('convert to deck')) {
+          routedAgent = 'Presentation Agent';
+        } else if (lowerText.includes('branding') || lowerText.includes('copywrite') || lowerText.includes('marketing')) {
           routedAgent = 'Marketing Agent';
         } else if (lowerText.includes('lookup') || lowerText.includes('research') || lowerText.includes('explain') || lowerText.includes('search')) {
           routedAgent = 'Research Agent';
@@ -15786,9 +15799,13 @@ Respond with a JSON array of slide objects matching the schema.`;
           documentContext = `\n\nActive Document Context:\n${blankBodyRef.current.innerText}`;
         }
 
-        if (routedAgent.includes('Marketing')) {
-          systemPrompt = `You are the Marketing Agent for Regaarder Compose. Specialized in copy editing, branding, and generating slide decks.
-Return direct, concise marketing suggestions. If requested to generate slides, formulate slide metadata.`;
+        if (routedAgent.includes('Presentation')) {
+          systemPrompt = `You are the Presentation Agent for Regaarder Compose. You specialize in converting document drafts into structured visual slide decks using React.
+When asked to convert the document or generate slides, reply that you are launching the document-to-slide converter, and append a structured action JSON block at the very end of your message in exactly this format:
+[ACTION: {"type": "convert_to_deck"}]`;
+        } else if (routedAgent.includes('Marketing')) {
+          systemPrompt = `You are the Marketing Agent for Regaarder Compose. Specialized in copy editing and branding.
+Return direct, concise marketing suggestions.`;
         } else if (routedAgent.includes('Analyst')) {
           systemPrompt = `You are the Data Analyst Agent. You analyze tabular data, spreadsheets, and files. 
 If requested to draw a chart or graph, do NOT generate raw SVG or HTML tags. Instead, append a structured action JSON block at the very end of your message in exactly this format:
@@ -21313,7 +21330,7 @@ You can recommend task creations on the board.`;
                   }}
                   className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
                 >
-                  Export to Deck
+                  Convert to Deck
                 </button>
                 <button
                   onClick={() => {
