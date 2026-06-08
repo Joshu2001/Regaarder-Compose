@@ -8826,6 +8826,37 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
   };
 
+  const focusEditableNodeAtOffset = (node, offset) => {
+    if (!node) return;
+    node.focus();
+    const selection = window.getSelection();
+    if (selection) {
+      const range = document.createRange();
+      let textNode = null;
+      if (node.firstChild) {
+        if (node.firstChild.nodeType === Node.TEXT_NODE) {
+          textNode = node.firstChild;
+        } else {
+          let curr = node.firstChild;
+          while (curr && curr.nodeType !== Node.TEXT_NODE) {
+            curr = curr.firstChild;
+          }
+          textNode = curr;
+        }
+      }
+      if (textNode) {
+        const maxOffset = textNode.length;
+        range.setStart(textNode, Math.min(offset, maxOffset));
+        range.setEnd(textNode, Math.min(offset, maxOffset));
+      } else {
+        range.selectNodeContents(node);
+        range.collapse(true);
+      }
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  };
+
   const isSelectionAtStartOfNode = (node) => {
     if (!node) return false;
     const selection = window.getSelection();
@@ -8857,7 +8888,13 @@ Generate the updated output according to the instruction. Preserve layout and ta
     } else if (event.key === 'Backspace') {
       if (isSelectionAtStartOfNode(subtitleEditableRef.current)) {
         event.preventDefault();
-        focusEditableNode(titleEditableRef.current, true);
+        const subtitleText = subtitleEditableRef.current.textContent || '';
+        const originalTitleLength = docTitle.length;
+        setDocSubtitle('');
+        setDocTitle(prev => prev + subtitleText);
+        setTimeout(() => {
+          focusEditableNodeAtOffset(titleEditableRef.current, originalTitleLength);
+        }, 0);
       }
     }
   };
@@ -8886,7 +8923,20 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
     if (event.key === 'Backspace' && isSelectionAtStartOfNode(blankBodyRef.current)) {
       event.preventDefault();
-      focusEditableNode(subtitleEditableRef.current, true);
+      const firstChild = blankBodyRef.current?.firstChild;
+      if (firstChild) {
+        const mergedText = firstChild.textContent || '';
+        firstChild.remove();
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+        
+        const originalSubtitleLength = docSubtitle.length;
+        setDocSubtitle(prev => prev + mergedText);
+        setTimeout(() => {
+          focusEditableNodeAtOffset(subtitleEditableRef.current, originalSubtitleLength);
+        }, 0);
+      } else {
+        focusEditableNode(subtitleEditableRef.current, true);
+      }
       return;
     }
 
