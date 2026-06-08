@@ -2319,17 +2319,6 @@ export default function App() {
     }
   }, [slashMenu.open]);
 
-  useEffect(() => {
-    if (titleEditableRef.current && titleEditableRef.current.textContent !== docTitle) {
-      titleEditableRef.current.textContent = docTitle;
-    }
-  }, [docTitle]);
-
-  useEffect(() => {
-    if (subtitleEditableRef.current && subtitleEditableRef.current.textContent !== docSubtitle) {
-      subtitleEditableRef.current.textContent = docSubtitle;
-    }
-  }, [docSubtitle]);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
   const [roomState, setRoomState] = useState('lobby');
@@ -2586,6 +2575,19 @@ export default function App() {
   // Stateful document content
   const [docTitle, setDocTitle] = useState('');
   const [docSubtitle, setDocSubtitle] = useState('');
+
+  useEffect(() => {
+    if (titleEditableRef.current && titleEditableRef.current.textContent !== docTitle) {
+      titleEditableRef.current.textContent = docTitle;
+    }
+  }, [docTitle]);
+
+  useEffect(() => {
+    if (subtitleEditableRef.current && subtitleEditableRef.current.textContent !== docSubtitle) {
+      subtitleEditableRef.current.textContent = docSubtitle;
+    }
+  }, [docSubtitle]);
+
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
   const [isBlankDocument, setIsBlankDocument] = useState(true);
