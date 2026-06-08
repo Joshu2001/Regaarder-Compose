@@ -2511,6 +2511,7 @@ export default function App() {
   const speechRecognitionRef = useRef(null);
   const lastSpeechTimeRef = useRef(Date.now());
   const voiceSilenceTimerRef = useRef(null);
+  const shouldExecuteCommandRef = useRef(false);
   const toggleVoiceRecordingRef = useRef(null);
   const promptAudioInputRef = useRef(null);
   const floatingPromptRef = useRef(null);
@@ -5897,6 +5898,20 @@ export default function App() {
           }
         }
       }
+
+      if (isVoiceCommandModeRef.current) {
+        voiceSilenceTimerRef.current = setTimeout(() => {
+          shouldExecuteCommandRef.current = true;
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+            try {
+              mediaRecorderRef.current.stop();
+            } catch (err) {
+              console.warn('Failed to stop mediaRecorder on silence:', err);
+            }
+          }
+          voiceSilenceTimerRef.current = null;
+        }, 1500);
+      }
     };
 
     recognition.onstart = () => {
@@ -5953,6 +5968,10 @@ export default function App() {
       if (interimCommitTimerRef.current) {
         clearTimeout(interimCommitTimerRef.current);
         interimCommitTimerRef.current = null;
+      }
+      if (voiceSilenceTimerRef.current) {
+        clearTimeout(voiceSilenceTimerRef.current);
+        voiceSilenceTimerRef.current = null;
       }
       try {
         recognition.stop();
@@ -11549,6 +11568,9 @@ Rules:
             }
           }, 800);
         } else {
+          if (isVoiceCommandModeRef.current) {
+            shouldExecuteCommandRef.current = true;
+          }
           if (isVoiceActiveRef.current) {
             if (isVoiceCommandModeRef.current) {
               setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || 'speak instructions...'}`);
@@ -11571,7 +11593,7 @@ Rules:
         setLiveSpeechInterimText('Listening... start speaking');
       }
     } finally {
-      if (!isVoiceActiveRef.current && isVoiceCommandModeRef.current) {
+      if ((!isVoiceActiveRef.current || shouldExecuteCommandRef.current) && isVoiceCommandModeRef.current) {
         const finalCommand = voiceCommandBufferRef.current.trim();
         if (finalCommand) {
           showToast('Executing AI voice command...');
@@ -11581,6 +11603,7 @@ Rules:
         isVoiceCommandModeRef.current = false;
         setVoiceCommandBuffer('');
         voiceCommandBufferRef.current = '';
+        shouldExecuteCommandRef.current = false;
       }
     }
   };
@@ -12871,6 +12894,74 @@ Rules:
     anchor.click();
     anchor.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const exportCurrentDocumentAsWord = () => {
+    try {
+      showToast('Generating Word document...');
+      const cleanTitle = docTitle || 'Untitled Document';
+      const cleanSubtitle = docSubtitle ? `<h2 style="color: #4a5568; font-weight: normal; font-size: 18px; margin-bottom: 20px;">${docSubtitle}</h2>` : '';
+      const cleanBodyHtml = sanitizeHtmlForExport(docBodyHtml);
+      
+      const content = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <title>${cleanTitle}</title>
+          <style>
+            body { font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.6; color: #2d3748; padding: 20px; }
+            h1 { color: #1a202c; font-size: 26px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 4px; }
+            hr { border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <h1 style="color: #1a202c; font-size: 26px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 4px;">${cleanTitle}</h1>
+          ${cleanSubtitle}
+          ${cleanSubtitle ? '<hr />' : ''}
+          <div>
+            ${cleanBodyHtml}
+          </div>
+        </body>
+        </html>
+      `;
+      const blob = new Blob(['\ufeff' + content], { type: 'application/msword' });
+      triggerBlobDownload(`${sanitizeFileName(docTitle)}.doc`, blob);
+      trackMemoryAction('export', 'Exported document', {
+        format: 'Word',
+        fileName: `${sanitizeFileName(docTitle)}.doc`,
+      });
+      showToast('Word document exported');
+    } catch (e) {
+      console.error('Word export failed', e);
+      showToast('Unable to export Word document');
+    }
+  };
+
+  const exportCurrentDocumentAsComposeFormat = () => {
+    try {
+      showToast('Exporting in Compose format...');
+      const composeData = {
+        format: 'regaarder-compose',
+        version: '1.0',
+        id: activeDocId,
+        title: docTitle,
+        subtitle: docSubtitle,
+        bodyHtml: docBodyHtml,
+        initiatives: initiatives,
+        appendedSections: appendedSections,
+        isBlank: isBlankDocument,
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(composeData, null, 2)], { type: 'application/json' });
+      triggerBlobDownload(`${sanitizeFileName(docTitle)}.compose.json`, blob);
+      trackMemoryAction('export', 'Exported document', {
+        format: 'Compose',
+        fileName: `${sanitizeFileName(docTitle)}.compose.json`,
+      });
+      showToast('Exported in Compose format');
+    } catch (e) {
+      console.error('Compose export failed', e);
+      showToast('Unable to export in Compose format');
+    }
   };
 
   const exportCurrentDocumentAsPdf = async (forcedFileName) => {
@@ -21173,7 +21264,7 @@ You can recommend task creations on the board.`;
               Export <ChevronDown size={10} className="text-gray-400" />
             </button>
             {exportMenuOpen && (
-              <div className="absolute top-8 right-0 z-[230] w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1">
+              <div className="absolute top-8 right-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1">
                 <button
                   onClick={() => {
                     exportCurrentDocumentAsPdf();
@@ -21191,6 +21282,24 @@ You can recommend task creations on the board.`;
                   className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
                 >
                   Export to Deck
+                </button>
+                <button
+                  onClick={() => {
+                    exportCurrentDocumentAsWord();
+                    setExportMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                >
+                  Export as Word
+                </button>
+                <button
+                  onClick={() => {
+                    exportCurrentDocumentAsComposeFormat();
+                    setExportMenuOpen(false);
+                  }}
+                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                >
+                  Export as Compose Format
                 </button>
               </div>
             )}
