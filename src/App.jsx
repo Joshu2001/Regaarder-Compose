@@ -5327,7 +5327,27 @@ export default function App() {
     if (isBodyTarget && htmlText.trim()) {
       document.execCommand('insertHTML', false, htmlText);
     } else if (plainText) {
-      document.execCommand('insertText', false, plainText);
+      if (isBodyTarget) {
+        const formatted = plainText
+          .split(/\r?\n/)
+          .map(line => {
+            if (!line.trim()) {
+              return '<p><br></p>';
+            }
+            const escapedLine = line
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#039;')
+              .replace(/  /g, ' &nbsp;');
+            return `<p>${escapedLine}</p>`;
+          })
+          .join('');
+        document.execCommand('insertHTML', false, formatted);
+      } else {
+        document.execCommand('insertText', false, plainText);
+      }
     }
     normalizeEditableDirection(target);
     if (afterPaste) {
@@ -12906,6 +12926,18 @@ Rules:
       const content = `
         <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
+          <!--[if gte mso 9]>
+          <xml>
+            <w:WordDocument>
+              <w:View>Print</w:View>
+              <w:Zoom>100</w:Zoom>
+              <w:DoNotOptimizeForBrowser/>
+            </w:WordDocument>
+          </xml>
+          <![endif]-->
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="ProgId" content="Word.Document">
+          <meta name="Generator" content="Microsoft Word 15">
           <title>${cleanTitle}</title>
           <style>
             body { font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.6; color: #2d3748; padding: 20px; }
