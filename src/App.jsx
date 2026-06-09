@@ -7999,7 +7999,8 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
           userPrompt = `Convert the following text/list into a clean, typo-corrected HTML numbered list (using <ol> and <li> tags). Correct any typos (like "Cnada" -> "Canada") and format each entry as its own item. Keep formatting clean. Text:\n"""${prompt}"""`;
         } else if (type === 'translate') {
           const textToTranslate = originalHtml || prompt;
-          const targetLanguage = originalHtml ? prompt : 'French';
+          const languageMatch = prompt.match(/\b(?:to|into)\s+([a-z][a-z\s-]{1,30})\b/i);
+          const targetLanguage = languageMatch?.[1]?.trim() || 'French';
           userPrompt = `Translate the following text to ${targetLanguage}. Preserve any HTML tags if present. Text:\n"""${textToTranslate}"""`;
         }
         
@@ -8130,10 +8131,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
         }
         showToast(`AI generation failed: ${res.error}`);
         if (liveContainer) {
-          liveContainer.remove();
-          if (blankBodyRef.current) {
-            setDocBodyHtml(blankBodyRef.current.innerHTML);
-          }
+          liveContainer.innerHTML = '<div>AI could not complete this request right now. Retry to regenerate.</div>';
         }
         return;
       }
@@ -8229,10 +8227,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       showToast('AI generation failed');
       const liveContainer = document.getElementById(containerId);
       if (liveContainer) {
-        liveContainer.remove();
-        if (blankBodyRef.current) {
-          setDocBodyHtml(blankBodyRef.current.innerHTML);
-        }
+        liveContainer.innerHTML = '<div>AI could not complete this request right now. Retry to regenerate.</div>';
       }
     }
   };
@@ -11587,6 +11582,9 @@ Rules:
   const COMMAND_PREFIXES = [
     'ai prompt',
     'ai command',
+    'hey orb',
+    'orb',
+    'orb command',
     'hey ai',
     'hey gemini',
     'format',
