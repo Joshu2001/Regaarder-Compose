@@ -7453,7 +7453,7 @@ export default function App() {
 
   const callGemini = async ({ userPrompt, systemPrompt, schema, attachments = [] }) => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
     try {
       setLastAiError('');
       const encodedAttachments = await encodePromptAttachments(attachments);
@@ -7506,7 +7506,7 @@ export default function App() {
       clearTimeout(timeoutId);
       const isTimeout = _error.name === 'AbortError';
       const reason = isTimeout 
-        ? 'AI request timed out after 15 seconds.' 
+        ? 'AI request timed out after 45 seconds.' 
         : 'Failed to reach /api/gemini. In local development, run via `vercel dev` or deploy to Vercel.';
       setLastAiError(reason);
       return { error: reason };
@@ -8131,7 +8131,26 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
         }
         showToast(`AI generation failed: ${res.error}`);
         if (liveContainer) {
-          liveContainer.innerHTML = '<div>AI could not complete this request right now. Retry to regenerate.</div>';
+          if (type === 'table') {
+            const tableHtml = '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
+            liveContainer.className = 'ai-preview-block';
+            liveContainer.setAttribute('contenteditable', 'false');
+            liveContainer.setAttribute('data-block-type', type);
+            liveContainer.setAttribute('data-original-prompt', prompt);
+            renderBlockInPreview(containerId, type, tableHtml);
+          } else if (type === 'graph') {
+            const chartState = standardizeChartData('line', [['Q1', 12], ['Q2', 18], ['Q3', 15], ['Q4', 21]], 'Fallback Chart', ['Period', 'Value']);
+            liveContainer.className = 'ai-preview-block';
+            liveContainer.setAttribute('contenteditable', 'false');
+            liveContainer.setAttribute('id', previewId);
+            liveContainer.setAttribute('data-block-type', type);
+            liveContainer.setAttribute('data-chart-data', JSON.stringify(chartState));
+            liveContainer.setAttribute('data-original-prompt', prompt);
+            renderBlockInPreview(previewId, type, '');
+            window.refreshChartBlock(previewId);
+          } else {
+            liveContainer.innerHTML = '<div>AI could not complete this request right now. Retry to regenerate.</div>';
+          }
         }
         return;
       }
@@ -8227,7 +8246,26 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       showToast('AI generation failed');
       const liveContainer = document.getElementById(containerId);
       if (liveContainer) {
-        liveContainer.innerHTML = '<div>AI could not complete this request right now. Retry to regenerate.</div>';
+        if (type === 'table') {
+          const tableHtml = '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
+          liveContainer.className = 'ai-preview-block';
+          liveContainer.setAttribute('contenteditable', 'false');
+          liveContainer.setAttribute('data-block-type', type);
+          liveContainer.setAttribute('data-original-prompt', prompt);
+          renderBlockInPreview(containerId, type, tableHtml);
+        } else if (type === 'graph') {
+          const chartState = standardizeChartData('line', [['Q1', 12], ['Q2', 18], ['Q3', 15], ['Q4', 21]], 'Fallback Chart', ['Period', 'Value']);
+          liveContainer.className = 'ai-preview-block';
+          liveContainer.setAttribute('contenteditable', 'false');
+          liveContainer.setAttribute('id', previewId);
+          liveContainer.setAttribute('data-block-type', type);
+          liveContainer.setAttribute('data-chart-data', JSON.stringify(chartState));
+          liveContainer.setAttribute('data-original-prompt', prompt);
+          renderBlockInPreview(previewId, type, '');
+          window.refreshChartBlock(previewId);
+        } else {
+          liveContainer.innerHTML = '<div>AI could not complete this request right now. Retry to regenerate.</div>';
+        }
       }
     }
   };
@@ -11603,6 +11641,16 @@ Rules:
     return text.trim().replace(/^[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
   };
 
+  const normalizeVoiceCommandText = (text) => {
+    return String(text || '')
+      .replace(/\b(?:hey|hi)\s+(?:gemini|orb|ai|jen|jenna)\b[:,]?/gi, ' ')
+      .replace(/\b(?:orb\s+command|ai\s+command|command)\b[:,]?/gi, ' ')
+      .replace(/\b(?:please|can you|could you|would you)\b/gi, ' ')
+      .replace(/[.,!?]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+
   const detectCommandPrefix = (text) => {
     const cleaned = cleanTranscriptText(text);
     for (const prefix of COMMAND_PREFIXES) {
@@ -11653,8 +11701,8 @@ Rules:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           task: 'transcription',
-          userPrompt: 'Transcribe this audio accurately. If the audio is silent or contains no speech, respond with exactly: [SILENCE]',
-          systemPrompt: 'You are an expert audio transcription tool. Filter out all filler words like "umm", "uh", "um", "like", "you know", and stutters. Output only the cleaned, well-formatted text without any additional commentary. Ensure proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE]',
+          userPrompt: 'Transcribe this audio accurately. Remove repeated wake words and trigger chatter (for example: hey gemini, hey orb, command). If the audio is silent or contains no speech, respond with exactly: [SILENCE]',
+          systemPrompt: 'You are an expert audio transcription tool. Filter out filler words like "umm", "uh", "um", "like", and stutters. Remove repeated wake words when they are not actionable intent. Output only clean text with proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE].',
           attachments: [{ name: 'audio.webm', mimeType: blob.type || 'audio/webm', data: base64data }]
         })
       });
@@ -11708,9 +11756,15 @@ Rules:
                 setIsVoiceCommandMode(true);
                 isVoiceCommandModeRef.current = true;
               }
-              const newInstruction = commandCheck.matched ? commandCheck.remaining : cleanedText;
+              const candidateInstruction = commandCheck.matched ? commandCheck.remaining : cleanedText;
+              const newInstruction = normalizeVoiceCommandText(candidateInstruction);
+              if (!newInstruction) {
+                setLiveSpeechInterimText('Command: speak instructions...');
+                return;
+              }
               setVoiceCommandBuffer((prev) => {
-                const combined = `${prev}${prev ? ' ' : ''}${newInstruction}`;
+                const previous = normalizeVoiceCommandText(prev);
+                const combined = `${previous}${previous ? ' ' : ''}${newInstruction}`.trim();
                 voiceCommandBufferRef.current = combined;
                 return combined;
               });
@@ -11789,10 +11843,12 @@ Rules:
       }
     } finally {
       if ((!isVoiceActiveRef.current || shouldExecuteCommandRef.current) && isVoiceCommandModeRef.current) {
-        const finalCommand = voiceCommandBufferRef.current.trim();
+        const finalCommand = normalizeVoiceCommandText(voiceCommandBufferRef.current.trim());
         if (finalCommand) {
           showToast('Executing AI voice command...');
           handleAISubmit(finalCommand, { source: 'compose' });
+        } else {
+          showToast('No actionable command detected. Try: Hey Orb add a table of monthly sales.');
         }
         setIsVoiceCommandMode(false);
         isVoiceCommandModeRef.current = false;
