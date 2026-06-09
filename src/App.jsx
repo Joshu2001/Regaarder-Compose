@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
@@ -390,7 +390,7 @@ const createBlankDeckSlide = (id = 1) => ({
   keyMetric: '',
   speakerNotes: '',
   section: '',
-  footer: 'Original design · Editable',
+  footer: 'Original design 繚 Editable',
 });
 
 // Sub-component to cleanly handle the local video stream without cluttering the main render
@@ -1703,8 +1703,8 @@ export default function App() {
             item.dueLabel ? `Due: ${item.dueLabel}` : '',
             item.dependencies?.length ? `Depends on: ${item.dependencies.join(', ')}` : '',
             item.subtasks?.length ? `Subtasks: ${item.subtasks.join(' | ')}` : '',
-          ].filter(Boolean).join(' �E ');
-          const text = `[${segments.join(' �E ')}] ${item.title}${meta ? ` �X ${meta}` : ''}`;
+          ].filter(Boolean).join(' 嚙瘟 ');
+          const text = `[${segments.join(' 嚙瘟 ')}] ${item.title}${meta ? ` 嚙碼 ${meta}` : ''}`;
           return {
             id: Date.now() + index,
             text,
@@ -1762,19 +1762,19 @@ export default function App() {
       return;
     }
     if (toolKey === 'select') {
-      showToast('Select tool �X tap widgets to select, drag to move');
+      showToast('Select tool 嚙碼 tap widgets to select, drag to move');
       return;
     }
     if (toolKey === 'hand') {
-      showToast('Hand tool �X drag to pan canvas');
+      showToast('Hand tool 嚙碼 drag to pan canvas');
       return;
     }
     if (toolKey === 'eraser') {
-      showToast('Eraser tool �X draw over strokes to erase');
+      showToast('Eraser tool 嚙碼 draw over strokes to erase');
       return;
     }
     if (toolKey === 'comment') {
-      showToast('Comment tool �X click to place a comment');
+      showToast('Comment tool 嚙碼 click to place a comment');
       return;
     }
     showToast(`${toolKey.charAt(0).toUpperCase()}${toolKey.slice(1)} tool active`);
@@ -2179,7 +2179,7 @@ export default function App() {
     }
   };
 
-  const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*�E]\s+|\d+\.\s+)/, '');
+  const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*嚙瘟]\s+|\d+\.\s+)/, '');
 
   const toggleWidgetList = (widgetId, nextType) => {
     setWhiteboardWidgets((prev) => prev.map((w) => {
@@ -2194,7 +2194,7 @@ export default function App() {
       if (nextType === 'numbered') {
         return { ...w, hasList: true, listType: 'numbered', text: normalized.map((line, i) => `${i + 1}. ${line}`).join('\n') };
       }
-      return { ...w, hasList: true, listType: 'bullet', text: normalized.map((line) => `�E ${line}`).join('\n') };
+      return { ...w, hasList: true, listType: 'bullet', text: normalized.map((line) => `嚙瘟 ${line}`).join('\n') };
     }));
   };
 
@@ -3232,7 +3232,7 @@ export default function App() {
 
     // Split inline numbered sections into standalone blocks.
     normalized = normalized
-      .replace(/([.!?"��'])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
+      .replace(/([.!?"嚙踝蕭'])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
       .replace(/([a-zA-Z])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
       .replace(/(\d+)\.(\S)/g, '$1. $2')
       .replace(/[ \t]+/g, ' ')
@@ -5080,7 +5080,7 @@ export default function App() {
     };
 
     lines.forEach((line, index) => {
-      const bulletMatch = line.match(/^(?:[-*?�]|\d+[.)])\s+(.+)$/);
+      const bulletMatch = line.match(/^(?:[-*?嚙稽|\d+[.)])\s+(.+)$/);
       if (bulletMatch) {
         if (!listOpen) {
           html.push('<ul style="margin:0 0 10px 18px;padding:0;list-style:disc;color:#334155;line-height:1.7;">');
@@ -6622,7 +6622,7 @@ export default function App() {
         keyMetric: '',
         speakerNotes: `Frame this ${section.toLowerCase()} point clearly, then transition to the next narrative beat.`,
         section,
-        footer: 'Original design · Editable',
+        footer: 'Original design 繚 Editable',
       };
     };
 
@@ -6645,7 +6645,7 @@ export default function App() {
             keyMetric: String(slide.keyMetric || ''),
             speakerNotes: String(slide.speakerNotes || ''),
             section: String(slide.section || inferDeckStorySection(slide, index, sourceSlides.length)),
-            footer: 'Original design · Editable',
+            footer: 'Original design 繚 Editable',
           };
         });
 
@@ -7802,7 +7802,7 @@ Ensure the startDate is calculated relative to today (${new Date().toISOString()
       return `You are an expert AI editor. Create an HTML hyperlink anchor <a> based on the user's prompt and any selected text. Wrap the selected text or a relevant word inside the anchor tag. Set the 'href' attribute to the appropriate URL or target. Style the link with inline styles for premium aesthetics: e.g. color: #6366f1; text-decoration: underline; font-weight: 500;. Do not output any markdown blocks or fences, return only the raw HTML.`;
     }
     if (type === 'bookmark') {
-      return `You are an expert AI editor. Create an HTML anchor/bookmark element with a unique descriptive ID (e.g. id="section-name" or id="bookmark-name") and clean styling. Design it to look like a premium inline bookmark tag: e.g. using a background, a link color like #4f46e5, a tiny pin/bookmark emoji (e.g. 📌), and the bookmark name. Return only the raw HTML element, no markdown fences or code block wrappers.`;
+      return `You are an expert AI editor. Create an HTML anchor/bookmark element with a unique descriptive ID (e.g. id="section-name" or id="bookmark-name") and clean styling. Design it to look like a premium inline bookmark tag: e.g. using a background, a link color like #4f46e5, a tiny pin/bookmark emoji (e.g. ??), and the bookmark name. Return only the raw HTML element, no markdown fences or code block wrappers.`;
     }
     if (type === 'shapes') {
       return `You are a shape generation AI. Based on the user's description, decide on the best shape type, color, scale, border weight, dash style, effects, and text overlay.
@@ -7850,7 +7850,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       }
     }
     // Remove enclosing quotes and trim
-    cleanPrompt = cleanPrompt.replace(/^['"“\s]+|['"”\s]+$/g, '').trim();
+    cleanPrompt = cleanPrompt.replace(/^['"?s]+|['"?s]+$/g, '').trim();
     if (!cleanPrompt) {
       cleanPrompt = 'beautiful landscape Yosemite Valley';
     }
@@ -8172,7 +8172,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
           finalHtml = `
             <div class="schedule-preview-card" style="font-family:sans-serif; background:#fbfaff; border:1px solid #e6e3fb; border-radius:12px; padding:16px; margin:8px 0; max-width:400px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
               <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                <span style="font-size:20px;">📅</span>
+                <span style="font-size:20px;">??</span>
                 <span style="font-weight:700; color:#1e293b; font-size:15px;">Confirm Schedule Event</span>
               </div>
               <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:#475569;">
@@ -8399,7 +8399,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           newHtml = `
             <div class="schedule-preview-card" style="font-family:sans-serif; background:#fbfaff; border:1px solid #e6e3fb; border-radius:12px; padding:16px; margin:8px 0; max-width:400px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
               <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;">
-                <span style="font-size:20px;">📅</span>
+                <span style="font-size:20px;">??</span>
                 <span style="font-weight:700; color:#1e293b; font-size:15px;">Confirm Schedule Event</span>
               </div>
               <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:#475569;">
@@ -9002,7 +9002,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const handleEditorKeyDown = (event) => {
-    // Use nativeEvent for dedup flag — React 18 creates separate SyntheticEvent
+    // Use nativeEvent for dedup flag ??React 18 creates separate SyntheticEvent
     // objects for capture vs bubble handlers, so we must tag the native event.
     if (event.nativeEvent._editorHandled) return;
     event.nativeEvent._editorHandled = true;
@@ -9635,8 +9635,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
       
       container.innerHTML = updatedFiles.map((item, idx) => `
         <div style="display:inline-flex; align-items:center; gap:6px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 8px; font-size:11px; color:#475569; margin:2px;">
-          <span>${item.type.startsWith('image/') ? '🖼️' : item.type.startsWith('audio/') ? '🎵' : '📄'} ${item.name}</span>
-          <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.removePromptFile('${boxId}', ${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold; padding:0 2px; line-height:1;">×</button>
+          <span>${item.type.startsWith('image/') ? '[IMG]' : item.type.startsWith('audio/') ? '[AUD]' : '[FILE]'} ${item.name}</span>
+          <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.removePromptFile('${boxId}', ${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold; padding:0 2px; line-height:1;">?</button>
         </div>
       `).join('');
       container.classList.remove('hidden');
@@ -9660,8 +9660,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
       } else {
         container.innerHTML = existingFiles.map((item, idx) => `
           <div style="display:inline-flex; align-items:center; gap:6px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:4px 8px; font-size:11px; color:#475569; margin:2px;">
-            <span>${item.type.startsWith('image/') ? '🖼️' : item.type.startsWith('audio/') ? '🎵' : '📄'} ${item.name}</span>
-            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.removePromptFile('${boxId}', ${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold; padding:0 2px; line-height:1;">×</button>
+            <span>${item.type.startsWith('image/') ? '[IMG]' : item.type.startsWith('audio/') ? '[AUD]' : '[FILE]'} ${item.name}</span>
+            <button type="button" onmousedown="event.preventDefault(); event.stopPropagation();" onclick="window.removePromptFile('${boxId}', ${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-weight:bold; padding:0 2px; line-height:1;">?</button>
           </div>
         `).join('');
       }
@@ -10031,7 +10031,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           <table style="width:100%; border-collapse:collapse; background:#ffffff; border-radius:8px; overflow:hidden; font-size:13px; border:1px solid #e2e8f0;">
             <thead>
               <tr style="background:#f1f5f9; text-align:left; border-bottom:2px solid #cbd5e1;">
-                ${headers.map((h, i) => `<th onclick="window.sortChartBlockTable('${state.id || ''}', ${i})" style="padding:10px 12px; font-weight:600; color:#334155; cursor:pointer; user-select:none;">${h} ↕</th>`).join('')}
+                ${headers.map((h, i) => `<th onclick="window.sortChartBlockTable('${state.id || ''}', ${i})" style="padding:10px 12px; font-weight:600; color:#334155; cursor:pointer; user-select:none;">${h} ??/th>`).join('')}
               </tr>
             </thead>
             <tbody>
@@ -10281,7 +10281,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
                 ${headers.map((h, i) => `
                   <th style="padding:6px 8px; font-weight:600; color:#475569; border-right:1px solid #e2e8f0; position:relative;">
                     <span contenteditable="true" onblur="window.updateChartBlockHeader('${containerId}', ${i}, this.innerText)" style="outline:none; display:inline-block; min-width:40px;">${h}</span>
-                    <button type="button" onclick="window.deleteChartCol('${containerId}', ${i})" style="position:absolute; right:2px; top:2px; background:none; border:none; color:#94a3b8; cursor:pointer; font-size:8px;">×</button>
+                    <button type="button" onclick="window.deleteChartCol('${containerId}', ${i})" style="position:absolute; right:2px; top:2px; background:none; border:none; color:#94a3b8; cursor:pointer; font-size:8px;">?</button>
                   </th>
                 `).join('')}
                 <th style="padding:6px; width:40px;"></th>
@@ -10613,6 +10613,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
       lengthValue: requestedLengthValue,
     });
 
+    if (source === 'compose' && !options.skipCommandEngine) {
+      const advancedAction = parseAdvancedComposeAction(promptText);
+      if (advancedAction) {
+        const handled = await executeAdvancedComposeAction(advancedAction);
+        if (handled) {
+          return;
+        }
+      }
+    }
+
     // Check if the promptText represents a block-level action (voice/canvas command routing)
     const lowerPrompt = promptText.toLowerCase();
     let detectedBlockType = null;
@@ -10871,7 +10881,7 @@ Rules:
                   keyMetric: String(slide?.keyMetric || ''),
                   speakerNotes: String(slide?.speakerNotes || ''),
                   section: String(slide?.section || ''),
-                  footer: 'Original design · Editable',
+                  footer: 'Original design 繚 Editable',
                 };
               })
               .slice(0, 20);
@@ -13218,7 +13228,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             keyMetric: slide.keyMetric || '',
             speakerNotes: slide.speakerNotes || '',
             section: slide.section || '',
-            footer: 'AI Generated · Convert to Deck'
+            footer: 'AI Generated 繚 Convert to Deck'
           };
         });
 
@@ -14216,7 +14226,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       keyMetric: activeDeckSlide.keyMetric || '',
       speakerNotes: activeDeckSlide.speakerNotes || '',
       section: activeDeckSlide.section || inferDeckStorySection(activeDeckSlide, Math.max(0, activeDeckSlide.id - 1), Math.max(1, deckSlides.length)),
-      footer: activeDeckSlide.footer || 'Original design · Editable',
+      footer: activeDeckSlide.footer || 'Original design 繚 Editable',
     };
   }, [activeDeckSlide, deckSlides.length]);
 
@@ -14299,7 +14309,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         designPresetKey: randomPreset.key,
         headline,
         blurb,
-        footer: `Original concept · ${new Date().toLocaleDateString()}`,
+        footer: `Original concept 繚 ${new Date().toLocaleDateString()}`,
       };
     }));
     showToast('Generated original slide design. You can edit headline and body directly.');
@@ -14317,7 +14327,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       layoutStyle: template.layoutStyle,
       motionCue: template.motionCue,
       section: slide.section || inferDeckStorySection(slide, index, total),
-      footer: `${template.label} · Editable`,
+      footer: `${template.label} 繚 Editable`,
     });
 
     if (scope === 'deck') {
@@ -14352,7 +14362,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       keyMetric: '',
       speakerNotes: '',
       section: inferDeckStorySection({ title: `Slide ${nextId}` }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
-      footer: 'Original design · Editable',
+      footer: 'Original design 繚 Editable',
     };
     setDeckSlidesData((prev) => [...prev, newSlide]);
     setActiveDeckSlideId(nextId);
@@ -15636,7 +15646,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         return;
       }
       const phrases = [
-        { author: 'Sarah Johnson', text: 'Let’s finalize the marketing launch copy by tomorrow morning.' },
+        { author: 'Sarah Johnson', text: 'Let? finalize the marketing launch copy by tomorrow morning.' },
         { author: 'Alex Morgan', text: 'I decided to start engineering sprint MVP planning on Monday.' },
         { author: 'Michael Chen', text: 'We will draft the Q2 operating budget outline for review.' },
         { author: 'Sarah Johnson', text: 'I approve the new landing page dashboard layouts.' }
@@ -15907,7 +15917,7 @@ You can recommend task creations on the board.`;
           // Log event to Workspace Memory Decision Graph
           addWorkspaceMemory(
             `Orb coordinator processed query: "${text.substring(0, 30)}..."`,
-            routedAgent !== 'Orb (AI Assistant)' ? `Orb ➔ ${routedAgent.split(' ')[0]}` : 'Orb Assistant',
+            routedAgent !== 'Orb (AI Assistant)' ? `Orb ??${routedAgent.split(' ')[0]}` : 'Orb Assistant',
             ["AI Chat"]
           );
         } else {
@@ -16519,7 +16529,7 @@ You can recommend task creations on the board.`;
                     >
                       <div className="text-sm font-semibold text-slate-800">{item.author}</div>
                       <div className="text-sm text-slate-600 mt-0.5 line-clamp-2">{item.text}</div>
-                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies �E Open thread</div>
+                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies 嚙瘟 Open thread</div>
                     </button>
                   ))}
                 </div>
@@ -16534,7 +16544,7 @@ You can recommend task creations on the board.`;
                     <div key={decision.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                       <div className="text-sm font-semibold text-amber-900">Decision</div>
                       <div className="text-sm text-amber-800 mt-0.5">{decision.summary}</div>
-                      <div className="text-xs text-amber-700 mt-1">{decision.by} �E {formatDmRelative(decision.createdAt)}</div>
+                      <div className="text-xs text-amber-700 mt-1">{decision.by} 嚙瘟 {formatDmRelative(decision.createdAt)}</div>
                     </div>
                   ))}
                 </div>
@@ -17580,7 +17590,7 @@ You can recommend task creations on the board.`;
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-slate-900">{file.name}</div>
-                      <div className="mt-1 text-xs text-slate-500">{file.kind} �E {file.owner}</div>
+                      <div className="mt-1 text-xs text-slate-500">{file.kind} 嚙瘟 {file.owner}</div>
                     </div>
                     <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{file.updated}</span>
                   </div>
@@ -17884,7 +17894,7 @@ You can recommend task creations on the board.`;
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-slate-900">{task.title}</div>
-                          <div className="mt-1 text-xs text-slate-500">{task.columnTitle} �E {task.assignee || 'Joshua'}</div>
+                          <div className="mt-1 text-xs text-slate-500">{task.columnTitle} 嚙瘟 {task.assignee || 'Joshua'}</div>
                         </div>
                         <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{task.due}</span>
                       </div>
@@ -17992,7 +18002,7 @@ You can recommend task creations on the board.`;
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-slate-900">{request.title}</div>
-                          <div className="mt-1 text-xs text-slate-500">{request.type} �E {request.owner}</div>
+                          <div className="mt-1 text-xs text-slate-500">{request.type} 嚙瘟 {request.owner}</div>
                         </div>
                         <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${request.tone}`}>{request.status}</span>
                       </div>
@@ -18839,7 +18849,7 @@ You can recommend task creations on the board.`;
                                 <div className={`h-16 rounded-lg ${preset.background} border border-white/20`} />
                                 <div className="mt-2 text-xs font-semibold text-gray-900">{template.label}</div>
                                 <div className="text-[11px] text-gray-500">{template.detail}</div>
-                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} · {template.motionCue}</div>
+                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} 繚 {template.motionCue}</div>
                                 <div className="mt-2 flex items-center gap-1.5">
                                   <button
                                     type="button"
@@ -18911,7 +18921,7 @@ You can recommend task creations on the board.`;
                           onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
                           className="text-sm text-indigo-100/80 outline-none rounded-md focus:ring-2 focus:ring-white/20"
                         >
-                          {resolvedDeckSlideDesign.footer} · Slide {activeDeckSlide.id}: {activeDeckSlide.title}
+                          {resolvedDeckSlideDesign.footer} 繚 Slide {activeDeckSlide.id}: {activeDeckSlide.title}
                         </div>
                       </div>
                     </div>
@@ -20239,7 +20249,7 @@ You can recommend task creations on the board.`;
                 <div className="text-[13px] font-semibold text-slate-900">Edit replay</div>
                 <div className="mt-1 text-[12px] text-slate-500">
                   {replayTimeline.length
-                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps · ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
+                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps 繚 ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
                     : 'Start typing or editing to build a replay history'}
                 </div>
               </div>
@@ -22282,10 +22292,10 @@ You can recommend task creations on the board.`;
                     const showWidgetReactionControls = (isWidgetHovered || isSelected || isWidgetReactionMenuOpen) && !isWidgetEditing && !['hand', 'eraser'].includes(whiteboardTool);
                     const showWidgetAnchorDots = (isWidgetHovered || isSelected) && !['hand', 'eraser'].includes(whiteboardTool);
                     const widgetAnchorPoints = [
-                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '��', kind: 'resize' },
-                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'pointer', icon: '��', kind: 'connect' },
-                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '��', kind: 'resize' },
-                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '��', kind: 'resize' },
+                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '嚙踝蕭', kind: 'resize' },
+                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'pointer', icon: '嚙踝蕭', kind: 'connect' },
+                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '嚙踝蕭', kind: 'resize' },
+                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '嚙踝蕭', kind: 'resize' },
                     ];
                     return (
                     <div
@@ -23258,7 +23268,7 @@ You can recommend task creations on the board.`;
                           className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-gray-200 rounded-full text-gray-400 hover:text-red-500 items-center justify-center hidden group-hover:flex"
                           title="Remove comment"
                         >
-                          ��
+                          嚙踝蕭
                         </button>
                       </div>
                     </div>
@@ -23296,7 +23306,7 @@ You can recommend task creations on the board.`;
                               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                               title="Clear"
                             >
-                              ��
+                              嚙踝蕭
                             </button>
                           </div>
                           <div className="mt-2 flex items-center gap-2 text-slate-500 overflow-x-auto thin-scrollbar pb-1">
@@ -23318,7 +23328,7 @@ You can recommend task creations on the board.`;
                                 type="button"
                                 onClick={() => applyWhiteboardReaction(item.emoji)}
                                 className="h-8 rounded-lg border border-slate-100 text-lg hover:bg-slate-100"
-                                title={`${item.emoji} �P ${item.count || 0} uses`}
+                                title={`${item.emoji} 嚙瞑 ${item.count || 0} uses`}
                               >
                                 {item.emoji}
                               </button>
@@ -23449,7 +23459,7 @@ You can recommend task creations on the board.`;
                             { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
-                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow �X coming soon'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow 嚙碼 coming soon'); setWhiteboardAddMenuOpen(false); } },
                           ].map((item) => (
                             <button
                               key={item.label}
@@ -26695,7 +26705,7 @@ You can recommend task creations on the board.`;
                       placeholder="Search Orb..."
                       className="w-full rounded-xl bg-gray-100 py-2 pl-8 pr-14 text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border-0"
                     />
-                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">⌘K</span>
+                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">?</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-5 px-4 text-xs font-semibold border-b border-gray-100">
@@ -26773,7 +26783,7 @@ You can recommend task creations on the board.`;
                           { name: 'Competitive Analysis.pdf', ext: 'PDF', iconBg: 'bg-red-100', iconText: 'text-red-600', meta: 'Mentioned: pricing, positioning, bundling', ago: '2h ago' },
                           { name: 'Creator Pricing Model.xlsx', ext: 'XLS', iconBg: 'bg-green-100', iconText: 'text-green-700', meta: 'Related to: monetization strategy', ago: '4h ago' },
                           { name: 'Market Entry Strategy.docx', ext: 'DOC', iconBg: 'bg-blue-100', iconText: 'text-blue-600', meta: 'Related to: go-to-market, verticals', ago: '1d ago' },
-                          { name: 'Strategy Call Recording.mp4', ext: '?', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync – May 10', ago: '2d ago' },
+                          { name: 'Strategy Call Recording.mp4', ext: '?', iconBg: 'bg-violet-100', iconText: 'text-violet-600', meta: 'From: Strategy Sync ??May 10', ago: '2d ago' },
                         ].map((asset) => (
                           <div key={asset.name} className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 hover:bg-white hover:border-gray-200 transition-colors cursor-pointer">
                             <div className="flex items-start gap-2.5">
@@ -26815,7 +26825,7 @@ You can recommend task creations on the board.`;
                           </div>
                         ))}
                       </div>
-                      <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more →</button>
+                      <button className="mt-2 text-[11px] font-semibold text-violet-600 hover:text-violet-700">Show more</button>
                     </div>
                   </>
                 )}
@@ -27393,7 +27403,7 @@ You can recommend task creations on the board.`;
                 <div className="mt-2 text-[11px] text-slate-600">
                   {coPilotActive 
                     ? "Co-pilot active: listening to microphone & transcribing meeting dialogue..." 
-                    : "I’m listening and will capture key points, decisions, and action items."}
+                    : "I? listening and will capture key points, decisions, and action items."}
                 </div>
                 <button 
                   type="button" 
@@ -27507,6 +27517,11 @@ You can recommend task creations on the board.`;
     </div>
   );
 }
+
+
+
+
+
 
 
 
