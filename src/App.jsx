@@ -2780,6 +2780,10 @@ export default function App() {
     'Trebuchet MS',
   ];
   const sizeOptions = [12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64];
+  const bulletStyleOptions = ['Disc', 'Circle', 'Square', 'Diamond', 'Check', 'Arrow', 'Star', 'Dot'];
+  const numberStyleOptions = ['1.', 'a.', 'A.', 'i.', 'I.', '(1)', '(a)', '01.'];
+  const lineSpacingOptions = ['1.0', '1.15', '1.5', '2.0'];
+  const paragraphSpacingOptions = ['0', '4', '8', '12', '16'];
   const composeFormatOptions = ['Auto (Compose decides)', 'Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft', 'Proposal', 'Plain Text', 'Custom...'];
   const promptToneOptions = [
     { key: 'formal', label: 'Formal' },
@@ -21353,6 +21357,136 @@ You can recommend task creations on the board.`;
               )}
             </div>
           </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                closeTransientMenus();
+                setOpenDropdown((prev) => (prev === 'bulletStyles' ? null : 'bulletStyles'));
+              }}
+              className="hover:text-gray-900"
+              title="Bullet presets"
+            >
+              <List size={15} className="text-gray-600" />
+            </button>
+            {openDropdown === 'bulletStyles' && (
+              <div className="absolute top-8 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1.5">
+                {bulletStyleOptions.map((style) => (
+                  <button
+                    key={style}
+                    type="button"
+                    onClick={() => {
+                      applyFormatCommand('insertUnorderedList');
+                      showToast(`Bullet style selected: ${style}`);
+                      setOpenDropdown(null);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                closeTransientMenus();
+                setOpenDropdown((prev) => (prev === 'numberStyles' ? null : 'numberStyles'));
+              }}
+              className="hover:text-gray-900"
+              title="Numbering presets"
+            >
+              <ListOrdered size={15} className="text-gray-600" />
+            </button>
+            {openDropdown === 'numberStyles' && (
+              <div className="absolute top-8 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1.5">
+                {numberStyleOptions.map((style) => (
+                  <button
+                    key={style}
+                    type="button"
+                    onClick={() => {
+                      applyFormatCommand('insertOrderedList');
+                      showToast(`Number style selected: ${style}`);
+                      setOpenDropdown(null);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                  >
+                    {style}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                closeTransientMenus();
+                setOpenDropdown((prev) => (prev === 'lineSpacing' ? null : 'lineSpacing'));
+              }}
+              className="text-xs hover:text-gray-900"
+              title="Line spacing"
+            >
+              Line
+            </button>
+            {openDropdown === 'lineSpacing' && (
+              <div className="absolute top-8 left-0 z-[230] w-24 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1.5">
+                {lineSpacingOptions.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      showToast(`Line spacing set to ${value}`);
+                      setOpenDropdown(null);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                closeTransientMenus();
+                setOpenDropdown((prev) => (prev === 'paragraphSpacing' ? null : 'paragraphSpacing'));
+              }}
+              className="text-xs hover:text-gray-900"
+              title="Paragraph spacing"
+            >
+              Para
+            </button>
+            {openDropdown === 'paragraphSpacing' && (
+              <div className="absolute top-8 left-0 z-[230] w-28 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1.5">
+                {paragraphSpacingOptions.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => {
+                      showToast(`Paragraph spacing set to ${value}px`);
+                      setOpenDropdown(null);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                  >
+                    {value}px
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => showToast('Signature tools opened')}
+            className="hover:text-gray-900"
+            title="Sign document"
+          >
+            <PenTool size={15} className="text-gray-600" />
+          </button>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="relative export-menu-container">
             <button
