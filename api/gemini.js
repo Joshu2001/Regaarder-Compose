@@ -32,9 +32,49 @@ const parseJsonSafely = (rawText) => {
   }
 };
 
-const resolveModelCandidates = async (apiKey) => {
-  // Return the static prioritized list to avoid extra network latency and API failures
-  return FALLBACK_MODELS;
+const resolveModelCandidates = async (apiKey, options = {}) => {
+  const hasAudioAttachment = Array.isArray(options.attachments)
+    && options.attachments.some((item) => String(item?.mimeType || '').toLowerCase().startsWith('audio/'));
+
+  const prioritize = (modelNames) => {
+    const preferred = [];
+    const remaining = [];
+    for (const modelName of modelNames) {
+      const lower = modelName.toLowerCase();
+      const isFlash = lower.includes('flash');
+      const wantsFlash = hasAudioAttachment || options.task === 'transcription';
+      if ((wantsFlash && isFlash) || (!wantsFlash && !isFlash)) {
+        preferred.push(modelName);
+      } else {
+        remaining.push(modelName);
+      }
+    }
+    return [...preferred, ...remaining];
+  };
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`,
+      { method: 'GET', headers: { Accept: 'application/json' } },
+    );
+
+    if (!response.ok) {
+      return prioritize(FALLBACK_MODELS);
+    }
+
+    const payload = await response.json().catch(() => ({}));
+    const dynamic = Array.isArray(payload?.models)
+      ? payload.models
+          .filter((model) => Array.isArray(model?.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
+          .map((model) => String(model?.name || '').replace(/^models\//, '').trim())
+          .filter((name) => name.startsWith('gemini-'))
+      : [];
+
+    const candidateSet = new Set([...dynamic, ...FALLBACK_MODELS]);
+    return prioritize(Array.from(candidateSet));
+  } catch (_error) {
+    return prioritize(FALLBACK_MODELS);
+  }
 };
 
 const readBody = (req) => {
@@ -90,7 +130,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'Missing userPrompt' });
   }
 
-  const modelCandidates = await resolveModelCandidates(apiKey);
+  const modelCandidates = await resolveModelCandidates(apiKey, {
+    attachments,
+    task: String(body?.task || '').toLowerCase(),
+  });
   let lastError = 'No Gemini model could generate a response.';
 
   for (const modelName of modelCandidates) {

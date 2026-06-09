@@ -5911,7 +5911,7 @@ export default function App() {
 
       if (finalTranscript.trim()) {
         routeTranscriptToTarget(finalTranscript.trim(), 'final');
-        interimTranscriptRef.current = '';
+        interimTranscriptRef.current = finalTranscript.trim();
         pendingInterimTranscriptRef.current = '';
         if (interimCommitTimerRef.current) {
           clearTimeout(interimCommitTimerRef.current);
@@ -10578,6 +10578,92 @@ Generate the updated output according to the instruction. Preserve layout and ta
     };
   }, []);
 
+  const parseAdvancedComposeAction = useCallback((promptText) => {
+    const prompt = String(promptText || '').trim();
+    if (!prompt) return null;
+    const lower = prompt.toLowerCase();
+
+    const replaceMatch = prompt.match(/replace\s+["']([^"']+)["']\s+with\s+["']([^"']*)["']/i);
+    if (replaceMatch?.[1]) return { kind: 'replace_text', find: replaceMatch[1], replace: replaceMatch[2] || '' };
+
+    const deleteMatch = prompt.match(/(?:delete|remove)\s+(?:every\s+occurrence\s+of\s+|all\s+occurrences\s+of\s+)?(?:the\s+word\s+)?["']([^"']+)["']/i);
+    if (deleteMatch?.[1]) return { kind: 'replace_text', find: deleteMatch[1], replace: '' };
+
+    if (/make\s+all\s+headings\s+blue/i.test(lower)) return { kind: 'style_headings' };
+
+    const titleMatch = prompt.match(/(?:set|add|create)\s+(?:a\s+)?title\s*[:\-]?\s*["']?([^"']+)["']?$/i);
+    if (titleMatch?.[1]) return { kind: 'set_title', title: String(titleMatch[1]).trim() };
+
+    const translateMatch = lower.match(/translate\s+(?:the\s+entire\s+document|entire\s+document|all\s+text|this\s+document)\s+(?:to|into)\s+([a-z\- ]+)/i);
+    if (translateMatch?.[1]) return { kind: 'translate_document', language: String(translateMatch[1]).trim() };
+
+    return null;
+  }, []);
+
+  const executeAdvancedComposeAction = useCallback(async (action) => {
+    const root = blankBodyRef.current;
+    if (!root || !action) return false;
+
+    if (action.kind === 'replace_text') {
+      const find = String(action.find || '').trim();
+      if (!find) return true;
+      const escaped = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}\\b`, 'gi');
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node = walker.nextNode();
+      let changed = 0;
+      while (node) {
+        const source = String(node.nodeValue || '');
+        regex.lastIndex = 0;
+        if (regex.test(source)) {
+          regex.lastIndex = 0;
+          node.nodeValue = source.replace(regex, () => {
+            changed += 1;
+            return String(action.replace || '');
+          });
+        }
+        node = walker.nextNode();
+      }
+      setDocBodyHtml(root.innerHTML);
+      computeDocumentStats();
+      computeDocumentOutline();
+      showToast(`Updated ${changed} occurrence${changed === 1 ? '' : 's'}.`);
+      return true;
+    }
+
+    if (action.kind === 'style_headings') {
+      root.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((heading) => {
+        heading.style.color = '#2563eb';
+      });
+      setDocBodyHtml(root.innerHTML);
+      showToast('Updated heading styles.');
+      return true;
+    }
+
+    if (action.kind === 'set_title') {
+      setDocTitle(action.title || 'Untitled');
+      showToast('Title updated.');
+      return true;
+    }
+
+    if (action.kind === 'translate_document' && action.language) {
+      const sourceText = String(root.innerText || '').trim();
+      if (!sourceText) return true;
+      const response = await callGemini({
+        userPrompt: `Translate this content into ${action.language}. Preserve paragraph breaks. Return plain text only.\n\n${sourceText}`,
+        systemPrompt: 'You are a translation engine. Return only translated plain text.',
+      });
+      const translated = String(response?.text || '').trim();
+      if (translated) {
+        replaceEntireCompositionText(translated);
+        showToast(`Translated document to ${action.language}.`);
+      }
+      return true;
+    }
+
+    return false;
+  }, [callGemini, computeDocumentOutline, computeDocumentStats, replaceEntireCompositionText]);
+
   // Function to process AI prompt and generate structured output
   const handleAISubmit = async (promptText, options = {}) => {
     if (!promptText.trim()) return;
@@ -11568,6 +11654,7 @@ Rules:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          task: 'transcription',
           userPrompt: 'Transcribe this audio accurately. If the audio is silent or contains no speech, respond with exactly: [SILENCE]',
           systemPrompt: 'You are an expert audio transcription tool. Filter out all filler words like "umm", "uh", "um", "like", "you know", and stutters. Output only the cleaned, well-formatted text without any additional commentary. Ensure proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE]',
           attachments: [{ name: 'audio.webm', mimeType: blob.type || 'audio/webm', data: base64data }]
@@ -11671,7 +11758,27 @@ Rules:
         }
       } else {
         console.warn('Gemini transcription failed:', result.error || 'unknown error');
-        showToast('Transcription error: ' + String(result.error || 'API returned no text'));
+        const fallbackTranscript = String(interimTranscriptRef.current || '').trim();
+        if (isVoiceCommandModeRef.current && fallbackTranscript) {
+          const fallbackCheck = detectCommandPrefix(fallbackTranscript);
+          const fallbackCommand = (fallbackCheck.matched ? fallbackCheck.remaining : fallbackTranscript).trim();
+          if (fallbackCommand) {
+            setVoiceCommandBuffer((prev) => {
+              const existing = String(prev || '').trim();
+              if (existing && existing.toLowerCase().endsWith(fallbackCommand.toLowerCase())) {
+                voiceCommandBufferRef.current = prev;
+                return prev;
+              }
+              const combined = `${prev}${prev ? ' ' : ''}${fallbackCommand}`;
+              voiceCommandBufferRef.current = combined;
+              return combined;
+            });
+            setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || fallbackCommand}`);
+            showToast('Using native speech fallback for command execution.');
+          }
+        } else {
+          showToast('Transcription error: ' + String(result.error || 'API returned no text'));
+        }
         if (isVoiceActiveRef.current) {
           setLiveSpeechInterimText('Listening... start speaking');
         }
@@ -27517,15 +27624,4 @@ You can recommend task creations on the board.`;
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
 
