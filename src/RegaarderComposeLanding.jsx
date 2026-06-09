@@ -80,6 +80,15 @@ export default function RegaarderComposeLanding({ onLaunch }) {
   const [composePrompt, setComposePrompt] = useState("");
   const fileInputRef = useRef(null);
   const promptInputRef = useRef(null);
+  const [bulletStyleOpen, setBulletStyleOpen] = useState(false);
+  const [numberStyleOpen, setNumberStyleOpen] = useState(false);
+  const [selectedBulletStyle, setSelectedBulletStyle] = useState('•');
+  const [selectedNumberStyle, setSelectedNumberStyle] = useState('1');
+  const [lineSpacing, setLineSpacing] = useState('1.5');
+  const [paragraphSpacing, setParagraphSpacing] = useState('1');
+
+  const bulletStyles = ['•', '◦', '▪', '◾', '✓', '▶', '★', '◆'];
+  const numberStyles = ['1', 'a', 'A', 'i', 'I', 'I.', 'i.', '1.'];
 
   const triggerAttachmentPicker = () => {
     fileInputRef.current?.click();
@@ -189,52 +198,81 @@ export default function RegaarderComposeLanding({ onLaunch }) {
               <Sparkles size={16} className="text-violet-600" />
             </button>
 
-            <button type="button" onClick={() => onLaunch?.("sign")} className="w-10 h-10 rounded-2xl hover:bg-slate-50 flex items-center justify-center">
+            <button type="button" onClick={() => onLaunch?.("sign")} className="w-10 h-10 rounded-2xl hover:bg-slate-50 flex items-center justify-center" title="Add signature">
               <PenTool size={17} className="text-slate-500" />
             </button>
           </div>
 
-          <div className="mt-4 flex items-center gap-2 border-b border-gray-200 pb-3">
-            <button type="button" className="p-2 rounded hover:bg-gray-100">
-              <AlignLeft size={16} />
-            </button>
+          <div className="mt-4 flex items-center gap-1 border-b border-gray-200 pb-3">
             <div className="relative">
-              <button type="button" className="p-2 rounded hover:bg-gray-100">
+              <button type="button" onClick={() => setBulletStyleOpen(!bulletStyleOpen)} className="p-2 rounded hover:bg-gray-100" title="Bullet styles">
                 <List size={16} />
               </button>
-              {/* Bullet style dropdown - matches image 4 */}
-              <div className="absolute left-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3 hidden">
-                <div className="grid grid-cols-4 gap-2">
-                  {[1,2,3,4,5,6,7,8].map(i => (
-                    <div key={i} className="w-12 h-12 rounded-lg border flex items-center justify-center hover:bg-gray-50">
-                      •
-                    </div>
-                  ))}
+              {bulletStyleOpen && (
+                <div className="absolute left-0 top-full mt-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3">
+                  <div className="text-xs font-semibold text-gray-600 mb-2">Bullet styles</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {bulletStyles.map((style, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setSelectedBulletStyle(style);
+                          setBulletStyleOpen(false);
+                        }}
+                        className={`p-3 rounded-lg border flex items-center justify-center hover:bg-violet-50 ${selectedBulletStyle === style ? 'border-violet-500 bg-violet-50' : 'border-gray-200'}`}
+                      >
+                        <span className="text-lg">{style}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
+            
             <div className="relative">
-              <button type="button" className="p-2 rounded hover:bg-gray-100">
+              <button type="button" onClick={() => setNumberStyleOpen(!numberStyleOpen)} className="p-2 rounded hover:bg-gray-100" title="Numbering styles">
                 <ListOrdered size={16} />
               </button>
-              {/* Numbering style dropdown */}
-              <div className="absolute left-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3 hidden">
-                <div className="grid grid-cols-4 gap-2">
-                  {[1,2,3,4,5,6,7,8].map(i => (
-                    <div key={i} className="w-12 h-12 rounded-lg border flex items-center justify-center hover:bg-gray-50">
-                      {i}.
-                    </div>
-                  ))}
+              {numberStyleOpen && (
+                <div className="absolute left-0 top-full mt-2 z-50 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3">
+                  <div className="text-xs font-semibold text-gray-600 mb-2">Numbering styles</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {numberStyles.map((style, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setSelectedNumberStyle(style);
+                          setNumberStyleOpen(false);
+                        }}
+                        className={`p-3 rounded-lg border flex items-center justify-center hover:bg-violet-50 ${selectedNumberStyle === style ? 'border-violet-500 bg-violet-50' : 'border-gray-200'}`}
+                      >
+                        <span className="text-sm font-semibold">{style}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs text-gray-500">Line spacing:</span>
-              <select className="text-xs border rounded px-2 py-1">
-                <option>1.0</option>
-                <option>1.15</option>
-                <option>1.5</option>
-                <option>2.0</option>
+
+            <div className="border-r border-gray-200 mx-1 h-5" />
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-500 font-medium">Line:</label>
+              <select value={lineSpacing} onChange={(e) => setLineSpacing(e.target.value)} className="text-xs border border-gray-200 rounded px-2 py-1 bg-white hover:bg-gray-50">
+                <option value="1.0">1.0</option>
+                <option value="1.15">1.15</option>
+                <option value="1.5">1.5</option>
+                <option value="2.0">2.0</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-gray-500 font-medium">Para:</label>
+              <select value={paragraphSpacing} onChange={(e) => setParagraphSpacing(e.target.value)} className="text-xs border border-gray-200 rounded px-2 py-1 bg-white hover:bg-gray-50">
+                <option value="0.5">0.5</option>
+                <option value="1">1</option>
+                <option value="1.5">1.5</option>
+                <option value="2">2</option>
               </select>
             </div>
           </div>
