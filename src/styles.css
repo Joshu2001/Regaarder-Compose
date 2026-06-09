@@ -752,3 +752,25 @@ body { margin: 0; background: #ffffff; }
   0% { height: 4px; }
   100% { height: 16px; }
 }
+
+/* Fix for dropdowns appearing under content */
+.new-button-dropdown,
+.new-dropdown,
+.right-panel-dropdown {
+  z-index: 2000 !important;
+}
+
+/* Ensure dropdowns appear above all other content */
+.dropdown-menu,
+.menu-container,
+.popover {
+  z-index: 2000 !important;
+}
+
+/* Fix for right panel dropdowns */
+.right-panel .dropdown,
+.right-panel .menu {
+  z-index: 2000 !important;
+  position: absolute !important;
+  will-change: transform;
+}
