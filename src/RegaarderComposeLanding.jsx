@@ -21,6 +21,9 @@ import {
   Paperclip,
   PenTool,
   Lock,
+  AlignLeft,
+  List,
+  ListOrdered,
 } from "lucide-react";
 
 const sidebarItems = [
