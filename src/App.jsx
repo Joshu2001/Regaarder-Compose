@@ -19442,7 +19442,7 @@ You can recommend task creations on the board.`;
             </div>
 
             {workspaceLauncherOpen && (
-              <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-[70%] z-[700] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5">
+              <div className="fixed z-[9999] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5" style={{ bottom: "calc(100% + 8px)", right: "16px" }}>
                 <div className="text-[11px] font-semibold text-gray-700 px-1 pb-1.5">Choose Workspace</div>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
@@ -26744,7 +26744,7 @@ You can recommend task creations on the board.`;
           </div>
 
           {workspaceLauncherOpen && (
-            <div className="absolute top-[calc(100%+8px)] left-1/2 -translate-x-[70%] z-[700] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5">
+            <div className="fixed z-[9999] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5" style={{ bottom: "calc(100% + 8px)", right: "16px" }}>
               <div className="text-[11px] font-semibold text-gray-700 px-1 pb-1.5">Choose Workspace</div>
               <div className="grid grid-cols-2 gap-1.5">
                 {[
