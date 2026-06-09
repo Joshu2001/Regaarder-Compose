@@ -714,6 +714,27 @@ export default function App() {
   const [dmAiChatOpen, setDmAiChatOpen] = useState(false);
   const [dmAiChatInput, setDmAiChatInput] = useState('');
   
+  // Presentation Wizard states
+  const [presentationWizardOpen, setPresentationWizardOpen] = useState(false);
+  const [presentationWizardStep, setPresentationWizardStep] = useState(1);
+  const [presPurpose, setPresPurpose] = useState('Investor Pitch');
+  const [presAudience, setPresAudience] = useState('Investors');
+  const [presLength, setPresLength] = useState('10 Slides');
+  const [presStyle, setPresStyle] = useState('Modern');
+  const [presCustomPurpose, setPresCustomPurpose] = useState('');
+  const [presCustomAudience, setPresCustomAudience] = useState('');
+  const [presKnowledgeSummary, setPresKnowledgeSummary] = useState('');
+  const [presBlueprint, setPresBlueprint] = useState(null);
+  const [presSubAgentLogs, setPresSubAgentLogs] = useState([]);
+  const [presBlueprintsList, setPresBlueprintsList] = useState([]);
+  const [presAuditReport, setPresAuditReport] = useState(null);
+  const [isGatheringContext, setIsGatheringContext] = useState(false);
+  const [isDesigningNarrative, setIsDesigningNarrative] = useState(false);
+  const [isCollaborating, setIsCollaborating] = useState(false);
+  const [isGeneratingBlueprints, setIsGeneratingBlueprints] = useState(false);
+  const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
+  const [isAuditing, setIsAuditing] = useState(false);
+
   const [activeAiAgent, setActiveAiAgent] = useState('Orb (AI Assistant)');
   const [dmAgentHistories, setDmAgentHistories] = useState({
     'Orb (AI Assistant)': [
@@ -5328,7 +5349,11 @@ export default function App() {
     event.preventDefault();
     const isBodyTarget = target === blankBodyRef.current;
     if (isBodyTarget && htmlText.trim()) {
-      document.execCommand('insertHTML', false, htmlText);
+      let cleanHtml = htmlText;
+      // Strip Word/Office/WPS conditional comments and XML namespaces
+      cleanHtml = cleanHtml.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/g, '');
+      cleanHtml = cleanHtml.replace(/<[\/]?([oxwm]:|xml)[^>]*?>/gi, '');
+      document.execCommand('insertHTML', false, cleanHtml);
     } else if (plainText) {
       if (isBodyTarget) {
         const formatted = plainText
@@ -8907,10 +8932,38 @@ Generate the updated output according to the instruction. Preserve layout and ta
     if (!node.contains(range.startContainer)) {
       return false;
     }
-    const preCaretRange = range.cloneRange();
-    preCaretRange.selectNodeContents(node);
-    preCaretRange.setEnd(range.startContainer, range.startOffset);
-    return preCaretRange.toString().length === 0;
+    
+    if (range.startContainer === node && range.startOffset === 0) {
+      return true;
+    }
+    
+    let current = range.startContainer;
+    let offset = range.startOffset;
+    
+    if (current.nodeType === Node.TEXT_NODE) {
+      if (offset > 0) return false;
+    } else {
+      if (offset > 0) {
+        for (let i = 0; i < offset; i++) {
+          const child = current.childNodes[i];
+          if (child && (child.textContent?.length > 0 || child.nodeName === 'BR' || child.nodeType === Node.ELEMENT_NODE)) {
+            return false;
+          }
+        }
+      }
+    }
+    
+    while (current && current !== node) {
+      let sibling = current.previousSibling;
+      while (sibling) {
+        if (sibling.textContent?.length > 0 || sibling.nodeType === Node.ELEMENT_NODE) {
+          return false;
+        }
+        sibling = sibling.previousSibling;
+      }
+      current = current.parentNode;
+    }
+    return true;
   };
 
   const handleTitleKeyDown = (event) => {
