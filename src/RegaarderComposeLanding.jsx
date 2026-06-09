@@ -185,7 +185,58 @@ export default function RegaarderComposeLanding({ onLaunch }) {
             <button type="button" onClick={() => onLaunch?.("assistant")} className="w-10 h-10 rounded-2xl bg-violet-50 flex items-center justify-center">
               <Sparkles size={16} className="text-violet-600" />
             </button>
+
+            <button type="button" onClick={() => onLaunch?.("sign")} className="w-10 h-10 rounded-2xl hover:bg-slate-50 flex items-center justify-center">
+              <PenTool size={17} className="text-slate-500" />
+            </button>
           </div>
+
+          <div className="mt-4 flex items-center gap-2 border-b border-gray-200 pb-3">
+            <button type="button" className="p-2 rounded hover:bg-gray-100">
+              <AlignLeft size={16} />
+            </button>
+            <div className="relative">
+              <button type="button" className="p-2 rounded hover:bg-gray-100">
+                <List size={16} />
+              </button>
+              {/* Bullet style dropdown - matches image 4 */}
+              <div className="absolute left-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3 hidden">
+                <div className="grid grid-cols-4 gap-2">
+                  {[1,2,3,4,5,6,7,8].map(i => (
+                    <div key={i} className="w-12 h-12 rounded-lg border flex items-center justify-center hover:bg-gray-50">
+                      •
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="relative">
+              <button type="button" className="p-2 rounded hover:bg-gray-100">
+                <ListOrdered size={16} />
+              </button>
+              {/* Numbering style dropdown */}
+              <div className="absolute left-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg p-3 hidden">
+                <div className="grid grid-cols-4 gap-2">
+                  {[1,2,3,4,5,6,7,8].map(i => (
+                    <div key={i} className="w-12 h-12 rounded-lg border flex items-center justify-center hover:bg-gray-50">
+                      {i}.
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-gray-500">Line spacing:</span>
+              <select className="text-xs border rounded px-2 py-1">
+                <option>1.0</option>
+                <option>1.15</option>
+                <option>1.5</option>
+                <option>2.0</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Added formatting toolbar with bullet/numbering presets and spacing controls */}
         </header>
 
         <div className="flex-1 overflow-hidden px-5 py-2 md:px-8 md:py-3">

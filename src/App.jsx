@@ -18206,7 +18206,7 @@ You can recommend task creations on the board.`;
               <div className="mb-4">
                 <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-2">Access level</label>
                 <div className="flex flex-wrap items-center gap-2">
-                  {['Viewer', 'Commenter', 'Editor'].map((level) => (
+                  {['Viewer', 'Commenter', 'Editor', 'Full access'].map((level) => (
                     <button
                       key={level}
                       type="button"
@@ -19802,7 +19802,7 @@ You can recommend task creations on the board.`;
             <div className="mb-4">
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-2">Access level</label>
               <div className="flex flex-wrap items-center gap-2">
-                {['Viewer', 'Commenter', 'Editor'].map((level) => (
+                {['Viewer', 'Commenter', 'Editor', 'Full access'].map((level) => (
                   <button
                     key={level}
                     type="button"
