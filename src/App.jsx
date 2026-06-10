@@ -6019,30 +6019,12 @@ export default function App() {
                 return;
               }
 
-              if (hasActionableCommand) {
-                showToast('Executing AI voice command...');
-                handleAISubmit(normalizedBuffered, { source: 'compose' });
-                setIsVoiceCommandMode(false);
-                isVoiceCommandModeRef.current = false;
-                setVoiceCommandBuffer('');
-                voiceCommandBufferRef.current = '';
-                shouldExecuteCommandRef.current = false;
-                if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-                  try {
-                    mediaRecorderRef.current.commandExecuted = true;
-                    mediaRecorderRef.current.stop();
-                  } catch (err) {
-                    console.warn('Failed to stop mediaRecorder on silence:', err);
-                  }
-                }
-              } else {
-                shouldExecuteCommandRef.current = true;
-                if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-                  try {
-                    mediaRecorderRef.current.stop();
-                  } catch (err) {
-                    console.warn('Failed to stop mediaRecorder on silence:', err);
-                  }
+              shouldExecuteCommandRef.current = true;
+              if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+                try {
+                  mediaRecorderRef.current.stop();
+                } catch (err) {
+                  console.warn('Failed to stop mediaRecorder on silence:', err);
                 }
               }
               voiceSilenceTimerRef.current = null;
@@ -12181,7 +12163,7 @@ Rules:
   ];
 
   const WAKE_WORD_PATTERN = /\b(?:hey\s+orb|orb\s+command|hey\s+gemini|hey\s+ai|ai\s+command)\b[:,]?/i;
-  const COMMAND_SILENCE_MS = 1200;
+  const COMMAND_SILENCE_MS = 2600;
 
   const ESCAPE_PREFIXES = [
     'write',
@@ -12231,13 +12213,6 @@ Rules:
   };
 
   const processAudioWithGemini = async () => {
-    const isCommandAlreadyExecuted = mediaRecorderRef.current && mediaRecorderRef.current.commandExecuted;
-    if (isCommandAlreadyExecuted) {
-      mediaRecorderRef.current.commandExecuted = false;
-      audioChunksRef.current.splice(0);
-      return;
-    }
-
     const chunks = audioChunksRef.current.splice(0);
     if (chunks.length === 0) return;
     
