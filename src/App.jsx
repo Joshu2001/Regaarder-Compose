@@ -11762,9 +11762,7 @@ Rules:
             setIsVoiceCommandMode(false);
             isVoiceCommandModeRef.current = false;
             setVoiceCommandBuffer('');
-              voiceCommandBufferRef.current = '';
-              commandModeActivatedAtRef.current = 0;
-              commandModeLastInputAtRef.current = 0;
+            voiceCommandBufferRef.current = '';
             setLiveSpeechInterimText('Command cancelled');
             showToast('Voice command cancelled');
             setTimeout(() => {
@@ -11796,26 +11794,25 @@ Rules:
             // Check command triggers
             const commandCheck = detectCommandPrefix(cleanedText);
             
-              if (commandCheck.matched || isVoiceCommandModeRef.current) {
-                if (!isVoiceCommandModeRef.current) {
-                  setIsVoiceCommandMode(true);
-                  isVoiceCommandModeRef.current = true;
-                  commandModeActivatedAtRef.current = Date.now();
-                }
-                const candidateInstruction = commandCheck.matched ? commandCheck.remaining : cleanedText;
-                const newInstruction = normalizeVoiceCommandText(candidateInstruction);
-                if (!newInstruction) {
-                  setLiveSpeechInterimText('Command: speak instructions...');
-                  return;
-                }
-                commandModeLastInputAtRef.current = Date.now();
-                setVoiceCommandBuffer((prev) => {
-                  const previous = normalizeVoiceCommandText(prev);
-                  const combined = `${previous}${previous ? ' ' : ''}${newInstruction}`.trim();
-                  voiceCommandBufferRef.current = combined;
-                  return combined;
-                });
-                setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || newInstruction}`);
+            if (commandCheck.matched || isVoiceCommandModeRef.current) {
+              if (!isVoiceCommandModeRef.current) {
+                setIsVoiceCommandMode(true);
+                isVoiceCommandModeRef.current = true;
+              }
+              const candidateInstruction = commandCheck.matched ? commandCheck.remaining : cleanedText;
+              const newInstruction = normalizeVoiceCommandText(candidateInstruction);
+              if (!newInstruction) {
+                setLiveSpeechInterimText('Command: speak instructions...');
+                return;
+              }
+              setVoiceCommandBuffer((prev) => {
+                const previous = normalizeVoiceCommandText(prev);
+                const combined = `${previous}${previous ? ' ' : ''}${newInstruction}`.trim();
+                voiceCommandBufferRef.current = combined;
+                return combined;
+              });
+              setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || newInstruction}`);
+            } else {
               // Normal transcription
               setLiveSpeechInterimText(cleanedText);
               if (voiceTargetRef.current === 'document') {
@@ -11842,22 +11839,18 @@ Rules:
               }
             }
           }, 800);
-          } else {
+        } else {
+          if (isVoiceCommandModeRef.current) {
+            shouldExecuteCommandRef.current = true;
+          }
+          if (isVoiceActiveRef.current) {
             if (isVoiceCommandModeRef.current) {
-              const normalizedBuffered = normalizeVoiceCommandText(voiceCommandBufferRef.current || '');
-              const commandAge = Date.now() - commandModeActivatedAtRef.current;
-              if (normalizedBuffered.length >= 4 || commandAge >= 6500) {
-                shouldExecuteCommandRef.current = true;
-              }
-            }
-            if (isVoiceActiveRef.current) {
-              if (isVoiceCommandModeRef.current) {
-                setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || 'speak instructions...'}`);
-              } else {
-                setLiveSpeechInterimText('Listening... start speaking');
-              }
+              setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || 'speak instructions...'}`);
+            } else {
+              setLiveSpeechInterimText('Listening... start speaking');
             }
           }
+        }
       } else {
         console.warn('Gemini transcription failed:', result.error || 'unknown error');
         const fallbackTranscript = String(interimTranscriptRef.current || '').trim();
@@ -11891,28 +11884,22 @@ Rules:
       if (isVoiceActiveRef.current) {
         setLiveSpeechInterimText('Listening... start speaking');
       }
-      } finally {
-        if ((!isVoiceActiveRef.current || shouldExecuteCommandRef.current) && isVoiceCommandModeRef.current) {
-          const finalCommand = normalizeVoiceCommandText(voiceCommandBufferRef.current.trim());
-          if (finalCommand) {
-            showToast('Executing AI voice command...');
-            handleAISubmit(finalCommand, { source: 'compose' });
-          } else if (isVoiceActiveRef.current) {
-            shouldExecuteCommandRef.current = false;
-            setLiveSpeechInterimText('Command: speak instructions...');
-            return;
-          } else {
-            showToast('No actionable command detected. Try: Hey Orb add a table of monthly sales.');
-          }
-          setIsVoiceCommandMode(false);
-          isVoiceCommandModeRef.current = false;
-          setVoiceCommandBuffer('');
-          voiceCommandBufferRef.current = '';
-          commandModeActivatedAtRef.current = 0;
-          commandModeLastInputAtRef.current = 0;
-          shouldExecuteCommandRef.current = false;
+    } finally {
+      if ((!isVoiceActiveRef.current || shouldExecuteCommandRef.current) && isVoiceCommandModeRef.current) {
+        const finalCommand = normalizeVoiceCommandText(voiceCommandBufferRef.current.trim());
+        if (finalCommand) {
+          showToast('Executing AI voice command...');
+          handleAISubmit(finalCommand, { source: 'compose' });
+        } else {
+          showToast('No actionable command detected. Try: Hey Orb add a table of monthly sales.');
         }
+        setIsVoiceCommandMode(false);
+        isVoiceCommandModeRef.current = false;
+        setVoiceCommandBuffer('');
+        voiceCommandBufferRef.current = '';
+        shouldExecuteCommandRef.current = false;
       }
+    }
   };
 
   const toggleVoiceRecording = async (targetMode = voiceTarget) => {
