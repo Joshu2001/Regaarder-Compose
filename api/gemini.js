@@ -1,6 +1,41 @@
 const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
 const ENV_KEY_CANDIDATES = ['GEMINI_API_KEY', 'VITE_GEMINI_DEMO_API_KEY'];
 
+const COMPOSE_AGENT_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    action: { type: 'STRING' },
+    targetText: { type: 'STRING' },
+    replacementText: { type: 'STRING' },
+    chartData: {
+      type: 'OBJECT',
+      properties: {
+        type: { type: 'STRING' },
+        title: { type: 'STRING' },
+        labels: { type: 'ARRAY', items: { type: 'STRING' } },
+        datasets: {
+          type: 'ARRAY',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              label: { type: 'STRING' },
+              data: { type: 'ARRAY', items: { type: 'NUMBER' } },
+            },
+          },
+        },
+      },
+    },
+    explanation: { type: 'STRING' },
+  },
+  required: ['action', 'explanation'],
+};
+
+const COMPOSE_AGENT_SYSTEM_PROMPT = `You are Regaarder Compose Agent.
+Interpret the command as an instruction and apply it to selected text/document content.
+Never transform the instruction phrase itself.
+If command says translate to a language, translate selected_text first; if missing, use full_document.
+Return strict JSON only matching schema.`;
+
 const resolveApiKey = () => {
   for (const keyName of ENV_KEY_CANDIDATES) {
     const value = String(process.env[keyName] || '').trim();
@@ -106,6 +141,16 @@ const normalizeAttachments = (attachments) => {
     .slice(0, 8);
 };
 
+const buildLegacyComposePrompt = (body) => {
+  const prompt = String(body?.prompt || '').trim();
+  if (!prompt) {
+    return null;
+  }
+  const selectedText = String(body?.selectedText || '').trim();
+  const documentText = String(body?.documentText || '').trim();
+  return `<user_command>\n${prompt}\n</user_command>\n\n<selected_text>\n${selectedText}\n</selected_text>\n\n<full_document>\n${documentText}\n</full_document>`;
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -121,9 +166,12 @@ export default async function handler(req, res) {
   }
 
   const body = readBody(req);
-  const userPrompt = String(body?.userPrompt || '').trim();
-  const systemPrompt = String(body?.systemPrompt || '').trim();
-  const schema = body?.schema;
+  const legacyPrompt = buildLegacyComposePrompt(body);
+  const isLegacyComposeMode = Boolean(legacyPrompt);
+
+  const userPrompt = String(body?.userPrompt || '').trim() || legacyPrompt || '';
+  const systemPrompt = String(body?.systemPrompt || '').trim() || (isLegacyComposeMode ? COMPOSE_AGENT_SYSTEM_PROMPT : '');
+  const schema = body?.schema || (isLegacyComposeMode ? COMPOSE_AGENT_SCHEMA : undefined);
   const attachments = normalizeAttachments(body?.attachments);
 
   if (!userPrompt) {
@@ -196,13 +244,24 @@ export default async function handler(req, res) {
         continue;
       }
 
-      return res.status(200).json({
+      const responsePayload = {
         ok: true,
         text,
         parsed,
         modelName,
         envKeyName,
-      });
+      };
+
+      if (isLegacyComposeMode) {
+        const actionPayload = parsed || parseJsonSafely(text) || {};
+        responsePayload.action = String(actionPayload?.action || 'general_chat');
+        responsePayload.targetText = String(actionPayload?.targetText || '');
+        responsePayload.replacementText = String(actionPayload?.replacementText || '');
+        responsePayload.chartData = actionPayload?.chartData || null;
+        responsePayload.explanation = String(actionPayload?.explanation || 'Processed command.');
+      }
+
+      return res.status(200).json(responsePayload);
     } catch (_error) {
       lastError = `${modelName}: network error while contacting Gemini`;
     }
