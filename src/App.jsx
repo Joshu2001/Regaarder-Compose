@@ -18910,7 +18910,7 @@ You can recommend task creations on the board.`;
 
   if (productMode === 'deck' || productMode === 'sheets') {
     return (
-      <div className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
           <div className="absolute top-16 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
             <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
@@ -19365,12 +19365,12 @@ You can recommend task creations on the board.`;
             </div>
           </header>
 
-          <div className={`flex-1 min-h-0 flex gap-4 ${isSheetsMode ? '' : 'p-4'}`}>
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#FAFAFC]' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
-              <div className={`${isSheetsMode ? 'w-full h-full flex flex-col' : 'mx-auto w-full max-w-[980px] pb-4'}`}>
+          <div className="flex-1 min-h-0 p-4 flex gap-4">
+            <section className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col overflow-y-auto thin-scrollbar">
+              <div className="mx-auto w-full max-w-[980px] flex flex-col pb-4 h-full">
                 {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col border-r border-gray-200">
-                    <div className="px-4 py-3 border-b border-gray-200 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
+                  <div ref={sheetCanvasPreviewRef} className="flex-1 rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)] flex flex-col">
+                    <div className="px-4 py-3 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
                       {['Data', 'Insert', 'Analyze', 'Automate', 'AI'].map((tab) => (
                         <button
                           key={tab}
