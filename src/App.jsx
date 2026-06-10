@@ -8068,7 +8068,8 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
         } else if (type === 'translate') {
           const textToTranslate = originalHtml || prompt;
           const languageMatch = prompt.match(/\b(?:to|into)\s+([a-z][a-z\s-]{1,30})\b/i);
-          const targetLanguage = languageMatch?.[1]?.trim() || 'French';
+          let targetLanguage = languageMatch?.[1]?.trim() || prompt.trim();
+          if (!targetLanguage || targetLanguage.toLowerCase().includes('translate')) targetLanguage = 'English';
           userPrompt = `Translate the following text to ${targetLanguage}. Preserve any HTML tags if present. Text:\n"""${textToTranslate}"""`;
         }
         
@@ -8712,7 +8713,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           <svg width="8" height="5" viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="2" style="pointer-events:none;"><path d="M1 1l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
         <div id="${boxId}_language_menu" class="hidden" style="position:absolute; top:100%; left:0; margin-top:4px; background:#ffffff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); padding:4px; display:flex; flex-direction:column; gap:2px; min-width:140px; z-index:100000; max-height: 200px; overflow-y: auto; pointer-events:auto !important;">
-          ${['French', 'Spanish', 'German', 'Chinese', 'Japanese', 'Italian', 'Portuguese', 'Arabic', 'Russian', 'Hindi', 'Swedish'].map(lang => `
+          ${['French', 'Spanish', 'German', 'Chinese', 'Chinese (Traditional)', 'Japanese', 'Italian', 'Portuguese', 'Arabic', 'Russian', 'Hindi', 'Indonesian', 'Vietnamese', 'Swedish'].map(lang => `
             <button type="button" onmousedown="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" onclick="event.preventDefault(); event.stopPropagation(); window.selectPromptLanguage('${boxId}', '${lang}')" style="background:none; border:none; padding:6px 12px; text-align:left; font-size:11px; cursor:pointer; font-weight:500; border-radius:4px; width:100%; color:#334155; transition:background 100ms; pointer-events:auto !important;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">${lang}</button>
           `).join('')}
         </div>
@@ -25113,7 +25114,7 @@ You can recommend task creations on the board.`;
               </button>
               {languageMenuOpen && (
                 <div className="absolute left-0 bottom-full mb-1 z-40 w-40 bg-white border border-gray-200 rounded-lg shadow-lg p-1" data-language-menu-root>
-                  {['Auto detect', 'English (US)', 'English (UK)', 'Spanish', 'French', 'German', 'Chinese'].map((lang) => (
+                  {['Auto detect', 'English (US)', 'English (UK)', 'Spanish', 'French', 'German', 'Chinese', 'Chinese (Traditional)', 'Indonesian', 'Vietnamese'].map((lang) => (
                     <button
                       key={lang}
                       onClick={() => {
