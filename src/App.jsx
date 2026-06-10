@@ -11798,20 +11798,21 @@ Rules:
               if (!isVoiceCommandModeRef.current) {
                 setIsVoiceCommandMode(true);
                 isVoiceCommandModeRef.current = true;
+                commandModeActivatedAtRef.current = Date.now();
               }
               const candidateInstruction = commandCheck.matched ? commandCheck.remaining : cleanedText;
               const newInstruction = normalizeVoiceCommandText(candidateInstruction);
-              if (!newInstruction) {
-                setLiveSpeechInterimText('Command: speak instructions...');
-                return;
+              if (newInstruction) {
+                setVoiceCommandBuffer((prev) => {
+                  const previous = normalizeVoiceCommandText(prev);
+                  const combined = `${previous}${previous ? ' ' : ''}${newInstruction}`.trim();
+                  voiceCommandBufferRef.current = combined;
+                  return combined;
+                });
+                setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || newInstruction}`);
+              } else {
+                setLiveSpeechInterimText('Command: listening...');
               }
-              setVoiceCommandBuffer((prev) => {
-                const previous = normalizeVoiceCommandText(prev);
-                const combined = `${previous}${previous ? ' ' : ''}${newInstruction}`.trim();
-                voiceCommandBufferRef.current = combined;
-                return combined;
-              });
-              setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || newInstruction}`);
             } else {
               // Normal transcription
               setLiveSpeechInterimText(cleanedText);
@@ -27727,6 +27728,8 @@ You can recommend task creations on the board.`;
     </div>
   );
 }
+
+
 
 
 
