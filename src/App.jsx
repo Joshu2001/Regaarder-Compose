@@ -999,7 +999,7 @@ export default function App() {
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
   const [deckSlidesData, setDeckSlidesData] = useState([createBlankDeckSlide(1)]);
-  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
   const [whiteboardPenVariant, setWhiteboardPenVariant] = useState('felt-pen');
@@ -12746,37 +12746,7 @@ Rules:
 
   const launchWorkspaceFromMiniPlus = (workspaceKey) => {
     setWorkspaceLauncherOpen(false);
-    if (workspaceKey === 'compose') {
-      createComposeExperience();
-      return;
-    }
-    if (workspaceKey === 'deck') {
-      createDeckExperience();
-      return;
-    }
-    if (workspaceKey === 'sheets') {
-      createSheetsExperience();
-      return;
-    }
-    if (workspaceKey === 'dms') {
-      createDmExperience();
-      return;
-    }
-    if (workspaceKey === 'whiteboard') {
-      setProductMode('compose');
-      setLeftSidebarOpen(true);
-      setRightSidebarOpen(true);
-      setActiveRightTab('whiteboard');
-      showToast('Whiteboard opened');
-      return;
-    }
-    if (workspaceKey === 'dashboard') {
-      setProductMode('landing');
-      setActivePrimaryNav('home');
-      showToast('Dashboard opened');
-      return;
-    }
-    handleMiniSidebarClick('chat');
+    openLandingWorkspace(workspaceKey);
   };
 
   const toggleDocumentImmersiveMode = async () => {
@@ -13584,106 +13554,54 @@ Rules:
   const openLandingWorkspace = (destination) => {
     setCreationPickerOpen(false);
 
+    let target = destination;
     if (typeof destination === 'object' && destination !== null) {
-      if (destination.type === 'action') {
-        if (destination.name === 'Data Mining') {
-          setActivePrimaryNav('home');
-          createSheetsExperience();
-          return;
-        } else if (destination.name === 'Web Reading') {
-          setActivePrimaryNav('drafts');
-          createComposeExperience({ initialTitle: 'Web Article Summary', initialHtml: '<p>Paste the URL of the article you want me to read and summarize...</p>' });
-          return;
-        } else if (destination.name === 'Deep Research') {
-          setActivePrimaryNav('drafts');
-          createComposeExperience({ initialTitle: 'Research Report', initialHtml: '<h2 data-heading="h2">Abstract</h2><p>Provide a summary of the research goals here...</p><h2 data-heading="h2">Introduction</h2><p><br></p>' });
-          return;
-        } else if (destination.name === 'File Management') {
-          setActivePrimaryNav('drafts');
-          createComposeExperience({ initialTitle: 'Document Index', initialHtml: '<p>List and categorize your documents here...</p>' });
-          return;
-        }
-      } else if (destination.type === 'role') {
-         setActivePrimaryNav('drafts');
-         const role = destination.name;
-         let initialTitle = '';
-         let initialHtml = '';
-         let persona = 'Assistant';
-         
-         if (role === 'Product') { 
-           initialTitle = 'Product Requirements Document'; 
-           initialHtml = '<h2 data-heading="h2">Overview</h2><p>Describe the product goals...</p>'; 
-           persona = 'Senior Product Manager';
-         }
-         else if (role === 'Founder') { 
-           initialTitle = 'Business Strategy'; 
-           initialHtml = '<h2 data-heading="h2">Executive Summary</h2><p>Outline the pitch...</p>'; 
-           persona = 'Startup Strategy Advisor';
-         }
-         else if (role === 'Designer') { 
-           initialTitle = 'Design Brief'; 
-           initialHtml = '<h2 data-heading="h2">UX Goals</h2><p>Describe the user journey...</p>'; 
-           persona = 'UX/UI Design Assistant';
-         }
-         else if (role === 'Engineer') { 
-           initialTitle = 'Technical Design Document'; 
-           initialHtml = '<h2 data-heading="h2">Architecture Overview</h2><p>Detail the technical stack...</p>'; 
-           persona = 'Principal Software Engineer';
-         }
-         else if (role === 'Consultant') { 
-           initialTitle = 'Strategy Proposal'; 
-           initialHtml = '<h2 data-heading="h2">Current State Analysis</h2><p>Summarize findings...</p>'; 
-           persona = 'Management Consultant';
-         }
-         else if (role === 'Marketing/Sales') { 
-           initialTitle = 'Campaign Brief'; 
-           initialHtml = '<h2 data-heading="h2">Target Audience</h2><p>Define the segments...</p>'; 
-           persona = 'Growth Marketing Expert';
-         }
-         else if (role === 'Operations') { 
-           initialTitle = 'Process SOP'; 
-           initialHtml = '<h2 data-heading="h2">Standard Operating Procedure</h2><p>Step-by-step logistics...</p>'; 
-           persona = 'Operations Manager';
-         }
-         else {
-           initialTitle = 'Workspace';
-           initialHtml = '<p>Start creating...</p>';
-         }
-         
-         setAiPersona(persona);
-         createComposeExperience({ initialTitle, initialHtml });
-         return;
+      if (destination.type === 'action' || destination.type === 'product') {
+        target = destination.name.toLowerCase();
+      } else {
+        target = 'compose';
       }
+    } else if (typeof destination === 'string') {
+      target = destination.toLowerCase();
+    } else {
+      target = 'compose';
     }
 
-    if (destination === 'compose') {
+    if (target === 'compose') {
       setActivePrimaryNav('drafts');
       createComposeExperience();
       return;
     }
 
-    if (destination === 'deck') {
+    if (target === 'deck') {
       setActivePrimaryNav('library');
       createDeckExperience();
       return;
     }
 
-    if (destination === 'sheets') {
+    if (target === 'sheet' || target === 'sheets' || target === 'data mining') {
       setActivePrimaryNav('home');
       createSheetsExperience();
       return;
     }
 
-    if (destination === 'dm') {
+    if (target === 'whiteboard') {
+      setActivePrimaryNav('home'); // or whiteboards
+      createWhiteboardExperience();
+      return;
+    }
+
+    if (target === 'dm') {
       setActivePrimaryNav('home');
       createDmExperience();
       return;
     }
 
+    // Products that act as Right Sidebar Panels or Overlays:
     setProductMode('compose');
     setRightSidebarOpen(true);
 
-    switch (destination) {
+    switch (target) {
       case 'room':
         setActivePrimaryNav('home');
         setRoomState('lobby');
@@ -13693,6 +13611,7 @@ Rules:
         setActivePrimaryNav('home');
         setActiveRightTab('tasks');
         break;
+      case 'schedule':
       case 'calendar':
         setActivePrimaryNav('home');
         setActiveRightTab('calendar');
@@ -13711,8 +13630,12 @@ Rules:
         break;
       case 'assistant':
       case 'more':
+      case 'web reading':
+      case 'deep research':
+      case 'file management':
         setActivePrimaryNav('inbox');
         setActiveRightTab('assistant');
+        setIsVoiceCommandMode(true);
         break;
       default:
         setActiveRightTab('chat');
@@ -27655,67 +27578,31 @@ You can recommend task creations on the board.`;
           </div>
 
           {workspaceLauncherOpen && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999] w-[254px] rounded-xl border border-gray-200 bg-white shadow-[0_24px_50px_-30px_rgba(15,23,42,0.65)] p-2.5">
-              <div className="text-[11px] font-semibold text-gray-700 px-1 pb-1.5">Choose Workspace</div>
-              <div className="grid grid-cols-2 gap-1.5">
+            <div className="absolute right-full top-0 mr-4 z-[9999] w-[180px] bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 overflow-hidden origin-right animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between px-3 py-2 mb-1 border-b border-slate-50">
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Create New</span>
+                <button onClick={() => setWorkspaceLauncherOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
+                  <X size={14} />
+                </button>
+              </div>
+              <div className="space-y-0.5">
                 {[
-                  { key: 'whiteboard', label: 'Whiteboard', icon: LayoutGrid },
                   { key: 'compose', label: 'Compose', icon: FileText },
-                  { key: 'deck', label: 'Deck', icon: Presentation },
-                  { key: 'sheets', label: 'Sheets', icon: ListOrdered },
-                  { key: 'dms', label: 'DMs', icon: MessageSquare },
-                  { key: 'dashboard', label: 'Dashboard', icon: Home },
+                  { key: 'deck', label: 'Deck', icon: MonitorPlay },
+                  { key: 'sheet', label: 'Sheet', icon: Table },
+                  { key: 'room', label: 'Room', icon: Video },
+                  { key: 'whiteboard', label: 'Whiteboard', icon: PenTool },
                 ].map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => launchWorkspaceFromMiniPlus(key)}
-                    className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[11px] text-gray-700 hover:bg-violet-50 hover:border-violet-200 inline-flex items-center gap-1.5"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-colors text-left font-medium group"
                   >
-                    <Icon size={12} />
+                    <Icon size={16} strokeWidth={2} className="text-slate-400 group-hover:text-violet-500 transition-colors" />
                     {label}
                   </button>
                 ))}
-              </div>
-
-              <div className="mt-2 border-t border-gray-100 pt-2">
-                <div className="text-[10px] uppercase tracking-wide text-gray-400 px-1">Icon style</div>
-                <div className="mt-1 flex items-center gap-1">
-                  {['solid', 'soft', 'outline'].map((styleKey) => (
-                    <button
-                      key={styleKey}
-                      type="button"
-                      onClick={() => setWorkspaceLauncherIconStyle(styleKey)}
-                      className={`px-2 py-1 rounded text-[10px] border ${workspaceLauncherIconStyle === styleKey ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
-                    >
-                      {styleKey}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-2 text-[10px] uppercase tracking-wide text-gray-400 px-1">Icon size</div>
-                <div className="mt-1 flex items-center gap-1">
-                  {['sm', 'md', 'lg'].map((sizeKey) => (
-                    <button
-                      key={sizeKey}
-                      type="button"
-                      onClick={() => setWorkspaceLauncherIconSize(sizeKey)}
-                      className={`px-2 py-1 rounded text-[10px] border ${workspaceLauncherIconSize === sizeKey ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
-                    >
-                      {sizeKey.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-2 text-[10px] uppercase tracking-wide text-gray-400 px-1">Icon color</div>
-                <div className="mt-1 px-1">
-                  <input
-                    type="color"
-                    value={workspaceLauncherIconColor}
-                    onChange={(event) => setWorkspaceLauncherIconColor(event.target.value)}
-                    className="h-8 w-full rounded-md border border-gray-200 bg-white cursor-pointer"
-                  />
-                </div>
               </div>
             </div>
           )}

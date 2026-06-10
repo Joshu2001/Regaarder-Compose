@@ -39,11 +39,11 @@ export default function RegaarderComposeLanding({ onLaunch }) {
 
   return (
     <div className="w-full h-full relative overflow-hidden bg-white" style={{ fontFamily: "Inter, system-ui, -apple-system, sans-serif" }}>
-      {/* Vibrant Blurred Mesh Background */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-blue-400/40 mix-blend-multiply filter blur-[100px] animate-blob" />
-        <div className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-purple-400/40 mix-blend-multiply filter blur-[100px] animate-blob animation-delay-2000" />
-        <div className="absolute -bottom-[20%] left-[20%] w-[80%] h-[80%] rounded-full bg-pink-400/40 mix-blend-multiply filter blur-[100px] animate-blob animation-delay-4000" />
+      {/* Subtle Blurred Mesh Background */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-40">
+        <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-blue-300/30 mix-blend-multiply filter blur-[100px] animate-blob" />
+        <div className="absolute top-[20%] -right-[10%] w-[60%] h-[60%] rounded-full bg-purple-300/30 mix-blend-multiply filter blur-[100px] animate-blob animation-delay-2000" />
+        <div className="absolute -bottom-[20%] left-[20%] w-[80%] h-[80%] rounded-full bg-pink-300/30 mix-blend-multiply filter blur-[100px] animate-blob animation-delay-4000" />
       </div>
 
       <div className="w-full h-full flex flex-col items-center justify-center p-8 overflow-y-auto thin-scrollbar relative z-10">
@@ -114,50 +114,7 @@ export default function RegaarderComposeLanding({ onLaunch }) {
         </div>
       </div>
 
-      {/* Floating + New Button Side Panel */}
-      <div className="absolute right-6 top-1/2 -translate-y-1/2 z-50 flex flex-col items-end gap-3">
-        
-        {/* Dropdown Menu */}
-        <div 
-          className={`bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 overflow-hidden transition-all duration-300 origin-right ${
-            showNewMenu ? 'opacity-100 scale-100 translate-x-0' : 'opacity-0 scale-95 translate-x-4 pointer-events-none'
-          }`}
-          style={{ width: '180px' }}
-        >
-          <div className="flex items-center justify-between px-3 py-2 mb-1 border-b border-slate-50">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Create New</span>
-            <button onClick={() => setShowNewMenu(false)} className="text-slate-400 hover:text-slate-700">
-              <X size={14} />
-            </button>
-          </div>
-          <div className="space-y-0.5">
-            {products.slice(0, 5).map((product, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setShowNewMenu(false);
-                  onLaunch?.({ type: 'action', name: product.title });
-                }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-colors text-left font-medium"
-              >
-                <product.icon size={15} strokeWidth={2} className="text-slate-400" />
-                {product.title}
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {/* Floating Action Button */}
-        <button
-          onClick={() => setShowNewMenu(!showNewMenu)}
-          className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center gap-0.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 hover:scale-105 active:scale-95 ${
-            showNewMenu ? 'bg-slate-800 text-white shadow-slate-800/20' : 'bg-white text-violet-600 hover:shadow-violet-600/20 border border-slate-100'
-          }`}
-        >
-          <Plus size={22} strokeWidth={2.5} className={showNewMenu ? 'rotate-45 transition-transform duration-300' : 'transition-transform duration-300'} />
-          <span className={`text-[10px] font-bold ${showNewMenu ? 'text-slate-300' : 'text-slate-500'}`}>New</span>
-        </button>
-      </div>
 
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes blob {
