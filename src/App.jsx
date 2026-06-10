@@ -2378,6 +2378,8 @@ export default function App() {
   const isVoiceCommandModeRef = useRef(false);
   const [voiceCommandBuffer, setVoiceCommandBuffer] = useState('');
   const voiceCommandBufferRef = useRef('');
+  const commandModeActivatedAtRef = useRef(0);
+  const commandModeLastInputAtRef = useRef(0);
   const [slashMenu, setSlashMenu] = useState({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
   const slashMenuRef = useRef(null);
   const slashMenuContainerRef = useRef(null);
@@ -5940,30 +5942,63 @@ export default function App() {
         }
       }
 
-      const fullSpeechText = (finalTranscript + interimTranscript).trim();
-      if (fullSpeechText) {
-        const commandCheck = detectCommandPrefix(fullSpeechText);
-        if (commandCheck.matched || isVoiceCommandModeRef.current) {
-          if (!isVoiceCommandModeRef.current) {
-            setIsVoiceCommandMode(true);
-            isVoiceCommandModeRef.current = true;
-          }
-        }
-      }
+          const fullSpeechText = (finalTranscript + interimTranscript).trim();
+          if (fullSpeechText) {
+            const commandCheck = detectCommandPrefix(fullSpeechText);
+            if (commandCheck.matched || isVoiceCommandModeRef.current) {
+              if (!isVoiceCommandModeRef.current) {
+                setIsVoiceCommandMode(true);
+                isVoiceCommandModeRef.current = true;
+                commandModeActivatedAtRef.current = Date.now();
+              }
 
-      if (isVoiceCommandModeRef.current) {
-        voiceSilenceTimerRef.current = setTimeout(() => {
-          shouldExecuteCommandRef.current = true;
-          if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-            try {
-              mediaRecorderRef.current.stop();
-            } catch (err) {
-              console.warn('Failed to stop mediaRecorder on silence:', err);
+              const candidateInstruction = commandCheck.matched ? commandCheck.remaining : fullSpeechText;
+              const normalizedInstruction = normalizeVoiceCommandText(candidateInstruction);
+              if (normalizedInstruction) {
+                commandModeLastInputAtRef.current = Date.now();
+                setVoiceCommandBuffer((prev) => {
+                  const previous = normalizeVoiceCommandText(prev);
+                  if (!previous) {
+                    voiceCommandBufferRef.current = normalizedInstruction;
+                    return normalizedInstruction;
+                  }
+                  if (previous.toLowerCase() === normalizedInstruction.toLowerCase() || previous.toLowerCase().endsWith(normalizedInstruction.toLowerCase())) {
+                    voiceCommandBufferRef.current = previous;
+                    return previous;
+                  }
+                  const combined = `${previous} ${normalizedInstruction}`.trim();
+                  voiceCommandBufferRef.current = combined;
+                  return combined;
+                });
+                setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || normalizedInstruction}`);
+              } else {
+                setLiveSpeechInterimText('Command: speak instructions...');
+              }
             }
           }
-          voiceSilenceTimerRef.current = null;
-        }, 1500);
-      }
+
+          if (isVoiceCommandModeRef.current) {
+            voiceSilenceTimerRef.current = setTimeout(() => {
+              const normalizedBuffered = normalizeVoiceCommandText(voiceCommandBufferRef.current || '');
+              const commandAge = Date.now() - commandModeActivatedAtRef.current;
+              const hasActionableCommand = normalizedBuffered.length >= 4;
+
+              if (!hasActionableCommand && commandAge < 6500) {
+                voiceSilenceTimerRef.current = null;
+                return;
+              }
+
+              shouldExecuteCommandRef.current = true;
+              if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+                try {
+                  mediaRecorderRef.current.stop();
+                } catch (err) {
+                  console.warn('Failed to stop mediaRecorder on silence:', err);
+                }
+              }
+              voiceSilenceTimerRef.current = null;
+            }, COMMAND_SILENCE_MS);
+          }
     };
 
     recognition.onstart = () => {
@@ -8132,10 +8167,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
         showToast(`AI generation failed: ${res.error}`);
         if (liveContainer) {
           if (type === 'table') {
-            const lowerPrompt = String(prompt || '').toLowerCase();
-                        const tableHtml = (lowerPrompt.includes('messi') && lowerPrompt.includes('2012'))
-                          ? '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Competition</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Goals</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">La Liga</td><td style="border:1px solid #e2e8f0;padding:10px 14px;">50</td></tr><tr style="background:#f8fafc;"><td style="border:1px solid #e2e8f0;padding:10px 14px;">Champions League</td><td style="border:1px solid #e2e8f0;padding:10px 14px;">14</td></tr><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Copa del Rey</td><td style="border:1px solid #e2e8f0;padding:10px 14px;">3</td></tr></tbody></table>'
-                          : '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
+            const tableHtml = '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
             liveContainer.className = 'ai-preview-block';
             liveContainer.setAttribute('contenteditable', 'false');
             liveContainer.setAttribute('data-block-type', type);
@@ -8250,10 +8282,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       const liveContainer = document.getElementById(containerId);
       if (liveContainer) {
         if (type === 'table') {
-          const lowerPrompt = String(prompt || '').toLowerCase();
-                      const tableHtml = (lowerPrompt.includes('messi') && lowerPrompt.includes('2012'))
-                        ? '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Competition</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Goals</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">La Liga</td><td style="border:1px solid #e2e8f0;padding:10px 14px;">50</td></tr><tr style="background:#f8fafc;"><td style="border:1px solid #e2e8f0;padding:10px 14px;">Champions League</td><td style="border:1px solid #e2e8f0;padding:10px 14px;">14</td></tr><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Copa del Rey</td><td style="border:1px solid #e2e8f0;padding:10px 14px;">3</td></tr></tbody></table>'
-                        : '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
+          const tableHtml = '<table style="border-collapse:collapse;width:100%;border:1px solid #e2e8f0;margin:16px 0;"><thead><tr style="background:#f1f5f9;color:#334155;"><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Item</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Value</th><th style="border:1px solid #e2e8f0;padding:10px 14px;text-align:left;">Notes</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:10px 14px;">Row 1</td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td><td style="border:1px solid #e2e8f0;padding:10px 14px;"></td></tr></tbody></table>';
           liveContainer.className = 'ai-preview-block';
           liveContainer.setAttribute('contenteditable', 'false');
           liveContainer.setAttribute('data-block-type', type);
@@ -11637,6 +11666,9 @@ Rules:
     'command'
   ];
 
+  const WAKE_WORD_PATTERN = /\b(?:hey\s+orb|orb\s+command|hey\s+gemini|hey\s+ai|ai\s+command)\b[:,]?/i;
+  const COMMAND_SILENCE_MS = 2600;
+
   const ESCAPE_PREFIXES = [
     'write',
     'dictate',
@@ -11664,6 +11696,11 @@ Rules:
         const remaining = cleaned.slice(prefix.length).replace(/^[:\s,.-]+/, "").trim();
         return { matched: true, prefix, remaining };
       }
+    }
+    const wakeMatch = cleaned.match(WAKE_WORD_PATTERN);
+    if (wakeMatch && typeof wakeMatch.index === 'number') {
+      const remaining = cleaned.slice(wakeMatch.index + wakeMatch[0].length).replace(/^[:\s,.-]+/, '').trim();
+      return { matched: true, prefix: wakeMatch[0].trim(), remaining };
     }
     return { matched: false };
   };
@@ -11725,7 +11762,9 @@ Rules:
             setIsVoiceCommandMode(false);
             isVoiceCommandModeRef.current = false;
             setVoiceCommandBuffer('');
-            voiceCommandBufferRef.current = '';
+              voiceCommandBufferRef.current = '';
+              commandModeActivatedAtRef.current = 0;
+              commandModeLastInputAtRef.current = 0;
             setLiveSpeechInterimText('Command cancelled');
             showToast('Voice command cancelled');
             setTimeout(() => {
@@ -11757,25 +11796,26 @@ Rules:
             // Check command triggers
             const commandCheck = detectCommandPrefix(cleanedText);
             
-            if (commandCheck.matched || isVoiceCommandModeRef.current) {
-              if (!isVoiceCommandModeRef.current) {
-                setIsVoiceCommandMode(true);
-                isVoiceCommandModeRef.current = true;
-              }
-              const candidateInstruction = commandCheck.matched ? commandCheck.remaining : cleanedText;
-              const newInstruction = normalizeVoiceCommandText(candidateInstruction);
-              if (!newInstruction) {
-                setLiveSpeechInterimText('Command: speak instructions...');
-                return;
-              }
-              setVoiceCommandBuffer((prev) => {
-                const previous = normalizeVoiceCommandText(prev);
-                const combined = `${previous}${previous ? ' ' : ''}${newInstruction}`.trim();
-                voiceCommandBufferRef.current = combined;
-                return combined;
-              });
-              setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || newInstruction}`);
-            } else {
+              if (commandCheck.matched || isVoiceCommandModeRef.current) {
+                if (!isVoiceCommandModeRef.current) {
+                  setIsVoiceCommandMode(true);
+                  isVoiceCommandModeRef.current = true;
+                  commandModeActivatedAtRef.current = Date.now();
+                }
+                const candidateInstruction = commandCheck.matched ? commandCheck.remaining : cleanedText;
+                const newInstruction = normalizeVoiceCommandText(candidateInstruction);
+                if (!newInstruction) {
+                  setLiveSpeechInterimText('Command: speak instructions...');
+                  return;
+                }
+                commandModeLastInputAtRef.current = Date.now();
+                setVoiceCommandBuffer((prev) => {
+                  const previous = normalizeVoiceCommandText(prev);
+                  const combined = `${previous}${previous ? ' ' : ''}${newInstruction}`.trim();
+                  voiceCommandBufferRef.current = combined;
+                  return combined;
+                });
+                setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || newInstruction}`);
               // Normal transcription
               setLiveSpeechInterimText(cleanedText);
               if (voiceTargetRef.current === 'document') {
@@ -11802,18 +11842,22 @@ Rules:
               }
             }
           }, 800);
-        } else {
-          if (isVoiceCommandModeRef.current) {
-            shouldExecuteCommandRef.current = true;
-          }
-          if (isVoiceActiveRef.current) {
+          } else {
             if (isVoiceCommandModeRef.current) {
-              setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || 'speak instructions...'}`);
-            } else {
-              setLiveSpeechInterimText('Listening... start speaking');
+              const normalizedBuffered = normalizeVoiceCommandText(voiceCommandBufferRef.current || '');
+              const commandAge = Date.now() - commandModeActivatedAtRef.current;
+              if (normalizedBuffered.length >= 4 || commandAge >= 6500) {
+                shouldExecuteCommandRef.current = true;
+              }
+            }
+            if (isVoiceActiveRef.current) {
+              if (isVoiceCommandModeRef.current) {
+                setLiveSpeechInterimText(`Command: ${voiceCommandBufferRef.current || 'speak instructions...'}`);
+              } else {
+                setLiveSpeechInterimText('Listening... start speaking');
+              }
             }
           }
-        }
       } else {
         console.warn('Gemini transcription failed:', result.error || 'unknown error');
         const fallbackTranscript = String(interimTranscriptRef.current || '').trim();
@@ -11847,22 +11891,28 @@ Rules:
       if (isVoiceActiveRef.current) {
         setLiveSpeechInterimText('Listening... start speaking');
       }
-    } finally {
-      if ((!isVoiceActiveRef.current || shouldExecuteCommandRef.current) && isVoiceCommandModeRef.current) {
-        const finalCommand = normalizeVoiceCommandText(voiceCommandBufferRef.current.trim());
-        if (finalCommand) {
-          showToast('Executing AI voice command...');
-          handleAISubmit(finalCommand, { source: 'compose' });
-        } else {
-          showToast('No actionable command detected. Try: Hey Orb add a table of monthly sales.');
+      } finally {
+        if ((!isVoiceActiveRef.current || shouldExecuteCommandRef.current) && isVoiceCommandModeRef.current) {
+          const finalCommand = normalizeVoiceCommandText(voiceCommandBufferRef.current.trim());
+          if (finalCommand) {
+            showToast('Executing AI voice command...');
+            handleAISubmit(finalCommand, { source: 'compose' });
+          } else if (isVoiceActiveRef.current) {
+            shouldExecuteCommandRef.current = false;
+            setLiveSpeechInterimText('Command: speak instructions...');
+            return;
+          } else {
+            showToast('No actionable command detected. Try: Hey Orb add a table of monthly sales.');
+          }
+          setIsVoiceCommandMode(false);
+          isVoiceCommandModeRef.current = false;
+          setVoiceCommandBuffer('');
+          voiceCommandBufferRef.current = '';
+          commandModeActivatedAtRef.current = 0;
+          commandModeLastInputAtRef.current = 0;
+          shouldExecuteCommandRef.current = false;
         }
-        setIsVoiceCommandMode(false);
-        isVoiceCommandModeRef.current = false;
-        setVoiceCommandBuffer('');
-        voiceCommandBufferRef.current = '';
-        shouldExecuteCommandRef.current = false;
       }
-    }
   };
 
   const toggleVoiceRecording = async (targetMode = voiceTarget) => {
@@ -11941,7 +11991,9 @@ Rules:
       setIsVoiceCommandMode(false);
       isVoiceCommandModeRef.current = false;
       setVoiceCommandBuffer('');
-      voiceCommandBufferRef.current = '';
+        voiceCommandBufferRef.current = '';
+        commandModeActivatedAtRef.current = 0;
+        commandModeLastInputAtRef.current = 0;
       
       // Set voice active immediately so startChunk doesn't bail
       setIsVoiceActive(true);
@@ -24490,7 +24542,9 @@ You can recommend task creations on the board.`;
                     setIsVoiceCommandMode(false);
                     isVoiceCommandModeRef.current = false;
                     setVoiceCommandBuffer('');
-                    voiceCommandBufferRef.current = '';
+        voiceCommandBufferRef.current = '';
+        commandModeActivatedAtRef.current = 0;
+        commandModeLastInputAtRef.current = 0;
                   }}
                   onPointerDown={(event) => {
                     event.preventDefault();
@@ -24507,7 +24561,9 @@ You can recommend task creations on the board.`;
                     setIsVoiceCommandMode(false);
                     isVoiceCommandModeRef.current = false;
                     setVoiceCommandBuffer('');
-                    voiceCommandBufferRef.current = '';
+        voiceCommandBufferRef.current = '';
+        commandModeActivatedAtRef.current = 0;
+        commandModeLastInputAtRef.current = 0;
                   }}
                   className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
                 >
@@ -27684,4 +27740,8 @@ You can recommend task creations on the board.`;
     </div>
   );
 }
+
+
+
+
 
