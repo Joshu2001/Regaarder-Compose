@@ -6019,12 +6019,30 @@ export default function App() {
                 return;
               }
 
-              shouldExecuteCommandRef.current = true;
-              if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-                try {
-                  mediaRecorderRef.current.stop();
-                } catch (err) {
-                  console.warn('Failed to stop mediaRecorder on silence:', err);
+              if (hasActionableCommand) {
+                showToast('Executing AI voice command...');
+                handleAISubmit(normalizedBuffered, { source: 'compose' });
+                setIsVoiceCommandMode(false);
+                isVoiceCommandModeRef.current = false;
+                setVoiceCommandBuffer('');
+                voiceCommandBufferRef.current = '';
+                shouldExecuteCommandRef.current = false;
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+                  try {
+                    mediaRecorderRef.current.commandExecuted = true;
+                    mediaRecorderRef.current.stop();
+                  } catch (err) {
+                    console.warn('Failed to stop mediaRecorder on silence:', err);
+                  }
+                }
+              } else {
+                shouldExecuteCommandRef.current = true;
+                if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+                  try {
+                    mediaRecorderRef.current.stop();
+                  } catch (err) {
+                    console.warn('Failed to stop mediaRecorder on silence:', err);
+                  }
                 }
               }
               voiceSilenceTimerRef.current = null;
@@ -8111,7 +8129,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
     container.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;">
         <span style="width:16px;height:16px;border-radius:50%;border:2px solid #7c3aed;border-top-color:transparent;animation:spin 1s linear infinite;display:inline-block;"></span>
-        <span style="font-size:12px;font-weight:600;color:#6d28d9;">{composingText || \`AI is composing your \${type}...\`}</span>
+        <span style="font-size:12px;font-weight:600;color:#6d28d9;">${composingText || `AI is composing your ${type}...`}</span>
       </div>
     `;
     
@@ -12163,7 +12181,7 @@ Rules:
   ];
 
   const WAKE_WORD_PATTERN = /\b(?:hey\s+orb|orb\s+command|hey\s+gemini|hey\s+ai|ai\s+command)\b[:,]?/i;
-  const COMMAND_SILENCE_MS = 2600;
+  const COMMAND_SILENCE_MS = 1200;
 
   const ESCAPE_PREFIXES = [
     'write',
@@ -12213,6 +12231,13 @@ Rules:
   };
 
   const processAudioWithGemini = async () => {
+    const isCommandAlreadyExecuted = mediaRecorderRef.current && mediaRecorderRef.current.commandExecuted;
+    if (isCommandAlreadyExecuted) {
+      mediaRecorderRef.current.commandExecuted = false;
+      audioChunksRef.current.splice(0);
+      return;
+    }
+
     const chunks = audioChunksRef.current.splice(0);
     if (chunks.length === 0) return;
     
