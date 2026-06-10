@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { io } from 'socket.io-client';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { 
@@ -718,6 +719,114 @@ export default function App() {
   const [presentationWizardOpen, setPresentationWizardOpen] = useState(false);
   const [presentationWizardStep, setPresentationWizardStep] = useState(1);
   const [presPurpose, setPresPurpose] = useState('Investor Pitch');
+
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    socketRef.current = io('http://localhost:3001');
+    
+    socketRef.current.on('agent_state', (data) => {
+       showToast(`Agent: ${data.state}`);
+       setIsComposing(true);
+       setComposingText(data.state);
+       
+       if (data.progress === 100) {
+         setIsComposing(false);
+       }
+    });
+    
+    socketRef.current.on('agent_action', (step) => {
+       executeAgentAction(step);
+    });
+    
+    socketRef.current.on('agent_error', (data) => {
+       showToast(`Agent Error: ${data.message}`, 'error');
+       setIsComposing(false);
+    });
+    
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+    };
+  }, []);
+
+  const executeAgentAction = (action) => {
+     if (action.action === 'replace_selection' || action.action === 'format_selection') {
+        const restored = restoreSavedSelection();
+        if (action.action === 'replace_selection' && action.text) {
+           injectIntoSavedSelection(action.text);
+        } else if (action.action === 'format_selection' && action.format) {
+           document.execCommand(action.format, false, null);
+        }
+     } else if (action.action === 'insert_chart') {
+        const chartState = standardizeChartData(action.chartType || 'bar', action.data, action.title, action.headers);
+        insertInlineBlock('graph', { 'data-chart-data': JSON.stringify(chartState) });
+     } else if (action.action === 'insert_table') {
+        insertInlineBlock('table', { 'data-table-data': JSON.stringify(action.data) });
+     } else if (action.action === 'chat_message') {
+        setChatMessages(prev => [...prev, { id: Date.now(), sender: 'assistant', text: action.message }]);
+     } else if (action.action === 'insert_block') {
+        injectIntoSavedSelection(action.text);
+     }
+  };
+
+  const insertInlineBlock = (type, extraAttrs = {}) => {
+      const root = blankBodyRef.current;
+      if (!root) return;
+      const previewId = `prev_${Date.now()}`;
+      const container = document.createElement('div');
+      container.className = 'ai-preview-block';
+      container.setAttribute('id', previewId);
+      container.setAttribute('data-block-type', type);
+      container.setAttribute('contenteditable', 'false');
+      
+      for (const [k, v] of Object.entries(extraAttrs)) container.setAttribute(k, v);
+      
+      const restored = restoreSavedSelection();
+      let range = getEditorSelectionRange();
+      if (range && root.contains(range.commonAncestorContainer)) {
+        if (!range.collapsed) range.deleteContents();
+        range.insertNode(container);
+      } else {
+        root.appendChild(container);
+      }
+      const spacer = document.createElement('p');
+      spacer.innerHTML = '<br>';
+      container.parentNode.insertBefore(spacer, container.nextSibling);
+      setDocBodyHtml(root.innerHTML);
+      
+      setTimeout(() => {
+        if (window.refreshChartBlock && type === 'graph') {
+          renderBlockInPreview(previewId, type, '');
+          window.refreshChartBlock(previewId);
+        } else {
+          renderBlockInPreview(previewId, type, '');
+        }
+      }, 50);
+  };
+
+  const handleAgentOSVoiceCommand = async (intentText) => {
+    if (!socketRef.current) return;
+    setIsComposing(true);
+    setComposingText('Initializing Agent OS...');
+    
+    let selectionText = savedSelectionRef.current ? savedSelectionRef.current.toString().trim() : '';
+    if (!selectionText && selectedEditorTextRef.current) {
+      selectionText = selectedEditorTextRef.current.trim();
+    }
+    
+    let nearbyParagraphs = '';
+    const root = blankBodyRef.current;
+    if (root) {
+       nearbyParagraphs = root.innerText.slice(0, 1500); 
+    }
+    
+    const context = {
+      selection: selectionText,
+      nearbyParagraphs,
+    };
+    
+    socketRef.current.emit('start_agent_task', { intent: intentText, context });
+  };
   const [presAudience, setPresAudience] = useState('Investors');
   const [presLength, setPresLength] = useState('10 Slides');
   const [presStyle, setPresStyle] = useState('Modern');
@@ -12387,7 +12496,7 @@ Rules:
         const finalCommand = normalizeVoiceCommandText(voiceCommandBufferRef.current.trim());
         if (finalCommand) {
           showToast('Executing AI voice command...');
-          handleAISubmit(finalCommand, { source: 'compose' });
+          handleAgentOSVoiceCommand(finalCommand);
         } else {
           showToast('No actionable command detected. Try: Hey Orb add a table of monthly sales.');
         }
