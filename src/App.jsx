@@ -6085,7 +6085,10 @@ export default function App() {
           const fullSpeechText = (finalTranscript + interimTranscript).trim();
           if (fullSpeechText) {
             const commandCheck = detectCommandPrefix(fullSpeechText);
-            if (commandCheck.matched || isVoiceCommandModeRef.current) {
+            const hasSelection = Boolean(String(window.getSelection?.()?.toString?.() || selectedEditorTextRef.current || savedSelectionRef.current?.toString?.() || '').trim());
+            const looksLikeIntent = /\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|übersetze|uebersetze|replace|delete|remove|set\s+title|make\s+all\s+headings|bold|italic|underline|chart|graph|plot|list|table|pie|bar|line|heatmap)\b/i.test(fullSpeechText);
+
+            if (commandCheck.matched || looksLikeIntent || hasSelection || isVoiceCommandModeRef.current) {
               if (!isVoiceCommandModeRef.current) {
                 setIsVoiceCommandMode(true);
                 isVoiceCommandModeRef.current = true;
@@ -12399,8 +12402,9 @@ Rules:
             // Check command triggers
             const commandCheck = detectCommandPrefix(cleanedText);
             const looksLikeIntent = /\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|übersetze|uebersetze|replace|delete|remove|set\s+title|make\s+all\s+headings|bold|italic|underline|chart|graph|plot|list|table|pie|bar|line|heatmap)\b/i.test(cleanedText);
+            const hasSelection = Boolean(String(window.getSelection?.()?.toString?.() || selectedEditorTextRef.current || savedSelectionRef.current?.toString?.() || '').trim());
             
-            if (commandCheck.matched || looksLikeIntent || isVoiceCommandModeRef.current) {
+            if (commandCheck.matched || looksLikeIntent || hasSelection || isVoiceCommandModeRef.current) {
               if (!isVoiceCommandModeRef.current) {
                 setIsVoiceCommandMode(true);
                 isVoiceCommandModeRef.current = true;

@@ -6,7 +6,7 @@ Available actions:
 - extract_table: If they want to chart/graph or summarize an existing table in the document.
 - generate_chart: If they ask for a pie, bar, line, or heatmap chart.
 - format_text: If they ask to bold, italicize, underline, or format as list.
-- translate: If they ask to translate text.
+- translate: If they ask to translate text, or if their command is just the name of a language (e.g., "Chinese", "Chinese traditional", "French", "Spanish").
 - summarize: If they ask for a summary.
 - rewrite: If they ask to rewrite, proofread, or improve text.
 - create_table: If they ask to generate a brand new table from scratch.
