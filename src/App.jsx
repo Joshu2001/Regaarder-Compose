@@ -19310,6 +19310,15 @@ You can recommend task creations on the board.`;
               </button>
               <button
                 type="button"
+                onClick={toggleDocumentImmersiveMode}
+                className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}
+                title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
+                aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
+              >
+                {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
+              </button>
+              <button
+                type="button"
                 onClick={() => openShareModal(activeDocId || documents[0]?.id)}
                 className="bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-2"
               >
@@ -19356,12 +19365,12 @@ You can recommend task creations on the board.`;
             </div>
           </header>
 
-          <div className="flex-1 min-h-0 p-4 flex gap-4">
-            <section className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col overflow-y-auto thin-scrollbar">
-              <div className="mx-auto w-full max-w-[980px] pb-4">
+          <div className={`flex-1 min-h-0 flex gap-4 ${isSheetsMode ? '' : 'p-4'}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#FAFAFC]' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
+              <div className={`${isSheetsMode ? 'w-full h-full flex flex-col' : 'mx-auto w-full max-w-[980px] pb-4'}`}>
                 {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)]">
-                    <div className="px-4 py-3 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
+                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col border-r border-gray-200">
+                    <div className="px-4 py-3 border-b border-gray-200 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
                       {['Data', 'Insert', 'Analyze', 'Automate', 'AI'].map((tab) => (
                         <button
                           key={tab}
@@ -19471,7 +19480,7 @@ You can recommend task creations on the board.`;
                         <div key={col} className="h-8 flex items-center justify-center border-r border-gray-100 last:border-r-0">{col}</div>
                       ))}
                     </div>
-                    <div className="max-h-[440px] overflow-y-auto thin-scrollbar">
+                    <div className="flex-1 overflow-y-auto thin-scrollbar">
                       <div className="grid grid-cols-[48px_1fr]">
                         <div className="border-r border-gray-100 bg-[#FAFAFC]">
                           {Array.from({ length: activeSheetGrid.rows }, (_, idx) => idx + 1).map((num) => (
