@@ -1,4 +1,4 @@
-const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-pro', 'gemini-1.5-pro'];
+const FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-pro'];
 const ENV_KEY_CANDIDATES = ['GEMINI_API_KEY', 'VITE_GEMINI_DEMO_API_KEY'];
 
 const resolveApiKey = () => {
@@ -67,7 +67,7 @@ const resolveModelCandidates = async (apiKey, options = {}) => {
       ? payload.models
           .filter((model) => Array.isArray(model?.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
           .map((model) => String(model?.name || '').replace(/^models\//, '').trim())
-          .filter((name) => name.startsWith('gemini-'))
+            .filter((name) => name.startsWith('gemini-2.5'))
       : [];
 
     const candidateSet = new Set([...dynamic, ...FALLBACK_MODELS]);
