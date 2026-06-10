@@ -5833,7 +5833,7 @@ export default function App() {
     recognition.interimResults = true;
     recognition.lang = resolveSpeechLocale(currentLanguage);
 
-    recognition.onresult = (event) => {
+    recognition.onresult = async (event) => {
       if (isMicMutedRef.current) {
         return;
       }
@@ -5912,8 +5912,22 @@ export default function App() {
       }
 
       if (finalTranscript.trim()) {
-        routeTranscriptToTarget(finalTranscript.trim(), 'final');
-        interimTranscriptRef.current = finalTranscript.trim();
+        const normalizedFinal = finalTranscript.trim();
+        const looksLikeVoiceIntent = /\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|übersetze|uebersetze|replace|delete|remove|set\s+title|make\s+all\s+headings)\b/i.test(normalizedFinal);
+        const hasSelection = Boolean(String(window.getSelection?.()?.toString?.() || selectedEditorTextRef.current || savedSelectionRef.current?.toString?.() || '').trim());
+
+        if (looksLikeVoiceIntent) {
+          showToast('Voice intent recognized. Executing command...');
+          await handleAISubmit(normalizedFinal, {
+            source: 'compose',
+            forceDocBuild: true,
+            selectionScoped: hasSelection,
+            skipCommandEngine: false,
+          });
+        } else {
+          routeTranscriptToTarget(normalizedFinal, 'final');
+        }
+        interimTranscriptRef.current = normalizedFinal;
         pendingInterimTranscriptRef.current = '';
         if (interimCommitTimerRef.current) {
           clearTimeout(interimCommitTimerRef.current);
@@ -10665,6 +10679,12 @@ Generate the updated output according to the instruction. Preserve layout and ta
     const translateMatch = lower.match(/translate\s+(?:the\s+entire\s+document|entire\s+document|all\s+text|this\s+document)\s+(?:to|into)\s+([a-z\- ]+)/i);
     if (translateMatch?.[1]) return { kind: 'translate_document', language: String(translateMatch[1]).trim() };
 
+    const translateSelectionMatch = lower.match(/translate\s+(?:selected\s+text|this\s+paragraph|this\s+sentence|this\s+text|highlighted\s+section)\s+(?:to|into|in)\s+([a-z\- ]+)/i);
+    if (translateSelectionMatch?.[1]) return { kind: 'translate_selection', language: String(translateSelectionMatch[1]).trim() };
+
+    const genericTranslateMatch = prompt.match(/\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|übersetze|uebersetze)\b[\s\S]{0,80}\b(?:to|into|in|en|a|al|au|an|auf|para)\s+([a-zA-Z\u00C0-\u017F\-\s]{2,40})/i);
+    if (genericTranslateMatch?.[1]) return { kind: 'translate_auto_scope', language: String(genericTranslateMatch[1]).trim() };
+
     return null;
   }, []);
 
@@ -10730,7 +10750,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
 
     return false;
-  }, [callGemini, computeDocumentOutline, computeDocumentStats, replaceEntireCompositionText]);
+  }, [callGemini, computeDocumentOutline, computeDocumentStats, injectIntoSavedSelection, replaceEntireCompositionText]);
 
   // Function to process AI prompt and generate structured output
   const handleAISubmit = async (promptText, options = {}) => {
@@ -10786,7 +10806,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
     else if (lowerPrompt.includes('image') || lowerPrompt.includes('picture') || lowerPrompt.includes('photo')) detectedBlockType = 'image';
     else if (lowerPrompt.includes('bullet') || lowerPrompt.includes('list')) detectedBlockType = 'bullets';
     else if (lowerPrompt.includes('proofread') || lowerPrompt.includes('improve') || lowerPrompt.includes('polish')) detectedBlockType = 'proofread';
-    else if (lowerPrompt.includes('translate')) detectedBlockType = 'translate';
     else if (lowerPrompt.includes('schedule') || lowerPrompt.includes('timeline') || lowerPrompt.includes('checklist')) detectedBlockType = 'schedule';
     else if (lowerPrompt.includes('icon') || lowerPrompt.includes('emoji')) detectedBlockType = 'icon';
     else if (lowerPrompt.includes('shape') || lowerPrompt.includes('rectangle') || lowerPrompt.includes('circle') || lowerPrompt.includes('triangle') || lowerPrompt.includes('diamond')) detectedBlockType = 'shapes';
@@ -27728,6 +27747,9 @@ You can recommend task creations on the board.`;
     </div>
   );
 }
+
+
+
 
 
 
