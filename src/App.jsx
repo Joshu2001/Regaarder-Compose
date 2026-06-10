@@ -20975,6 +20975,11 @@ You can recommend task creations on the board.`;
       )}
 
       {/* 2. Main Editor Area */}
+      {productMode === 'landing' ? (
+        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+          <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
+        </div>
+      ) : (
       <div className="flex-1 flex flex-col min-w-0 bg-white relative">
         
         {/* Top Header */}
@@ -24425,9 +24430,6 @@ You can recommend task creations on the board.`;
               </div>
             </div>
           )}
-          {productMode === 'landing' ? (
-            <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
-          ) : (
           <div className={activeRightTab === 'whiteboard' ? 'opacity-0 pointer-events-none select-none' : ''}>
           <div
             className="mx-auto"
@@ -25209,6 +25211,7 @@ You can recommend task creations on the board.`;
         </div>
         )}
       </div>
+      )}
 
       {!shareModalOpen && rightSidebarOpen && (
         <div
