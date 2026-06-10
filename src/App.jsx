@@ -693,6 +693,7 @@ export default function App() {
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
   const [productMode, setProductMode] = useState('landing');
+  const [aiPersona, setAiPersona] = useState(null);
   const [dmSearchQuery, setDmSearchQuery] = useState('');
   const [dmComposerValue, setDmComposerValue] = useState('');
   const [dmPendingAttachments, setDmPendingAttachments] = useState([]);
@@ -823,6 +824,7 @@ export default function App() {
     const context = {
       selection: selectionText,
       nearbyParagraphs,
+      persona: aiPersona,
     };
     
     socketRef.current.emit('start_agent_task', { intent: intentText, context });
@@ -13294,26 +13296,26 @@ Rules:
     setDocBodyHtml(targetDoc.bodyHtml || '');
   };
 
-  const createNewComposition = ({ silent = false } = {}) => {
+  const createNewComposition = ({ silent = false, initialHtml = '', initialTitle = '' } = {}) => {
     const newDoc = {
       id: Date.now() + Math.floor(Math.random() * 1000),
-      title: '',
+      title: initialTitle,
       subtitle: '',
       initiatives: [],
       appendedSections: [],
-      isBlank: true,
-      bodyHtml: '',
+      isBlank: !initialHtml && !initialTitle,
+      bodyHtml: initialHtml,
       pinned: false,
     };
 
     setDocuments((prev) => [...prev, newDoc]);
     setActiveDocId(newDoc.id);
-    setDocTitle('');
+    setDocTitle(initialTitle);
     setDocSubtitle('');
-    setIsBlankDocument(true);
+    setIsBlankDocument(!initialHtml && !initialTitle);
     setAppendedSections([]);
     setInitiatives([]);
-    setDocBodyHtml('');
+    setDocBodyHtml(initialHtml);
     setLastComposeRun(null);
     setLeftSidebarOpen(true);
     trackMemoryAction('document', silent ? 'Created new blank composition (auto)' : 'Created new blank composition', {
@@ -13329,12 +13331,12 @@ Rules:
     setCreationPickerOpen(true);
   };
 
-  const createComposeExperience = () => {
+  const createComposeExperience = (options = {}) => {
     setCreationPickerOpen(false);
     setProductMode('compose');
     setLeftSidebarOpen(true);
     setActiveDocView('document');
-    createNewComposition();
+    createNewComposition(options);
   };
 
   const createDeckExperience = () => {
@@ -13581,6 +13583,78 @@ Rules:
 
   const openLandingWorkspace = (destination) => {
     setCreationPickerOpen(false);
+
+    if (typeof destination === 'object' && destination !== null) {
+      if (destination.type === 'action') {
+        if (destination.name === 'Data Mining') {
+          setActivePrimaryNav('home');
+          createSheetsExperience();
+          return;
+        } else if (destination.name === 'Web Reading') {
+          setActivePrimaryNav('drafts');
+          createComposeExperience({ initialTitle: 'Web Article Summary', initialHtml: '<p>Paste the URL of the article you want me to read and summarize...</p>' });
+          return;
+        } else if (destination.name === 'Deep Research') {
+          setActivePrimaryNav('drafts');
+          createComposeExperience({ initialTitle: 'Research Report', initialHtml: '<h2 data-heading="h2">Abstract</h2><p>Provide a summary of the research goals here...</p><h2 data-heading="h2">Introduction</h2><p><br></p>' });
+          return;
+        } else if (destination.name === 'File Management') {
+          setActivePrimaryNav('drafts');
+          createComposeExperience({ initialTitle: 'Document Index', initialHtml: '<p>List and categorize your documents here...</p>' });
+          return;
+        }
+      } else if (destination.type === 'role') {
+         setActivePrimaryNav('drafts');
+         const role = destination.name;
+         let initialTitle = '';
+         let initialHtml = '';
+         let persona = 'Assistant';
+         
+         if (role === 'Product') { 
+           initialTitle = 'Product Requirements Document'; 
+           initialHtml = '<h2 data-heading="h2">Overview</h2><p>Describe the product goals...</p>'; 
+           persona = 'Senior Product Manager';
+         }
+         else if (role === 'Founder') { 
+           initialTitle = 'Business Strategy'; 
+           initialHtml = '<h2 data-heading="h2">Executive Summary</h2><p>Outline the pitch...</p>'; 
+           persona = 'Startup Strategy Advisor';
+         }
+         else if (role === 'Designer') { 
+           initialTitle = 'Design Brief'; 
+           initialHtml = '<h2 data-heading="h2">UX Goals</h2><p>Describe the user journey...</p>'; 
+           persona = 'UX/UI Design Assistant';
+         }
+         else if (role === 'Engineer') { 
+           initialTitle = 'Technical Design Document'; 
+           initialHtml = '<h2 data-heading="h2">Architecture Overview</h2><p>Detail the technical stack...</p>'; 
+           persona = 'Principal Software Engineer';
+         }
+         else if (role === 'Consultant') { 
+           initialTitle = 'Strategy Proposal'; 
+           initialHtml = '<h2 data-heading="h2">Current State Analysis</h2><p>Summarize findings...</p>'; 
+           persona = 'Management Consultant';
+         }
+         else if (role === 'Marketing/Sales') { 
+           initialTitle = 'Campaign Brief'; 
+           initialHtml = '<h2 data-heading="h2">Target Audience</h2><p>Define the segments...</p>'; 
+           persona = 'Growth Marketing Expert';
+         }
+         else if (role === 'Operations') { 
+           initialTitle = 'Process SOP'; 
+           initialHtml = '<h2 data-heading="h2">Standard Operating Procedure</h2><p>Step-by-step logistics...</p>'; 
+           persona = 'Operations Manager';
+         }
+         else {
+           initialTitle = 'Workspace';
+           initialHtml = '<p>Start creating...</p>';
+         }
+         
+         setAiPersona(persona);
+         createComposeExperience({ initialTitle, initialHtml });
+         return;
+      }
+    }
 
     if (destination === 'compose') {
       setActivePrimaryNav('drafts');
@@ -18185,7 +18259,7 @@ You can recommend task creations on the board.`;
                           )}
                         </article>
                       ))}
-                      <button type="button" onClick={() => openManageenTaskComposer(column.id)} className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-2 py-2 text-xs text-violet-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40">+ Add task</button>
+                      <button type="button" onClick={() => setCreationPickerOpen(true)} className="w-full rounded-xl border border-dashed border-slate-300 bg-white px-2 py-2 text-xs text-violet-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40">+ Add task</button>
                     </div>
                   </div>
                 ))}
@@ -18524,7 +18598,7 @@ You can recommend task creations on the board.`;
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input placeholder="Search" className="h-10 w-[220px] rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-violet-300" />
               </div>
-              <button type="button" onClick={() => openManageenTaskComposer('ideas')} className="h-10 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 inline-flex items-center gap-1.5"><Plus size={14} /> New task</button>
+              <button type="button" onClick={() => setCreationPickerOpen(true)} className="h-10 px-4 rounded-xl bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 inline-flex items-center gap-1.5"><Plus size={14} /> New task</button>
               <button type="button" onClick={() => {
                 const name = String(window.prompt('Team member name') || '').trim();
                 const email = String(window.prompt('Team member email') || '').trim();
@@ -18909,14 +18983,7 @@ You can recommend task creations on the board.`;
     );
   }
 
-  if (productMode === 'landing') {
-    return (
-      <RegaarderComposeLanding
-        onExit={createComposeExperience}
-        onLaunch={openLandingWorkspace}
-      />
-    );
-  }
+  // The landing mode now integrates with the main Compose view
 
   if (productMode === 'deck' || productMode === 'sheets') {
     return (
@@ -22185,136 +22252,6 @@ You can recommend task creations on the board.`;
               )}
             </div>
           </div>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                closeTransientMenus();
-                setOpenDropdown((prev) => (prev === 'bulletStyles' ? null : 'bulletStyles'));
-              }}
-              className="hover:text-gray-900"
-              title="Bullet presets"
-            >
-              <List size={15} className="text-gray-600" />
-            </button>
-            {openDropdown === 'bulletStyles' && (
-              <div className="absolute top-8 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1.5">
-                {bulletStyleOptions.map((style) => (
-                  <button
-                    key={style}
-                    type="button"
-                    onClick={() => {
-                      applyFormatCommand('insertUnorderedList');
-                      showToast(`Bullet style selected: ${style}`);
-                      setOpenDropdown(null);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                  >
-                    {style}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                closeTransientMenus();
-                setOpenDropdown((prev) => (prev === 'numberStyles' ? null : 'numberStyles'));
-              }}
-              className="hover:text-gray-900"
-              title="Numbering presets"
-            >
-              <ListOrdered size={15} className="text-gray-600" />
-            </button>
-            {openDropdown === 'numberStyles' && (
-              <div className="absolute top-8 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1.5">
-                {numberStyleOptions.map((style) => (
-                  <button
-                    key={style}
-                    type="button"
-                    onClick={() => {
-                      applyFormatCommand('insertOrderedList');
-                      showToast(`Number style selected: ${style}`);
-                      setOpenDropdown(null);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                  >
-                    {style}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                closeTransientMenus();
-                setOpenDropdown((prev) => (prev === 'lineSpacing' ? null : 'lineSpacing'));
-              }}
-              className="text-xs hover:text-gray-900"
-              title="Line spacing"
-            >
-              Line
-            </button>
-            {openDropdown === 'lineSpacing' && (
-              <div className="absolute top-8 left-0 z-[230] w-24 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1.5">
-                {lineSpacingOptions.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      showToast(`Line spacing set to ${value}`);
-                      setOpenDropdown(null);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                closeTransientMenus();
-                setOpenDropdown((prev) => (prev === 'paragraphSpacing' ? null : 'paragraphSpacing'));
-              }}
-              className="text-xs hover:text-gray-900"
-              title="Paragraph spacing"
-            >
-              Para
-            </button>
-            {openDropdown === 'paragraphSpacing' && (
-              <div className="absolute top-8 left-0 z-[230] w-28 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1.5">
-                {paragraphSpacingOptions.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      showToast(`Paragraph spacing set to ${value}px`);
-                      setOpenDropdown(null);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                  >
-                    {value}px
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => showToast('Signature tools opened')}
-            className="hover:text-gray-900"
-            title="Sign document"
-          >
-            <PenTool size={15} className="text-gray-600" />
-          </button>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="relative export-menu-container">
             <button
@@ -24488,6 +24425,9 @@ You can recommend task creations on the board.`;
               </div>
             </div>
           )}
+          {productMode === 'landing' ? (
+            <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
+          ) : (
           <div className={activeRightTab === 'whiteboard' ? 'opacity-0 pointer-events-none select-none' : ''}>
           <div
             className="mx-auto"
