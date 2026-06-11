@@ -15,7 +15,7 @@ import {
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
-  Hand, Eraser, MousePointer2, Bot, Highlighter
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -19408,7 +19408,7 @@ You can recommend task creations on the board.`;
                       <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
                         <button type="button" onClick={() => showToast('Undo not available in demo')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600"><Undo2 size={14} /></button>
                         <button type="button" onClick={() => showToast('Redo not available in demo')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600"><Redo2 size={14} /></button>
-                        <button type="button" onClick={() => showToast('Edit replay coming soon')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600" title="Edit replay"><History size={14} /></button>
+                        <button type="button" onClick={() => showToast('Edit replay coming soon')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600" title="Edit replay"><Clock size={14} /></button>
                         <button type="button" onClick={() => showToast('Save locally')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600" title="Save"><Save size={14} /></button>
                       </div>
                       <button type="button" onClick={() => showToast('Search')} className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600"><Search size={14} /></button>
