@@ -13345,8 +13345,7 @@ Rules:
     setDeckPromptChips(['Analyze this data', 'Create pivot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year']);
     setDeckCustomChip('');
     setDeckSlidesPanelOpen(true);
-    setRightSidebarOpen(true);
-    setActiveRightTab('assistant');
+    setRightSidebarOpen(false);
     showToast('Sheets workspace ready');
   };
 
@@ -19371,12 +19370,12 @@ You can recommend task creations on the board.`;
             </div>
           </header>
 
-          <div className={`flex-1 min-h-0 flex gap-4 ${isSheetsMode ? 'pt-4' : 'p-4'}`}>
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? '' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
-              <div className="mx-auto w-full max-w-[980px] flex flex-col pb-4 h-full">
+          <div className={`flex-1 min-h-0 flex gap-4 ${isSheetsMode ? '' : 'p-4'}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#FAFAFC]' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
+              <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'mx-auto w-full max-w-[980px] pb-4'}`}>
                 {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className="flex-1 rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)] flex flex-col">
-                    <div className="px-4 py-3 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
+                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative border-t border-gray-200">
+                    <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-3 text-xs text-gray-600">
                       {['Data', 'Insert', 'Analyze', 'Automate', 'AI'].map((tab) => (
                         <button
                           key={tab}
@@ -19478,19 +19477,19 @@ You can recommend task creations on the board.`;
                       />
                     </div>
                     <div
-                      className="grid border-b border-gray-100 bg-[#FAFAFC] text-[11px] text-gray-500"
+                      className="grid border-b border-gray-300 bg-slate-50 text-[11px] font-semibold text-slate-700"
                       style={{ gridTemplateColumns: `48px repeat(${activeSheetGrid.cols}, minmax(100px, 1fr))` }}
                     >
-                      <div className="h-8 border-r border-gray-100" />
+                      <div className="h-8 border-r border-gray-300" />
                       {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col) => (
-                        <div key={col} className="h-8 flex items-center justify-center border-r border-gray-100 last:border-r-0">{col}</div>
+                        <div key={col} className="h-8 flex items-center justify-center border-r border-gray-300 last:border-r-0">{col}</div>
                       ))}
                     </div>
-                    <div className="flex-1 overflow-y-auto thin-scrollbar">
+                    <div className="flex-1 overflow-y-auto thin-scrollbar relative">
                       <div className="grid grid-cols-[48px_1fr]">
-                        <div className="border-r border-gray-100 bg-[#FAFAFC]">
+                        <div className="border-r border-gray-300 bg-slate-50">
                           {Array.from({ length: activeSheetGrid.rows }, (_, idx) => idx + 1).map((num) => (
-                            <div key={num} className="h-9 border-b border-gray-100 text-[11px] text-gray-500 flex items-center justify-center">{num}</div>
+                            <div key={num} className="h-9 border-b border-gray-300 text-[11px] font-semibold text-slate-700 flex items-center justify-center">{num}</div>
                           ))}
                         </div>
                         <div
@@ -19506,7 +19505,7 @@ You can recommend task creations on the board.`;
                                   value={activeSheetGrid.cells?.[rowIndex]?.[colIndex] || ''}
                                   onFocus={() => setSelectedSheetCell({ row: rowIndex + 1, col: colIndex + 1 })}
                                   onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
-                                  className={`h-9 border-b border-r border-gray-100 px-2 text-xs bg-white focus:outline-none ${isSelected ? 'ring-1 ring-violet-300' : ''}`}
+                                  className={`h-9 border-b border-r border-gray-200 px-2 text-xs bg-white focus:outline-none ${isSelected ? 'ring-2 ring-violet-500 z-10' : ''}`}
                                   style={{
                                     fontFamily: sheetToolbarFont,
                                     fontSize: `${sheetToolbarSize}px`,
@@ -19521,58 +19520,16 @@ You can recommend task creations on the board.`;
                         </div>
                       </div>
                     </div>
-                    <div className="px-4 py-2 border-t border-gray-100 bg-white flex items-center gap-2 text-[11px]">
-                      {['Summary', 'Revenue', 'Expenses', 'Profit & Loss', 'Cash Flow', '+'].map((tab) => (
-                        <button key={tab} className={`px-2.5 py-1 rounded ${tab === 'Summary' ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'text-gray-500 hover:bg-gray-50'}`}>{tab}</button>
-                      ))}
-                    </div>
-                    <div className="px-4 py-3 border-t border-gray-100 bg-[#FAFAFC]">
-                      <div className="rounded-2xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-gray-500 flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => promptFileInputRef.current?.click()}
-                          className="w-5 h-5 rounded-full text-gray-400 hover:bg-gray-100 flex items-center justify-center"
-                          title="Attach files"
-                        >
-                          +
-                        </button>
-                        <span className="truncate flex-1">Ask anything about your data or tell Sheets what to do...</span>
-                        {['Analyze this data', 'Create plot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year'].map((chip) => (
-                          <button
-                            key={chip}
-                            type="button"
-                            onClick={() => {
-                              setDeckPromptInput(chip);
-                              setDeckPromptMinimized(false);
-                            }}
-                            className="hidden md:inline-flex px-2 py-1 rounded-full border border-gray-200 text-[10px] text-gray-500 hover:border-violet-300 hover:text-violet-700"
-                          >
-                            {chip}
-                          </button>
+                    <div className="px-4 py-2 border-t border-gray-200 bg-white flex items-center justify-between gap-2 text-[11px]">
+                      <div className="flex items-center gap-2">
+                        {['Summary', 'Revenue', 'Expenses', 'Profit & Loss', 'Cash Flow', '+'].map((tab) => (
+                          <button key={tab} className={`px-2.5 py-1 rounded ${tab === 'Summary' ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'text-gray-500 hover:bg-gray-50'}`}>{tab}</button>
                         ))}
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            await toggleVoiceRecording('chat');
-                          }}
-                          className="w-5 h-5 rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center"
-                          title="Voice prompt"
-                        >
-                          <Mic size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const basePrompt = deckPromptInput.trim() || 'Analyze this sheet and propose insights.';
-                            handleAISubmit(basePrompt, { source: 'chat', attachments: promptAttachments });
-                            setActiveRightTab(productMode === 'deck' ? 'assistant' : 'chat');
-                            setRightSidebarOpen(true);
-                          }}
-                          className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center"
-                          title="Send to AI"
-                        >
-                          <ArrowUp size={12} />
-                        </button>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                        <button className="hover:text-gray-800" title="Zoom out" onClick={() => showToast('Zoom out')}>-</button>
+                        <span className="w-10 text-center">100%</span>
+                        <button className="hover:text-gray-800" title="Zoom in" onClick={() => showToast('Zoom in')}>+</button>
                       </div>
                     </div>
                   </div>
@@ -19769,7 +19726,7 @@ You can recommend task creations on the board.`;
                     </div>
                   </div>
                 )}
-                {!deckPromptMinimized && !isComposing && (
+                {!deckPromptMinimized && !isComposing && !isSheetsMode && (
                   <form
                     className="mt-4 rounded-[24px] border border-violet-100 bg-gradient-to-br from-white via-violet-50/30 to-white p-3 shadow-[0_18px_40px_-28px_rgba(76,29,149,0.45)] cursor-grab active:cursor-grabbing"
                     style={{ transform: `translate(${deckPromptOffset.x}px, ${deckPromptOffset.y}px)` }}
@@ -20266,16 +20223,13 @@ You can recommend task creations on the board.`;
         <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
           <div className="relative">
             <div
-              onClick={() => setWorkspaceLauncherOpen((prev) => !prev)}
-              className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${workspaceLauncherOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+              className="group flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-gray-600"
+              onClick={() => {
+                setProductMode('landing');
+              }}
             >
-                <Plus
-                  className="transition-all"
-                  size={workspaceLauncherIconSize === 'sm' ? 16 : workspaceLauncherIconSize === 'lg' ? 24 : 20}
-                  strokeWidth={workspaceLauncherIconStyle === 'solid' ? 2.5 : workspaceLauncherIconStyle === 'soft' ? 1.7 : 2}
-                  style={{ color: workspaceLauncherIconColor, opacity: workspaceLauncherIconStyle === 'soft' ? 0.78 : 1 }}
-                />
-              <span className="text-[9px] font-semibold">New</span>
+              <Home className="transition-all" size={20} strokeWidth={2} />
+              <span className="text-[9px] font-semibold">Home</span>
             </div>
 
             {workspaceLauncherOpen && (
