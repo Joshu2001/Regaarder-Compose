@@ -1072,6 +1072,8 @@ export default function App() {
     { id: 'collab-maya', name: 'Maya', color: '#f97316', access: 'Commenter', x: 620, y: 340, online: true },
   ]);
   const [isWhiteboardPanning, setIsWhiteboardPanning] = useState(false);
+  const callRecognitionRef = useRef(null);
+  const coPilotRecognitionRef = useRef(null);
   const whiteboardCanvasRef = useRef(null);
   const whiteboardTemplateSourceInputRef = useRef(null);
   const commentDragRef = useRef(null);
@@ -19101,7 +19103,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       });
     };
 
-    const callRecognitionRef = useRef(null);
+    // Moved callRecognitionRef to top level
     
     const startCallSpeechRecognition = () => {
       if (isVoiceCallMuted || !isVoiceCallActive) return;
@@ -19186,7 +19188,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       }
     };
 
-    const coPilotRecognitionRef = useRef(null);
+    // Moved coPilotRecognitionRef to top level
     
     const toggleMeetingCoPilot = () => {
       setCoPilotActive(prev => {
