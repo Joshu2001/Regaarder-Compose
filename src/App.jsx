@@ -13530,6 +13530,2595 @@ Rules:
       createSheetsExperience();
       return;
     }
+    if (productMode === 'dm') {
+      createDmExperience();
+      return;
+    }
+    openCreationPicker();
+  };
+
+  const createDmExperience = () => {
+    enterFullscreen();
+    setCreationPickerOpen(false);
+    setProductMode('dm');
+    setRightSidebarOpen(false);
+    setLeftSidebarOpen(false);
+    setDmSearchQuery('');
+    setDmConversationTab('chat');
+    setDmComposerValue('');
+    setDmPendingAttachments([]);
+    setDmEmojiPickerOpen(false);
+    setDmFormatMenuOpen(false);
+    setDmComposerQuickMenuOpen(false);
+    setDmScheduleMenuOpen(false);
+    setDmThreadComposerValue('');
+    setDmActiveParentMessageId(null);
+    setDmActiveThreadId((prev) => prev || 'thread-beta-launch');
+    setDmProjectPanelOpen(true);
+    showToast('DM workspace ready');
+  };
+
+  const createManageenExperience = () => {
+    setCreationPickerOpen(false);
+    setProductMode('manageen');
+    setManageenActiveNav('Boards');
+    setRightSidebarOpen(false);
+    setLeftSidebarOpen(false);
+    if (rightPanelMaximized) {
+      setRightPanelMaximized(false);
+    }
+    showToast('Manageen workspace ready');
+  };
+
+  const openLandingWorkspace = (destination) => {
+    setCreationPickerOpen(false);
+
+    let target = destination;
+    if (typeof destination === 'object' && destination !== null) {
+      if (destination.type === 'action' || destination.type === 'product') {
+        target = destination.name.toLowerCase();
+      } else {
+        target = 'compose';
+      }
+    } else if (typeof destination === 'string') {
+      target = destination.toLowerCase();
+    } else {
+      target = 'compose';
+    }
+
+    if (target === 'compose') {
+      setActivePrimaryNav('drafts');
+      createComposeExperience();
+      return;
+    }
+
+    if (target === 'deck') {
+      setActivePrimaryNav('library');
+      createDeckExperience();
+      return;
+    }
+
+    if (target === 'sheet' || target === 'sheets' || target === 'data mining') {
+      setActivePrimaryNav('home');
+      createSheetsExperience();
+      return;
+    }
+
+    if (target === 'whiteboard') {
+      setActivePrimaryNav('home'); // or whiteboards
+      createWhiteboardExperience();
+      return;
+    }
+
+    if (target === 'dm') {
+      setActivePrimaryNav('home');
+      createDmExperience();
+      return;
+    }
+
+    // Products that act as Right Sidebar Panels or Overlays:
+    setProductMode('compose');
+    setRightSidebarOpen(true);
+
+    switch (target) {
+      case 'room':
+        setActivePrimaryNav('home');
+        setRoomState('lobby');
+        setActiveRightTab('room');
+        break;
+      case 'tasks':
+        setActivePrimaryNav('home');
+        setActiveRightTab('tasks');
+        break;
+      case 'schedule':
+      case 'calendar':
+        setActivePrimaryNav('home');
+        setActiveRightTab('calendar');
+        break;
+      case 'people':
+        setActivePrimaryNav('home');
+        setActiveRightTab('people');
+        break;
+      case 'memory':
+        setActivePrimaryNav('home');
+        setActiveRightTab('memory');
+        break;
+      case 'chat':
+        setActivePrimaryNav('inbox');
+        setActiveRightTab('chat');
+        break;
+      case 'assistant':
+      case 'more':
+      case 'web reading':
+      case 'deep research':
+      case 'file management':
+        setActivePrimaryNav('inbox');
+        setActiveRightTab('assistant');
+        setIsVoiceCommandMode(true);
+        break;
+      default:
+        setActiveRightTab('chat');
+        break;
+    }
+  };
+
+  const requestCloseDocument = (docId) => {
+    setCloseConfirmDocId(docId);
+    setOpenDocMenuId(null);
+  };
+
+  const confirmCloseDocument = () => {
+    if (!closeConfirmDocId) {
+      return;
+    }
+
+    const remaining = documents.filter((doc) => doc.id !== closeConfirmDocId);
+    if (!remaining.length) {
+      setCloseConfirmDocId(null);
+      createNewComposition();
+      return;
+    }
+
+    setDocuments(remaining);
+    const nextActive = remaining[0];
+    setCloseConfirmDocId(null);
+    switchDocument(nextActive.id);
+  };
+
+  const openCreateWorkspaceModal = () => {
+    setWorkspaceModalMode('create');
+    setWorkspaceNameInput('');
+    setEditingWorkspaceId(null);
+    setWorkspaceModalOpen(true);
+    setOpenWorkspaceMenuId(null);
+  };
+
+  const openRenameWorkspaceModal = (workspace) => {
+    setWorkspaceModalMode('rename');
+    setWorkspaceNameInput(workspace.name);
+    setEditingWorkspaceId(workspace.id);
+    setWorkspaceModalOpen(true);
+    setOpenWorkspaceMenuId(null);
+  };
+
+  const submitWorkspaceModal = () => {
+    const trimmed = workspaceNameInput.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    if (workspaceModalMode === 'create') {
+      const letter = trimmed.charAt(0).toUpperCase();
+      setWorkspaces((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          name: trimmed,
+          letter,
+          colorClass: 'bg-slate-500',
+          hasDocuments: false,
+        },
+      ]);
+      showToast(`Workspace ${trimmed} created`);
+    } else if (editingWorkspaceId) {
+      setWorkspaces((prev) =>
+        prev.map((ws) =>
+          ws.id === editingWorkspaceId
+            ? { ...ws, name: trimmed, letter: trimmed.charAt(0).toUpperCase() }
+            : ws,
+        ),
+      );
+      showToast(`Workspace renamed to ${trimmed}`);
+    }
+
+    setWorkspaceModalOpen(false);
+    setWorkspaceNameInput('');
+    setEditingWorkspaceId(null);
+  };
+
+  const startRenameDocument = (doc) => {
+    setRenamingDocId(doc.id);
+    setRenameDocValue(doc.title?.trim() ? doc.title : '');
+    setOpenDocMenuId(null);
+  };
+
+  const commitRenameDocument = (docId) => {
+    const nextTitle = renameDocValue.trim();
+    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle } : doc)));
+    if (activeDocId === docId) {
+      setDocTitle(nextTitle);
+    }
+    setRenamingDocId(null);
+    setRenameDocValue('');
+    showToast('Document renamed');
+  };
+
+  const beginUnsavedDraftRename = () => {
+    const activeDoc = documents.find((doc) => doc.id === activeDocId);
+    const currentName = (activeDoc?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft';
+    setUnsavedDraftNameInput(currentName);
+    setIsEditingUnsavedDraftName(true);
+  };
+
+  const commitUnsavedDraftRename = () => {
+    const nextTitle = unsavedDraftNameInput.trim();
+    if (!nextTitle) {
+      setIsEditingUnsavedDraftName(false);
+      setUnsavedDraftNameInput('');
+      return;
+    }
+
+    if (activeDocId) {
+      setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
+    }
+    setDocTitle(nextTitle);
+    setIsEditingUnsavedDraftName(false);
+    setUnsavedDraftNameInput('');
+    showToast('Document renamed');
+  };
+
+  const getDocumentPayload = (docId = activeDocId) => {
+    const cleanBodyHtml = sanitizeHtmlForExport(docBodyHtml);
+    const fallback = {
+      title: docTitle,
+      subtitle: docSubtitle,
+      initiatives,
+      bodyHtml: cleanBodyHtml,
+      appendedSections,
+      isBlank: isBlankDocument,
+    };
+
+    if (!docId) {
+      return fallback;
+    }
+
+    const target = documents.find((doc) => doc.id === docId);
+    if (target) {
+      return {
+        ...target,
+        bodyHtml: sanitizeHtmlForExport(target.bodyHtml)
+      };
+    }
+    return fallback;
+  };
+
+  const sanitizeFileName = (value) => {
+    const trimmed = (value || '').trim();
+    const safe = trimmed.replace(/[<>:"/\\|?*]+/g, '-');
+    return safe || 'composition';
+  };
+
+  const triggerBlobDownload = (filename, blob) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCurrentDocumentAsWord = () => {
+    try {
+      showToast('Generating Word document...');
+      const cleanTitle = docTitle || 'Untitled Document';
+      const cleanSubtitle = docSubtitle ? `<h2 style="color: #4a5568; font-weight: normal; font-size: 18px; margin-bottom: 20px;">${docSubtitle}</h2>` : '';
+      const cleanBodyHtml = sanitizeHtmlForExport(docBodyHtml);
+      
+      const content = `
+        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+        <head>
+          <!--[if gte mso 9]>
+          <xml>
+            <w:WordDocument>
+              <w:View>Print</w:View>
+              <w:Zoom>100</w:Zoom>
+              <w:DoNotOptimizeForBrowser/>
+            </w:WordDocument>
+          </xml>
+          <![endif]-->
+          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+          <meta name="ProgId" content="Word.Document">
+          <meta name="Generator" content="Microsoft Word 15">
+          <title>${cleanTitle}</title>
+          <style>
+            body { font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.6; color: #2d3748; padding: 20px; }
+            h1 { color: #1a202c; font-size: 26px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 4px; }
+            hr { border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+          </style>
+        </head>
+        <body>
+          <h1 style="color: #1a202c; font-size: 26px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 4px;">${cleanTitle}</h1>
+          ${cleanSubtitle}
+          ${cleanSubtitle ? '<hr />' : ''}
+          <div>
+            ${cleanBodyHtml}
+          </div>
+        </body>
+        </html>
+      `;
+      const blob = new Blob(['\ufeff' + content], { type: 'application/msword' });
+      triggerBlobDownload(`${sanitizeFileName(docTitle)}.doc`, blob);
+      trackMemoryAction('export', 'Exported document', {
+        format: 'Word',
+        fileName: `${sanitizeFileName(docTitle)}.doc`,
+      });
+      showToast('Word document exported');
+    } catch (e) {
+      console.error('Word export failed', e);
+      showToast('Unable to export Word document');
+    }
+  };
+
+  const exportCurrentDocumentAsComposeFormat = () => {
+    try {
+      showToast('Exporting in Compose format...');
+      const composeData = {
+        format: 'regaarder-compose',
+        version: '1.0',
+        id: activeDocId,
+        title: docTitle,
+        subtitle: docSubtitle,
+        bodyHtml: docBodyHtml,
+        initiatives: initiatives,
+        appendedSections: appendedSections,
+        isBlank: isBlankDocument,
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(composeData, null, 2)], { type: 'application/json' });
+      triggerBlobDownload(`${sanitizeFileName(docTitle)}.compose.json`, blob);
+      trackMemoryAction('export', 'Exported document', {
+        format: 'Compose',
+        fileName: `${sanitizeFileName(docTitle)}.compose.json`,
+      });
+      showToast('Exported in Compose format');
+    } catch (e) {
+      console.error('Compose export failed', e);
+      showToast('Unable to export in Compose format');
+    }
+  };
+
+  const exportCurrentDocumentAsPdf = async (forcedFileName) => {
+    if (!documentCardRef.current) {
+      showToast('Document is not ready for export yet');
+      return false;
+    }
+
+    let printContainer = null;
+
+    try {
+      showToast('Generating PDF...');
+
+      printContainer = document.createElement('div');
+      printContainer.style.position = 'fixed';
+      printContainer.style.left = '-99999px';
+      printContainer.style.top = '0';
+      printContainer.style.width = '850px';
+      printContainer.style.background = '#ffffff';
+      printContainer.style.padding = '24px';
+
+      const clonedCard = documentCardRef.current.cloneNode(true);
+      
+      // Clean up preview banners from export
+      clonedCard.querySelectorAll('.ai-preview-action-banner').forEach(el => el.remove());
+      clonedCard.querySelectorAll('.ai-preview-block').forEach(el => {
+        const contentEl = el.querySelector('.ai-preview-content');
+        if (contentEl) {
+          const parent = el.parentNode;
+          while (contentEl.firstChild) {
+            parent.insertBefore(contentEl.firstChild, el);
+          }
+          el.remove();
+        } else {
+          el.remove();
+        }
+      });
+      clonedCard.querySelectorAll('.inline-ai-prompt-box').forEach(el => el.remove());
+      clonedCard.querySelectorAll('.inline-ai-icon-box').forEach(el => el.remove());
+
+      printContainer.appendChild(clonedCard);
+      document.body.appendChild(printContainer);
+
+      const canvas = await html2canvas(printContainer, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
+
+      const imageData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imageProps = pdf.getImageProperties(imageData);
+      const imageWidth = pageWidth;
+      const imageHeight = (imageProps.height * imageWidth) / imageProps.width;
+
+      let heightLeft = imageHeight;
+      let position = 0;
+
+      pdf.addImage(imageData, 'PNG', 0, position, imageWidth, imageHeight, undefined, 'FAST');
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imageHeight;
+        pdf.addPage();
+        pdf.addImage(imageData, 'PNG', 0, position, imageWidth, imageHeight, undefined, 'FAST');
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = forcedFileName || `${sanitizeFileName(docTitle)}.pdf`;
+      pdf.save(fileName);
+      trackMemoryAction('export', 'Exported document', {
+        format: 'PDF',
+        fileName,
+      });
+      showToast('PDF exported successfully');
+      return true;
+    } catch (_error) {
+      showToast('Unable to export PDF right now');
+      return false;
+    } finally {
+      if (printContainer && printContainer.parentNode) {
+        printContainer.parentNode.removeChild(printContainer);
+      }
+    }
+  };
+
+  const convertDocumentToDeck = async () => {
+    if (!blankBodyRef.current) return;
+    const docText = blankBodyRef.current.innerText;
+    if (!docText.trim()) {
+      showToast('Document is empty. Write some content first.');
+      return;
+    }
+
+    setIsComposing(true);
+    showToast('Converting document to presentation deck...');
+
+    const systemPrompt = `You are a Presentation Design Expert. Convert the provided document content into a structured slide presentation deck.
+Create slides representing a coherent story narrative flow (such as Intro, Problem, Solution, Market, Product, Business Model, Traction, Team, Financials, Outro).
+For each slide, fill in:
+- title: concise, slide title
+- subtitle: optional context/subtitle
+- headline: powerful take-away statement
+- blurb: 1-3 sentences or bullet points of narrative content explaining the slide detail
+- visualType: e.g. "hero statement", "data-backed narrative", "comparison grid", "metric callout"
+- layoutStyle: e.g. "cinematic split", "timeline flow", "contrast grid", "key metrics list"
+- motionCue: e.g. "Soft fade and stagger reveal", "slide in from right"
+- keyMetric: e.g. "85% conversion", "$1.2M ARR" or empty string
+- speakerNotes: optional presenter cues/notes
+- section: e.g. "Intro", "Problem", "Solution", "Market", "Product", "Business Model", "Traction", "Team", "Financials", "Outro"
+Respond with a JSON array of slide objects matching the schema.`;
+
+    const schema = {
+      type: 'object',
+      properties: {
+        slides: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              subtitle: { type: 'string' },
+              headline: { type: 'string' },
+              blurb: { type: 'string' },
+              visualType: { type: 'string' },
+              layoutStyle: { type: 'string' },
+              motionCue: { type: 'string' },
+              keyMetric: { type: 'string' },
+              speakerNotes: { type: 'string' },
+              section: { type: 'string' }
+            },
+            required: ['title', 'headline', 'blurb', 'visualType', 'layoutStyle', 'section']
+          }
+        }
+      },
+      required: ['slides']
+    };
+
+    try {
+      const response = await callGemini({
+        userPrompt: `Document content:\n${docText}`,
+        systemPrompt,
+        schema
+      });
+
+      if (response?.parsed?.slides) {
+        const slides = response.parsed.slides.map((slide, index) => {
+          const id = index + 1;
+          return {
+            id,
+            title: slide.title || `Slide ${id}`,
+            subtitle: slide.subtitle || '',
+            accent: 'from-indigo-500 to-violet-500',
+            designPresetKey: DECK_DESIGN_PRESETS[(id - 1) % DECK_DESIGN_PRESETS.length]?.key || DECK_DESIGN_PRESETS[0].key,
+            headline: slide.headline || '',
+            blurb: slide.blurb || '',
+            visualType: slide.visualType || 'hero statement',
+            layoutStyle: slide.layoutStyle || 'cinematic split',
+            motionCue: slide.motionCue || 'Soft fade and stagger reveal',
+            keyMetric: slide.keyMetric || '',
+            speakerNotes: slide.speakerNotes || '',
+            section: slide.section || '',
+            footer: 'AI Generated 繚 Convert to Deck'
+          };
+        });
+
+        setProductMode('deck');
+        setDeckTitle(docTitle || 'Converted Deck');
+        setDeckSlidesData(slides);
+        setActiveDeckSlideId(1);
+        setDeckZoomLevel(100);
+        setDeckToolbarFont('Inter');
+        setDeckSlidesPanelOpen(true);
+        setRightSidebarOpen(true);
+        setActiveRightTab('assistant');
+        showToast('Converted document to Deck successfully!');
+      } else {
+        showToast('Failed to convert: ' + (response?.error || 'Gemini returned invalid response.'));
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Error converting to Deck.');
+    } finally {
+      setIsComposing(false);
+    }
+  };
+
+  const downloadDocumentInFormat = async (format, docId = activeDocId) => {
+    const payload = getDocumentPayload(docId);
+    const fileBase = sanitizeFileName(payload.title);
+
+    if (format === 'PDF') {
+      return exportCurrentDocumentAsPdf(`${fileBase}.pdf`);
+    }
+
+    if (format === 'Compose (.cmp)') {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      triggerBlobDownload(`${fileBase}.cmp`, blob);
+      trackMemoryAction('export', 'Exported document', { format: 'Compose (.cmp)' });
+      return true;
+    }
+
+    if (format === 'Markdown') {
+      const markdown = `# ${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}\n\n${(payload.initiatives || []).map((item) => `- ${item.name} (${item.timeline})`).join('\n')}\n`;
+      triggerBlobDownload(`${fileBase}.md`, new Blob([markdown], { type: 'text/markdown' }));
+      trackMemoryAction('export', 'Exported document', { format: 'Markdown' });
+      return true;
+    }
+
+    if (format === 'Plain Text') {
+      const plain = `${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}`;
+      triggerBlobDownload(`${fileBase}.txt`, new Blob([plain], { type: 'text/plain' }));
+      trackMemoryAction('export', 'Exported document', { format: 'Plain Text' });
+      return true;
+    }
+
+    if (format === 'DOC (Word-compatible)') {
+      const docMarkup = `<html><head><meta charset="utf-8"/></head><body><h1>${payload.title || 'Untitled'}</h1><p>${payload.subtitle || ''}</p></body></html>`;
+      triggerBlobDownload(`${fileBase}.doc`, new Blob([docMarkup], { type: 'application/msword' }));
+      trackMemoryAction('export', 'Exported document', { format: 'DOC (Word-compatible)' });
+      return true;
+    }
+
+    if (format === 'HTML') {
+      const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body>${payload.bodyHtml || ''}</body></html>`;
+      triggerBlobDownload(`${fileBase}.html`, new Blob([html], { type: 'text/html' }));
+      trackMemoryAction('export', 'Exported document', { format: 'HTML' });
+      return true;
+    }
+
+    return false;
+  };
+
+  const openShareModal = (docId) => {
+    const target = getDocumentPayload(docId);
+    const base = `${window.location.origin}${window.location.pathname}`;
+    setShareTargetDocId(docId);
+    setShareTargetDocTitle(target.title?.trim() || 'Untitled composition');
+    setShareDestination('friends');
+    setShareFormat('Compose (.cmp)');
+    setShareAccess('Viewer');
+    setShareLink(`${base}?doc=${docId}&access=viewer`);
+    closeTransientMenus();
+    setRightSidebarOpen(false);
+    setShareModalOpen(true);
+    trackMemoryAction('share', 'Opened share modal', {
+      documentId: String(docId),
+    });
+  };
+
+  const handleShareModalConfirm = async () => {
+    if (shareDestination === 'downloads') {
+      const ok = await downloadDocumentInFormat(shareFormat, shareTargetDocId || activeDocId);
+      if (ok) {
+        trackMemoryAction('share', 'Shared to downloads', {
+          format: shareFormat,
+          access: shareAccess,
+        });
+        setShareModalOpen(false);
+      }
+      return;
+    }
+
+    if (shareDestination === 'apps') {
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: shareTargetDocTitle,
+            text: `Shared from Regaarder Compose (${shareAccess})`,
+            url: shareLink,
+          });
+          trackMemoryAction('share', 'Shared via native app sheet', {
+            access: shareAccess,
+            format: shareFormat,
+          });
+          showToast('Shared to app successfully');
+        } else {
+          await navigator.clipboard.writeText(shareLink);
+          showToast('Native app sharing not supported. Link copied instead.');
+        }
+      } catch (_error) {
+        showToast('Sharing to app was cancelled or unavailable');
+      }
+      setShareModalOpen(false);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      trackMemoryAction('share', 'Copied share link', {
+        access: shareAccess,
+      });
+      showToast(`Share link copied (${shareAccess})`);
+    } catch (_error) {
+      showToast('Could not copy link automatically');
+    }
+    setShareModalOpen(false);
+  };
+
+  const handleDocumentAction = (action, docId) => {
+    if (action === 'rename') {
+      const target = documents.find((doc) => doc.id === docId);
+      if (target) {
+        startRenameDocument(target);
+      }
+      return;
+    }
+
+    if (action === 'save') {
+      saveDocumentLocally();
+      setOpenDocMenuId(null);
+      return;
+    }
+
+    if (action === 'share') {
+      openShareModal(docId);
+      setOpenDocMenuId(null);
+      return;
+    }
+
+    if (action === 'pin') {
+      setDocuments((prev) =>
+        prev.map((doc) =>
+          doc.id === docId
+            ? {
+                ...doc,
+                pinned: !doc.pinned,
+              }
+            : doc,
+        ),
+      );
+      setOpenDocMenuId(null);
+      showToast('Pin state updated');
+      return;
+    }
+
+    if (action === 'close') {
+      requestCloseDocument(docId);
+    }
+  };
+
+  const applyFormatCommand = (command, value) => {
+    let range = getEditorSelectionRange();
+
+    if (!range && restoreSavedSelection()) {
+      range = getEditorSelectionRange();
+    }
+
+    if (!range) {
+      blankBodyRef.current?.focus();
+      return;
+    }
+
+    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
+      if (range && !range.collapsed) {
+        const selectedText = range.toString().trim();
+        if (selectedText) {
+          const type = command === 'insertUnorderedList' ? 'bullets' : 'numbered_list';
+          applyDirectSelectionAIAction(type, selectedText, range);
+          return;
+        }
+      }
+    }
+
+    if (command === 'fontSize') {
+      const parsedSize = Number(value);
+      const safeSize = Number.isFinite(parsedSize) ? Math.min(72, Math.max(10, parsedSize)) : editorSize;
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount) {
+        return;
+      }
+
+      const activeRange = selection.getRangeAt(0);
+      if (!isRangeInsideEditor(activeRange)) {
+        return;
+      }
+
+      const ancestor = activeRange.commonAncestorContainer;
+      const targetNode = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+      const insideTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
+      const insideSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+
+      if (insideTitle) {
+        setEditorSize(safeSize);
+        if (selection.rangeCount) {
+          savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
+        }
+        return;
+      }
+
+      if (insideSubtitle) {
+        setSubtitleSize(safeSize);
+        if (selection.rangeCount) {
+          savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
+        }
+        return;
+      }
+
+      if (activeRange.collapsed) {
+        const anchorNode = activeRange.startContainer;
+        const parentElement = anchorNode.nodeType === Node.ELEMENT_NODE
+          ? anchorNode
+          : anchorNode.parentElement;
+        if (parentElement && documentCardRef.current?.contains(parentElement)) {
+          const isContainer = parentElement === blankBodyRef.current || 
+                              parentElement.tagName === 'P' || 
+                              parentElement.tagName === 'DIV' || 
+                              parentElement.tagName === 'TD' ||
+                              parentElement.tagName === 'LI';
+          if (isContainer) {
+            const span = document.createElement('span');
+            span.style.fontSize = `${safeSize}px`;
+            span.appendChild(document.createTextNode('\u200B')); // zero-width space
+            activeRange.insertNode(span);
+            
+            const nextRange = document.createRange();
+            nextRange.setStart(span.firstChild, 1);
+            nextRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(nextRange);
+          } else {
+            parentElement.style.fontSize = `${safeSize}px`;
+          }
+        }
+      } else {
+        const wrapper = document.createElement('span');
+        wrapper.style.fontSize = `${safeSize}px`;
+
+        try {
+          activeRange.surroundContents(wrapper);
+        } catch (_error) {
+          const fragment = activeRange.extractContents();
+          wrapper.appendChild(fragment);
+          activeRange.insertNode(wrapper);
+        }
+
+        const nextRange = document.createRange();
+        nextRange.selectNodeContents(wrapper);
+        selection.removeAllRanges();
+        selection.addRange(nextRange);
+      }
+
+      if (selection.rangeCount) {
+        savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
+      }
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+      return;
+    }
+
+    document.execCommand(command, false, value);
+
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount) {
+      savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
+    }
+
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+
+    try {
+      setIsBoldActive(Boolean(document.queryCommandState('bold')));
+      setIsItalicActive(Boolean(document.queryCommandState('italic')));
+      setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
+      setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
+      setIsListActive(Boolean(document.queryCommandState('insertUnorderedList')));
+      
+      const ancestor = range.commonAncestorContainer;
+      const element = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+      if (element) {
+        if (titleEditableRef.current && titleEditableRef.current.contains(element)) {
+          setActiveFontSize(editorSize);
+        } else if (subtitleEditableRef.current && subtitleEditableRef.current.contains(element)) {
+          setActiveFontSize(subtitleSize);
+        } else {
+          const style = window.getComputedStyle(element);
+          const size = parseInt(style.fontSize, 10);
+          setActiveFontSize(size || 14);
+        }
+      }
+    } catch (_error) {
+      // noop
+    }
+  };
+
+  const addTaskFromInput = () => {
+    const trimmed = newTaskInput.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    setTasks((prev) => [...prev, { id: Date.now(), text: trimmed, completed: false, owner: newTaskOwner }]);
+    setNewTaskInput('');
+    trackMemoryAction('task', 'Added task', {
+      textLength: trimmed.length,
+    });
+    showToast('Task added');
+  };
+
+  const removeTask = (taskId) => {
+    setTasks((prev) => prev.filter((task) => task.id !== taskId));
+    showToast('Task removed');
+  };
+
+  const beginTaskEdit = (task) => {
+    setEditingTaskId(task.id);
+    setEditingTaskText(task.text || '');
+  };
+
+  const commitTaskEdit = (taskId) => {
+    const next = editingTaskText.trim();
+    if (!next) {
+      setEditingTaskId(null);
+      setEditingTaskText('');
+      return;
+    }
+    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, text: next } : task)));
+    setEditingTaskId(null);
+    setEditingTaskText('');
+    showToast('Task updated');
+  };
+
+  const formatTimeSlot = (hours24, minutes = 0) => `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+
+  const parseTimeSlot = (slot) => {
+    const match = String(slot || '').match(/(\d{1,2}):(\d{2})/);
+    if (!match) {
+      return { hours: 9, minutes: 0 };
+    }
+    return {
+      hours: Math.min(23, Math.max(0, Number(match[1] || 9))),
+      minutes: Math.min(59, Math.max(0, Number(match[2] || 0))),
+    };
+  };
+
+  const inferCategory = (text) => {
+    const value = String(text || '').toLowerCase();
+    if (/meeting|call|sync|interview|standup/.test(value)) return 'Meeting';
+    if (/review|report|draft|write|document|plan/.test(value)) return 'Work';
+    if (/doctor|gym|pay|bill|buy|pickup|family/.test(value)) return 'Personal';
+    return 'General';
+  };
+
+  const inferUrgency = (text, targetDate) => {
+    const value = String(text || '').toLowerCase();
+    if (/urgent|asap|immediately|today/.test(value)) return 'high';
+    if (/tomorrow|soon|next/.test(value)) return 'medium';
+    if (targetDate) {
+      const now = new Date();
+      const diffDays = Math.ceil((targetDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+      if (diffDays <= 1) return 'high';
+      if (diffDays <= 3) return 'medium';
+    }
+    return 'low';
+  };
+
+  const parseScheduleItem = (rawItem, index = 0) => {
+    const cleaned = String(rawItem || '').trim();
+    const normalized = cleaned.replace(/\bshhedule\b|\bshedule\b/gi, 'schedule').replace(/\bppm\b/gi, 'pm');
+
+    const explicitTimeMatch = normalized.match(/\bat\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?/i);
+    const timeWithMarkerMatch = normalized.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\b/i);
+    const timeMatch = explicitTimeMatch || timeWithMarkerMatch;
+    let hours = 9 + (index % 10);
+    let minutes = 0;
+    const hasExplicitTime = Boolean(timeMatch);
+    if (timeMatch) {
+      hours = Number(timeMatch[1] || hours);
+      minutes = Number(timeMatch[2] || 0);
+      const marker = String(timeMatch[3] || '').toLowerCase().replace(/\./g, '');
+      if (marker === 'pm' && hours < 12) hours += 12;
+      if (marker === 'am' && hours === 12) hours = 0;
+      if (!marker && hours <= 7 && explicitTimeMatch) {
+        hours += 12;
+      }
+      hours = Math.min(23, Math.max(0, hours));
+    }
+
+    const durationMatch = normalized.match(/(\d{1,3})\s*(m|min|mins|minute|minutes|h|hr|hrs|hour|hours)\b/i);
+    let durationMinutes = 60;
+    if (durationMatch) {
+      const amount = Number(durationMatch[1] || 60);
+      const unit = String(durationMatch[2] || 'm').toLowerCase();
+      durationMinutes = /h|hr|hrs|hour/.test(unit) ? amount * 60 : amount;
+    }
+
+    const monthRegex = /(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+[a-z]+)?\s+(\d{1,2})(?:[^\d]+(\d{4}))?/i;
+    const dateMatch = normalized.match(monthRegex);
+    let dueDate = null;
+    if (dateMatch) {
+      const monthNamesLookup = {
+        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+      };
+      const monthIndex = monthNamesLookup[String(dateMatch[1] || '').toLowerCase()];
+      const day = Number(dateMatch[2] || selectedCalendarDate.getDate());
+      const year = Number(dateMatch[3] || selectedCalendarDate.getFullYear());
+      if (!Number.isNaN(monthIndex) && !Number.isNaN(day)) {
+        dueDate = new Date(year, monthIndex, day, hours, minutes);
+      }
+    } else {
+      dueDate = new Date(selectedCalendarDate.getFullYear(), selectedCalendarDate.getMonth(), selectedCalendarDate.getDate(), hours, minutes);
+    }
+
+    const titleSource = normalized
+      .replace(/\b(schedule|create|add|set|plan)\b/gi, '')
+      .replace(/\bon\b.+$/i, '')
+      .replace(/\bat\b.+$/i, '')
+      .trim();
+
+    let title = titleSource;
+    if (/meeting|call|sync/i.test(normalized)) {
+      title = 'Meeting';
+    } else if (!title) {
+      title = `Task ${index + 1}`;
+    }
+
+    const category = inferCategory(normalized);
+    const urgency = inferUrgency(normalized, dueDate);
+
+    const slot = formatTimeSlot(hours, minutes);
+
+    const parsed = {
+      id: Date.now() + index + Math.floor(Math.random() * 1000),
+      slot,
+      timeExplicit: hasExplicitTime,
+      title,
+      summary: '',
+      steps: [],
+      category,
+      urgency,
+      durationMinutes,
+      dueDate: dueDate ? dueDate.toISOString() : null,
+      approved: false,
+      rawInput: cleaned,
+    };
+
+    return {
+      ...parsed,
+      original: {
+        slot: parsed.slot,
+        title: parsed.title,
+        summary: parsed.summary,
+        steps: parsed.steps,
+        category: parsed.category,
+        urgency: parsed.urgency,
+        durationMinutes: parsed.durationMinutes,
+        dueDate: parsed.dueDate,
+      },
+    };
+  };
+
+  const findBestAvailableSlot = (targetDate) => {
+    const pool = ['09:00', '11:00', '13:00', '15:00', '17:00', '19:00'];
+    const isSameDay = (iso) => {
+      if (!iso) return false;
+      const d = new Date(iso);
+      return d.getFullYear() === targetDate.getFullYear() && d.getMonth() === targetDate.getMonth() && d.getDate() === targetDate.getDate();
+    };
+    const busy = new Set([
+      ...scheduleOutput.filter((item) => isSameDay(item.dueDate)).map((item) => item.slot),
+      ...upcomingEvents.filter((item) => isSameDay(item.dueDate)).map((item) => item.slot),
+    ]);
+    return pool.find((slot) => !busy.has(slot)) || pool[0];
+  };
+
+  const enrichScheduleItemsWithAI = async (rawItems, fallbackItems) => {
+    const schema = {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              slot: { type: 'string' },
+              dueDateISO: { type: 'string' },
+              durationMinutes: { type: 'number' },
+              category: { type: 'string' },
+              urgency: { type: 'string' },
+              summary: { type: 'string' },
+              steps: { type: 'array', items: { type: 'string' } },
+            },
+          },
+        },
+      },
+    };
+
+    try {
+      const response = await callGemini({
+        userPrompt: rawItems.join('\n'),
+        systemPrompt: `Convert the schedule lines into structured JSON.\nRules:\n- Extract title, date/time, duration in minutes.\n- slot must be HH:MM 24-hour.\n- dueDateISO must be valid ISO datetime.\n- infer category as Meeting/Work/Personal/General.\n- urgency must be high/medium/low.\n- Keep summary concise.\n- Add useful step checklist when obvious.`,
+        schema,
+        attachments: scheduleAttachments,
+      });
+
+      const aiItems = response?.parsed?.items;
+      if (!Array.isArray(aiItems) || !aiItems.length) {
+        return fallbackItems;
+      }
+
+      return fallbackItems.map((base, index) => {
+        const ai = aiItems[index] || {};
+        const mergedDate = ai.dueDateISO ? new Date(ai.dueDateISO) : (base.dueDate ? new Date(base.dueDate) : null);
+        const nextDate = mergedDate && !Number.isNaN(mergedDate.getTime()) ? mergedDate : null;
+        const nextSlot = /\d{1,2}:\d{2}/.test(String(ai.slot || '')) ? String(ai.slot) : base.slot;
+        const next = {
+          ...base,
+          title: String(ai.title || base.title || '').trim() || base.title,
+          slot: nextSlot,
+          dueDate: nextDate ? nextDate.toISOString() : base.dueDate,
+          timeExplicit: /\d{1,2}:\d{2}/.test(String(ai.slot || '')) || base.timeExplicit,
+          durationMinutes: Number(ai.durationMinutes || base.durationMinutes || 60),
+          category: String(ai.category || base.category || 'General'),
+          urgency: ['high', 'medium', 'low'].includes(String(ai.urgency || '').toLowerCase()) ? String(ai.urgency).toLowerCase() : base.urgency,
+          summary: String(ai.summary || base.summary || ''),
+          steps: Array.isArray(ai.steps) ? ai.steps.filter(Boolean).map((step) => String(step)) : base.steps,
+        };
+
+        return {
+          ...next,
+          original: {
+            slot: next.slot,
+            title: next.title,
+            summary: next.summary,
+            steps: next.steps,
+            category: next.category,
+            urgency: next.urgency,
+            durationMinutes: next.durationMinutes,
+            dueDate: next.dueDate,
+          },
+        };
+      });
+    } catch (_error) {
+      return fallbackItems;
+    }
+  };
+
+  const formatEventSlotLabel = (event) => {
+    if (!event?.dueDate) {
+      return event?.slot ? `${event.slot}` : (event?.slotLabel || 'No time set');
+    }
+
+    const dateValue = new Date(event.dueDate);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
+    const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    const slotLabel = event.slot || formatTimeSlot(dateValue.getHours(), dateValue.getMinutes());
+
+    if (isSameDay(dateValue, today)) {
+      return `Today - ${slotLabel}`;
+    }
+    if (isSameDay(dateValue, tomorrow)) {
+      return `Tomorrow - ${slotLabel}`;
+    }
+    return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} - ${slotLabel}`;
+  };
+
+  const formatUpcomingHeaderDate = (dateValue) => {
+    const safeDate = dateValue instanceof Date ? dateValue : new Date();
+    const weekday = safeDate.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
+    const month = safeDate.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
+    return `${weekday} ${month} ${safeDate.getDate()}`;
+  };
+
+  const scheduleAgendaItems = useMemo(() => {
+    const parseSlotMinutes = (slot) => {
+      const raw = String(slot || '').trim();
+      if (!raw) {
+        return null;
+      }
+      let match = raw.match(/^(\d{1,2}):(\d{2})$/);
+      if (match) {
+        return Number(match[1]) * 60 + Number(match[2]);
+      }
+      match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (match) {
+        const meridian = String(match[3] || '').toUpperCase();
+        let hour = Number(match[1]) % 12;
+        if (meridian === 'PM') {
+          hour += 12;
+        }
+        return hour * 60 + Number(match[2]);
+      }
+      return null;
+    };
+
+    const normalized = [...(upcomingEvents || []), ...(scheduleOutput || [])]
+      .map((event, index) => {
+        const dueDate = event?.dueDate ? new Date(event.dueDate) : null;
+        const hasDate = dueDate instanceof Date && !Number.isNaN(dueDate.getTime());
+        const slotMinutes = parseSlotMinutes(event?.slot);
+        const fallback = new Date(selectedCalendarDate || new Date());
+        if (slotMinutes !== null) {
+          fallback.setHours(Math.floor(slotMinutes / 60), slotMinutes % 60, 0, 0);
+        } else {
+          fallback.setHours(9 + index, 0, 0, 0);
+        }
+
+        return {
+          ...event,
+          _sortDate: hasDate ? dueDate : fallback,
+        };
+      })
+      .sort((a, b) => a._sortDate - b._sortDate)
+      .slice(0, 6);
+
+    return normalized;
+  }, [scheduleOutput, selectedCalendarDate, upcomingEvents]);
+
+  const scheduleAiInsights = useMemo(() => {
+    const insights = [];
+    const agenda = scheduleAgendaItems;
+    if (!agenda.length) {
+      return ['No upcoming events yet. Paste tasks below and Compose AI will build a focused schedule.'];
+    }
+
+    const todaysEvents = agenda.filter((event) => {
+      if (!event?._sortDate) {
+        return false;
+      }
+      const now = new Date();
+      return event._sortDate.getFullYear() === now.getFullYear()
+        && event._sortDate.getMonth() === now.getMonth()
+        && event._sortDate.getDate() === now.getDate();
+    });
+
+    const todayDuration = todaysEvents.reduce((sum, event) => sum + Math.max(15, Number(event.durationMinutes || 60)), 0);
+    if (todayDuration >= 300) {
+      insights.push('Today is packed. Consider a 15-minute recovery buffer between deep-work blocks.');
+    }
+
+    const adjacentHighUrgency = agenda.filter((event) => String(event.urgency || '').toLowerCase() === 'high').length;
+    if (adjacentHighUrgency >= 3) {
+      insights.push('Three high-urgency items are competing. Reorder by impact to avoid context switching.');
+    }
+
+    const titleSignal = String(docTitle || '').trim().toLowerCase();
+    if (titleSignal) {
+      const hasLinkedEvent = agenda.some((event) => String(event.title || '').toLowerCase().includes(titleSignal.split(' ')[0] || ''));
+      if (hasLinkedEvent) {
+        insights.push('A scheduled item aligns with your active document. Keep it near your writing sprint.');
+      }
+    }
+
+    if (!insights.length) {
+      insights.push('Schedule balance looks healthy. Keep one flexible slot open for AI-assisted revisions.');
+    }
+
+    return insights.slice(0, 3);
+  }, [docTitle, scheduleAgendaItems]);
+
+  useEffect(() => {
+    // Expand schedule rail when full calendar panel is open; otherwise keep compact width.
+    if (activeRightTab === 'calendar' && rightSidebarOpen) {
+      const targetWidth = isScheduleCalendarExpanded ? 440 : 320;
+      if (rightSidebarWidth !== targetWidth) {
+        setRightSidebarWidth(targetWidth);
+      }
+    }
+  }, [activeRightTab, rightSidebarOpen, rightSidebarWidth, isScheduleCalendarExpanded]);
+
+  const convertTaskToSchedule = async (taskValue) => {
+    const taskText = typeof taskValue === 'string' ? taskValue : String(taskValue?.text || '');
+    const trimmed = taskText.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    let scheduleItem = parseScheduleItem(trimmed, scheduleOutput.length);
+    const targetDate = scheduleItem.dueDate ? new Date(scheduleItem.dueDate) : selectedCalendarDate;
+    if (!scheduleItem.timeExplicit) {
+      scheduleItem.slot = findBestAvailableSlot(targetDate);
+    }
+
+    const aiEnriched = await enrichScheduleItemsWithAI([trimmed], [scheduleItem]);
+    scheduleItem = aiEnriched[0] || scheduleItem;
+    if (typeof taskValue === 'object' && taskValue?.owner) {
+      scheduleItem.category = taskValue.owner === 'agent' ? 'Agent Task' : scheduleItem.category;
+    }
+
+    setScheduleOutput((prev) => [...prev, scheduleItem]);
+    setActiveRightTab('calendar');
+    setRightSidebarOpen(true);
+    trackMemoryAction('automation', 'Converted task to schedule', {
+      title: scheduleItem.title,
+    });
+    showToast('Task converted to schedule');
+  };
+
+  const convertMessyScheduleToPlan = async () => {
+    const rawItems = scheduleInput
+      .split(/\n|;/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (!rawItems.length) {
+      return;
+    }
+
+    let cleanItems = rawItems.map((item, index) => {
+      const parsed = parseScheduleItem(item, index);
+      if (!parsed.timeExplicit) {
+        const targetDate = parsed.dueDate ? new Date(parsed.dueDate) : selectedCalendarDate;
+        parsed.slot = findBestAvailableSlot(targetDate);
+      }
+      return parsed;
+    });
+
+    cleanItems = await enrichScheduleItemsWithAI(rawItems, cleanItems);
+
+    setScheduleOutput(cleanItems);
+    trackMemoryAction('automation', 'Converted raw schedule input', {
+      items: cleanItems.length,
+    });
+    showToast('Messy schedule converted to clean timeline');
+  };
+
+  const updateScheduleItem = (id, field, value) => {
+    setScheduleOutput((prev) => prev.map((item) => (
+      item.id === id ? { ...item, [field]: value } : item
+    )));
+  };
+
+  const undoScheduleItem = (id) => {
+    setScheduleOutput((prev) => prev.filter((item) => item.id !== id));
+    showToast('Removed from processed list');
+  };
+
+  const addScheduleStep = (id) => {
+    setScheduleOutput((prev) => prev.map((item) => (
+      item.id === id ? { ...item, steps: [...(item.steps || []), ''] } : item
+    )));
+  };
+
+  const updateScheduleStep = (id, stepIndex, value) => {
+    setScheduleOutput((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      const nextSteps = [...(item.steps || [])];
+      nextSteps[stepIndex] = value;
+      return { ...item, steps: nextSteps };
+    }));
+  };
+
+  const removeScheduleStep = (id, stepIndex) => {
+    setScheduleOutput((prev) => prev.map((item) => {
+      if (item.id !== id) return item;
+      return { ...item, steps: (item.steps || []).filter((_, idx) => idx !== stepIndex) };
+    }));
+  };
+
+  const approveScheduleItem = (id) => {
+    setScheduleOutput((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (!target) return prev;
+
+      setUpcomingEvents((existing) => [
+        {
+          id: Date.now() + Math.floor(Math.random() * 1000),
+          title: target.title,
+          slot: target.slot,
+          dueDate: target.dueDate || selectedCalendarDate.toISOString(),
+          category: target.category,
+          urgency: target.urgency,
+          durationMinutes: target.durationMinutes || 60,
+          slotLabel: formatEventSlotLabel(target),
+        },
+        ...existing,
+      ]);
+
+      showToast('Schedule item approved and added to upcoming events');
+      return prev.filter((item) => item.id !== id);
+    });
+  };
+
+  const beginPanelResize = (target, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const point = event.touches?.[0] || event;
+    if (!event.touches && event.button !== 0) {
+      return;
+    }
+    dragStateRef.current = {
+      startX: point.clientX,
+      startY: point.clientY,
+      leftWidth: leftSidebarWidth,
+      rightWidth: rightSidebarWidth,
+      promptX: promptOffset.x,
+      promptY: promptOffset.y,
+      miniPromptX: miniPromptOffset.x,
+      miniPromptY: miniPromptOffset.y,
+      dictationX: dictationOffset.x,
+      dictationY: dictationOffset.y,
+      deckPromptX: deckPromptOffset.x,
+      deckPromptY: deckPromptOffset.y,
+    };
+    setDragTarget(target);
+  };
+
+  useEffect(() => {
+    if (!dragTarget) {
+      return;
+    }
+
+    const handlePointerMove = (event) => {
+      const deltaX = event.clientX - dragStateRef.current.startX;
+
+      if (dragTarget === 'left') {
+        const nextLeftWidth = Math.min(380, Math.max(220, dragStateRef.current.leftWidth + deltaX));
+        setLeftSidebarWidth(nextLeftWidth);
+      }
+
+      if (dragTarget === 'right') {
+        const nextRightWidth = Math.min(520, Math.max(280, dragStateRef.current.rightWidth - deltaX));
+        setRightSidebarWidth(nextRightWidth);
+      }
+
+      if (dragTarget === 'prompt') {
+        const nextX = Math.min(620, Math.max(-620, dragStateRef.current.promptX + deltaX));
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextY = Math.min(320, Math.max(-540, dragStateRef.current.promptY - deltaY));
+        setPromptOffset({ x: nextX, y: nextY });
+      }
+
+      if (dragTarget === 'miniPrompt') {
+        const nextX = Math.min(840, Math.max(-20, dragStateRef.current.miniPromptX + deltaX));
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextY = Math.min(560, Math.max(-40, dragStateRef.current.miniPromptY + deltaY));
+        setMiniPromptOffset({ x: nextX, y: nextY });
+      }
+
+      if (dragTarget === 'dictation') {
+        const nextX = Math.min(840, Math.max(-20, dragStateRef.current.dictationX + deltaX));
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextY = Math.min(520, Math.max(-280, dragStateRef.current.dictationY + deltaY));
+        setDictationOffset({ x: nextX, y: nextY });
+      }
+
+      if (dragTarget === 'deckPrompt') {
+        const nextX = Math.min(220, Math.max(-220, dragStateRef.current.deckPromptX + deltaX));
+        const deltaY = event.clientY - dragStateRef.current.startY;
+        const nextY = Math.min(200, Math.max(-220, dragStateRef.current.deckPromptY + deltaY));
+        setDeckPromptOffset({ x: nextX, y: nextY });
+      }
+    };
+
+    const handlePointerUp = () => {
+      setDragTarget(null);
+    };
+
+    document.body.style.cursor = ['prompt', 'miniPrompt', 'dictation', 'deckPrompt'].includes(dragTarget) ? 'grabbing' : 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [dragTarget, deckPromptOffset.x, deckPromptOffset.y, dictationOffset.x, dictationOffset.y, leftSidebarWidth, miniPromptOffset.x, miniPromptOffset.y, promptOffset.x, promptOffset.y, rightSidebarWidth]);
+
+  // Helper function to generate calendar days
+  const generateCalendarDays = (month, year) => {
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+    
+    const days = [];
+    
+    // Previous month's trailing days
+    for (let i = firstDay - 1; i >= 0; i--) {
+      days.push({ day: daysInPrevMonth - i, isCurrentMonth: false });
+    }
+    
+    // Current month's days
+    for (let i = 1; i <= daysInMonth; i++) {
+      const isToday = new Date(year, month, i).toDateString() === new Date().toDateString();
+      days.push({ day: i, isCurrentMonth: true, isToday });
+    }
+    
+    // Next month's leading days
+    const remainingDays = 42 - days.length;
+    for (let i = 1; i <= remainingDays; i++) {
+      days.push({ day: i, isCurrentMonth: false });
+    }
+    
+    return days;
+  };
+
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const setCalendarView = (nextMonth, nextYear) => {
+    const boundedYear = Math.min(2029, Math.max(2026, nextYear));
+    const boundedMonth = Math.min(11, Math.max(0, nextMonth));
+    const preferredDay = selectedCalendarDate?.getDate?.() || 1;
+    const maxDay = new Date(boundedYear, boundedMonth + 1, 0).getDate();
+
+    setCalendarMonth(boundedMonth);
+    setCalendarYear(boundedYear);
+    setSelectedCalendarDate(new Date(boundedYear, boundedMonth, Math.min(preferredDay, maxDay)));
+  };
+
+  // Helper component for the Workspace icons in the sidebar
+  const WorkspaceIcon = ({ letter, colorClass }) => (
+    <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white ${colorClass}`}>
+      {letter}
+    </div>
+  );
+
+  const orderedDocuments = [...documents].sort((a, b) => {
+    if (!!a.pinned === !!b.pinned) {
+      return 0;
+    }
+    return a.pinned ? -1 : 1;
+  });
+
+  const canShowComposeActions = Boolean(
+    lastComposeRun
+    && lastComposeRun.documentId === activeDocId
+    && getPlainText(docBodyHtml).length
+  );
+  const deckSlides = deckSlidesData;
+  const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
+  const resolvedDeckSlideDesign = useMemo(() => {
+    const fallback = DECK_DESIGN_PRESETS[0];
+    if (!activeDeckSlide) {
+      return {
+        preset: fallback,
+        headline: 'The future of work is human + AI.',
+        blurb: 'An adaptive workspace that thinks with you, so you can create without limits.',
+        visualType: 'hero statement',
+        layoutStyle: 'cinematic split',
+        motionCue: 'Soft fade and stagger reveal',
+        keyMetric: '',
+        speakerNotes: '',
+        section: 'Opening',
+        footer: 'May 15, 2026',
+      };
+    }
+    const preset = DECK_DESIGN_PRESETS.find((item) => item.key === activeDeckSlide.designPresetKey)
+      || DECK_DESIGN_PRESETS[(Math.max(0, activeDeckSlide.id - 1)) % DECK_DESIGN_PRESETS.length]
+      || fallback;
+
+    return {
+      preset,
+      headline: activeDeckSlide.headline || `${activeDeckSlide.title || 'Original concept'} that earns attention`,
+      blurb: activeDeckSlide.blurb || `${activeDeckSlide.subtitle || 'Built for modern teams'} and crafted to be edited live.`,
+      visualType: activeDeckSlide.visualType || 'hero statement',
+      layoutStyle: activeDeckSlide.layoutStyle || 'cinematic split',
+      motionCue: activeDeckSlide.motionCue || 'Soft fade and stagger reveal',
+      keyMetric: activeDeckSlide.keyMetric || '',
+      speakerNotes: activeDeckSlide.speakerNotes || '',
+      section: activeDeckSlide.section || inferDeckStorySection(activeDeckSlide, Math.max(0, activeDeckSlide.id - 1), Math.max(1, deckSlides.length)),
+      footer: activeDeckSlide.footer || 'Original design 繚 Editable',
+    };
+  }, [activeDeckSlide, deckSlides.length]);
+
+  const deckIntelligence = useMemo(() => {
+    if (!deckSlides.length) {
+      return {
+        narrativeQuality: 'No slides yet',
+        pacingQuality: 'No pacing yet',
+        weakSlides: [],
+        audienceFit: 'Audience fit not available',
+        presentationSummary: 'Generate slides to see AI narrative diagnostics.',
+        suggestions: ['Generate a deck from your goal and source materials.'],
+        suggestedAdditions: ['Add market signal slide', 'Add proof/traction slide'],
+        relatedSources: [],
+        speakerNotes: 'Speaker notes will appear after deck generation.',
+      };
+    }
+
+    const withSections = deckSlides.map((slide, index) => ({
+      ...slide,
+      section: slide.section || inferDeckStorySection(slide, index, deckSlides.length),
+    }));
+    const uniqueSections = [...new Set(withSections.map((slide) => slide.section))];
+    const avgWords = withSections.reduce((acc, slide) => acc + String(slide.blurb || '').split(/\s+/).filter(Boolean).length, 0) / Math.max(1, withSections.length);
+    const weakSlides = withSections
+      .filter((slide) => String(slide.blurb || '').trim().length < 55 || String(slide.headline || '').trim().length < 12)
+      .slice(0, 4)
+      .map((slide) => `${slide.title}: strengthen emotional hook and proof.`);
+
+    const hasFinancialSignal = withSections.some((slide) => /revenue|cac|ltv|forecast|unit/i.test(`${slide.title} ${slide.headline} ${slide.blurb}`));
+    const narrativeQuality = `${Math.min(99, Math.round((uniqueSections.length / DECK_STORY_SECTIONS.length) * 100 + 15))}% coherent narrative flow`;
+    const pacingQuality = `${Math.max(62, 100 - Math.abs(withSections.length - 10) * 6)}% pacing balance`;
+    const suggestions = [];
+    if (weakSlides.length) suggestions.push('Strengthen weak slides with stronger hooks and concrete proof points.');
+    if (withSections.length > 12) suggestions.push('Compress to 8-10 slides for tighter executive pacing.');
+    if (!hasFinancialSignal) suggestions.push('Add one concise financial confidence slide for investor readiness.');
+    if (!suggestions.length) suggestions.push('Narrative quality is strong. Add a differentiator visual to increase memorability.');
+
+    const relatedSources = [...new Map([...promptAttachments, ...chatAttachments].map((item) => [item.id || item.name, item])).values()]
+      .slice(0, 5)
+      .map((item) => `${item.name} (${item.type || 'file'})`);
+
+    const activeNotes = activeDeckSlide?.speakerNotes?.trim();
+
+    return {
+      narrativeQuality,
+      pacingQuality,
+      weakSlides,
+      audienceFit: hasFinancialSignal ? 'Strong investor-fit narrative with quant signals.' : 'General audience fit detected. Add financial proof for investors.',
+      presentationSummary: `${deckSlides.length} slides across ${uniqueSections.length} narrative sections: ${uniqueSections.join(', ')}.`,
+      suggestions,
+      suggestedAdditions: ['Competitor comparison visual', 'Go-to-market timeline', 'Risk and mitigation slide'],
+      relatedSources,
+      speakerNotes: activeNotes || 'No speaker notes yet on this slide. Ask AI Assistant to create presenter notes.',
+    };
+  }, [activeDeckSlide?.speakerNotes, chatAttachments, deckSlides, promptAttachments]);
+
+  const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
+  const activeSheetGrid = sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+  const isSheetsMode = productMode === 'sheets';
+  const updateDeckSlideField = (slideId, field, value) => {
+    setDeckSlidesData((prev) => prev.map((slide) => (slide.id === slideId ? { ...slide, [field]: value } : slide)));
+  };
+
+  const generateOriginalDeckDesign = () => {
+    if (!activeDeckSlide?.id) {
+      return;
+    }
+    const randomPreset = DECK_DESIGN_PRESETS[Math.floor(Math.random() * DECK_DESIGN_PRESETS.length)] || DECK_DESIGN_PRESETS[0];
+    const conceptSeed = deckPromptInput.trim() || activeDeckSlide.title || 'New original concept';
+    const headline = `${conceptSeed.replace(/\.$/, '')}: a bold narrative direction`;
+    const blurb = `${activeDeckSlide.subtitle || 'Story-first slide'} with original visuals and editable layers for your team.`;
+
+    setDeckSlidesData((prev) => prev.map((slide) => {
+      if (slide.id !== activeDeckSlide.id) {
+        return slide;
+      }
+      return {
+        ...slide,
+        designPresetKey: randomPreset.key,
+        headline,
+        blurb,
+        footer: `Original concept 繚 ${new Date().toLocaleDateString()}`,
+      };
+    }));
+    showToast('Generated original slide design. You can edit headline and body directly.');
+  };
+
+  const applyDeckTemplate = (template, scope = 'slide') => {
+    if (!template) {
+      return;
+    }
+
+    const applyToSlide = (slide, index = 0, total = 1) => ({
+      ...slide,
+      designPresetKey: template.presetKey,
+      visualType: template.visualType,
+      layoutStyle: template.layoutStyle,
+      motionCue: template.motionCue,
+      section: slide.section || inferDeckStorySection(slide, index, total),
+      footer: `${template.label} 繚 Editable`,
+    });
+
+    if (scope === 'deck') {
+      setDeckSlidesData((prev) => prev.map((slide, index) => applyToSlide(slide, index, prev.length)));
+      showToast(`Applied ${template.label} to full deck`);
+      return;
+    }
+
+    if (!activeDeckSlide?.id) {
+      return;
+    }
+    setDeckSlidesData((prev) => prev.map((slide, index) => (
+      slide.id === activeDeckSlide.id ? applyToSlide(slide, index, prev.length) : slide
+    )));
+    showToast(`Applied ${template.label} to current slide`);
+  };
+
+  const addDeckSlide = () => {
+    const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
+    const preset = DECK_DESIGN_PRESETS[(nextId - 1) % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
+    const newSlide = {
+      id: nextId,
+      title: `Slide ${nextId}`,
+      subtitle: 'New talking point',
+      accent: 'from-violet-500 to-indigo-600',
+      designPresetKey: preset.key,
+      headline: `Original concept for Slide ${nextId}`,
+      blurb: 'Click and edit this text to shape your message.',
+      visualType: 'hero statement',
+      layoutStyle: 'cinematic split',
+      motionCue: 'Soft fade and stagger reveal',
+      keyMetric: '',
+      speakerNotes: '',
+      section: inferDeckStorySection({ title: `Slide ${nextId}` }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
+      footer: 'Original design 繚 Editable',
+    };
+    setDeckSlidesData((prev) => [...prev, newSlide]);
+    setActiveDeckSlideId(nextId);
+    showToast(`Slide ${nextId} created`);
+  };
+  const addWorksheet = () => {
+    const nextId = (sheetsData[sheetsData.length - 1]?.id || 0) + 1;
+    const worksheet = {
+      id: nextId,
+      title: `Worksheet ${nextId}`,
+      subtitle: 'Custom',
+    };
+    setSheetsData((prev) => [...prev, worksheet]);
+    setSheetGrids((prev) => ({
+      ...prev,
+      [nextId]: { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) },
+    }));
+    setActiveSheetId(nextId);
+    setSheetsTitle(worksheet.title);
+    showToast(`${worksheet.title} created`);
+  };
+  const toColumnLabel = (index) => {
+    let current = index + 1;
+    let label = '';
+    while (current > 0) {
+      const rem = (current - 1) % 26;
+      label = String.fromCharCode(65 + rem) + label;
+      current = Math.floor((current - 1) / 26);
+    }
+    return label;
+  };
+  const updateSheetCell = (sheetId, rowIndex, colIndex, value) => {
+    setSheetGrids((prev) => {
+      const target = prev[sheetId];
+      if (!target) return prev;
+      const nextCells = target.cells.map((row) => [...row]);
+      if (!nextCells[rowIndex]) return prev;
+      nextCells[rowIndex][colIndex] = value;
+      return {
+        ...prev,
+        [sheetId]: {
+          ...target,
+          cells: nextCells,
+        },
+      };
+    });
+  };
+  const addSheetRow = () => {
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target) return prev;
+      const nextCols = target.cols;
+      return {
+        ...prev,
+        [activeSheetId]: {
+          ...target,
+          rows: target.rows + 1,
+          cells: [...target.cells.map((row) => [...row]), Array.from({ length: nextCols }, () => '')],
+        },
+      };
+    });
+  };
+  const removeSheetRow = () => {
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target || target.rows <= 1) return prev;
+      const nextCells = target.cells.slice(0, -1).map((row) => [...row]);
+      return {
+        ...prev,
+        [activeSheetId]: {
+          ...target,
+          rows: target.rows - 1,
+          cells: nextCells,
+        },
+      };
+    });
+    showToast('Last row removed');
+  };
+  const addSheetColumn = () => {
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target) return prev;
+      const nextCells = target.cells.map((row) => [...row, '']);
+      return {
+        ...prev,
+        [activeSheetId]: {
+          ...target,
+          cols: target.cols + 1,
+          cells: nextCells,
+        },
+      };
+    });
+  };
+  const removeSheetColumn = () => {
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target || target.cols <= 1) return prev;
+      const nextCells = target.cells.map((row) => row.slice(0, -1));
+      return {
+        ...prev,
+        [activeSheetId]: {
+          ...target,
+          cols: target.cols - 1,
+          cells: nextCells,
+        },
+      };
+    });
+    showToast('Last column removed');
+  };
+  const handlePageContextAction = (action) => {
+    const targetId = pageContextMenu.itemId;
+    const isTargetSheets = pageContextMenu.isSheets;
+    if (!targetId) {
+      setPageContextMenu((prev) => ({ ...prev, open: false }));
+      return;
+    }
+
+    if (action === 'add') {
+      if (isTargetSheets) {
+        addWorksheet();
+      } else {
+        addDeckSlide();
+      }
+    }
+
+    if (action === 'duplicate') {
+      if (isTargetSheets) {
+        const source = sheetsData.find((item) => item.id === targetId);
+        if (source) {
+          const nextId = (sheetsData[sheetsData.length - 1]?.id || 0) + 1;
+          const clone = { ...source, id: nextId, title: `${source.title} Copy` };
+          setSheetsData((prev) => [...prev, clone]);
+          const sourceGrid = sheetGrids[targetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+          setSheetGrids((prev) => ({
+            ...prev,
+            [nextId]: {
+              rows: sourceGrid.rows,
+              cols: sourceGrid.cols,
+              cells: sourceGrid.cells.map((row) => [...row]),
+            },
+          }));
+          setActiveSheetId(nextId);
+          setSheetsTitle(clone.title);
+          showToast('Worksheet duplicated');
+        }
+      } else {
+        const source = deckSlides.find((item) => item.id === targetId);
+        if (source) {
+          const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
+          const clone = { ...source, id: nextId, title: `${source.title} Copy` };
+          setDeckSlidesData((prev) => [...prev, clone]);
+          setActiveDeckSlideId(nextId);
+          showToast('Slide duplicated');
+        }
+      }
+    }
+
+    if (action === 'delete') {
+      if (isTargetSheets) {
+        setSheetsData((prev) => {
+          if (prev.length <= 1) {
+            showToast('At least one worksheet is required');
+            return prev;
+          }
+          const next = prev.filter((item) => item.id !== targetId);
+          if (activeSheetId === targetId && next[0]) {
+            setActiveSheetId(next[0].id);
+            setSheetsTitle(next[0].title);
+          }
+          return next;
+        });
+        setSheetGrids((prev) => {
+          const next = { ...prev };
+          delete next[targetId];
+          return next;
+        });
+      } else {
+        setDeckSlidesData((prev) => {
+          if (prev.length <= 1) {
+            showToast('At least one slide is required');
+            return prev;
+          }
+          const next = prev.filter((item) => item.id !== targetId);
+          if (activeDeckSlideId === targetId && next[0]) {
+            setActiveDeckSlideId(next[0].id);
+          }
+          return next;
+        });
+      }
+      showToast('Page deleted');
+    }
+
+    if (['copy', 'copyStyle', 'paste', 'hide', 'transition', 'lock', 'download', 'copyLink', 'notes', 'resize', 'editVideo'].includes(action)) {
+      const actionLabels = {
+        copy: 'Copied',
+        copyStyle: 'Style copied',
+        paste: 'Pasted',
+        hide: 'Page hidden',
+        transition: 'Transition added',
+        lock: 'Page locked',
+        download: 'Page download started',
+        copyLink: 'Page link copied',
+        notes: 'Notes opened',
+        resize: 'Resize options opened',
+        editVideo: 'Video editor opened',
+      };
+      showToast(actionLabels[action] || 'Done');
+    }
+
+    setPageContextMenu((prev) => ({ ...prev, open: false }));
+  };
+  const escapeSvgText = (value) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const buildDeckPreviewDataUri = (slide) => {
+    const title = escapeSvgText(slide?.title || 'Untitled Slide');
+    const subtitle = escapeSvgText(slide?.subtitle || '');
+    const gradientMap = {
+      'from-indigo-500 to-violet-500': ['#6366f1', '#8b5cf6'],
+      'from-sky-500 to-indigo-500': ['#0ea5e9', '#6366f1'],
+      'from-cyan-500 to-blue-500': ['#06b6d4', '#3b82f6'],
+      'from-amber-500 to-orange-500': ['#f59e0b', '#f97316'],
+      'from-violet-500 to-fuchsia-500': ['#8b5cf6', '#d946ef'],
+      'from-emerald-500 to-teal-500': ['#10b981', '#14b8a6'],
+      'from-blue-500 to-violet-500': ['#3b82f6', '#8b5cf6'],
+      'from-fuchsia-500 to-pink-500': ['#d946ef', '#ec4899'],
+      'from-indigo-600 to-slate-600': ['#4f46e5', '#475569'],
+      'from-violet-600 to-indigo-700': ['#7c3aed', '#4338ca'],
+    };
+    const [c1, c2] = gradientMap[slide?.accent] || ['#6366f1', '#8b5cf6'];
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
+      <rect width="320" height="192" rx="14" fill="url(#g)"/>
+      <rect x="10" y="10" width="64" height="10" rx="5" fill="rgba(255,255,255,0.35)"/>
+      <rect x="10" y="31" width="220" height="12" rx="6" fill="rgba(255,255,255,0.28)"/>
+      <rect x="10" y="49" width="180" height="10" rx="5" fill="rgba(255,255,255,0.22)"/>
+      <text x="12" y="110" font-size="20" font-family="Inter, Arial, sans-serif" fill="white" font-weight="600">${title}</text>
+      <text x="12" y="134" font-size="11" font-family="Inter, Arial, sans-serif" fill="rgba(255,255,255,0.85)">${subtitle}</text>
+      <rect x="12" y="154" width="170" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+      <rect x="12" y="166" width="136" height="6" rx="3" fill="rgba(255,255,255,0.38)"/>
+    </svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  };
+
+  const buildSheetPreviewDataUri = (sheet) => {
+    const title = escapeSvgText(sheet?.title || 'Untitled Sheet');
+    const subtitle = escapeSvgText(sheet?.subtitle || '');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+      <rect width="320" height="192" rx="14" fill="#ffffff"/>
+      <rect x="0" y="0" width="320" height="24" fill="#f8f9fd"/>
+      <rect x="0" y="24" width="320" height="1" fill="#e5e7eb"/>
+      <rect x="0" y="24" width="34" height="168" fill="#f8f9fd"/>
+      <rect x="34" y="24" width="1" height="168" fill="#e5e7eb"/>
+      <text x="42" y="16" font-size="10" font-family="Inter, Arial, sans-serif" fill="#6b7280">${title}</text>
+      <text x="260" y="16" font-size="9" font-family="Inter, Arial, sans-serif" fill="#9ca3af">${subtitle}</text>
+      <g stroke="#e5e7eb" stroke-width="1">
+        <line x1="34" y1="48" x2="320" y2="48"/>
+        <line x1="34" y1="72" x2="320" y2="72"/>
+        <line x1="34" y1="96" x2="320" y2="96"/>
+        <line x1="34" y1="120" x2="320" y2="120"/>
+        <line x1="34" y1="144" x2="320" y2="144"/>
+        <line x1="34" y1="168" x2="320" y2="168"/>
+        <line x1="75" y1="24" x2="75" y2="192"/>
+        <line x1="116" y1="24" x2="116" y2="192"/>
+        <line x1="157" y1="24" x2="157" y2="192"/>
+        <line x1="198" y1="24" x2="198" y2="192"/>
+        <line x1="239" y1="24" x2="239" y2="192"/>
+        <line x1="280" y1="24" x2="280" y2="192"/>
+      </g>
+      <rect x="75" y="48" width="41" height="24" fill="#ede9fe"/>
+      <rect x="116" y="72" width="41" height="24" fill="#f5f3ff"/>
+    </svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  };
+  const handleGenerateSheetFilePrompt = () => {
+    if (!isSheetsMode) {
+      return;
+    }
+    addWorksheet();
+    setDeckPromptInput('Generate a new Sheets file with starter tabs: Summary, Revenue, Expenses, and Forecast. Fill each tab with clean table headers and starter formulas.');
+    setDeckPromptMinimized(false);
+  };
+  const pageNumberPositionClass = pageNumberPosition === 'left'
+    ? 'left-12 text-left'
+    : pageNumberPosition === 'right'
+      ? 'right-12 text-right'
+      : 'left-1/2 -translate-x-1/2 text-center';
+
+  const showDocumentOutlineView = isFocusMode || activeDocView === 'document';
+  const rightMiniRailWidth = 0;
+  const blurEdgeGuard = 0;
+  const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
+  const blurRightInset = (rightSidebarOpen ? rightSidebarWidth : 0) + rightMiniRailWidth + blurEdgeGuard;
+  const shouldShowPromptBackdrop =
+    isPromptExpanded &&
+    isPromptAutoVisible &&
+    !isPromptDismissed &&
+    !isPromptMinimized &&
+    !isComposing &&
+    !(isVoiceActive && voiceTarget === 'document');
+  const shouldHideDictationOverlay =
+    openDropdown !== null
+    || textStyleMenuOpen
+    || languageMenuOpen
+    || Boolean(openDocMenuId)
+    || Boolean(openWorkspaceMenuId)
+    || isPromptMenuOpen
+    || promptTuneMenuOpen
+    || promptFormatMenuOpen
+    || promptLibraryOpen
+    || promptHistoryFilterMenuOpen
+    || Boolean(sheetToolbarMenuOpen)
+    || deckToolbarMenuOpen
+    || notificationsOpen
+    || replayPanelOpen
+    || replaySpeedMenuOpen
+    || (selectionActionMenuEnabled && selectionActionMenu.open)
+    || pageContextMenu.open
+    || docSearchPanelOpen
+    || creationPickerOpen
+    || workspaceModalOpen
+    || shareModalOpen
+    || isScheduleSessionModalOpen;
+  const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
+  const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
+  const activeDraftDisplayTitle = (() => {
+    const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
+    return rawTitle || (lastSavedAt ? SAVED_DRAFT_LABEL : 'Unsaved draft');
+  })();
+  const showHeaderGhostPlaceholder = !String(docTitle || '').trim()
+    && !String(docSubtitle || '').trim()
+    && !getPlainText(docBodyHtml).trim();
+
+  useEffect(() => {
+    if (productMode !== 'compose') {
+      return undefined;
+    }
+
+    const updateDictationAnchor = () => {
+      const card = documentCardRef.current;
+      if (!card) {
+        setDictationAnchor({ left: window.innerWidth - 100, top: window.innerHeight / 2 });
+        return;
+      }
+
+      const rect = card.getBoundingClientRect();
+      const visibleLeft = Math.max(rect.left, 0);
+      const visibleRight = Math.min(rect.right, window.innerWidth);
+      const visibleTop = Math.max(rect.top, 0);
+      const visibleBottom = Math.min(rect.bottom, window.innerHeight);
+
+      const hasVisibleWidth = visibleRight > visibleLeft;
+      const hasVisibleHeight = visibleBottom > visibleTop;
+
+      const rightX = hasVisibleWidth ? visibleRight - 80 : window.innerWidth - 100;
+      const centerY = hasVisibleHeight ? visibleTop + (visibleBottom - visibleTop) / 2 : window.innerHeight / 2;
+
+      setDictationAnchor({ left: rightX, top: centerY });
+    };
+
+    updateDictationAnchor();
+    window.addEventListener('resize', updateDictationAnchor);
+    window.addEventListener('scroll', updateDictationAnchor, true);
+
+    return () => {
+      window.removeEventListener('resize', updateDictationAnchor);
+      window.removeEventListener('scroll', updateDictationAnchor, true);
+    };
+  }, [
+    productMode,
+    activeDocId,
+    zoomLevel,
+    leftSidebarOpen,
+    rightSidebarOpen,
+    leftSidebarWidth,
+    rightSidebarWidth,
+  ]);
+
+  useEffect(() => {
+    if (productMode !== 'compose') {
+      return;
+    }
+    // Keep dictation centered when layout panels change.
+    setDictationOffset({ x: 0, y: 0 });
+  }, [
+    productMode,
+    activeDocId,
+    leftSidebarOpen,
+    rightSidebarOpen,
+    leftSidebarWidth,
+    rightSidebarWidth,
+    showDocumentOutlineView,
+    isPromptExpanded,
+  ]);
+
+  const smartAssistMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
+  const smartAssistIntro = smartAssistMode === 'sheets'
+    ? 'Use AI to transform data quickly: clean, model, summarize, and detect issues.'
+    : smartAssistMode === 'deck'
+      ? 'Use AI to improve slide clarity, structure, and storytelling flow.'
+      : 'Use AI to shape writing structure, tone, and section hierarchy.';
+  const smartAssistOptions = smartAssistMode === 'sheets'
+    ? [
+      { key: 'fill-pattern', label: 'Fill down this pattern', detail: 'Auto-detect and extend sequences', icon: RefreshCcw, color: 'text-violet-500', prompt: 'Fill down this pattern across adjacent rows and keep sequence logic consistent.' },
+      { key: 'clean-data', label: 'Clean this data', detail: 'Remove duplicates and standardize formats', icon: ShieldAlert, color: 'text-indigo-500', prompt: 'Clean this data by removing duplicates, fixing inconsistent formats, and normalizing values.' },
+      { key: 'suggest-formula', label: 'Suggest a formula', detail: 'Natural language to formula', icon: Type, color: 'text-emerald-500', prompt: 'Suggest the best spreadsheet formula for the selected cells and explain assumptions briefly.' },
+      { key: 'anomalies', label: 'Find anomalies', detail: 'Flag unusual values or outliers', icon: AlertTriangle, color: 'text-amber-500', prompt: 'Find anomalies and outliers in this sheet and suggest likely reasons.' },
+      { key: 'pivot-summary', label: 'Create a pivot summary', detail: 'Aggregate by key dimensions', icon: Database, color: 'text-cyan-500', prompt: 'Create a pivot-style summary grouped by key dimensions with totals and highlights.' },
+      { key: 'split-column', label: 'Split this column', detail: 'Parse mixed text into separate columns', icon: Scissors, color: 'text-fuchsia-500', prompt: 'Split this mixed column into clean separate columns based on detected delimiters and patterns.' },
+    ]
+    : smartAssistMode === 'deck'
+      ? [
+        { key: 'investor-tone', label: 'Investor Tone', detail: 'Sharper fundraise narrative', icon: LayoutGrid, color: 'text-violet-500', prompt: 'Turn this deck into investor tone with stronger proof points, risks, and ask clarity.' },
+        { key: 'comparison-slide', label: 'Comparison Slide', detail: 'Add competitive framing visual', icon: Sparkles, color: 'text-indigo-500', prompt: 'Generate a competitor comparison slide with clear positioning and defensibility.' },
+        { key: 'visual-first', label: 'Make More Visual', detail: 'Less text, stronger visuals', icon: PenTool, color: 'text-emerald-500', prompt: 'Make the deck more visual by reducing text density and introducing chart/diagram-ready layouts.' },
+        { key: 'compress-flow', label: 'Reduce To 8 Slides', detail: 'Tighter executive pacing', icon: ListTodo, color: 'text-fuchsia-500', prompt: 'Reduce this presentation to 8 slides while preserving the strongest narrative arc.' },
+        { key: 'speaker-notes', label: 'Speaker Notes', detail: 'Create persuasive talking tracks', icon: FileText, color: 'text-cyan-500', prompt: 'Generate speaker notes for each slide with transitions and anticipated audience questions.' },
+      ]
+      : [
+        { key: 'insert-page-cover', label: 'Insert Page Cover', detail: 'Add a styled cover page', icon: BookOpen, color: 'text-indigo-500', prompt: '' },
+        { key: 'insert-shapes', label: 'Insert Shapes', detail: 'Add diagrams and flowchart shapes', icon: Shapes, color: 'text-rose-500', prompt: '' },
+        { key: 'insert-chart', label: 'Insert Chart', detail: 'Add data visualizations', icon: LayoutGrid, color: 'text-orange-500', prompt: '' },
+        { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content while preserving meaning and key facts.' },
+        { key: 'summarize', label: 'Summarize', detail: 'Condense without losing meaning', icon: Scissors, color: 'text-fuchsia-500', prompt: 'Summarize this content clearly while preserving key meaning and important context.' },
+        { key: 'proofread', label: 'Proofread', detail: 'Fix typos, repeats, and grammar', icon: ShieldAlert, color: 'text-amber-500', prompt: 'Proofread this content and return a corrected version that fixes typos, repeated sentences, grammar errors, and awkward phrasing while preserving intent.' },
+        { key: 'create-outline', label: 'Create outline', detail: 'Structure messy notes into sections', icon: ListTodo, color: 'text-indigo-500', prompt: 'Create a clear outline from this content with logical section flow.' },
+        { key: 'generate-toc', label: 'Generate table of content', detail: 'Build TOC and align headings', icon: BookOpen, color: 'text-cyan-500', prompt: 'Generate a table of contents for this document and align headings/content to it.' },
+        { key: 'title-headers', label: 'Generate title/headers', detail: 'Auto-structure with strong headings', icon: Type, color: 'text-emerald-500', prompt: 'Generate a strong title and section headers for this document.' },
+      ];
+
+  const whiteboardAssistantActions = {
+    ask: [
+      { key: 'launch-plan', label: 'Generate launch plan', prompt: 'Generate a launch plan for Q2 Product Launch Strategy whiteboard.' },
+      { key: 'breakdown-tasks', label: 'Break down into tasks', prompt: 'Break this whiteboard strategy into clear execution tasks with owners.' },
+      { key: 'identify-risks', label: 'Identify risks', prompt: 'Identify the main launch risks in this whiteboard and suggest mitigations.' },
+      { key: 'create-timeline', label: 'Create timeline', prompt: 'Create a timeline for this whiteboard strategy from May 1 to Jun 30.' },
+    ],
+    generate: [
+      { key: 'summary', label: 'Generate board summary', prompt: 'Write a concise executive summary from this whiteboard board.' },
+      { key: 'meeting-brief', label: 'Create meeting brief', prompt: 'Create a meeting brief from this whiteboard with goals and next steps.' },
+      { key: 'sync-update', label: 'Draft status update', prompt: 'Draft a weekly status update from this whiteboard progress.' },
+      { key: 'stakeholder-email', label: 'Compose stakeholder email', prompt: 'Compose a stakeholder-ready launch update email from this whiteboard.' },
+    ],
+    insights: [
+      { key: 'conversion-gaps', label: 'Review conversion gaps', prompt: 'Analyze this whiteboard and report likely conversion bottlenecks.' },
+      { key: 'goal-coverage', label: 'Check goal coverage', prompt: 'Check whether this whiteboard fully covers awareness, activation, conversion, and retention.' },
+      { key: 'resource-risks', label: 'Evaluate dependencies', prompt: 'Evaluate key dependencies and resource risks in this whiteboard plan.' },
+      { key: 'cadence-health', label: 'Assess launch cadence', prompt: 'Assess whether this whiteboard timeline cadence is realistic and balanced.' },
+    ],
+  };
+
+  useEffect(() => {
+    setSheetGrids((prev) => {
+      const next = { ...prev };
+      sheetsData.forEach((sheet) => {
+        if (!next[sheet.id]) {
+          next[sheet.id] = { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+        }
+      });
+      Object.keys(next).forEach((key) => {
+        const id = Number(key);
+        if (!sheetsData.some((sheet) => sheet.id === id)) {
+          delete next[id];
+        }
+      });
+      return next;
+    });
+  }, [sheetsData]);
+
+  useEffect(() => {
+    if (!pageContextMenu.open) {
+      return undefined;
+    }
+    const onPointerDown = (event) => {
+      if (pageContextMenuRef.current && !pageContextMenuRef.current.contains(event.target)) {
+        setPageContextMenu((prev) => ({ ...prev, open: false }));
+      }
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, [pageContextMenu.open]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const capturePreview = async () => {
+      try {
+        if (isSheetsMode) {
+          const target = sheetCanvasPreviewRef.current;
+          if (!target || !activeSheet?.id) {
+            return;
+          }
+          const canvas = await html2canvas(target, {
+            scale: 0.45,
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            logging: false,
+          });
+          if (cancelled) {
+            return;
+          }
+          const dataUrl = canvas.toDataURL('image/png', 0.82);
+          setSheetSnapshotPreviews((prev) => ({ ...prev, [activeSheet.id]: dataUrl }));
+          return;
+        }
+
+        const target = deckCanvasPreviewRef.current;
+        if (!target || !activeDeckSlide?.id) {
+          return;
+        }
+        const canvas = await html2canvas(target, {
+          scale: 0.45,
+          backgroundColor: '#ffffff',
+          useCORS: true,
+          logging: false,
+        });
+        if (cancelled) {
+          return;
+        }
+        const dataUrl = canvas.toDataURL('image/png', 0.82);
+        setDeckSnapshotPreviews((prev) => ({ ...prev, [activeDeckSlide.id]: dataUrl }));
+      } catch (_error) {
+        // Ignore preview capture failures and keep SVG fallback thumbnails.
+      }
+    };
+
+    const timer = setTimeout(capturePreview, 220);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [
+    isSheetsMode,
+    productMode,
+    activeDeckSlide?.id,
+    activeDeckSlide?.title,
+    activeDeckSlide?.subtitle,
+    activeSheet?.id,
+    activeSheet?.title,
+    activeSheet?.subtitle,
+    sheetsTitle,
+  ]);
+
+  useEffect(() => {
+    try {
+      const savedThreads = JSON.parse(localStorage.getItem('rc.dm.threads') || 'null');
+      const savedMessages = JSON.parse(localStorage.getItem('rc.dm.messages') || 'null');
+      const savedFiles = JSON.parse(localStorage.getItem('rc.dm.files') || 'null');
+      const savedDecisions = JSON.parse(localStorage.getItem('rc.dm.decisions') || 'null');
+      const savedArchive = JSON.parse(localStorage.getItem('rc.dm.archive') || 'null');
+      const savedThreadReplies = JSON.parse(localStorage.getItem('rc.dm.threadReplies') || 'null');
+      if (Array.isArray(savedThreads) && savedThreads.length) {
+        setDmThreads(savedThreads);
+      }
+      if (Array.isArray(savedMessages) && savedMessages.length) {
+        setDmMessages(savedMessages);
+      }
+      if (Array.isArray(savedFiles)) {
+        setDmFiles(savedFiles);
+      }
+      if (Array.isArray(savedDecisions)) {
+        setDmDecisions(savedDecisions);
+      }
+      if (Array.isArray(savedArchive)) {
+        setDmArchive(savedArchive);
+      }
+      if (Array.isArray(savedThreadReplies)) {
+        setDmThreadReplies(savedThreadReplies);
+      }
+    } catch (_error) {
+      // noop
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.threads', JSON.stringify(dmThreads));
+  }, [dmThreads]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.messages', JSON.stringify(dmMessages));
+  }, [dmMessages]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.files', JSON.stringify(dmFiles));
+  }, [dmFiles]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.decisions', JSON.stringify(dmDecisions));
+  }, [dmDecisions]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.archive', JSON.stringify(dmArchive));
+  }, [dmArchive]);
+
+  useEffect(() => {
+    localStorage.setItem('rc.dm.threadReplies', JSON.stringify(dmThreadReplies));
+  }, [dmThreadReplies]);
+
+  useEffect(() => {
+    if (dmArchive.length) {
+      return;
+    }
+    const seeded = [
+      ...dmMessages.map((message) => ({
+        id: `seed-msg-${message.id}`,
+        type: 'message',
+        threadId: message.threadId,
+        threadTitle: dmThreads.find((thread) => thread.id === message.threadId)?.title || 'Thread',
+        author: message.author,
+        text: message.text,
+        createdAt: message.createdAt,
+      })),
+      ...dmFiles.map((file) => ({
+        id: `seed-file-${file.id}`,
+        type: 'file',
+        threadId: file.threadId,
+        threadTitle: dmThreads.find((thread) => thread.id === file.threadId)?.title || 'Thread',
+        author: 'system',
+        fileName: file.name,
+        createdAt: file.updatedAt,
+      })),
+      ...dmDecisions.map((decision) => ({
+        id: `seed-decision-${decision.id}`,
+        type: 'decision',
+        threadId: decision.threadId,
+        threadTitle: dmThreads.find((thread) => thread.id === decision.threadId)?.title || 'Thread',
+        author: decision.by,
+        decision: decision.summary,
+        createdAt: decision.createdAt,
+      })),
+    ];
+    setDmArchive(seeded.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 1200));
+  }, [dmArchive.length, dmMessages, dmFiles, dmDecisions, dmThreads]);
+
+  const formatDmRelative = (timestamp) => {
+    const diff = Date.now() - Number(timestamp || Date.now());
+    const mins = Math.max(0, Math.floor(diff / 60000));
+    if (mins < 1) {
+      return 'just now';
+    }
+    if (mins < 60) {
+      return `${mins}m ago`;
+    }
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) {
+      return `${hours}h ago`;
+    }
+    return `${Math.floor(hours / 24)}d ago`;
+  };
+
+  const activeDmThread = dmThreads.find((thread) => thread.id === dmActiveThreadId) || dmThreads[0] || null;
+  useEffect(() => {
+    setDmThreadTitleDraft(activeDmThread?.title || '');
+    setDmThreadDescriptionDraft(activeDmThread?.description || '');
+    setDmEditingThreadTitle(false);
+    setDmEditingThreadDescription(false);
+  }, [activeDmThread?.id]);
+
+  const activeDmMessages = useMemo(() => dmMessages
+    .filter((message) => message.threadId === (activeDmThread?.id || ''))
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)), [dmMessages, activeDmThread?.id]);
+  const activeDmThreadReplyMap = useMemo(() => {
+    const map = new Map();
+    dmThreadReplies
+      .filter((reply) => reply.threadId === (activeDmThread?.id || ''))
+      .forEach((reply) => {
+        map.set(reply.parentMessageId, (map.get(reply.parentMessageId) || 0) + 1);
+      });
+    return map;
+  }, [dmThreadReplies, activeDmThread?.id]);
+  const activeDmParentMessage = useMemo(
+    () => activeDmMessages.find((message) => message.id === dmActiveParentMessageId) || null,
+    [activeDmMessages, dmActiveParentMessageId],
+  );
+  const activeDmThreadPanelReplies = useMemo(
+    () => dmThreadReplies
+      .filter((reply) => reply.parentMessageId === dmActiveParentMessageId)
+      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)),
+    [dmThreadReplies, dmActiveParentMessageId],
+  );
+
+  const dmSearchResults = useMemo(() => {
+    const needle = String(dmSearchQuery || '').trim().toLowerCase();
+    if (!needle) {
+      return dmArchive.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 40);
+    }
+    return dmArchive
+      .filter((entry) => {
+        const textBlob = `${entry.type || ''} ${entry.threadTitle || ''} ${entry.author || ''} ${entry.text || ''} ${entry.fileName || ''} ${entry.decision || ''}`.toLowerCase();
+        return textBlob.includes(needle);
+      })
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }, [dmArchive, dmSearchQuery]);
+
+  const effectiveDmJoinedAt = dmJoinedAt || null;
+  const visibleDmMessages = useMemo(() => {
+    if (dmMemberView !== 'new-member' || !effectiveDmJoinedAt) {
+      return activeDmMessages;
+    }
+    return activeDmMessages.filter((message) => (message.createdAt || 0) >= effectiveDmJoinedAt);
+  }, [activeDmMessages, dmMemberView, effectiveDmJoinedAt]);
+
+  useEffect(() => {
+    if (productMode !== 'dm' || dmConversationTab !== 'chat') {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [productMode, dmConversationTab, activeDmThread?.id, visibleDmMessages.length]);
+
+  const visibleDmSearchResults = useMemo(() => {
+    if (dmMemberView !== 'new-member' || !effectiveDmJoinedAt) {
+      return dmSearchResults;
+    }
+    return dmSearchResults.filter((entry) => (entry.createdAt || 0) >= effectiveDmJoinedAt);
+  }, [dmSearchResults, dmMemberView, effectiveDmJoinedAt]);
+
+  const dmThreadSummaries = useMemo(() => {
+    return activeDmMessages
+      .filter((message) => (activeDmThreadReplyMap.get(message.id) || 0) > 0)
+      .map((message) => ({
+        ...message,
+        replyCount: activeDmThreadReplyMap.get(message.id) || 0,
+      }))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }, [activeDmMessages, activeDmThreadReplyMap]);
+
+  const appendDmArchive = (entries) => {
+    const list = Array.isArray(entries) ? entries : [entries];
+    setDmArchive((prev) => [...list, ...prev].slice(0, 1200));
+  };
+
+  const openDmMessageThread = (messageId) => {
+    setDmActiveParentMessageId(messageId);
+    setDmThreadComposerValue('');
+  };
+
+  const sendDmThreadReply = () => {
+    const text = String(dmThreadComposerValue || '').trim();
+    if (!text || !activeDmThread || !activeDmParentMessage) {
+      return;
+    }
+    const now = Date.now();
+    const reply = {
+      id: `dm-thread-reply-${now}`,
+      threadId: activeDmThread.id,
+      parentMessageId: activeDmParentMessage.id,
+      author: 'You',
+      role: 'you',
+      text,
+      createdAt: now,
+    };
+
+    setDmThreadReplies((prev) => [...prev, reply]);
+    appendDmArchive({
+      id: `arc-thread-${now}`,
+      type: 'thread-reply',
+      threadId: activeDmThread.id,
+      threadTitle: activeDmThread.title,
+      author: 'You',
+      text,
+      parentMessageId: activeDmParentMessage.id,
+      parentMessageText: activeDmParentMessage.text,
+      createdAt: now,
+    });
+    setDmThreadComposerValue('');
+  };
+
+  const classifyDmAttachmentKind = (file) => {
+    const mime = String(file?.type || '').toLowerCase();
+    const name = String(file?.name || '').toLowerCase();
+    if (mime.startsWith('image/')) return 'image';
+    if (mime.startsWith('audio/')) return 'audio';
+    if (mime.includes('sheet') || /\.csv$|\.xlsx?$/.test(name)) return 'sheet';
+    if (mime.includes('presentation') || /\.pptx?$/.test(name)) return 'deck';
+    return 'doc';
+  };
+
+  const addDmAttachments = (fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length) {
+      return;
+    }
+    const nextItems = files.map((file) => ({
+      id: `dm-attach-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      kind: classifyDmAttachmentKind(file),
+      file,
+    }));
+    setDmPendingAttachments((prev) => [...prev, ...nextItems].slice(0, 20));
+    showToast(`${files.length} attachment${files.length > 1 ? 's' : ''} added`);
+  };
+
+  const handleDmAttachmentInputChange = (event) => {
+    addDmAttachments(event.target.files);
+    event.target.value = '';
+  };
+
+  const sendDmMessage = () => {
+    const text = String(dmComposerValue || '').trim();
+    if ((!text && !dmPendingAttachments.length) || !activeDmThread) {
+      return;
+    }
+    const now = Date.now();
+    const attachedFiles = dmPendingAttachments.map((attachment, index) => ({
+      id: `dm-file-${now}-${index}`,
+      threadId: activeDmThread.id,
+      name: attachment.name,
+      kind: attachment.kind,
+      updatedAt: now,
+      size: attachment.size,
+      mimeType: attachment.type,
+    }));
+    const messageText = text || `Shared ${attachedFiles.length} attachment${attachedFiles.length > 1 ? 's' : ''}`;
+    const message = {
+      id: `dm-${now}-${Math.floor(Math.random() * 1000)}`,
+      threadId: activeDmThread.id,
+      author: 'You',
+      role: 'you',
+      text: messageText,
+      createdAt: now,
+      files: attachedFiles,
+      decisions: [],
+    };
+    const decisionSignals = ['decision', 'decided', 'approved', 'ship', 'finalized'];
+    const hasDecisionSignal = decisionSignals.some((signal) => messageText.toLowerCase().includes(signal));
+
+    setDmMessages((prev) => [...prev, message]);
+    if (attachedFiles.length) {
+      setDmFiles((prev) => [...attachedFiles, ...prev].slice(0, 300));
+    }
+    setDmThreads((prev) => prev.map((thread) => (
+      thread.id === activeDmThread.id
+        ? { ...thread, lastMessageAt: now }
+        : thread
+    )));
+
+    const archiveEntries = [{
+      id: `arc-msg-${now}`,
+      type: 'message',
+      threadId: activeDmThread.id,
+      threadTitle: activeDmThread.title,
+      author: 'You',
+      text: messageText,
+      createdAt: now,
+    }];
+
+    attachedFiles.forEach((file) => {
+      archiveEntries.push({
+        id: `arc-file-${file.id}`,
+        type: 'file',
+        threadId: activeDmThread.id,
+        threadTitle: activeDmThread.title,
+        author: 'You',
+        fileName: file.name,
+        createdAt: now,
+      });
+    });
+
+    if (hasDecisionSignal) {
+      const decision = {
+        id: `dm-decision-${now}`,
+        threadId: activeDmThread.id,
+        summary: messageText,
+        createdAt: now,
+        by: 'You',
+      };
+      setDmDecisions((prev) => [decision, ...prev].slice(0, 200));
+      archiveEntries.push({
+        id: `arc-decision-${now}`,
+        type: 'decision',
+        threadId: activeDmThread.id,
+        threadTitle: activeDmThread.title,
+        author: 'You',
+        decision: messageText,
+        createdAt: now,
+      });
+    }
+
+    appendDmArchive(archiveEntries);
+    setDmComposerValue('');
+    setDmPendingAttachments([]);
+    setDmEmojiPickerOpen(false);
+    setDmFormatMenuOpen(false);
+    setDmComposerQuickMenuOpen(false);
+    setDmScheduleMenuOpen(false);
+  };
+
+  const quickAttachDmFile = () => {
+    if (!activeDmThread) {
+      return;
+    }
+    const now = Date.now();
+    const nextFile = {
+      id: `dm-file-${now}`,
+      threadId: activeDmThread.id,
+      name: `Decision Notes ${new Date(now).toLocaleTimeString()}`,
+      kind: 'doc',
+      updatedAt: now,
+    };
+    setDmFiles((prev) => [nextFile, ...prev].slice(0, 300));
+    appendDmArchive({
+      id: `arc-file-${now}`,
+      type: 'file',
+      threadId: activeDmThread.id,
+      threadTitle: activeDmThread.title,
+      author: 'You',
+      fileName: nextFile.name,
+      createdAt: now,
+    });
+    showToast('File archived in conversation log');
+  };
+
   const sharedRightPanels = (
     <React.Fragment>
       {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
@@ -16285,2595 +18874,6 @@ Rules:
         )}
     </React.Fragment>
   );
-
-    if (productMode === 'dm') {
-      createDmExperience();
-      return;
-    }
-    openCreationPicker();
-  };
-
-  const createDmExperience = () => {
-    enterFullscreen();
-    setCreationPickerOpen(false);
-    setProductMode('dm');
-    setRightSidebarOpen(false);
-    setLeftSidebarOpen(false);
-    setDmSearchQuery('');
-    setDmConversationTab('chat');
-    setDmComposerValue('');
-    setDmPendingAttachments([]);
-    setDmEmojiPickerOpen(false);
-    setDmFormatMenuOpen(false);
-    setDmComposerQuickMenuOpen(false);
-    setDmScheduleMenuOpen(false);
-    setDmThreadComposerValue('');
-    setDmActiveParentMessageId(null);
-    setDmActiveThreadId((prev) => prev || 'thread-beta-launch');
-    setDmProjectPanelOpen(true);
-    showToast('DM workspace ready');
-  };
-
-  const createManageenExperience = () => {
-    setCreationPickerOpen(false);
-    setProductMode('manageen');
-    setManageenActiveNav('Boards');
-    setRightSidebarOpen(false);
-    setLeftSidebarOpen(false);
-    if (rightPanelMaximized) {
-      setRightPanelMaximized(false);
-    }
-    showToast('Manageen workspace ready');
-  };
-
-  const openLandingWorkspace = (destination) => {
-    setCreationPickerOpen(false);
-
-    let target = destination;
-    if (typeof destination === 'object' && destination !== null) {
-      if (destination.type === 'action' || destination.type === 'product') {
-        target = destination.name.toLowerCase();
-      } else {
-        target = 'compose';
-      }
-    } else if (typeof destination === 'string') {
-      target = destination.toLowerCase();
-    } else {
-      target = 'compose';
-    }
-
-    if (target === 'compose') {
-      setActivePrimaryNav('drafts');
-      createComposeExperience();
-      return;
-    }
-
-    if (target === 'deck') {
-      setActivePrimaryNav('library');
-      createDeckExperience();
-      return;
-    }
-
-    if (target === 'sheet' || target === 'sheets' || target === 'data mining') {
-      setActivePrimaryNav('home');
-      createSheetsExperience();
-      return;
-    }
-
-    if (target === 'whiteboard') {
-      setActivePrimaryNav('home'); // or whiteboards
-      createWhiteboardExperience();
-      return;
-    }
-
-    if (target === 'dm') {
-      setActivePrimaryNav('home');
-      createDmExperience();
-      return;
-    }
-
-    // Products that act as Right Sidebar Panels or Overlays:
-    setProductMode('compose');
-    setRightSidebarOpen(true);
-
-    switch (target) {
-      case 'room':
-        setActivePrimaryNav('home');
-        setRoomState('lobby');
-        setActiveRightTab('room');
-        break;
-      case 'tasks':
-        setActivePrimaryNav('home');
-        setActiveRightTab('tasks');
-        break;
-      case 'schedule':
-      case 'calendar':
-        setActivePrimaryNav('home');
-        setActiveRightTab('calendar');
-        break;
-      case 'people':
-        setActivePrimaryNav('home');
-        setActiveRightTab('people');
-        break;
-      case 'memory':
-        setActivePrimaryNav('home');
-        setActiveRightTab('memory');
-        break;
-      case 'chat':
-        setActivePrimaryNav('inbox');
-        setActiveRightTab('chat');
-        break;
-      case 'assistant':
-      case 'more':
-      case 'web reading':
-      case 'deep research':
-      case 'file management':
-        setActivePrimaryNav('inbox');
-        setActiveRightTab('assistant');
-        setIsVoiceCommandMode(true);
-        break;
-      default:
-        setActiveRightTab('chat');
-        break;
-    }
-  };
-
-  const requestCloseDocument = (docId) => {
-    setCloseConfirmDocId(docId);
-    setOpenDocMenuId(null);
-  };
-
-  const confirmCloseDocument = () => {
-    if (!closeConfirmDocId) {
-      return;
-    }
-
-    const remaining = documents.filter((doc) => doc.id !== closeConfirmDocId);
-    if (!remaining.length) {
-      setCloseConfirmDocId(null);
-      createNewComposition();
-      return;
-    }
-
-    setDocuments(remaining);
-    const nextActive = remaining[0];
-    setCloseConfirmDocId(null);
-    switchDocument(nextActive.id);
-  };
-
-  const openCreateWorkspaceModal = () => {
-    setWorkspaceModalMode('create');
-    setWorkspaceNameInput('');
-    setEditingWorkspaceId(null);
-    setWorkspaceModalOpen(true);
-    setOpenWorkspaceMenuId(null);
-  };
-
-  const openRenameWorkspaceModal = (workspace) => {
-    setWorkspaceModalMode('rename');
-    setWorkspaceNameInput(workspace.name);
-    setEditingWorkspaceId(workspace.id);
-    setWorkspaceModalOpen(true);
-    setOpenWorkspaceMenuId(null);
-  };
-
-  const submitWorkspaceModal = () => {
-    const trimmed = workspaceNameInput.trim();
-    if (!trimmed) {
-      return;
-    }
-
-    if (workspaceModalMode === 'create') {
-      const letter = trimmed.charAt(0).toUpperCase();
-      setWorkspaces((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          name: trimmed,
-          letter,
-          colorClass: 'bg-slate-500',
-          hasDocuments: false,
-        },
-      ]);
-      showToast(`Workspace ${trimmed} created`);
-    } else if (editingWorkspaceId) {
-      setWorkspaces((prev) =>
-        prev.map((ws) =>
-          ws.id === editingWorkspaceId
-            ? { ...ws, name: trimmed, letter: trimmed.charAt(0).toUpperCase() }
-            : ws,
-        ),
-      );
-      showToast(`Workspace renamed to ${trimmed}`);
-    }
-
-    setWorkspaceModalOpen(false);
-    setWorkspaceNameInput('');
-    setEditingWorkspaceId(null);
-  };
-
-  const startRenameDocument = (doc) => {
-    setRenamingDocId(doc.id);
-    setRenameDocValue(doc.title?.trim() ? doc.title : '');
-    setOpenDocMenuId(null);
-  };
-
-  const commitRenameDocument = (docId) => {
-    const nextTitle = renameDocValue.trim();
-    setDocuments((prev) => prev.map((doc) => (doc.id === docId ? { ...doc, title: nextTitle } : doc)));
-    if (activeDocId === docId) {
-      setDocTitle(nextTitle);
-    }
-    setRenamingDocId(null);
-    setRenameDocValue('');
-    showToast('Document renamed');
-  };
-
-  const beginUnsavedDraftRename = () => {
-    const activeDoc = documents.find((doc) => doc.id === activeDocId);
-    const currentName = (activeDoc?.title || docTitle || 'Unsaved draft').trim() || 'Unsaved draft';
-    setUnsavedDraftNameInput(currentName);
-    setIsEditingUnsavedDraftName(true);
-  };
-
-  const commitUnsavedDraftRename = () => {
-    const nextTitle = unsavedDraftNameInput.trim();
-    if (!nextTitle) {
-      setIsEditingUnsavedDraftName(false);
-      setUnsavedDraftNameInput('');
-      return;
-    }
-
-    if (activeDocId) {
-      setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
-    }
-    setDocTitle(nextTitle);
-    setIsEditingUnsavedDraftName(false);
-    setUnsavedDraftNameInput('');
-    showToast('Document renamed');
-  };
-
-  const getDocumentPayload = (docId = activeDocId) => {
-    const cleanBodyHtml = sanitizeHtmlForExport(docBodyHtml);
-    const fallback = {
-      title: docTitle,
-      subtitle: docSubtitle,
-      initiatives,
-      bodyHtml: cleanBodyHtml,
-      appendedSections,
-      isBlank: isBlankDocument,
-    };
-
-    if (!docId) {
-      return fallback;
-    }
-
-    const target = documents.find((doc) => doc.id === docId);
-    if (target) {
-      return {
-        ...target,
-        bodyHtml: sanitizeHtmlForExport(target.bodyHtml)
-      };
-    }
-    return fallback;
-  };
-
-  const sanitizeFileName = (value) => {
-    const trimmed = (value || '').trim();
-    const safe = trimmed.replace(/[<>:"/\\|?*]+/g, '-');
-    return safe || 'composition';
-  };
-
-  const triggerBlobDownload = (filename, blob) => {
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportCurrentDocumentAsWord = () => {
-    try {
-      showToast('Generating Word document...');
-      const cleanTitle = docTitle || 'Untitled Document';
-      const cleanSubtitle = docSubtitle ? `<h2 style="color: #4a5568; font-weight: normal; font-size: 18px; margin-bottom: 20px;">${docSubtitle}</h2>` : '';
-      const cleanBodyHtml = sanitizeHtmlForExport(docBodyHtml);
-      
-      const content = `
-        <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-        <head>
-          <!--[if gte mso 9]>
-          <xml>
-            <w:WordDocument>
-              <w:View>Print</w:View>
-              <w:Zoom>100</w:Zoom>
-              <w:DoNotOptimizeForBrowser/>
-            </w:WordDocument>
-          </xml>
-          <![endif]-->
-          <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-          <meta name="ProgId" content="Word.Document">
-          <meta name="Generator" content="Microsoft Word 15">
-          <title>${cleanTitle}</title>
-          <style>
-            body { font-family: 'Calibri', 'Arial', sans-serif; line-height: 1.6; color: #2d3748; padding: 20px; }
-            h1 { color: #1a202c; font-size: 26px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 4px; }
-            hr { border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <h1 style="color: #1a202c; font-size: 26px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 4px;">${cleanTitle}</h1>
-          ${cleanSubtitle}
-          ${cleanSubtitle ? '<hr />' : ''}
-          <div>
-            ${cleanBodyHtml}
-          </div>
-        </body>
-        </html>
-      `;
-      const blob = new Blob(['\ufeff' + content], { type: 'application/msword' });
-      triggerBlobDownload(`${sanitizeFileName(docTitle)}.doc`, blob);
-      trackMemoryAction('export', 'Exported document', {
-        format: 'Word',
-        fileName: `${sanitizeFileName(docTitle)}.doc`,
-      });
-      showToast('Word document exported');
-    } catch (e) {
-      console.error('Word export failed', e);
-      showToast('Unable to export Word document');
-    }
-  };
-
-  const exportCurrentDocumentAsComposeFormat = () => {
-    try {
-      showToast('Exporting in Compose format...');
-      const composeData = {
-        format: 'regaarder-compose',
-        version: '1.0',
-        id: activeDocId,
-        title: docTitle,
-        subtitle: docSubtitle,
-        bodyHtml: docBodyHtml,
-        initiatives: initiatives,
-        appendedSections: appendedSections,
-        isBlank: isBlankDocument,
-        exportedAt: new Date().toISOString()
-      };
-      const blob = new Blob([JSON.stringify(composeData, null, 2)], { type: 'application/json' });
-      triggerBlobDownload(`${sanitizeFileName(docTitle)}.compose.json`, blob);
-      trackMemoryAction('export', 'Exported document', {
-        format: 'Compose',
-        fileName: `${sanitizeFileName(docTitle)}.compose.json`,
-      });
-      showToast('Exported in Compose format');
-    } catch (e) {
-      console.error('Compose export failed', e);
-      showToast('Unable to export in Compose format');
-    }
-  };
-
-  const exportCurrentDocumentAsPdf = async (forcedFileName) => {
-    if (!documentCardRef.current) {
-      showToast('Document is not ready for export yet');
-      return false;
-    }
-
-    let printContainer = null;
-
-    try {
-      showToast('Generating PDF...');
-
-      printContainer = document.createElement('div');
-      printContainer.style.position = 'fixed';
-      printContainer.style.left = '-99999px';
-      printContainer.style.top = '0';
-      printContainer.style.width = '850px';
-      printContainer.style.background = '#ffffff';
-      printContainer.style.padding = '24px';
-
-      const clonedCard = documentCardRef.current.cloneNode(true);
-      
-      // Clean up preview banners from export
-      clonedCard.querySelectorAll('.ai-preview-action-banner').forEach(el => el.remove());
-      clonedCard.querySelectorAll('.ai-preview-block').forEach(el => {
-        const contentEl = el.querySelector('.ai-preview-content');
-        if (contentEl) {
-          const parent = el.parentNode;
-          while (contentEl.firstChild) {
-            parent.insertBefore(contentEl.firstChild, el);
-          }
-          el.remove();
-        } else {
-          el.remove();
-        }
-      });
-      clonedCard.querySelectorAll('.inline-ai-prompt-box').forEach(el => el.remove());
-      clonedCard.querySelectorAll('.inline-ai-icon-box').forEach(el => el.remove());
-
-      printContainer.appendChild(clonedCard);
-      document.body.appendChild(printContainer);
-
-      const canvas = await html2canvas(printContainer, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-      });
-
-      const imageData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imageProps = pdf.getImageProperties(imageData);
-      const imageWidth = pageWidth;
-      const imageHeight = (imageProps.height * imageWidth) / imageProps.width;
-
-      let heightLeft = imageHeight;
-      let position = 0;
-
-      pdf.addImage(imageData, 'PNG', 0, position, imageWidth, imageHeight, undefined, 'FAST');
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imageHeight;
-        pdf.addPage();
-        pdf.addImage(imageData, 'PNG', 0, position, imageWidth, imageHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
-      }
-
-      const fileName = forcedFileName || `${sanitizeFileName(docTitle)}.pdf`;
-      pdf.save(fileName);
-      trackMemoryAction('export', 'Exported document', {
-        format: 'PDF',
-        fileName,
-      });
-      showToast('PDF exported successfully');
-      return true;
-    } catch (_error) {
-      showToast('Unable to export PDF right now');
-      return false;
-    } finally {
-      if (printContainer && printContainer.parentNode) {
-        printContainer.parentNode.removeChild(printContainer);
-      }
-    }
-  };
-
-  const convertDocumentToDeck = async () => {
-    if (!blankBodyRef.current) return;
-    const docText = blankBodyRef.current.innerText;
-    if (!docText.trim()) {
-      showToast('Document is empty. Write some content first.');
-      return;
-    }
-
-    setIsComposing(true);
-    showToast('Converting document to presentation deck...');
-
-    const systemPrompt = `You are a Presentation Design Expert. Convert the provided document content into a structured slide presentation deck.
-Create slides representing a coherent story narrative flow (such as Intro, Problem, Solution, Market, Product, Business Model, Traction, Team, Financials, Outro).
-For each slide, fill in:
-- title: concise, slide title
-- subtitle: optional context/subtitle
-- headline: powerful take-away statement
-- blurb: 1-3 sentences or bullet points of narrative content explaining the slide detail
-- visualType: e.g. "hero statement", "data-backed narrative", "comparison grid", "metric callout"
-- layoutStyle: e.g. "cinematic split", "timeline flow", "contrast grid", "key metrics list"
-- motionCue: e.g. "Soft fade and stagger reveal", "slide in from right"
-- keyMetric: e.g. "85% conversion", "$1.2M ARR" or empty string
-- speakerNotes: optional presenter cues/notes
-- section: e.g. "Intro", "Problem", "Solution", "Market", "Product", "Business Model", "Traction", "Team", "Financials", "Outro"
-Respond with a JSON array of slide objects matching the schema.`;
-
-    const schema = {
-      type: 'object',
-      properties: {
-        slides: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              title: { type: 'string' },
-              subtitle: { type: 'string' },
-              headline: { type: 'string' },
-              blurb: { type: 'string' },
-              visualType: { type: 'string' },
-              layoutStyle: { type: 'string' },
-              motionCue: { type: 'string' },
-              keyMetric: { type: 'string' },
-              speakerNotes: { type: 'string' },
-              section: { type: 'string' }
-            },
-            required: ['title', 'headline', 'blurb', 'visualType', 'layoutStyle', 'section']
-          }
-        }
-      },
-      required: ['slides']
-    };
-
-    try {
-      const response = await callGemini({
-        userPrompt: `Document content:\n${docText}`,
-        systemPrompt,
-        schema
-      });
-
-      if (response?.parsed?.slides) {
-        const slides = response.parsed.slides.map((slide, index) => {
-          const id = index + 1;
-          return {
-            id,
-            title: slide.title || `Slide ${id}`,
-            subtitle: slide.subtitle || '',
-            accent: 'from-indigo-500 to-violet-500',
-            designPresetKey: DECK_DESIGN_PRESETS[(id - 1) % DECK_DESIGN_PRESETS.length]?.key || DECK_DESIGN_PRESETS[0].key,
-            headline: slide.headline || '',
-            blurb: slide.blurb || '',
-            visualType: slide.visualType || 'hero statement',
-            layoutStyle: slide.layoutStyle || 'cinematic split',
-            motionCue: slide.motionCue || 'Soft fade and stagger reveal',
-            keyMetric: slide.keyMetric || '',
-            speakerNotes: slide.speakerNotes || '',
-            section: slide.section || '',
-            footer: 'AI Generated 繚 Convert to Deck'
-          };
-        });
-
-        setProductMode('deck');
-        setDeckTitle(docTitle || 'Converted Deck');
-        setDeckSlidesData(slides);
-        setActiveDeckSlideId(1);
-        setDeckZoomLevel(100);
-        setDeckToolbarFont('Inter');
-        setDeckSlidesPanelOpen(true);
-        setRightSidebarOpen(true);
-        setActiveRightTab('assistant');
-        showToast('Converted document to Deck successfully!');
-      } else {
-        showToast('Failed to convert: ' + (response?.error || 'Gemini returned invalid response.'));
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Error converting to Deck.');
-    } finally {
-      setIsComposing(false);
-    }
-  };
-
-  const downloadDocumentInFormat = async (format, docId = activeDocId) => {
-    const payload = getDocumentPayload(docId);
-    const fileBase = sanitizeFileName(payload.title);
-
-    if (format === 'PDF') {
-      return exportCurrentDocumentAsPdf(`${fileBase}.pdf`);
-    }
-
-    if (format === 'Compose (.cmp)') {
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-      triggerBlobDownload(`${fileBase}.cmp`, blob);
-      trackMemoryAction('export', 'Exported document', { format: 'Compose (.cmp)' });
-      return true;
-    }
-
-    if (format === 'Markdown') {
-      const markdown = `# ${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}\n\n${(payload.initiatives || []).map((item) => `- ${item.name} (${item.timeline})`).join('\n')}\n`;
-      triggerBlobDownload(`${fileBase}.md`, new Blob([markdown], { type: 'text/markdown' }));
-      trackMemoryAction('export', 'Exported document', { format: 'Markdown' });
-      return true;
-    }
-
-    if (format === 'Plain Text') {
-      const plain = `${payload.title || 'Untitled'}\n\n${payload.subtitle || ''}`;
-      triggerBlobDownload(`${fileBase}.txt`, new Blob([plain], { type: 'text/plain' }));
-      trackMemoryAction('export', 'Exported document', { format: 'Plain Text' });
-      return true;
-    }
-
-    if (format === 'DOC (Word-compatible)') {
-      const docMarkup = `<html><head><meta charset="utf-8"/></head><body><h1>${payload.title || 'Untitled'}</h1><p>${payload.subtitle || ''}</p></body></html>`;
-      triggerBlobDownload(`${fileBase}.doc`, new Blob([docMarkup], { type: 'application/msword' }));
-      trackMemoryAction('export', 'Exported document', { format: 'DOC (Word-compatible)' });
-      return true;
-    }
-
-    if (format === 'HTML') {
-      const html = `<!doctype html><html><head><meta charset="utf-8"/></head><body>${payload.bodyHtml || ''}</body></html>`;
-      triggerBlobDownload(`${fileBase}.html`, new Blob([html], { type: 'text/html' }));
-      trackMemoryAction('export', 'Exported document', { format: 'HTML' });
-      return true;
-    }
-
-    return false;
-  };
-
-  const openShareModal = (docId) => {
-    const target = getDocumentPayload(docId);
-    const base = `${window.location.origin}${window.location.pathname}`;
-    setShareTargetDocId(docId);
-    setShareTargetDocTitle(target.title?.trim() || 'Untitled composition');
-    setShareDestination('friends');
-    setShareFormat('Compose (.cmp)');
-    setShareAccess('Viewer');
-    setShareLink(`${base}?doc=${docId}&access=viewer`);
-    closeTransientMenus();
-    setRightSidebarOpen(false);
-    setShareModalOpen(true);
-    trackMemoryAction('share', 'Opened share modal', {
-      documentId: String(docId),
-    });
-  };
-
-  const handleShareModalConfirm = async () => {
-    if (shareDestination === 'downloads') {
-      const ok = await downloadDocumentInFormat(shareFormat, shareTargetDocId || activeDocId);
-      if (ok) {
-        trackMemoryAction('share', 'Shared to downloads', {
-          format: shareFormat,
-          access: shareAccess,
-        });
-        setShareModalOpen(false);
-      }
-      return;
-    }
-
-    if (shareDestination === 'apps') {
-      try {
-        if (navigator.share) {
-          await navigator.share({
-            title: shareTargetDocTitle,
-            text: `Shared from Regaarder Compose (${shareAccess})`,
-            url: shareLink,
-          });
-          trackMemoryAction('share', 'Shared via native app sheet', {
-            access: shareAccess,
-            format: shareFormat,
-          });
-          showToast('Shared to app successfully');
-        } else {
-          await navigator.clipboard.writeText(shareLink);
-          showToast('Native app sharing not supported. Link copied instead.');
-        }
-      } catch (_error) {
-        showToast('Sharing to app was cancelled or unavailable');
-      }
-      setShareModalOpen(false);
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareLink);
-      trackMemoryAction('share', 'Copied share link', {
-        access: shareAccess,
-      });
-      showToast(`Share link copied (${shareAccess})`);
-    } catch (_error) {
-      showToast('Could not copy link automatically');
-    }
-    setShareModalOpen(false);
-  };
-
-  const handleDocumentAction = (action, docId) => {
-    if (action === 'rename') {
-      const target = documents.find((doc) => doc.id === docId);
-      if (target) {
-        startRenameDocument(target);
-      }
-      return;
-    }
-
-    if (action === 'save') {
-      saveDocumentLocally();
-      setOpenDocMenuId(null);
-      return;
-    }
-
-    if (action === 'share') {
-      openShareModal(docId);
-      setOpenDocMenuId(null);
-      return;
-    }
-
-    if (action === 'pin') {
-      setDocuments((prev) =>
-        prev.map((doc) =>
-          doc.id === docId
-            ? {
-                ...doc,
-                pinned: !doc.pinned,
-              }
-            : doc,
-        ),
-      );
-      setOpenDocMenuId(null);
-      showToast('Pin state updated');
-      return;
-    }
-
-    if (action === 'close') {
-      requestCloseDocument(docId);
-    }
-  };
-
-  const applyFormatCommand = (command, value) => {
-    let range = getEditorSelectionRange();
-
-    if (!range && restoreSavedSelection()) {
-      range = getEditorSelectionRange();
-    }
-
-    if (!range) {
-      blankBodyRef.current?.focus();
-      return;
-    }
-
-    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
-      if (range && !range.collapsed) {
-        const selectedText = range.toString().trim();
-        if (selectedText) {
-          const type = command === 'insertUnorderedList' ? 'bullets' : 'numbered_list';
-          applyDirectSelectionAIAction(type, selectedText, range);
-          return;
-        }
-      }
-    }
-
-    if (command === 'fontSize') {
-      const parsedSize = Number(value);
-      const safeSize = Number.isFinite(parsedSize) ? Math.min(72, Math.max(10, parsedSize)) : editorSize;
-      const selection = window.getSelection();
-      if (!selection || !selection.rangeCount) {
-        return;
-      }
-
-      const activeRange = selection.getRangeAt(0);
-      if (!isRangeInsideEditor(activeRange)) {
-        return;
-      }
-
-      const ancestor = activeRange.commonAncestorContainer;
-      const targetNode = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-      const insideTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
-      const insideSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
-
-      if (insideTitle) {
-        setEditorSize(safeSize);
-        if (selection.rangeCount) {
-          savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
-        }
-        return;
-      }
-
-      if (insideSubtitle) {
-        setSubtitleSize(safeSize);
-        if (selection.rangeCount) {
-          savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
-        }
-        return;
-      }
-
-      if (activeRange.collapsed) {
-        const anchorNode = activeRange.startContainer;
-        const parentElement = anchorNode.nodeType === Node.ELEMENT_NODE
-          ? anchorNode
-          : anchorNode.parentElement;
-        if (parentElement && documentCardRef.current?.contains(parentElement)) {
-          const isContainer = parentElement === blankBodyRef.current || 
-                              parentElement.tagName === 'P' || 
-                              parentElement.tagName === 'DIV' || 
-                              parentElement.tagName === 'TD' ||
-                              parentElement.tagName === 'LI';
-          if (isContainer) {
-            const span = document.createElement('span');
-            span.style.fontSize = `${safeSize}px`;
-            span.appendChild(document.createTextNode('\u200B')); // zero-width space
-            activeRange.insertNode(span);
-            
-            const nextRange = document.createRange();
-            nextRange.setStart(span.firstChild, 1);
-            nextRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(nextRange);
-          } else {
-            parentElement.style.fontSize = `${safeSize}px`;
-          }
-        }
-      } else {
-        const wrapper = document.createElement('span');
-        wrapper.style.fontSize = `${safeSize}px`;
-
-        try {
-          activeRange.surroundContents(wrapper);
-        } catch (_error) {
-          const fragment = activeRange.extractContents();
-          wrapper.appendChild(fragment);
-          activeRange.insertNode(wrapper);
-        }
-
-        const nextRange = document.createRange();
-        nextRange.selectNodeContents(wrapper);
-        selection.removeAllRanges();
-        selection.addRange(nextRange);
-      }
-
-      if (selection.rangeCount) {
-        savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
-      }
-      if (blankBodyRef.current) {
-        setDocBodyHtml(blankBodyRef.current.innerHTML);
-      }
-      return;
-    }
-
-    document.execCommand(command, false, value);
-
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount) {
-      savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
-    }
-
-    if (blankBodyRef.current) {
-      setDocBodyHtml(blankBodyRef.current.innerHTML);
-    }
-
-    try {
-      setIsBoldActive(Boolean(document.queryCommandState('bold')));
-      setIsItalicActive(Boolean(document.queryCommandState('italic')));
-      setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
-      setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
-      setIsListActive(Boolean(document.queryCommandState('insertUnorderedList')));
-      
-      const ancestor = range.commonAncestorContainer;
-      const element = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-      if (element) {
-        if (titleEditableRef.current && titleEditableRef.current.contains(element)) {
-          setActiveFontSize(editorSize);
-        } else if (subtitleEditableRef.current && subtitleEditableRef.current.contains(element)) {
-          setActiveFontSize(subtitleSize);
-        } else {
-          const style = window.getComputedStyle(element);
-          const size = parseInt(style.fontSize, 10);
-          setActiveFontSize(size || 14);
-        }
-      }
-    } catch (_error) {
-      // noop
-    }
-  };
-
-  const addTaskFromInput = () => {
-    const trimmed = newTaskInput.trim();
-    if (!trimmed) {
-      return;
-    }
-
-    setTasks((prev) => [...prev, { id: Date.now(), text: trimmed, completed: false, owner: newTaskOwner }]);
-    setNewTaskInput('');
-    trackMemoryAction('task', 'Added task', {
-      textLength: trimmed.length,
-    });
-    showToast('Task added');
-  };
-
-  const removeTask = (taskId) => {
-    setTasks((prev) => prev.filter((task) => task.id !== taskId));
-    showToast('Task removed');
-  };
-
-  const beginTaskEdit = (task) => {
-    setEditingTaskId(task.id);
-    setEditingTaskText(task.text || '');
-  };
-
-  const commitTaskEdit = (taskId) => {
-    const next = editingTaskText.trim();
-    if (!next) {
-      setEditingTaskId(null);
-      setEditingTaskText('');
-      return;
-    }
-    setTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, text: next } : task)));
-    setEditingTaskId(null);
-    setEditingTaskText('');
-    showToast('Task updated');
-  };
-
-  const formatTimeSlot = (hours24, minutes = 0) => `${String(hours24).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-
-  const parseTimeSlot = (slot) => {
-    const match = String(slot || '').match(/(\d{1,2}):(\d{2})/);
-    if (!match) {
-      return { hours: 9, minutes: 0 };
-    }
-    return {
-      hours: Math.min(23, Math.max(0, Number(match[1] || 9))),
-      minutes: Math.min(59, Math.max(0, Number(match[2] || 0))),
-    };
-  };
-
-  const inferCategory = (text) => {
-    const value = String(text || '').toLowerCase();
-    if (/meeting|call|sync|interview|standup/.test(value)) return 'Meeting';
-    if (/review|report|draft|write|document|plan/.test(value)) return 'Work';
-    if (/doctor|gym|pay|bill|buy|pickup|family/.test(value)) return 'Personal';
-    return 'General';
-  };
-
-  const inferUrgency = (text, targetDate) => {
-    const value = String(text || '').toLowerCase();
-    if (/urgent|asap|immediately|today/.test(value)) return 'high';
-    if (/tomorrow|soon|next/.test(value)) return 'medium';
-    if (targetDate) {
-      const now = new Date();
-      const diffDays = Math.ceil((targetDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-      if (diffDays <= 1) return 'high';
-      if (diffDays <= 3) return 'medium';
-    }
-    return 'low';
-  };
-
-  const parseScheduleItem = (rawItem, index = 0) => {
-    const cleaned = String(rawItem || '').trim();
-    const normalized = cleaned.replace(/\bshhedule\b|\bshedule\b/gi, 'schedule').replace(/\bppm\b/gi, 'pm');
-
-    const explicitTimeMatch = normalized.match(/\bat\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?/i);
-    const timeWithMarkerMatch = normalized.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\b/i);
-    const timeMatch = explicitTimeMatch || timeWithMarkerMatch;
-    let hours = 9 + (index % 10);
-    let minutes = 0;
-    const hasExplicitTime = Boolean(timeMatch);
-    if (timeMatch) {
-      hours = Number(timeMatch[1] || hours);
-      minutes = Number(timeMatch[2] || 0);
-      const marker = String(timeMatch[3] || '').toLowerCase().replace(/\./g, '');
-      if (marker === 'pm' && hours < 12) hours += 12;
-      if (marker === 'am' && hours === 12) hours = 0;
-      if (!marker && hours <= 7 && explicitTimeMatch) {
-        hours += 12;
-      }
-      hours = Math.min(23, Math.max(0, hours));
-    }
-
-    const durationMatch = normalized.match(/(\d{1,3})\s*(m|min|mins|minute|minutes|h|hr|hrs|hour|hours)\b/i);
-    let durationMinutes = 60;
-    if (durationMatch) {
-      const amount = Number(durationMatch[1] || 60);
-      const unit = String(durationMatch[2] || 'm').toLowerCase();
-      durationMinutes = /h|hr|hrs|hour/.test(unit) ? amount * 60 : amount;
-    }
-
-    const monthRegex = /(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+[a-z]+)?\s+(\d{1,2})(?:[^\d]+(\d{4}))?/i;
-    const dateMatch = normalized.match(monthRegex);
-    let dueDate = null;
-    if (dateMatch) {
-      const monthNamesLookup = {
-        january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
-        july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
-      };
-      const monthIndex = monthNamesLookup[String(dateMatch[1] || '').toLowerCase()];
-      const day = Number(dateMatch[2] || selectedCalendarDate.getDate());
-      const year = Number(dateMatch[3] || selectedCalendarDate.getFullYear());
-      if (!Number.isNaN(monthIndex) && !Number.isNaN(day)) {
-        dueDate = new Date(year, monthIndex, day, hours, minutes);
-      }
-    } else {
-      dueDate = new Date(selectedCalendarDate.getFullYear(), selectedCalendarDate.getMonth(), selectedCalendarDate.getDate(), hours, minutes);
-    }
-
-    const titleSource = normalized
-      .replace(/\b(schedule|create|add|set|plan)\b/gi, '')
-      .replace(/\bon\b.+$/i, '')
-      .replace(/\bat\b.+$/i, '')
-      .trim();
-
-    let title = titleSource;
-    if (/meeting|call|sync/i.test(normalized)) {
-      title = 'Meeting';
-    } else if (!title) {
-      title = `Task ${index + 1}`;
-    }
-
-    const category = inferCategory(normalized);
-    const urgency = inferUrgency(normalized, dueDate);
-
-    const slot = formatTimeSlot(hours, minutes);
-
-    const parsed = {
-      id: Date.now() + index + Math.floor(Math.random() * 1000),
-      slot,
-      timeExplicit: hasExplicitTime,
-      title,
-      summary: '',
-      steps: [],
-      category,
-      urgency,
-      durationMinutes,
-      dueDate: dueDate ? dueDate.toISOString() : null,
-      approved: false,
-      rawInput: cleaned,
-    };
-
-    return {
-      ...parsed,
-      original: {
-        slot: parsed.slot,
-        title: parsed.title,
-        summary: parsed.summary,
-        steps: parsed.steps,
-        category: parsed.category,
-        urgency: parsed.urgency,
-        durationMinutes: parsed.durationMinutes,
-        dueDate: parsed.dueDate,
-      },
-    };
-  };
-
-  const findBestAvailableSlot = (targetDate) => {
-    const pool = ['09:00', '11:00', '13:00', '15:00', '17:00', '19:00'];
-    const isSameDay = (iso) => {
-      if (!iso) return false;
-      const d = new Date(iso);
-      return d.getFullYear() === targetDate.getFullYear() && d.getMonth() === targetDate.getMonth() && d.getDate() === targetDate.getDate();
-    };
-    const busy = new Set([
-      ...scheduleOutput.filter((item) => isSameDay(item.dueDate)).map((item) => item.slot),
-      ...upcomingEvents.filter((item) => isSameDay(item.dueDate)).map((item) => item.slot),
-    ]);
-    return pool.find((slot) => !busy.has(slot)) || pool[0];
-  };
-
-  const enrichScheduleItemsWithAI = async (rawItems, fallbackItems) => {
-    const schema = {
-      type: 'object',
-      properties: {
-        items: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              title: { type: 'string' },
-              slot: { type: 'string' },
-              dueDateISO: { type: 'string' },
-              durationMinutes: { type: 'number' },
-              category: { type: 'string' },
-              urgency: { type: 'string' },
-              summary: { type: 'string' },
-              steps: { type: 'array', items: { type: 'string' } },
-            },
-          },
-        },
-      },
-    };
-
-    try {
-      const response = await callGemini({
-        userPrompt: rawItems.join('\n'),
-        systemPrompt: `Convert the schedule lines into structured JSON.\nRules:\n- Extract title, date/time, duration in minutes.\n- slot must be HH:MM 24-hour.\n- dueDateISO must be valid ISO datetime.\n- infer category as Meeting/Work/Personal/General.\n- urgency must be high/medium/low.\n- Keep summary concise.\n- Add useful step checklist when obvious.`,
-        schema,
-        attachments: scheduleAttachments,
-      });
-
-      const aiItems = response?.parsed?.items;
-      if (!Array.isArray(aiItems) || !aiItems.length) {
-        return fallbackItems;
-      }
-
-      return fallbackItems.map((base, index) => {
-        const ai = aiItems[index] || {};
-        const mergedDate = ai.dueDateISO ? new Date(ai.dueDateISO) : (base.dueDate ? new Date(base.dueDate) : null);
-        const nextDate = mergedDate && !Number.isNaN(mergedDate.getTime()) ? mergedDate : null;
-        const nextSlot = /\d{1,2}:\d{2}/.test(String(ai.slot || '')) ? String(ai.slot) : base.slot;
-        const next = {
-          ...base,
-          title: String(ai.title || base.title || '').trim() || base.title,
-          slot: nextSlot,
-          dueDate: nextDate ? nextDate.toISOString() : base.dueDate,
-          timeExplicit: /\d{1,2}:\d{2}/.test(String(ai.slot || '')) || base.timeExplicit,
-          durationMinutes: Number(ai.durationMinutes || base.durationMinutes || 60),
-          category: String(ai.category || base.category || 'General'),
-          urgency: ['high', 'medium', 'low'].includes(String(ai.urgency || '').toLowerCase()) ? String(ai.urgency).toLowerCase() : base.urgency,
-          summary: String(ai.summary || base.summary || ''),
-          steps: Array.isArray(ai.steps) ? ai.steps.filter(Boolean).map((step) => String(step)) : base.steps,
-        };
-
-        return {
-          ...next,
-          original: {
-            slot: next.slot,
-            title: next.title,
-            summary: next.summary,
-            steps: next.steps,
-            category: next.category,
-            urgency: next.urgency,
-            durationMinutes: next.durationMinutes,
-            dueDate: next.dueDate,
-          },
-        };
-      });
-    } catch (_error) {
-      return fallbackItems;
-    }
-  };
-
-  const formatEventSlotLabel = (event) => {
-    if (!event?.dueDate) {
-      return event?.slot ? `${event.slot}` : (event?.slotLabel || 'No time set');
-    }
-
-    const dateValue = new Date(event.dueDate);
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-
-    const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-    const slotLabel = event.slot || formatTimeSlot(dateValue.getHours(), dateValue.getMinutes());
-
-    if (isSameDay(dateValue, today)) {
-      return `Today - ${slotLabel}`;
-    }
-    if (isSameDay(dateValue, tomorrow)) {
-      return `Tomorrow - ${slotLabel}`;
-    }
-    return `${dateValue.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} - ${slotLabel}`;
-  };
-
-  const formatUpcomingHeaderDate = (dateValue) => {
-    const safeDate = dateValue instanceof Date ? dateValue : new Date();
-    const weekday = safeDate.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase();
-    const month = safeDate.toLocaleDateString(undefined, { month: 'short' }).toUpperCase();
-    return `${weekday} ${month} ${safeDate.getDate()}`;
-  };
-
-  const scheduleAgendaItems = useMemo(() => {
-    const parseSlotMinutes = (slot) => {
-      const raw = String(slot || '').trim();
-      if (!raw) {
-        return null;
-      }
-      let match = raw.match(/^(\d{1,2}):(\d{2})$/);
-      if (match) {
-        return Number(match[1]) * 60 + Number(match[2]);
-      }
-      match = raw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-      if (match) {
-        const meridian = String(match[3] || '').toUpperCase();
-        let hour = Number(match[1]) % 12;
-        if (meridian === 'PM') {
-          hour += 12;
-        }
-        return hour * 60 + Number(match[2]);
-      }
-      return null;
-    };
-
-    const normalized = [...(upcomingEvents || []), ...(scheduleOutput || [])]
-      .map((event, index) => {
-        const dueDate = event?.dueDate ? new Date(event.dueDate) : null;
-        const hasDate = dueDate instanceof Date && !Number.isNaN(dueDate.getTime());
-        const slotMinutes = parseSlotMinutes(event?.slot);
-        const fallback = new Date(selectedCalendarDate || new Date());
-        if (slotMinutes !== null) {
-          fallback.setHours(Math.floor(slotMinutes / 60), slotMinutes % 60, 0, 0);
-        } else {
-          fallback.setHours(9 + index, 0, 0, 0);
-        }
-
-        return {
-          ...event,
-          _sortDate: hasDate ? dueDate : fallback,
-        };
-      })
-      .sort((a, b) => a._sortDate - b._sortDate)
-      .slice(0, 6);
-
-    return normalized;
-  }, [scheduleOutput, selectedCalendarDate, upcomingEvents]);
-
-  const scheduleAiInsights = useMemo(() => {
-    const insights = [];
-    const agenda = scheduleAgendaItems;
-    if (!agenda.length) {
-      return ['No upcoming events yet. Paste tasks below and Compose AI will build a focused schedule.'];
-    }
-
-    const todaysEvents = agenda.filter((event) => {
-      if (!event?._sortDate) {
-        return false;
-      }
-      const now = new Date();
-      return event._sortDate.getFullYear() === now.getFullYear()
-        && event._sortDate.getMonth() === now.getMonth()
-        && event._sortDate.getDate() === now.getDate();
-    });
-
-    const todayDuration = todaysEvents.reduce((sum, event) => sum + Math.max(15, Number(event.durationMinutes || 60)), 0);
-    if (todayDuration >= 300) {
-      insights.push('Today is packed. Consider a 15-minute recovery buffer between deep-work blocks.');
-    }
-
-    const adjacentHighUrgency = agenda.filter((event) => String(event.urgency || '').toLowerCase() === 'high').length;
-    if (adjacentHighUrgency >= 3) {
-      insights.push('Three high-urgency items are competing. Reorder by impact to avoid context switching.');
-    }
-
-    const titleSignal = String(docTitle || '').trim().toLowerCase();
-    if (titleSignal) {
-      const hasLinkedEvent = agenda.some((event) => String(event.title || '').toLowerCase().includes(titleSignal.split(' ')[0] || ''));
-      if (hasLinkedEvent) {
-        insights.push('A scheduled item aligns with your active document. Keep it near your writing sprint.');
-      }
-    }
-
-    if (!insights.length) {
-      insights.push('Schedule balance looks healthy. Keep one flexible slot open for AI-assisted revisions.');
-    }
-
-    return insights.slice(0, 3);
-  }, [docTitle, scheduleAgendaItems]);
-
-  useEffect(() => {
-    // Expand schedule rail when full calendar panel is open; otherwise keep compact width.
-    if (activeRightTab === 'calendar' && rightSidebarOpen) {
-      const targetWidth = isScheduleCalendarExpanded ? 440 : 320;
-      if (rightSidebarWidth !== targetWidth) {
-        setRightSidebarWidth(targetWidth);
-      }
-    }
-  }, [activeRightTab, rightSidebarOpen, rightSidebarWidth, isScheduleCalendarExpanded]);
-
-  const convertTaskToSchedule = async (taskValue) => {
-    const taskText = typeof taskValue === 'string' ? taskValue : String(taskValue?.text || '');
-    const trimmed = taskText.trim();
-    if (!trimmed) {
-      return;
-    }
-
-    let scheduleItem = parseScheduleItem(trimmed, scheduleOutput.length);
-    const targetDate = scheduleItem.dueDate ? new Date(scheduleItem.dueDate) : selectedCalendarDate;
-    if (!scheduleItem.timeExplicit) {
-      scheduleItem.slot = findBestAvailableSlot(targetDate);
-    }
-
-    const aiEnriched = await enrichScheduleItemsWithAI([trimmed], [scheduleItem]);
-    scheduleItem = aiEnriched[0] || scheduleItem;
-    if (typeof taskValue === 'object' && taskValue?.owner) {
-      scheduleItem.category = taskValue.owner === 'agent' ? 'Agent Task' : scheduleItem.category;
-    }
-
-    setScheduleOutput((prev) => [...prev, scheduleItem]);
-    setActiveRightTab('calendar');
-    setRightSidebarOpen(true);
-    trackMemoryAction('automation', 'Converted task to schedule', {
-      title: scheduleItem.title,
-    });
-    showToast('Task converted to schedule');
-  };
-
-  const convertMessyScheduleToPlan = async () => {
-    const rawItems = scheduleInput
-      .split(/\n|;/)
-      .map((item) => item.trim())
-      .filter(Boolean);
-
-    if (!rawItems.length) {
-      return;
-    }
-
-    let cleanItems = rawItems.map((item, index) => {
-      const parsed = parseScheduleItem(item, index);
-      if (!parsed.timeExplicit) {
-        const targetDate = parsed.dueDate ? new Date(parsed.dueDate) : selectedCalendarDate;
-        parsed.slot = findBestAvailableSlot(targetDate);
-      }
-      return parsed;
-    });
-
-    cleanItems = await enrichScheduleItemsWithAI(rawItems, cleanItems);
-
-    setScheduleOutput(cleanItems);
-    trackMemoryAction('automation', 'Converted raw schedule input', {
-      items: cleanItems.length,
-    });
-    showToast('Messy schedule converted to clean timeline');
-  };
-
-  const updateScheduleItem = (id, field, value) => {
-    setScheduleOutput((prev) => prev.map((item) => (
-      item.id === id ? { ...item, [field]: value } : item
-    )));
-  };
-
-  const undoScheduleItem = (id) => {
-    setScheduleOutput((prev) => prev.filter((item) => item.id !== id));
-    showToast('Removed from processed list');
-  };
-
-  const addScheduleStep = (id) => {
-    setScheduleOutput((prev) => prev.map((item) => (
-      item.id === id ? { ...item, steps: [...(item.steps || []), ''] } : item
-    )));
-  };
-
-  const updateScheduleStep = (id, stepIndex, value) => {
-    setScheduleOutput((prev) => prev.map((item) => {
-      if (item.id !== id) return item;
-      const nextSteps = [...(item.steps || [])];
-      nextSteps[stepIndex] = value;
-      return { ...item, steps: nextSteps };
-    }));
-  };
-
-  const removeScheduleStep = (id, stepIndex) => {
-    setScheduleOutput((prev) => prev.map((item) => {
-      if (item.id !== id) return item;
-      return { ...item, steps: (item.steps || []).filter((_, idx) => idx !== stepIndex) };
-    }));
-  };
-
-  const approveScheduleItem = (id) => {
-    setScheduleOutput((prev) => {
-      const target = prev.find((item) => item.id === id);
-      if (!target) return prev;
-
-      setUpcomingEvents((existing) => [
-        {
-          id: Date.now() + Math.floor(Math.random() * 1000),
-          title: target.title,
-          slot: target.slot,
-          dueDate: target.dueDate || selectedCalendarDate.toISOString(),
-          category: target.category,
-          urgency: target.urgency,
-          durationMinutes: target.durationMinutes || 60,
-          slotLabel: formatEventSlotLabel(target),
-        },
-        ...existing,
-      ]);
-
-      showToast('Schedule item approved and added to upcoming events');
-      return prev.filter((item) => item.id !== id);
-    });
-  };
-
-  const beginPanelResize = (target, event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const point = event.touches?.[0] || event;
-    if (!event.touches && event.button !== 0) {
-      return;
-    }
-    dragStateRef.current = {
-      startX: point.clientX,
-      startY: point.clientY,
-      leftWidth: leftSidebarWidth,
-      rightWidth: rightSidebarWidth,
-      promptX: promptOffset.x,
-      promptY: promptOffset.y,
-      miniPromptX: miniPromptOffset.x,
-      miniPromptY: miniPromptOffset.y,
-      dictationX: dictationOffset.x,
-      dictationY: dictationOffset.y,
-      deckPromptX: deckPromptOffset.x,
-      deckPromptY: deckPromptOffset.y,
-    };
-    setDragTarget(target);
-  };
-
-  useEffect(() => {
-    if (!dragTarget) {
-      return;
-    }
-
-    const handlePointerMove = (event) => {
-      const deltaX = event.clientX - dragStateRef.current.startX;
-
-      if (dragTarget === 'left') {
-        const nextLeftWidth = Math.min(380, Math.max(220, dragStateRef.current.leftWidth + deltaX));
-        setLeftSidebarWidth(nextLeftWidth);
-      }
-
-      if (dragTarget === 'right') {
-        const nextRightWidth = Math.min(520, Math.max(280, dragStateRef.current.rightWidth - deltaX));
-        setRightSidebarWidth(nextRightWidth);
-      }
-
-      if (dragTarget === 'prompt') {
-        const nextX = Math.min(620, Math.max(-620, dragStateRef.current.promptX + deltaX));
-        const deltaY = event.clientY - dragStateRef.current.startY;
-        const nextY = Math.min(320, Math.max(-540, dragStateRef.current.promptY - deltaY));
-        setPromptOffset({ x: nextX, y: nextY });
-      }
-
-      if (dragTarget === 'miniPrompt') {
-        const nextX = Math.min(840, Math.max(-20, dragStateRef.current.miniPromptX + deltaX));
-        const deltaY = event.clientY - dragStateRef.current.startY;
-        const nextY = Math.min(560, Math.max(-40, dragStateRef.current.miniPromptY + deltaY));
-        setMiniPromptOffset({ x: nextX, y: nextY });
-      }
-
-      if (dragTarget === 'dictation') {
-        const nextX = Math.min(840, Math.max(-20, dragStateRef.current.dictationX + deltaX));
-        const deltaY = event.clientY - dragStateRef.current.startY;
-        const nextY = Math.min(520, Math.max(-280, dragStateRef.current.dictationY + deltaY));
-        setDictationOffset({ x: nextX, y: nextY });
-      }
-
-      if (dragTarget === 'deckPrompt') {
-        const nextX = Math.min(220, Math.max(-220, dragStateRef.current.deckPromptX + deltaX));
-        const deltaY = event.clientY - dragStateRef.current.startY;
-        const nextY = Math.min(200, Math.max(-220, dragStateRef.current.deckPromptY + deltaY));
-        setDeckPromptOffset({ x: nextX, y: nextY });
-      }
-    };
-
-    const handlePointerUp = () => {
-      setDragTarget(null);
-    };
-
-    document.body.style.cursor = ['prompt', 'miniPrompt', 'dictation', 'deckPrompt'].includes(dragTarget) ? 'grabbing' : 'col-resize';
-    document.body.style.userSelect = 'none';
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-
-    return () => {
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-    };
-  }, [dragTarget, deckPromptOffset.x, deckPromptOffset.y, dictationOffset.x, dictationOffset.y, leftSidebarWidth, miniPromptOffset.x, miniPromptOffset.y, promptOffset.x, promptOffset.y, rightSidebarWidth]);
-
-  // Helper function to generate calendar days
-  const generateCalendarDays = (month, year) => {
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const daysInPrevMonth = new Date(year, month, 0).getDate();
-    
-    const days = [];
-    
-    // Previous month's trailing days
-    for (let i = firstDay - 1; i >= 0; i--) {
-      days.push({ day: daysInPrevMonth - i, isCurrentMonth: false });
-    }
-    
-    // Current month's days
-    for (let i = 1; i <= daysInMonth; i++) {
-      const isToday = new Date(year, month, i).toDateString() === new Date().toDateString();
-      days.push({ day: i, isCurrentMonth: true, isToday });
-    }
-    
-    // Next month's leading days
-    const remainingDays = 42 - days.length;
-    for (let i = 1; i <= remainingDays; i++) {
-      days.push({ day: i, isCurrentMonth: false });
-    }
-    
-    return days;
-  };
-
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-  const setCalendarView = (nextMonth, nextYear) => {
-    const boundedYear = Math.min(2029, Math.max(2026, nextYear));
-    const boundedMonth = Math.min(11, Math.max(0, nextMonth));
-    const preferredDay = selectedCalendarDate?.getDate?.() || 1;
-    const maxDay = new Date(boundedYear, boundedMonth + 1, 0).getDate();
-
-    setCalendarMonth(boundedMonth);
-    setCalendarYear(boundedYear);
-    setSelectedCalendarDate(new Date(boundedYear, boundedMonth, Math.min(preferredDay, maxDay)));
-  };
-
-  // Helper component for the Workspace icons in the sidebar
-  const WorkspaceIcon = ({ letter, colorClass }) => (
-    <div className={`w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white ${colorClass}`}>
-      {letter}
-    </div>
-  );
-
-  const orderedDocuments = [...documents].sort((a, b) => {
-    if (!!a.pinned === !!b.pinned) {
-      return 0;
-    }
-    return a.pinned ? -1 : 1;
-  });
-
-  const canShowComposeActions = Boolean(
-    lastComposeRun
-    && lastComposeRun.documentId === activeDocId
-    && getPlainText(docBodyHtml).length
-  );
-  const deckSlides = deckSlidesData;
-  const activeDeckSlide = deckSlides.find((slide) => slide.id === activeDeckSlideId) || deckSlides[0];
-  const resolvedDeckSlideDesign = useMemo(() => {
-    const fallback = DECK_DESIGN_PRESETS[0];
-    if (!activeDeckSlide) {
-      return {
-        preset: fallback,
-        headline: 'The future of work is human + AI.',
-        blurb: 'An adaptive workspace that thinks with you, so you can create without limits.',
-        visualType: 'hero statement',
-        layoutStyle: 'cinematic split',
-        motionCue: 'Soft fade and stagger reveal',
-        keyMetric: '',
-        speakerNotes: '',
-        section: 'Opening',
-        footer: 'May 15, 2026',
-      };
-    }
-    const preset = DECK_DESIGN_PRESETS.find((item) => item.key === activeDeckSlide.designPresetKey)
-      || DECK_DESIGN_PRESETS[(Math.max(0, activeDeckSlide.id - 1)) % DECK_DESIGN_PRESETS.length]
-      || fallback;
-
-    return {
-      preset,
-      headline: activeDeckSlide.headline || `${activeDeckSlide.title || 'Original concept'} that earns attention`,
-      blurb: activeDeckSlide.blurb || `${activeDeckSlide.subtitle || 'Built for modern teams'} and crafted to be edited live.`,
-      visualType: activeDeckSlide.visualType || 'hero statement',
-      layoutStyle: activeDeckSlide.layoutStyle || 'cinematic split',
-      motionCue: activeDeckSlide.motionCue || 'Soft fade and stagger reveal',
-      keyMetric: activeDeckSlide.keyMetric || '',
-      speakerNotes: activeDeckSlide.speakerNotes || '',
-      section: activeDeckSlide.section || inferDeckStorySection(activeDeckSlide, Math.max(0, activeDeckSlide.id - 1), Math.max(1, deckSlides.length)),
-      footer: activeDeckSlide.footer || 'Original design 繚 Editable',
-    };
-  }, [activeDeckSlide, deckSlides.length]);
-
-  const deckIntelligence = useMemo(() => {
-    if (!deckSlides.length) {
-      return {
-        narrativeQuality: 'No slides yet',
-        pacingQuality: 'No pacing yet',
-        weakSlides: [],
-        audienceFit: 'Audience fit not available',
-        presentationSummary: 'Generate slides to see AI narrative diagnostics.',
-        suggestions: ['Generate a deck from your goal and source materials.'],
-        suggestedAdditions: ['Add market signal slide', 'Add proof/traction slide'],
-        relatedSources: [],
-        speakerNotes: 'Speaker notes will appear after deck generation.',
-      };
-    }
-
-    const withSections = deckSlides.map((slide, index) => ({
-      ...slide,
-      section: slide.section || inferDeckStorySection(slide, index, deckSlides.length),
-    }));
-    const uniqueSections = [...new Set(withSections.map((slide) => slide.section))];
-    const avgWords = withSections.reduce((acc, slide) => acc + String(slide.blurb || '').split(/\s+/).filter(Boolean).length, 0) / Math.max(1, withSections.length);
-    const weakSlides = withSections
-      .filter((slide) => String(slide.blurb || '').trim().length < 55 || String(slide.headline || '').trim().length < 12)
-      .slice(0, 4)
-      .map((slide) => `${slide.title}: strengthen emotional hook and proof.`);
-
-    const hasFinancialSignal = withSections.some((slide) => /revenue|cac|ltv|forecast|unit/i.test(`${slide.title} ${slide.headline} ${slide.blurb}`));
-    const narrativeQuality = `${Math.min(99, Math.round((uniqueSections.length / DECK_STORY_SECTIONS.length) * 100 + 15))}% coherent narrative flow`;
-    const pacingQuality = `${Math.max(62, 100 - Math.abs(withSections.length - 10) * 6)}% pacing balance`;
-    const suggestions = [];
-    if (weakSlides.length) suggestions.push('Strengthen weak slides with stronger hooks and concrete proof points.');
-    if (withSections.length > 12) suggestions.push('Compress to 8-10 slides for tighter executive pacing.');
-    if (!hasFinancialSignal) suggestions.push('Add one concise financial confidence slide for investor readiness.');
-    if (!suggestions.length) suggestions.push('Narrative quality is strong. Add a differentiator visual to increase memorability.');
-
-    const relatedSources = [...new Map([...promptAttachments, ...chatAttachments].map((item) => [item.id || item.name, item])).values()]
-      .slice(0, 5)
-      .map((item) => `${item.name} (${item.type || 'file'})`);
-
-    const activeNotes = activeDeckSlide?.speakerNotes?.trim();
-
-    return {
-      narrativeQuality,
-      pacingQuality,
-      weakSlides,
-      audienceFit: hasFinancialSignal ? 'Strong investor-fit narrative with quant signals.' : 'General audience fit detected. Add financial proof for investors.',
-      presentationSummary: `${deckSlides.length} slides across ${uniqueSections.length} narrative sections: ${uniqueSections.join(', ')}.`,
-      suggestions,
-      suggestedAdditions: ['Competitor comparison visual', 'Go-to-market timeline', 'Risk and mitigation slide'],
-      relatedSources,
-      speakerNotes: activeNotes || 'No speaker notes yet on this slide. Ask AI Assistant to create presenter notes.',
-    };
-  }, [activeDeckSlide?.speakerNotes, chatAttachments, deckSlides, promptAttachments]);
-
-  const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
-  const activeSheetGrid = sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
-  const isSheetsMode = productMode === 'sheets';
-  const updateDeckSlideField = (slideId, field, value) => {
-    setDeckSlidesData((prev) => prev.map((slide) => (slide.id === slideId ? { ...slide, [field]: value } : slide)));
-  };
-
-  const generateOriginalDeckDesign = () => {
-    if (!activeDeckSlide?.id) {
-      return;
-    }
-    const randomPreset = DECK_DESIGN_PRESETS[Math.floor(Math.random() * DECK_DESIGN_PRESETS.length)] || DECK_DESIGN_PRESETS[0];
-    const conceptSeed = deckPromptInput.trim() || activeDeckSlide.title || 'New original concept';
-    const headline = `${conceptSeed.replace(/\.$/, '')}: a bold narrative direction`;
-    const blurb = `${activeDeckSlide.subtitle || 'Story-first slide'} with original visuals and editable layers for your team.`;
-
-    setDeckSlidesData((prev) => prev.map((slide) => {
-      if (slide.id !== activeDeckSlide.id) {
-        return slide;
-      }
-      return {
-        ...slide,
-        designPresetKey: randomPreset.key,
-        headline,
-        blurb,
-        footer: `Original concept 繚 ${new Date().toLocaleDateString()}`,
-      };
-    }));
-    showToast('Generated original slide design. You can edit headline and body directly.');
-  };
-
-  const applyDeckTemplate = (template, scope = 'slide') => {
-    if (!template) {
-      return;
-    }
-
-    const applyToSlide = (slide, index = 0, total = 1) => ({
-      ...slide,
-      designPresetKey: template.presetKey,
-      visualType: template.visualType,
-      layoutStyle: template.layoutStyle,
-      motionCue: template.motionCue,
-      section: slide.section || inferDeckStorySection(slide, index, total),
-      footer: `${template.label} 繚 Editable`,
-    });
-
-    if (scope === 'deck') {
-      setDeckSlidesData((prev) => prev.map((slide, index) => applyToSlide(slide, index, prev.length)));
-      showToast(`Applied ${template.label} to full deck`);
-      return;
-    }
-
-    if (!activeDeckSlide?.id) {
-      return;
-    }
-    setDeckSlidesData((prev) => prev.map((slide, index) => (
-      slide.id === activeDeckSlide.id ? applyToSlide(slide, index, prev.length) : slide
-    )));
-    showToast(`Applied ${template.label} to current slide`);
-  };
-
-  const addDeckSlide = () => {
-    const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
-    const preset = DECK_DESIGN_PRESETS[(nextId - 1) % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
-    const newSlide = {
-      id: nextId,
-      title: `Slide ${nextId}`,
-      subtitle: 'New talking point',
-      accent: 'from-violet-500 to-indigo-600',
-      designPresetKey: preset.key,
-      headline: `Original concept for Slide ${nextId}`,
-      blurb: 'Click and edit this text to shape your message.',
-      visualType: 'hero statement',
-      layoutStyle: 'cinematic split',
-      motionCue: 'Soft fade and stagger reveal',
-      keyMetric: '',
-      speakerNotes: '',
-      section: inferDeckStorySection({ title: `Slide ${nextId}` }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
-      footer: 'Original design 繚 Editable',
-    };
-    setDeckSlidesData((prev) => [...prev, newSlide]);
-    setActiveDeckSlideId(nextId);
-    showToast(`Slide ${nextId} created`);
-  };
-  const addWorksheet = () => {
-    const nextId = (sheetsData[sheetsData.length - 1]?.id || 0) + 1;
-    const worksheet = {
-      id: nextId,
-      title: `Worksheet ${nextId}`,
-      subtitle: 'Custom',
-    };
-    setSheetsData((prev) => [...prev, worksheet]);
-    setSheetGrids((prev) => ({
-      ...prev,
-      [nextId]: { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) },
-    }));
-    setActiveSheetId(nextId);
-    setSheetsTitle(worksheet.title);
-    showToast(`${worksheet.title} created`);
-  };
-  const toColumnLabel = (index) => {
-    let current = index + 1;
-    let label = '';
-    while (current > 0) {
-      const rem = (current - 1) % 26;
-      label = String.fromCharCode(65 + rem) + label;
-      current = Math.floor((current - 1) / 26);
-    }
-    return label;
-  };
-  const updateSheetCell = (sheetId, rowIndex, colIndex, value) => {
-    setSheetGrids((prev) => {
-      const target = prev[sheetId];
-      if (!target) return prev;
-      const nextCells = target.cells.map((row) => [...row]);
-      if (!nextCells[rowIndex]) return prev;
-      nextCells[rowIndex][colIndex] = value;
-      return {
-        ...prev,
-        [sheetId]: {
-          ...target,
-          cells: nextCells,
-        },
-      };
-    });
-  };
-  const addSheetRow = () => {
-    setSheetGrids((prev) => {
-      const target = prev[activeSheetId];
-      if (!target) return prev;
-      const nextCols = target.cols;
-      return {
-        ...prev,
-        [activeSheetId]: {
-          ...target,
-          rows: target.rows + 1,
-          cells: [...target.cells.map((row) => [...row]), Array.from({ length: nextCols }, () => '')],
-        },
-      };
-    });
-  };
-  const removeSheetRow = () => {
-    setSheetGrids((prev) => {
-      const target = prev[activeSheetId];
-      if (!target || target.rows <= 1) return prev;
-      const nextCells = target.cells.slice(0, -1).map((row) => [...row]);
-      return {
-        ...prev,
-        [activeSheetId]: {
-          ...target,
-          rows: target.rows - 1,
-          cells: nextCells,
-        },
-      };
-    });
-    showToast('Last row removed');
-  };
-  const addSheetColumn = () => {
-    setSheetGrids((prev) => {
-      const target = prev[activeSheetId];
-      if (!target) return prev;
-      const nextCells = target.cells.map((row) => [...row, '']);
-      return {
-        ...prev,
-        [activeSheetId]: {
-          ...target,
-          cols: target.cols + 1,
-          cells: nextCells,
-        },
-      };
-    });
-  };
-  const removeSheetColumn = () => {
-    setSheetGrids((prev) => {
-      const target = prev[activeSheetId];
-      if (!target || target.cols <= 1) return prev;
-      const nextCells = target.cells.map((row) => row.slice(0, -1));
-      return {
-        ...prev,
-        [activeSheetId]: {
-          ...target,
-          cols: target.cols - 1,
-          cells: nextCells,
-        },
-      };
-    });
-    showToast('Last column removed');
-  };
-  const handlePageContextAction = (action) => {
-    const targetId = pageContextMenu.itemId;
-    const isTargetSheets = pageContextMenu.isSheets;
-    if (!targetId) {
-      setPageContextMenu((prev) => ({ ...prev, open: false }));
-      return;
-    }
-
-    if (action === 'add') {
-      if (isTargetSheets) {
-        addWorksheet();
-      } else {
-        addDeckSlide();
-      }
-    }
-
-    if (action === 'duplicate') {
-      if (isTargetSheets) {
-        const source = sheetsData.find((item) => item.id === targetId);
-        if (source) {
-          const nextId = (sheetsData[sheetsData.length - 1]?.id || 0) + 1;
-          const clone = { ...source, id: nextId, title: `${source.title} Copy` };
-          setSheetsData((prev) => [...prev, clone]);
-          const sourceGrid = sheetGrids[targetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
-          setSheetGrids((prev) => ({
-            ...prev,
-            [nextId]: {
-              rows: sourceGrid.rows,
-              cols: sourceGrid.cols,
-              cells: sourceGrid.cells.map((row) => [...row]),
-            },
-          }));
-          setActiveSheetId(nextId);
-          setSheetsTitle(clone.title);
-          showToast('Worksheet duplicated');
-        }
-      } else {
-        const source = deckSlides.find((item) => item.id === targetId);
-        if (source) {
-          const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
-          const clone = { ...source, id: nextId, title: `${source.title} Copy` };
-          setDeckSlidesData((prev) => [...prev, clone]);
-          setActiveDeckSlideId(nextId);
-          showToast('Slide duplicated');
-        }
-      }
-    }
-
-    if (action === 'delete') {
-      if (isTargetSheets) {
-        setSheetsData((prev) => {
-          if (prev.length <= 1) {
-            showToast('At least one worksheet is required');
-            return prev;
-          }
-          const next = prev.filter((item) => item.id !== targetId);
-          if (activeSheetId === targetId && next[0]) {
-            setActiveSheetId(next[0].id);
-            setSheetsTitle(next[0].title);
-          }
-          return next;
-        });
-        setSheetGrids((prev) => {
-          const next = { ...prev };
-          delete next[targetId];
-          return next;
-        });
-      } else {
-        setDeckSlidesData((prev) => {
-          if (prev.length <= 1) {
-            showToast('At least one slide is required');
-            return prev;
-          }
-          const next = prev.filter((item) => item.id !== targetId);
-          if (activeDeckSlideId === targetId && next[0]) {
-            setActiveDeckSlideId(next[0].id);
-          }
-          return next;
-        });
-      }
-      showToast('Page deleted');
-    }
-
-    if (['copy', 'copyStyle', 'paste', 'hide', 'transition', 'lock', 'download', 'copyLink', 'notes', 'resize', 'editVideo'].includes(action)) {
-      const actionLabels = {
-        copy: 'Copied',
-        copyStyle: 'Style copied',
-        paste: 'Pasted',
-        hide: 'Page hidden',
-        transition: 'Transition added',
-        lock: 'Page locked',
-        download: 'Page download started',
-        copyLink: 'Page link copied',
-        notes: 'Notes opened',
-        resize: 'Resize options opened',
-        editVideo: 'Video editor opened',
-      };
-      showToast(actionLabels[action] || 'Done');
-    }
-
-    setPageContextMenu((prev) => ({ ...prev, open: false }));
-  };
-  const escapeSvgText = (value) => String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-
-  const buildDeckPreviewDataUri = (slide) => {
-    const title = escapeSvgText(slide?.title || 'Untitled Slide');
-    const subtitle = escapeSvgText(slide?.subtitle || '');
-    const gradientMap = {
-      'from-indigo-500 to-violet-500': ['#6366f1', '#8b5cf6'],
-      'from-sky-500 to-indigo-500': ['#0ea5e9', '#6366f1'],
-      'from-cyan-500 to-blue-500': ['#06b6d4', '#3b82f6'],
-      'from-amber-500 to-orange-500': ['#f59e0b', '#f97316'],
-      'from-violet-500 to-fuchsia-500': ['#8b5cf6', '#d946ef'],
-      'from-emerald-500 to-teal-500': ['#10b981', '#14b8a6'],
-      'from-blue-500 to-violet-500': ['#3b82f6', '#8b5cf6'],
-      'from-fuchsia-500 to-pink-500': ['#d946ef', '#ec4899'],
-      'from-indigo-600 to-slate-600': ['#4f46e5', '#475569'],
-      'from-violet-600 to-indigo-700': ['#7c3aed', '#4338ca'],
-    };
-    const [c1, c2] = gradientMap[slide?.accent] || ['#6366f1', '#8b5cf6'];
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
-      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="${c1}"/><stop offset="100%" stop-color="${c2}"/></linearGradient></defs>
-      <rect width="320" height="192" rx="14" fill="url(#g)"/>
-      <rect x="10" y="10" width="64" height="10" rx="5" fill="rgba(255,255,255,0.35)"/>
-      <rect x="10" y="31" width="220" height="12" rx="6" fill="rgba(255,255,255,0.28)"/>
-      <rect x="10" y="49" width="180" height="10" rx="5" fill="rgba(255,255,255,0.22)"/>
-      <text x="12" y="110" font-size="20" font-family="Inter, Arial, sans-serif" fill="white" font-weight="600">${title}</text>
-      <text x="12" y="134" font-size="11" font-family="Inter, Arial, sans-serif" fill="rgba(255,255,255,0.85)">${subtitle}</text>
-      <rect x="12" y="154" width="170" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
-      <rect x="12" y="166" width="136" height="6" rx="3" fill="rgba(255,255,255,0.38)"/>
-    </svg>`;
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-  };
-
-  const buildSheetPreviewDataUri = (sheet) => {
-    const title = escapeSvgText(sheet?.title || 'Untitled Sheet');
-    const subtitle = escapeSvgText(sheet?.subtitle || '');
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
-      <rect width="320" height="192" rx="14" fill="#ffffff"/>
-      <rect x="0" y="0" width="320" height="24" fill="#f8f9fd"/>
-      <rect x="0" y="24" width="320" height="1" fill="#e5e7eb"/>
-      <rect x="0" y="24" width="34" height="168" fill="#f8f9fd"/>
-      <rect x="34" y="24" width="1" height="168" fill="#e5e7eb"/>
-      <text x="42" y="16" font-size="10" font-family="Inter, Arial, sans-serif" fill="#6b7280">${title}</text>
-      <text x="260" y="16" font-size="9" font-family="Inter, Arial, sans-serif" fill="#9ca3af">${subtitle}</text>
-      <g stroke="#e5e7eb" stroke-width="1">
-        <line x1="34" y1="48" x2="320" y2="48"/>
-        <line x1="34" y1="72" x2="320" y2="72"/>
-        <line x1="34" y1="96" x2="320" y2="96"/>
-        <line x1="34" y1="120" x2="320" y2="120"/>
-        <line x1="34" y1="144" x2="320" y2="144"/>
-        <line x1="34" y1="168" x2="320" y2="168"/>
-        <line x1="75" y1="24" x2="75" y2="192"/>
-        <line x1="116" y1="24" x2="116" y2="192"/>
-        <line x1="157" y1="24" x2="157" y2="192"/>
-        <line x1="198" y1="24" x2="198" y2="192"/>
-        <line x1="239" y1="24" x2="239" y2="192"/>
-        <line x1="280" y1="24" x2="280" y2="192"/>
-      </g>
-      <rect x="75" y="48" width="41" height="24" fill="#ede9fe"/>
-      <rect x="116" y="72" width="41" height="24" fill="#f5f3ff"/>
-    </svg>`;
-    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-  };
-  const handleGenerateSheetFilePrompt = () => {
-    if (!isSheetsMode) {
-      return;
-    }
-    addWorksheet();
-    setDeckPromptInput('Generate a new Sheets file with starter tabs: Summary, Revenue, Expenses, and Forecast. Fill each tab with clean table headers and starter formulas.');
-    setDeckPromptMinimized(false);
-  };
-  const pageNumberPositionClass = pageNumberPosition === 'left'
-    ? 'left-12 text-left'
-    : pageNumberPosition === 'right'
-      ? 'right-12 text-right'
-      : 'left-1/2 -translate-x-1/2 text-center';
-
-  const showDocumentOutlineView = isFocusMode || activeDocView === 'document';
-  const rightMiniRailWidth = 0;
-  const blurEdgeGuard = 0;
-  const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
-  const blurRightInset = (rightSidebarOpen ? rightSidebarWidth : 0) + rightMiniRailWidth + blurEdgeGuard;
-  const shouldShowPromptBackdrop =
-    isPromptExpanded &&
-    isPromptAutoVisible &&
-    !isPromptDismissed &&
-    !isPromptMinimized &&
-    !isComposing &&
-    !(isVoiceActive && voiceTarget === 'document');
-  const shouldHideDictationOverlay =
-    openDropdown !== null
-    || textStyleMenuOpen
-    || languageMenuOpen
-    || Boolean(openDocMenuId)
-    || Boolean(openWorkspaceMenuId)
-    || isPromptMenuOpen
-    || promptTuneMenuOpen
-    || promptFormatMenuOpen
-    || promptLibraryOpen
-    || promptHistoryFilterMenuOpen
-    || Boolean(sheetToolbarMenuOpen)
-    || deckToolbarMenuOpen
-    || notificationsOpen
-    || replayPanelOpen
-    || replaySpeedMenuOpen
-    || (selectionActionMenuEnabled && selectionActionMenu.open)
-    || pageContextMenu.open
-    || docSearchPanelOpen
-    || creationPickerOpen
-    || workspaceModalOpen
-    || shareModalOpen
-    || isScheduleSessionModalOpen;
-  const shouldHideScrollbarsForPrompt = shouldShowPromptBackdrop;
-  const savedStatusLabel = formatRelativeSavedLabel(lastSavedAt);
-  const activeDraftDisplayTitle = (() => {
-    const rawTitle = (documents.find((doc) => doc.id === activeDocId)?.title || docTitle || '').trim();
-    return rawTitle || (lastSavedAt ? SAVED_DRAFT_LABEL : 'Unsaved draft');
-  })();
-  const showHeaderGhostPlaceholder = !String(docTitle || '').trim()
-    && !String(docSubtitle || '').trim()
-    && !getPlainText(docBodyHtml).trim();
-
-  useEffect(() => {
-    if (productMode !== 'compose') {
-      return undefined;
-    }
-
-    const updateDictationAnchor = () => {
-      const card = documentCardRef.current;
-      if (!card) {
-        setDictationAnchor({ left: window.innerWidth - 100, top: window.innerHeight / 2 });
-        return;
-      }
-
-      const rect = card.getBoundingClientRect();
-      const visibleLeft = Math.max(rect.left, 0);
-      const visibleRight = Math.min(rect.right, window.innerWidth);
-      const visibleTop = Math.max(rect.top, 0);
-      const visibleBottom = Math.min(rect.bottom, window.innerHeight);
-
-      const hasVisibleWidth = visibleRight > visibleLeft;
-      const hasVisibleHeight = visibleBottom > visibleTop;
-
-      const rightX = hasVisibleWidth ? visibleRight - 80 : window.innerWidth - 100;
-      const centerY = hasVisibleHeight ? visibleTop + (visibleBottom - visibleTop) / 2 : window.innerHeight / 2;
-
-      setDictationAnchor({ left: rightX, top: centerY });
-    };
-
-    updateDictationAnchor();
-    window.addEventListener('resize', updateDictationAnchor);
-    window.addEventListener('scroll', updateDictationAnchor, true);
-
-    return () => {
-      window.removeEventListener('resize', updateDictationAnchor);
-      window.removeEventListener('scroll', updateDictationAnchor, true);
-    };
-  }, [
-    productMode,
-    activeDocId,
-    zoomLevel,
-    leftSidebarOpen,
-    rightSidebarOpen,
-    leftSidebarWidth,
-    rightSidebarWidth,
-  ]);
-
-  useEffect(() => {
-    if (productMode !== 'compose') {
-      return;
-    }
-    // Keep dictation centered when layout panels change.
-    setDictationOffset({ x: 0, y: 0 });
-  }, [
-    productMode,
-    activeDocId,
-    leftSidebarOpen,
-    rightSidebarOpen,
-    leftSidebarWidth,
-    rightSidebarWidth,
-    showDocumentOutlineView,
-    isPromptExpanded,
-  ]);
-
-  const smartAssistMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
-  const smartAssistIntro = smartAssistMode === 'sheets'
-    ? 'Use AI to transform data quickly: clean, model, summarize, and detect issues.'
-    : smartAssistMode === 'deck'
-      ? 'Use AI to improve slide clarity, structure, and storytelling flow.'
-      : 'Use AI to shape writing structure, tone, and section hierarchy.';
-  const smartAssistOptions = smartAssistMode === 'sheets'
-    ? [
-      { key: 'fill-pattern', label: 'Fill down this pattern', detail: 'Auto-detect and extend sequences', icon: RefreshCcw, color: 'text-violet-500', prompt: 'Fill down this pattern across adjacent rows and keep sequence logic consistent.' },
-      { key: 'clean-data', label: 'Clean this data', detail: 'Remove duplicates and standardize formats', icon: ShieldAlert, color: 'text-indigo-500', prompt: 'Clean this data by removing duplicates, fixing inconsistent formats, and normalizing values.' },
-      { key: 'suggest-formula', label: 'Suggest a formula', detail: 'Natural language to formula', icon: Type, color: 'text-emerald-500', prompt: 'Suggest the best spreadsheet formula for the selected cells and explain assumptions briefly.' },
-      { key: 'anomalies', label: 'Find anomalies', detail: 'Flag unusual values or outliers', icon: AlertTriangle, color: 'text-amber-500', prompt: 'Find anomalies and outliers in this sheet and suggest likely reasons.' },
-      { key: 'pivot-summary', label: 'Create a pivot summary', detail: 'Aggregate by key dimensions', icon: Database, color: 'text-cyan-500', prompt: 'Create a pivot-style summary grouped by key dimensions with totals and highlights.' },
-      { key: 'split-column', label: 'Split this column', detail: 'Parse mixed text into separate columns', icon: Scissors, color: 'text-fuchsia-500', prompt: 'Split this mixed column into clean separate columns based on detected delimiters and patterns.' },
-    ]
-    : smartAssistMode === 'deck'
-      ? [
-        { key: 'investor-tone', label: 'Investor Tone', detail: 'Sharper fundraise narrative', icon: LayoutGrid, color: 'text-violet-500', prompt: 'Turn this deck into investor tone with stronger proof points, risks, and ask clarity.' },
-        { key: 'comparison-slide', label: 'Comparison Slide', detail: 'Add competitive framing visual', icon: Sparkles, color: 'text-indigo-500', prompt: 'Generate a competitor comparison slide with clear positioning and defensibility.' },
-        { key: 'visual-first', label: 'Make More Visual', detail: 'Less text, stronger visuals', icon: PenTool, color: 'text-emerald-500', prompt: 'Make the deck more visual by reducing text density and introducing chart/diagram-ready layouts.' },
-        { key: 'compress-flow', label: 'Reduce To 8 Slides', detail: 'Tighter executive pacing', icon: ListTodo, color: 'text-fuchsia-500', prompt: 'Reduce this presentation to 8 slides while preserving the strongest narrative arc.' },
-        { key: 'speaker-notes', label: 'Speaker Notes', detail: 'Create persuasive talking tracks', icon: FileText, color: 'text-cyan-500', prompt: 'Generate speaker notes for each slide with transitions and anticipated audience questions.' },
-      ]
-      : [
-        { key: 'insert-page-cover', label: 'Insert Page Cover', detail: 'Add a styled cover page', icon: BookOpen, color: 'text-indigo-500', prompt: '' },
-        { key: 'insert-shapes', label: 'Insert Shapes', detail: 'Add diagrams and flowchart shapes', icon: Shapes, color: 'text-rose-500', prompt: '' },
-        { key: 'insert-chart', label: 'Insert Chart', detail: 'Add data visualizations', icon: LayoutGrid, color: 'text-orange-500', prompt: '' },
-        { key: 'adjust-tone', label: 'Adjust tone', detail: 'Make voice match audience and intent', icon: PenTool, color: 'text-violet-500', prompt: 'Adjust the tone of this content while preserving meaning and key facts.' },
-        { key: 'summarize', label: 'Summarize', detail: 'Condense without losing meaning', icon: Scissors, color: 'text-fuchsia-500', prompt: 'Summarize this content clearly while preserving key meaning and important context.' },
-        { key: 'proofread', label: 'Proofread', detail: 'Fix typos, repeats, and grammar', icon: ShieldAlert, color: 'text-amber-500', prompt: 'Proofread this content and return a corrected version that fixes typos, repeated sentences, grammar errors, and awkward phrasing while preserving intent.' },
-        { key: 'create-outline', label: 'Create outline', detail: 'Structure messy notes into sections', icon: ListTodo, color: 'text-indigo-500', prompt: 'Create a clear outline from this content with logical section flow.' },
-        { key: 'generate-toc', label: 'Generate table of content', detail: 'Build TOC and align headings', icon: BookOpen, color: 'text-cyan-500', prompt: 'Generate a table of contents for this document and align headings/content to it.' },
-        { key: 'title-headers', label: 'Generate title/headers', detail: 'Auto-structure with strong headings', icon: Type, color: 'text-emerald-500', prompt: 'Generate a strong title and section headers for this document.' },
-      ];
-
-  const whiteboardAssistantActions = {
-    ask: [
-      { key: 'launch-plan', label: 'Generate launch plan', prompt: 'Generate a launch plan for Q2 Product Launch Strategy whiteboard.' },
-      { key: 'breakdown-tasks', label: 'Break down into tasks', prompt: 'Break this whiteboard strategy into clear execution tasks with owners.' },
-      { key: 'identify-risks', label: 'Identify risks', prompt: 'Identify the main launch risks in this whiteboard and suggest mitigations.' },
-      { key: 'create-timeline', label: 'Create timeline', prompt: 'Create a timeline for this whiteboard strategy from May 1 to Jun 30.' },
-    ],
-    generate: [
-      { key: 'summary', label: 'Generate board summary', prompt: 'Write a concise executive summary from this whiteboard board.' },
-      { key: 'meeting-brief', label: 'Create meeting brief', prompt: 'Create a meeting brief from this whiteboard with goals and next steps.' },
-      { key: 'sync-update', label: 'Draft status update', prompt: 'Draft a weekly status update from this whiteboard progress.' },
-      { key: 'stakeholder-email', label: 'Compose stakeholder email', prompt: 'Compose a stakeholder-ready launch update email from this whiteboard.' },
-    ],
-    insights: [
-      { key: 'conversion-gaps', label: 'Review conversion gaps', prompt: 'Analyze this whiteboard and report likely conversion bottlenecks.' },
-      { key: 'goal-coverage', label: 'Check goal coverage', prompt: 'Check whether this whiteboard fully covers awareness, activation, conversion, and retention.' },
-      { key: 'resource-risks', label: 'Evaluate dependencies', prompt: 'Evaluate key dependencies and resource risks in this whiteboard plan.' },
-      { key: 'cadence-health', label: 'Assess launch cadence', prompt: 'Assess whether this whiteboard timeline cadence is realistic and balanced.' },
-    ],
-  };
-
-  useEffect(() => {
-    setSheetGrids((prev) => {
-      const next = { ...prev };
-      sheetsData.forEach((sheet) => {
-        if (!next[sheet.id]) {
-          next[sheet.id] = { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
-        }
-      });
-      Object.keys(next).forEach((key) => {
-        const id = Number(key);
-        if (!sheetsData.some((sheet) => sheet.id === id)) {
-          delete next[id];
-        }
-      });
-      return next;
-    });
-  }, [sheetsData]);
-
-  useEffect(() => {
-    if (!pageContextMenu.open) {
-      return undefined;
-    }
-    const onPointerDown = (event) => {
-      if (pageContextMenuRef.current && !pageContextMenuRef.current.contains(event.target)) {
-        setPageContextMenu((prev) => ({ ...prev, open: false }));
-      }
-    };
-    window.addEventListener('pointerdown', onPointerDown);
-    return () => window.removeEventListener('pointerdown', onPointerDown);
-  }, [pageContextMenu.open]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const capturePreview = async () => {
-      try {
-        if (isSheetsMode) {
-          const target = sheetCanvasPreviewRef.current;
-          if (!target || !activeSheet?.id) {
-            return;
-          }
-          const canvas = await html2canvas(target, {
-            scale: 0.45,
-            backgroundColor: '#ffffff',
-            useCORS: true,
-            logging: false,
-          });
-          if (cancelled) {
-            return;
-          }
-          const dataUrl = canvas.toDataURL('image/png', 0.82);
-          setSheetSnapshotPreviews((prev) => ({ ...prev, [activeSheet.id]: dataUrl }));
-          return;
-        }
-
-        const target = deckCanvasPreviewRef.current;
-        if (!target || !activeDeckSlide?.id) {
-          return;
-        }
-        const canvas = await html2canvas(target, {
-          scale: 0.45,
-          backgroundColor: '#ffffff',
-          useCORS: true,
-          logging: false,
-        });
-        if (cancelled) {
-          return;
-        }
-        const dataUrl = canvas.toDataURL('image/png', 0.82);
-        setDeckSnapshotPreviews((prev) => ({ ...prev, [activeDeckSlide.id]: dataUrl }));
-      } catch (_error) {
-        // Ignore preview capture failures and keep SVG fallback thumbnails.
-      }
-    };
-
-    const timer = setTimeout(capturePreview, 220);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [
-    isSheetsMode,
-    productMode,
-    activeDeckSlide?.id,
-    activeDeckSlide?.title,
-    activeDeckSlide?.subtitle,
-    activeSheet?.id,
-    activeSheet?.title,
-    activeSheet?.subtitle,
-    sheetsTitle,
-  ]);
-
-  useEffect(() => {
-    try {
-      const savedThreads = JSON.parse(localStorage.getItem('rc.dm.threads') || 'null');
-      const savedMessages = JSON.parse(localStorage.getItem('rc.dm.messages') || 'null');
-      const savedFiles = JSON.parse(localStorage.getItem('rc.dm.files') || 'null');
-      const savedDecisions = JSON.parse(localStorage.getItem('rc.dm.decisions') || 'null');
-      const savedArchive = JSON.parse(localStorage.getItem('rc.dm.archive') || 'null');
-      const savedThreadReplies = JSON.parse(localStorage.getItem('rc.dm.threadReplies') || 'null');
-      if (Array.isArray(savedThreads) && savedThreads.length) {
-        setDmThreads(savedThreads);
-      }
-      if (Array.isArray(savedMessages) && savedMessages.length) {
-        setDmMessages(savedMessages);
-      }
-      if (Array.isArray(savedFiles)) {
-        setDmFiles(savedFiles);
-      }
-      if (Array.isArray(savedDecisions)) {
-        setDmDecisions(savedDecisions);
-      }
-      if (Array.isArray(savedArchive)) {
-        setDmArchive(savedArchive);
-      }
-      if (Array.isArray(savedThreadReplies)) {
-        setDmThreadReplies(savedThreadReplies);
-      }
-    } catch (_error) {
-      // noop
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('rc.dm.threads', JSON.stringify(dmThreads));
-  }, [dmThreads]);
-
-  useEffect(() => {
-    localStorage.setItem('rc.dm.messages', JSON.stringify(dmMessages));
-  }, [dmMessages]);
-
-  useEffect(() => {
-    localStorage.setItem('rc.dm.files', JSON.stringify(dmFiles));
-  }, [dmFiles]);
-
-  useEffect(() => {
-    localStorage.setItem('rc.dm.decisions', JSON.stringify(dmDecisions));
-  }, [dmDecisions]);
-
-  useEffect(() => {
-    localStorage.setItem('rc.dm.archive', JSON.stringify(dmArchive));
-  }, [dmArchive]);
-
-  useEffect(() => {
-    localStorage.setItem('rc.dm.threadReplies', JSON.stringify(dmThreadReplies));
-  }, [dmThreadReplies]);
-
-  useEffect(() => {
-    if (dmArchive.length) {
-      return;
-    }
-    const seeded = [
-      ...dmMessages.map((message) => ({
-        id: `seed-msg-${message.id}`,
-        type: 'message',
-        threadId: message.threadId,
-        threadTitle: dmThreads.find((thread) => thread.id === message.threadId)?.title || 'Thread',
-        author: message.author,
-        text: message.text,
-        createdAt: message.createdAt,
-      })),
-      ...dmFiles.map((file) => ({
-        id: `seed-file-${file.id}`,
-        type: 'file',
-        threadId: file.threadId,
-        threadTitle: dmThreads.find((thread) => thread.id === file.threadId)?.title || 'Thread',
-        author: 'system',
-        fileName: file.name,
-        createdAt: file.updatedAt,
-      })),
-      ...dmDecisions.map((decision) => ({
-        id: `seed-decision-${decision.id}`,
-        type: 'decision',
-        threadId: decision.threadId,
-        threadTitle: dmThreads.find((thread) => thread.id === decision.threadId)?.title || 'Thread',
-        author: decision.by,
-        decision: decision.summary,
-        createdAt: decision.createdAt,
-      })),
-    ];
-    setDmArchive(seeded.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 1200));
-  }, [dmArchive.length, dmMessages, dmFiles, dmDecisions, dmThreads]);
-
-  const formatDmRelative = (timestamp) => {
-    const diff = Date.now() - Number(timestamp || Date.now());
-    const mins = Math.max(0, Math.floor(diff / 60000));
-    if (mins < 1) {
-      return 'just now';
-    }
-    if (mins < 60) {
-      return `${mins}m ago`;
-    }
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) {
-      return `${hours}h ago`;
-    }
-    return `${Math.floor(hours / 24)}d ago`;
-  };
-
-  const activeDmThread = dmThreads.find((thread) => thread.id === dmActiveThreadId) || dmThreads[0] || null;
-  useEffect(() => {
-    setDmThreadTitleDraft(activeDmThread?.title || '');
-    setDmThreadDescriptionDraft(activeDmThread?.description || '');
-    setDmEditingThreadTitle(false);
-    setDmEditingThreadDescription(false);
-  }, [activeDmThread?.id]);
-
-  const activeDmMessages = useMemo(() => dmMessages
-    .filter((message) => message.threadId === (activeDmThread?.id || ''))
-    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)), [dmMessages, activeDmThread?.id]);
-  const activeDmThreadReplyMap = useMemo(() => {
-    const map = new Map();
-    dmThreadReplies
-      .filter((reply) => reply.threadId === (activeDmThread?.id || ''))
-      .forEach((reply) => {
-        map.set(reply.parentMessageId, (map.get(reply.parentMessageId) || 0) + 1);
-      });
-    return map;
-  }, [dmThreadReplies, activeDmThread?.id]);
-  const activeDmParentMessage = useMemo(
-    () => activeDmMessages.find((message) => message.id === dmActiveParentMessageId) || null,
-    [activeDmMessages, dmActiveParentMessageId],
-  );
-  const activeDmThreadPanelReplies = useMemo(
-    () => dmThreadReplies
-      .filter((reply) => reply.parentMessageId === dmActiveParentMessageId)
-      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)),
-    [dmThreadReplies, dmActiveParentMessageId],
-  );
-
-  const dmSearchResults = useMemo(() => {
-    const needle = String(dmSearchQuery || '').trim().toLowerCase();
-    if (!needle) {
-      return dmArchive.slice().sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 40);
-    }
-    return dmArchive
-      .filter((entry) => {
-        const textBlob = `${entry.type || ''} ${entry.threadTitle || ''} ${entry.author || ''} ${entry.text || ''} ${entry.fileName || ''} ${entry.decision || ''}`.toLowerCase();
-        return textBlob.includes(needle);
-      })
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  }, [dmArchive, dmSearchQuery]);
-
-  const effectiveDmJoinedAt = dmJoinedAt || null;
-  const visibleDmMessages = useMemo(() => {
-    if (dmMemberView !== 'new-member' || !effectiveDmJoinedAt) {
-      return activeDmMessages;
-    }
-    return activeDmMessages.filter((message) => (message.createdAt || 0) >= effectiveDmJoinedAt);
-  }, [activeDmMessages, dmMemberView, effectiveDmJoinedAt]);
-
-  useEffect(() => {
-    if (productMode !== 'dm' || dmConversationTab !== 'chat') {
-      return;
-    }
-
-    const frame = window.requestAnimationFrame(() => {
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [productMode, dmConversationTab, activeDmThread?.id, visibleDmMessages.length]);
-
-  const visibleDmSearchResults = useMemo(() => {
-    if (dmMemberView !== 'new-member' || !effectiveDmJoinedAt) {
-      return dmSearchResults;
-    }
-    return dmSearchResults.filter((entry) => (entry.createdAt || 0) >= effectiveDmJoinedAt);
-  }, [dmSearchResults, dmMemberView, effectiveDmJoinedAt]);
-
-  const dmThreadSummaries = useMemo(() => {
-    return activeDmMessages
-      .filter((message) => (activeDmThreadReplyMap.get(message.id) || 0) > 0)
-      .map((message) => ({
-        ...message,
-        replyCount: activeDmThreadReplyMap.get(message.id) || 0,
-      }))
-      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  }, [activeDmMessages, activeDmThreadReplyMap]);
-
-  const appendDmArchive = (entries) => {
-    const list = Array.isArray(entries) ? entries : [entries];
-    setDmArchive((prev) => [...list, ...prev].slice(0, 1200));
-  };
-
-  const openDmMessageThread = (messageId) => {
-    setDmActiveParentMessageId(messageId);
-    setDmThreadComposerValue('');
-  };
-
-  const sendDmThreadReply = () => {
-    const text = String(dmThreadComposerValue || '').trim();
-    if (!text || !activeDmThread || !activeDmParentMessage) {
-      return;
-    }
-    const now = Date.now();
-    const reply = {
-      id: `dm-thread-reply-${now}`,
-      threadId: activeDmThread.id,
-      parentMessageId: activeDmParentMessage.id,
-      author: 'You',
-      role: 'you',
-      text,
-      createdAt: now,
-    };
-
-    setDmThreadReplies((prev) => [...prev, reply]);
-    appendDmArchive({
-      id: `arc-thread-${now}`,
-      type: 'thread-reply',
-      threadId: activeDmThread.id,
-      threadTitle: activeDmThread.title,
-      author: 'You',
-      text,
-      parentMessageId: activeDmParentMessage.id,
-      parentMessageText: activeDmParentMessage.text,
-      createdAt: now,
-    });
-    setDmThreadComposerValue('');
-  };
-
-  const classifyDmAttachmentKind = (file) => {
-    const mime = String(file?.type || '').toLowerCase();
-    const name = String(file?.name || '').toLowerCase();
-    if (mime.startsWith('image/')) return 'image';
-    if (mime.startsWith('audio/')) return 'audio';
-    if (mime.includes('sheet') || /\.csv$|\.xlsx?$/.test(name)) return 'sheet';
-    if (mime.includes('presentation') || /\.pptx?$/.test(name)) return 'deck';
-    return 'doc';
-  };
-
-  const addDmAttachments = (fileList) => {
-    const files = Array.from(fileList || []);
-    if (!files.length) {
-      return;
-    }
-    const nextItems = files.map((file) => ({
-      id: `dm-attach-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      kind: classifyDmAttachmentKind(file),
-      file,
-    }));
-    setDmPendingAttachments((prev) => [...prev, ...nextItems].slice(0, 20));
-    showToast(`${files.length} attachment${files.length > 1 ? 's' : ''} added`);
-  };
-
-  const handleDmAttachmentInputChange = (event) => {
-    addDmAttachments(event.target.files);
-    event.target.value = '';
-  };
-
-  const sendDmMessage = () => {
-    const text = String(dmComposerValue || '').trim();
-    if ((!text && !dmPendingAttachments.length) || !activeDmThread) {
-      return;
-    }
-    const now = Date.now();
-    const attachedFiles = dmPendingAttachments.map((attachment, index) => ({
-      id: `dm-file-${now}-${index}`,
-      threadId: activeDmThread.id,
-      name: attachment.name,
-      kind: attachment.kind,
-      updatedAt: now,
-      size: attachment.size,
-      mimeType: attachment.type,
-    }));
-    const messageText = text || `Shared ${attachedFiles.length} attachment${attachedFiles.length > 1 ? 's' : ''}`;
-    const message = {
-      id: `dm-${now}-${Math.floor(Math.random() * 1000)}`,
-      threadId: activeDmThread.id,
-      author: 'You',
-      role: 'you',
-      text: messageText,
-      createdAt: now,
-      files: attachedFiles,
-      decisions: [],
-    };
-    const decisionSignals = ['decision', 'decided', 'approved', 'ship', 'finalized'];
-    const hasDecisionSignal = decisionSignals.some((signal) => messageText.toLowerCase().includes(signal));
-
-    setDmMessages((prev) => [...prev, message]);
-    if (attachedFiles.length) {
-      setDmFiles((prev) => [...attachedFiles, ...prev].slice(0, 300));
-    }
-    setDmThreads((prev) => prev.map((thread) => (
-      thread.id === activeDmThread.id
-        ? { ...thread, lastMessageAt: now }
-        : thread
-    )));
-
-    const archiveEntries = [{
-      id: `arc-msg-${now}`,
-      type: 'message',
-      threadId: activeDmThread.id,
-      threadTitle: activeDmThread.title,
-      author: 'You',
-      text: messageText,
-      createdAt: now,
-    }];
-
-    attachedFiles.forEach((file) => {
-      archiveEntries.push({
-        id: `arc-file-${file.id}`,
-        type: 'file',
-        threadId: activeDmThread.id,
-        threadTitle: activeDmThread.title,
-        author: 'You',
-        fileName: file.name,
-        createdAt: now,
-      });
-    });
-
-    if (hasDecisionSignal) {
-      const decision = {
-        id: `dm-decision-${now}`,
-        threadId: activeDmThread.id,
-        summary: messageText,
-        createdAt: now,
-        by: 'You',
-      };
-      setDmDecisions((prev) => [decision, ...prev].slice(0, 200));
-      archiveEntries.push({
-        id: `arc-decision-${now}`,
-        type: 'decision',
-        threadId: activeDmThread.id,
-        threadTitle: activeDmThread.title,
-        author: 'You',
-        decision: messageText,
-        createdAt: now,
-      });
-    }
-
-    appendDmArchive(archiveEntries);
-    setDmComposerValue('');
-    setDmPendingAttachments([]);
-    setDmEmojiPickerOpen(false);
-    setDmFormatMenuOpen(false);
-    setDmComposerQuickMenuOpen(false);
-    setDmScheduleMenuOpen(false);
-  };
-
-  const quickAttachDmFile = () => {
-    if (!activeDmThread) {
-      return;
-    }
-    const now = Date.now();
-    const nextFile = {
-      id: `dm-file-${now}`,
-      threadId: activeDmThread.id,
-      name: `Decision Notes ${new Date(now).toLocaleTimeString()}`,
-      kind: 'doc',
-      updatedAt: now,
-    };
-    setDmFiles((prev) => [nextFile, ...prev].slice(0, 300));
-    appendDmArchive({
-      id: `arc-file-${now}`,
-      type: 'file',
-      threadId: activeDmThread.id,
-      threadTitle: activeDmThread.title,
-      author: 'You',
-      fileName: nextFile.name,
-      createdAt: now,
-    });
-    showToast('File archived in conversation log');
-  };
 
   if (productMode === 'dm') {
     const directMessages = dmDirectMessages;
