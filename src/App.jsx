@@ -13351,6 +13351,7 @@ Rules:
     setCreationPickerOpen(false);
     setProductMode('sheets');
     setSheetsTitle('Q2 Financial Overview');
+    setLeftSidebarOpen(false);
     setActiveSheetId(1);
     setDeckPromptInput('');
     setDeckPromptMinimized(false);
@@ -19254,8 +19255,9 @@ You can recommend task creations on the board.`;
                         setActiveDeckSlideId(item.id);
                       }
                     }}
-                    className={`w-full rounded-xl border p-2 text-left transition-colors ${isActive ? 'border-violet-300 bg-violet-50/70' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                    className={`w-full relative rounded-xl p-2 text-left transition-colors ${isActive ? 'bg-violet-50' : 'bg-transparent hover:bg-gray-50/80'}`}
                   >
+                    {isActive && <div className="absolute left-0 top-3 bottom-3 w-[3px] bg-violet-500 rounded-r-full" />}
                     <div className="flex items-start gap-2">
                       <div className="w-20 h-12 rounded-md shrink-0 relative overflow-hidden border border-gray-200 bg-white">
                         <img
@@ -19385,11 +19387,11 @@ You can recommend task creations on the board.`;
           </header>
 
           <div className="flex-1 min-h-0 flex gap-4 p-4">
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#FAFAFC]' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#F3F4F6] p-4 pr-4' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
               <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'mx-auto w-full max-w-[980px] pb-4'}`}>
                 {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative rounded-xl border border-gray-200 shadow-sm">
-                    <div className="px-4 py-3 border-b border-gray-200 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
+                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative rounded-2xl border border-gray-200 shadow-sm">
+                    <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                       {['Data', 'Insert', 'Analyze', 'Automate', 'AI'].map((tab) => (
                         <button
                           key={tab}
@@ -19398,29 +19400,29 @@ You can recommend task creations on the board.`;
                             setSheetToolbarTab(tab);
                             showToast(`${tab} tools ready`);
                           }}
-                          className={`px-2 py-1 rounded border ${sheetToolbarTab === tab ? 'bg-violet-50 border-violet-200 text-violet-700' : 'bg-white border-gray-200'}`}
+                          className={`px-3 py-1.5 rounded-lg transition-colors ${sheetToolbarTab === tab ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
                         >
                           {tab}
                         </button>
                       ))}
                     </div>
-                    <div className="px-4 py-2 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-[11px] text-gray-500">
+                    <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
                       <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
-                        <button type="button" onClick={() => showToast('Undo not available in demo')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600"><Undo2 size={14} /></button>
-                        <button type="button" onClick={() => showToast('Redo not available in demo')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600"><Redo2 size={14} /></button>
-                        <button type="button" onClick={() => showToast('Edit replay coming soon')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600" title="Edit replay"><Clock size={14} /></button>
-                        <button type="button" onClick={() => showToast('Save locally')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600" title="Save"><Save size={14} /></button>
+                        <button type="button" onClick={() => showToast('Undo not available in demo')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"><Undo2 size={15} /></button>
+                        <button type="button" onClick={() => showToast('Redo not available in demo')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"><Redo2 size={15} /></button>
+                        <button type="button" onClick={() => showToast('Edit replay coming soon')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Edit replay"><Clock size={15} /></button>
+                        <button type="button" onClick={() => showToast('Save locally')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Save"><Save size={15} /></button>
                       </div>
-                      <button type="button" onClick={() => showToast('Search')} className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600"><Search size={14} /></button>
+                      <button type="button" onClick={() => showToast('Search')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"><Search size={15} /></button>
                       <div className="relative flex items-center gap-1" ref={sheetToolbarMenuRef}>
                         <div className="relative">
                           <button
                             type="button"
                             onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font')}
-                            className="inline-flex items-center gap-1 border border-gray-200 rounded px-1.5 py-0.5 bg-white text-[11px] hover:bg-gray-50"
+                            className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
                           >
                             <span>{sheetToolbarFont}</span>
-                            <ChevronDown size={11} />
+                            <ChevronDown size={13} />
                           </button>
                           {sheetToolbarMenuOpen === 'font' && (
                             <div className="absolute z-[420] top-full mt-1 left-0 w-32 rounded-lg border border-gray-200 bg-white shadow-lg p-1">
@@ -19444,10 +19446,10 @@ You can recommend task creations on the board.`;
                           <button
                             type="button"
                             onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size')}
-                            className="inline-flex items-center gap-1 border border-gray-200 rounded px-1 py-0.5 bg-white text-[11px] hover:bg-gray-50"
+                            className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
                           >
                             <span>{sheetToolbarSize}</span>
-                            <ChevronDown size={11} />
+                            <ChevronDown size={13} />
                           </button>
                           {sheetToolbarMenuOpen === 'size' && (
                             <div className="absolute z-[420] top-full mt-1 left-0 w-16 max-h-48 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
@@ -19468,31 +19470,31 @@ You can recommend task creations on the board.`;
                           )}
                         </div>
                       </div>
-                      <button type="button" onClick={() => setSheetToolbarBold((prev) => !prev)} className={`w-7 h-7 flex items-center justify-center rounded border ${sheetToolbarBold ? 'bg-violet-50 border-violet-200 text-violet-700 font-bold' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'}`}>B</button>
-                      <button type="button" onClick={() => setSheetToolbarItalic((prev) => !prev)} className={`w-7 h-7 flex items-center justify-center rounded border ${sheetToolbarItalic ? 'bg-violet-50 border-violet-200 text-violet-700 italic' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'}`}>I</button>
-                      <button type="button" onClick={() => setSheetToolbarUnderline((prev) => !prev)} className={`w-7 h-7 flex items-center justify-center rounded border ${sheetToolbarUnderline ? 'bg-violet-50 border-violet-200 text-violet-700 underline' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'}`}>U</button>
+                      <button type="button" onClick={() => setSheetToolbarBold((prev) => !prev)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sheetToolbarBold ? 'bg-violet-50 text-violet-700 font-bold' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
+                      <button type="button" onClick={() => setSheetToolbarItalic((prev) => !prev)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sheetToolbarItalic ? 'bg-violet-50 text-violet-700 italic' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
+                      <button type="button" onClick={() => setSheetToolbarUnderline((prev) => !prev)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sheetToolbarUnderline ? 'bg-violet-50 text-violet-700 underline' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
                       <span className="mx-1 text-gray-200">|</span>
-                      <button type="button" className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600">-</button>
-                      <button type="button" className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600">=</button>
-                      <button type="button" className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600">...</button>
-                      <button type="button" className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600">$</button>
-                      <button type="button" className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600">%</button>
-                      <button type="button" className="w-8 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600">.0</button>
+                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">-</button>
+                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">=</button>
+                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">...</button>
+                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">$</button>
+                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">%</button>
+                      <button type="button" className="w-9 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">.0</button>
                       <span className="mx-1 text-gray-200">|</span>
-                      <button type="button" onClick={addSheetRow} className="px-2 py-1 border border-gray-200 rounded bg-white hover:bg-gray-50 text-gray-600">+ Row</button>
-                      <button type="button" onClick={removeSheetRow} className="px-2 py-1 border border-gray-200 rounded bg-white hover:bg-gray-50 text-gray-600">- Row</button>
-                      <button type="button" onClick={addSheetColumn} className="px-2 py-1 border border-gray-200 rounded bg-white hover:bg-gray-50 text-gray-600">+ Col</button>
-                      <button type="button" onClick={removeSheetColumn} className="px-2 py-1 border border-gray-200 rounded bg-white hover:bg-gray-50 text-gray-600">- Col</button>
-                      <span className="ml-auto">More</span>
+                      <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Row</button>
+                      <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
+                      <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
+                      <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
+                      <span className="ml-auto text-[#374151] px-2 font-medium">More</span>
                     </div>
-                    <div className="px-4 py-1.5 border-b border-gray-100 bg-white flex items-center gap-3 text-[11px] text-gray-600">
-                      <div className="w-12 text-center border border-gray-200 rounded bg-[#FAFAFC]">{toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}{selectedSheetCell.row}</div>
+                    <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
+                      <div className="w-12 text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5">{toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}{selectedSheetCell.row}</div>
                       <span className="text-gray-400">fx</span>
                       <input
                         type="text"
                         value={activeSheetGrid.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || ''}
                         onChange={(event) => updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, event.target.value)}
-                        className="flex-1 border border-gray-200 rounded bg-[#FAFAFC] px-2 py-1"
+                        className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-violet-500 font-normal"
                         placeholder="Enter value or formula"
                       />
                     </div>
@@ -19540,16 +19542,27 @@ You can recommend task creations on the board.`;
                         </div>
                       </div>
                     </div>
-                    <div className="px-4 py-2 border-t border-gray-200 bg-white flex items-center justify-between gap-2 text-[11px]">
-                      <div className="flex items-center gap-2">
-                        {['Summary', 'Revenue', 'Expenses', 'Profit & Loss', 'Cash Flow', '+'].map((tab) => (
-                          <button key={tab} className={`px-2.5 py-1 rounded ${tab === 'Summary' ? 'bg-violet-50 text-violet-700 border border-violet-200' : 'text-gray-500 hover:bg-gray-50'}`}>{tab}</button>
+                    <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
+                        {sheetsData.map((sheet) => (
+                          <button
+                            key={sheet.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveSheetId(sheet.id);
+                              setSheetsTitle(sheet.title);
+                            }}
+                            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-[13px] font-medium tracking-wide transition-colors ${activeSheetId === sheet.id ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
+                          >
+                            {sheet.title.split(' ')[0]}
+                          </button>
                         ))}
+                        <button type="button" className="px-2 py-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">+</button>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <button className="hover:text-gray-800" title="Zoom out" onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}>-</button>
+                      <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
+                        <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom out" onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}>-</button>
                         <span className="w-10 text-center">{sheetZoomLevel}%</span>
-                        <button className="hover:text-gray-800" title="Zoom in" onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}>+</button>
+                        <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom in" onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}>+</button>
                       </div>
                     </div>
                   </div>
