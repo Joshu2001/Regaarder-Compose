@@ -4502,7 +4502,7 @@ export default function App() {
     }, 1200);
 
     return () => window.clearTimeout(timer);
-  }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument, sheetsTitle, sheetsData, deckTitle, deckSlides]);
+  }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument, sheetsTitle, sheetsData, deckTitle, deckSlidesData]);
 
   const undoDocumentChange = () => {
     flushPendingHistoryRecord();
@@ -25164,7 +25164,7 @@ You can recommend task creations on the board.`;
       </div>
       )}
 
-      {!shareModalOpen && rightSidebarOpen && (
+      {productMode !== 'landing' && !shareModalOpen && rightSidebarOpen && (
         <div
           onMouseDown={(event) => beginPanelResize('right', event)}
           className="w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-violet-100 active:bg-violet-200 transition-colors opacity-0 hover:opacity-100"
@@ -25175,9 +25175,9 @@ You can recommend task creations on the board.`;
       {/* 3. Right Sidebar (AI Assistant / Smart Chat / Tools) */}
       <div 
         className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 relative z-[260] ${
-          rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
+          productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
-        style={ rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }
+        style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && (
@@ -27589,7 +27589,7 @@ You can recommend task creations on the board.`;
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
+      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar`}>
         <div className="relative">
           <div
             className="group flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-gray-600"
