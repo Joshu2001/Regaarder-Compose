@@ -4493,7 +4493,7 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (!activeDocId || !docTitle.trim()) {
+    if (!activeDocId) {
       return undefined;
     }
 
@@ -4502,7 +4502,7 @@ export default function App() {
     }, 1200);
 
     return () => window.clearTimeout(timer);
-  }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
+  }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument, sheetsTitle, sheetsData, deckTitle, deckSlides]);
 
   const undoDocumentChange = () => {
     flushPendingHistoryRecord();
@@ -19311,16 +19311,42 @@ You can recommend task creations on the board.`;
                 {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
               </button>
               <div className="text-sm font-semibold text-gray-900 truncate">{isSheetsMode ? 'Regaarder Sheets' : 'Regaarder Deck'}</div>
-              <input
-                type="text"
-                value={isSheetsMode ? sheetsTitle : deckTitle}
-                onChange={(event) => isSheetsMode ? setSheetsTitle(event.target.value) : setDeckTitle(event.target.value)}
-                className="text-sm text-gray-500 truncate bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-300 rounded px-2 py-0.5 outline-none"
-                placeholder={isSheetsMode ? 'Untitled sheetbook' : 'Untitled deck'}
-              />
-              <div className="text-xs text-gray-400">{savedStatusLabel}</div>
+              {isEditingUnsavedDraftName ? (
+                <input
+                  autoFocus
+                  type="text"
+                  value={isSheetsMode ? sheetsTitle : deckTitle}
+                  onChange={(event) => isSheetsMode ? setSheetsTitle(event.target.value) : setDeckTitle(event.target.value)}
+                  onBlur={() => setIsEditingUnsavedDraftName(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === 'Escape') {
+                      e.preventDefault();
+                      setIsEditingUnsavedDraftName(false);
+                    }
+                  }}
+                  className="text-sm text-gray-500 font-medium italic bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
+                  placeholder={isSheetsMode ? 'Untitled sheetbook' : 'Untitled deck'}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsTopDraftTitleExpanded((prev) => !prev)}
+                  onDoubleClick={() => setIsEditingUnsavedDraftName(true)}
+                  className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left truncate"
+                >
+                  {isSheetsMode ? (sheetsTitle || 'Unsaved draft') : (deckTitle || 'Unsaved draft')}
+                </button>
+              )}
+              <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2 hidden sm:flex">
+                <Cloud size={14} /> {savedStatusLabel}
+              </div>
             </div>
             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 mr-2">
+                <button onClick={undoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Undo (Ctrl+Z)"><Undo2 size={15} /></button>
+                <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={15} /></button>
+                <button onClick={toggleReplayHistory} className={`p-1.5 rounded-md transition-colors ${replayHistoryOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><History size={15} /></button>
+              </div>
               <button
                 type="button"
                 onClick={() => setIsDarkMode((prev) => !prev)}
