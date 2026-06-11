@@ -1,26 +1,31 @@
-const puppeteer = require('puppeteer');
-(async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-  page.on('pageerror', error => console.log('PAGE ERROR:', error.message));
-  
-  await page.goto('http://localhost:5173', { waitUntil: 'networkidle0' });
-  
-  try {
-    const btn = await page.waitForSelector('text/Sheet');
-    if (btn) {
-      await btn.click();
-      await new Promise(r => setTimeout(r, 2000));
-      const bodyHTML = await page.evaluate(() => document.body.innerHTML);
-      console.log('BODY HTML LENGTH:', bodyHTML.length);
-      if (bodyHTML.length < 500) {
-        console.log('BODY HTML:', bodyHTML);
-      }
-    }
-  } catch (e) {
-    console.log('Click failed', e.message);
-  }
+const fs = require('fs');
+const content = fs.readFileSync('c:\\Users\\user\\Downloads\\Project MOAT\\Regaarder Compose\\src\\App.jsx', 'utf8');
+const lines = content.split(/\r?\n/);
 
-  await browser.close();
-})();
+let manageenIdx = -1;
+for (let i = 0; i < lines.length; i++) {
+  if (lines[i] === "  if (productMode === 'manageen') {") {
+    manageenIdx = i;
+    break;
+  }
+}
+
+if (manageenIdx !== -1) {
+  for (let i = manageenIdx; i < lines.length; i++) {
+    if (lines[i] === "    );") {
+      console.log("manageen ends at", i);
+      break;
+    }
+  }
+}
+
+let dmIdx = -1;
+for (let i = 0; i < lines.length; i++) {
+  if (lines[i] === "  if (productMode === 'dm') {") {
+    dmIdx = i;
+    break;
+  }
+}
+if (dmIdx !== -1) {
+  console.log("dm starts at", dmIdx);
+}

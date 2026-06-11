@@ -1,23 +1,13 @@
-const puppeteer = require('puppeteer');
-(async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 720 });
-  
-  await page.goto('http://localhost:5173', { waitUntil: 'networkidle0' });
-  
-  try {
-    const deckBtn = await page.waitForSelector('text/Sheet');
-    if (deckBtn) {
-      await deckBtn.click();
-      await new Promise(r => setTimeout(r, 2000));
-      await page.screenshot({ path: 'c:\\Users\\user\\Downloads\\Project MOAT\\Regaarder Compose\\sheets.png' });
-      console.log('Saved sheets.png');
-    }
-    
-  } catch (e) {
-    console.log('Click failed', e.message);
-  }
+const fs = require('fs');
+const content = fs.readFileSync('c:\\Users\\user\\Downloads\\Project MOAT\\Regaarder Compose\\src\\App.jsx', 'utf8');
+const lines = content.split(/\r?\n/);
 
-  await browser.close();
-})();
+for (let i = 0; i < lines.length; i++) {
+  if (lines[i].includes('className="w-[64px] border-l border-gray-100 bg-[#fbfafc]')) {
+    console.log("Found at line", i);
+    // Print the previous 5 lines
+    for (let j = Math.max(0, i - 5); j < i; j++) {
+      console.log(j + ':', lines[j]);
+    }
+  }
+}

@@ -1,11 +1,15 @@
-const puppeteer = require('puppeteer');
+const fs = require('fs');
+const content = fs.readFileSync('c:\\Users\\user\\Downloads\\Project MOAT\\Regaarder Compose\\src\\App.jsx', 'utf8');
+const lines = content.split(/\r?\n/);
 
-(async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-  page.on('pageerror', error => console.log('PAGE ERROR:', error.message));
-  
-  await page.goto('http://localhost:5173', { waitUntil: 'networkidle0' });
-  await browser.close();
-})();
+let startIdx = -1;
+for (let i = 0; i < lines.length; i++) {
+  if (lines[i].includes('const sharedRightPanels = (')) {
+    startIdx = i;
+    break;
+  }
+}
+if (startIdx !== -1) {
+  const block = lines.slice(startIdx + 2400, startIdx + 2650).join('\n');
+  fs.writeFileSync('c:\\Users\\user\\Downloads\\Project MOAT\\Regaarder Compose\\shared_end.jsx', block);
+}

@@ -1,30 +1,26 @@
-const puppeteer = require('puppeteer');
-(async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-  page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-  page.on('pageerror', error => console.log('PAGE ERROR:', error.message));
-  
-  await page.goto('http://localhost:5173', { waitUntil: 'networkidle0' });
-  
-  try {
-    const btn = await page.waitForSelector('text/Compose');
-    if (btn) {
-      console.log('Clicking Compose...');
-      await btn.click();
-      await new Promise(r => setTimeout(r, 2000));
-    }
-    
-    const deckBtn = await page.waitForSelector('text/Deck');
-    if (deckBtn) {
-      console.log('Clicking Deck...');
-      await deckBtn.click();
-      await new Promise(r => setTimeout(r, 2000));
-    }
-    
-  } catch (e) {
-    console.log('Click failed', e.message);
-  }
+const fs = require('fs');
+const content = fs.readFileSync('c:\\Users\\user\\Downloads\\Project MOAT\\Regaarder Compose\\src\\App.jsx', 'utf8');
+const lines = content.split(/\r?\n/);
 
-  await browser.close();
-})();
+let startIdx = -1;
+for (let i = 0; i < lines.length; i++) {
+  if (lines[i].includes('const sharedRightPanels = (')) {
+    startIdx = i;
+    break;
+  }
+}
+if (startIdx !== -1) {
+  let endIdx = -1;
+  for (let i = startIdx; i < lines.length; i++) {
+    if (lines[i].includes('const sharedReplayPanel = (')) {
+      endIdx = i;
+      break;
+    }
+  }
+  
+  if (endIdx !== -1) {
+    const block = lines.slice(startIdx, endIdx).join('\n');
+    const match = block.match(/\{miniSidebarExpanded \? '[^']+' : '[^']+'\}/);
+    console.log("Match:", match);
+  }
+}
