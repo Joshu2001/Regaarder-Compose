@@ -19371,11 +19371,11 @@ You can recommend task creations on the board.`;
             </div>
           </header>
 
-          <div className={`flex-1 min-h-0 flex gap-4 ${isSheetsMode ? '' : 'p-4'}`}>
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#FAFAFC]' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
-              <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'mx-auto w-full max-w-[980px] pb-4'}`}>
+          <div className={`flex-1 min-h-0 flex gap-4 ${isSheetsMode ? 'pt-4' : 'p-4'}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? '' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
+              <div className="mx-auto w-full max-w-[980px] flex flex-col pb-4 h-full">
                 {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className={`flex-1 overflow-hidden bg-white flex flex-col ${isSheetsMode ? '' : 'rounded-2xl border border-gray-200 shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)]'}`}>
+                  <div ref={sheetCanvasPreviewRef} className="flex-1 rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)] flex flex-col">
                     <div className="px-4 py-3 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
                       {['Data', 'Insert', 'Analyze', 'Automate', 'AI'].map((tab) => (
                         <button
@@ -27572,7 +27572,6 @@ You can recommend task creations on the board.`;
               </div>
             </div>
           )}
-
         </div>
       </div>
 
@@ -27582,26 +27581,11 @@ You can recommend task creations on the board.`;
           <div
             className="group flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-gray-600"
             onClick={() => {
-              if (productMode !== 'landing') {
-                setProductMode('landing');
-              } else {
-                setWorkspaceLauncherOpen((prev) => !prev);
-              }
+              setProductMode('landing');
             }}
           >
-            {productMode !== 'landing' ? (
-              <>
-                <Home className="hidden group-hover:block transition-all text-gray-400 group-hover:text-gray-600" size={20} strokeWidth={2} />
-                <Plus className="block group-hover:hidden transition-all text-gray-400 group-hover:text-gray-600" size={20} strokeWidth={2} />
-                <span className="text-[9px] font-semibold block group-hover:hidden">New</span>
-                <span className="text-[9px] font-semibold hidden group-hover:block text-gray-600">Home</span>
-              </>
-            ) : (
-              <>
-                <Plus className="transition-all text-gray-400 group-hover:text-gray-600" size={20} strokeWidth={2} />
-                <span className="text-[9px] font-semibold text-gray-400 group-hover:text-gray-600">New</span>
-              </>
-            )}
+            <Home className="transition-all" size={20} strokeWidth={2} />
+            <span className="text-[9px] font-semibold">Home</span>
           </div>
 
           {workspaceLauncherOpen && (
