@@ -846,6 +846,12 @@ export default function App() {
   const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
   const [isAuditing, setIsAuditing] = useState(false);
 
+  useEffect(() => {
+    if (productMode === 'landing') {
+      setRightSidebarOpen(false);
+    }
+  }, [productMode]);
+
   const [activeAiAgent, setActiveAiAgent] = useState('Orb (AI Assistant)');
   const [dmAgentHistories, setDmAgentHistories] = useState({
     'Orb (AI Assistant)': [
@@ -19365,11 +19371,11 @@ You can recommend task creations on the board.`;
             </div>
           </header>
 
-          <div className="flex-1 min-h-0 p-4 flex gap-4">
-            <section className="flex-1 min-w-0 rounded-2xl border border-gray-200 bg-white p-4 flex flex-col overflow-y-auto thin-scrollbar">
-              <div className="mx-auto w-full max-w-[980px] flex flex-col pb-4 h-full">
+          <div className={`flex-1 min-h-0 flex gap-4 ${isSheetsMode ? '' : 'p-4'}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#FAFAFC]' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
+              <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'mx-auto w-full max-w-[980px] pb-4'}`}>
                 {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className="flex-1 rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)] flex flex-col">
+                  <div ref={sheetCanvasPreviewRef} className={`flex-1 overflow-hidden bg-white flex flex-col ${isSheetsMode ? '' : 'rounded-2xl border border-gray-200 shadow-[0_25px_55px_-40px_rgba(15,23,42,0.45)]'}`}>
                     <div className="px-4 py-3 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-xs text-gray-600">
                       {['Data', 'Insert', 'Analyze', 'Automate', 'AI'].map((tab) => (
                         <button
@@ -27574,16 +27580,28 @@ You can recommend task creations on the board.`;
       <div className="w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar">
         <div className="relative">
           <div
-            onClick={() => setWorkspaceLauncherOpen((prev) => !prev)}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${workspaceLauncherOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'}`}
+            className="group flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-gray-600"
+            onClick={() => {
+              if (productMode !== 'landing') {
+                setProductMode('landing');
+              } else {
+                setWorkspaceLauncherOpen((prev) => !prev);
+              }
+            }}
           >
-            <Plus
-              className="transition-all"
-              size={workspaceLauncherIconSize === 'sm' ? 16 : workspaceLauncherIconSize === 'lg' ? 24 : 20}
-              strokeWidth={workspaceLauncherIconStyle === 'solid' ? 2.5 : workspaceLauncherIconStyle === 'soft' ? 1.7 : 2}
-              style={{ color: workspaceLauncherIconColor, opacity: workspaceLauncherIconStyle === 'soft' ? 0.78 : 1 }}
-            />
-            <span className="text-[9px] font-semibold">New</span>
+            {productMode !== 'landing' ? (
+              <>
+                <Home className="hidden group-hover:block transition-all text-gray-400 group-hover:text-gray-600" size={20} strokeWidth={2} />
+                <Plus className="block group-hover:hidden transition-all text-gray-400 group-hover:text-gray-600" size={20} strokeWidth={2} />
+                <span className="text-[9px] font-semibold block group-hover:hidden">New</span>
+                <span className="text-[9px] font-semibold hidden group-hover:block text-gray-600">Home</span>
+              </>
+            ) : (
+              <>
+                <Plus className="transition-all text-gray-400 group-hover:text-gray-600" size={20} strokeWidth={2} />
+                <span className="text-[9px] font-semibold text-gray-400 group-hover:text-gray-600">New</span>
+              </>
+            )}
           </div>
 
           {workspaceLauncherOpen && (
