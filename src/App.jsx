@@ -13308,7 +13308,16 @@ Rules:
     setCreationPickerOpen(true);
   };
 
+  const enterFullscreen = () => {
+    try {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch (e) {}
+  };
+
   const createComposeExperience = (options = {}) => {
+    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('compose');
     setLeftSidebarOpen(true);
@@ -13317,6 +13326,7 @@ Rules:
   };
 
   const createDeckExperience = () => {
+    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('deck');
     setDeckTitle('Untitled deck');
@@ -13337,6 +13347,7 @@ Rules:
   };
 
   const createSheetsExperience = () => {
+    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('sheets');
     setSheetsTitle('Q2 Financial Overview');
@@ -13526,6 +13537,7 @@ Rules:
   };
 
   const createDmExperience = () => {
+    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('dm');
     setRightSidebarOpen(false);
@@ -16140,16 +16152,17 @@ Respond with a JSON array of slide objects matching the schema.`;
       return Array.from(names)
         .slice(0, 6)
         .map((name) => {
-          const initials = name
+          const nameStr = String(name || 'Unknown');
+          const initials = nameStr
             .split(/\s+/)
             .filter(Boolean)
             .map((part) => part.charAt(0).toUpperCase())
             .join('')
             .slice(0, 2) || 'U';
-          return { name, initials };
+          return { name: nameStr, initials };
         });
     })();
-    const panelHasContent = activeThreadTasks.length > 0 || activeThreadFiles.length > 0 || activeThreadMeetings.length > 0 || activeThreadPeople.length > 0 || activeThreadDecisions.length > 0;
+    const panelHasContent = (activeThreadTasks?.length || 0) > 0 || (activeThreadFiles?.length || 0) > 0 || (activeThreadMeetings?.length || 0) > 0 || (activeThreadPeople?.length || 0) > 0 || (activeThreadDecisions?.length || 0) > 0;
     const currentUserShort = 'J';
     const openDmWorkspaceTab = (tabKey, options = {}) => {
       if (tabKey === 'dm') {
@@ -19392,9 +19405,13 @@ You can recommend task creations on the board.`;
                       ))}
                     </div>
                     <div className="px-4 py-2 border-b border-gray-100 bg-[#FAFAFC] flex items-center gap-3 text-[11px] text-gray-500">
+                      <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
+                        <button type="button" onClick={() => showToast('Undo not available in demo')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600"><Undo2 size={14} /></button>
+                        <button type="button" onClick={() => showToast('Redo not available in demo')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600"><Redo2 size={14} /></button>
+                        <button type="button" onClick={() => showToast('Edit replay coming soon')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600" title="Edit replay"><History size={14} /></button>
+                        <button type="button" onClick={() => showToast('Save locally')} className="w-7 h-7 flex items-center justify-center rounded border border-transparent hover:border-gray-200 hover:bg-white text-gray-600" title="Save"><Save size={14} /></button>
+                      </div>
                       <button type="button" onClick={() => showToast('Search')} className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600"><Search size={14} /></button>
-                      <button type="button" onClick={() => showToast('Undo not available in demo')} className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600"><Undo2 size={14} /></button>
-                      <button type="button" onClick={() => showToast('Redo not available in demo')} className="w-7 h-7 flex items-center justify-center rounded border border-gray-200 bg-white hover:bg-gray-50 text-gray-600"><Redo2 size={14} /></button>
                       <div className="relative flex items-center gap-1" ref={sheetToolbarMenuRef}>
                         <div className="relative">
                           <button
