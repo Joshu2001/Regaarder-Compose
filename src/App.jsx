@@ -19345,7 +19345,7 @@ You can recommend task creations on the board.`;
               <div className="flex items-center gap-1 mr-2">
                 <button onClick={undoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Undo (Ctrl+Z)"><Undo2 size={15} /></button>
                 <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={15} /></button>
-                <button onClick={toggleReplayHistory} className={`p-1.5 rounded-md transition-colors ${replayHistoryOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><History size={15} /></button>
+                <button onClick={openReplayPanel} className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><Clock size={15} /></button>
               </div>
               <button
                 type="button"
