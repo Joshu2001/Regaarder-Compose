@@ -26805,9 +26805,9 @@ You can recommend task creations on the board.`;
               style={{
                 width: '100%',
                 height: '100%',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                backgroundColor: 'rgba(255, 255, 255, 0.15)'
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                backgroundColor: 'rgba(15, 23, 42, 0.25)'
               }}
               className="w-full h-full"
             />
