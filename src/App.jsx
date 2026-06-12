@@ -2629,6 +2629,7 @@ export default function App() {
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
+  const [headerContextMenu, setHeaderContextMenu] = useState({ open: false, x: 0, y: 0, type: '', index: -1 });
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
@@ -22630,16 +22631,16 @@ You can recommend task creations on the board.`;
           >
             <div className="px-2 py-2 border-b border-gray-100">
               {(() => {
-                const targetTitle = pageContextMenu.isSheets ? sheetsData.find(s => s.id === pageContextMenu.id)?.title : deckSlides.find(s => s.id === pageContextMenu.id)?.title;
+                const targetTitle = pageContextMenu.isSheets ? sheetsData.find(s => s.id === pageContextMenu.itemId)?.title : deckSlides.find(s => s.id === pageContextMenu.itemId)?.title;
                 return (
                   <input
                     type="text"
                     value={targetTitle || ''}
                     onChange={(e) => {
                       if (pageContextMenu.isSheets) {
-                        setSheetsData(prev => prev.map(s => s.id === pageContextMenu.id ? { ...s, title: e.target.value } : s));
+                        setSheetsData(prev => prev.map(s => s.id === pageContextMenu.itemId ? { ...s, title: e.target.value } : s));
                       } else {
-                        setDeckSlides(prev => prev.map(s => s.id === pageContextMenu.id ? { ...s, title: e.target.value } : s));
+                        setDeckSlides(prev => prev.map(s => s.id === pageContextMenu.itemId ? { ...s, title: e.target.value } : s));
                       }
                     }}
                     placeholder={pageContextMenu.isSheets ? 'Add worksheet title' : 'Add page title'}
