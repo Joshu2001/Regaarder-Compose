@@ -22126,7 +22126,7 @@ You can recommend task creations on the board.`;
                       <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
                       <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
                       <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
-                      <span className="ml-auto text-[#374151] px-2 font-medium">More</span>
+                      <button className="ml-auto text-[11px] text-[#374151] px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 font-medium">More</button>
                     </div>
                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
                       <div className="w-12 text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5">{toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}{selectedSheetCell.row}</div>
@@ -22143,16 +22143,22 @@ You can recommend task creations on the board.`;
                       className="grid border-b border-gray-300 bg-slate-50 text-[11px] font-semibold text-slate-700"
                       style={{ gridTemplateColumns: `48px repeat(${activeSheetGrid.cols}, minmax(100px, 1fr))`, minWidth: 'max-content' }}
                     >
-                      <div className="h-8 border-r border-gray-300" />
+                      <div className="h-8 border-r border-gray-300 relative group">
+                        <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400" />
+                      </div>
                       {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => (
-                        <div key={col} className={`h-8 flex items-center justify-center border-r border-gray-300 last:border-r-0 ${selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`}>{col}</div>
+                        <div key={col} className={`h-8 relative border-r border-gray-300 last:border-r-0 ${selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ resize: 'horizontal', overflow: 'hidden' }}>
+                          <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={col} onClick={() => setSelectedSheetCell({ row: selectedSheetCell.row, col: colIndex + 1 })} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }} />
+                        </div>
                       ))}
                     </div>
                     <div className="flex-1 overflow-auto thin-scrollbar relative bg-white">
                       <div className="grid grid-cols-[48px_1fr] origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content' }}>
                         <div className="border-r border-gray-300 bg-slate-50">
                           {Array.from({ length: activeSheetGrid.rows }, (_, idx) => idx + 1).map((num) => (
-                            <div key={num} className={`h-9 border-b border-gray-300 text-[11px] font-semibold flex items-center justify-center ${selectedSheetCell.row === num ? 'bg-violet-100 text-violet-800' : 'text-slate-700'}`}>{num}</div>
+                            <div key={num} className={`h-9 relative border-b border-gray-300 text-[11px] font-semibold ${selectedSheetCell.row === num ? 'bg-violet-100 text-violet-800' : 'text-slate-700'}`} style={{ resize: 'vertical', overflow: 'hidden' }}>
+                              <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={num} onClick={() => setSelectedSheetCell({ row: num, col: selectedSheetCell.col })} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'row', index: num - 1 }); }} />
+                            </div>
                           ))}
                         </div>
                         <div
@@ -22202,7 +22208,7 @@ You can recommend task creations on the board.`;
                             {sheet.title.split(' ')[0]}
                           </button>
                         ))}
-                        <button type="button" className="px-2 py-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">+</button>
+                        <button type="button" onClick={addWorksheet} className="px-2 py-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">+</button>
                       </div>
                       <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
                         <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom out" onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}>-</button>
@@ -22587,6 +22593,35 @@ You can recommend task creations on the board.`;
 
         {sharedRightPanels}
 
+        {headerContextMenu.open && (
+          <div
+            className="fixed z-[700] w-[220px] rounded-xl border border-gray-200 bg-white shadow-[0_18px_45px_-24px_rgba(15,23,42,0.65)] p-2"
+            style={{ left: Math.max(12, headerContextMenu.x - 20), top: Math.max(12, headerContextMenu.y - 12) }}
+          >
+            <div className="px-2 py-2 border-b border-gray-100 mb-1">
+              <div className="text-[13px] font-semibold text-gray-900">{headerContextMenu.type === 'col' ? 'Column options' : 'Row options'}</div>
+            </div>
+            {[
+              { key: 'select', label: headerContextMenu.type === 'col' ? 'Select column' : 'Select row' },
+              { key: 'insert-before', label: headerContextMenu.type === 'col' ? 'Insert 1 column left' : 'Insert 1 row above' },
+              { key: 'insert-after', label: headerContextMenu.type === 'col' ? 'Insert 1 column right' : 'Insert 1 row below' },
+              { key: 'delete', label: headerContextMenu.type === 'col' ? 'Delete column' : 'Delete row' },
+              { key: 'clear', label: headerContextMenu.type === 'col' ? 'Clear column' : 'Clear row' },
+            ].map((item, i) => (
+              <React.Fragment key={item.key}>
+                {(i === 1 || i === 3) && <div className="h-px bg-gray-100 my-1 mx-1" />}
+                <button
+                  className="w-full text-left px-3 py-1.5 text-[13px] text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => {
+                    setHeaderContextMenu({ open: false, x: 0, y: 0, type: '', index: -1 });
+                  }}
+                >
+                  {item.label}
+                </button>
+              </React.Fragment>
+            ))}
+          </div>
+        )}
         {pageContextMenu.open && (
           <div
             ref={pageContextMenuRef}
@@ -22594,7 +22629,25 @@ You can recommend task creations on the board.`;
             style={{ left: Math.max(12, pageContextMenu.x - 20), top: Math.max(12, pageContextMenu.y - 12) }}
           >
             <div className="px-2 py-2 border-b border-gray-100">
-              <div className="text-[13px] font-semibold text-gray-900">{pageContextMenu.isSheets ? 'Add worksheet title' : 'Add page title'}</div>
+              {(() => {
+                const targetTitle = pageContextMenu.isSheets ? sheetsData.find(s => s.id === pageContextMenu.id)?.title : deckSlides.find(s => s.id === pageContextMenu.id)?.title;
+                return (
+                  <input
+                    type="text"
+                    value={targetTitle || ''}
+                    onChange={(e) => {
+                      if (pageContextMenu.isSheets) {
+                        setSheetsData(prev => prev.map(s => s.id === pageContextMenu.id ? { ...s, title: e.target.value } : s));
+                      } else {
+                        setDeckSlides(prev => prev.map(s => s.id === pageContextMenu.id ? { ...s, title: e.target.value } : s));
+                      }
+                    }}
+                    placeholder={pageContextMenu.isSheets ? 'Add worksheet title' : 'Add page title'}
+                    className="w-full text-[13px] font-semibold text-gray-900 focus:outline-none focus:bg-gray-50 rounded px-1 py-0.5"
+                    autoFocus
+                  />
+                );
+              })()}
             </div>
             {[
               { key: 'copy', label: 'Copy', shortcut: 'Ctrl+C' },
