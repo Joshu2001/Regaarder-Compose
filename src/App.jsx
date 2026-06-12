@@ -21634,6 +21634,18 @@ You can recommend task creations on the board.`;
     </div>
   );
 
+  const renderRoomTopHeader = () => (
+    <div className="absolute top-0 left-0 right-0 h-[72px] bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50">
+      <div className="flex items-center gap-4">
+        <div className="bg-violet-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
+          Meeting Active
+        </div>
+        <div className="text-gray-800 font-semibold text-lg">Team Sync</div>
+      </div>
+    </div>
+  );
+
   const renderRoomBottomBar = () => (
     <div className="absolute bottom-0 left-0 right-0 h-[72px] bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-[500] flex items-center justify-between px-6">
       
