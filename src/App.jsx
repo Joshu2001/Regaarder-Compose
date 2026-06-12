@@ -983,16 +983,10 @@ export default function App() {
   const [creationPickerOpen, setCreationPickerOpen] = useState(false);
   const [activeDeckSlideId, setActiveDeckSlideId] = useState(1);
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
-  const [sheetsTitle, setSheetsTitle] = useState('Q2 Financial Overview');
+  const [sheetsTitle, setSheetsTitle] = useState('Untitled sheet');
   const [activeSheetId, setActiveSheetId] = useState(1);
   const [sheetsData, setSheetsData] = useState([
-    { id: 1, title: 'Q2 Financial Overview', subtitle: 'Finance' },
-    { id: 2, title: 'Revenue Breakdown', subtitle: 'Finance' },
-    { id: 3, title: 'Profit & Loss', subtitle: 'Finance' },
-    { id: 4, title: 'Cash Flow Statement', subtitle: 'Finance' },
-    { id: 5, title: 'Product Metrics', subtitle: 'Operations' },
-    { id: 6, title: 'Team OKRs', subtitle: 'Operations' },
-    { id: 7, title: 'Market Research', subtitle: 'Analysis' },
+    { id: 1, title: 'Sheet 1', subtitle: '' },
   ]);
   const [deckPromptInput, setDeckPromptInput] = useState('');
   const [deckPromptMinimized, setDeckPromptMinimized] = useState(false);
@@ -17684,221 +17678,89 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto thin-scrollbar px-3 py-3 space-y-3">
-                    <div className="rounded-2xl border border-[#eceef7] bg-white px-4 py-5 text-center">
-                      <h3 className="text-[12px] font-semibold text-[#1a1f36] tracking-tight">No active sharing</h3>
-                      <p className="text-[11px] text-[#6b7280] mt-1.5">Start a call or invite others to collaborate.</p>
-                      <div className="mt-4 w-[110px] h-[110px] rounded-full border border-dashed border-violet-200 mx-auto flex items-center justify-center">
-                        <div className="w-14 h-14 rounded-2xl bg-violet-50 border border-violet-200 text-violet-500 flex items-center justify-center">
-                          <MonitorPlay size={24} />
-                        </div>
+                                    <div className="flex-1 overflow-y-auto thin-scrollbar px-5 py-6 bg-white space-y-8">
+                    <div>
+                      <div className="flex items-center gap-2 mb-4">
+                        <div className="w-2 h-2 rounded-full bg-slate-300"></div>
+                        <span className="text-[13px] font-semibold text-slate-800">Offline</span>
                       </div>
-                      <div className="mt-4 space-y-2 text-left">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={() => setIsRoomStartMenuOpen((prev) => !prev)}
-                              className="w-full rounded-xl border border-violet-200 bg-violet-50 text-violet-700 py-2 px-1 text-[10px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-violet-100"
-                            >
-                              <Plus size={13} /> Start room <ChevronDown size={11} />
-                            </button>
-                            {isRoomStartMenuOpen && (
-                              <div className="absolute z-30 left-0 mt-1 w-[220px] rounded-xl border border-gray-200 bg-white shadow-[0_18px_40px_-20px_rgba(15,23,42,0.45)] p-2 text-left">
-                                <div className="text-[9px] uppercase tracking-wide text-gray-400 font-semibold px-2 py-1">Quick start</div>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setIsRoomStartMenuOpen(false);
-                                    startMeetingNow(generateRoomCode());
-                                  }}
-                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2.5"
-                                >
-                                  <Sparkles size={12} className="text-violet-500 mt-0.5 shrink-0" />
-                                  <div className="min-w-0 text-left">
-                                    <div className="text-[10px] font-semibold leading-none text-slate-800">Start instant room</div>
-                                    <div className="mt-1 text-[9px] leading-tight text-slate-500">Start collaborating immediately</div>
-                                  </div>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setIsRoomStartMenuOpen(false);
-                                    setIsScheduleSessionModalOpen(true);
-                                  }}
-                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2.5"
-                                >
-                                  <Calendar size={12} className="text-slate-500 mt-0.5 shrink-0" />
-                                  <div className="min-w-0 text-left">
-                                    <div className="text-[10px] font-semibold leading-none text-slate-800">Schedule session</div>
-                                    <div className="mt-1 text-[9px] leading-tight text-slate-500">Plan with Google Calendar</div>
-                                  </div>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setIsRoomStartMenuOpen(false);
-                                    roomJoinInputRef.current?.focus();
-                                  }}
-                                  className="w-full rounded-lg px-2 py-1.5 hover:bg-violet-50 inline-flex items-start gap-2.5"
-                                >
-                                  <LinkIcon size={12} className="text-slate-500 mt-0.5 shrink-0" />
-                                  <div className="min-w-0 text-left">
-                                    <div className="text-[10px] font-semibold leading-none text-slate-800">Join with code or link</div>
-                                    <div className="mt-1 text-[9px] leading-tight text-slate-500">Enter a code to join instantly</div>
-                                  </div>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => {
-                              setIsRoomInviteModalOpen(true);
-                              setIsRoomStartMenuOpen(false);
-                            }}
-                            className="rounded-xl border border-gray-200 bg-white text-slate-700 py-2 px-1 text-[10px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-slate-50"
-                          >
-                            <UserPlus size={12} /> Invite people
-                          </button>
-                        </div>
-
-                        <input
-                          ref={roomJoinInputRef}
-                          type="text"
-                          value={joinCode}
-                          onChange={(e) => setJoinCode(e.target.value)}
-                          onFocus={() => setIsRoomStartMenuOpen(false)}
-                          placeholder="Join with code"
-                          className="w-full rounded-xl border border-gray-200 bg-white py-2 px-3 text-[10px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-violet-300"
-                        />
+                      <div className="space-y-2">
                         <button
-                          onClick={() => {
-                            if (joinCode.trim()) {
-                              openMeetingSetup(joinCode.trim());
-                            } else {
-                              showToast('Please enter a room code');
-                            }
-                          }}
-                          className="w-full rounded-xl border border-gray-200 bg-white text-slate-700 py-2 px-1 text-[10px] font-semibold inline-flex items-center justify-center gap-1 whitespace-nowrap leading-none hover:bg-slate-50"
+                          type="button"
+                          onClick={() => startMeetingNow(generateRoomCode())}
+                          className="w-full text-left px-3 py-2.5 rounded-xl bg-slate-900 text-white text-[13px] font-medium hover:bg-slate-800 transition-colors flex items-center justify-between"
                         >
-                          <LinkIcon size={12} /> Join
+                          Start meeting
+                          <Plus size={16} className="opacity-70" />
                         </button>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-[#eceef7] bg-white px-4 py-3 text-left">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-[12px] font-semibold text-[#23283b] tracking-tight">Upcoming</span>
-                        <button type="button" className="text-[10px] font-semibold text-violet-600 hover:text-violet-700">View calendar</button>
-                      </div>
-                      {upcomingEvents.slice(0, 1).map((event) => {
-                        const eventDate = event?.dueDate ? new Date(event.dueDate) : null;
-                        const hasDate = eventDate && !Number.isNaN(eventDate.getTime());
-                        const dateLabel = hasDate
-                          ? eventDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-                          : 'Upcoming';
-                        return (
+                        {isRoomStartMenuOpen ? (
+                          <div className="flex gap-2">
+                            <input
+                              ref={roomJoinInputRef}
+                              type="text"
+                              value={joinCode}
+                              onChange={(e) => setJoinCode(e.target.value)}
+                              placeholder="Enter code"
+                              className="flex-1 rounded-xl border border-slate-200 px-3 py-2.5 text-[13px] focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && joinCode.trim()) openMeetingSetup(joinCode.trim());
+                              }}
+                            />
+                            <button onClick={() => joinCode.trim() && openMeetingSetup(joinCode.trim())} className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-[13px] font-medium hover:bg-slate-200">Join</button>
+                          </div>
+                        ) : (
                           <button
-                            key={`room-upcoming-${event.id}`}
-                            onClick={() => openMeetingSetup(normalizeRoomCode(event.title) || generateRoomCode())}
-                            className="w-full rounded-xl border border-gray-200 bg-white p-3 hover:border-violet-200 hover:bg-violet-50/20 transition-colors text-left"
+                            type="button"
+                            onClick={() => setIsRoomStartMenuOpen(true)}
+                            className="w-full text-left px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-[13px] font-medium hover:bg-slate-50 transition-colors flex items-center justify-between"
                           >
-                            <div className="flex items-start gap-2.5">
-                              <div className="w-7 h-7 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                                <Calendar size={14} />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="text-[12px] font-semibold text-slate-800">{dateLabel}</div>
-                                <div className="text-[10px] font-semibold text-slate-900 mt-1 leading-tight">{event.title}</div>
-                                <div className="text-[10px] text-slate-500 mt-1">{event.slotLabel || `${scheduleForm.startDate} - ${event.slot || scheduleForm.startTime}`}</div>
-                                <div className="mt-2 flex items-center justify-between">
-                                  <div className="flex items-center -space-x-1.5">
-                                    {meetingParticipants.slice(0, 3).map((participant) => (
-                                      <img key={`upcoming-${event.id}-${participant.name}`} src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full border border-white object-cover" />
-                                    ))}
-                                    <span className="ml-2 text-[10px] font-semibold text-slate-500">+{Math.max(1, (event.participants || []).length)}</span>
-                                  </div>
-                                  <span className="px-2 py-1 rounded-lg border border-violet-200 text-violet-600 text-[10px] font-semibold">Join</span>
-                                </div>
-                              </div>
-                            </div>
+                            Join meeting
+                            <LinkIcon size={16} className="opacity-50" />
                           </button>
-                        );
-                      })}
-                      {upcomingEvents.length === 0 && (
-                        <div className="rounded-xl border border-dashed border-gray-200 bg-white p-3 text-[11px] text-slate-500">
-                          No upcoming meetings yet. Use Schedule session to add one.
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
-                    <div className="rounded-2xl border border-[#eceef7] bg-white px-4 py-3 text-left">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-[12px] font-semibold text-[#23283b] tracking-tight">Recent rooms</span>
-                        <button type="button" className="text-[10px] font-semibold text-violet-600 hover:text-violet-700">See all</button>
-                      </div>
+                    <div>
+                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Upcoming ({upcomingEvents.length})</h3>
                       <div className="space-y-1">
-                        <button onClick={() => openMeetingSetup('q2-launch')} className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-violet-50/30 transition-colors text-left">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-6 h-6 rounded-md bg-violet-50 text-violet-600 flex items-center justify-center shrink-0"><Clock size={13} /></div>
-                            <div className="min-w-0">
-                              <div className="text-[10px] font-semibold text-slate-800 truncate">Q2 Launch Strategy</div>
-                              <div className="text-[10px] text-slate-500">Active yesterday</div>
+                        {upcomingEvents.slice(0, 2).map((event) => {
+                          const eventDate = event?.dueDate ? new Date(event.dueDate) : null;
+                          const hasDate = eventDate && !Number.isNaN(eventDate.getTime());
+                          const dateLabel = hasDate ? eventDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Upcoming';
+                          return (
+                            <div key={event.id} className="group flex items-center justify-between p-2 -mx-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                              <div className="flex flex-col">
+                                <span className="text-[13px] font-medium text-slate-800">{event.title}</span>
+                                <span className="text-[11px] text-slate-500 mt-0.5">{dateLabel}</span>
+                              </div>
+                              <button onClick={() => startMeetingNow(generateRoomCode())} className="opacity-0 group-hover:opacity-100 px-2.5 py-1 bg-violet-50 text-violet-600 rounded-md text-[11px] font-semibold transition-opacity">Start</button>
                             </div>
-                          </div>
-                          <div className="flex items-center -space-x-1.5">
-                            {meetingParticipants.slice(0, 3).map((participant) => (
-                              <img key={`recent-a-${participant.name}`} src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full border border-white object-cover" />
-                            ))}
-                            <span className="ml-2 text-[10px] font-semibold text-slate-500">+3</span>
-                          </div>
-                        </button>
-                        <button onClick={() => openMeetingSetup('product-hunt-planning')} className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-violet-50/30 transition-colors text-left">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-6 h-6 rounded-md bg-violet-50 text-violet-600 flex items-center justify-center shrink-0"><Clock size={13} /></div>
-                            <div className="min-w-0">
-                              <div className="text-[10px] font-semibold text-slate-800 truncate">Product Hunt Planning</div>
-                              <div className="text-[10px] text-slate-500">Active May 12</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center -space-x-1.5">
-                            {meetingParticipants.slice(1, 3).map((participant) => (
-                              <img key={`recent-b-${participant.name}`} src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full border border-white object-cover" />
-                            ))}
-                            <span className="ml-2 text-[10px] font-semibold text-slate-500">+2</span>
-                          </div>
-                        </button>
-                        <button onClick={() => openMeetingSetup('design-review-room')} className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl hover:bg-violet-50/30 transition-colors text-left">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-6 h-6 rounded-md bg-violet-50 text-violet-600 flex items-center justify-center shrink-0"><Clock size={13} /></div>
-                            <div className="min-w-0">
-                              <div className="text-[10px] font-semibold text-slate-800 truncate">Design Review Room</div>
-                              <div className="text-[10px] text-slate-500">Active May 8</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center -space-x-1.5">
-                            {meetingParticipants.slice(0, 3).map((participant) => (
-                              <img key={`recent-c-${participant.name}`} src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full border border-white object-cover" />
-                            ))}
-                            <span className="ml-2 text-[10px] font-semibold text-slate-500">+4</span>
-                          </div>
-                        </button>
+                          );
+                        })}
                       </div>
                     </div>
 
-                    <div className="rounded-2xl border border-violet-100 bg-[#f6f2ff] px-4 py-3 text-left flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[12px] font-semibold text-[#1f2537]">AI Assistant</span>
-                          <span className="px-1.5 py-0.5 rounded-full bg-violet-200 text-violet-700 text-[9px] font-semibold">BETA</span>
-                        </div>
-                        <p className="text-[10px] text-slate-600 mt-2">I can capture key points, decisions, and action items during your call.</p>
-                        <button type="button" className="mt-3 text-[10px] font-semibold text-violet-600 hover:text-violet-700 inline-flex items-center gap-1">
-                          View how it works <ArrowRight size={12} />
-                        </button>
-                      </div>
-                      <div className="w-10 h-10 rounded-xl bg-white/70 border border-violet-200 text-violet-500 flex items-center justify-center shrink-0">
-                        <Sparkles size={16} />
+                    <div>
+                      <h3 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Recent (3)</h3>
+                      <div className="space-y-1">
+                        {[
+                          { id: 1, title: 'Weekly Sync', date: 'Yesterday', avatars: ['https://i.pravatar.cc/150?u=a042581f4e29026024d', 'https://i.pravatar.cc/150?u=a042581f4e29026704d'] },
+                          { id: 2, title: 'Design Review', date: 'Mon', avatars: ['https://i.pravatar.cc/150?u=a04258114e29026702d'] },
+                          { id: 3, title: 'Planning', date: 'Last week', avatars: ['https://i.pravatar.cc/150?u=a042581f4e29026024d', 'https://i.pravatar.cc/150?u=a04258a2462d826712d'] }
+                        ].map((recent) => (
+                          <div key={recent.id} className="group flex items-center justify-between p-2 -mx-2 rounded-lg hover:bg-slate-50 cursor-pointer" onClick={() => openMeetingSetup('recent-room')}>
+                            <div className="flex flex-col">
+                              <span className="text-[13px] font-medium text-slate-800">{recent.title}</span>
+                              <span className="text-[11px] text-slate-500 mt-0.5">{recent.date}</span>
+                            </div>
+                            <div className="flex -space-x-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                              {recent.avatars.map((src, i) => (
+                                <img key={i} src={src} className="w-5 h-5 rounded-full border border-white" alt="Avatar" />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -21859,7 +21721,9 @@ You can recommend task creations on the board.`;
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="text-sm font-semibold text-gray-800">{isSheetsMode ? 'Sheets' : 'Narrative'}</div>
-                <div className="text-[11px] text-gray-500 mt-1">{isSheetsMode ? 'Financial models' : 'Investor Pitch'}</div>
+                {(!isSheetsMode || sheetsData.length > 1) && (
+                  <div className="text-[11px] text-gray-500 mt-1">{isSheetsMode ? 'Financial models' : 'Investor Pitch'}</div>
+                )}
               </div>
               <button
                 type="button"
@@ -22094,12 +21958,68 @@ You can recommend task creations on the board.`;
                     </div>
                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
                       <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
-                        <button type="button" onClick={() => showToast('Undo not available in demo')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"><Undo2 size={15} /></button>
-                        <button type="button" onClick={() => showToast('Redo not available in demo')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"><Redo2 size={15} /></button>
-                        <button type="button" onClick={() => showToast('Edit replay coming soon')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Edit replay"><Clock size={15} /></button>
-                        <button type="button" onClick={() => showToast('Save locally')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Save"><Save size={15} /></button>
+                        <button type="button" onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Undo"><Undo2 size={15} /></button>
+                        <button type="button" onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Redo"><Redo2 size={15} /></button>
+                        <button type="button" onClick={openReplayPanel} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Edit replay"><Clock size={15} /></button>
+                        <button type="button" onClick={saveDocumentLocally} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Save"><Save size={15} /></button>
                       </div>
-                      <button type="button" onClick={() => showToast('Search')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors"><Search size={15} /></button>
+                      <div className="relative">
+                        <button type="button" onClick={() => { closeTransientMenus(); setDocSearchPanelOpen((prev) => !prev); setDocSearchAutoPlay(false); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-gray-600'}`} title="Search"><Search size={15} /></button>
+                        {docSearchPanelOpen && (
+                          <div className="absolute left-0 top-full mt-1 z-[420] w-[360px] rounded-xl border border-gray-200 bg-white p-3 shadow-2xl ring-1 ring-black/5">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 text-[11px]">
+                                {[
+                                  { key: 'find', label: 'Find' },
+                                  { key: 'replace', label: 'Replace' },
+                                  { key: 'goTo', label: 'Go To' },
+                                ].map((item) => (
+                                  <button
+                                    key={item.key}
+                                    type="button"
+                                    onClick={() => setDocSearchMode(item.key)}
+                                    className={`px-2 py-1 rounded-md transition-colors ${docSearchMode === item.key ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            {(docSearchMode === 'find' || docSearchMode === 'replace') && (
+                              <>
+                                <input
+                                  value={docSearchQuery}
+                                  onChange={(event) => setDocSearchQuery(event.target.value)}
+                                  placeholder="Search text"
+                                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
+                                />
+                                {docSearchMode === 'replace' && (
+                                  <input
+                                    value={docReplaceValue}
+                                    onChange={(event) => setDocReplaceValue(event.target.value)}
+                                    placeholder="Replace with (leave empty to remove)"
+                                    className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
+                                  />
+                                )}
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  <button type="button" onClick={() => highlightDocumentSearchTerms(docSearchQuery, false)} className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700">Find</button>
+                                  {docSearchMode === 'replace' && (
+                                    <button type="button" onClick={replaceHighlightedSearchMatches} className="px-2.5 py-1.5 text-[11px] rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50">Replace</button>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                            {docSearchMode === 'goTo' && (
+                              <>
+                                <input value={docGoToValue} onChange={(event) => setDocGoToValue(event.target.value)} placeholder="Sheet/Cell" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400" />
+                                <div className="mt-2 flex items-center gap-2">
+                                  <button type="button" onClick={goToDocumentPage} className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700">Go</button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       <div className="relative flex items-center gap-1" ref={sheetToolbarMenuRef}>
                         <div className="relative">
                           <button
@@ -22111,8 +22031,8 @@ You can recommend task creations on the board.`;
                             <ChevronDown size={13} />
                           </button>
                           {sheetToolbarMenuOpen === 'font' && (
-                            <div className="absolute z-[420] top-full mt-1 left-0 w-32 rounded-lg border border-gray-200 bg-white shadow-lg p-1">
-                              {['Inter', 'Arial', 'Roboto', 'Lato', 'Georgia'].map((font) => (
+                            <div className="absolute z-[420] top-full mt-1 left-0 w-48 max-h-40 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
+                              {fontOptions.map((font) => (
                                 <button
                                   key={font}
                                   type="button"
@@ -22120,7 +22040,8 @@ You can recommend task creations on the board.`;
                                     setSheetToolbarFont(font);
                                     setSheetToolbarMenuOpen(null);
                                   }}
-                                  className={`w-full text-left px-2 py-1 rounded text-[11px] ${sheetToolbarFont === font ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                  className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarFont === font ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                  style={{ fontFamily: font }}
                                 >
                                   {font}
                                 </button>
@@ -22138,8 +22059,8 @@ You can recommend task creations on the board.`;
                             <ChevronDown size={13} />
                           </button>
                           {sheetToolbarMenuOpen === 'size' && (
-                            <div className="absolute z-[420] top-full mt-1 left-0 w-16 max-h-48 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
-                              {[12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48, 56, 64].map((size) => (
+                            <div className="absolute z-[420] top-full mt-1 left-0 w-24 max-h-40 overflow-y-auto thin-scrollbar rounded-lg border border-gray-200 bg-white shadow-lg p-1">
+                              {sizeOptions.map((size) => (
                                 <button
                                   key={size}
                                   type="button"
@@ -22147,7 +22068,7 @@ You can recommend task creations on the board.`;
                                     setSheetToolbarSize(size);
                                     setSheetToolbarMenuOpen(null);
                                   }}
-                                  className={`w-full text-left px-2 py-1 rounded text-[11px] ${sheetToolbarSize === size ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
+                                  className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarSize === size ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
                                 >
                                   {size}
                                 </button>
