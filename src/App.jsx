@@ -27494,8 +27494,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {sharedRightPanels}
 
-      {renderRoomStage()}
-
       {roomState === 'active' && mainView === 'document' && (
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
