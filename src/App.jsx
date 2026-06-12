@@ -410,7 +410,6 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
         <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-xl font-bold">
           You
         </div>
-      {renderRoomStage()}
       </div>
     );
   }
@@ -22879,6 +22878,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
+      {renderRoomStage()}
       </div>
     );
   }
