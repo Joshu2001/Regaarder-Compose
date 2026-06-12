@@ -2628,6 +2628,7 @@ export default function App() {
   ]);
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
+  const [selectedSheetRange, setSelectedSheetRange] = useState(null);
   const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
   const [headerContextMenu, setHeaderContextMenu] = useState({ open: false, x: 0, y: 0, type: '', index: -1 });
   const [sheetGrids, setSheetGrids] = useState(() => {
@@ -21485,152 +21486,202 @@ You can recommend task creations on the board.`;
 
   // The landing mode now integrates with the main Compose view
 
-            const renderRoomStage = () => {
-  return roomState === 'active' && roomPanelMode === 'expanded' && mainView === 'room' && (
-    <div className="fixed inset-0 z-[500] bg-[#202124] flex flex-col font-sans select-none overflow-hidden">
+              // --- ROOM UI COMPONENTS ---
+  const renderRoomLeftSidebar = () => (
+    <div className="flex-1 flex flex-col p-4 gap-3 overflow-y-auto thin-scrollbar">
+      {/* Host */}
+      <div className="relative rounded-2xl overflow-hidden bg-gray-100 h-36 border border-gray-200">
+        <img src={meetingParticipants[0]?.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb"} className="w-full h-full object-cover" alt="Host" />
+        <div className="absolute top-2 left-2 bg-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full text-yellow-900 shadow-sm">Host</div>
+        <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur px-3 py-2 flex items-center justify-between border-t border-gray-200/50">
+          <div>
+            <div className="text-xs font-bold text-gray-900">Joshua Sajous</div>
+            <div className="text-[10px] font-semibold text-violet-600">Speaking</div>
+          </div>
+          <div className="w-4 h-4 text-violet-600"><Mic size={14} /></div>
+        </div>
+      </div>
       
-      {/* Top Header */}
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white z-10 pointer-events-none">
-        <div className="flex items-center gap-3">
-          <div className="text-base font-medium px-2 pointer-events-auto text-white/90 drop-shadow-md">
-            {scheduleForm.title || 'Project MOAT Sync'}
+      {/* Participants */}
+      {meetingParticipants.slice(1, 4).map((participant, index) => (
+        <div key={index} className="relative rounded-2xl overflow-hidden bg-gray-100 h-32 border border-gray-200">
+          <img src={participant.img} className="w-full h-full object-cover" alt={participant.name} />
+          <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur px-3 py-2 flex items-center justify-between border-t border-gray-200/50">
+            <div className="text-xs font-bold text-gray-900">{participant.name}</div>
+            <div className="flex items-center gap-1.5 text-gray-400">
+              <MicOff size={14} />
+              <MoreHorizontal size={14} />
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-4 pointer-events-auto">
-          <button onClick={() => { setMainView('document'); setRoomPanelMode('docked'); }} className="px-4 py-2 rounded-lg text-sm font-medium bg-[#3c4043]/80 hover:bg-[#4d5156] backdrop-blur transition-colors text-white">
-            Return to Editor
+      ))}
+      
+      {/* More Participants */}
+      <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4 flex items-center justify-between cursor-pointer hover:bg-violet-100 transition-colors">
+        <div>
+          <div className="flex -space-x-2 mb-1.5">
+            <div className="w-7 h-7 rounded-full bg-violet-200 border-2 border-white flex items-center justify-center text-[10px] font-bold text-violet-700">+1</div>
+          </div>
+          <div className="text-xs font-semibold text-violet-900">1 more participant</div>
+        </div>
+        <ChevronRight size={16} className="text-violet-400" />
+      </div>
+    </div>
+  );
+
+  const renderRoomRightSidebar = () => (
+    <div className="flex flex-col h-full bg-[#FAFAFC]">
+      <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200/80 bg-white shrink-0">
+        <div className="flex items-center gap-2 text-gray-900 font-bold">
+          <Sparkles size={16} className="text-violet-600" /> Room Assistant
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
+        {/* Meeting Summary */}
+        <div className="bg-white rounded-2xl border border-violet-100 shadow-sm p-4 relative overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-400 to-fuchsia-400"></div>
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-center gap-1.5 text-violet-700 font-semibold text-xs">
+              <FileText size={14} /> Meeting summary
+            </div>
+            <Clock size={12} className="text-gray-400" />
+          </div>
+          <div className="text-[10px] text-gray-500 mb-2">AI generated �E 2 min ago</div>
+          <div className="text-xs text-gray-700 leading-relaxed mb-3">
+            The team discussed Q3 priorities, focusing on collaboration, AI integration, templates, and mobile improvements.
+          </div>
+          <button className="w-full py-1.5 rounded-lg border border-violet-200 text-violet-700 text-xs font-semibold hover:bg-violet-50 transition-colors">
+            View full summary
+          </button>
+        </div>
+
+        {/* Action Items */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-3 text-gray-900 font-semibold text-xs">
+            <ListTodo size={14} className="text-violet-600" /> Action items <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md text-[10px]">3</span>
+          </div>
+          <div className="space-y-3">
+            {[
+              { text: "Alex to draft AI integration plan", due: "May 26", img: meetingParticipants[1]?.img },
+              { text: "Michelle to explore template ideas", due: "May 27", img: meetingParticipants[2]?.img },
+              { text: "Joshua to review mobile roadmap", due: "May 28", img: meetingParticipants[0]?.img },
+            ].map((task, i) => (
+              <div key={i} className="flex gap-2">
+                <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300 mt-0.5 shrink-0"></div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-gray-800 font-medium truncate">{task.text}</div>
+                  <div className="text-[10px] text-gray-500">Due {task.due}</div>
+                </div>
+                <img src={task.img} className="w-5 h-5 rounded-full border border-white" alt="" />
+              </div>
+            ))}
+          </div>
+          <button className="w-full mt-3 py-1.5 text-center text-violet-600 text-xs font-semibold hover:underline">
+            All tasks in Room
           </button>
         </div>
       </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 p-4 pb-[88px] flex items-center justify-center relative">
-        <div className="w-full h-full max-w-[1280px] rounded-xl overflow-hidden relative bg-[#3c4043] shadow-2xl flex items-center justify-center border border-white/5 group">
-          
-          {isRoomCameraOn && localStream ? (
-            <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
-          ) : (
-            <div className="w-32 h-32 rounded-full bg-[#1a73e8] flex items-center justify-center text-white text-5xl font-semibold shadow-2xl overflow-hidden border-2 border-white/10">
-              <img src={meetingParticipants[0]?.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=320&q=80"} className="w-full h-full object-cover" alt="Avatar" />
+      
+      {/* Tabs at bottom */}
+      <div className="shrink-0 bg-white border-t border-gray-200 flex flex-col h-1/3">
+        <div className="flex items-center border-b border-gray-200">
+          <div className="px-4 py-2.5 text-xs font-bold text-violet-700 border-b-2 border-violet-600">Chat</div>
+          <div className="px-4 py-2.5 text-xs font-medium text-gray-500 hover:text-gray-700 cursor-pointer">Notes</div>
+          <div className="px-4 py-2.5 text-xs font-medium text-gray-500 hover:text-gray-700 cursor-pointer">Highlights</div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
+          <div className="flex gap-2.5">
+            <img src={meetingParticipants[0]?.img} className="w-6 h-6 rounded-full shrink-0" alt="" />
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-bold text-gray-900">Joshua</span>
+                <span className="text-[10px] text-gray-400">9:40 AM</span>
+              </div>
+              <div className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded-xl rounded-tl-none border border-gray-100">
+                Let's launch the new template system in September.
+              </div>
+              <div className="inline-flex mt-1 bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded-full text-[10px] border border-violet-100">?? 2</div>
             </div>
-          )}
-
-          {/* User Name Bottom Left */}
-          <div className="absolute bottom-4 left-4 text-[13px] font-medium text-white px-2 py-0.5 drop-shadow-md">
-            Joshua Carl Hans Bergson Sajous
           </div>
-          
-          {/* Translation Tooltip - Google Style */}
-          <div className="absolute bottom-6 right-6 w-72 bg-[#0b57d0] text-white p-4 rounded-xl shadow-[0_4px_14px_rgba(0,0,0,0.25)] flex flex-col gap-2 transform transition-all duration-300 opacity-90 hover:opacity-100">
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-2 font-medium text-[13px]">
-                <MessageSquare size={16} /> Try speech translation
+          <div className="flex gap-2.5">
+            <img src={meetingParticipants[2]?.img} className="w-6 h-6 rounded-full shrink-0" alt="" />
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-bold text-gray-900">Michelle</span>
+                <span className="text-[10px] text-gray-400">9:41 AM</span>
+              </div>
+              <div className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded-xl rounded-tl-none border border-gray-100">
+                Sounds good! I'll share some inspiration in the whiteboard.
               </div>
             </div>
-            <div className="text-[13px] text-blue-50 leading-relaxed pr-2">
-              Translate for people who don't speak the same language
-            </div>
-            <div className="flex justify-end gap-2 mt-2">
-              <button className="px-4 py-2 text-[13px] font-medium hover:bg-white/10 rounded-full transition">Not now</button>
-              <button className="px-5 py-2 text-[13px] font-medium bg-white text-[#0b57d0] rounded-full hover:bg-blue-50 transition shadow-sm">Try it</button>
-            </div>
-            {/* Tooltip tail */}
-            <div className="absolute -bottom-2 right-6 w-4 h-4 bg-[#0b57d0] rotate-45 transform origin-center"></div>
           </div>
-
         </div>
-      </div>
-
-      {/* Bottom Control Bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-[88px] px-6 flex items-center justify-between bg-[#202124]">
-        
-        {/* Left side info */}
-        <div className="text-[15px] font-medium text-white flex items-center gap-3 w-64">
-          {meetingDurationLabel} <span className="text-white/40">|</span> ywt-nift-qpg
-        </div>
-        
-        {/* Center Controls */}
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={toggleRoomMic}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRoomMicOn ? 'bg-[#3c4043] hover:bg-[#4d5156] text-white' : 'bg-[#ea4335] hover:bg-[#d93025] text-white'}`}
-            title={isRoomMicOn ? "Turn off microphone" : "Turn on microphone"}
-          >
-            {isRoomMicOn ? <Mic size={20} /> : <MicOff size={20} />}
-          </button>
-          
-          <button 
-            onClick={toggleRoomCamera}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isRoomCameraOn ? 'bg-[#3c4043] hover:bg-[#4d5156] text-white' : 'bg-[#ea4335] hover:bg-[#d93025] text-white'}`}
-            title={isRoomCameraOn ? "Turn off camera" : "Turn on camera"}
-          >
-            {isRoomCameraOn ? <Video size={20} /> : <VideoOff size={20} />}
-          </button>
-          
-          <button 
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4d5156] text-white transition-all"
-            title="Turn on captions"
-          >
-            <span className="font-bold text-[13px]">CC</span>
-          </button>
-
-          <button 
-            onClick={() => handleMeetingShareOption('document')}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4d5156] text-white transition-all"
-            title="Present now"
-          >
-            <ArrowUp size={20} className="mb-0.5" />
-          </button>
-
-          <button 
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4d5156] text-white transition-all"
-            title="React"
-          >
-            <Smile size={20} />
-          </button>
-
-          <button 
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4d5156] text-white transition-all"
-            title="Raise hand"
-          >
-            <Hand size={20} />
-          </button>
-
-          <button 
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4d5156] text-white transition-all"
-            title="More options"
-          >
-            <MoreHorizontal size={20} />
-          </button>
-
-          <button 
-            onClick={leaveRoom}
-            className="px-6 h-10 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-[#d93025] text-white ml-1 transition-all"
-            title="Leave call"
-          >
-            <PhoneOff size={20} />
-          </button>
-        </div>
-        
-        {/* Right side controls */}
-        <div className="flex items-center justify-end gap-3 w-64">
-          <button className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 text-white transition">
-            <MessageSquare size={20} />
-          </button>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 text-white transition">
-            <Users size={20} />
-          </button>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 text-white transition">
-            <LayoutGrid size={20} />
-          </button>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 text-white transition">
-            <Lock size={18} />
-          </button>
+        <div className="p-3 bg-white border-t border-gray-100">
+          <div className="relative">
+            <input type="text" placeholder="Message everyone..." className="w-full bg-gray-50 border border-gray-200 rounded-full py-2 pl-3 pr-10 text-xs outline-none focus:border-violet-300" />
+            <button className="absolute right-1 top-1 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center">
+              <Send size={10} />
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
-};
+
+  const renderRoomBottomBar = () => (
+    <div className="absolute bottom-0 left-0 right-0 h-[72px] bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-[500] flex items-center justify-between px-6">
+      
+      {/* Left */}
+      <div className="flex items-center gap-2">
+        <button className="flex items-center gap-2 px-4 h-10 rounded-full border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
+          <div className="w-2 h-2 rounded-full border-2 border-gray-500"></div> Record
+        </button>
+        <button className="flex items-center gap-2 px-4 h-10 rounded-full border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
+          <span className="font-bold border border-gray-400 rounded-sm px-1 text-[10px] leading-tight mt-0.5">CC</span> Captions
+        </button>
+      </div>
+      
+      {/* Center Controls */}
+      <div className="flex items-center gap-3">
+        <button onClick={toggleRoomMic} className={`flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold transition-colors ${isRoomMicOn ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+          {isRoomMicOn ? <Mic size={18} /> : <MicOff size={18} />} Mic <ChevronUp size={14} className="ml-1 opacity-50" />
+        </button>
+        
+        <button onClick={toggleRoomCamera} className={`flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold transition-colors ${isRoomCameraOn ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+          {isRoomCameraOn ? <Video size={18} /> : <VideoOff size={18} />} Camera <ChevronUp size={14} className="ml-1 opacity-50" />
+        </button>
+        
+        <button onClick={() => handleMeetingShareOption('document')} className="flex items-center gap-2 px-4 h-10 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
+          <ArrowUp size={18} /> Present <ChevronUp size={14} className="ml-1 opacity-50" />
+        </button>
+
+        <button className="flex items-center gap-2 px-5 h-10 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5">
+          <Sparkles size={16} /> Room AI
+        </button>
+
+        <button className="flex items-center gap-2 px-4 h-10 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
+          <FileText size={18} /> Notes
+        </button>
+
+        <button className="relative flex items-center gap-2 px-4 h-10 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
+          <Users size={18} /> People
+          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-bold flex items-center justify-center border border-white">5</div>
+        </button>
+      </div>
+      
+      {/* Right */}
+      <div className="flex items-center gap-3">
+        <button className="flex items-center gap-2 px-4 h-10 rounded-full border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
+          <MoreHorizontal size={18} /> More
+        </button>
+        <button onClick={leaveRoom} className="flex items-center gap-2 px-5 h-10 rounded-full bg-red-50 text-red-600 border border-red-100 text-sm font-bold hover:bg-red-100 transition-colors">
+          <PhoneOff size={18} /> Leave room
+        </button>
+      </div>
+    </div>
+  );
+  // --- END ROOM UI COMPONENTS ---
 
 
 if (productMode === 'deck' || productMode === 'sheets') {
@@ -22125,7 +22176,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative rounded-2xl border border-gray-200 shadow-sm">
                     <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
-                      {['Data', 'Insert', 'Analyze', 'Automate', 'AI'].map((tab) => (
+                      {['Data', 'Insert', 'Analyze', 'Visualize', 'AI'].map((tab) => (
                         <button
                           key={tab}
                           type="button"
@@ -22319,12 +22370,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           {Array.from({ length: activeSheetGrid.rows }).flatMap((_, rowIndex) => (
                             Array.from({ length: activeSheetGrid.cols }).map((__, colIndex) => {
-                              const isSelected = selectedSheetCell.row === rowIndex + 1 && selectedSheetCell.col === colIndex + 1;
+                              const isSelected = selectedSheetCell.row === rowIndex + 1 && selectedSheetCell.col === colIndex + 1 || (selectedSheetRange && rowIndex + 1 >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && rowIndex + 1 <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) && colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol));
                               return (
                                 <div key={`${rowIndex + 1}-${colIndex + 1}`} className={`relative border-b border-r border-gray-200 ${isSelected ? 'ring-2 ring-violet-600 z-10' : ''}`}>
                                   <input
                                     value={activeSheetGrid.cells?.[rowIndex]?.[colIndex] || ''}
-                                    onFocus={() => setSelectedSheetCell({ row: rowIndex + 1, col: colIndex + 1 })}
+                                    onFocus={() => { setSelectedSheetCell({ row: rowIndex + 1, col: colIndex + 1 }); setSelectedSheetRange(null); }}
                                     onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
                                     className="w-full h-full px-2 text-xs bg-transparent focus:outline-none"
                                     style={{
@@ -22830,7 +22881,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
-      {renderRoomStage()}
       </div>
     );
   }
