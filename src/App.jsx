@@ -13616,6 +13616,7 @@ Rules:
     // Products that act as Right Sidebar Panels or Overlays:
     setProductMode('compose');
     setRightSidebarOpen(true);
+    setRightPanelMaximized(true);
 
     switch (target) {
       case 'room':
@@ -22163,13 +22164,16 @@ You can recommend task creations on the board.`;
                         </div>
                         <div
                           className="grid"
-                          style={{ gridTemplateColumns: `repeat(${activeSheetGrid.cols}, minmax(100px, 1fr))` }}
+                          style={{
+                            gridTemplateColumns: Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, minmax(100px, 1fr))`).join(' '),
+                            gridTemplateRows: Array.from({ length: activeSheetGrid.rows }).map((_, i) => `var(--row-${i}-height, 36px)`).join(' ')
+                          }}
                         >
                           {Array.from({ length: activeSheetGrid.rows }).flatMap((_, rowIndex) => (
                             Array.from({ length: activeSheetGrid.cols }).map((__, colIndex) => {
                               const isSelected = selectedSheetCell.row === rowIndex + 1 && selectedSheetCell.col === colIndex + 1;
                               return (
-                                <div key={`${rowIndex + 1}-${colIndex + 1}`} className={`relative h-9 border-b border-r border-gray-200 ${isSelected ? 'ring-2 ring-violet-600 z-10' : ''}`}>
+                                <div key={`${rowIndex + 1}-${colIndex + 1}`} className={`relative border-b border-r border-gray-200 ${isSelected ? 'ring-2 ring-violet-600 z-10' : ''}`}>
                                   <input
                                     value={activeSheetGrid.cells?.[rowIndex]?.[colIndex] || ''}
                                     onFocus={() => setSelectedSheetCell({ row: rowIndex + 1, col: colIndex + 1 })}
@@ -26830,7 +26834,7 @@ You can recommend task creations on the board.`;
                 attachFilesToPrompt(event.dataTransfer?.files);
               }}
               className={`relative transition-all duration-500 ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
-              style={{ width: isPromptExpanded ? `min(1360px, calc(100vw - ${(rightSidebarOpen ? rightSidebarWidth + 140 : 360)}px))` : `${Math.max(320, Math.min(promptWidth, 980))}px`, maxWidth: '100%' }}
+              style={{ width: isPromptExpanded ? `min(1360px, calc(100vw - ${blurLeftInset + blurRightInset + 120}px))` : `${Math.max(320, Math.min(promptWidth, 980))}px`, maxWidth: '100%' }}
             >
               <input
                 ref={promptAudioInputRef}
@@ -26864,7 +26868,7 @@ You can recommend task creations on the board.`;
                         key={exampleText}
                         type="button"
                         onClick={() => setFloatingPrompt(exampleText)}
-                        className="flex items-center gap-3 text-left rounded-2xl border border-[#e8e6f1] px-4 py-3 text-[13px] text-slate-600 hover:border-violet-200 hover:bg-violet-50/40 transition-all"
+                        className="flex items-center gap-3 text-left rounded-2xl border border-white/60 bg-white/60 backdrop-blur-md shadow-[0_2px_10px_rgba(0,0,0,0.04)] px-4 py-3 text-[13px] text-slate-600 hover:border-violet-200 hover:bg-white/80 transition-all"
                       >
                         <Icon size={20} className="flex-shrink-0 text-violet-500" />
                         <span className="leading-[1.1]">{exampleText}</span>
@@ -26878,7 +26882,7 @@ You can recommend task creations on the board.`;
                     <button
                       type="button"
                       onClick={() => setRotatingExampleSetIndex((prevIndex) => (prevIndex - 1 + EXAMPLE_SETS.length) % EXAMPLE_SETS.length)}
-                      className="inline-flex items-center gap-1 rounded-full border border-[#e8e6f1] bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:border-violet-200 hover:text-violet-700"
+                      className="inline-flex items-center gap-1 px-1 py-1 text-[12px] font-medium text-slate-500 hover:text-violet-700 transition-colors"
                       title="Previous suggestions"
                     >
                       <MoveLeft size={12} />
@@ -26887,7 +26891,7 @@ You can recommend task creations on the board.`;
                     <button
                       type="button"
                       onClick={() => setRotatingExampleSetIndex((prevIndex) => (prevIndex + 1) % EXAMPLE_SETS.length)}
-                      className="inline-flex items-center gap-1 rounded-full border border-[#e8e6f1] bg-white px-2.5 py-1 text-[11px] font-medium text-slate-500 hover:border-violet-200 hover:text-violet-700"
+                      className="inline-flex items-center gap-1 px-1 py-1 text-[12px] font-medium text-slate-500 hover:text-violet-700 transition-colors"
                       title="Next suggestions"
                     >
                       More
@@ -26921,14 +26925,14 @@ You can recommend task creations on the board.`;
                     <button
                       type="button"
                       onClick={() => promptFileInputRef.current?.click()}
-                      className="inline-flex items-center gap-2 rounded-xl border border-dashed border-[#d8d5e8] bg-white px-3 py-2 text-[12px] text-slate-500 hover:border-violet-300 hover:text-violet-700"
+                      className="inline-flex items-center gap-1 mt-1 text-[12px] font-medium text-slate-500 hover:text-violet-700 transition-colors"
                     >
                       <Plus size={14} />
                       Add more
                     </button>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2 rounded-2xl border border-[#e9e6f5] bg-white px-3 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
+                  <div className="mt-8 pt-5 flex items-center gap-2 border-t border-[#e9e6f5] px-1">
                     <textarea
                       ref={floatingPromptRef}
                       value={floatingPrompt}
@@ -27015,9 +27019,9 @@ You can recommend task creations on the board.`;
                     <button
                       type="submit"
                       disabled={isComposing}
-                      className={`text-white rounded-full transition-colors flex items-center justify-center h-11 w-11 active:scale-90 ${isComposing ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}`}
+                      className={`text-violet-600 hover:text-violet-700 transition-colors flex items-center justify-center h-11 w-11 active:scale-90 ${isComposing ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                      {isComposing ? <Loader2 size={18} className="animate-spin" /> : <ArrowUp size={18} />}
+                      {isComposing ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
                     </button>
                   </div>
 
