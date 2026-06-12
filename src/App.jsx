@@ -21558,18 +21558,18 @@ You can recommend task creations on the board.`;
         ) : (
           /* Empty State / Grid View */
           <div className="flex-1 rounded-3xl bg-[#222428] border border-white/5 relative overflow-hidden flex items-center justify-center">
-            {remoteStreams.length > 0 ? (
+            {meetingParticipants.length > 0 ? (
               <div className="grid grid-cols-2 gap-4 w-full h-full p-4">
                 <div className="rounded-2xl overflow-hidden relative bg-[#2a2c32]">
                   <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
                   <div className="absolute bottom-4 left-4 text-sm font-medium text-white px-2.5 py-1 bg-black/40 rounded-lg backdrop-blur-sm">You</div>
                 </div>
-                {remoteStreams.map((s, i) => (
+                {meetingParticipants.map((participant, i) => (
                   <div key={i} className="rounded-2xl overflow-hidden relative bg-[#2a2c32]">
                     <div className="absolute inset-0 flex items-center justify-center">
-                       <div className="w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center text-white text-3xl font-bold">P{i+1}</div>
+                       <div className="w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center text-white text-3xl font-bold overflow-hidden"><img src={participant.img} className="w-full h-full object-cover" alt="" /></div>
                     </div>
-                    <div className="absolute bottom-4 left-4 text-sm font-medium text-white px-2.5 py-1 bg-black/40 rounded-lg backdrop-blur-sm">Participant {i+1}</div>
+                    <div className="absolute bottom-4 left-4 text-sm font-medium text-white px-2.5 py-1 bg-black/40 rounded-lg backdrop-blur-sm">{participant.name}</div>
                   </div>
                 ))}
               </div>
