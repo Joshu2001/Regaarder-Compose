@@ -2515,8 +2515,8 @@ export default function App() {
   const [joinCode, setJoinCode] = useState('');
   const [isRoomStartMenuOpen, setIsRoomStartMenuOpen] = useState(false);
   const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
-  const [!isMicMuted, setIsRoomMicOn] = useState(true);
-  const [!isVideoOff, setIsRoomCameraOn] = useState(true);
+  const [isRoomMicOn, setIsRoomMicOn] = useState(true);
+  const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
@@ -21635,13 +21635,6 @@ You can recommend task creations on the board.`;
   );
 
   
-  const meetingParticipants = [
-    { name: "Joshua Sajous", img: "https://images.unsplash.com/photo-1531384441138-2736e62e0919?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80" },
-    { name: "Michelle Lee", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80" },
-    { name: "Alex Morgan", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80" },
-    { name: "Sarah Chen", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80" }
-  ];
-
 const renderRoomTopHeader = () => (
     <div className="absolute top-0 left-0 right-0 h-[72px] bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50">
       <div className="flex items-center gap-4">
