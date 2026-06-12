@@ -16136,7 +16136,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }
       >
         {/* Sidebar Header Tabs */}
-        {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && (
+        {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
         <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
           <div
             className="flex-1 min-w-0 overflow-x-auto no-scrollbar"
@@ -16539,7 +16539,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
           {/* C. ACTIVE TAB: WHITEBOARD ASSISTANT */}
           {activeRightTab === 'whiteboard' && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#fcfcff]">
+            <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-4 bg-[#fcfcff]">
               <div className="rounded-2xl border border-[#ece8ff] bg-white shadow-[0_18px_34px_-28px_rgba(109,40,217,0.45)] overflow-hidden">
                 <div className="px-4 pt-4 pb-2 border-b border-gray-100">
                   <div className="text-[14px] font-semibold text-[#1f2537] inline-flex items-center gap-1.5">
@@ -21486,365 +21486,201 @@ You can recommend task creations on the board.`;
 
   // The landing mode now integrates with the main Compose view
 
-    const renderRoomStage = () => {
+        const renderRoomStage = () => {
   return roomState === 'active' && roomPanelMode === 'expanded' && mainView === 'room' && (
-        <div
-          ref={roomStageRef}
-          className={`fixed overflow-hidden border border-white/40 shadow-[0_24px_70px_rgba(15,23,42,0.35)] bg-slate-900 z-[320] ${isRoomFullscreen ? 'inset-0 rounded-none' : 'rounded-3xl'}`}
-          style={isRoomFullscreen ? undefined : {
-            left: `${roomStageFrame.x}px`,
-            top: `${roomStageFrame.y}px`,
-            width: `${roomStageFrame.width}px`,
-            height: `${roomStageFrame.height}px`,
-          }}
-        >
-          <div className="h-12 px-4 bg-black/45 backdrop-blur-md flex items-center justify-between text-white">
-            <div className={`flex items-center gap-3 min-w-0 ${isRoomFullscreen ? '' : 'cursor-move'}`} onPointerDown={beginRoomStageDrag}>
-              <span className="text-sm font-semibold truncate">{scheduleForm.title || 'Project MOAT Sync'}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">LIVE {meetingDurationLabel}</span>
-              <div className="hidden md:flex items-center gap-1 rounded-lg border border-white/20 bg-white/5 p-1">
-                {[
-                  { key: 'room', label: 'Room' },
-                  { key: 'call', label: 'Call' },
-                  { key: 'files', label: 'Files' },
-                ].map((tab) => (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveMeetingStageTab(tab.key)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition ${activeMeetingStageTab === tab.key ? 'bg-white text-slate-900' : 'text-slate-200 hover:bg-white/10'}`}
-                  >
-                    {tab.label}
-                  </button>
+    <div className="fixed inset-0 z-[320] bg-[#1a1b1e] flex flex-col font-sans">
+      
+      {/* Top Header */}
+      <div className="h-16 px-6 flex items-center justify-between text-white shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="text-sm font-semibold">{scheduleForm.title || 'Project MOAT Sync'}</div>
+          <div className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-medium tracking-wide">
+            LIVE {meetingDurationLabel}
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="flex -space-x-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="w-8 h-8 rounded-full border-2 border-[#1a1b1e] bg-slate-700 flex items-center justify-center text-xs font-medium text-slate-300">
+                {String.fromCharCode(64 + i)}
+              </div>
+            ))}
+          </div>
+          <button onClick={() => { setMainView('document'); setRoomPanelMode('docked'); }} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/20 transition-colors text-white border border-white/10">
+            Dock to Sidebar
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 min-h-0 p-4 pb-0 flex gap-4">
+        {activeSharedMeetingFile ? (
+          <>
+            {/* Screen Share / File View */}
+            <div className="flex-[3] relative bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col border border-white/10">
+              <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                  <Presentation size={16} className="text-violet-600" />
+                  {activeSharedMeetingFile.name}
+                </div>
+                <div className="text-xs text-gray-500">Shared by {activeSharedMeetingFile.sharedBy}</div>
+              </div>
+              <div className="flex-1 bg-[#f8fafc] overflow-y-auto thin-scrollbar p-8">
+                <div className="max-w-2xl mx-auto bg-white border border-gray-200 shadow-sm rounded-xl p-8 min-h-[500px]">
+                  <h1 className="text-2xl font-bold text-gray-900 mb-6">{activeSharedMeetingFile.baseName || 'Strategic Disruption Through AI-Native Bundling'}</h1>
+                  <p className="text-gray-600 leading-relaxed mb-6">
+                    Incumbents win by bundling and distribution leverage. Our approach is to build a superior suite and distribute as a unified ecosystem.
+                  </p>
+                  <div className="h-64 bg-violet-50 rounded-lg border border-violet-100 flex items-center justify-center">
+                    <Presentation size={48} className="text-violet-200" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Sidebar Participants */}
+            <div className="flex-1 flex flex-col gap-3 min-w-[280px] max-w-[320px]">
+              <div className="h-1/3 rounded-2xl bg-[#282a2f] overflow-hidden relative border border-white/10">
+                <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
+                <div className="absolute bottom-3 left-3 text-xs font-medium text-white px-2 py-1 bg-black/50 rounded-md backdrop-blur-md">
+                  You
+                </div>
+              </div>
+              <div className="flex-1 rounded-2xl bg-[#282a2f] overflow-hidden relative border border-white/10 flex items-center justify-center">
+                <div className="w-20 h-20 rounded-full bg-indigo-500 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                  M
+                </div>
+                <div className="absolute bottom-3 left-3 text-xs font-medium text-white px-2 py-1 bg-black/50 rounded-md backdrop-blur-md">
+                  Michelle Tran
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          /* Empty State / Grid View */
+          <div className="flex-1 rounded-3xl bg-[#222428] border border-white/5 relative overflow-hidden flex items-center justify-center">
+            {remoteStreams.length > 0 ? (
+              <div className="grid grid-cols-2 gap-4 w-full h-full p-4">
+                <div className="rounded-2xl overflow-hidden relative bg-[#2a2c32]">
+                  <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
+                  <div className="absolute bottom-4 left-4 text-sm font-medium text-white px-2.5 py-1 bg-black/40 rounded-lg backdrop-blur-sm">You</div>
+                </div>
+                {remoteStreams.map((s, i) => (
+                  <div key={i} className="rounded-2xl overflow-hidden relative bg-[#2a2c32]">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                       <div className="w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center text-white text-3xl font-bold">P{i+1}</div>
+                    </div>
+                    <div className="absolute bottom-4 left-4 text-sm font-medium text-white px-2.5 py-1 bg-black/40 rounded-lg backdrop-blur-sm">Participant {i+1}</div>
+                  </div>
                 ))}
               </div>
-            </div>
-            <div className="flex items-center gap-2" data-meeting-share-root>
-              <div className="relative">
-                <button
-                  onClick={() => setMeetingShareMenuAnchor((prev) => (prev === 'header' ? null : 'header'))}
-                  className="px-2.5 py-1.5 rounded-lg text-xs bg-white/15 hover:bg-white/25 transition inline-flex items-center gap-1.5"
-                  title="Share file"
-                >
-                  <Paperclip size={13} /> Share file
-                </button>
-                {meetingShareMenuAnchor === 'header' && (
-                  <div className="absolute right-0 top-full mt-1.5 z-20 w-44 rounded-xl border border-slate-200 bg-[#0b1225] p-1.5 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
-                    <button type="button" onClick={() => handleMeetingShareOption('document')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><FileText size={12} />Share document</button>
-                    <button type="button" onClick={() => handleMeetingShareOption('image')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><ImageIcon size={12} />Share image</button>
-                    <button type="button" onClick={() => handleMeetingShareOption('audio')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><Mic size={12} />Share audio</button>
-                    <button type="button" onClick={() => handleMeetingShareOption('link')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><LinkIcon size={12} />Share link</button>
+            ) : (
+              /* Single User Large View (Empty State) */
+              <div className="w-full h-full relative group">
+                <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
+                <div className="absolute bottom-6 left-6 text-sm font-medium text-white px-3 py-1.5 bg-black/40 rounded-lg backdrop-blur-md">
+                  You (Joshua Carl Hans Bergson Sajous)
+                </div>
+                
+                {/* Translation Tooltip */}
+                <div className="absolute bottom-6 right-6 max-w-xs bg-[#0b57d0] text-white p-4 rounded-2xl shadow-xl flex flex-col gap-2 transform translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    <MessageSquare size={16} /> Try speech translation
                   </div>
-                )}
+                  <div className="text-xs text-blue-100 leading-relaxed">
+                    Translate for people who don't speak the same language.
+                  </div>
+                  <div className="flex justify-end gap-2 mt-2">
+                    <button className="px-3 py-1.5 text-xs font-medium hover:bg-white/10 rounded-full transition">Not now</button>
+                    <button className="px-4 py-1.5 text-xs font-semibold bg-white text-[#0b57d0] rounded-full hover:bg-blue-50 transition shadow-sm">Try it</button>
+                  </div>
+                </div>
               </div>
-              <button onClick={handleShareMeeting} className="px-2.5 py-1.5 rounded-lg text-xs bg-white/15 hover:bg-white/25 transition">Share</button>
-              <button onClick={toggleRoomStageFullscreen} className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition" title={isRoomFullscreen ? 'Exit fullscreen' : 'Open fullscreen'}>
-                {isRoomFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-              </button>
-            </div>
+            )}
           </div>
+        )}
+      </div>
 
-          <div className="h-[calc(100%-3rem)] flex">
-            <div className="flex-1 relative bg-black">
-              {activeMeetingStageTab === 'files' && activeSharedMeetingFile ? (
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_18%,rgba(196,181,253,0.3),rgba(30,41,59,0)_36%),radial-gradient(circle_at_14%_84%,rgba(59,130,246,0.22),rgba(15,23,42,0)_38%),linear-gradient(150deg,#f8fafc_0%,#eef2ff_48%,#f1f5f9_100%)]">
-                  <div className="h-full p-4 flex gap-3">
-                    <div className="w-24 rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-sm p-2 space-y-2 overflow-y-auto thin-scrollbar">
-                      {Array.from({ length: Math.min(6, activeSharedMeetingFile.pages) }).map((_, index) => (
-                        <button
-                          key={`thumb-${activeSharedMeetingFile.id}-${index}`}
-                          type="button"
-                          className={`w-full rounded-lg border p-1.5 text-left transition ${index === 0 ? 'border-violet-300 bg-violet-50 shadow-sm' : 'border-slate-200 bg-white hover:border-violet-200'}`}
-                        >
-                          <div className="h-8 rounded bg-gradient-to-br from-slate-100 to-slate-200" />
-                          <div className="mt-1 text-[9px] font-semibold text-slate-600">{index + 1}</div>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex-1 rounded-2xl border border-slate-200 bg-white/88 backdrop-blur-sm shadow-[0_18px_45px_-26px_rgba(15,23,42,0.4)] p-5 flex flex-col min-h-0">
-                      <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200">
-                        <div className="min-w-0">
-                          <div className="text-[11px] uppercase tracking-[0.12em] text-violet-600 font-semibold">Presentation</div>
-                          <div className="text-[15px] font-semibold text-slate-900 truncate">{activeSharedMeetingFile.name}</div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">Shared by {activeSharedMeetingFile.sharedBy} - {formatMeetingFileSize(activeSharedMeetingFile.size)}</div>
-                        </div>
-                        <div className="text-[11px] text-slate-600 rounded-lg border border-slate-200 bg-white px-2 py-1">1 / {activeSharedMeetingFile.pages}</div>
-                      </div>
-                      <div className="flex-1 min-h-0 py-4">
-                        <div className="h-full rounded-2xl border border-slate-200 bg-white p-6 relative overflow-hidden">
-                          <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-violet-200/50 blur-3xl" />
-                          <div className="absolute -bottom-14 left-[-20px] w-44 h-44 rounded-full bg-blue-200/50 blur-3xl" />
-                          <div className="relative z-10 max-w-[520px]">
-                            <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-violet-600">Project MOAT</div>
-                            <h2 className="mt-2 text-[28px] leading-[1.1] font-semibold text-slate-900">{activeSharedMeetingFile.baseName || 'Strategic Disruption Through AI-Native Bundling'}</h2>
-                            <p className="mt-2 text-[13px] text-slate-600">Shared deck is now visible to all participants in the meeting workspace.</p>
-                            <div className="mt-5 grid grid-cols-3 gap-3 text-[11px]">
-                              <div className="rounded-xl border border-slate-200 bg-violet-50/60 p-3">
-                                <div className="font-semibold text-slate-900">The Problem</div>
-                                <div className="mt-1 text-slate-600">Incumbents win by bundling and distribution leverage.</div>
-                              </div>
-                              <div className="rounded-xl border border-slate-200 bg-emerald-50/50 p-3">
-                                <div className="font-semibold text-slate-900">Our Approach</div>
-                                <div className="mt-1 text-slate-600">Build a superior suite and distribute as a unified ecosystem.</div>
-                              </div>
-                              <div className="rounded-xl border border-slate-200 bg-amber-50/60 p-3">
-                                <div className="font-semibold text-slate-900">Our Advantage</div>
-                                <div className="mt-1 text-slate-600">AI-native tools, speed, and deep workflow integration.</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : isScreenSharing ? (
-                <>
-                  <RoomStageFeed stream={screenShareStream} placeholder="Screen share preview" />
-                  <div className="absolute top-3 left-3 px-2 py-1 rounded-lg bg-black/45 text-white text-xs">
-                    Presenting Screen
-                  </div>
-                </>
-              ) : (
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_32%_24%,rgba(99,102,241,0.32),rgba(15,23,42,0)_45%),radial-gradient(circle_at_72%_74%,rgba(56,189,248,0.24),rgba(2,6,23,0)_42%),linear-gradient(145deg,#020617_0%,#0b1120_55%,#111827_100%)] text-white">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center px-6 pb-40 text-center">
-                    <div className="w-48 h-48 rounded-full border border-dashed border-white/25 flex flex-col items-center justify-center px-4">
-                      <div className="w-10 h-10 rounded-lg border border-violet-300/60 bg-violet-500/20 flex items-center justify-center">
-                        <MonitorPlay size={18} className="text-violet-200" />
-                      </div>
-                      <div className="mt-2.5 text-[16px] font-semibold leading-tight">No one is sharing yet</div>
-                      <p className="mt-1 text-[11px] text-slate-300 max-w-[185px]">Share your screen, a window, or share a file to get started.</p>
-                      <div className="mt-3 flex items-center gap-1.5" data-meeting-share-root>
-                        <button
-                          onClick={toggleScreenShare}
-                          className="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap"
-                        >
-                          <MonitorPlay size={12} /> Share screen
-                        </button>
-                        <div className="relative">
-                          <button
-                            onClick={() => setMeetingShareMenuAnchor((prev) => (prev === 'center' ? null : 'center'))}
-                            className="px-3 py-1.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-white text-xs font-semibold inline-flex items-center gap-1.5 whitespace-nowrap"
-                          >
-                            <Upload size={12} /> Share a file
-                          </button>
-                          {meetingShareMenuAnchor === 'center' && (
-                            <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-20 w-44 rounded-xl border border-slate-200 bg-[#0b1225] p-1.5 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
-                              <button type="button" onClick={() => handleMeetingShareOption('document')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><FileText size={12} />Share document</button>
-                              <button type="button" onClick={() => handleMeetingShareOption('image')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><ImageIcon size={12} />Share image</button>
-                              <button type="button" onClick={() => handleMeetingShareOption('audio')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><Mic size={12} />Share audio</button>
-                              <button type="button" onClick={() => handleMeetingShareOption('link')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><LinkIcon size={12} />Share link</button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div className="absolute bottom-[76px] left-4 right-4">
-                <div className="flex items-stretch gap-2 overflow-x-auto thin-scrollbar pb-1">
-                  <div className="min-w-[86px] rounded-xl border border-white/20 bg-black/45 overflow-hidden">
-                    <div className="h-14 bg-slate-900">
-                      <RoomStageFeed stream={localStream} placeholder="You" />
-                    </div>
-                    <div className="px-2 py-1 text-[11px] text-slate-100">You</div>
-                  </div>
-                  {meetingParticipants.map((participant) => (
-                    <div key={`stage-tile-${participant.name}`} className="min-w-[86px] rounded-xl border border-white/20 bg-black/45 overflow-hidden">
-                      <img src={participant.img} alt={participant.name} className="w-full h-14 object-cover" />
-                      <div className="px-2 py-1 text-[11px] text-slate-100 truncate">{participant.name}</div>
-                    </div>
-                  ))}
-                  <div className="relative" data-meeting-overflow-root>
-                    <button
-                      type="button"
-                      onClick={() => setIsMeetingOverflowParticipantsOpen((prev) => !prev)}
-                      className="min-w-[86px] h-full rounded-xl border border-white/20 bg-black/45 flex flex-col items-center justify-center px-2 py-2 text-slate-100 hover:border-violet-300"
-                    >
-                      <span className="text-2xl font-semibold">+{meetingOverflowParticipants.length}</span>
-                      <span className="text-[11px]">Others</span>
-                    </button>
-                    {isMeetingOverflowParticipantsOpen && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-xl border border-slate-200 bg-[#0b1225] p-2 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
-                        {meetingOverflowParticipants.map((participant) => (
-                          <div key={`overflow-card-${participant.name}`} className="flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-white/10">
-                            <img src={participant.img} alt={participant.name} className="w-6 h-6 rounded-full object-cover border border-white/20" />
-                            <span className="text-xs text-slate-100">{participant.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-2 rounded-2xl bg-black/40 backdrop-blur-md border border-white/20">
-                <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition ${isRoomMicOn ? 'bg-white text-slate-800' : 'bg-red-500 text-white'}`} title="Microphone">
-                  {isRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}
-                </button>
-                <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition ${isRoomCameraOn ? 'bg-white text-slate-800' : 'bg-red-500 text-white'}`} title="Camera">
-                  {isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
-                </button>
-                <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-slate-800'}`} title="Share screen">
-                  <MonitorPlay size={16} />
-                </button>
-                <button
-                  onClick={() => setMeetingShareMenuAnchor((prev) => (prev === 'toolbar' ? null : 'toolbar'))}
-                  className="p-2 rounded-xl transition bg-white text-slate-800"
-                  title="Share files"
-                >
-                  <File size={16} />
-                </button>
-                {meetingShareMenuAnchor === 'toolbar' && (
-                  <div data-meeting-share-root className="absolute bottom-[54px] right-[82px] z-20 w-44 rounded-xl border border-slate-200 bg-[#0b1225] p-1.5 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
-                    <button type="button" onClick={() => handleMeetingShareOption('document')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><FileText size={12} />Share document</button>
-                    <button type="button" onClick={() => handleMeetingShareOption('image')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><ImageIcon size={12} />Share image</button>
-                    <button type="button" onClick={() => handleMeetingShareOption('audio')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><Mic size={12} />Share audio</button>
-                    <button type="button" onClick={() => handleMeetingShareOption('link')} className="w-full rounded-lg px-2.5 py-1.5 text-left text-xs text-slate-100 hover:bg-white/10 inline-flex items-center gap-2"><LinkIcon size={12} />Share link</button>
-                  </div>
-                )}
-                {isMeetingLinkInputOpen && (
-                  <div data-meeting-link-input-root className="absolute bottom-[54px] right-[20px] z-20 w-72 rounded-xl border border-slate-200 bg-[#0b1225] p-2 shadow-[0_18px_40px_-18px_rgba(15,23,42,0.7)]">
-                    <div className="text-[11px] font-semibold text-slate-100 mb-1">Add link</div>
-                    <input
-                      value={meetingLinkDraft}
-                      onChange={(event) => setMeetingLinkDraft(event.target.value)}
-                      placeholder="https://"
-                      className="w-full rounded-lg border border-slate-500/60 bg-[#111a31] px-2.5 py-1.5 text-xs text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-violet-400"
-                    />
-                    <div className="mt-2 flex justify-end gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setIsMeetingLinkInputOpen(false)}
-                        className="rounded-md px-2.5 py-1 text-xs text-slate-200 hover:bg-white/10"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={saveMeetingSharedLink}
-                        className="rounded-md bg-violet-600 px-2.5 py-1 text-xs font-semibold text-white hover:bg-violet-500"
-                      >
-                        Add link
-                      </button>
-                    </div>
-                  </div>
-                )}
-                <button onClick={leaveRoom} className="px-3 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-semibold" title="Leave meeting">
-                  Leave
-                </button>
-              </div>
-            </div>
-
-            <div className="w-[320px] bg-white border-l border-slate-200 p-3 space-y-3 text-slate-800 overflow-y-auto thin-scrollbar">
-              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="text-[13px] font-semibold truncate">{scheduleForm.title || 'Project MOAT Sync'}</div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 font-semibold">LIVE</span>
-                </div>
-                <div className="text-[10px] text-slate-500 mt-1">{meetingDurationLabel}</div>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="text-[12px] font-semibold">Participants ({meetingParticipants.length + meetingOverflowParticipants.length + 1})</div>
-                  <button type="button" className="text-[10px] text-violet-600 font-semibold">Mute all</button>
-                </div>
-                <div className="mt-2 space-y-2">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <div className="inline-flex items-center gap-2">
-                      <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=120&q=80" alt="Joshua" className="w-5 h-5 rounded-full object-cover border border-slate-200" />
-                      <span>Joshua (You)</span>
-                    </div>
-                    {!isRoomMicOn && <MicOff size={12} className="text-rose-500" />}
-                  </div>
-                  {meetingParticipants.slice(0, 4).map((participant) => (
-                    <div key={`side-${participant.name}`} className="flex items-center justify-between text-[11px] text-slate-700">
-                      <div className="inline-flex items-center gap-2">
-                        <img src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full object-cover border border-slate-200" />
-                        <span>{participant.name}</span>
-                      </div>
-                      <span className="text-slate-400">Listening</span>
-                    </div>
-                  ))}
-                  {meetingOverflowParticipants.map((participant) => (
-                    <div key={`side-overflow-${participant.name}`} className="flex items-center justify-between text-[11px] text-slate-700">
-                      <div className="inline-flex items-center gap-2">
-                        <img src={participant.img} alt={participant.name} className="w-5 h-5 rounded-full object-cover border border-slate-200" />
-                        <span>{participant.name}</span>
-                      </div>
-                      <span className="text-slate-400">Muted</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-violet-100 bg-violet-50/50 px-3 py-2.5">
-                <div className="text-[12px] font-semibold inline-flex items-center gap-1.5"><Sparkles size={12} className="text-violet-500" />AI Assistant <span className="text-[10px] text-violet-600">BETA</span></div>
-                <div className="mt-2 text-[11px] text-slate-600">
-                  {coPilotActive 
-                    ? "Co-pilot active: listening to microphone & transcribing meeting dialogue..." 
-                    : "I? listening and will capture key points, decisions, and action items."}
-                </div>
-                <button 
-                  type="button" 
-                  onClick={toggleMeetingCoPilot}
-                  className={`mt-2 w-full rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold transition-all ${coPilotActive ? 'bg-red-500 border-red-600 text-white hover:bg-red-600' : 'border-violet-200 bg-white text-violet-700 hover:bg-violet-50'}`}
-                >
-                  {coPilotActive ? "Stop Meeting Co-pilot" : "Start Meeting Co-pilot"}
-                </button>
-                {coPilotActive && (
-                  <button 
-                    type="button" 
-                    onClick={simulateColleagueSpeaking}
-                    className="mt-1.5 w-full rounded-lg border border-slate-200 bg-white hover:bg-slate-50 px-2.5 py-1 text-[10px] font-medium text-slate-600 transition-colors"
-                  >
-                    Simulate Colleague Speech (Demo)
-                  </button>
-                )}
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 text-[11px] font-medium">
-                  <button type="button" onClick={() => setMeetingConversationTab('chat')} className={`rounded-md py-1 ${meetingConversationTab === 'chat' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'}`}>Chat</button>
-                  <button type="button" onClick={() => setMeetingConversationTab('transcript')} className={`rounded-md py-1 ${meetingConversationTab === 'transcript' ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-500'}`}>Transcript</button>
-                </div>
-                <div className="mt-2 space-y-2 max-h-44 overflow-y-auto thin-scrollbar pr-1">
-                  {meetingConversationTab === 'chat' ? (
-                    chatMessages.length ? chatMessages.slice(-6).map((message, index) => (
-                      <div key={`meeting-chat-${message.id}`} className="text-[11px] rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
-                        <div className="font-semibold text-slate-700">{message.sender === 'user' ? 'Joshua' : 'Priya'} <span className="ml-1 text-[10px] text-slate-400 font-normal">10:{30 + index} AM</span></div>
-                        <div className="text-slate-500 line-clamp-2 mt-0.5">{message.text}</div>
-                      </div>
-                    )) : (
-                      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-[11px] text-slate-500 text-center">No chat yet. Messages from the room will appear here.</div>
-                    )
-                  ) : (
-                    chatMessages.length > 1 ? chatMessages.slice(-6).map((message, index) => (
-                      <div key={`meeting-transcript-${message.id}`} className="text-[11px] rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
-                        <div className="text-[10px] text-slate-400">10:{35 + index} AM</div>
-                        <div className="font-semibold text-slate-700 mt-0.5">{message.sender === 'user' ? 'Joshua' : 'Priya'}</div>
-                        <div className="text-slate-500 line-clamp-2 mt-0.5">{message.text}</div>
-                      </div>
-                    )) : (
-                      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-[11px] text-slate-500 text-center">No transcript yet. Live speech will appear here once participants start talking.</div>
-                    )
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-          {!isRoomFullscreen && (
-            <button
-              type="button"
-              onPointerDown={beginRoomStageResize}
-              className="absolute bottom-2 right-2 h-4 w-4 rounded-sm border border-white/30 bg-white/20 hover:bg-white/30 cursor-se-resize"
-              title="Resize meeting panel"
-            />
-          )}
+      {/* Bottom Control Bar */}
+      <div className="h-24 px-8 flex items-center justify-between shrink-0">
+        <div className="text-sm font-medium text-white/90">
+          {meetingDurationLabel} | {roomId || 'Meeting'}
         </div>
-    );
-  };
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={toggleRoomMic}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isRoomMicOn ? 'bg-[#3c4043] hover:bg-[#4d5156] text-white' : 'bg-[#ea4335] hover:bg-[#d93025] text-white'}`}
+          >
+            {isRoomMicOn ? <Mic size={20} /> : <MicOff size={20} />}
+          </button>
+          
+          <button 
+            onClick={toggleRoomCamera}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${isRoomCameraOn ? 'bg-[#3c4043] hover:bg-[#4d5156] text-white' : 'bg-[#ea4335] hover:bg-[#d93025] text-white'}`}
+          >
+            {isRoomCameraOn ? <Video size={20} /> : <VideoOff size={20} />}
+          </button>
+          
+          <div className="w-px h-8 bg-white/10 mx-1" />
+          
+          <button 
+            onClick={() => handleMeetingShareOption('document')}
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4d5156] text-white transition-all"
+            title="Present now"
+          >
+            <MonitorPlay size={20} />
+          </button>
+
+          <button 
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4d5156] text-white transition-all"
+            title="React"
+          >
+            <Smile size={20} />
+          </button>
+
+          <button 
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4d5156] text-white transition-all"
+            title="Raise hand"
+          >
+            <Hand size={20} />
+          </button>
+
+          <button 
+            className="w-12 h-12 rounded-full flex items-center justify-center bg-[#3c4043] hover:bg-[#4d5156] text-white transition-all"
+            title="More options"
+          >
+            <MoreVertical size={20} />
+          </button>
+
+          <button 
+            onClick={leaveRoom}
+            className="w-16 h-12 rounded-full flex items-center justify-center bg-[#ea4335] hover:bg-[#d93025] text-white ml-2 shadow-[0_4px_14px_rgba(234,67,53,0.4)] transition-all"
+            title="Leave call"
+          >
+            <PhoneOff size={22} />
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-transparent hover:bg-white/10 text-white transition">
+            <AlertTriangle size={18} />
+          </button>
+          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-transparent hover:bg-white/10 text-white transition">
+            <Users size={18} />
+          </button>
+          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-transparent hover:bg-white/10 text-white transition">
+            <MessageSquare size={18} />
+          </button>
+          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-transparent hover:bg-white/10 text-white transition">
+            <LayoutGrid size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
@@ -27622,7 +27458,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {sharedRightPanels}
 
       {renderRoomStage()}
-      )}
 
       {roomState === 'active' && mainView === 'document' && (
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
