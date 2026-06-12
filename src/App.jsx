@@ -12739,13 +12739,14 @@ Rules:
       createManageenExperience();
       return;
     }
-    // If panel was maximized, un-maximize when switching
-    if (rightPanelMaximized) setRightPanelMaximized(false);
+    const shouldBeFullscreen = ['room', 'whiteboard', 'people', 'calendar', 'tasks', 'schedule'].includes(tabKey);
     if (rightSidebarOpen && activeRightTab === tabKey) {
       setRightSidebarOpen(false);
+      if (rightPanelMaximized) setRightPanelMaximized(false);
     } else {
       setRightSidebarOpen(true);
       setActiveRightTab(tabKey);
+      setRightPanelMaximized(shouldBeFullscreen);
     }
   };
 
@@ -16138,6 +16139,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
         <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
+          {productMode !== 'sheets' ? (
           <div
             className="flex-1 min-w-0 overflow-x-auto no-scrollbar"
             tabIndex={0}
@@ -16172,6 +16174,9 @@ Respond with a JSON array of slide objects matching the schema.`;
               ))}
             </div>
           </div>
+          ) : (
+            <div className="flex-1 min-w-0" />
+          )}
           <div className="w-14 shrink-0 flex items-center justify-center border-l border-gray-100 gap-2 px-2">
             <button
               type="button"
@@ -22352,7 +22357,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       ))}
                     </div>
-                    <div className="flex-1 overflow-auto thin-scrollbar relative bg-white">
+                    <div className="flex-1 overflow-auto thin-scrollbar relative bg-white" tabIndex={0} onKeyDown={(e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+      e.preventDefault();
+      setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
+    }
+  }}>
                       <div className="origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content', display: 'grid', gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, minmax(100px, 1fr))`).join(' ')}` }}>
                         <div className="border-r border-gray-300 bg-slate-50">
                           {Array.from({ length: activeSheetGrid.rows }, (_, idx) => idx + 1).map((num) => (
@@ -22372,7 +22382,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             Array.from({ length: activeSheetGrid.cols }).map((__, colIndex) => {
                               const isSelected = selectedSheetCell.row === rowIndex + 1 && selectedSheetCell.col === colIndex + 1 || (selectedSheetRange && rowIndex + 1 >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && rowIndex + 1 <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) && colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol));
                               return (
-                                <div key={`${rowIndex + 1}-${colIndex + 1}`} className={`relative border-b border-r border-gray-200 ${isSelected ? 'ring-2 ring-violet-600 z-10' : ''}`}>
+                                <div key={`${rowIndex + 1}-${colIndex + 1}`} className={`relative border-b border-r border-gray-200 ${isSelected ? 'ring-2 ring-violet-600 z-10' : ''}`}
+                                  onMouseDown={(e) => {
+                                    if (e.ctrlKey || e.metaKey) {
+                                      setSelectedSheetRange({ startRow: rowIndex + 1, startCol: colIndex + 1, endRow: rowIndex + 1, endCol: colIndex + 1 });
+                                    }
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if ((e.ctrlKey || e.metaKey) && e.buttons === 1 && selectedSheetRange) {
+                                      setSelectedSheetRange(prev => ({ ...prev, endRow: rowIndex + 1, endCol: colIndex + 1 }));
+                                    }
+                                  }}
+                                >
                                   <input
                                     value={activeSheetGrid.cells?.[rowIndex]?.[colIndex] || ''}
                                     onFocus={() => { setSelectedSheetCell({ row: rowIndex + 1, col: colIndex + 1 }); setSelectedSheetRange(null); }}
