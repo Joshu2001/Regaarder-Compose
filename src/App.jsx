@@ -23196,8 +23196,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* 1. Left Navigation Sidebar */}
       <div
-        className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
-        style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
+        className={`flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200 ${roomState === 'active' && roomPanelMode === 'expanded' ? '' : 'border-r border-gray-100'}`}
+        style={{ width: (roomState === 'active' && roomPanelMode === 'expanded') ? '280px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
         {roomState === 'active' && roomPanelMode === 'expanded' ? renderRoomLeftSidebar() : showDocumentOutlineView ? (
           <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
@@ -27493,7 +27493,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
       </div>
       )}
 
-      {sharedRightPanels}
+      {roomState === 'active' && roomPanelMode === 'expanded' ? (
+        <div className="flex flex-col bg-white shrink-0 overflow-hidden" style={{ width: '340px' }}>
+          {renderRoomRightSidebar()}
+        </div>
+      ) : sharedRightPanels}
 
       {roomState === 'active' && mainView === 'document' && (
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
