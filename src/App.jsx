@@ -21888,8 +21888,7 @@ You can recommend task creations on the board.`;
               ) : (
                 <button
                   type="button"
-                  onClick={() => setIsTopDraftTitleExpanded((prev) => !prev)}
-                  onDoubleClick={() => setIsEditingUnsavedDraftName(true)}
+                  onClick={() => setIsEditingUnsavedDraftName(true)}
                   className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left truncate"
                 >
                   {isSheetsMode ? (sheetsTitle || 'Unsaved draft') : (deckTitle || 'Unsaved draft')}
@@ -22142,22 +22141,22 @@ You can recommend task creations on the board.`;
                     </div>
                     <div
                       className="grid border-b border-gray-300 bg-slate-50 text-[11px] font-semibold text-slate-700"
-                      style={{ gridTemplateColumns: `48px repeat(${activeSheetGrid.cols}, minmax(100px, 1fr))`, minWidth: 'max-content' }}
+                      style={{ gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, minmax(100px, 1fr))`).join(' ')}`, minWidth: 'max-content' }}
                     >
                       <div className="h-8 border-r border-gray-300 relative group">
                         <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400" />
                       </div>
                       {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => (
-                        <div key={col} className={`h-8 relative border-r border-gray-300 last:border-r-0 ${selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ resize: 'horizontal', overflow: 'hidden' }}>
+                        <div key={col} ref={el => { if (el && window.__sheetGridRO) window.__sheetGridRO.observe(el) }} data-col-index={colIndex} className={`h-8 relative border-r border-gray-300 last:border-r-0 ${selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ resize: 'horizontal', overflow: 'hidden', width: `var(--col-${colIndex}-width, 100px)` }}>
                           <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={col} onClick={() => setSelectedSheetCell({ row: selectedSheetCell.row, col: colIndex + 1 })} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }} />
                         </div>
                       ))}
                     </div>
                     <div className="flex-1 overflow-auto thin-scrollbar relative bg-white">
-                      <div className="grid grid-cols-[48px_1fr] origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content' }}>
+                      <div className="origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content', display: 'grid', gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, minmax(100px, 1fr))`).join(' ')}` }}>
                         <div className="border-r border-gray-300 bg-slate-50">
                           {Array.from({ length: activeSheetGrid.rows }, (_, idx) => idx + 1).map((num) => (
-                            <div key={num} className={`h-9 relative border-b border-gray-300 text-[11px] font-semibold ${selectedSheetCell.row === num ? 'bg-violet-100 text-violet-800' : 'text-slate-700'}`} style={{ resize: 'vertical', overflow: 'hidden' }}>
+                            <div key={num} ref={el => { if (el && window.__sheetGridRO) window.__sheetGridRO.observe(el) }} data-row-index={num - 1} className={`relative border-b border-gray-300 text-[11px] font-semibold flex items-center justify-center ${selectedSheetCell.row === num ? 'bg-violet-100 text-violet-800' : 'text-slate-700'}`} style={{ resize: 'vertical', overflow: 'hidden', height: `var(--row-${num-1}-height, 36px)` }}>
                               <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={num} onClick={() => setSelectedSheetCell({ row: num, col: selectedSheetCell.col })} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'row', index: num - 1 }); }} />
                             </div>
                           ))}
