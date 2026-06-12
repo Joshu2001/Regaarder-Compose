@@ -22907,7 +22907,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
   }
 
   return (
-    <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+    <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'} ${roomState === 'active' && roomPanelMode === 'expanded' ? 'pt-[72px] pb-[80px] bg-[#f3f5fb]' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      {roomState === 'active' && roomPanelMode === 'expanded' && renderRoomTopHeader()}
+      {roomState === 'active' && roomPanelMode === 'expanded' && renderRoomBottomBar()}
       
       {/* Dynamic Toast System */}
       {toastMessage && (
@@ -23184,7 +23186,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
         style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
       >
-        {showDocumentOutlineView ? (
+        {roomState === 'active' && roomPanelMode === 'expanded' ? renderRoomLeftSidebar() : showDocumentOutlineView ? (
           <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
             <div className="flex items-center gap-2 text-gray-900 font-semibold">
               <FileText size={16} className="text-violet-600" />
@@ -23367,11 +23369,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* 2. Main Editor Area */}
       {productMode === 'landing' ? (
-        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+        <div className={`flex-1 flex flex-col min-w-0 bg-white relative ${roomState === 'active' && roomPanelMode === 'expanded' ? 'm-4 rounded-2xl shadow-sm border border-gray-200 overflow-hidden' : ''}`}>
           <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
         </div>
       ) : (
-      <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+      <div className={`flex-1 flex flex-col min-w-0 bg-white relative ${roomState === 'active' && roomPanelMode === 'expanded' ? 'm-4 rounded-2xl shadow-sm border border-gray-200 overflow-hidden' : ''}`}>
         
         {/* Top Header */}
         <div className="h-14 flex items-center justify-between px-6 border-b border-gray-100 shrink-0 select-none">
