@@ -21496,7 +21496,11 @@ You can recommend task creations on the board.`;
     <div className="flex-1 flex flex-col p-4 gap-3 overflow-y-auto thin-scrollbar">
       {/* Host */}
       <div className="relative rounded-2xl overflow-hidden bg-gray-100 h-36 border border-gray-200">
-        <img src={meetingParticipants[0]?.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb"} className="w-full h-full object-cover" alt="Host" />
+        {isRoomCameraOn && localStream ? (
+          <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
+        ) : (
+          <img src={meetingParticipants[0]?.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb"} className="w-full h-full object-cover" alt="Host" />
+        )}
         <div className="absolute top-2 left-2 bg-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full text-yellow-900 shadow-sm">Host</div>
         <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur px-3 py-2 flex items-center justify-between border-t border-gray-200/50">
           <div>
