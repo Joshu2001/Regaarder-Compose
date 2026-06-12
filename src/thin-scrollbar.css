@@ -4,9 +4,14 @@
   scrollbar-color: transparent transparent;
 }
 
+.thin-scrollbar:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15,23,42,0.16) transparent;
+}
+
 .thin-scrollbar::-webkit-scrollbar {
-  width: 0px;
-  height: 0px;
+  width: 6px;
+  height: 6px;
 }
 
 .thin-scrollbar::-webkit-scrollbar-track {
@@ -14,20 +19,9 @@
 }
 
 .thin-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(15,23,42,0.06);
+  background-color: transparent;
   border-radius: 999px;
   border: 0px solid transparent;
-}
-
-/* Slightly more visible on hover */
-.thin-scrollbar:hover {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(15,23,42,0.16) transparent;
-}
-
-.thin-scrollbar:hover::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
 }
 
 .thin-scrollbar:hover::-webkit-scrollbar-thumb {
