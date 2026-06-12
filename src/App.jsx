@@ -2515,8 +2515,8 @@ export default function App() {
   const [joinCode, setJoinCode] = useState('');
   const [isRoomStartMenuOpen, setIsRoomStartMenuOpen] = useState(false);
   const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
-  const [isRoomMicOn, setIsRoomMicOn] = useState(true);
-  const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
+  const [!isMicMuted, setIsRoomMicOn] = useState(true);
+  const [!isVideoOff, setIsRoomCameraOn] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
@@ -17889,8 +17889,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Participants</div>
                     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
                       <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-violet-200 shadow-sm flex-shrink-0 bg-gray-900">
-                        <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
-                        {!isRoomMicOn && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
+                        <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
+                        {!!isMicMuted && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
                       </div>
                       {meetingParticipants.map((participant) => (
                         <div key={participant.name} className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
@@ -17902,11 +17902,11 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                   <div className="mt-auto rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-xl px-3 py-2 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${isRoomMicOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle microphone">
-                        {isRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}
+                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${!isMicMuted ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle microphone">
+                        {!isMicMuted ? <Mic size={16} /> : <MicOff size={16} />}
                       </button>
-                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${isRoomCameraOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle camera">
-                        {isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${!isVideoOff ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle camera">
+                        {!isVideoOff ? <Video size={16} /> : <VideoOff size={16} />}
                       </button>
                       <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100'}`} title="Toggle screen share">
                         <MonitorPlay size={16} />
@@ -17968,8 +17968,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                       </div>
                       <div className="flex items-center gap-2 px-3 pb-3 overflow-x-auto no-scrollbar shrink-0">
                         <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-sm flex-shrink-0 bg-gray-900">
-                          <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
-                          {!isRoomMicOn && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
+                          <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
+                          {!!isMicMuted && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
                         </div>
                         <div className="relative w-14 h-14 rounded-[10px] overflow-hidden ring-2 ring-emerald-500 shadow-sm flex-shrink-0">
                           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Sarah" className="object-cover w-full h-full" />
@@ -18024,11 +18024,11 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                   {mainView === 'document' && (
                     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 p-1.5 bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-10 w-max">
-                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${isRoomMicOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                        {isRoomMicOn ? <Mic size={16} /> : <MicOff size={16} />}
+                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${!isMicMuted ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                        {!isMicMuted ? <Mic size={16} /> : <MicOff size={16} />}
                       </button>
-                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${isRoomCameraOn ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                        {isRoomCameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${!isVideoOff ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                        {!isVideoOff ? <Video size={16} /> : <VideoOff size={16} />}
                       </button>
                       <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100'}`}>
                         <MonitorPlay size={16} />
@@ -21634,7 +21634,15 @@ You can recommend task creations on the board.`;
     </div>
   );
 
-  const renderRoomTopHeader = () => (
+  
+  const meetingParticipants = [
+    { name: "Joshua Sajous", img: "https://images.unsplash.com/photo-1531384441138-2736e62e0919?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80" },
+    { name: "Michelle Lee", img: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80" },
+    { name: "Alex Morgan", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80" },
+    { name: "Sarah Chen", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-4.0.3&auto=format&fit=crop&w=256&q=80" }
+  ];
+
+const renderRoomTopHeader = () => (
     <div className="absolute top-0 left-0 right-0 h-[72px] bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50">
       <div className="flex items-center gap-4">
         <div className="bg-violet-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2">
@@ -21661,12 +21669,12 @@ You can recommend task creations on the board.`;
       
       {/* Center Controls */}
       <div className="flex items-center gap-3">
-        <button onClick={toggleRoomMic} className={`flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold transition-colors ${isRoomMicOn ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-          {isRoomMicOn ? <Mic size={18} /> : <MicOff size={18} />} Mic <ChevronUp size={14} className="ml-1 opacity-50" />
+        <button onClick={toggleRoomMic} className={`flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold transition-colors ${!isMicMuted ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+          {!isMicMuted ? <Mic size={18} /> : <MicOff size={18} />} Mic <ChevronUp size={14} className="ml-1 opacity-50" />
         </button>
         
-        <button onClick={toggleRoomCamera} className={`flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold transition-colors ${isRoomCameraOn ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-          {isRoomCameraOn ? <Video size={18} /> : <VideoOff size={18} />} Camera <ChevronUp size={14} className="ml-1 opacity-50" />
+        <button onClick={toggleRoomCamera} className={`flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold transition-colors ${!isVideoOff ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+          {!isVideoOff ? <Video size={18} /> : <VideoOff size={18} />} Camera <ChevronUp size={14} className="ml-1 opacity-50" />
         </button>
         
         <button onClick={() => handleMeetingShareOption('document')} className="flex items-center gap-2 px-4 h-10 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
