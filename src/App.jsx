@@ -18,6 +18,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers
 } from 'lucide-react';
 import './thin-scrollbar.css';
+import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 
 const ensureHtmlList = (rawOutput, type) => {
@@ -12741,7 +12742,7 @@ Rules:
       createManageenExperience();
       return;
     }
-    const shouldBeFullscreen = ['room', 'whiteboard', 'people', 'calendar', 'tasks', 'schedule'].includes(tabKey);
+    const shouldBeFullscreen = ['room', 'whiteboard', 'people', 'calendar', 'tasks', 'schedule', 'memory'].includes(tabKey);
     if (rightSidebarOpen && activeRightTab === tabKey) {
       setRightSidebarOpen(false);
       if (rightPanelMaximized) setRightPanelMaximized(false);
@@ -18226,120 +18227,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           )}
 
           {activeRightTab === 'memory' && (
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-1">AI Access + Memory</h3>
-                <p className="text-xs text-gray-500">Secure mode: AI calls run through your Vercel server function.</p>
-              </div>
-
-              <div className="rounded-xl border border-gray-100 bg-[#FAFAFC] p-3 space-y-3">
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">API Security</div>
-                <div className="text-[11px] text-gray-500 flex items-center gap-2">
-                  <KeyRound size={12} />
-                  Server-managed key expected: set `GEMINI_API_KEY` or `VITE_GEMINI_DEMO_API_KEY` in Vercel project env.
-                </div>
-                <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 leading-relaxed">
-                  Keep API keys out of client code. This app now sends prompts to `/api/gemini`, and only that server route reads `GEMINI_API_KEY` or `VITE_GEMINI_DEMO_API_KEY`. The checker validates both presence and provider usability.
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={checkAiBackendStatus}
-                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    <RefreshCcw size={12} className={aiBackendStatus.state === 'checking' ? 'animate-spin' : ''} />
-                    Check AI Backend
-                  </button>
-                  <div className={`text-[11px] ${aiBackendStatus.state === 'ok' ? 'text-emerald-600' : aiBackendStatus.state === 'error' ? 'text-rose-600' : 'text-gray-500'}`}>
-                    {aiBackendStatus.message}
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-gray-100 bg-[#FAFAFC] p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Memory Controls</div>
-                  <label className="text-xs text-gray-600 flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={memoryCaptureEnabled}
-                      onChange={(e) => setMemoryCaptureEnabled(e.target.checked)}
-                    />
-                    Capture events
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                  <div className="rounded-lg border border-gray-200 bg-white p-2">Total: <span className="font-semibold">{memoryStats.total}</span></div>
-                  <div className="rounded-lg border border-gray-200 bg-white p-2">AI: <span className="font-semibold">{memoryStats.aiCalls}</span></div>
-                  <div className="rounded-lg border border-gray-200 bg-white p-2">Uploads: <span className="font-semibold">{memoryStats.uploads}</span></div>
-                  <div className="rounded-lg border border-gray-200 bg-white p-2">Exports: <span className="font-semibold">{memoryStats.exports}</span></div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-wrap">
-                  <label className="text-xs text-gray-600">Retention days</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={3650}
-                    value={memoryRetentionDays}
-                    onChange={(e) => setMemoryRetentionDays(Math.min(3650, Math.max(1, Number(e.target.value) || 90)))}
-                    className="w-24 bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
-                  />
-                  <button
-                    onClick={() => setMemoryEntries([])}
-                    className="ml-auto shrink-0 px-2.5 py-1.5 rounded-lg text-xs border border-rose-200 text-rose-600 hover:bg-rose-50"
-                  >
-                    Clear all
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-gray-100 bg-[#FAFAFC] p-3 space-y-2">
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Memory Browser</div>
-                <div className="flex gap-2 min-w-0">
-                  <input
-                    type="text"
-                    value={memorySearch}
-                    onChange={(e) => setMemorySearch(e.target.value)}
-                    placeholder="Search memory entries..."
-                    className="flex-1 min-w-0 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-700 focus:outline-none focus:border-violet-400"
-                  />
-                  <select
-                    value={memoryFilter}
-                    onChange={(e) => setMemoryFilter(e.target.value)}
-                    className="shrink-0 bg-white border border-gray-200 rounded-lg px-2 py-2 text-xs text-gray-700"
-                  >
-                    <option value="all">All</option>
-                    <option value="ai">AI</option>
-                    <option value="upload">Uploads</option>
-                    <option value="export">Exports</option>
-                    <option value="automation">Automation</option>
-                    <option value="task">Tasks</option>
-                    <option value="share">Sharing</option>
-                    <option value="feedback">Feedback</option>
-                    <option value="document">Documents</option>
-                  </select>
-                </div>
-
-                <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
-                  {filteredMemoryEntries.length === 0 && (
-                    <div className="text-xs text-gray-500 py-3 text-center">No memory entries yet.</div>
-                  )}
-                  {filteredMemoryEntries.map((entry) => (
-                    <div key={entry.id} className="rounded-lg border border-gray-200 bg-white p-2.5 text-xs">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-gray-800">{entry.summary}</span>
-                        <span className="text-[10px] uppercase text-violet-600 font-semibold">{entry.type}</span>
-                      </div>
-                      <div className="text-[10px] text-gray-500 mt-1">{new Date(entry.timestamp).toLocaleString()}</div>
-                      {Object.keys(entry.details || {}).length > 0 && (
-                        <div className="mt-1.5 text-[10px] text-gray-600 break-all">{Object.entries(entry.details).map(([key, value]) => `${key}: ${value}`).join(' | ')}</div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <MemoryDashboard />
           )}
 
           {activeRightTab === 'orb' && (
