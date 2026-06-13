@@ -13615,17 +13615,20 @@ Rules:
       return;
     }
 
+    if (target === 'room') {
+      setActivePrimaryNav('home');
+      createRoomExperience();
+      return;
+    }
+
     // Products that act as Right Sidebar Panels or Overlays:
+    setIsPromptExpanded(false);
+    setIsPromptAutoVisible(false);
     setProductMode('compose');
     setRightSidebarOpen(true);
     setRightPanelMaximized(true);
 
     switch (target) {
-      case 'room':
-        setActivePrimaryNav('home');
-        setRoomState('lobby');
-        setActiveRightTab('room');
-        break;
       case 'tasks':
         setActivePrimaryNav('home');
         setActiveRightTab('tasks');
