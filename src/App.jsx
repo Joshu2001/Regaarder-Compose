@@ -15488,7 +15488,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       ? 'right-12 text-right'
       : 'left-1/2 -translate-x-1/2 text-center';
 
-  const showDocumentOutlineView = isFocusMode || activeDocView === 'document';
+  const showDocumentOutlineView = (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard';
   const rightMiniRailWidth = 0;
   const blurEdgeGuard = 0;
   const blurLeftInset = leftSidebarOpen ? leftSidebarWidth : 0;
@@ -16389,7 +16389,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     ))}
                   </div>
                 )}
-                <div className="relative flex items-end bg-white border border-gray-200 rounded-xl focus-within:border-violet-400 transition-colors">
+                <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-sm">
                   <input
                     ref={chatFileInputRef}
                     type="file"
@@ -16413,23 +16413,37 @@ Respond with a JSON array of slide objects matching the schema.`;
                       }
                     }}
                     placeholder="Ask, summarize, or instruct..."
-                    rows={1}
-                    className="w-full bg-transparent border-none focus:outline-none text-sm py-2.5 pl-10 pr-10 text-gray-700 placeholder-gray-400 resize-none"
+                    rows={3}
+                    className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-4 pb-2 text-gray-700 placeholder-gray-400 resize-none min-h-[80px]"
                   />
-                  <button
-                    type="button"
-                    onClick={() => chatFileInputRef.current?.click()}
-                    className="absolute left-1.5 bottom-1.5 p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
-                    title="Attach files"
-                  >
-                    <Upload size={14} />
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="absolute right-1.5 bottom-1.5 p-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-600 transition-colors"
-                  >
-                    <Send size={14} />
-                  </button>
+                  <div className="flex items-center justify-between px-2 pb-2">
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => chatFileInputRef.current?.click()}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        title="Attach files"
+                      >
+                        <Plus size={18} strokeWidth={2.5} />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                        title="Voice dictation"
+                      >
+                        <Mic size={18} />
+                      </button>
+                    </div>
+                    <button 
+                      type="submit" 
+                      className={`p-1.5 rounded-lg transition-colors ${chatInput.trim().length > 0 ? 'bg-violet-600 text-white hover:bg-violet-700' : 'bg-violet-50 text-violet-400'}`}
+                    >
+                      <Send size={16} />
+                    </button>
+                  </div>
+                </div>
+                <div className="text-center mt-2 pb-2">
+                  <span className="text-[10px] text-gray-400 font-medium">AI can make mistakes. Check important info.</span>
                 </div>
               </form>
             </div>
