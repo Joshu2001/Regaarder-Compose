@@ -8,7 +8,7 @@ import {
   FileText, Trash, Settings, MoreHorizontal,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
-  List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown,
+  List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown, ChevronUp,
   LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
@@ -2517,6 +2517,7 @@ export default function App() {
   const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
   const [isRoomMicOn, setIsRoomMicOn] = useState(true);
   const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
+  const isVideoOff = !isRoomCameraOn;
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
