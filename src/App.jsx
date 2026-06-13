@@ -16225,7 +16225,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {chatMessages.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-center px-4 pt-10">
-                    <div className="w-16 h-16 bg-violet-50 rounded-[20px] flex items-center justify-center mb-5 text-violet-600 relative border border-violet-100 shadow-sm">
+                    <div className="w-16 h-16 bg-violet-50 rounded-[20px] flex items-center justify-center mb-5 text-violet-600 relative border border-violet-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
                       <MessageSquare size={26} strokeWidth={2.5} />
                       <Sparkles size={16} className="absolute -top-1.5 -right-1.5 text-violet-400" fill="currentColor" />
                     </div>
@@ -16267,7 +16267,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     {/* Chat Bubble / Cards */}
                     <div className={`p-3 rounded-2xl text-sm leading-relaxed ${
                       msg.sender === 'user' 
-                        ? 'bg-violet-600 text-white rounded-tr-xs shadow-sm' 
+                        ? 'bg-violet-600 text-white rounded-tr-xs shadow-[0_8px_30px_rgba(124,58,237,0.06)]' 
                         : 'bg-[#FAFAFC] text-gray-700 border border-gray-100 rounded-tl-xs shadow-xs'
                     }`}>
                       {msg.text}
@@ -16434,7 +16434,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                     ))}
                   </div>
                 )}
-                <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-sm">
+                <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
                   <input
                     ref={chatFileInputRef}
                     type="file"
@@ -16621,7 +16621,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           setWhiteboardAssistantTab(tabKey);
                           showToast(`Whiteboard ${tabKey} mode active`);
                         }}
-                        className={`h-8 rounded-lg text-[11px] font-semibold transition-colors ${whiteboardAssistantTab === tabKey ? 'bg-white text-violet-700 shadow-sm' : 'text-slate-500 hover:text-violet-600'}`}
+                        className={`h-8 rounded-lg text-[11px] font-semibold transition-colors ${whiteboardAssistantTab === tabKey ? 'bg-white text-violet-700 shadow-[0_8px_30px_rgba(124,58,237,0.06)]' : 'text-slate-500 hover:text-violet-600'}`}
                       >
                         {tabKey.charAt(0).toUpperCase() + tabKey.slice(1)}
                       </button>
@@ -17799,7 +17799,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       {/* Content Grid */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
                         {/* Upcoming Meetings */}
-                        <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 flex flex-col h-full">
+                        <div className="bg-white rounded-[20px] border border-slate-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 flex flex-col h-full">
                           <div className="flex items-center justify-between mb-5">
                             <h3 className="text-[15px] font-bold text-slate-900">Upcoming meetings</h3>
                             <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">View calendar</button>
@@ -17812,7 +17812,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                               { title: 'Marketing Sync', time: 'Monday, May 19 • 11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
                             ].map((mtg, i) => (
                               <div key={i} className="group p-4 rounded-[16px] border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all flex items-start justify-between">
-                                <div className="flex gap-4">
+                                <div className="flex gap-6">
                                   <div className={`w-10 h-10 rounded-xl ${mtg.color} flex items-center justify-center shrink-0`}>
                                     <Calendar size={18} />
                                   </div>
@@ -17841,7 +17841,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </div>
 
                         {/* Recent Rooms */}
-                        <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 flex flex-col h-full">
+                        <div className="bg-white rounded-[20px] border border-slate-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 flex flex-col h-full">
                           <div className="flex items-center justify-between mb-5">
                             <h3 className="text-[15px] font-bold text-slate-900">Recent rooms</h3>
                             <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">See all</button>
@@ -17970,12 +17970,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <div className="rounded-2xl border border-gray-200 bg-white p-3">
                     <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Participants</div>
                     <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                      <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-violet-200 shadow-sm flex-shrink-0 bg-gray-900">
+                      <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-violet-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0 bg-gray-900">
                         <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
                         {!!isMicMuted && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
                       </div>
                       {meetingParticipants.map((participant) => (
-                        <div key={participant.name} className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                        <div key={participant.name} className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0">
                           <img src={participant.img} alt={participant.name} className="object-cover w-full h-full" />
                         </div>
                       ))}
@@ -17984,13 +17984,13 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                   <div className="mt-auto rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-xl px-3 py-2 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5">
-                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${!isMicMuted ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle microphone">
+                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${!isMicMuted ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle microphone">
                         {!isMicMuted ? <Mic size={16} /> : <MicOff size={16} />}
                       </button>
-                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${!isVideoOff ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle camera">
+                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${!isVideoOff ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle camera">
                         {!isVideoOff ? <Video size={16} /> : <VideoOff size={16} />}
                       </button>
-                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100'}`} title="Toggle screen share">
+                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100'}`} title="Toggle screen share">
                         <MonitorPlay size={16} />
                       </button>
                     </div>
@@ -18049,14 +18049,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </button>
                       </div>
                       <div className="flex items-center gap-2 px-3 pb-3 overflow-x-auto no-scrollbar shrink-0">
-                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-sm flex-shrink-0 bg-gray-900">
+                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0 bg-gray-900">
                           <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
                           {!!isMicMuted && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
                         </div>
-                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden ring-2 ring-emerald-500 shadow-sm flex-shrink-0">
+                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden ring-2 ring-emerald-500 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0">
                           <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Sarah" className="object-cover w-full h-full" />
                         </div>
-                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0">
                           <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" alt="Mike" className="object-cover w-full h-full grayscale-[20%]" />
                         </div>
                       </div>
@@ -18076,14 +18076,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                       <div className="flex items-center gap-1.5 text-[10px] font-bold text-violet-600 uppercase tracking-wider">
                         <Sparkles size={10} /> Live Context
                       </div>
-                      <div className="bg-white border border-gray-100 rounded-xl p-3 text-xs text-gray-700 leading-relaxed shadow-sm">
+                      <div className="bg-white border border-gray-100 rounded-xl p-3 text-xs text-gray-700 leading-relaxed shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
                         Discussing the Q2 launch timelines. Sarah is presenting the new branding assets for final review before deployment.
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Decisions</div>
-                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-default">
+                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-default">
                         <div className="mt-0.5 bg-emerald-100 p-0.5 rounded text-emerald-600"><Check size={10} strokeWidth={3} /></div>
                         <span className="text-xs text-gray-700">Beta launch officially locked for May 15th.</span>
                       </div>
@@ -18093,11 +18093,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
                         Action Items <button className="text-violet-600 hover:text-violet-700 normal-case tracking-normal">Add</button>
                       </div>
-                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
+                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
                         <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
                         <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Sarah to upload final assets to the shared drive by Friday.</span>
                       </div>
-                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-sm flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
+                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
                         <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
                         <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Alex to update the Compose AI prompt templates.</span>
                       </div>
@@ -18106,17 +18106,17 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                   {mainView === 'document' && (
                     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 p-1.5 bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-10 w-max">
-                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${!isMicMuted ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${!isMicMuted ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
                         {!isMicMuted ? <Mic size={16} /> : <MicOff size={16} />}
                       </button>
-                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${!isVideoOff ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${!isVideoOff ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
                         {!isVideoOff ? <Video size={16} /> : <VideoOff size={16} />}
                       </button>
-                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-sm border border-gray-100'}`}>
+                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100'}`}>
                         <MonitorPlay size={16} />
                       </button>
                       <div className="w-px h-5 bg-gray-200 mx-1"></div>
-                      <button onClick={leaveRoom} className="px-2.5 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-sm flex items-center gap-1.5 font-medium text-[11px] border border-red-600 active:scale-95">
+                      <button onClick={leaveRoom} className="px-2.5 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-center gap-1.5 font-medium text-[11px] border border-red-600 active:scale-95">
                         <PhoneOff size={14} /> Leave
                       </button>
                     </div>
@@ -18184,9 +18184,9 @@ Respond with a JSON array of slide objects matching the schema.`;
 
               <div className="space-y-3">
                 {platformContacts.map((person) => (
-                  <div key={person.id} className="rounded-xl border border-gray-100 bg-white p-3 flex items-center justify-between gap-3 hover:border-violet-200 hover:shadow-sm transition-all">
+                  <div key={person.id} className="rounded-xl border border-gray-100 bg-white p-3 flex items-center justify-between gap-3 hover:border-violet-200 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)] transition-all">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-full bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center shrink-0">
+                      <div className="w-10 h-[48px] rounded-[999px] bg-violet-100 text-violet-700 text-xs font-bold flex items-center justify-center shrink-0">
                         {person.name.split(' ').map((token) => token[0]).join('').slice(0, 2)}
                       </div>
                       <div className="min-w-0">
@@ -20782,15 +20782,15 @@ You can recommend task creations on the board.`;
                       key={filter}
                       type="button"
                       onClick={() => showToast(`${filter} filter opened`)}
-                      className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:text-violet-700 hover:shadow-sm"
+                      className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:text-violet-700 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]"
                     >
                       {filter}
                     </button>
                   ))}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => showToast('Automations opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Automations</button>
-                  <button type="button" onClick={() => showToast('Board settings opened')} className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:text-violet-700 hover:shadow-sm"><LayoutGrid size={14} className="mx-auto" /></button>
+                  <button type="button" onClick={() => showToast('Automations opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]">Automations</button>
+                  <button type="button" onClick={() => showToast('Board settings opened')} className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-500 transition-all duration-200 hover:-translate-y-0.5 hover:text-violet-700 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]"><LayoutGrid size={14} className="mx-auto" /></button>
                 </div>
               </div>
 
@@ -20939,7 +20939,7 @@ You can recommend task creations on the board.`;
                 <div className="text-sm font-semibold text-violet-700">Timeline</div>
                 <div className="text-sm text-slate-500">Dependency lanes, blockers, and milestone timing.</div>
               </div>
-              <button type="button" onClick={() => showToast('Timeline filters opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Filters</button>
+              <button type="button" onClick={() => showToast('Timeline filters opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]">Filters</button>
             </div>
             <div className="mt-4 space-y-3">
               {manageenTimelineLanes.map((lane, laneIndex) => (
@@ -20975,7 +20975,7 @@ You can recommend task creations on the board.`;
                   <div className="text-sm font-semibold text-violet-700">Calendar</div>
                   <div className="text-sm text-slate-500">Due-date heat and milestone density.</div>
                 </div>
-                <button type="button" onClick={() => showToast('Calendar sync opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Sync</button>
+                <button type="button" onClick={() => showToast('Calendar sync opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]">Sync</button>
               </div>
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
                 {manageenCalendarDays.map((day, dayIndex) => (
@@ -20983,7 +20983,7 @@ You can recommend task creations on the board.`;
                     key={day.day}
                     type="button"
                     onClick={() => showToast(`${day.label} on day ${day.day}`)}
-                    className={`rounded-2xl border p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm ${day.intensity === 'high' ? 'border-rose-200 bg-rose-50' : day.intensity === 'medium' ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}
+                    className={`rounded-2xl border p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)] ${day.intensity === 'high' ? 'border-rose-200 bg-rose-50' : day.intensity === 'medium' ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}
                     style={{ animation: `manageenFadeIn 0.45s ease-out ${dayIndex * 45}ms both` }}
                   >
                     <div className="text-[11px] uppercase tracking-wide text-slate-400">Jun {day.day}</div>
@@ -21022,7 +21022,7 @@ You can recommend task creations on the board.`;
                 <div className="text-sm font-semibold text-violet-700">Workload</div>
                 <div className="text-sm text-slate-500">Simple capacity bars for quick balance checks.</div>
               </div>
-              <button type="button" onClick={() => showToast('Capacity rules opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Capacity rules</button>
+              <button type="button" onClick={() => showToast('Capacity rules opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]">Capacity rules</button>
             </div>
             <div className="mt-4 space-y-3">
               {manageenWorkload.map((person, personIndex) => (
@@ -21052,7 +21052,7 @@ You can recommend task creations on the board.`;
                 <div className="text-sm font-semibold text-violet-700">Files</div>
                 <div className="text-sm text-slate-500">Linked docs and attachments tied to the selected work.</div>
               </div>
-              <button type="button" onClick={() => showToast('Upload file opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Upload</button>
+              <button type="button" onClick={() => showToast('Upload file opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]">Upload</button>
             </div>
             <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-3">
               {manageenFiles.map((file, fileIndex) => (
@@ -21060,7 +21060,7 @@ You can recommend task creations on the board.`;
                   key={file.name}
                   type="button"
                   onClick={() => showToast(`${file.name} opened`)}
-                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40 hover:shadow-sm"
+                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50/40 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]"
                   style={{ animation: `manageenFadeIn 0.45s ease-out ${fileIndex * 55}ms both` }}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -21085,7 +21085,7 @@ You can recommend task creations on the board.`;
               <div className="text-sm font-semibold text-violet-700">Insights</div>
               <div className="text-sm text-slate-500">A short summary of risk, overdue work, and velocity.</div>
             </div>
-            <button type="button" onClick={() => showToast('Insights refresh opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">Refresh</button>
+            <button type="button" onClick={() => showToast('Insights refresh opened')} className="h-9 px-3 rounded-xl border border-slate-200 bg-white text-xs text-slate-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]">Refresh</button>
           </div>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
             {manageenInsights.map((insight, insightIndex) => (
@@ -21364,7 +21364,7 @@ You can recommend task creations on the board.`;
                         setManageenBoardView('Board');
                         setManageenSelectedTaskId(task.id);
                       }}
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)]"
                       style={{ animation: `manageenFadeIn 0.45s ease-out ${taskIndex * 55}ms both` }}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -21577,13 +21577,13 @@ You can recommend task creations on the board.`;
   const renderRoomLeftSidebar = () => (
     <div className="flex-1 flex flex-col p-4 gap-3 overflow-y-auto thin-scrollbar">
       {/* Host */}
-      <div className="relative rounded-2xl overflow-hidden bg-gray-100 h-36 border border-gray-200">
+      <div className="relative rounded-[24px] overflow-hidden bg-gray-100 min-h-[136px] border border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
         {isRoomCameraOn && localStream ? (
           <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
         ) : (
           <img src={meetingParticipants[0]?.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb"} className="w-full h-full object-cover" alt="Host" />
         )}
-        <div className="absolute top-2 left-2 bg-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full text-yellow-900 shadow-sm">Host</div>
+        <div className="absolute top-2 left-2 bg-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full text-yellow-900 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">Host</div>
         <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur px-3 py-2 flex items-center justify-between border-t border-gray-200/50">
           <div>
             <div className="text-xs font-bold text-gray-900">Joshua Sajous</div>
@@ -21595,7 +21595,7 @@ You can recommend task creations on the board.`;
       
       {/* Participants */}
       {meetingParticipants.slice(1, 4).map((participant, index) => (
-        <div key={index} className="relative rounded-2xl overflow-hidden bg-gray-100 h-32 border border-gray-200">
+        <div key={index} className="relative rounded-[24px] overflow-hidden bg-gray-100 min-h-[136px] border border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
           <img src={participant.img} className="w-full h-full object-cover" alt={participant.name} />
           <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur px-3 py-2 flex items-center justify-between border-t border-gray-200/50">
             <div className="text-xs font-bold text-gray-900">{participant.name}</div>
@@ -21630,7 +21630,7 @@ You can recommend task creations on the board.`;
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
         {/* Meeting Summary */}
-        <div className="bg-white rounded-2xl border border-violet-100 shadow-sm p-4 relative overflow-hidden">
+        <div className="bg-white rounded-[20px] border border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-400 to-fuchsia-400"></div>
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-1.5 text-violet-700 font-semibold text-xs">
@@ -21648,7 +21648,7 @@ You can recommend task creations on the board.`;
         </div>
 
         {/* Action Items */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+        <div className="bg-white rounded-[20px] border border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6">
           <div className="flex items-center gap-2 mb-3 text-gray-900 font-semibold text-xs">
             <ListTodo size={14} className="text-violet-600" /> Action items <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md text-[10px]">3</span>
           </div>
@@ -21677,9 +21677,9 @@ You can recommend task creations on the board.`;
       {/* Tabs at bottom */}
       <div className="shrink-0 bg-white border-t border-gray-200 flex flex-col h-1/3">
         <div className="flex items-center border-b border-gray-200">
-          <div className="px-4 py-2.5 text-xs font-bold text-violet-700 border-b-2 border-violet-600">Chat</div>
-          <div className="px-4 py-2.5 text-xs font-medium text-gray-500 hover:text-gray-700 cursor-pointer">Notes</div>
-          <div className="px-4 py-2.5 text-xs font-medium text-gray-500 hover:text-gray-700 cursor-pointer">Highlights</div>
+          <div className="px-4 py-3 text-[13px] font-semibold text-violet-700 border-b-[3px] border-violet-600">Chat</div>
+          <div className="px-4 py-3 text-[13px] font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Notes</div>
+          <div className="px-4 py-3 text-[13px] font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Highlights</div>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
           <div className="flex gap-2.5">
@@ -21710,8 +21710,8 @@ You can recommend task creations on the board.`;
         </div>
         <div className="p-3 bg-white border-t border-gray-100">
           <div className="relative">
-            <input type="text" placeholder="Message everyone..." className="w-full bg-gray-50 border border-gray-200 rounded-full py-2 pl-3 pr-10 text-xs outline-none focus:border-violet-300" />
-            <button className="absolute right-1 top-1 w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center">
+            <input type="text" placeholder="Message everyone..." className="w-full bg-gray-50 border border-gray-200 rounded-[24px] py-0 pl-4 pr-12 text-[13px] outline-none focus:border-violet-300 min-h-[48px]" />
+            <button className="absolute right-2 top-2 w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.06)] hover:bg-violet-700">
               <Send size={10} />
             </button>
           </div>
@@ -21722,53 +21722,53 @@ You can recommend task creations on the board.`;
 
   
 const renderRoomTopHeader = () => (
-    <div className="absolute top-0 left-0 right-0 h-[72px] bg-white border-b border-gray-200 flex items-center justify-between px-6 z-50">
+    <div className="absolute top-0 left-0 right-0 h-[88px] bg-white border-b border-gray-200 flex items-center justify-between px-8 py-5 z-50">
       <div className="flex items-center gap-4">
         <div className="bg-violet-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
           Meeting Active
         </div>
-        <div className="text-gray-800 font-semibold text-lg">Team Sync</div>
+        <div className="text-slate-900 font-semibold text-[24px] leading-[32px] flex items-center gap-2">Product Strategy Meeting <ChevronDown size={18} className="text-slate-400" /></div>
       </div>
     </div>
   );
 
   const renderRoomBottomBar = () => (
-    <div className="absolute bottom-0 left-0 right-0 h-[72px] bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-[500] flex items-center justify-between px-6">
+    <div className="absolute bottom-0 left-0 right-0 h-[80px] bg-white border-t border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)] z-[500] flex items-center justify-between px-8">
       
       {/* Left */}
       <div className="flex items-center gap-2">
-        <button className="flex items-center gap-2 px-4 h-10 rounded-full border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
+        <button className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
           <div className="w-2 h-2 rounded-full border-2 border-gray-500"></div> Record
         </button>
-        <button className="flex items-center gap-2 px-4 h-10 rounded-full border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
+        <button className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
           <span className="font-bold border border-gray-400 rounded-sm px-1 text-[10px] leading-tight mt-0.5">CC</span> Captions
         </button>
       </div>
       
       {/* Center Controls */}
       <div className="flex items-center gap-3">
-        <button onClick={toggleRoomMic} className={`flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold transition-colors ${!isMicMuted ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+        <button onClick={toggleRoomMic} className={`flex items-center gap-2 px-4 h-[48px] rounded-[999px] text-sm font-semibold transition-colors ${!isMicMuted ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
           {!isMicMuted ? <Mic size={18} /> : <MicOff size={18} />} Mic <ChevronUp size={14} className="ml-1 opacity-50" />
         </button>
         
-        <button onClick={toggleRoomCamera} className={`flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold transition-colors ${!isVideoOff ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+        <button onClick={toggleRoomCamera} className={`flex items-center gap-2 px-4 h-[48px] rounded-[999px] text-sm font-semibold transition-colors ${!isVideoOff ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
           {!isVideoOff ? <Video size={18} /> : <VideoOff size={18} />} Camera <ChevronUp size={14} className="ml-1 opacity-50" />
         </button>
         
-        <button onClick={() => handleMeetingShareOption('document')} className="flex items-center gap-2 px-4 h-10 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
+        <button onClick={() => handleMeetingShareOption('document')} className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
           <ArrowUp size={18} /> Present <ChevronUp size={14} className="ml-1 opacity-50" />
         </button>
 
-        <button className="flex items-center gap-2 px-5 h-10 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5">
+        <button className="flex items-center gap-2 px-8 h-[48px] rounded-[999px] bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] text-white text-[15px] font-bold shadow-[0_8px_30px_rgba(139,92,246,0.3)] hover:shadow-[0_12px_40px_rgba(139,92,246,0.4)] transition-all hover:-translate-y-0.5">
           <Sparkles size={16} /> Room AI
         </button>
 
-        <button className="flex items-center gap-2 px-4 h-10 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
+        <button className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
           <FileText size={18} /> Notes
         </button>
 
-        <button className="relative flex items-center gap-2 px-4 h-10 rounded-full bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
+        <button className="relative flex items-center gap-2 px-4 h-[48px] rounded-[999px] bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
           <Users size={18} /> People
           <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-bold flex items-center justify-center border border-white">5</div>
         </button>
@@ -21776,10 +21776,10 @@ const renderRoomTopHeader = () => (
       
       {/* Right */}
       <div className="flex items-center gap-3">
-        <button className="flex items-center gap-2 px-4 h-10 rounded-full border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
+        <button className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
           <MoreHorizontal size={18} /> More
         </button>
-        <button onClick={leaveRoom} className="flex items-center gap-2 px-5 h-10 rounded-full bg-red-50 text-red-600 border border-red-100 text-sm font-bold hover:bg-red-100 transition-colors">
+        <button onClick={leaveRoom} className="flex items-center gap-2 px-5 h-[48px] rounded-[999px] bg-red-50 text-red-600 border border-red-100 text-sm font-bold hover:bg-red-100 transition-colors">
           <PhoneOff size={18} /> Leave room
         </button>
       </div>
@@ -22278,7 +22278,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#F3F4F6] p-4 pr-4' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
               <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'mx-auto w-full max-w-[980px] pb-4'}`}>
                 {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative rounded-2xl border border-gray-200 shadow-sm">
+                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
                     <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                       {['Data', 'Insert', 'Analyze', 'Visualize', 'AI'].map((tab) => (
                         <button
@@ -22714,7 +22714,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
 
                     <div className="flex items-center justify-center">
-                      <div className="h-10 rounded-full border border-gray-200 bg-white px-3 flex items-center gap-2 text-xs text-gray-600">
+                      <div className="h-[48px] rounded-[999px] border border-gray-200 bg-white px-3 flex items-center gap-2 text-xs text-gray-600">
                         <button type="button" onClick={() => {
                           const currentIndex = deckSlides.findIndex((slide) => slide.id === activeDeckSlide.id);
                           if (currentIndex > 0) setActiveDeckSlideId(deckSlides[currentIndex - 1].id);
@@ -23060,7 +23060,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <ChevronDown size={14} className="text-slate-400" />
             </button>
 
-            <div className="bg-white/80 border border-violet-100 rounded-[16px] p-4 shadow-sm relative overflow-hidden backdrop-blur-sm">
+            <div className="bg-white/80 border border-violet-100 rounded-[16px] p-4 shadow-[0_8px_30px_rgba(124,58,237,0.06)] relative overflow-hidden backdrop-blur-sm">
               <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600 mb-3">
                 <Sparkles size={14} />
               </div>
@@ -23077,17 +23077,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <main className="flex-1 overflow-y-auto thin-scrollbar relative p-6 md:p-10">
           {/* Header Icons */}
           <div className="absolute top-6 right-8 flex items-center gap-3">
-            <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 transition-all">
+            <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-transparent hover:border-slate-200 transition-all">
               <Bell size={16} />
             </button>
-            <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200 transition-all">
+            <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-transparent hover:border-slate-200 transition-all">
               <Calendar size={16} />
             </button>
           </div>
 
           <div className="max-w-[1000px] mx-auto mt-6 text-left">
             {/* Hero Banner */}
-            <div className="relative w-full rounded-[24px] overflow-hidden bg-[#f4effc] border border-violet-100/50 shadow-sm mb-8 p-10 flex items-center justify-between min-h-[280px]">
+            <div className="relative w-full rounded-[24px] overflow-hidden bg-[#f4effc] border border-violet-100/50 shadow-[0_8px_30px_rgba(124,58,237,0.06)] mb-8 p-10 flex items-center justify-between min-h-[280px]">
               {/* Background styling for premium look */}
               <div className="absolute inset-0 bg-gradient-to-br from-violet-50/80 via-white/40 to-fuchsia-50/30"></div>
               
@@ -23157,7 +23157,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {/* Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Upcoming Meetings */}
-              <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 flex flex-col h-full">
+              <div className="bg-white rounded-[20px] border border-slate-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="text-[15px] font-bold text-slate-900">Upcoming meetings</h3>
                   <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">View calendar</button>
@@ -23199,7 +23199,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
 
               {/* Recent Rooms */}
-              <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 flex flex-col h-full">
+              <div className="bg-white rounded-[20px] border border-slate-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 flex flex-col h-full">
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="text-[15px] font-bold text-slate-900">Recent rooms</h3>
                   <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">See all</button>
@@ -23713,11 +23713,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* 2. Main Editor Area */}
       {productMode === 'landing' ? (
-        <div className={`flex-1 flex flex-col min-w-0 bg-white relative ${roomState === 'active' && roomPanelMode === 'expanded' ? 'm-4 rounded-2xl shadow-sm border border-gray-200 overflow-hidden' : ''}`}>
+        <div className={`flex-1 flex flex-col min-w-0 bg-white relative ${roomState === 'active' && roomPanelMode === 'expanded' ? 'm-4 rounded-2xl shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-200 overflow-hidden' : ''}`}>
           <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
         </div>
       ) : (
-      <div className={`flex-1 flex flex-col min-w-0 bg-white relative ${roomState === 'active' && roomPanelMode === 'expanded' ? 'm-4 rounded-2xl shadow-sm border border-gray-200 overflow-hidden' : ''}`}>
+      <div className={`flex-1 flex flex-col min-w-0 bg-white relative ${roomState === 'active' && roomPanelMode === 'expanded' ? 'm-4 rounded-2xl shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-200 overflow-hidden' : ''}`}>
         
         {/* Top Header */}
         <div className="h-14 flex items-center justify-between px-6 border-b border-gray-100 shrink-0 select-none">
@@ -24306,7 +24306,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   key={type}
                   type="button"
                   onClick={() => window.changeShapeType(shapeToolbar.containerId, type)}
-                  className={`px-2 py-1 text-xs font-semibold rounded-md transition-all active:scale-95 ${active ? 'bg-violet-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}
+                  className={`px-2 py-1 text-xs font-semibold rounded-md transition-all active:scale-95 ${active ? 'bg-violet-600 text-white shadow-[0_8px_30px_rgba(124,58,237,0.06)]' : 'text-slate-600 hover:bg-slate-50'}`}
                 >
                   {type.charAt(0).toUpperCase() + type.slice(1)}
                 </button>
@@ -25112,7 +25112,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 </div>
                 <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#ececf6_1px,transparent_0)] bg-[size:24px_24px]" style={{ zoom: whiteboardZoomScale }}>
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2 flex flex-col gap-1.5">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-2 flex flex-col gap-1.5">
                     {[
                       { key: 'select', label: 'Select', icon: MousePointer2 },
                       { key: 'hand', label: 'Hand (pan)', icon: Hand },
@@ -25161,7 +25161,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     })}
                   </div>
                   {whiteboardTool === 'eraser' && whiteboardEraserMenuOpen && (
-                    <div className="absolute left-20 top-[74%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2.5 w-[172px]">
+                    <div className="absolute left-20 top-[74%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-2.5 w-[172px]">
                       <p className="text-[10px] font-semibold text-gray-500">Eraser size</p>
                       <div className="mt-2 flex items-end justify-between gap-2">
                         {whiteboardEraserSizeOptions.map((sizeValue) => (
@@ -25204,7 +25204,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
                   {whiteboardTool === 'pen' && whiteboardPenMenuOpen && (
-                    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2.5 flex flex-col gap-1.5 w-[172px]">
+                    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-2.5 flex flex-col gap-1.5 w-[172px]">
                       <p className="text-[10px] font-semibold text-gray-500 px-1">Pen styles</p>
                       {whiteboardPenPresets.map((penPreset, penIndex) => (
                         <button
@@ -25286,7 +25286,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
                   {whiteboardShapeMenuOpen && (
-                    <div className="absolute left-20 top-[44%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2 flex flex-col gap-1.5 w-[172px]">
+                    <div className="absolute left-20 top-[44%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-2 flex flex-col gap-1.5 w-[172px]">
                       <p className="text-[10px] font-semibold text-gray-500 px-1">Shapes</p>
                       {whiteboardShapePresets.map((shapePreset) => (
                         <button
@@ -25309,7 +25309,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
                   {whiteboardStickyPaletteOpen && (
-                    <div className="absolute left-20 top-[62%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm p-2 flex flex-col gap-1.5 w-[172px]">
+                    <div className="absolute left-20 top-[62%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-2 flex flex-col gap-1.5 w-[172px]">
                       <p className="text-[10px] font-semibold text-gray-500 px-1">Sticky note colors</p>
                       {whiteboardStickyColorPresets.map((colorPreset) => (
                         <button
@@ -25639,7 +25639,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       className="absolute pointer-events-none z-20"
                       style={{ left: `${whiteboardStickyCursorPosition.x + 8}px`, top: `${whiteboardStickyCursorPosition.y + 8}px` }}
                     >
-                      <div className="h-7 w-7 rounded-md border border-amber-300 shadow-sm flex items-center justify-center" style={{ backgroundColor: whiteboardStickyColor }}>
+                      <div className="h-7 w-7 rounded-md border border-amber-300 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-center justify-center" style={{ backgroundColor: whiteboardStickyColor }}>
                         <StickyNote size={13} className="text-amber-900" />
                       </div>
                     </div>
@@ -25671,7 +25671,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     return (
                     <div
                       key={widget.id}
-                      className={`absolute rounded-xl px-3 py-2 shadow-sm border ${
+                      className={`absolute rounded-xl px-3 py-2 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border ${
                         widget.type === 'sticky'
                           ? 'bg-amber-100 border-amber-200'
                           : widget.type === 'text'
@@ -25759,7 +25759,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setWhiteboardEmojiSearch('');
                               setWhiteboardReactionMenuOpen(true);
                             }}
-                            className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
+                            className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_8px_30px_rgba(124,58,237,0.06)] hover:bg-slate-50 inline-flex items-center justify-center"
                             title="Quick reactions"
                           >
                             <span className="text-[14px] leading-none">?</span>
@@ -25863,14 +25863,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onMouseLeave={() => setWhiteboardHoveredAnchor((prev) => (prev?.objectId === widget.id && prev?.anchorKey === anchor.key ? null : prev))}
                         >
                           <div
-                            className={`relative h-3 w-3 rounded-full border-2 shadow-sm flex items-center justify-center ${whiteboardHoveredAnchor?.objectId === widget.id && whiteboardHoveredAnchor?.anchorKey === anchor.key ? 'border-blue-600 bg-blue-600 text-white' : 'border-blue-600 bg-white'}`}
+                            className={`relative h-3 w-3 rounded-full border-2 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-center justify-center ${whiteboardHoveredAnchor?.objectId === widget.id && whiteboardHoveredAnchor?.anchorKey === anchor.key ? 'border-blue-600 bg-blue-600 text-white' : 'border-blue-600 bg-white'}`}
                             style={{ cursor: anchor.cursor }}
                           >
                             {whiteboardHoveredAnchor?.objectId === widget.id && whiteboardHoveredAnchor?.anchorKey === anchor.key && (
                               <span className="text-[8px] leading-none">{anchor.icon}</span>
                             )}
                             {anchor.kind === 'connect' && (
-                              <span className="absolute left-full ml-1 flex items-center gap-1 rounded-full border border-blue-500/20 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-blue-600 shadow-sm">
+                              <span className="absolute left-full ml-1 flex items-center gap-1 rounded-full border border-blue-500/20 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-blue-600 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
                                 <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
                                 Link
                               </span>
@@ -26007,7 +26007,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {isSelected && !['eraser', 'hand'].includes(whiteboardTool) && (
                         <div
                           data-widget-interactive="true"
-                          className="absolute left-1/2 -translate-x-1/2 z-30 rounded-xl border border-gray-200 bg-white shadow-sm px-2 py-1.5"
+                          className="absolute left-1/2 -translate-x-1/2 z-30 rounded-xl border border-gray-200 bg-white shadow-[0_8px_30px_rgba(124,58,237,0.06)] px-2 py-1.5"
                           style={{ top: `${(widget.height || 120) + 14}px` }}
                           onPointerDown={(e) => e.stopPropagation()}
                         >
@@ -26342,7 +26342,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 setWhiteboardEmojiSearch('');
                                 setWhiteboardReactionMenuOpen(true);
                               }}
-                              className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 inline-flex items-center justify-center"
+                              className="relative h-7 w-7 rounded-xl border border-slate-200 bg-white text-slate-600 shadow-[0_8px_30px_rgba(124,58,237,0.06)] hover:bg-slate-50 inline-flex items-center justify-center"
                               title="Quick reactions"
                             >
                               <span className="text-[14px] leading-none">?</span>
@@ -26629,7 +26629,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <p className="text-[11px] leading-snug whitespace-nowrap overflow-hidden text-ellipsis">{comment.text || 'Tap + to expand comment'}</p>
                           )}
                         </div>
-                        <div className="w-2 h-2 bg-sky-500 rotate-45 -mt-1 shadow-sm" />
+                        <div className="w-2 h-2 bg-sky-500 rotate-45 -mt-1 shadow-[0_8px_30px_rgba(124,58,237,0.06)]" />
                         <button
                           type="button"
                           onClick={() => {
@@ -26709,7 +26709,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     );
                   })()}
-                  <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-sm px-2.5 py-2 flex items-center gap-1.5">
+                  <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] px-2.5 py-2 flex items-center gap-1.5">
                     <button type="button" onClick={handleWhiteboardUndo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo (Ctrl+Z)"><Undo2 size={15} /></button>
                     <button type="button" onClick={handleWhiteboardRedo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo (Ctrl+Shift+Z)"><Redo2 size={15} /></button>
                     <div className="w-px h-5 bg-gray-200 mx-0.5" />
@@ -26815,7 +26815,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <button
                         type="button"
                         onClick={() => setWhiteboardAddMenuOpen((prev) => !prev)}
-                        className="h-9 w-9 rounded-lg bg-violet-600 text-white hover:bg-violet-700 flex items-center justify-center shadow-sm"
+                        className="h-9 w-9 rounded-lg bg-violet-600 text-white hover:bg-violet-700 flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.06)]"
                         title="Add object"
                       >
                         <Plus size={15} />
@@ -26931,7 +26931,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         <div className="flex-1 overflow-y-auto thin-scrollbar px-5 py-4 space-y-3 bg-[#fbfbfe]">
                           {whiteboardTaskPreview.items.map((item) => (
-                            <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                            <div key={item.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
                               <div className="grid grid-cols-[minmax(0,1.6fr)_130px_130px_130px_auto] gap-2 items-start">
                                 <div>
                                   <input
@@ -27263,7 +27263,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 key={idx} 
                 className="mb-10 border-t border-dashed border-violet-100 pt-8 animate-fade-in group relative"
               >
-                <div className="absolute -top-3 left-4 bg-violet-600 text-[10px] text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                <div className="absolute -top-3 left-4 bg-violet-600 text-[10px] text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
                   <Sparkles size={8} /> AI Composed
                 </div>
                 
