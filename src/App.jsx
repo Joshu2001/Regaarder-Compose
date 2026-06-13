@@ -16176,6 +16176,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               {[
                 { key: 'chat', label: 'AI Chat' },
                 { key: 'assistant', label: 'AI Assistant' },
+                { key: 'properties', label: 'Properties' },
                 { key: 'whiteboard', label: 'Whiteboard' },
                 { key: 'tasks', label: `Tasks (${tasks.filter((t) => !t.completed).length})` },
                 { key: 'manageen', label: 'Manageen' },
@@ -16224,6 +16225,43 @@ Respond with a JSON array of slide objects matching the schema.`;
         {/* Dynamic Sidebar Content */}
         <div className="flex-1 flex flex-col min-h-0 bg-white">
           
+          {/* ACTIVE TAB: PROPERTIES */}
+          {activeRightTab === 'properties' && (
+            <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc]">
+              <div className="px-5 py-4 border-b border-slate-200 bg-white">
+                <h3 className="text-[14px] font-bold text-slate-800">Slide Properties</h3>
+                <p className="text-[11px] text-slate-500 mt-1">Manage global theme and styling</p>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Global Settings</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Theme', 'Layout', 'Background', 'Transitions', 'Animations'].map((option) => (
+                      <button key={option} type="button" onClick={() => showToast(`${option} panel opened`)} className="px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-violet-50 hover:border-violet-200 text-xs text-slate-700 font-semibold text-left transition-colors shadow-sm">{option}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Brand Settings</div>
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Primary Font</span>
+                      <span className="text-xs font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg">Inter</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-600">Brand Color</span>
+                      <div className="w-5 h-5 rounded-full bg-violet-600 shadow-sm border border-slate-200"></div>
+                    </div>
+                    <div className="pt-2">
+                      <button type="button" onClick={() => showToast('Brand kit opened')} className="w-full py-2 rounded-lg bg-slate-50 text-xs text-violet-600 font-semibold hover:bg-violet-50 transition-colors">Edit brand kit</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* A. ACTIVE TAB: AI CHAT */}
           {activeRightTab === 'chat' && (
             <div className="flex-1 flex flex-col min-h-0">
@@ -22440,68 +22478,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-                      <div className="h-10 px-3 border-b border-gray-100 flex items-center gap-2 text-xs text-gray-600">
-                        <button className="p-1 rounded hover:bg-gray-100"><Home size={12} /></button>
-                        <ChevronRight size={11} className="text-gray-400" />
-                        <button className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 inline-flex items-center gap-1">
-                          <span>Untitled presentation</span>
-                          <ChevronDown size={11} />
+                  <div className="flex flex-col h-full bg-[#f5f7fc]">
+                    <div className="h-12 border-b border-gray-200 bg-white flex items-center px-4 justify-between text-[13px] font-medium text-gray-600">
+                      <div className="flex items-center gap-3">
+                        <button type="button" onClick={addDeckSlide} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                          <Plus size={14} />
+                          <span>Add Slide</span>
                         </button>
-                        <button type="button" onClick={addDeckSlide} className="w-6 h-6 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50 inline-flex items-center justify-center">
-                          <Plus size={12} />
+                        <button type="button" onClick={() => showToast('Present mode coming soon')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                          <MonitorPlay size={14} />
+                          <span>Present</span>
                         </button>
-                        <div className="ml-auto flex items-center gap-2">
-                          <button type="button" onClick={() => showToast('Undo not available in demo')} className="p-1 rounded hover:bg-gray-100"><Undo2 size={12} /></button>
-                          <button type="button" onClick={() => showToast('Redo not available in demo')} className="p-1 rounded hover:bg-gray-100"><Redo2 size={12} /></button>
-                          <button type="button" onClick={() => showToast('Present mode coming soon')} className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 inline-flex items-center gap-1">
-                            <MonitorPlay size={12} />
-                            <span>Present</span>
-                            <ChevronDown size={11} />
-                          </button>
-                        </div>
                       </div>
-                      <div className="h-10 px-3 flex items-center gap-2 text-[11px] text-gray-600">
-                        {['Theme', 'Layout', 'Background'].map((option) => (
-                          <button key={option} type="button" onClick={() => showToast(`${option} panel opened`)} className="px-2 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50">{option}</button>
-                        ))}
-                        <div className="relative" ref={deckToolbarMenuRef}>
-                          <button
-                            type="button"
-                            onClick={() => setDeckToolbarMenuOpen((prev) => !prev)}
-                            className="inline-flex items-center gap-1 border border-gray-200 rounded px-2 py-1 bg-white hover:bg-gray-50"
-                          >
-                            <span>{deckToolbarFont}</span>
-                            <ChevronDown size={11} />
-                          </button>
-                          {deckToolbarMenuOpen && (
-                            <div className="absolute z-[420] top-full mt-1 left-0 w-28 rounded-lg border border-gray-200 bg-white shadow-lg p-1">
-                              {['Inter', 'Arial', 'Roboto', 'Lato', 'Georgia'].map((font) => (
-                                <button
-                                  key={font}
-                                  type="button"
-                                  onClick={() => {
-                                    setDeckToolbarFont(font);
-                                    setDeckToolbarMenuOpen(false);
-                                  }}
-                                  className={`w-full text-left px-2 py-1 rounded text-[11px] ${deckToolbarFont === font ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
-                                >
-                                  {font}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <button type="button" className="px-1.5 font-semibold">B</button>
-                        <button type="button" className="px-1.5 italic">I</button>
-                        <button type="button" className="px-1.5 underline">U</button>
-                        <button type="button" className="px-1.5">S</button>
-                        <span className="mx-1">|</span>
-                        <button type="button" onClick={() => showToast('Animate panel opened')} className="px-2 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50">Animate</button>
-                        <button type="button" onClick={() => showToast('More tools opened')} className="px-2 py-1 rounded border border-gray-200 bg-white hover:bg-gray-50">More</button>
+                      <div className="flex items-center gap-3">
+                        <button type="button" onClick={() => setActiveRightTab('properties')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                          <Settings size={14} />
+                          <span>Properties</span>
+                        </button>
                       </div>
                     </div>
+                    
+                    <div className="flex-1 overflow-auto p-4 flex justify-center">
 
                     {deckContextRailTab === 'Template' && (
                       <div className="mt-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/40 to-white p-3 shadow-[0_16px_30px_-24px_rgba(109,40,217,0.45)]">
@@ -22552,7 +22549,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
 
-                    <div ref={deckCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
+                    <div ref={deckCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg mt-4 max-w-[900px] w-full bg-[#10162f]">
                       <div className={`relative p-8 md:p-12 ${resolvedDeckSlideDesign.preset.background} min-h-[430px] flex flex-col justify-between`} style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
 
                         <div>
@@ -22595,6 +22592,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <Expand size={14} />
                       </button>
                     </div>
+                  </div>
                   </div>
                 )}
                 {!deckPromptMinimized && !isComposing && !isSheetsMode && (
