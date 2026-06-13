@@ -1,0 +1,50 @@
+const fs = require('fs');
+const file = 'c:\\Users\\user\\Downloads\\Project MOAT\\Regaarder Compose\\src\\thin-scrollbar.css';
+
+const newCss = `/* Thin, subtle scrollbar for icon rails and compact panels */
+.thin-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  scrollbar-color: transparent transparent;
+}
+
+.thin-scrollbar:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15,23,42,0.16) transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 999px;
+  border: 0px solid transparent;
+}
+
+.thin-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(15,23,42,0.18);
+}
+
+/* Dark Mode Implementation */
+.app-dark {
+  filter: invert(0.9) hue-rotate(180deg);
+  background: #111;
+}
+
+.app-dark img, .app-dark video, .app-dark .no-invert {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.app-dark .bg-violet-600, .app-dark .bg-violet-500 {
+  filter: hue-rotate(180deg);
+}
+`;
+
+fs.writeFileSync(file, newCss, 'utf8');
+console.log('Fixed scrollbar CSS');

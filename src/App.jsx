@@ -17759,10 +17759,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </div>
 
                         <div className="relative z-10 w-full md:w-1/2 text-center md:text-left">
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-[11px] font-bold tracking-wide uppercase mb-3">
-                            Good afternoon, Joshua <span className="text-base leading-none">🖐️</span>
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-[13px] font-medium mb-3">
+                            Good afternoon, Joshua <span className="text-base leading-none">👋</span>
                           </div>
-                          <h1 className="text-2xl md:text-[36px] font-extrabold text-slate-900 leading-tight mb-2 tracking-tight">Ready to collaborate?</h1>
+                          <h1 className="text-2xl md:text-[32px] font-bold text-slate-900 leading-tight mb-2 tracking-tight">Ready to collaborate?</h1>
                           <p className="text-sm text-slate-500 mb-6 max-w-[340px] mx-auto md:mx-0 leading-relaxed">Start a room, join a meeting, or continue where you left off.</p>
                           
                           <div className="flex items-center justify-center md:justify-start gap-3">
@@ -23048,19 +23048,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </div>
           
-          <div className="px-4 pb-6">
-            <div className="bg-white border border-violet-100 rounded-[16px] p-4 mb-4 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-fuchsia-400"></div>
-              <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 mb-3">
-                <Sparkles size={14} />
-              </div>
-              <h4 className="text-[13px] font-bold text-slate-900 mb-1">Upgrade to Pro</h4>
-              <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">Unlock unlimited rooms, cloud recordings, and more.</p>
-              <button className="w-full py-2 bg-violet-50 text-violet-700 text-[12px] font-semibold rounded-lg hover:bg-violet-100 transition-colors">
-                Upgrade now
-              </button>
-            </div>
-            
+          <div className="px-4 pb-6 flex flex-col gap-4">
             <button className="w-full flex items-center justify-between group">
               <div className="flex items-center gap-2">
                 <img src="https://i.pravatar.cc/150?u=joshua" alt="Joshua" className="w-9 h-9 rounded-full object-cover border border-slate-200" />
@@ -23071,6 +23059,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
               <ChevronDown size={14} className="text-slate-400" />
             </button>
+
+            <div className="bg-white/80 border border-violet-100 rounded-[16px] p-4 shadow-sm relative overflow-hidden backdrop-blur-sm">
+              <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600 mb-3">
+                <Sparkles size={14} />
+              </div>
+              <h4 className="text-[13px] font-bold text-slate-900 mb-1">Upgrade to Pro</h4>
+              <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">Unlock unlimited rooms, cloud recordings, and more.</p>
+              <button className="w-full py-2 bg-violet-50 text-violet-700 text-[12px] font-semibold rounded-lg hover:bg-violet-100 transition-colors">
+                Upgrade now
+              </button>
+            </div>
           </div>
         </aside>
 
@@ -23088,23 +23087,41 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
           <div className="max-w-[1000px] mx-auto mt-6 text-left">
             {/* Hero Banner */}
-            <div className="relative w-full rounded-[24px] overflow-hidden bg-white border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-8 p-12 flex items-center justify-between min-h-[300px]">
+            <div className="relative w-full rounded-[24px] overflow-hidden bg-[#f4effc] border border-violet-100/50 shadow-sm mb-8 p-10 flex items-center justify-between min-h-[280px]">
               {/* Background styling for premium look */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#f8f5ff] via-white to-[#fbfaff]"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-50/80 via-white/40 to-fuchsia-50/30"></div>
+              
+              {/* Curved wave lines */}
+              <svg className="absolute left-0 top-0 w-full h-full opacity-30 pointer-events-none" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+                <path d="M-100,300 C150,200 350,0 600,-50" fill="none" stroke="url(#hero-grad)" strokeWidth="1.5" />
+                <path d="M-50,350 C200,250 400,50 650,0" fill="none" stroke="url(#hero-grad)" strokeWidth="1" />
+                <path d="M0,400 C250,300 450,100 700,50" fill="none" stroke="url(#hero-grad)" strokeWidth="1" />
+                <path d="M50,450 C300,350 500,150 750,100" fill="none" stroke="url(#hero-grad)" strokeWidth="1" />
+                <defs>
+                  <linearGradient id="hero-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.2" />
+                    <stop offset="50%" stopColor="#c084fc" stopOpacity="0.5" />
+                    <stop offset="100%" stopColor="#f0abfc" stopOpacity="0.2" />
+                  </linearGradient>
+                </defs>
+              </svg>
               
               <div className="relative z-10 w-1/2 flex items-center justify-center">
-                <div className="w-32 h-32 rounded-[32px] bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(139,92,246,0.15)] border border-white/80 flex items-center justify-center relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-[32px] opacity-10"></div>
-                  <Video size={56} className="text-violet-600 drop-shadow-md" fill="currentColor" />
+                <div className="w-[180px] h-[180px] rounded-[48px] bg-white/40 backdrop-blur-2xl shadow-[0_30px_60px_rgba(139,92,246,0.12),inset_0_2px_4px_rgba(255,255,255,0.8),inset_0_-2px_4px_rgba(139,92,246,0.1)] border border-white/60 flex items-center justify-center relative transform -rotate-2 hover:rotate-0 transition-transform duration-500 group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-transparent rounded-[48px] opacity-80"></div>
+                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-200/40 to-transparent rounded-[48px] opacity-60"></div>
+                  <div className="relative w-24 h-24 rounded-[28px] bg-gradient-to-br from-violet-400 to-violet-600 shadow-[0_15px_30px_rgba(124,58,237,0.3),inset_0_2px_4px_rgba(255,255,255,0.4)] flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                    <Video size={42} className="text-white drop-shadow-md" fill="currentColor" />
+                  </div>
                 </div>
               </div>
 
-              <div className="relative z-10 w-1/2 pl-6">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-[11px] font-bold tracking-wide uppercase mb-4">
-                  Good afternoon, Joshua <span className="text-base leading-none">🖐️</span>
+              <div className="relative z-10 w-1/2 pl-4 pr-8">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-100/50 text-violet-700 text-[13px] font-medium mb-4 backdrop-blur-sm">
+                  Good afternoon, Joshua <span className="text-base leading-none">👋</span>
                 </div>
-                <h1 className="text-[40px] font-extrabold text-slate-900 leading-tight mb-3 tracking-tight">Ready to collaborate?</h1>
-                <p className="text-[15px] text-slate-500 mb-8 max-w-[340px] leading-relaxed">Start a room, join a meeting, or continue where you left off.</p>
+                <h1 className="text-[36px] font-bold text-slate-900 leading-tight mb-3 tracking-tight">Ready to collaborate?</h1>
+                <p className="text-[15px] text-slate-600 mb-8 max-w-[340px] leading-relaxed">Start a room, join a meeting, or continue where you left off.</p>
                 
                 <div className="flex items-center gap-3">
                   <button onClick={() => startMeetingNow(generateRoomCode())} className="px-6 py-3.5 rounded-xl bg-violet-600 text-white text-[14px] font-semibold hover:bg-violet-700 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
