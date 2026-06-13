@@ -12917,7 +12917,7 @@ Rules:
     setJoinCode(code);
     setRoomState('active');
     setActiveMeetingStageTab('room');
-    setMainView('room');
+    setMainView('document');
     setRoomPanelMode('expanded');
     setMeetingSummary(null);
     setMeetingStartedAt(Date.now());
@@ -18043,7 +18043,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <div className="text-xs font-bold text-gray-900 truncate">Q2 Launch Strategy</div>
                           <div className="text-[10px] text-gray-400 font-mono mt-0.5">{roomId}</div>
                         </div>
-                        <button onClick={() => { setMainView('room'); setRoomPanelMode('expanded'); }} className="p-1.5 bg-violet-50 text-violet-600 rounded hover:bg-violet-100 transition-colors" title="Expand to Main View">
+                        <button onClick={() => { setMainView('document'); setRoomPanelMode('expanded'); }} className="p-1.5 bg-violet-50 text-violet-600 rounded hover:bg-violet-100 transition-colors" title="Expand to Main View">
                           <Maximize2 size={14} />
                         </button>
                       </div>
@@ -27816,7 +27816,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           <span className="text-xs font-semibold text-gray-700">Meeting live - {meetingDurationLabel}</span>
-          <button onClick={() => { setMainView('room'); setRoomPanelMode('docked'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Return</button>
+          <button onClick={() => { setMainView('document'); setRoomPanelMode('docked'); }} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Return</button>
           <button onClick={leaveRoom} className="px-2 py-1 text-[11px] rounded border border-red-200 text-red-600 hover:bg-red-50">Leave</button>
         </div>
       )}
