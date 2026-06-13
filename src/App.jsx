@@ -2537,9 +2537,10 @@ export default function App() {
   const [activeSharedMeetingFileId, setActiveSharedMeetingFileId] = useState(null);
   const [collaboratorInvite, setCollaboratorInvite] = useState('');
   const [meetingParticipants] = useState([
-    { name: 'Sarah', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=320&q=80' },
-    { name: 'Mike', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80' },
-    { name: 'Ana', img: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=320&q=80' },
+    { name: 'Joshua Sajous', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=320&q=80' },
+    { name: 'Michelle Lee', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80' },
+    { name: 'Alex Morgan', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=320&q=80' },
+    { name: 'Sarah Chen', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=320&q=80' },
   ]);
   const [meetingOverflowParticipants] = useState([
     { name: 'Kevin', img: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=320&q=80' },
@@ -13536,6 +13537,15 @@ Rules:
     openCreationPicker();
   };
 
+  const createRoomExperience = () => {
+    setCreationPickerOpen(false);
+    setProductMode('room');
+    setRightSidebarOpen(false);
+    setLeftSidebarOpen(false);
+    setRoomState('lobby');
+    showToast('Room dashboard ready');
+  };
+
   const createDmExperience = () => {
     enterFullscreen();
     setCreationPickerOpen(false);
@@ -17706,8 +17716,8 @@ Respond with a JSON array of slide objects matching the schema.`;
 
               {/* STATE: LOBBY */}
               {roomState === 'lobby' && (
-                <div className="flex-1 min-h-0 bg-[#f7f8fd] animate-fade-in flex flex-col relative">
-                  <div className="h-12 px-4 border-b border-gray-200 bg-white flex items-center justify-between">
+                <div className="flex-1 min-h-0 bg-[#f7f8fd] animate-fade-in flex flex-col relative overflow-y-auto thin-scrollbar">
+                  <div className="h-12 px-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2 text-slate-900">
                       <span className="w-5 h-5 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center">
                         <MonitorPlay size={12} />
@@ -17734,123 +17744,146 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </div>
                   </div>
 
-                                                      <div className="flex-1 overflow-y-auto thin-scrollbar px-4 py-5 space-y-6 bg-white">
-                    <div className="text-left">
-                      <h3 className="text-[14px] font-semibold text-slate-900 tracking-tight">No active meeting</h3>
-                      <p className="text-[12px] text-slate-500 mt-1">Start a meeting or join a room to collaborate.</p>
-                    </div>
-
-                    <div className="space-y-2.5">
-                      <button
-                        type="button"
-                        onClick={() => startMeetingNow(generateRoomCode())}
-                        className="w-full text-left px-4 py-2.5 rounded-xl bg-violet-600 text-white text-[13px] font-medium hover:bg-violet-700 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <MonitorPlay size={15} />
-                        Start meeting
-                      </button>
-                      
-                      {isRoomStartMenuOpen ? (
-                        <div className="flex gap-2">
-                          <input
-                            ref={roomJoinInputRef}
-                            type="text"
-                            value={joinCode}
-                            onChange={(e) => setJoinCode(e.target.value)}
-                            placeholder="Enter code"
-                            className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && joinCode.trim()) openMeetingSetup(joinCode.trim());
-                            }}
-                          />
-                          <button onClick={() => joinCode.trim() && openMeetingSetup(joinCode.trim())} className="px-4 py-2 rounded-xl bg-violet-50 text-violet-700 text-[13px] font-medium hover:bg-violet-100 transition-colors">Join</button>
+                  <div className="flex-1 p-6 md:p-8 overflow-y-auto thin-scrollbar">
+                    <div className="max-w-[1000px] mx-auto">
+                      {/* Hero Banner */}
+                      <div className="relative w-full rounded-[24px] overflow-hidden bg-white border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-8 p-8 md:p-12 flex flex-col md:flex-row items-center justify-between min-h-[260px] gap-6">
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#f8f5ff] via-white to-[#fbfaff]"></div>
+                        
+                        <div className="relative z-10 w-full md:w-1/2 flex items-center justify-center">
+                          <div className="w-24 h-24 md:w-32 md:h-32 rounded-[24px] md:rounded-[32px] bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(139,92,246,0.15)] border border-white/80 flex items-center justify-center relative">
+                            <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-[24px] md:rounded-[32px] opacity-10"></div>
+                            <Video size={48} className="text-violet-600 drop-shadow-md" fill="currentColor" />
+                          </div>
                         </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setIsRoomStartMenuOpen(true)}
-                          className="w-full text-left px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-[13px] font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
-                        >
-                          <LinkIcon size={15} />
-                          Join meeting
-                        </button>
-                      )}
 
-                      <button
-                        type="button"
-                        onClick={() => setIsRoomInviteModalOpen(true)}
-                        className="w-full text-left px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-[13px] font-medium hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
-                      >
-                        <UserPlus size={15} />
-                        Invite people
-                      </button>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-[13px] font-semibold text-slate-900">Upcoming</h3>
-                        <button type="button" className="text-[11px] font-medium text-violet-600 hover:text-violet-700">View calendar</button>
+                        <div className="relative z-10 w-full md:w-1/2 text-center md:text-left">
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-[11px] font-bold tracking-wide uppercase mb-3">
+                            Good afternoon, Joshua <span className="text-base leading-none">🖐️</span>
+                          </div>
+                          <h1 className="text-2xl md:text-[36px] font-extrabold text-slate-900 leading-tight mb-2 tracking-tight">Ready to collaborate?</h1>
+                          <p className="text-sm text-slate-500 mb-6 max-w-[340px] mx-auto md:mx-0 leading-relaxed">Start a room, join a meeting, or continue where you left off.</p>
+                          
+                          <div className="flex items-center justify-center md:justify-start gap-3">
+                            <button onClick={() => startMeetingNow(generateRoomCode())} className="px-5 py-3 rounded-xl bg-violet-600 text-white text-[13px] font-semibold hover:bg-violet-700 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
+                              <MonitorPlay size={16} />
+                              Start room
+                            </button>
+                            
+                            {isRoomStartMenuOpen ? (
+                              <div className="flex gap-2">
+                                <input
+                                  ref={roomJoinInputRef}
+                                  type="text"
+                                  value={joinCode}
+                                  onChange={(e) => setJoinCode(e.target.value)}
+                                  placeholder="Enter code"
+                                  className="rounded-xl border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 w-28 bg-white"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && joinCode.trim()) openMeetingSetup(joinCode.trim());
+                                  }}
+                                />
+                                <button onClick={() => joinCode.trim() && openMeetingSetup(joinCode.trim())} className="px-3 py-2 rounded-xl bg-violet-50 text-violet-700 text-[13px] font-medium hover:bg-violet-100 transition-colors">Join</button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setIsRoomStartMenuOpen(true)} className="px-5 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-[13px] font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2">
+                                <LinkIcon size={16} />
+                                Join room
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        {upcomingEvents.slice(0, 1).map((event) => {
-                          const eventDate = event?.dueDate ? new Date(event.dueDate) : null;
-                          return (
-                            <div key={event.id} className="rounded-xl border border-slate-200 p-3 bg-white">
-                              <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                                  <Calendar size={15} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-[13px] font-semibold text-slate-900 truncate">{event.title}</div>
-                                  <div className="text-[11px] text-slate-500 mt-0.5">May 15 �E 10:00 AM</div>
-                                  <div className="flex items-center justify-between mt-3">
-                                    <div className="flex items-center -space-x-1.5">
-                                      <img src="https://i.pravatar.cc/150?u=a042581f4e29026024d" className="w-5 h-5 rounded-full border border-white" alt="Avatar" />
-                                      <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" className="w-5 h-5 rounded-full border border-white" alt="Avatar" />
-                                      <img src="https://i.pravatar.cc/150?u=a04258114e29026702d" className="w-5 h-5 rounded-full border border-white" alt="Avatar" />
-                                      <span className="ml-2 text-[10px] font-medium text-slate-500">+1</span>
+
+                      {/* Content Grid */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
+                        {/* Upcoming Meetings */}
+                        <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 flex flex-col h-full">
+                          <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-[15px] font-bold text-slate-900">Upcoming meetings</h3>
+                            <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">View calendar</button>
+                          </div>
+                          
+                          <div className="space-y-3 flex-1">
+                            {[
+                              { title: 'Beta Launch Kickoff', time: 'Thursday, May 15 • 10:00 AM', color: 'bg-violet-100 text-violet-600' },
+                              { title: 'Design System Review', time: 'Friday, May 16 • 2:00 PM', color: 'bg-fuchsia-100 text-fuchsia-600' },
+                              { title: 'Marketing Sync', time: 'Monday, May 19 • 11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
+                            ].map((mtg, i) => (
+                              <div key={i} className="group p-4 rounded-[16px] border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all flex items-start justify-between">
+                                <div className="flex gap-4">
+                                  <div className={`w-10 h-10 rounded-xl ${mtg.color} flex items-center justify-center shrink-0`}>
+                                    <Calendar size={18} />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-[14px] font-bold text-slate-900 mb-1">{mtg.title}</h4>
+                                    <p className="text-[12px] text-slate-500 mb-2">{mtg.time}</p>
+                                    <div className="flex -space-x-2">
+                                      <img src="https://i.pravatar.cc/150?u=1" className="w-6 h-6 rounded-full border-2 border-white" />
+                                      <img src="https://i.pravatar.cc/150?u=2" className="w-6 h-6 rounded-full border-2 border-white" />
+                                      <img src="https://i.pravatar.cc/150?u=3" className="w-6 h-6 rounded-full border-2 border-white" />
+                                      <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[9px] font-medium text-slate-600">+1</div>
                                     </div>
-                                    <button onClick={() => startMeetingNow(generateRoomCode())} className="px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 rounded-lg text-[11px] font-semibold transition-colors">Join</button>
                                   </div>
                                 </div>
+                                <button onClick={() => startMeetingNow(generateRoomCode())} className="px-4 py-1.5 rounded-lg bg-violet-50 text-violet-700 text-[12px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Join</button>
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-[13px] font-semibold text-slate-900">Recent rooms</h3>
-                        <button type="button" className="text-[11px] font-medium text-violet-600 hover:text-violet-700">See all</button>
-                      </div>
-                      <div className="space-y-1">
-                        {[
-                          { id: 1, title: 'Q2 Launch Strategy', date: 'May 12 �E 2:30 PM', avatars: ['https://i.pravatar.cc/150?u=a042581f4e29026024d', 'https://i.pravatar.cc/150?u=a042581f4e29026704d'], extra: '+2' },
-                          { id: 2, title: 'Product Review', date: 'May 9 �E 11:00 AM', avatars: ['https://i.pravatar.cc/150?u=a04258114e29026702d', 'https://i.pravatar.cc/150?u=a04258a2462d826712d'], extra: '+1' },
-                          { id: 3, title: 'Investor Update', date: 'May 7 �E 4:00 PM', avatars: ['https://i.pravatar.cc/150?u=a042581f4e29026024d', 'https://i.pravatar.cc/150?u=a042581f4e29026704d'] }
-                        ].map((recent) => (
-                          <div key={recent.id} className="group flex items-center justify-between p-2 -mx-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors" onClick={() => openMeetingSetup('recent-room')}>
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                                <MonitorPlay size={15} />
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="text-[13px] font-semibold text-slate-900 truncate">{recent.title}</span>
-                                <span className="text-[11px] text-slate-500 mt-0.5">{recent.date}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center ml-2 shrink-0">
-                              <div className="flex -space-x-1.5">
-                                {recent.avatars.map((src, i) => (
-                                  <img key={i} src={src} className="w-5 h-5 rounded-full border border-white" alt="Avatar" />
-                                ))}
-                              </div>
-                              {recent.extra && <span className="ml-1 text-[10px] font-medium text-slate-500">{recent.extra}</span>}
-                            </div>
+                            ))}
                           </div>
-                        ))}
+                          
+                          <div className="pt-4 mt-4 border-t border-slate-100">
+                            <button className="w-full flex items-center justify-between text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
+                              <span>View full calendar</span>
+                              <ArrowRight size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Recent Rooms */}
+                        <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm p-6 flex flex-col h-full">
+                          <div className="flex items-center justify-between mb-5">
+                            <h3 className="text-[15px] font-bold text-slate-900">Recent rooms</h3>
+                            <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">See all</button>
+                          </div>
+                          
+                          <div className="space-y-3 flex-1">
+                            {[
+                              { title: 'Q2 Launch Strategy', time: 'May 12 • 2:30 PM' },
+                              { title: 'Product Review', time: 'May 9 • 11:00 AM' },
+                              { title: 'Investor Update', time: 'May 7 • 4:00 PM' },
+                              { title: 'Design Critique', time: 'May 5 • 10:30 AM' }
+                            ].map((room, i) => (
+                              <div key={i} className="group p-3 rounded-[16px] border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-between cursor-pointer" onClick={() => startMeetingNow(generateRoomCode())}>
+                                <div className="flex items-center gap-4">
+                                  <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                                    <MonitorPlay size={18} />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-[14px] font-bold text-slate-900 mb-0.5 group-hover:text-violet-700 transition-colors">{room.title}</h4>
+                                    <p className="text-[12px] text-slate-500">{room.time}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="flex -space-x-2">
+                                    <img src={`https://i.pravatar.cc/150?u=${i+10}`} className="w-6 h-6 rounded-full border-2 border-white" />
+                                    <img src={`https://i.pravatar.cc/150?u=${i+20}`} className="w-6 h-6 rounded-full border-2 border-white" />
+                                    <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[9px] font-medium text-slate-600">+{((i+2)%3)+1}</div>
+                                  </div>
+                                  <button className="p-1 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors">
+                                    <MoreHorizontal size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <div className="pt-4 mt-2 border-t border-slate-100">
+                            <button className="w-full flex items-center justify-between text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
+                              <span>View all rooms</span>
+                              <ArrowRight size={14} />
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -22972,6 +23005,107 @@ if (productMode === 'deck' || productMode === 'sheets') {
   }
 
   if (productMode === 'room') {
+    if (roomState === 'active') {
+      return (
+        <div ref={appShellRef} className={`flex bg-[#FAFAFC] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} h-screen pt-[72px] pb-[72px]`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+          {renderRoomTopHeader()}
+          
+          <div className="flex-1 flex min-w-0">
+            {/* Left side: Video grid of participants */}
+            <div className="flex-1 flex flex-col border-r border-slate-200 bg-white">
+              <div className="flex-1 flex flex-col min-h-0 bg-[#f7f8fd] p-6 overflow-y-auto thin-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-[300px]">
+                  {/* Host Card */}
+                  <div className="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-md flex items-center justify-center group h-full min-h-[180px]">
+                    {isRoomCameraOn && localStream ? (
+                      <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
+                        <img src="https://i.pravatar.cc/150?u=joshua" className="w-20 h-20 rounded-full object-cover border-4 border-white/10 shadow-lg" alt="Host" />
+                      </div>
+                    )}
+                    <div className="absolute top-3 left-3 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">Host</div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/70 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 flex items-center justify-between">
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-white">Joshua Sajous (You)</div>
+                        <div className="text-[9px] font-semibold text-emerald-400">Speaking</div>
+                      </div>
+                      <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-white">
+                        {!isMicMuted ? <Mic size={12} /> : <MicOff size={12} className="text-red-400" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Participant 1 (Sarah) */}
+                  <div className="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-md flex items-center justify-center group h-full min-h-[180px]">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
+                      <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" className="w-20 h-20 rounded-full object-cover border-4 border-white/10 shadow-lg" alt="Sarah" />
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/70 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 flex items-center justify-between">
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-white">Sarah Jenkins</div>
+                        <div className="text-[9px] font-semibold text-slate-400">Muted</div>
+                      </div>
+                      <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-red-400">
+                        <MicOff size={12} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Participant 2 (Mike) */}
+                  <div className="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-md flex items-center justify-center group h-full min-h-[180px]">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
+                      <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80" className="w-20 h-20 rounded-full object-cover border-4 border-white/10 shadow-lg" alt="Mike" />
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/70 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 flex items-center justify-between">
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-white">Mike Ross</div>
+                        <div className="text-[9px] font-semibold text-slate-400">Muted</div>
+                      </div>
+                      <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-red-400">
+                        <MicOff size={12} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Participant 3 (Maya) */}
+                  <div className="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-200/80 shadow-md flex items-center justify-center group h-full min-h-[180px]">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-950">
+                      <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80" className="w-20 h-20 rounded-full object-cover border-4 border-white/10 shadow-lg" alt="Maya" />
+                    </div>
+                    <div className="absolute bottom-3 left-3 right-3 bg-slate-950/70 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 flex items-center justify-between">
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-white">Maya Lin</div>
+                        <div className="text-[9px] font-semibold text-slate-400">Muted</div>
+                      </div>
+                      <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-red-400">
+                        <MicOff size={12} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Right side: Room Assistant */}
+            <div className="w-[340px] shrink-0 flex flex-col bg-white border-l border-slate-200">
+              {renderRoomRightSidebar()}
+            </div>
+          </div>
+
+          {renderRoomBottomBar()}
+
+          {/* Toast System */}
+          {toastMessage && (
+            <div className="absolute top-20 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[600] flex items-center gap-2 transition-all duration-300">
+              <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+              <span>{toastMessage}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div ref={appShellRef} className={`flex bg-[#FAFAFC] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} h-screen`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         
@@ -23051,7 +23185,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </button>
           </div>
 
-          <div className="max-w-[1000px] mx-auto mt-6">
+          <div className="max-w-[1000px] mx-auto mt-6 text-left">
             {/* Hero Banner */}
             <div className="relative w-full rounded-[24px] overflow-hidden bg-white border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-8 p-12 flex items-center justify-between min-h-[300px]">
               {/* Background styling for premium look */}
@@ -23066,9 +23200,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               <div className="relative z-10 w-1/2 pl-6">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-[11px] font-bold tracking-wide uppercase mb-4">
-                  Good afternoon, Joshua <span className="text-base leading-none">??</span>
+                  Good afternoon, Joshua <span className="text-base leading-none">🖐️</span>
                 </div>
-                <h1 className="text-[40px] font-bold text-slate-900 leading-tight mb-3 tracking-tight">Ready to collaborate?</h1>
+                <h1 className="text-[40px] font-extrabold text-slate-900 leading-tight mb-3 tracking-tight">Ready to collaborate?</h1>
                 <p className="text-[15px] text-slate-500 mb-8 max-w-[340px] leading-relaxed">Start a room, join a meeting, or continue where you left off.</p>
                 
                 <div className="flex items-center gap-3">
@@ -23076,10 +23210,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <MonitorPlay size={18} />
                     Start room
                   </button>
-                  <button onClick={() => setIsRoomStartMenuOpen(true)} className="px-6 py-3.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-[14px] font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2">
-                    <LinkIcon size={18} />
-                    Join room
-                  </button>
+                  
+                  {isRoomStartMenuOpen ? (
+                    <div className="flex gap-2">
+                      <input
+                        ref={roomJoinInputRef}
+                        type="text"
+                        value={joinCode}
+                        onChange={(e) => setJoinCode(e.target.value)}
+                        placeholder="Enter code"
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 w-28 bg-white"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && joinCode.trim()) openMeetingSetup(joinCode.trim());
+                        }}
+                      />
+                      <button onClick={() => joinCode.trim() && openMeetingSetup(joinCode.trim())} className="px-3 py-2 rounded-xl bg-violet-50 text-violet-700 text-[13px] font-medium hover:bg-violet-100 transition-colors">Join</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setIsRoomStartMenuOpen(true)} className="px-6 py-3.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-[14px] font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2">
+                      <LinkIcon size={18} />
+                      Join room
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -23095,9 +23247,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 
                 <div className="space-y-3 flex-1">
                   {[
-                    { title: 'Beta Launch Kickoff', time: 'Thursday, May 15 �E 10:00 AM', color: 'bg-violet-100 text-violet-600' },
-                    { title: 'Design System Review', time: 'Friday, May 16 �E 2:00 PM', color: 'bg-fuchsia-100 text-fuchsia-600' },
-                    { title: 'Marketing Sync', time: 'Monday, May 19 �E 11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
+                    { title: 'Beta Launch Kickoff', time: 'Thursday, May 15 • 10:00 AM', color: 'bg-violet-100 text-violet-600' },
+                    { title: 'Design System Review', time: 'Friday, May 16 • 2:00 PM', color: 'bg-fuchsia-100 text-fuchsia-600' },
+                    { title: 'Marketing Sync', time: 'Monday, May 19 • 11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
                   ].map((mtg, i) => (
                     <div key={i} className="group p-4 rounded-[16px] border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all flex items-start justify-between">
                       <div className="flex gap-4">
@@ -23115,7 +23267,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                         </div>
                       </div>
-                      <button className="px-4 py-1.5 rounded-lg bg-violet-50 text-violet-700 text-[12px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Join</button>
+                      <button onClick={() => startMeetingNow(generateRoomCode())} className="px-4 py-1.5 rounded-lg bg-violet-50 text-violet-700 text-[12px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Join</button>
                     </div>
                   ))}
                 </div>
@@ -23137,12 +23289,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 
                 <div className="space-y-3 flex-1">
                   {[
-                    { title: 'Q2 Launch Strategy', time: 'May 12 �E 2:30 PM' },
-                    { title: 'Product Review', time: 'May 9 �E 11:00 AM' },
-                    { title: 'Investor Update', time: 'May 7 �E 4:00 PM' },
-                    { title: 'Design Critique', time: 'May 5 �E 10:30 AM' }
+                    { title: 'Q2 Launch Strategy', time: 'May 12 • 2:30 PM' },
+                    { title: 'Product Review', time: 'May 9 • 11:00 AM' },
+                    { title: 'Investor Update', time: 'May 7 • 4:00 PM' },
+                    { title: 'Design Critique', time: 'May 5 • 10:30 AM' }
                   ].map((room, i) => (
-                    <div key={i} className="group p-3 rounded-[16px] border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-between cursor-pointer">
+                    <div key={i} className="group p-3 rounded-[16px] border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-between cursor-pointer" onClick={() => startMeetingNow(generateRoomCode())}>
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
                           <MonitorPlay size={18} />
@@ -23156,7 +23308,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="flex -space-x-2">
                           <img src={`https://i.pravatar.cc/150?u=${i+10}`} className="w-6 h-6 rounded-full border-2 border-white" />
                           <img src={`https://i.pravatar.cc/150?u=${i+20}`} className="w-6 h-6 rounded-full border-2 border-white" />
-                          <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[9px] font-medium text-slate-600">+${Math.floor(Math.random() * 3) + 1}</div>
+                          <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[9px] font-medium text-slate-600">+{((i+2)%3)+1}</div>
                         </div>
                         <button className="p-1 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors">
                           <MoreHorizontal size={16} />
