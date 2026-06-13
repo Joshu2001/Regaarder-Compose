@@ -999,7 +999,18 @@ export default function App() {
   const [deckToolbarFont, setDeckToolbarFont] = useState('Manrope');
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
-  const [deckSlidesData, setDeckSlidesData] = useState([createBlankDeckSlide(1)]);
+  const [deckSlidesData, setDeckSlidesData] = useState([
+    { ...createBlankDeckSlide(1), section: 'Opening', title: 'Slide 1', headline: 'Slide 1 that earns attention', blurb: 'Built for modern teams and crafted to be edited live.', presetKey: 'aurora-split', footer: 'Regaarder Deck · Opening' },
+    { ...createBlankDeckSlide(2), section: 'Problem', title: 'Problem', headline: 'Problem', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Problem' },
+    { ...createBlankDeckSlide(3), section: 'Solution', title: 'Solution', headline: 'Solution', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Solution' },
+    { ...createBlankDeckSlide(4), section: 'Market', title: 'Market', headline: 'Market', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Market' },
+    { ...createBlankDeckSlide(5), section: 'Product', title: 'Product', headline: 'Product', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Product' },
+    { ...createBlankDeckSlide(6), section: 'Business Model', title: 'Business Model', headline: 'Business Model', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Business Model' },
+    { ...createBlankDeckSlide(7), section: 'Traction', title: 'Traction', headline: 'Traction', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Traction' },
+    { ...createBlankDeckSlide(8), section: 'Team', title: 'Team', headline: 'Team', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Team' },
+    { ...createBlankDeckSlide(9), section: 'Financials', title: 'Financials', headline: 'Financials', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Financials' },
+    { ...createBlankDeckSlide(10), section: 'Ask', title: 'Ask', headline: 'Ask', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Ask' },
+  ]);
   const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
@@ -22442,13 +22453,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <Plus size={12} />
                         </button>
                         <div className="ml-auto flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={generateOriginalDeckDesign}
-                            className="px-2.5 py-1 rounded-lg border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100"
-                          >
-                            Original Design
-                          </button>
                           <button type="button" onClick={() => showToast('Undo not available in demo')} className="p-1 rounded hover:bg-gray-100"><Undo2 size={12} /></button>
                           <button type="button" onClick={() => showToast('Redo not available in demo')} className="p-1 rounded hover:bg-gray-100"><Redo2 size={12} /></button>
                           <button type="button" onClick={() => showToast('Present mode coming soon')} className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 inline-flex items-center gap-1">
@@ -22550,17 +22554,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     <div ref={deckCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-indigo-950/20 bg-[#10162f] shadow-[0_35px_70px_-45px_rgba(21,24,52,0.8)]">
                       <div className={`relative p-8 md:p-12 ${resolvedDeckSlideDesign.preset.background} min-h-[430px] flex flex-col justify-between`} style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
-                        <div className="flex items-center justify-between text-[13px] text-indigo-100/90" style={{ fontFamily: deckToolbarFont }}>
-                          <span className="font-medium">Regaarder</span>
-                          <span>{resolvedDeckSlideDesign.preset.badge}</span>
-                        </div>
+
                         <div>
                           <h1
                             contentEditable
                             suppressContentEditableWarning
                             onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
-                            className="text-5xl leading-[1.1] font-medium text-white max-w-[620px] outline-none rounded-md focus:ring-2 focus:ring-white/40"
-                            style={{ fontFamily: deckToolbarFont }}
+                            className="text-5xl leading-[1.1] font-medium text-white max-w-[620px] outline-none rounded-md focus:ring-2 focus:ring-white/40 font-serif"
                           >
                             {resolvedDeckSlideDesign.headline}
                           </h1>
@@ -22568,56 +22568,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             contentEditable
                             suppressContentEditableWarning
                             onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
-                            className="mt-5 text-indigo-100/85 text-2xl max-w-[540px] outline-none rounded-md focus:ring-2 focus:ring-white/30"
-                            style={{ fontFamily: deckToolbarFont }}
+                            className="mt-5 text-indigo-100/85 text-2xl max-w-[540px] outline-none rounded-md focus:ring-2 focus:ring-white/30 font-serif"
                           >
                             {resolvedDeckSlideDesign.blurb}
                           </p>
                         </div>
-                        <div className="absolute top-6 right-6 w-14 h-14 rounded-xl border border-dashed border-white/40 bg-white/5 flex items-center justify-center text-[10px] text-white/70">Logo</div>
-                        <div className="absolute right-6 top-24 w-[210px] rounded-2xl border border-white/20 bg-white/10 backdrop-blur px-3 py-2.5 text-white/90">
-                          <div className="text-[10px] uppercase tracking-wide text-indigo-100/80">Visual Direction</div>
-                          <div className="mt-1 text-xs font-semibold">{resolvedDeckSlideDesign.visualType}</div>
-                          <div className="mt-1 text-[11px] text-indigo-100/80">{resolvedDeckSlideDesign.layoutStyle}</div>
-                          <div className="mt-2 text-[10px] uppercase tracking-wide text-indigo-100/75">Motion</div>
-                          <div className="text-[11px]">{resolvedDeckSlideDesign.motionCue}</div>
-                          {resolvedDeckSlideDesign.keyMetric && (
-                            <div className="mt-2 rounded-lg bg-white/10 px-2 py-1 text-[11px]">
-                              Key metric: {resolvedDeckSlideDesign.keyMetric}
-                            </div>
-                          )}
-                        </div>
-                        <div className="absolute left-6 top-6 inline-flex items-center rounded-full border border-white/30 bg-white/10 px-3 py-1 text-[10px] uppercase tracking-wide text-indigo-50">
-                          {resolvedDeckSlideDesign.section}
-                        </div>
+
                         <div
                           contentEditable
                           suppressContentEditableWarning
                           onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
                           className="text-sm text-indigo-100/80 outline-none rounded-md focus:ring-2 focus:ring-white/20"
                         >
-                          {resolvedDeckSlideDesign.footer} 繚 Slide {activeDeckSlide.id}: {activeDeckSlide.title}
+                          {resolvedDeckSlideDesign.footer}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-center">
-                      <div className="h-[48px] rounded-[999px] border border-gray-200 bg-white px-3 flex items-center gap-2 text-xs text-gray-600">
-                        <button type="button" onClick={() => {
-                          const currentIndex = deckSlides.findIndex((slide) => slide.id === activeDeckSlide.id);
-                          if (currentIndex > 0) setActiveDeckSlideId(deckSlides[currentIndex - 1].id);
-                        }} className="p-1 rounded hover:bg-gray-100" title="Previous slide"><ChevronLeft size={14} /></button>
-                        <button type="button" onClick={() => showToast('Presentation mode coming soon')} className="p-1 rounded hover:bg-gray-100" title="Play"><MonitorPlay size={14} /></button>
-                        <button type="button" onClick={() => {
-                          const currentIndex = deckSlides.findIndex((slide) => slide.id === activeDeckSlide.id);
-                          if (currentIndex < deckSlides.length - 1) setActiveDeckSlideId(deckSlides[currentIndex + 1].id);
-                        }} className="p-1 rounded hover:bg-gray-100" title="Next slide"><ChevronRight size={14} /></button>
-                        <span className="mx-1 text-gray-300">|</span>
-                        <button type="button" onClick={() => setDeckZoomLevel((prev) => Math.max(50, prev - 10))} className="p-1 rounded hover:bg-gray-100" title="Zoom out">-</button>
-                        <span className="min-w-[42px] text-center">{deckZoomLevel}%</span>
-                        <button type="button" onClick={() => setDeckZoomLevel((prev) => Math.min(160, prev + 10))} className="p-1 rounded hover:bg-gray-100" title="Zoom in">+</button>
-                        <button type="button" onClick={() => setDeckZoomLevel(100)} className="p-1 rounded hover:bg-gray-100" title="Reset zoom"><Expand size={13} /></button>
-                      </div>
+                    <div className="mt-4 border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative">
+                      <textarea
+                        placeholder="Add speaker notes..."
+                        className="w-full resize-none outline-none text-sm text-gray-600 bg-transparent"
+                        rows={2}
+                      />
+                      <button className="absolute bottom-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                        <Expand size={14} />
+                      </button>
                     </div>
                   </div>
                 )}
