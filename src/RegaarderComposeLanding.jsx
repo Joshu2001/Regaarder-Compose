@@ -11,7 +11,8 @@ import {
   Plus,
   ChevronRight,
   ChevronLeft,
-  X
+  X,
+  Brain
 } from "lucide-react";
 
 const products = [
@@ -21,7 +22,7 @@ const products = [
   { title: "Room", description: "Host meetings", icon: Video },
   { title: "Whiteboard", description: "Brainstorm ideas", icon: PenTool },
   { title: "Schedule", description: "Manage calendar", icon: Calendar },
-  { title: "People", description: "Manage contacts", icon: Users },
+  { title: "Memory", description: "Access memories", icon: Brain },
   { title: "Tasks", description: "Track to-dos", icon: CheckSquare },
 ];
 
