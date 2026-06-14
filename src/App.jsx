@@ -15,7 +15,7 @@ import {
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
-  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
