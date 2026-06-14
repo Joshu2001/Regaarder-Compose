@@ -6,7 +6,7 @@ import { Parser } from 'hot-formula-parser';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
   ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
-  FileText, Trash, Settings, MoreHorizontal,
+  FileText, Trash, Settings, MoreHorizontal, MoreVertical,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
   List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown, ChevronUp,

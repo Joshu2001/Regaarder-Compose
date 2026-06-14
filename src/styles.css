@@ -734,7 +734,9 @@ body { margin: 0; background: #ffffff; }
 .title-editable:focus::before,
 .subtitle-editable:focus::before,
 .has-content .title-editable::before,
-.has-content .subtitle-editable::before {
+.has-content .subtitle-editable::before,
+[contenteditable]:focus::before,
+[contenteditable]:not(:empty)::before {
   content: "" !important;
   display: none !important;
 }
