@@ -998,6 +998,10 @@ export default function App() {
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
   const [deckZoomLevel, setDeckZoomLevel] = useState(100);
   const [deckToolbarExpanded, setDeckToolbarExpanded] = useState(false);
+  const [showResizeModal, setShowResizeModal] = useState(false);
+  const [resizeWidth, setResizeWidth] = useState(1920);
+  const [resizeHeight, setResizeHeight] = useState(1080);
+  const [resizeUnit, setResizeUnit] = useState('px');
   const [showDeckComments, setShowDeckComments] = useState(false);
   const [isPresentingDeck, setIsPresentingDeck] = useState(false);
   const [showDeckNotes, setShowDeckNotes] = useState(false);
@@ -1024,6 +1028,29 @@ export default function App() {
     }
     return () => clearInterval(interval);
   }, [deckTimerActive, deckTimerSeconds]);
+
+  const getCurrentPageNumber = () => {
+    try {
+      const selection = window.getSelection();
+      if (!selection || !selection.rangeCount || !blankBodyRef.current) return 1;
+      const range = selection.getRangeAt(0);
+      let node = range.startContainer;
+      const editor = blankBodyRef.current;
+      let pageNum = 1;
+      let current = node;
+      while (current && current !== editor) {
+        if (current.nodeType === 1 && current.getAttribute?.('data-enterprise-page') === 'true') {
+          const pages = Array.from(editor.querySelectorAll('[data-enterprise-page="true"]'));
+          pageNum = pages.indexOf(current) + 2;
+          break;
+        }
+        current = current.parentNode;
+      }
+      return pageNum;
+    } catch (e) {
+      return 1;
+    }
+  };
 
   const formatDeckTimer = (totalSeconds) => {
     const minutes = Math.floor(totalSeconds / 60);
@@ -1126,7 +1153,7 @@ export default function App() {
   const eraserLastPointRef = useRef(null);
   const [dragTarget, setDragTarget] = useState(null);
   const [promptOffset, setPromptOffset] = useState({ x: 0, y: -14 });
-  const [isPromptExpanded, setIsPromptExpanded] = useState(true);
+  const [isPromptExpanded, setIsPromptExpanded] = useState(false);
   const [promptWidth, setPromptWidth] = useState(620);
   const [isPromptMenuOpen, setIsPromptMenuOpen] = useState(false);
   const [isPromptAutoVisible, setIsPromptAutoVisible] = useState(false);
@@ -16587,14 +16614,57 @@ Respond with a JSON array of slide objects matching the schema.`;
                 <h3 className="text-[14px] font-bold text-slate-800">Slide Properties</h3>
                 <p className="text-[11px] text-slate-500 mt-1">Manage global theme and styling</p>
               </div>
-              <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              <div className="flex-1 overflow-y-auto thin-scrollbar p-5 space-y-6">
                 <div>
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Global Settings</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {['Theme', 'Layout', 'Background', 'Transitions', 'Animations'].map((option) => (
-                      <button key={option} type="button" onClick={() => showToast(`${option} panel opened`)} className="px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-violet-50 hover:border-violet-200 text-xs text-slate-700 font-semibold text-left transition-colors shadow-sm">{option}</button>
-                    ))}
-                  </div>
+                  {productMode === 'compose' ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { name: 'Page Cover', icon: ImageIcon, action: () => setPageCoverModalOpen(true) },
+                        { name: 'Doc Layout', icon: LayoutGrid, action: () => showToast('Document Layout panel opened') },
+                        { name: 'Page Margins', icon: AlignLeft, action: () => showToast('Page Margins panel opened') },
+                        { name: 'Page Numbers', icon: FileText, action: () => showToast('Page Numbering configuration opened') },
+                        { name: 'Header & Footer', icon: Layers, action: () => showToast('Header & Footer settings opened') },
+                        { name: 'Doc Theme', icon: Sparkles, action: () => showToast('Document Theme opened') }
+                      ].map((option) => {
+                        const Icon = option.icon;
+                        return (
+                          <button 
+                            key={option.name} 
+                            type="button" 
+                            onClick={option.action} 
+                            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-violet-50 hover:border-violet-200 text-xs text-slate-700 font-semibold text-left transition-colors shadow-sm"
+                          >
+                            <Icon size={14} className="text-violet-600 shrink-0" />
+                            <span className="truncate">{option.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { name: 'Theme', icon: Sparkles, action: () => showToast('Theme panel opened') },
+                        { name: 'Layout', icon: LayoutGrid, action: () => showToast('Layout panel opened') },
+                        { name: 'Background', icon: ImageIcon, action: () => showToast('Background panel opened') },
+                        { name: 'Transitions', icon: Layers, action: () => showToast('Transitions panel opened') },
+                        { name: 'Animations', icon: Wand2, action: () => showToast('Animations panel opened') }
+                      ].map((option) => {
+                        const Icon = option.icon;
+                        return (
+                          <button 
+                            key={option.name} 
+                            type="button" 
+                            onClick={option.action} 
+                            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-violet-50 hover:border-violet-200 text-xs text-slate-700 font-semibold text-left transition-colors shadow-sm"
+                          >
+                            <Icon size={14} className="text-violet-600 shrink-0" />
+                            <span className="truncate">{option.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -16627,7 +16697,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               </div>
 
               {/* Chat Stream */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-4">
                 {chatMessages.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-center px-4 pt-10">
                     <div className="w-16 h-16 bg-violet-50 rounded-[20px] flex items-center justify-center mb-5 text-violet-600 relative border border-violet-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
@@ -16902,17 +16972,32 @@ Respond with a JSON array of slide objects matching the schema.`;
           {/* B. ACTIVE TAB: AI ASSISTANT CO-WRITER */}
           {activeRightTab === 'assistant' && (
             <div className="flex-1 flex flex-col min-h-0 bg-white">
-              <div className="flex-1 overflow-y-auto p-5">
+              <div className="flex-1 overflow-y-auto thin-scrollbar p-5">
                 <div className="flex flex-col items-center justify-start min-h-full text-center mt-2 pb-8">
                   <div className="w-full max-w-[280px] text-[13px] font-semibold text-gray-800 text-left mb-2">Currently editing</div>
                   <div className="w-full max-w-[280px] mb-8 bg-white border border-gray-200 rounded-xl p-3 shadow-sm text-left flex items-center justify-between">
                     <div className="flex items-center gap-3 overflow-hidden">
-                      <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
-                        <img src={deckSnapshotPreviews[activeDeckSlideId] || buildDeckPreviewDataUri(deckSlidesData.find(s => s.id === activeDeckSlideId) || deckSlidesData[0])} className="w-full h-full object-cover" alt="thumbnail" />
-                      </div>
+                      {productMode === 'compose' ? (
+                        <div className="w-12 h-8 rounded shrink-0 bg-gray-100 flex items-center justify-center border border-gray-200 text-violet-600">
+                          <FileText size={16} />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
+                          <img src={deckSnapshotPreviews[activeDeckSlideId] || buildDeckPreviewDataUri(deckSlidesData.find(s => s.id === activeDeckSlideId) || deckSlidesData[0])} className="w-full h-full object-cover" alt="thumbnail" />
+                        </div>
+                      )}
                       <div className="min-w-0">
-                        <div className="text-[12px] font-bold text-gray-900 truncate">Slide {activeDeckSlideId}</div>
-                        <div className="text-[11px] text-gray-500 truncate">{deckSlidesData.find(s => s.id === activeDeckSlideId)?.headline || 'Untitled Slide'}</div>
+                        {productMode === 'compose' ? (
+                          <>
+                            <div className="text-[12px] font-bold text-gray-900 truncate">Page {getCurrentPageNumber()}</div>
+                            <div className="text-[11px] text-gray-500 truncate">{docTitle || 'Untitled Document'}</div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="text-[12px] font-bold text-gray-900 truncate">Slide {activeDeckSlideId}</div>
+                            <div className="text-[11px] text-gray-500 truncate">{deckSlidesData.find(s => s.id === activeDeckSlideId)?.headline || 'Untitled Slide'}</div>
+                          </>
+                        )}
                       </div>
                     </div>
                     <button className="p-1.5 text-gray-400 hover:text-gray-700 transition-colors shrink-0">
@@ -16920,23 +17005,32 @@ Respond with a JSON array of slide objects matching the schema.`;
                     </button>
                   </div>
 
-                  <h3 className="text-[14px] font-bold text-gray-900 mb-4 tracking-tight text-left w-full max-w-[280px]">How can I help with this slide?</h3>
+                  <h3 className="text-[14px] font-bold text-gray-900 mb-4 tracking-tight text-left w-full max-w-[280px]">
+                    {productMode === 'compose' ? 'How can I help you with this doc?' : 'How can I help with this slide?'}
+                  </h3>
                   
                   <div className="flex flex-col w-full max-w-[280px] gap-1 mx-auto">
-                    {[
+                    {(productMode === 'compose' ? [
+                      { label: 'Write an article based on my notes and audio files', subtitle: 'Generate a comprehensive draft from your materials', icon: PenTool },
+                      { label: 'Transform this document into a presentation deck', subtitle: 'Convert text content into structured slides', icon: Presentation },
+                      { label: 'Create a project timeline from these documents', subtitle: 'Build a chronological roadmap from references', icon: Calendar },
+                      { label: 'Summarize this document into key takeaways', subtitle: 'Extract main themes and core insights', icon: FileText },
+                      { label: 'Extract action items from this meeting recording', subtitle: 'Action items and tasks checklist', icon: ListTodo },
+                      { label: 'Build a report using data from these files', subtitle: 'Synthesize structured reports from inputs', icon: Database }
+                    ] : [
                       { label: 'Improve slide clarity', subtitle: 'Make your message stronger and easier to understand', icon: Sparkles },
                       { label: 'Rewrite content', subtitle: 'Improve wording, tone, and flow', icon: PenTool },
                       { label: 'Generate visuals', subtitle: 'Add images, charts, or illustrations', icon: ImageIcon },
                       { label: 'Create speaker notes', subtitle: 'Add talking points for this slide', icon: FileText },
                       { label: 'Reduce slide count', subtitle: 'Combine and simplify where possible', icon: LayoutGrid },
                       { label: 'Improve structure', subtitle: 'Enhance flow and presentation order', icon: AlignCenter }
-                    ].map((item, idx) => {
+                    ]).map((item, idx) => {
                       const Icon = item.icon;
                       return (
                         <button 
                           key={idx}
                           onClick={() => setAssistantQuickPrompt(item.label)} 
-                          className="group px-3 py-3 bg-white hover:bg-gray-50 rounded-xl text-left transition-all flex items-center justify-between w-full"
+                          className="group px-3 py-3 bg-white hover:bg-gray-50 rounded-xl text-left transition-all flex items-center justify-between w-full border border-transparent hover:border-gray-100"
                         >
                           <div className="flex items-center gap-3 overflow-hidden">
                             <div className="p-2 rounded-xl bg-violet-50 text-violet-600 shrink-0 group-hover:bg-violet-100 transition-colors">
@@ -16965,7 +17059,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                   if (!assistantQuickPrompt.trim()) return;
                   handleAssistantQuickPromptSend(e);
                 }}>
-                  <div className="mb-3 text-[12px] font-medium text-gray-700 px-1">Ask AI anything about this slide...</div>
+                  <div className="mb-3 text-[12px] font-medium text-gray-700 px-1">
+                    {productMode === 'compose' ? 'Ask AI anything about this doc...' : 'Ask AI anything about this slide...'}
+                  </div>
                   <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-sm">
                     <textarea
                       value={assistantQuickPrompt}
@@ -23062,11 +23158,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </button>
                           ) : (
                             <>
-                              <button className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
-                                <Maximize size={16} /> Fit
-                              </button>
-                              <button className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
-                                <MonitorPlay size={16} /> Fill
+                              <button onClick={() => setShowResizeModal(true)} className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
+                                <Square size={16} /> Resize
                               </button>
                               
                               <div className="w-px h-5 bg-gray-200"></div>
@@ -23106,6 +23199,93 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       )}
                     </div>
+
+{showResizeModal && (
+  <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h3 className="text-lg font-semibold text-gray-900">Resize Presentation</h3>
+        <button onClick={() => setShowResizeModal(false)} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors">
+          <X size={18} />
+        </button>
+      </div>
+      
+      <div className="p-6 space-y-6">
+        <div>
+          <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">Presets</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <button className="flex flex-col items-start p-4 border border-gray-200 rounded-xl hover:border-violet-500 hover:bg-violet-50 transition-colors text-left group">
+              <div className="w-12 h-8 bg-gray-100 group-hover:bg-violet-100 rounded mb-3 flex items-center justify-center">
+                <MonitorPlay size={16} className="text-gray-500 group-hover:text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-gray-900">Presentation</span>
+              <span className="text-xs text-gray-500 mt-1">1920 × 1080 px</span>
+            </button>
+            <button className="flex flex-col items-start p-4 border border-gray-200 rounded-xl hover:border-violet-500 hover:bg-violet-50 transition-colors text-left group">
+              <div className="w-10 h-8 bg-gray-100 group-hover:bg-violet-100 rounded mb-3 flex items-center justify-center">
+                <Presentation size={16} className="text-gray-500 group-hover:text-violet-600" />
+              </div>
+              <span className="text-sm font-semibold text-gray-900">Presentation (4:3)</span>
+              <span className="text-xs text-gray-500 mt-1">1024 × 768 px</span>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wider">Custom size</h4>
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Width</label>
+              <input 
+                type="number" 
+                value={resizeWidth}
+                onChange={(e) => setResizeWidth(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Height</label>
+              <input 
+                type="number" 
+                value={resizeHeight}
+                onChange={(e) => setResizeHeight(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+              />
+            </div>
+            <div className="w-24 relative">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Units</label>
+              <div className="relative">
+                <select 
+                  value={resizeUnit}
+                  onChange={(e) => setResizeUnit(e.target.value)}
+                  className="w-full pl-3 pr-8 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none appearance-none cursor-pointer focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
+                >
+                  <option value="px">px</option>
+                  <option value="in">in</option>
+                  <option value="mm">mm</option>
+                  <option value="cm">cm</option>
+                </select>
+                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+            <button className="p-2.5 text-gray-400 hover:text-gray-900 transition-colors mb-[1px]">
+              <Lock size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+        <button onClick={() => setShowResizeModal(false)} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors">
+          Cancel
+        </button>
+        <button onClick={() => setShowResizeModal(false)} className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm">
+          Apply Resize
+        </button>
+      </div>
+    </div>
+  </div>
+)}
                   </div>
                 </div>
               </div>
@@ -27625,7 +27805,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 }}
               />
 
-              {isPromptExpanded ? (
+              {false ? (
                 <div className="rounded-[34px] border border-[#ebe7f8] bg-white/95 shadow-[0_30px_80px_-34px_rgba(91,33,182,0.45)] px-6 py-6 md:px-7 md:py-7 max-h-[calc(100vh-160px)] overflow-y-auto thin-scrollbar">
                   <div className="text-center px-2">
                     <Sparkles size={18} className="mx-auto text-violet-500" />
@@ -27816,18 +27996,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     style={{ textAlign: alignMode }}
                     className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-2 resize-none overflow-hidden min-h-[38px]"
                   />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsPromptDismissed(false);
-                      setIsPromptExpanded(true);
-                      setIsPromptMinimized(false);
-                    }}
-                    className="p-2 rounded-full transition-colors text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                    title="Open intent capture"
-                  >
-                    <Expand size={16} />
-                  </button>
                 </div>
               )}
             </form>
