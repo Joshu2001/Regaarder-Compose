@@ -13526,7 +13526,7 @@ Rules:
     setDeckPromptChips(['Turn this into investor tone', 'Generate competitor comparison slide', 'Make this more visual', 'Reduce to 8 slides', 'Simplify for students']);
     setDeckCustomChip('');
     setDeckSlidesPanelOpen(true);
-    setRightSidebarOpen(true);
+    setRightSidebarOpen(false);
     setActiveRightTab('assistant');
     showToast('Deck workspace ready');
   };
@@ -14270,7 +14270,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         setDeckZoomLevel(100);
         setDeckToolbarFont('Inter');
         setDeckSlidesPanelOpen(true);
-        setRightSidebarOpen(true);
+        setRightSidebarOpen(false);
         setActiveRightTab('assistant');
         showToast('Converted document to Deck successfully!');
       } else {
@@ -14961,8 +14961,16 @@ Respond with a JSON array of slide objects matching the schema.`;
       if (rightSidebarWidth !== targetWidth) {
         setRightSidebarWidth(targetWidth);
       }
+    } else if (activeRightTab === 'assistant' && rightSidebarOpen && productMode === 'deck') {
+      if (rightSidebarWidth !== 380) {
+        setRightSidebarWidth(380);
+      }
+    } else {
+      if (rightSidebarWidth !== 340 && activeRightTab !== 'calendar') {
+        setRightSidebarWidth(340);
+      }
     }
-  }, [activeRightTab, rightSidebarOpen, rightSidebarWidth, isScheduleCalendarExpanded]);
+  }, [activeRightTab, rightSidebarOpen, rightSidebarWidth, isScheduleCalendarExpanded, productMode]);
 
   const convertTaskToSchedule = async (taskValue) => {
     const taskText = typeof taskValue === 'string' ? taskValue : String(taskValue?.text || '');
@@ -16371,7 +16379,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
-        <div className="flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
+        <div className="h-14 flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
           {productMode !== 'sheets' ? (
           <div
             className="flex-1 min-w-0 overflow-x-auto no-scrollbar"
@@ -16394,7 +16402,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               ].map((tab) => (
                 <button
                   key={tab.key}
-                  className={`shrink-0 px-3 py-4 transition-all border-b-2 ${activeRightTab === tab.key ? 'text-violet-600 border-violet-600 bg-white' : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'}`}
+                  className={`shrink-0 px-3 flex items-center transition-all border-b-2 ${activeRightTab === tab.key ? 'text-violet-600 border-violet-600 bg-white' : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'}`}
                   onClick={() => {
                     if (tab.key === 'manageen') {
                       createManageenExperience();
@@ -16753,105 +16761,92 @@ Respond with a JSON array of slide objects matching the schema.`;
 
           {/* B. ACTIVE TAB: AI ASSISTANT CO-WRITER */}
           {activeRightTab === 'assistant' && (
-            <div className="flex-1 overflow-y-auto p-5 space-y-6">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900 mb-2">Smart Assist Options</h3>
-                <p className="text-xs text-gray-500">{smartAssistIntro}</p>
-                {!isLiveAiReady && (
-                  <p className="mt-2 text-[11px] text-rose-600">{smartAssistDisabledReason}</p>
-                )}
+            <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc]">
+              <div className="flex-1 overflow-y-auto p-5">
+                <div className="flex flex-col items-center justify-center h-full text-center mt-8">
+                  <h3 className="text-[16px] font-bold text-gray-900 mb-6 tracking-tight">How can I help with this deck?</h3>
+                  
+                  <div className="flex flex-col w-full max-w-[280px] gap-2 mx-auto">
+                    {[
+                      { label: 'Improve slide clarity', icon: Sparkles },
+                      { label: 'Rewrite content', icon: PenTool },
+                      { label: 'Generate visuals', icon: ImageIcon },
+                      { label: 'Create speaker notes', icon: FileText },
+                      { label: 'Reduce slide count', icon: LayoutGrid },
+                      { label: 'Improve presentation structure', icon: AlignCenter }
+                    ].map((item, idx) => {
+                      const Icon = item.icon;
+                      return (
+                        <button 
+                          key={idx}
+                          onClick={() => setAssistantQuickPrompt(item.label)} 
+                          className="px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50 text-[13px] font-medium text-gray-700 transition-colors flex items-center justify-start gap-3 shadow-sm"
+                        >
+                          <Icon size={16} className="text-violet-500" />
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
 
-              {/* Action Buttons Grid */}
-              <div className="space-y-2">
-                {smartAssistOptions.map((option) => {
-                  const Icon = option.icon;
-                  return (
-                    <div key={option.key} className="space-y-1">
-                      <button
-                        type="button"
-                        disabled={!isLiveAiReady}
-                        onClick={() => {
+              <div className="p-4 border-t border-gray-100 bg-white">
+                <div className="mb-2 text-[11px] font-bold text-gray-400 px-1">Ask AI anything about this deck...</div>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!isLiveAiReady) {
+                    showToast(smartAssistDisabledReason);
+                    return;
+                  }
+                  if (!assistantQuickPrompt.trim()) return;
+                  handleAssistantQuickPromptSend(e);
+                }}>
+                  <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
+                    <textarea
+                      value={assistantQuickPrompt}
+                      onChange={(e) => setAssistantQuickPrompt(e.target.value)}
+                      onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
                           if (!isLiveAiReady) {
                             showToast(smartAssistDisabledReason);
                             return;
                           }
-                          if (option.key === 'create-outline') {
-                            setOutlineLevelMenuOpen((prev) => !prev);
-                            return;
-                          }
-                          if (option.key === 'insert-page-cover') {
-                                      setPageCoverModalOpen(true);
-                                      return;
-                                    }
-                                    if (option.key === 'insert-page-cover') { setPageCoverModalOpen(true); return; }
-                                    if (option.key === 'insert-shapes') {
-                            setShapesModalOpen(true);
-                            return;
-                          }
-                          if (option.key === 'insert-chart') {
-                            setChartsModalOpen(true);
-                            return;
-                          }
-                          setOpenDropdown(null);
-                          runSmartAssistAction(option.prompt, { actionKey: option.key });
-                        }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg text-sm transition-colors text-left ${isLiveAiReady ? `${selectedEditorText ? 'assist-option-snake border-transparent' : 'border-gray-100'} text-gray-700 hover:border-violet-200 hover:bg-violet-50` : 'text-gray-400 border-gray-200 cursor-not-allowed bg-gray-50'}`}
+                          if (!assistantQuickPrompt.trim()) return;
+                          handleAssistantQuickPromptSend(e);
+                        }
+                      }}
+                      placeholder="Ask AI Assistant from here..."
+                      rows={1}
+                      className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-4 pb-2 text-gray-700 placeholder-gray-400 resize-none min-h-[50px]"
+                    />
+                    <div className="flex items-center justify-between px-2 pb-2">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                          title="Attach files"
+                        >
+                          <Plus size={18} strokeWidth={2.5} />
+                        </button>
+                        <button
+                          type="button"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                          title="Voice dictation"
+                        >
+                          <Mic size={18} />
+                        </button>
+                      </div>
+                      <button 
+                        type="submit" 
+                        disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady}
+                        className={`p-1.5 rounded-lg transition-colors ${(isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady) ? 'bg-violet-50 text-violet-400 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm'}`}
                       >
-                        <Icon size={16} className={option.color} />
-                        <div>
-                          <div className="font-semibold text-xs">{option.label}</div>
-                          <p className="text-[10px] text-gray-400">{option.detail}</p>
-                        </div>
+                        <Send size={16} />
                       </button>
-                      {option.key === 'create-outline' && outlineLevelMenuOpen && isLiveAiReady && (
-                        <div className="ml-7 rounded-lg border border-violet-100 bg-violet-50/40 p-2">
-                          <div className="text-[10px] font-semibold text-violet-700 mb-1">Choose depth</div>
-                          <div className="flex items-center gap-1.5">
-                            {[2, 3, 4].map((level) => (
-                              <button
-                                key={level}
-                                type="button"
-                                onClick={() => {
-                                  if (!isLiveAiReady) {
-                                    showToast(smartAssistDisabledReason);
-                                    return;
-                                  }
-                                  setOutlineLevels(level);
-                                  setOutlineLevelMenuOpen(false);
-                                  runSmartAssistAction(option.prompt, { actionKey: option.key, outlineLevels: level });
-                                }}
-                                className={`px-2 py-1 rounded text-[10px] border ${outlineLevels === level ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-gray-600 border-gray-200 hover:border-violet-300'}`}
-                              >
-                                {level} levels
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
-              </div>
-
-              <div>
-                <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">AI Prompt Box</h4>
-                <form onSubmit={handleAssistantQuickPromptSend} className="rounded-xl p-3 border border-violet-100/70 bg-gradient-to-br from-violet-50/60 via-white to-white space-y-2 shadow-[0_10px_25px_-20px_rgba(109,40,217,0.55)]">
-                  <textarea
-                    value={assistantQuickPrompt}
-                    onChange={(e) => setAssistantQuickPrompt(e.target.value)}
-                    placeholder="Ask AI Assistant from here..."
-                    rows={2}
-                    className="w-full bg-white/95 border border-violet-100 rounded-lg px-2.5 py-2 text-xs text-gray-700 outline-none focus:border-violet-400 resize-y min-h-[64px]"
-                  />
-                  <div className="flex items-center justify-end">
-                    <button
-                      type="submit"
-                      disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady ? 'bg-violet-200 text-white cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-[0_8px_16px_-10px_rgba(124,58,237,0.7)]'}`}
-                    >
-                      Send to AI
-                    </button>
                   </div>
                 </form>
               </div>
@@ -22200,8 +22195,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {deckSlidesPanelOpen && (
         <aside className="w-[220px] border-r border-gray-200 bg-[#f8f9fd] flex flex-col">
-          <div className="px-4 py-4 border-b border-gray-200">
-            <div className="flex items-start justify-between gap-2">
+          <div className="h-14 px-4 border-b border-gray-200 flex flex-col justify-center">
+            <div className="flex items-center justify-between gap-2">
               <div>
                 <div className="text-sm font-semibold text-gray-800">{isSheetsMode ? 'Sheets' : 'Narrative'}</div>
                 {(!isSheetsMode || sheetsData.length > 1) && (
@@ -22756,7 +22751,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
 
-                    <div ref={deckCanvasPreviewRef} className="deck-canvas-preview rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg mt-4 max-w-[900px] w-full bg-[#10162f]">
+                    <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg mt-4 max-w-[900px] w-full bg-[#10162f] group/canvas">
                       <div className={`relative p-8 md:p-12 ${resolvedDeckSlideDesign.preset.background} min-h-[430px] flex flex-col justify-between w-full h-full`} style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
 
                         <div>
@@ -22790,80 +22785,98 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {resolvedDeckSlideDesign.footer}
                         </div>
                       </div>
-                    </div>
 
-                    {/* Bottom Toolbar & Notes */}
-                    <div className="w-full max-w-[900px] mt-4 flex flex-col gap-2">
-                      {showDeckNotes && (
-                        <div className="border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative shadow-sm">
-                          <textarea
-                            placeholder="Add speaker notes..."
-                            className="w-full resize-none outline-none text-sm text-gray-600 bg-transparent"
-                            rows={3}
-                          />
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between border border-gray-200 rounded-xl bg-white px-4 py-2 shadow-sm text-xs text-gray-600 font-medium">
-                        <div className="flex items-center gap-4">
+                      {/* Floating Toolbar */}
+                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-300 z-[100] flex items-center justify-center">
+                        <div className="flex items-center gap-1.5 border border-gray-200/60 rounded-2xl bg-white/95 backdrop-blur-md px-2 py-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] text-xs text-gray-700 font-medium">
+                          {/* Group 1: Notes, Timer */}
+                          <div className="flex items-center gap-1">
+                            <button 
+                              type="button" 
+                              onClick={() => setShowDeckNotes(!showDeckNotes)} 
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-colors ${showDeckNotes ? 'bg-violet-100 text-violet-700' : 'hover:bg-gray-100/80'}`}
+                            >
+                              <FileText size={14} /> Notes
+                            </button>
+                            
+                            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-gray-100/80 transition-colors cursor-pointer group/timer">
+                              <Clock size={14} className={deckTimerActive ? 'text-red-500' : 'text-gray-400'} />
+                              <span className="w-9 text-center font-mono">{formatDeckTimer(deckTimerSeconds)}</span>
+                              <button 
+                                type="button" 
+                                onClick={(e) => { e.stopPropagation(); setDeckTimerActive(!deckTimerActive); }} 
+                                className="text-gray-400 hover:text-gray-700"
+                              >
+                                {deckTimerActive ? <Pause size={12} /> : <Play size={12} />}
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={(e) => { e.stopPropagation(); setDeckTimerActive(false); setDeckTimerSeconds(0); }} 
+                                className="text-gray-400 hover:text-gray-700 ml-0.5 hidden group-hover/timer:block"
+                              >
+                                <RefreshCcw size={12} />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="w-px h-5 bg-gray-200 mx-1"></div>
+                          
+                          {/* Group 2: Present */}
                           <button 
                             type="button" 
-                            onClick={() => setShowDeckNotes(!showDeckNotes)} 
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${showDeckNotes ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100'}`}
+                            onClick={handlePresentDeck} 
+                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-violet-600 text-white font-semibold shadow-md hover:bg-violet-700 hover:-translate-y-0.5 transition-all"
                           >
-                            <FileText size={14} />
-                            Notes
+                            <Play size={13} fill="currentColor" /> Present
                           </button>
+
+                          <div className="w-px h-5 bg-gray-200 mx-1"></div>
                           
-                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 border border-gray-100">
-                            <Clock size={14} className={deckTimerActive ? 'text-red-500' : 'text-gray-400'} />
-                            <span className="w-12 text-center font-mono">{formatDeckTimer(deckTimerSeconds)}</span>
-                            <button 
-                              type="button" 
-                              onClick={() => setDeckTimerActive(!deckTimerActive)} 
-                              className="text-gray-400 hover:text-gray-700 ml-1"
-                            >
-                              {deckTimerActive ? <Pause size={12} /> : <Play size={12} />}
-                            </button>
-                            <button 
-                              type="button" 
-                              onClick={() => { setDeckTimerActive(false); setDeckTimerSeconds(0); }} 
-                              className="text-gray-400 hover:text-gray-700 ml-1"
-                            >
-                              <RefreshCcw size={12} />
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1 bg-gray-50 rounded-md p-0.5 border border-gray-100">
+                          {/* Group 3: Zoom Controls */}
+                          <div className="flex items-center gap-0.5">
                             <button 
                               type="button" 
                               onClick={() => setDeckZoomLevel(z => Math.max(z - 10, 10))} 
-                              className="p-1 text-gray-500 hover:bg-gray-200 rounded"
+                              className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-lg transition-colors"
                             >
                               <Minus size={14} />
                             </button>
-                            <span className="w-10 text-center">{deckZoomLevel}%</span>
+                            <span className="w-10 text-center font-medium">{deckZoomLevel}%</span>
                             <button 
                               type="button" 
                               onClick={() => setDeckZoomLevel(z => Math.min(z + 10, 200))} 
-                              className="p-1 text-gray-500 hover:bg-gray-200 rounded"
+                              className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-lg transition-colors"
                             >
                               <Plus size={14} />
                             </button>
                           </div>
                           
+                          <div className="w-px h-5 bg-gray-200 mx-1"></div>
+                          
+                          {/* Group 4: Fullscreen */}
                           <button 
                             type="button" 
                             onClick={() => setDeckZoomLevel(100)} 
-                            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md border border-transparent hover:border-gray-200 transition-colors"
+                            className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-lg transition-colors"
                             title="Fit to screen"
                           >
                             <Expand size={14} />
                           </button>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Bottom Toolbar & Notes */}
+                    <div className="w-full max-w-[900px] flex flex-col gap-2">
+                      {showDeckNotes && (
+                        <div className="mt-4 border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative shadow-sm">
+                          <textarea
+                            placeholder="Add speaker notes..."
+                            className="w-full resize-none outline-none text-sm text-gray-600 bg-transparent min-h-[60px]"
+                            rows={3}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                   </div>
