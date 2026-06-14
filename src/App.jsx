@@ -1012,6 +1012,9 @@ export default function App() {
   const [docHeaderText, setDocHeaderText] = useState('Product Launch Plan');
   const [docFooterText, setDocFooterText] = useState('Confidential');
   const [docTheme, setDocTheme] = useState('violet');
+  const [pageSizeDropdownOpen, setPageSizeDropdownOpen] = useState(false);
+  const [pageMarginDropdownOpen, setPageMarginDropdownOpen] = useState(false);
+  const [headerTextEditing, setHeaderTextEditing] = useState(false);
 
   const [pageOptionsMenuOpen, setPageOptionsMenuOpen] = useState(false);
   const [brandColor, setBrandColor] = useState('#7c3aed');
@@ -24538,30 +24541,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {/* Main Nav Links */}
         {showDocumentOutlineView ? (
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 thin-scrollbar flex flex-col font-sans select-none text-left">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6 thin-scrollbar flex flex-col select-none text-left" style={{ fontFamily: editorFont }}>
             {/* Header Title */}
-            <div className="px-1">
-              <h2 className="text-[13px] font-bold text-slate-800 tracking-wide uppercase">Document Outline</h2>
+            <div>
+              <h2 className="text-[12px] font-bold text-slate-400 tracking-wider uppercase">Document Outline</h2>
             </div>
 
-            {/* Document Outline Meta Panel */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-4">
+            {/* Document Outline Meta Panel (Plain, borderless style) */}
+            <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="relative shrink-0 flex items-center justify-center">
                   <svg className="w-12 h-12 transform -rotate-90">
-                    <circle cx="24" cy="24" r="20" fill="transparent" stroke="#f1f5f9" strokeWidth="3.5" />
+                    <circle cx="24" cy="24" r="20" fill="transparent" stroke="#f1f5f9" strokeWidth="3" />
                     <circle 
                       cx="24" 
                       cy="24" 
                       r="20" 
                       fill="transparent" 
                       stroke={brandColor || '#7c3aed'} 
-                      strokeWidth="3.5" 
+                      strokeWidth="3" 
                       strokeDasharray={2 * Math.PI * 20} 
                       strokeDashoffset={2 * Math.PI * 20 * (1 - 0.84)} 
                     />
                   </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-slate-800">84%</span>
+                  <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-800">84%</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <h4 className="text-xs font-bold text-slate-800 truncate flex items-center gap-1">
@@ -24587,17 +24590,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   }, 1200);
                 }}
                 className="w-full py-2 flex items-center justify-center gap-2 rounded-xl bg-white border text-xs font-semibold shadow-sm transition-all hover:bg-slate-50"
-                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#cbd5e1' }}
+                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#cbd5e1', fontFamily: editorFont }}
               >
                 <Sparkles size={13} style={{ color: brandColor || '#7c3aed' }} />
                 Generate Structure
               </button>
             </div>
 
-            {/* Tree List container */}
-            <div className="flex-1 bg-white rounded-2xl p-3 border border-slate-100 shadow-sm overflow-y-auto max-h-[35vh] space-y-1 relative">
+            {/* Tree List container (Plain, no card borders/backgrounds) */}
+            <div className="flex-1 overflow-y-auto max-h-[45vh] space-y-1 relative pr-1">
               {outlineTreeData.map((section) => {
-                let badgeColorClass = "bg-slate-50 text-slate-600 border border-slate-200";
+                let badgeColorClass = "bg-slate-50 text-slate-600 border border-slate-150";
                 if (section.completed || section.progress >= 80) {
                   badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
                 } else if (section.progress >= 40) {
@@ -24607,8 +24610,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 }
 
                 return (
-                  <div key={section.id} className="space-y-1 font-sans">
-                    <div className="group flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 transition-colors relative">
+                  <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
+                    <div className="group flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-100/60 transition-colors relative">
                       <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         <button
                           type="button"
@@ -24642,6 +24645,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }}
                             autoFocus
                             className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
+                            style={{ fontFamily: editorFont }}
                           />
                         ) : (
                           <span 
@@ -24670,13 +24674,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <button
                             type="button"
                             onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
                           >
                             <MoreVertical size={13} />
                           </button>
                           
                           {activeOutlineMenuId === section.id && (
-                            <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left font-sans">
+                            <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left" style={{ fontFamily: editorFont }}>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -24769,11 +24773,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     {/* Render Subsections */}
                     {section.expanded && section.subsections && section.subsections.length > 0 && (
-                      <div className="pl-6 space-y-1.5 border-l border-slate-100 ml-3.5">
+                      <div className="pl-6 space-y-1.5 border-l border-slate-200 ml-3.5">
                         {section.subsections.map(sub => (
                           <div key={sub.id} className="flex items-center gap-2.5 py-1">
                             <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
-                            <span className="text-[11px] text-slate-500 font-bold truncate">{sub.title}</span>
+                            <span className="text-[11px] text-slate-500 font-semibold truncate">{sub.title}</span>
                           </div>
                         ))}
                       </div>
@@ -24783,7 +24787,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               })}
             </div>
 
-            {/* Tree Buttons */}
+            {/* Tree Buttons (Minimal, clean, borderless style) */}
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -24796,8 +24800,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     ]);
                   }
                 }}
-                className="py-2 rounded-xl border bg-white hover:bg-slate-50 text-xs font-semibold text-center shadow-sm"
-                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#cbd5e1' }}
+                className="py-1.5 rounded-lg border bg-white hover:bg-slate-50 text-xs font-semibold text-center transition-colors"
+                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#e2e8f0', fontFamily: editorFont }}
               >
                 + Add Section
               </button>
@@ -24807,28 +24811,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   setOutlineTreeData(prev => prev.map(s => ({ ...s, expanded: true })));
                   showToast('Outline expanded');
                 }}
-                className="py-2 rounded-xl border bg-white hover:bg-slate-50 text-xs font-semibold text-center shadow-sm"
-                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#cbd5e1' }}
+                className="py-1.5 rounded-lg border bg-white hover:bg-slate-50 text-xs font-semibold text-center transition-colors"
+                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#e2e8f0', fontFamily: editorFont }}
               >
                 + Expand Outline
               </button>
             </div>
 
-            {/* Health / Suggestions Card */}
-            <div className="bg-[#FAF9FC] border border-violet-100/70 rounded-2xl p-4 space-y-3">
+            {/* Health / Suggestions Card (Clean, borderless, plain layout) */}
+            <div className="border border-slate-200/60 rounded-xl p-3.5 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-700">Document Health</span>
-                <span className="text-xs font-bold text-violet-600" style={{ color: brandColor || '#7c3aed' }}>84%</span>
+                <span className="text-xs font-bold" style={{ color: brandColor || '#7c3aed' }}>84%</span>
               </div>
-              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                 <div className="h-full rounded-full" style={{ width: '84%', backgroundColor: brandColor || '#10b981' }}></div>
               </div>
-              <div className="space-y-1.5 text-xs text-slate-650 font-medium">
-                <div className="flex items-center justify-between py-1 bg-white rounded-lg px-2.5 border border-slate-100/50">
+              <div className="space-y-1.5 text-xs text-slate-500 font-semibold">
+                <div className="flex items-center justify-between py-1 bg-white/60 rounded-lg px-2 border border-slate-100">
                   <span className="flex items-center gap-1.5">🪄 AI Suggestions</span>
                   <span className="text-[10px] font-bold bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded-full" style={{ color: brandColor || '#7c3aed', backgroundColor: brandColor ? `${brandColor}12` : undefined }}>3</span>
                 </div>
-                <div className="flex items-center justify-between py-1 bg-white rounded-lg px-2.5 border border-slate-100/50">
+                <div className="flex items-center justify-between py-1 bg-white/60 rounded-lg px-2 border border-slate-100">
                   <span className="flex items-center gap-1.5 text-amber-600">⚠ Missing Conclusion</span>
                   <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full">!</span>
                 </div>
@@ -28278,14 +28282,87 @@ if (productMode === 'deck' || productMode === 'sheets') {
               transition: 'transform 180ms ease-out',
             }}
           >
-            <div className="flex justify-between items-center mb-3 px-6 select-none bg-slate-50 border border-slate-100 rounded-full py-1 text-[11px] font-bold text-slate-500 shadow-sm">
-              <span className="capitalize text-violet-600 flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></span>
-                {docPageSize} &bull; {pageOrientation} ({pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)} x {pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)} px)
-              </span>
-              <span className="text-[10px] text-slate-400 bg-white border border-slate-150 px-2.5 py-0.5 rounded-full">
-                Margin: {docMargins}
-              </span>
+            <div className="flex justify-between items-center mb-3 px-6 select-none bg-slate-50 border border-slate-100 rounded-full py-1 text-[11px] font-bold text-slate-500 shadow-sm relative z-[100]">
+              
+              {/* Size & Orientation Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setPageSizeDropdownOpen(!pageSizeDropdownOpen)}
+                  className="capitalize flex items-center gap-1.5 hover:bg-slate-100/80 px-2.5 py-1 rounded-full transition-all cursor-pointer font-bold"
+                  style={{ color: brandColor }}
+                >
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: brandColor }}></span>
+                  {docPageSize} &bull; {pageOrientation} ({pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)} x {pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)} px)
+                </button>
+
+                {pageSizeDropdownOpen && (
+                  <div className="absolute left-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-48 text-left z-[300]">
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Page Size</div>
+                    {['a4', 'letter', 'legal'].map((sz) => (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => {
+                          setDocPageSize(sz);
+                          setPageSizeDropdownOpen(false);
+                          showToast(`Page size set to ${sz.toUpperCase()}`);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg uppercase font-semibold ${docPageSize === sz ? 'bg-slate-50 text-slate-900' : 'text-slate-650 hover:bg-slate-50/50'}`}
+                      >
+                        {sz}
+                      </button>
+                    ))}
+                    <div className="border-t border-slate-100 my-1.5"></div>
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Orientation</div>
+                    {['portrait', 'landscape'].map((ort) => (
+                      <button
+                        key={ort}
+                        type="button"
+                        onClick={() => {
+                          setPageOrientation(ort);
+                          setPageSizeDropdownOpen(false);
+                          showToast(`Orientation set to ${ort}`);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg capitalize font-semibold ${pageOrientation === ort ? 'bg-slate-50 text-slate-900' : 'text-slate-650 hover:bg-slate-50/50'}`}
+                      >
+                        {ort}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Margin Dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setPageMarginDropdownOpen(!pageMarginDropdownOpen)}
+                  className="text-[10px] text-slate-555 bg-white border border-slate-150 px-3 py-1 rounded-full hover:bg-slate-50 transition-all cursor-pointer flex items-center gap-1 font-bold shadow-sm"
+                >
+                  Margin: <span className="capitalize text-slate-700">{docMargins}</span>
+                </button>
+
+                {pageMarginDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-40 text-left z-[300]">
+                    <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Margins</div>
+                    {['normal', 'narrow', 'wide'].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={() => {
+                          setDocMargins(m);
+                          setPageMarginDropdownOpen(false);
+                          showToast(`Margins set to ${m}`);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg capitalize font-semibold ${docMargins === m ? 'bg-slate-50 text-slate-900' : 'text-slate-650 hover:bg-slate-50/50'}`}
+                      >
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
           <div
@@ -28340,7 +28417,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   right: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px' 
                 }}
               >
-                <span>{docHeaderText}</span>
+                {headerTextEditing ? (
+                  <input
+                    type="text"
+                    value={docHeaderText}
+                    onChange={(e) => setDocHeaderText(e.target.value)}
+                    onBlur={() => setHeaderTextEditing(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setHeaderTextEditing(false);
+                      }
+                    }}
+                    autoFocus
+                    className="bg-transparent border-none outline-none focus:ring-0 p-0 text-[10px] font-semibold uppercase tracking-wider text-gray-700 w-48"
+                  />
+                ) : (
+                  <span 
+                    onClick={() => setHeaderTextEditing(true)}
+                    className="hover:text-slate-600 cursor-pointer border-b border-transparent hover:border-slate-300 transition-all"
+                  >
+                    {docHeaderText}
+                  </span>
+                )}
                 <span className="text-[9px] font-bold bg-gray-50 border border-gray-150 rounded px-1 text-gray-500">Draft</span>
               </div>
             )}
