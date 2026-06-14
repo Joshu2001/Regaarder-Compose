@@ -22830,7 +22830,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     )}
 
                     <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full ${isPresentingDeck ? 'h-full bg-[#10162f] justify-center fixed inset-0 z-50' : ''}`}>
-                      <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative rounded-[24px] overflow-hidden w-full aspect-[4/3] mx-auto bg-[#10162f] group/canvas shrink-0 ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 max-w-[90%] shadow-[0_12px_40px_rgba(0,0,0,0.08)]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 4 / 3))' : '100%', zoom: `${deckZoomLevel}%`, transition: 'zoom 140ms ease' }}>
+                      <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative rounded-[24px] overflow-hidden w-full aspect-[4/3] mx-auto bg-[#10162f] group/canvas shrink-0 ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 max-w-[90%] shadow-[0_12px_40px_rgba(0,0,0,0.08)]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 4 / 3))' : '100%', transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 0.75 )` }}>
                         <div className={`absolute inset-0 ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-8 md:p-12`}>
 
                         <div>
