@@ -22434,6 +22434,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 )}
               </div>
+              </div>
+              </div>
             </div>
           </header>
 
