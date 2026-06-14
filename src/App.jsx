@@ -22951,7 +22951,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     <div className="flex w-full gap-4 relative items-start justify-center">
                       <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center flex-1 min-w-0 ${isPresentingDeck ? 'h-full bg-[#10162f] justify-center fixed inset-0 z-50' : ''}`}>
-                        <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas shrink-0 @container ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 shadow-[0_12px_40px_rgba(0,0,0,0.08)] rounded-[24px]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 140px) * 16 / 9))' : 'min(100%, calc(50vh * 16 / 9))', transform: isPresentingDeck ? 'scale(1)' : `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 9 / 16 )` }}>
+                        <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas shrink-0 @container ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 shadow-[0_12px_40px_rgba(0,0,0,0.08)] rounded-[24px]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 140px) * 16 / 9))' : 'min(100%, calc(40vh * 16 / 9))', transform: isPresentingDeck ? 'scale(1)' : `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 9 / 16 )` }}>
                           <div className={`absolute top-0 left-0 w-[1600px] h-[900px] origin-top-left ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-[80px] md:p-[120px]`} style={{ transform: 'scale(calc(100cqw / 1600))' }}>
                             <div>
                               <h1
@@ -23025,7 +23025,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
 
                     {/* Bottom Toolbar & Notes */}
-                      <div className={`mt-6 mb-8 flex items-center justify-between bg-white rounded-[24px] border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] px-5 py-2.5 w-[95%] max-w-[1100px] ${isPresentingDeck ? 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[60]' : ''}`}>
+                      <div className={`mt-6 mb-8 flex items-center justify-between bg-white rounded-[24px] border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] px-5 py-2.5 w-[95%] max-w-[1100px] relative z-[60] ${isPresentingDeck ? 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[100]' : ''}`}>
                         <div className="flex items-center gap-6">
                           <button 
                             onClick={() => setShowDeckNotes(!showDeckNotes)} 
