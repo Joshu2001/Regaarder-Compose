@@ -2767,6 +2767,7 @@ export default function App() {
   const toastTimerRef = useRef(null);
   const promptRevealTimerRef = useRef(null);
   const deckCanvasPreviewRef = useRef(null);
+  const deckFullscreenWrapperRef = useRef(null);
   const sheetCanvasPreviewRef = useRef(null);
   const pageContextMenuRef = useRef(null);
   const sheetToolbarMenuRef = useRef(null);
@@ -15355,14 +15356,14 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const handlePresentDeck = async () => {
-    if (deckCanvasPreviewRef.current) {
+    if (deckFullscreenWrapperRef.current) {
       try {
-        if (deckCanvasPreviewRef.current.requestFullscreen) {
-          await deckCanvasPreviewRef.current.requestFullscreen();
-        } else if (deckCanvasPreviewRef.current.webkitRequestFullscreen) {
-          await deckCanvasPreviewRef.current.webkitRequestFullscreen();
-        } else if (deckCanvasPreviewRef.current.msRequestFullscreen) {
-          await deckCanvasPreviewRef.current.msRequestFullscreen();
+        if (deckFullscreenWrapperRef.current.requestFullscreen) {
+          await deckFullscreenWrapperRef.current.requestFullscreen();
+        } else if (deckFullscreenWrapperRef.current.webkitRequestFullscreen) {
+          await deckFullscreenWrapperRef.current.webkitRequestFullscreen();
+        } else if (deckFullscreenWrapperRef.current.msRequestFullscreen) {
+          await deckFullscreenWrapperRef.current.msRequestFullscreen();
         }
         setIsPresentingDeck(true);
       } catch (err) {
@@ -16761,41 +16762,52 @@ Respond with a JSON array of slide objects matching the schema.`;
 
           {/* B. ACTIVE TAB: AI ASSISTANT CO-WRITER */}
           {activeRightTab === 'assistant' && (
-            <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc]">
+            <div className="flex-1 flex flex-col min-h-0 bg-white">
               <div className="flex-1 overflow-y-auto p-5">
-                <div className="flex flex-col items-center justify-center h-full text-center mt-4 pb-8">
-                  <div className="w-full max-w-[280px] mb-8 bg-white border border-gray-200 rounded-xl p-3 shadow-sm text-left relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-violet-500"></div>
-                    <div className="text-[10px] font-bold text-violet-600 uppercase tracking-wider mb-1">Currently Editing</div>
-                    <div className="text-sm font-semibold text-gray-900 truncate">Slide {activeDeckSlide?.id || 1}</div>
-                    <div className="text-[11px] text-gray-500 truncate">{activeDeckSlide?.headline || 'Untitled Slide'}</div>
+                <div className="flex flex-col items-center justify-center h-full text-center mt-2 pb-8">
+                  <div className="w-full max-w-[280px] mb-8 bg-white border border-gray-200 rounded-xl p-3 shadow-sm text-left flex items-center justify-between">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
+                        <img src={deckSnapshotPreviews[activeDeckSlideId] || buildDeckPreviewDataUri(deckSlidesData.find(s => s.id === activeDeckSlideId) || deckSlidesData[0])} className="w-full h-full object-cover" alt="thumbnail" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[12px] font-bold text-gray-900 truncate">Slide {activeDeckSlideId}</div>
+                        <div className="text-[11px] text-gray-500 truncate">{deckSlidesData.find(s => s.id === activeDeckSlideId)?.headline || 'Untitled Slide'}</div>
+                      </div>
+                    </div>
+                    <button className="p-1.5 text-gray-400 hover:text-gray-700 transition-colors shrink-0">
+                      <PenTool size={14} />
+                    </button>
                   </div>
 
-                  <h3 className="text-[16px] font-bold text-gray-900 mb-6 tracking-tight">How can I help with this deck?</h3>
+                  <h3 className="text-[14px] font-bold text-gray-900 mb-4 tracking-tight text-left w-full max-w-[280px]">How can I help with this slide?</h3>
                   
-                  <div className="flex flex-col w-full max-w-[280px] gap-2 mx-auto">
+                  <div className="flex flex-col w-full max-w-[280px] gap-1 mx-auto">
                     {[
-                      { label: 'Improve slide clarity', icon: Sparkles },
-                      { label: 'Rewrite content', icon: PenTool },
-                      { label: 'Generate visuals', icon: ImageIcon },
-                      { label: 'Create speaker notes', icon: FileText },
-                      { label: 'Reduce slide count', icon: LayoutGrid },
-                      { label: 'Improve presentation structure', icon: AlignCenter }
+                      { label: 'Improve slide clarity', subtitle: 'Make your message stronger and easier to understand', icon: Sparkles },
+                      { label: 'Rewrite content', subtitle: 'Improve wording, tone, and flow', icon: PenTool },
+                      { label: 'Generate visuals', subtitle: 'Add images, charts, or illustrations', icon: ImageIcon },
+                      { label: 'Create speaker notes', subtitle: 'Add talking points for this slide', icon: FileText },
+                      { label: 'Reduce slide count', subtitle: 'Combine and simplify where possible', icon: LayoutGrid },
+                      { label: 'Improve structure', subtitle: 'Enhance flow and presentation order', icon: AlignCenter }
                     ].map((item, idx) => {
                       const Icon = item.icon;
                       return (
                         <button 
                           key={idx}
                           onClick={() => setAssistantQuickPrompt(item.label)} 
-                          className="group px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50 hover:-translate-y-0.5 hover:shadow-md text-[13px] font-medium text-gray-700 transition-all flex items-center justify-between w-full"
+                          className="group px-3 py-3 bg-white hover:bg-gray-50 rounded-xl text-left transition-all flex items-center justify-between w-full"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="p-1.5 rounded-lg bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="p-2 rounded-xl bg-violet-50 text-violet-600 shrink-0 group-hover:bg-violet-100 transition-colors">
                               <Icon size={16} />
                             </div>
-                            {item.label}
+                            <div className="min-w-0">
+                              <div className="text-[13px] font-semibold text-gray-900 truncate">{item.label}</div>
+                              <div className="text-[11px] text-gray-500 truncate mt-0.5 leading-tight">{item.subtitle}</div>
+                            </div>
                           </div>
-                          <ArrowRight size={14} className="text-gray-300 group-hover:text-violet-600 transition-colors" />
+                          <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 shrink-0 ml-2 transition-colors" />
                         </button>
                       );
                     })}
@@ -16803,8 +16815,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 </div>
               </div>
 
-              <div className="p-4 border-t border-gray-100 bg-white">
-                <div className="mb-2 text-[11px] font-bold text-gray-400 px-1">Ask AI anything about this deck...</div>
+              <div className="p-4 bg-white border-t border-gray-100">
                 <form onSubmit={(e) => {
                   e.preventDefault();
                   if (!isLiveAiReady) {
@@ -16814,7 +16825,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                   if (!assistantQuickPrompt.trim()) return;
                   handleAssistantQuickPromptSend(e);
                 }}>
-                  <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
+                  <div className="mb-3 text-[12px] font-medium text-gray-500 px-1">Ask AI anything about this slide...</div>
+                  <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-sm">
                     <textarea
                       value={assistantQuickPrompt}
                       onChange={(e) => setAssistantQuickPrompt(e.target.value)}
@@ -16836,28 +16848,19 @@ Respond with a JSON array of slide objects matching the schema.`;
                     />
                     <div className="flex items-center justify-between px-2 pb-2">
                       <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                          title="Attach files"
+                        <button type="button" className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"><Plus size={18} strokeWidth={2.5} /></button>
+                        <button type="button" className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"><Mic size={18} /></button>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button type="button" className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"><Maximize2 size={16} /></button>
+                        <button 
+                          type="submit" 
+                          disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady}
+                          className={`p-2 rounded-xl transition-colors ${(isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady) ? 'bg-violet-50 text-violet-400 cursor-not-allowed' : 'bg-violet-600 text-white shadow-sm hover:bg-violet-700'}`}
                         >
-                          <Plus size={20} strokeWidth={2.5} />
-                        </button>
-                        <button
-                          type="button"
-                          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                          title="Voice dictation"
-                        >
-                          <Mic size={20} />
+                          <Send size={16} />
                         </button>
                       </div>
-                      <button 
-                        type="submit" 
-                        disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady}
-                        className={`p-2 rounded-lg transition-colors ${(isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady) ? 'bg-violet-50 text-violet-400 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm'}`}
-                      >
-                        <Send size={18} />
-                      </button>
                     </div>
                   </div>
                 </form>
@@ -22777,8 +22780,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
 
-                    <div className="flex flex-col items-center w-full max-w-[1200px]">
-                      <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg mt-4 w-[95%] aspect-[16/9] bg-[#10162f] group/canvas">
+                    <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full bg-[#f5f7fc] ${isPresentingDeck ? 'h-screen justify-center' : ''}`}>
+                      <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-[0_8px_30px_rgba(0,0,0,0.06)] mt-8 w-[95%] max-w-[1100px] aspect-[16/9] bg-[#10162f] group/canvas">
                         <div className={`absolute inset-0 ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-8 md:p-12`} style={{ zoom: `${deckZoomLevel}%`, transition: 'zoom 140ms ease' }}>
 
                         <div>
@@ -22812,89 +22815,66 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {resolvedDeckSlideDesign.footer}
                         </div>
                       </div>
+                      </div>
 
-                      {/* Floating Toolbar */}
-                      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover/canvas:opacity-100 transition-opacity duration-300 z-[100] flex items-center justify-center">
-                        <div className="flex items-center gap-1.5 border border-gray-200/60 rounded-2xl bg-white/95 backdrop-blur-md px-2 py-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] text-xs text-gray-700 font-medium">
-                          {/* Group 1: Notes, Timer */}
-                          <div className="flex items-center gap-1">
-                            <button 
-                              type="button" 
-                              onClick={() => setShowDeckNotes(!showDeckNotes)} 
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-colors ${showDeckNotes ? 'bg-violet-100 text-violet-700' : 'hover:bg-gray-100/80'}`}
-                            >
-                              <FileText size={14} /> Notes
-                            </button>
-                            
-                            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl hover:bg-gray-100/80 transition-colors cursor-pointer group/timer">
-                              <Clock size={14} className={deckTimerActive ? 'text-red-500' : 'text-gray-400'} />
-                              <span className="w-9 text-center font-mono">{formatDeckTimer(deckTimerSeconds)}</span>
-                              <button 
-                                type="button" 
-                                onClick={(e) => { e.stopPropagation(); setDeckTimerActive(!deckTimerActive); }} 
-                                className="text-gray-400 hover:text-gray-700"
-                              >
-                                {deckTimerActive ? <Pause size={12} /> : <Play size={12} />}
-                              </button>
-                              <button 
-                                type="button" 
-                                onClick={(e) => { e.stopPropagation(); setDeckTimerActive(false); setDeckTimerSeconds(0); }} 
-                                className="text-gray-400 hover:text-gray-700 ml-0.5 hidden group-hover/timer:block"
-                              >
-                                <RefreshCcw size={12} />
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <div className="w-px h-5 bg-gray-200 mx-1"></div>
-                          
-                          {/* Group 2: Present */}
+                      {/* Bottom Toolbar & Notes */}
+                      <div className="mt-6 mb-8 flex items-center justify-between bg-white rounded-[24px] shadow-sm px-5 py-2.5 w-[95%] max-w-[1100px]">
+                        <div className="flex items-center gap-6">
                           <button 
-                            type="button" 
-                            onClick={handlePresentDeck} 
-                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-violet-600 text-white font-semibold shadow-md hover:bg-violet-700 hover:-translate-y-0.5 transition-all"
+                            onClick={() => setShowDeckNotes(!showDeckNotes)} 
+                            className={`flex items-center gap-2 text-[13px] font-semibold transition-colors ${showDeckNotes ? 'text-violet-600' : 'text-gray-600 hover:text-gray-900'}`}
                           >
-                            <Play size={13} fill="currentColor" /> Present
+                            <FileText size={16} /> Notes
                           </button>
-
-                          <div className="w-px h-5 bg-gray-200 mx-1"></div>
                           
-                          {/* Group 3: Zoom Controls */}
-                          <div className="flex items-center gap-0.5">
-                            <button 
-                              type="button" 
-                              onClick={() => setDeckZoomLevel(z => Math.max(z - 10, 10))} 
-                              className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-lg transition-colors"
+                          <div className="flex items-center gap-2 text-[13px] font-semibold text-gray-600">
+                            <Clock size={16} className={deckTimerActive ? 'text-red-500' : ''} />
+                            <span 
+                              className="w-10 text-center cursor-pointer hover:text-gray-900" 
+                              onClick={() => setDeckTimerActive(!deckTimerActive)}
                             >
-                              <Minus size={14} />
+                              {formatDeckTimer(deckTimerSeconds)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center bg-violet-600 hover:bg-violet-700 rounded-[12px] text-white shadow-sm overflow-hidden transition-colors">
+                            <button onClick={handlePresentDeck} className="flex items-center gap-1.5 px-4 py-2 font-semibold text-[13px]">
+                              <Play size={14} fill="currentColor" /> Present
                             </button>
-                            <span className="w-10 text-center font-medium">{deckZoomLevel}%</span>
-                            <button 
-                              type="button" 
-                              onClick={() => setDeckZoomLevel(z => Math.min(z + 10, 200))} 
-                              className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-lg transition-colors"
-                            >
-                              <Plus size={14} />
+                            <div className="w-px h-6 bg-violet-500/50"></div>
+                            <button className="px-3 py-2 hover:bg-violet-800">
+                              <ChevronDown size={14} />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-5 text-[13px] font-semibold text-gray-600">
+                          <button className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
+                            <Maximize size={16} /> Fit
+                          </button>
+                          <button className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
+                            <MonitorPlay size={16} /> Fill
+                          </button>
+                          
+                          <div className="w-px h-5 bg-gray-200"></div>
+                          
+                          <div className="flex items-center gap-2 bg-gray-50/50 rounded-lg">
+                            <button onClick={() => setDeckZoomLevel(z => Math.max(z - 10, 10))} className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-900 transition-colors">
+                              <Minus size={14} strokeWidth={2.5} />
+                            </button>
+                            <span className="w-12 text-center text-gray-900">{deckZoomLevel}%</span>
+                            <button onClick={() => setDeckZoomLevel(z => Math.min(z + 10, 200))} className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-900 transition-colors">
+                              <Plus size={14} strokeWidth={2.5} />
                             </button>
                           </div>
                           
-                          <div className="w-px h-5 bg-gray-200 mx-1"></div>
-                          
-                          {/* Group 4: Fullscreen */}
-                          <button 
-                            type="button" 
-                            onClick={() => setDeckZoomLevel(150)} 
-                            className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-lg transition-colors"
-                            title="Fit to screen"
-                          >
-                            <Expand size={14} />
+                          <button onClick={handlePresentDeck} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-900 transition-colors" title="Fullscreen">
+                            <Expand size={18} strokeWidth={2} />
                           </button>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Bottom Toolbar & Notes */}
-                    <div className="w-full max-w-[900px] flex flex-col gap-2">
+                      <div className="w-full max-w-[1100px] flex flex-col gap-2">
                       {showDeckNotes && (
                         <div className="mt-4 border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative shadow-sm">
                           <textarea
