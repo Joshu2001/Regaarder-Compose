@@ -1002,6 +1002,28 @@ export default function App() {
   const [resizeWidth, setResizeWidth] = useState(1920);
   const [resizeHeight, setResizeHeight] = useState(1080);
   const [resizeUnit, setResizeUnit] = useState('px');
+
+  const [activePropertyMenu, setActivePropertyMenu] = useState(null);
+  const [pageOrientation, setPageOrientation] = useState('portrait');
+  const [docMargins, setDocMargins] = useState('normal');
+  const [docPageSize, setDocPageSize] = useState('a4');
+  const [showPageNumbers, setShowPageNumbers] = useState(true);
+  const [pageNumberPos, setPageNumberPos] = useState('bottom-center');
+  const [docHeaderText, setDocHeaderText] = useState('Product Launch Plan');
+  const [docFooterText, setDocFooterText] = useState('Confidential');
+  const [docTheme, setDocTheme] = useState('violet');
+
+  const [pageOptionsMenuOpen, setPageOptionsMenuOpen] = useState(false);
+
+  const [activeEmojiEl, setActiveEmojiEl] = useState(null);
+  const [emojiControlsPosition, setEmojiControlsPosition] = useState({ top: 0, left: 0 });
+  const [savedEmojis, setSavedEmojis] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('rc.savedEmojis') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const [showDeckComments, setShowDeckComments] = useState(false);
   const [isPresentingDeck, setIsPresentingDeck] = useState(false);
   const [showDeckNotes, setShowDeckNotes] = useState(false);
@@ -1028,6 +1050,139 @@ export default function App() {
     }
     return () => clearInterval(interval);
   }, [deckTimerActive, deckTimerSeconds]);
+
+  useEffect(() => {
+    window.bindDragHandler = (element) => {
+      let isDragging = false;
+      element.onmousedown = (e) => {
+        if (element.style.position !== 'absolute') return;
+        isDragging = true;
+        let startX = e.clientX - element.offsetLeft;
+        let startY = e.clientY - element.offsetTop;
+        
+        const handleMouseMove = (moveEvent) => {
+          if (!isDragging) return;
+          element.style.left = (moveEvent.clientX - startX) + 'px';
+          element.style.top = (moveEvent.clientY - startY) + 'px';
+        };
+        
+        const handleMouseUp = () => {
+          isDragging = false;
+          document.removeEventListener('mousemove', handleMouseMove);
+          document.removeEventListener('mouseup', handleMouseUp);
+          if (blankBodyRef.current) {
+            setDocBodyHtml(blankBodyRef.current.innerHTML);
+          }
+        };
+        
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+      };
+    };
+
+    window.handleEmojiClick = (event, element) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const rect = element.getBoundingClientRect();
+      const editorRect = blankBodyRef.current?.getBoundingClientRect();
+      setEmojiControlsPosition({
+        top: rect.bottom - (editorRect?.top || 0) + (blankBodyRef.current?.scrollTop || 0) + 8,
+        left: rect.left - (editorRect?.left || 0) + (blankBodyRef.current?.scrollLeft || 0),
+      });
+      setActiveEmojiEl(element);
+    };
+
+    window.showCreateEmojiForm = (boxId) => {
+      const menuOpts = document.getElementById(`${boxId}_menu_options`);
+      const createForm = document.getElementById(`${boxId}_create_form`);
+      if (menuOpts) menuOpts.style.display = 'none';
+      if (createForm) createForm.style.display = 'flex';
+    };
+
+    window.showSavedEmojisList = (boxId) => {
+      const menuOpts = document.getElementById(`${boxId}_menu_options`);
+      const listEl = document.getElementById(`${boxId}_saved_list`);
+      if (menuOpts) menuOpts.style.display = 'none';
+      if (listEl) {
+        listEl.style.display = 'flex';
+        listEl.style.flexWrap = 'wrap';
+        
+        const saved = JSON.parse(localStorage.getItem('rc.savedEmojis') || '[]');
+        if (saved.length === 0) {
+          listEl.innerHTML = `<span style="font-size:11px;color:#64748b;padding:4px;">No saved emojis yet.</span>`;
+        } else {
+          listEl.innerHTML = '';
+          saved.forEach((item) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.style.fontSize = '24px';
+            btn.style.background = 'none';
+            btn.style.border = 'none';
+            btn.style.cursor = 'pointer';
+            btn.style.padding = '4px';
+            btn.style.borderRadius = '4px';
+            btn.style.display = 'inline-flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+            btn.style.color = item.color || 'inherit';
+            if (item.background) btn.style.backgroundColor = item.background;
+            btn.title = `Size: ${item.fontSize || '24px'}, Color: ${item.color || 'Default'}`;
+            btn.textContent = item.emoji;
+            
+            btn.onclick = () => {
+              const liveContainer = document.getElementById(boxId);
+              if (liveContainer && liveContainer.parentNode) {
+                const emojiSpan = document.createElement('span');
+                emojiSpan.className = 'inline-ai-emoji';
+                emojiSpan.setAttribute('contenteditable', 'false');
+                emojiSpan.setAttribute('draggable', 'true');
+                emojiSpan.style.display = 'inline-block';
+                emojiSpan.style.cursor = 'pointer';
+                emojiSpan.style.fontSize = item.fontSize || '24px';
+                emojiSpan.style.color = item.color || 'inherit';
+                if (item.background) emojiSpan.style.backgroundColor = item.background;
+                emojiSpan.style.userSelect = 'none';
+                emojiSpan.style.position = item.position || 'relative';
+                if (item.left) emojiSpan.style.left = item.left;
+                if (item.top) emojiSpan.style.top = item.top;
+                emojiSpan.textContent = item.emoji;
+                emojiSpan.setAttribute('onclick', `window.handleEmojiClick(event, this)`);
+                
+                if (item.position === 'absolute') {
+                  window.bindDragHandler(emojiSpan);
+                }
+                
+                liveContainer.parentNode.insertBefore(emojiSpan, liveContainer);
+                liveContainer.remove();
+                
+                if (blankBodyRef.current) {
+                  setDocBodyHtml(blankBodyRef.current.innerHTML);
+                }
+              }
+            };
+            listEl.appendChild(btn);
+          });
+        }
+      }
+    };
+
+    const handleOutsideClick = (e) => {
+      if (emojiControlsRef.current && !emojiControlsRef.current.contains(e.target)) {
+        setActiveEmojiEl(null);
+      }
+      if (pageOptionsMenuRef.current && !pageOptionsMenuRef.current.contains(e.target)) {
+        setPageOptionsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+
+    return () => {
+      delete window.handleEmojiClick;
+      delete window.showCreateEmojiForm;
+      delete window.showSavedEmojisList;
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, []);
 
   const getCurrentPageNumber = () => {
     try {
@@ -2736,6 +2891,8 @@ export default function App() {
   const chatEndRef = useRef(null);
   const documentCardRef = useRef(null);
   const blankBodyRef = useRef(null);
+  const pageOptionsMenuRef = useRef(null);
+  const emojiControlsRef = useRef(null);
   const activeDocIdRef = useRef(null);
   const titleEditableRef = useRef(null);
   const subtitleEditableRef = useRef(null);
@@ -2926,7 +3083,6 @@ export default function App() {
   const [isStrikeActive, setIsStrikeActive] = useState(false);
   const [alignMode, setAlignMode] = useState('left');
   const [isListActive, setIsListActive] = useState(false);
-  const [showPageNumbers, setShowPageNumbers] = useState(true);
   const [showPageNumberOnFirstPage, setShowPageNumberOnFirstPage] = useState(true);
   const [pageNumberPosition, setPageNumberPosition] = useState('center');
   const [docSearchPanelOpen, setDocSearchPanelOpen] = useState(false);
@@ -8794,15 +8950,32 @@ Generate the updated output according to the instruction. Preserve layout and ta
     container.setAttribute('id', boxId);
     
     container.innerHTML = `
-      <input 
-        type="text" 
-        placeholder="Type emoji or icon name (e.g., rocket, target)..." 
-        class="inline-ai-prompt-input"
-        id="${boxId}_input"
-        oninput="this.setAttribute('value', this.value)"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();submitInlineIcon('${boxId}');}"
-      />
-      <button type="button" class="inline-ai-prompt-btn" id="${boxId}_btn" onmousedown="event.preventDefault(); event.stopPropagation(); submitInlineIcon('${boxId}')">Insert</button>
+      <div class="inline-ai-icon-selector-container" style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); display: inline-flex; flex-direction: column; gap: 8px; font-family: sans-serif; width: 240px; text-align: left; margin: 4px 0;">
+        <div style="font-size: 11px; font-weight: 600; color: #1e293b; display: flex; justify-content: space-between; align-items: center;">
+          <span>AI Emojis</span>
+          <button type="button" onclick="document.getElementById('${boxId}').remove()" style="background:none; border:none; cursor:pointer; color:#94a3b8; font-size:14px; padding:0 4px;">&times;</button>
+        </div>
+        
+        <div id="${boxId}_menu_options" style="display: flex; gap: 6px;">
+          <button type="button" onclick="window.showCreateEmojiForm('${boxId}')" style="flex: 1; padding: 6px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 150ms;">Create Emoji</button>
+          <button type="button" onclick="window.showSavedEmojisList('${boxId}')" style="flex: 1; padding: 6px; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 150ms;">Saved Emojis</button>
+        </div>
+
+        <div id="${boxId}_create_form" style="display: none; flex-direction: column; gap: 6px;">
+          <input 
+            type="text" 
+            placeholder="Type keyword (e.g., fire, heart)..." 
+            id="${boxId}_input"
+            style="padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 11px; outline: none; width: 100%; box-sizing: border-box;"
+            onkeydown="if(event.key==='Enter'){event.preventDefault(); window.submitInlineIcon('${boxId}');}"
+          />
+          <button type="button" onclick="window.submitInlineIcon('${boxId}')" style="padding: 6px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 150ms; width: 100%;">Generate with AI</button>
+        </div>
+
+        <div id="${boxId}_saved_list" style="display: none; max-h: 120px; overflow-y: auto; gap: 4px; flex-wrap: wrap; padding: 4px; border: 1px solid #f1f5f9; border-radius: 8px; background: #fafafa;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
     `;
     
     range.insertNode(container);
@@ -10146,7 +10319,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       const liveBox = document.getElementById(boxId);
       if (liveBox) {
-        liveBox.innerHTML = `<span style="font-size:12px;color:#6b7280;">Searching...</span>`;
+        liveBox.innerHTML = `<span style="font-size:12px;color:#6b7280;font-family:sans-serif;">Generating emoji...</span>`;
       }
       try {
         const userPrompt = `Translate this keyword/icon name to a single Unicode Emoji that represents it best: "${query}". Return ONLY the single emoji character.`;
@@ -10156,8 +10329,19 @@ Generate the updated output according to the instruction. Preserve layout and ta
         
         const liveContainer = document.getElementById(boxId);
         if (liveContainer && liveContainer.parentNode) {
-          const textNode = document.createTextNode(emoji);
-          liveContainer.parentNode.insertBefore(textNode, liveContainer);
+          const emojiSpan = document.createElement('span');
+          emojiSpan.className = 'inline-ai-emoji';
+          emojiSpan.setAttribute('contenteditable', 'false');
+          emojiSpan.setAttribute('draggable', 'true');
+          emojiSpan.style.display = 'inline-block';
+          emojiSpan.style.cursor = 'pointer';
+          emojiSpan.style.fontSize = '24px';
+          emojiSpan.style.userSelect = 'none';
+          emojiSpan.style.transition = 'all 0.2s';
+          emojiSpan.textContent = emoji;
+          emojiSpan.setAttribute('onclick', `window.handleEmojiClick(event, this)`);
+          
+          liveContainer.parentNode.insertBefore(emojiSpan, liveContainer);
           liveContainer.remove();
         }
         
@@ -16611,35 +16795,124 @@ Respond with a JSON array of slide objects matching the schema.`;
           {activeRightTab === 'properties' && (
             <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc]">
               <div className="px-5 py-4 border-b border-slate-200 bg-white">
-                <h3 className="text-[14px] font-bold text-slate-800">Slide Properties</h3>
-                <p className="text-[11px] text-slate-500 mt-1">Manage global theme and styling</p>
+                <h3 className="text-[14px] font-bold text-slate-800">{productMode === 'compose' ? 'Page Properties' : 'Slide Properties'}</h3>
+                <p className="text-[11px] text-slate-500 mt-1">{productMode === 'compose' ? 'Manage page layout and styling' : 'Manage global theme and styling'}</p>
               </div>
               <div className="flex-1 overflow-y-auto thin-scrollbar p-5 space-y-6">
                 <div>
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Global Settings</div>
                   {productMode === 'compose' ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { name: 'Page Cover', icon: ImageIcon, action: () => setPageCoverModalOpen(true) },
-                        { name: 'Doc Layout', icon: LayoutGrid, action: () => showToast('Document Layout panel opened') },
-                        { name: 'Page Margins', icon: AlignLeft, action: () => showToast('Page Margins panel opened') },
-                        { name: 'Page Numbers', icon: FileText, action: () => showToast('Page Numbering configuration opened') },
-                        { name: 'Header & Footer', icon: Layers, action: () => showToast('Header & Footer settings opened') },
-                        { name: 'Doc Theme', icon: Sparkles, action: () => showToast('Document Theme opened') }
-                      ].map((option) => {
-                        const Icon = option.icon;
-                        return (
-                          <button 
-                            key={option.name} 
-                            type="button" 
-                            onClick={option.action} 
-                            className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-violet-50 hover:border-violet-200 text-xs text-slate-700 font-semibold text-left transition-colors shadow-sm"
-                          >
-                            <Icon size={14} className="text-violet-600 shrink-0" />
-                            <span className="truncate">{option.name}</span>
-                          </button>
-                        );
-                      })}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { name: 'Page Cover', icon: ImageIcon, action: () => setPageCoverModalOpen(true) },
+                          { name: 'Doc Layout', icon: LayoutGrid, action: () => setActivePropertyMenu(activePropertyMenu === 'layout' ? null : 'layout') },
+                          { name: 'Page Margins', icon: AlignLeft, action: () => setActivePropertyMenu(activePropertyMenu === 'margins' ? null : 'margins') },
+                          { name: 'Page Numbers', icon: FileText, action: () => setActivePropertyMenu(activePropertyMenu === 'numbers' ? null : 'numbers') },
+                          { name: 'Header & Footer', icon: Layers, action: () => setActivePropertyMenu(activePropertyMenu === 'header-footer' ? null : 'header-footer') },
+                          { name: 'Doc Theme', icon: Sparkles, action: () => setActivePropertyMenu(activePropertyMenu === 'theme' ? null : 'theme') }
+                        ].map((option) => {
+                          const Icon = option.icon;
+                          const mKey = option.name.toLowerCase().replace(' ', '-').replace('& ', '');
+                          const isActive = activePropertyMenu === mKey;
+                          return (
+                            <button 
+                              key={option.name} 
+                              type="button" 
+                              onClick={option.action} 
+                              className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold text-left transition-colors shadow-sm ${isActive ? 'bg-violet-600 border-violet-600 text-white' : 'border-slate-200 bg-white hover:bg-violet-50 hover:border-violet-200 text-slate-700'}`}
+                            >
+                              <Icon size={14} className={isActive ? 'text-white shrink-0' : 'text-violet-600 shrink-0'} />
+                              <span className="truncate">{option.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Submenus */}
+                      {activePropertyMenu === 'layout' && (
+                        <div className="p-4 bg-white border border-gray-150 rounded-xl space-y-3 shadow-inner">
+                          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Orientation & Size</span>
+                          <div className="flex gap-2">
+                            {['portrait', 'landscape'].map(mode => (
+                              <button key={mode} onClick={() => setPageOrientation(mode)} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all capitalize ${pageOrientation === mode ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'}`}>{mode}</button>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            {['a4', 'letter', 'legal'].map(sz => (
+                              <button key={sz} onClick={() => setDocPageSize(sz)} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all uppercase ${docPageSize === sz ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'}`}>{sz}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {activePropertyMenu === 'margins' && (
+                        <div className="p-4 bg-white border border-gray-150 rounded-xl space-y-3 shadow-inner">
+                          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Page Margins</span>
+                          <div className="flex gap-2">
+                            {['normal', 'narrow', 'wide'].map(m => (
+                              <button key={m} onClick={() => setDocMargins(m)} className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all capitalize ${docMargins === m ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 text-gray-700 bg-white hover:bg-gray-50'}`}>{m}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {activePropertyMenu === 'numbers' && (
+                        <div className="p-4 bg-white border border-gray-150 rounded-xl space-y-3 shadow-inner">
+                          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Page Numbering</span>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs text-gray-600 font-medium">Show Numbers</span>
+                            <input type="checkbox" checked={showPageNumbers} onChange={(e) => setShowPageNumbers(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500" />
+                          </div>
+                          {showPageNumbers && (
+                            <div className="grid grid-cols-3 gap-1">
+                              {['bottom-left', 'bottom-center', 'bottom-right'].map(pos => (
+                                <button key={pos} onClick={() => setPageNumberPos(pos)} className={`py-1 px-1.5 text-[10px] font-semibold rounded-md border transition-all capitalize truncate ${pageNumberPos === pos ? 'bg-violet-600 text-white border-violet-600' : 'border-gray-200 text-gray-600 bg-white hover:bg-gray-50'}`}>{pos.replace('bottom-', '')}</button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {activePropertyMenu === 'header-footer' && (
+                        <div className="p-4 bg-white border border-gray-150 rounded-xl space-y-3 shadow-inner">
+                          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Headers & Footers</span>
+                          <div className="space-y-2">
+                            <div>
+                              <label className="block text-[10px] font-medium text-gray-500 mb-1">Header text</label>
+                              <input type="text" value={docHeaderText} onChange={(e) => setDocHeaderText(e.target.value)} className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-violet-500 bg-gray-50/50" />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-medium text-gray-500 mb-1">Footer text</label>
+                              <input type="text" value={docFooterText} onChange={(e) => setDocFooterText(e.target.value)} className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-violet-500 bg-gray-50/50" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {activePropertyMenu === 'theme' && (
+                        <div className="p-4 bg-white border border-gray-150 rounded-xl space-y-3 shadow-inner">
+                          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Doc Theme styling</span>
+                          <div className="flex gap-2">
+                            {[
+                              { key: 'violet', label: 'Violet', color: 'bg-violet-500' },
+                              { key: 'emerald', label: 'Emerald', color: 'bg-emerald-500' },
+                              { key: 'amber', label: 'Amber', color: 'bg-amber-500' },
+                              { key: 'rose', label: 'Rose', color: 'bg-rose-500' },
+                              { key: 'slate', label: 'Slate', color: 'bg-slate-500' }
+                            ].map((themeObj) => (
+                              <button 
+                                key={themeObj.key} 
+                                onClick={() => setDocTheme(themeObj.key)} 
+                                className={`flex-1 flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all ${docTheme === themeObj.key ? 'border-violet-500 bg-violet-50/20' : 'border-gray-200 bg-white hover:bg-gray-50'}`}
+                              >
+                                <span className={`w-5 h-5 rounded-full ${themeObj.color}`} />
+                                <span className="text-[9px] font-semibold text-gray-700">{themeObj.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
@@ -27465,9 +27738,63 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
               insertEnterprisePage();
             }}
-            className="compose-editor-surface mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 px-12 md:px-16 pt-16 pb-36 relative"
-            style={{ width: `${ENTERPRISE_PAGE_WIDTH_PX}px`, minHeight: `${ENTERPRISE_PAGE_HEIGHT_PX}px` }}
+            className={`compose-editor-surface mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 pt-16 pb-36 relative ${
+              docTheme === 'emerald' ? 'font-sans text-emerald-950' :
+              docTheme === 'amber' ? 'font-serif text-amber-950 bg-amber-50/5' :
+              docTheme === 'rose' ? 'font-sans text-rose-950 bg-rose-50/5' :
+              docTheme === 'slate' ? 'font-mono text-slate-900 bg-slate-50/5' :
+              'font-sans text-gray-900'
+            }`}
+            style={{ 
+              width: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
+              minHeight: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
+              maxHeight: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
+              overflow: 'hidden',
+              paddingLeft: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
+              paddingRight: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
+            }}
           >
+            {docHeaderText && (
+              <div 
+                className="absolute top-6 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-1.5 flex justify-between select-none"
+                style={{ 
+                  left: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px', 
+                  right: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px' 
+                }}
+              >
+                <span>{docHeaderText}</span>
+                <span className="text-[9px] font-bold bg-gray-50 border border-gray-150 rounded px-1 text-gray-500">Draft</span>
+              </div>
+            )}
+
+            {docFooterText && (
+              <div 
+                className="absolute bottom-6 text-[10px] font-semibold text-gray-400 border-t border-gray-100 pt-1.5 flex justify-between select-none"
+                style={{ 
+                  left: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px', 
+                  right: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px' 
+                }}
+              >
+                <span>{docFooterText}</span>
+                <span>Page 1</span>
+              </div>
+            )}
+
+            {showPageNumbers && (
+              <div 
+                className={`absolute text-[11px] font-semibold text-gray-400 select-none ${
+                  pageNumberPos === 'bottom-left' ? 'bottom-10' :
+                  pageNumberPos === 'bottom-right' ? 'bottom-10' :
+                  'bottom-10 left-1/2 -translate-x-1/2'
+                }`}
+                style={{ 
+                  left: pageNumberPos === 'bottom-left' ? (docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px') : undefined,
+                  right: pageNumberPos === 'bottom-right' ? (docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px') : undefined,
+                }}
+              >
+                1
+              </div>
+            )}
             {tonePickerState.open && (
               <div className="absolute top-5 right-5 z-40 w-[340px] max-w-[calc(100%-2.5rem)] rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-[0_24px_50px_-26px_rgba(15,23,42,0.5)] backdrop-blur-sm">
                 <div className="mb-2 flex items-center justify-between gap-3">
@@ -28279,6 +28606,137 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </button>
               );
             })}
+        </div>
+      )}
+
+      {activeEmojiEl && (
+        <div
+          ref={emojiControlsRef}
+          className="fixed bg-white border border-gray-200 rounded-2xl shadow-2xl p-4 z-[9999] flex flex-col gap-3 w-64 text-left font-sans"
+          style={{
+            top: `${emojiControlsPosition.top}px`,
+            left: `${emojiControlsPosition.left}px`,
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Emoji Settings</span>
+            <button
+              onClick={() => setActiveEmojiEl(null)}
+              className="text-gray-400 hover:text-gray-600 text-base"
+            >
+              &times;
+            </button>
+          </div>
+
+          {/* Size Controls */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Size</label>
+            <div className="flex gap-1">
+              {['16px', '24px', '32px', '48px', '64px'].map((sz) => (
+                <button
+                  key={sz}
+                  onClick={() => {
+                    activeEmojiEl.style.fontSize = sz;
+                    if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+                  }}
+                  className={`flex-1 py-1 text-xs border rounded-lg hover:bg-violet-50 transition-colors ${
+                    activeEmojiEl.style.fontSize === sz ? 'border-violet-600 text-violet-700 bg-violet-50 font-semibold' : 'border-gray-200 text-gray-600'
+                  }`}
+                >
+                  {sz.replace('px', '')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Background Highlight / Text Color Colorizer */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Highlight / Tint</label>
+            <div className="grid grid-cols-5 gap-1.5">
+              <button
+                onClick={() => {
+                  activeEmojiEl.style.backgroundColor = 'transparent';
+                  activeEmojiEl.style.color = 'inherit';
+                  if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+                }}
+                className="w-7 h-7 rounded-full border border-gray-200 bg-white flex items-center justify-center text-[10px] text-gray-400 hover:scale-105 transition-transform"
+              >
+                Clear
+              </button>
+              {[
+                { label: 'Violet', bg: '#ede9fe', text: '#6d28d9' },
+                { label: 'Emerald', bg: '#d1fae5', text: '#047857' },
+                { label: 'Amber', bg: '#fef3c7', text: '#b45309' },
+                { label: 'Rose', bg: '#ffe4e6', text: '#be123c' },
+                { label: 'Sky', bg: '#e0f2fe', text: '#0369a1' }
+              ].map((themeObj) => (
+                <button
+                  key={themeObj.label}
+                  onClick={() => {
+                    activeEmojiEl.style.backgroundColor = themeObj.bg;
+                    activeEmojiEl.style.color = themeObj.text;
+                    activeEmojiEl.style.padding = '2px 6px';
+                    activeEmojiEl.style.borderRadius = '8px';
+                    if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+                  }}
+                  className="w-7 h-7 rounded-full border border-gray-200 hover:scale-105 transition-transform flex items-center justify-center text-xs"
+                  style={{ backgroundColor: themeObj.bg, color: themeObj.text }}
+                  title={themeObj.label}
+                >
+                  A
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Drag Placement */}
+          <div className="flex items-center justify-between border-t border-gray-150 pt-2.5">
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Float & Drag</span>
+            <button
+              onClick={() => {
+                const isAbs = activeEmojiEl.style.position === 'absolute';
+                if (isAbs) {
+                  activeEmojiEl.style.position = 'relative';
+                  activeEmojiEl.style.left = '';
+                  activeEmojiEl.style.top = '';
+                } else {
+                  activeEmojiEl.style.position = 'absolute';
+                  activeEmojiEl.style.left = '20px';
+                  activeEmojiEl.style.top = '20px';
+                  window.bindDragHandler(activeEmojiEl);
+                }
+                if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+              }}
+              className={`px-2 py-1 text-[10px] font-semibold border rounded-lg transition-colors ${
+                activeEmojiEl.style.position === 'absolute' ? 'bg-violet-600 text-white border-violet-600' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {activeEmojiEl.style.position === 'absolute' ? 'Draggable' : 'Inline'}
+            </button>
+          </div>
+
+          {/* Save & Reuse option */}
+          <button
+            onClick={() => {
+              const newItem = {
+                emoji: activeEmojiEl.textContent.trim(),
+                fontSize: activeEmojiEl.style.fontSize,
+                color: activeEmojiEl.style.color,
+                background: activeEmojiEl.style.backgroundColor,
+                position: activeEmojiEl.style.position,
+                left: activeEmojiEl.style.left,
+                top: activeEmojiEl.style.top,
+              };
+              const updated = [...savedEmojis.filter(e => e.emoji !== newItem.emoji), newItem];
+              setSavedEmojis(updated);
+              localStorage.setItem('rc.savedEmojis', JSON.stringify(updated));
+              showToast('Emoji preset saved for future reuse!');
+              setActiveEmojiEl(null);
+            }}
+            className="w-full py-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white font-semibold rounded-lg shadow-sm transition-colors mt-1"
+          >
+            Save Emoji Preset
+          </button>
         </div>
       )}
 
