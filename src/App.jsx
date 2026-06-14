@@ -16,7 +16,7 @@ import {
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
-  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -998,6 +998,7 @@ export default function App() {
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
   const [deckZoomLevel, setDeckZoomLevel] = useState(100);
   const [deckToolbarExpanded, setDeckToolbarExpanded] = useState(false);
+  const [showDeckComments, setShowDeckComments] = useState(false);
   const [isPresentingDeck, setIsPresentingDeck] = useState(false);
   const [showDeckNotes, setShowDeckNotes] = useState(false);
   const [deckTimerSeconds, setDeckTimerSeconds] = useState(0);
@@ -15560,6 +15561,53 @@ Respond with a JSON array of slide objects matching the schema.`;
     });
   };
 
+  const executeHeaderContextMenuAction = (actionKey, type, index) => {
+    if (actionKey === 'select') {
+      if (type === 'col') setSelectedSheetRange({ startRow: 1, endRow: activeSheetGridRaw.rows, startCol: index + 1, endCol: index + 1 });
+      if (type === 'row') setSelectedSheetRange({ startRow: index + 1, endRow: index + 1, startCol: 1, endCol: activeSheetGridRaw.cols });
+      return;
+    }
+    setSheetGrids((prev) => {
+      const target = prev[activeSheetId];
+      if (!target) return prev;
+      const nextCells = target.cells.map(r => [...r]);
+      const nextFormats = target.formats ? target.formats.map(r => [...r]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
+      let nextRows = target.rows;
+      let nextCols = target.cols;
+      if (actionKey === 'insert-before' || actionKey === 'insert-after') {
+        const offset = actionKey === 'insert-after' ? 1 : 0;
+        if (type === 'row') {
+          nextCells.splice(index + offset, 0, Array.from({ length: target.cols }, () => ''));
+          nextFormats.splice(index + offset, 0, Array.from({ length: target.cols }, () => null));
+          nextRows++;
+        } else {
+          nextCells.forEach(r => r.splice(index + offset, 0, ''));
+          nextFormats.forEach(r => r.splice(index + offset, 0, null));
+          nextCols++;
+        }
+      } else if (actionKey === 'delete') {
+        if (type === 'row') {
+          nextCells.splice(index, 1);
+          nextFormats.splice(index, 1);
+          nextRows = Math.max(1, nextRows - 1);
+        } else {
+          nextCells.forEach(r => r.splice(index, 1));
+          nextFormats.forEach(r => r.splice(index, 1));
+          nextCols = Math.max(1, nextCols - 1);
+        }
+      } else if (actionKey === 'clear') {
+        if (type === 'row') {
+          nextCells[index] = Array.from({ length: target.cols }, () => '');
+          nextFormats[index] = Array.from({ length: target.cols }, () => null);
+        } else {
+          nextCells.forEach(r => r[index] = '');
+          nextFormats.forEach(r => r[index] = null);
+        }
+      }
+      return { ...prev, [activeSheetId]: { ...target, rows: nextRows, cols: nextCols, cells: nextCells, formats: nextFormats } };
+    });
+  };
+
   const updateSheetCell = (sheetId, rowIndex, colIndex, value) => {
     setSheetGrids((prev) => {
       const target = prev[sheetId];
@@ -22482,7 +22530,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={undoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
                 <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
                 <button onClick={openReplayPanel} className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><Clock size={16} /></button>
-                <button className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Comments"><MessageSquareText size={16} /></button>
+                <button onClick={() => setShowDeckComments(s => !s)} className={`p-1.5 rounded-md transition-colors ${showDeckComments ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="Comments"><MessageSquareText size={16} /></button>
               </div>
 
               <div className="w-px h-5 bg-gray-200 mx-1"></div>
@@ -22893,52 +22941,85 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   >
                                     Apply Deck
                                   </button>
-                                </div>
+                            <div className="flex w-full gap-4 relative items-start justify-center">
+                      <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center flex-1 min-w-0 ${isPresentingDeck ? 'h-full bg-[#10162f] justify-center fixed inset-0 z-50' : ''}`}>
+                        <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas shrink-0 @container ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 shadow-[0_12px_40px_rgba(0,0,0,0.08)] rounded-[24px]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 16 / 9))' : 'min(100%, calc(85vh * 16 / 9))', transform: isPresentingDeck ? 'scale(1)' : `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 9 / 16 )` }}>
+                          <div className={`absolute top-0 left-0 w-[1600px] h-[900px] origin-top-left ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-[80px] md:p-[120px]`} style={{ transform: 'scale(calc(100cqw / 1600))' }}>
+                            <div>
+                              <h1
+                                contentEditable
+                                suppressContentEditableWarning
+                                onKeyDown={handleDeckKeyDown}
+                                onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
+                                className="text-[100px] leading-[1.1] font-medium text-white w-[1040px] max-w-full outline-none rounded-xl focus:ring-4 focus:ring-white/40 font-serif"
+                              >
+                                {resolvedDeckSlideDesign.headline}
+                              </h1>
+                              <p
+                                contentEditable
+                                suppressContentEditableWarning
+                                onKeyDown={handleDeckKeyDown}
+                                onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
+                                className="mt-[40px] text-indigo-100/85 text-[48px] leading-tight w-[1040px] max-w-full outline-none rounded-xl focus:ring-4 focus:ring-white/30 font-serif"
+                              >
+                                {resolvedDeckSlideDesign.blurb}
+                              </p>
+                            </div>
+  
+                            <div
+                              contentEditable
+                              suppressContentEditableWarning
+                              onKeyDown={handleDeckKeyDown}
+                              onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
+                              className="text-[28px] text-indigo-100/80 outline-none rounded-lg focus:ring-4 focus:ring-white/20"
+                            >
+                              {resolvedDeckSlideDesign.footer}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {showDeckComments && !isPresentingDeck && (
+                        <div className="w-[340px] shrink-0 bg-white rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-100 flex flex-col overflow-hidden mt-2 animate-fade-in z-10 sticky top-4" style={{ height: 'min(640px, calc(85vh * 16 / 9))' }}>
+                          <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
+                            <h3 className="font-semibold text-gray-900 text-[14px]">Comments</h3>
+                            <button onClick={() => setShowDeckComments(false)} className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"><X size={16} /></button>
+                          </div>
+                          
+                          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#FAFAFA]">
+                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[9px] font-bold text-indigo-700">SC</div>
+                                <span className="text-[12px] font-medium text-gray-900">Sarah Chen</span>
+                                <span className="text-[11px] text-gray-400">2m ago</span>
                               </div>
-                            );
-                          })}
+                              <p className="text-[13px] text-gray-700 pl-7">Can we make the title stronger?</p>
+                            </div>
+                          </div>
+                          
+                          <div className="p-4 bg-white border-t border-gray-100 shrink-0">
+                            <div className="border border-violet-500 rounded-xl focus-within:ring-4 focus-within:ring-violet-500/10 p-2.5 transition-all bg-white shadow-sm">
+                              <input type="text" placeholder="Add feedback, suggestion, or task..." className="w-full text-[13px] outline-none bg-transparent mb-3 placeholder-gray-400 font-medium text-gray-800" />
+                              
+                              <div className="flex items-center justify-between mt-1">
+                                <div className="flex items-center gap-0.5">
+                                  <button className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-md hover:text-gray-700 transition-colors" title="Mention"><AtSign size={15} strokeWidth={2.5} /></button>
+                                  <button className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-md hover:text-gray-700 transition-colors" title="Reaction"><Smile size={15} strokeWidth={2.5} /></button>
+                                  <button className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-md hover:text-gray-700 transition-colors" title="Attach"><Paperclip size={15} strokeWidth={2.5} /></button>
+                                  <button className="p-1.5 text-violet-500 hover:bg-violet-50 rounded-md hover:text-violet-600 transition-colors" title="AI Assist"><Sparkles size={15} strokeWidth={2.5} /></button>
+                                  <button className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-md hover:text-gray-700 transition-colors" title="Convert to task"><CheckSquare size={15} strokeWidth={2.5} /></button>
+                                </div>
+                                <button className="w-8 h-8 flex items-center justify-center bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors shadow-sm">
+                                  <ArrowRight size={14} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
-                    <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full ${isPresentingDeck ? 'h-full bg-[#10162f] justify-center fixed inset-0 z-50' : ''}`}>
-                      <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative rounded-[24px] overflow-hidden w-full aspect-[4/3] mx-auto bg-[#10162f] group/canvas shrink-0 ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 max-w-[90%] shadow-[0_12px_40px_rgba(0,0,0,0.08)]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 4 / 3))' : '100%', transform: isPresentingDeck ? 'scale(1)' : `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 0.75 )` }}>
-                        <div className={`absolute inset-0 ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-8 md:p-12`}>
-
-                        <div>
-                          <h1
-                            contentEditable
-                            suppressContentEditableWarning
-                            onKeyDown={handleDeckKeyDown}
-                            onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
-                            className="text-5xl leading-[1.1] font-medium text-white max-w-[620px] outline-none rounded-md focus:ring-2 focus:ring-white/40 font-serif"
-                          >
-                            {resolvedDeckSlideDesign.headline}
-                          </h1>
-                          <p
-                            contentEditable
-                            suppressContentEditableWarning
-                            onKeyDown={handleDeckKeyDown}
-                            onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
-                            className="mt-5 text-indigo-100/85 text-2xl max-w-[540px] outline-none rounded-md focus:ring-2 focus:ring-white/30 font-serif"
-                          >
-                            {resolvedDeckSlideDesign.blurb}
-                          </p>
-                        </div>
-
-                        <div
-                          contentEditable
-                          suppressContentEditableWarning
-                          onKeyDown={handleDeckKeyDown}
-                          onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
-                          className="text-sm text-indigo-100/80 outline-none rounded-md focus:ring-2 focus:ring-white/20"
-                        >
-                          {resolvedDeckSlideDesign.footer}
-                        </div>
-                      </div>
-                      </div>
-
-                      {/* Bottom Toolbar & Notes */}
+                    {/* Bottom Toolbar & Notes */}
                       <div className={`mt-6 mb-8 flex items-center justify-between bg-white rounded-[24px] border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] px-5 py-2.5 w-[95%] max-w-[1100px] ${isPresentingDeck ? 'fixed bottom-6 left-1/2 -translate-x-1/2' : ''}`}>
                         <div className="flex items-center gap-6">
                           <button 
@@ -23055,6 +23136,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   className="w-full text-left px-3 py-1.5 text-[13px] text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   onClick={() => {
+                    executeHeaderContextMenuAction(item.key, headerContextMenu.type, headerContextMenu.index);
                     setHeaderContextMenu({ open: false, x: 0, y: 0, type: '', index: -1 });
                   }}
                 >
