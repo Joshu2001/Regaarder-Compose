@@ -774,3 +774,21 @@ body { margin: 0; background: #ffffff; }
   position: absolute !important;
   will-change: transform;
 }
+
+/* Deck Fullscreen Support */
+:fullscreen .deck-canvas-preview {
+  max-width: 100vw !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+:fullscreen .deck-canvas-preview > div {
+  transform: scale(1) !important;
+  width: 100% !important;
+  height: 100% !important;
+}

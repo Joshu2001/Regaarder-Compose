@@ -996,6 +996,37 @@ export default function App() {
   const [deckCustomChip, setDeckCustomChip] = useState('');
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
   const [deckZoomLevel, setDeckZoomLevel] = useState(100);
+  const [isPresentingDeck, setIsPresentingDeck] = useState(false);
+  const [showDeckNotes, setShowDeckNotes] = useState(false);
+  const [deckTimerSeconds, setDeckTimerSeconds] = useState(0);
+  const [deckTimerActive, setDeckTimerActive] = useState(false);
+  const [deckSlashMenu, setDeckSlashMenu] = useState({
+    open: false,
+    top: 0,
+    left: 0,
+    bottom: 'auto',
+    filterText: '',
+    activeIndex: 0,
+    range: null
+  });
+
+  useEffect(() => {
+    let interval;
+    if (deckTimerActive) {
+      interval = setInterval(() => {
+        setDeckTimerSeconds(s => s + 1);
+      }, 1000);
+    } else if (!deckTimerActive && deckTimerSeconds !== 0) {
+      clearInterval(interval);
+    }
+    return () => clearInterval(interval);
+  }, [deckTimerActive, deckTimerSeconds]);
+
+  const formatDeckTimer = (totalSeconds) => {
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
   const [deckToolbarFont, setDeckToolbarFont] = useState('Manrope');
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
@@ -9014,6 +9045,147 @@ Generate the updated output according to the instruction. Preserve layout and ta
     window.refreshShapeBlock(previewId);
   };
 
+  const DECK_SLASH_OPTIONS = [
+    { key: 'new_slide', icon: Plus, label: 'New Slide', description: 'Add a new slide' },
+    { key: 'change_layout', icon: LayoutGrid, label: 'Change Layout', description: 'Select a different layout' },
+    { key: 'change_theme', icon: Sparkles, label: 'Change Theme', description: 'Apply a new design preset' },
+    { key: 'ai_generate', icon: Wand2, label: 'AI Generate', description: 'Generate content with AI' }
+  ];
+
+  const executeDeckSlashCommand = (key) => {
+    const savedRange = deckSlashMenu.range;
+    
+    // Clean up slash text
+    if (savedRange) {
+      const textNode = savedRange.startContainer;
+      if (textNode.nodeType === Node.TEXT_NODE) {
+        const text = textNode.textContent;
+        const slashIndex = text.lastIndexOf('/', savedRange.startOffset);
+        if (slashIndex !== -1) {
+          textNode.textContent = text.slice(0, slashIndex) + text.slice(savedRange.startOffset);
+        }
+      }
+    }
+    
+    setDeckSlashMenu({ open: false, top: 0, left: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+
+    if (key === 'new_slide') {
+      addDeckSlide();
+    } else if (key === 'change_layout') {
+      setDeckContextRailTab('Template');
+    } else if (key === 'change_theme') {
+      setDeckContextRailTab('Design');
+    } else if (key === 'ai_generate') {
+      setDeckPromptMinimized(false);
+    }
+  };
+
+  const handleDeckKeyDown = (event) => {
+    if (deckSlashMenu.open && event.key !== '/') {
+      const filteredOptions = DECK_SLASH_OPTIONS.filter(opt => 
+        opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase())
+      );
+      
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setDeckSlashMenu(prev => ({
+          ...prev,
+          activeIndex: (prev.activeIndex + 1) % Math.max(1, filteredOptions.length)
+        }));
+        return;
+      }
+      
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setDeckSlashMenu(prev => ({
+          ...prev,
+          activeIndex: (prev.activeIndex - 1 + filteredOptions.length) % Math.max(1, filteredOptions.length)
+        }));
+        return;
+      }
+      
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const selected = filteredOptions[deckSlashMenu.activeIndex];
+        if (selected) {
+          executeDeckSlashCommand(selected.key);
+        }
+        return;
+      }
+      
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setDeckSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+        return;
+      }
+      
+      if (event.key === 'Backspace') {
+        if (deckSlashMenu.filterText.length === 0) {
+          setDeckSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+        } else {
+          setDeckSlashMenu(prev => ({
+            ...prev,
+            filterText: prev.filterText.slice(0, -1),
+            activeIndex: 0
+          }));
+        }
+        return;
+      }
+      
+      if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        setDeckSlashMenu(prev => ({
+          ...prev,
+          filterText: prev.filterText + event.key,
+          activeIndex: 0
+        }));
+      }
+      return;
+    }
+
+    if (event.key === '/') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount) {
+        const range = selection.getRangeAt(0);
+        
+        let rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          const dummy = document.createElement('span');
+          dummy.innerHTML = '&#8203;';
+          range.insertNode(dummy);
+          rect = dummy.getBoundingClientRect();
+          dummy.parentNode.removeChild(dummy);
+        }
+        
+        const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
+        let topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
+        let bottomCoord = 'auto';
+        
+        const menuHeight = 250;
+        if (topCoord + menuHeight > window.innerHeight) {
+          if (rect.top - menuHeight > 10) {
+            bottomCoord = `${window.innerHeight - rect.top + 4}px`;
+            topCoord = 'auto';
+          } else {
+            topCoord = `${Math.max(10, window.innerHeight - menuHeight - 15)}px`;
+            bottomCoord = 'auto';
+          }
+        } else {
+          topCoord = `${topCoord}px`;
+        }
+        
+        setDeckSlashMenu({
+          open: true,
+          left: leftCoord,
+          top: topCoord,
+          bottom: bottomCoord,
+          filterText: '',
+          activeIndex: 0,
+          range: range.cloneRange()
+        });
+      }
+    }
+  };
+
   const executeSlashCommand = (key) => {
     const savedRange = slashMenuRef.current?.range;
     
@@ -15173,6 +15345,41 @@ Respond with a JSON array of slide objects matching the schema.`;
     }));
     showToast('Generated original slide design. You can edit headline and body directly.');
   };
+
+  const handlePresentDeck = async () => {
+    if (deckCanvasPreviewRef.current) {
+      try {
+        if (deckCanvasPreviewRef.current.requestFullscreen) {
+          await deckCanvasPreviewRef.current.requestFullscreen();
+        } else if (deckCanvasPreviewRef.current.webkitRequestFullscreen) {
+          await deckCanvasPreviewRef.current.webkitRequestFullscreen();
+        } else if (deckCanvasPreviewRef.current.msRequestFullscreen) {
+          await deckCanvasPreviewRef.current.msRequestFullscreen();
+        }
+        setIsPresentingDeck(true);
+      } catch (err) {
+        showToast('Unable to enter present mode');
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && !document.webkitIsFullScreen && !document.mozFullScreen && !document.msFullscreenElement) {
+        setIsPresentingDeck(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
 
   const applyDeckTemplate = (template, scope = 'slide') => {
     if (!template) {
@@ -22485,13 +22692,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <Plus size={14} />
                           <span>Add Slide</span>
                         </button>
-                        <button type="button" onClick={() => showToast('Present mode coming soon')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                        <button type="button" onClick={handlePresentDeck} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
                           <MonitorPlay size={14} />
                           <span>Present</span>
                         </button>
                       </div>
                       <div className="flex items-center gap-3">
-                        <button type="button" onClick={() => setActiveRightTab('properties')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                        <button type="button" onClick={() => { setActiveRightTab('properties'); setRightSidebarOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
                           <Settings size={14} />
                           <span>Properties</span>
                         </button>
@@ -22549,13 +22756,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
 
-                    <div ref={deckCanvasPreviewRef} className="rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg mt-4 max-w-[900px] w-full bg-[#10162f]">
-                      <div className={`relative p-8 md:p-12 ${resolvedDeckSlideDesign.preset.background} min-h-[430px] flex flex-col justify-between`} style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
+                    <div ref={deckCanvasPreviewRef} className="deck-canvas-preview rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg mt-4 max-w-[900px] w-full bg-[#10162f]">
+                      <div className={`relative p-8 md:p-12 ${resolvedDeckSlideDesign.preset.background} min-h-[430px] flex flex-col justify-between w-full h-full`} style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
 
                         <div>
                           <h1
                             contentEditable
                             suppressContentEditableWarning
+                            onKeyDown={handleDeckKeyDown}
                             onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
                             className="text-5xl leading-[1.1] font-medium text-white max-w-[620px] outline-none rounded-md focus:ring-2 focus:ring-white/40 font-serif"
                           >
@@ -22564,6 +22772,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <p
                             contentEditable
                             suppressContentEditableWarning
+                            onKeyDown={handleDeckKeyDown}
                             onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
                             className="mt-5 text-indigo-100/85 text-2xl max-w-[540px] outline-none rounded-md focus:ring-2 focus:ring-white/30 font-serif"
                           >
@@ -22574,6 +22783,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div
                           contentEditable
                           suppressContentEditableWarning
+                          onKeyDown={handleDeckKeyDown}
                           onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
                           className="text-sm text-indigo-100/80 outline-none rounded-md focus:ring-2 focus:ring-white/20"
                         >
@@ -22582,15 +22792,78 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
 
-                    <div className="mt-4 border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative">
-                      <textarea
-                        placeholder="Add speaker notes..."
-                        className="w-full resize-none outline-none text-sm text-gray-600 bg-transparent"
-                        rows={2}
-                      />
-                      <button className="absolute bottom-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
-                        <Expand size={14} />
-                      </button>
+                    {/* Bottom Toolbar & Notes */}
+                    <div className="w-full max-w-[900px] mt-4 flex flex-col gap-2">
+                      {showDeckNotes && (
+                        <div className="border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative shadow-sm">
+                          <textarea
+                            placeholder="Add speaker notes..."
+                            className="w-full resize-none outline-none text-sm text-gray-600 bg-transparent"
+                            rows={3}
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center justify-between border border-gray-200 rounded-xl bg-white px-4 py-2 shadow-sm text-xs text-gray-600 font-medium">
+                        <div className="flex items-center gap-4">
+                          <button 
+                            type="button" 
+                            onClick={() => setShowDeckNotes(!showDeckNotes)} 
+                            className={`flex items-center gap-1.5 px-2 py-1 rounded-md transition-colors ${showDeckNotes ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100'}`}
+                          >
+                            <FileText size={14} />
+                            Notes
+                          </button>
+                          
+                          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 border border-gray-100">
+                            <Clock size={14} className={deckTimerActive ? 'text-red-500' : 'text-gray-400'} />
+                            <span className="w-12 text-center font-mono">{formatDeckTimer(deckTimerSeconds)}</span>
+                            <button 
+                              type="button" 
+                              onClick={() => setDeckTimerActive(!deckTimerActive)} 
+                              className="text-gray-400 hover:text-gray-700 ml-1"
+                            >
+                              {deckTimerActive ? <Pause size={12} /> : <Play size={12} />}
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => { setDeckTimerActive(false); setDeckTimerSeconds(0); }} 
+                              className="text-gray-400 hover:text-gray-700 ml-1"
+                            >
+                              <RefreshCcw size={12} />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1 bg-gray-50 rounded-md p-0.5 border border-gray-100">
+                            <button 
+                              type="button" 
+                              onClick={() => setDeckZoomLevel(z => Math.max(z - 10, 10))} 
+                              className="p-1 text-gray-500 hover:bg-gray-200 rounded"
+                            >
+                              <Minus size={14} />
+                            </button>
+                            <span className="w-10 text-center">{deckZoomLevel}%</span>
+                            <button 
+                              type="button" 
+                              onClick={() => setDeckZoomLevel(z => Math.min(z + 10, 200))} 
+                              className="p-1 text-gray-500 hover:bg-gray-200 rounded"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                          
+                          <button 
+                            type="button" 
+                            onClick={() => setDeckZoomLevel(100)} 
+                            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md border border-transparent hover:border-gray-200 transition-colors"
+                            title="Fit to screen"
+                          >
+                            <Expand size={14} />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   </div>
@@ -27736,6 +28009,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 >
                   <span className="slash-menu-option-label">{opt.label}</span>
                   <span className="slash-menu-option-desc">{opt.desc}</span>
+                </button>
+              );
+            })}
+        </div>
+      )}
+
+      {deckSlashMenu.open && (
+        <div 
+          className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
+          style={{ 
+            left: `${deckSlashMenu.left}px`, 
+            top: deckSlashMenu.top,
+            bottom: deckSlashMenu.bottom
+          }}
+        >
+          {DECK_SLASH_OPTIONS
+            .filter(opt => opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase()))
+            .map((opt, idx) => {
+              const isActive = idx === deckSlashMenu.activeIndex;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => executeDeckSlashCommand(opt.key)}
+                  className={`slash-menu-option ${isActive ? 'active' : ''}`}
+                >
+                  <span className="slash-menu-option-label">{opt.label}</span>
+                  <span className="slash-menu-option-desc">{opt.description}</span>
                 </button>
               );
             })}
