@@ -24541,302 +24541,216 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {/* Main Nav Links */}
         {showDocumentOutlineView ? (
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6 thin-scrollbar flex flex-col select-none text-left" style={{ fontFamily: editorFont }}>
-            {/* Header Title */}
-            <div>
-              <h2 className="text-[12px] font-bold text-slate-400 tracking-wider uppercase">Document Outline</h2>
-            </div>
-
-            {/* Document Outline Meta Panel (Plain, borderless style) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="relative shrink-0 flex items-center justify-center">
-                  <svg className="w-12 h-12 transform -rotate-90">
-                    <circle cx="24" cy="24" r="20" fill="transparent" stroke="#f1f5f9" strokeWidth="3" />
-                    <circle 
-                      cx="24" 
-                      cy="24" 
-                      r="20" 
-                      fill="transparent" 
-                      stroke={brandColor || '#7c3aed'} 
-                      strokeWidth="3" 
-                      strokeDasharray={2 * Math.PI * 20} 
-                      strokeDashoffset={2 * Math.PI * 20 * (1 - 0.84)} 
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-800">84%</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-bold text-slate-800 truncate flex items-center gap-1">
-                    {docTitleDisplay}
-                    <ChevronDown size={14} className="text-slate-400 cursor-pointer shrink-0" />
-                  </h4>
-                  <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
-                    {outlineTreeData.length} Sections &bull; 4,821 Words &bull; 18 min read
-                  </p>
+          <div className="flex-1 overflow-y-auto px-3 py-3" style={{ fontFamily: editorFont }}>
+            <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-750 uppercase">Document Outline</span>
+                <span className="text-[10px] font-semibold text-violet-650 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
+                  {outlineTreeData.length} Sections
+                </span>
+              </div>
+              
+              <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Focused document</div>
+                <div className="text-xs font-bold text-gray-950 truncate mt-0.5" title={docTitleDisplay}>
+                  {docTitleDisplay}
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  showToast('AI outline generation started...');
-                  setTimeout(() => {
-                    setOutlineTreeData(prev => [
-                      ...prev,
-                      { id: `sec-${Date.now()}`, title: 'Advanced Strategies', completed: false, progress: 0, subsections: [] }
-                    ]);
-                    showToast('AI appended a new strategic section!');
-                  }, 1200);
-                }}
-                className="w-full py-2 flex items-center justify-center gap-2 rounded-xl bg-white border text-xs font-semibold shadow-sm transition-all hover:bg-slate-50"
-                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#cbd5e1', fontFamily: editorFont }}
-              >
-                <Sparkles size={13} style={{ color: brandColor || '#7c3aed' }} />
-                Generate Structure
-              </button>
-            </div>
+              {outlineTreeData.length > 0 ? (
+                <div className="max-h-[50vh] overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
+                  {outlineTreeData.map((section) => {
+                    let badgeColorClass = "bg-slate-50 text-slate-650 border border-slate-150";
+                    if (section.completed || section.progress >= 80) {
+                      badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                    } else if (section.progress >= 40) {
+                      badgeColorClass = "bg-amber-50 text-amber-600 border border-amber-100";
+                    } else if (section.progress > 0) {
+                      badgeColorClass = "bg-rose-50 text-rose-600 border border-rose-100";
+                    }
 
-            {/* Tree List container (Plain, no card borders/backgrounds) */}
-            <div className="flex-1 overflow-y-auto max-h-[45vh] space-y-1 relative pr-1">
-              {outlineTreeData.map((section) => {
-                let badgeColorClass = "bg-slate-50 text-slate-600 border border-slate-150";
-                if (section.completed || section.progress >= 80) {
-                  badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
-                } else if (section.progress >= 40) {
-                  badgeColorClass = "bg-amber-50 text-amber-600 border border-amber-100";
-                } else if (section.progress > 0) {
-                  badgeColorClass = "bg-rose-50 text-rose-600 border border-rose-100";
-                }
-
-                return (
-                  <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
-                    <div className="group flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-100/60 transition-colors relative">
-                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
-                          }}
-                          className="text-slate-400 hover:text-slate-600 transition-colors"
-                        >
-                          {section.subsections?.length > 0 ? (
-                            section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
-                          ) : (
-                            <span className="w-3.5 block" />
-                          )}
-                        </button>
-                        
-                        {editingOutlineId === section.id ? (
-                          <input
-                            type="text"
-                            value={editingOutlineText}
-                            onChange={(e) => setEditingOutlineText(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
-                                setEditingOutlineId(null);
-                                showToast('Section renamed');
-                              }
-                            }}
-                            onBlur={() => {
-                              setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
-                              setEditingOutlineId(null);
-                            }}
-                            autoFocus
-                            className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
-                            style={{ fontFamily: editorFont }}
-                          />
-                        ) : (
-                          <span 
-                            onClick={() => {
-                              setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
-                            }}
-                            className="text-xs font-bold text-slate-700 truncate cursor-pointer hover:text-slate-900"
-                          >
-                            {section.title}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1.5 pl-2 shrink-0">
-                        {section.completed ? (
-                          <span className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[10px] text-emerald-600 font-bold">✓</span>
-                        ) : (
-                          section.progress > 0 && (
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${badgeColorClass}`}>
-                              {section.progress}%
-                            </span>
-                          )
-                        )}
-
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
-                          >
-                            <MoreVertical size={13} />
-                          </button>
-                          
-                          {activeOutlineMenuId === section.id && (
-                            <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left" style={{ fontFamily: editorFont }}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingOutlineId(section.id);
-                                  setEditingOutlineText(section.title);
-                                  setActiveOutlineMenuId(null);
-                                }}
-                                className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                              >
-                                Rename
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  showToast(`AI Summary of ${section.title}: Focus on core strategies and optimization.`);
-                                  setActiveOutlineMenuId(null);
-                                }}
-                                className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                              >
-                                Summarize
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: true } : s));
-                                  setActiveOutlineMenuId(null);
-                                }}
-                                className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                              >
-                                Expand
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  showToast(`AI Rewriting ${section.title}...`);
-                                  setActiveOutlineMenuId(null);
-                                }}
-                                className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                              >
-                                Rewrite
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOutlineTreeData(prev => prev.map(s => s.id === section.id ? {
-                                    ...s,
-                                    subsections: [...s.subsections, { id: `sub-${Date.now()}`, title: 'Generated Subsection' }],
-                                    expanded: true
-                                  } : s));
-                                  showToast('AI generated subsections');
-                                  setActiveOutlineMenuId(null);
-                                }}
-                                className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                              >
-                                Generate Subsections
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  const idx = outlineTreeData.findIndex(s => s.id === section.id);
-                                  if (idx > 0) {
-                                    const list = [...outlineTreeData];
-                                    const temp = list[idx];
-                                    list[idx] = list[idx - 1];
-                                    list[idx - 1] = temp;
-                                    setOutlineTreeData(list);
+                    return (
+                      <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
+                        <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50 transition-colors relative">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
+                              }}
+                              className="text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                              {section.subsections?.length > 0 ? (
+                                section.expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />
+                              ) : (
+                                <span className="w-3 block" />
+                              )}
+                            </button>
+                            
+                            {editingOutlineId === section.id ? (
+                              <input
+                                type="text"
+                                value={editingOutlineText}
+                                onChange={(e) => setEditingOutlineText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                                    setEditingOutlineId(null);
+                                    showToast('Section renamed');
                                   }
-                                  setActiveOutlineMenuId(null);
                                 }}
-                                className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                onBlur={() => {
+                                  setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                                  setEditingOutlineId(null);
+                                }}
+                                autoFocus
+                                className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
+                                style={{ fontFamily: editorFont }}
+                              />
+                            ) : (
+                              <span 
+                                onClick={() => {
+                                  setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
+                                }}
+                                className="text-[11px] font-bold text-slate-700 truncate cursor-pointer hover:text-slate-900"
                               >
-                                Move Up
-                              </button>
+                                {section.title}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1 pl-1 shrink-0">
+                            {section.completed ? (
+                              <span className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[9px] text-emerald-600 font-bold">✓</span>
+                            ) : (
+                              section.progress > 0 && (
+                                <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${badgeColorClass}`}>
+                                  {section.progress}%
+                                </span>
+                              )
+                            )}
+
+                            <div className="relative">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setOutlineTreeData(prev => prev.filter(s => s.id !== section.id));
-                                  showToast('Section deleted');
-                                  setActiveOutlineMenuId(null);
-                                }}
-                                className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-600 font-bold flex items-center gap-2 border-t border-slate-100"
+                                onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
+                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
                               >
-                                Delete
+                                <MoreVertical size={12} />
                               </button>
+                              
+                              {activeOutlineMenuId === section.id && (
+                                <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left" style={{ fontFamily: editorFont }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingOutlineId(section.id);
+                                      setEditingOutlineText(section.title);
+                                      setActiveOutlineMenuId(null);
+                                    }}
+                                    className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                  >
+                                    Rename
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      showToast(`AI Summary of ${section.title}: Focus on core strategies and optimization.`);
+                                      setActiveOutlineMenuId(null);
+                                    }}
+                                    className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                  >
+                                    Summarize
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: true } : s));
+                                      setActiveOutlineMenuId(null);
+                                    }}
+                                    className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                  >
+                                    Expand
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      showToast(`AI Rewriting ${section.title}...`);
+                                      setActiveOutlineMenuId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                  >
+                                    Rewrite
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOutlineTreeData(prev => prev.map(s => s.id === section.id ? {
+                                        ...s,
+                                        subsections: [...s.subsections, { id: `sub-${Date.now()}`, title: 'Generated Subsection' }],
+                                        expanded: true
+                                      } : s));
+                                      showToast('AI generated subsections');
+                                      setActiveOutlineMenuId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                  >
+                                    Generate Subsections
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const idx = outlineTreeData.findIndex(s => s.id === section.id);
+                                      if (idx > 0) {
+                                        const list = [...outlineTreeData];
+                                        const temp = list[idx];
+                                        list[idx] = list[idx - 1];
+                                        list[idx - 1] = temp;
+                                        setOutlineTreeData(list);
+                                      }
+                                      setActiveOutlineMenuId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                  >
+                                    Move Up
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setOutlineTreeData(prev => prev.filter(s => s.id !== section.id));
+                                      showToast('Section deleted');
+                                      setActiveOutlineMenuId(null);
+                                    }}
+                                    className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-600 font-bold flex items-center gap-2 border-t border-slate-100"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Render Subsections */}
-                    {section.expanded && section.subsections && section.subsections.length > 0 && (
-                      <div className="pl-6 space-y-1.5 border-l border-slate-200 ml-3.5">
-                        {section.subsections.map(sub => (
-                          <div key={sub.id} className="flex items-center gap-2.5 py-1">
-                            <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
-                            <span className="text-[11px] text-slate-500 font-semibold truncate">{sub.title}</span>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Render Subsections */}
+                        {section.expanded && section.subsections && section.subsections.length > 0 && (
+                          <div className="pl-4 space-y-1 border-l border-slate-200 ml-2.5">
+                            {section.subsections.map(sub => (
+                              <div key={sub.id} className="flex items-center gap-2 py-0.5">
+                                <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
+                                <span className="text-[10px] text-slate-500 font-semibold truncate">{sub.title}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Tree Buttons (Minimal, clean, borderless style) */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const title = prompt('Enter section title:');
-                  if (title) {
-                    setOutlineTreeData(prev => [
-                      ...prev,
-                      { id: `sec-${Date.now()}`, title, completed: false, progress: 0, subsections: [] }
-                    ]);
-                  }
-                }}
-                className="py-1.5 rounded-lg border bg-white hover:bg-slate-50 text-xs font-semibold text-center transition-colors"
-                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#e2e8f0', fontFamily: editorFont }}
-              >
-                + Add Section
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setOutlineTreeData(prev => prev.map(s => ({ ...s, expanded: true })));
-                  showToast('Outline expanded');
-                }}
-                className="py-1.5 rounded-lg border bg-white hover:bg-slate-50 text-xs font-semibold text-center transition-colors"
-                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#e2e8f0', fontFamily: editorFont }}
-              >
-                + Expand Outline
-              </button>
-            </div>
-
-            {/* Health / Suggestions Card (Clean, borderless, plain layout) */}
-            <div className="border border-slate-200/60 rounded-xl p-3.5 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-slate-700">Document Health</span>
-                <span className="text-xs font-bold" style={{ color: brandColor || '#7c3aed' }}>84%</span>
-              </div>
-              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: '84%', backgroundColor: brandColor || '#10b981' }}></div>
-              </div>
-              <div className="space-y-1.5 text-xs text-slate-500 font-semibold">
-                <div className="flex items-center justify-between py-1 bg-white/60 rounded-lg px-2 border border-slate-100">
-                  <span className="flex items-center gap-1.5">🪄 AI Suggestions</span>
-                  <span className="text-[10px] font-bold bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded-full" style={{ color: brandColor || '#7c3aed', backgroundColor: brandColor ? `${brandColor}12` : undefined }}>3</span>
+                    );
+                  })}
                 </div>
-                <div className="flex items-center justify-between py-1 bg-white/60 rounded-lg px-2 border border-slate-100">
-                  <span className="flex items-center gap-1.5 text-amber-600">⚠ Missing Conclusion</span>
-                  <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full">!</span>
+              ) : (
+                <div className="text-[11px] text-gray-555 px-1.5 py-2">
+                  Generate or format headings to populate the outline.
                 </div>
-              </div>
+              )}
             </div>
           </div>
         ) : (
@@ -28282,7 +28196,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               transition: 'transform 180ms ease-out',
             }}
           >
-            <div className="flex justify-between items-center mb-3 px-6 select-none bg-slate-50 border border-slate-100 rounded-full py-1 text-[11px] font-bold text-slate-500 shadow-sm relative z-[100]">
+            <div className={`flex justify-between items-center mb-3 px-6 select-none bg-slate-50 border border-slate-100 rounded-full py-1 text-[11px] font-bold text-slate-500 shadow-sm relative z-[100] transition-all duration-300 ${
+              (pageSizeDropdownOpen || pageMarginDropdownOpen) ? 'opacity-100' : 'opacity-0 hover:opacity-100'
+            }`}>
               
               {/* Size & Orientation Dropdown */}
               <div className="relative">
