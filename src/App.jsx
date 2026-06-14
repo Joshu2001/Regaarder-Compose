@@ -22941,7 +22941,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   >
                                     Apply Deck
                                   </button>
-                            <div className="flex w-full gap-4 relative items-start justify-center">
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex w-full gap-4 relative items-start justify-center">
                       <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center flex-1 min-w-0 ${isPresentingDeck ? 'h-full bg-[#10162f] justify-center fixed inset-0 z-50' : ''}`}>
                         <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas shrink-0 @container ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 shadow-[0_12px_40px_rgba(0,0,0,0.08)] rounded-[24px]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 16 / 9))' : 'min(100%, calc(85vh * 16 / 9))', transform: isPresentingDeck ? 'scale(1)' : `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 9 / 16 )` }}>
                           <div className={`absolute top-0 left-0 w-[1600px] h-[900px] origin-top-left ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-[80px] md:p-[120px]`} style={{ transform: 'scale(calc(100cqw / 1600))' }}>
@@ -23101,11 +23109,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       )}
                     </div>
-                    </div>
                   </div>
-                  </div>
-                  </div>
-                )}
+                </div>
+              </div>
+              )}
               </div>
             </section>
 
