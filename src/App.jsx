@@ -3570,11 +3570,23 @@ export default function App() {
     pageWrapper.style.position = 'relative';
     pageWrapper.style.minHeight = `${ENTERPRISE_PAGE_HEIGHT_PX}px`;
     pageWrapper.style.marginTop = '24px';
-    pageWrapper.style.padding = '64px 0 78px';
+    pageWrapper.style.padding = '64px 48px 78px';
     pageWrapper.style.background = '#ffffff';
     pageWrapper.style.border = '1px solid rgba(148,163,184,0.22)';
     pageWrapper.style.borderRadius = '20px';
     pageWrapper.style.boxShadow = '0 10px 22px -18px rgba(15,23,42,0.22)';
+
+    // Add page-break-plus-btn
+    const plusBtn = document.createElement('button');
+    plusBtn.type = 'button';
+    plusBtn.className = 'page-break-plus-btn select-none';
+    plusBtn.setAttribute('contenteditable', 'false');
+    plusBtn.innerHTML = '+';
+    plusBtn.onclick = (e) => {
+      e.stopPropagation();
+      insertEnterprisePage();
+    };
+    pageWrapper.appendChild(plusBtn);
 
     const paragraph = document.createElement('p');
     paragraph.innerHTML = '<br/>';
@@ -5902,6 +5914,18 @@ export default function App() {
         pageNumEl.textContent = String(num);
         pageWrapper.appendChild(pageNumEl);
       }
+      
+      // Add page-break-plus-btn
+      const plusBtn = document.createElement('button');
+      plusBtn.type = 'button';
+      plusBtn.className = 'page-break-plus-btn select-none';
+      plusBtn.setAttribute('contenteditable', 'false');
+      plusBtn.innerHTML = '+';
+      plusBtn.onclick = (e) => {
+        e.stopPropagation();
+        insertEnterprisePage();
+      };
+      pageWrapper.appendChild(plusBtn);
       
       return pageWrapper;
     };
@@ -24515,29 +24539,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {/* Main Nav Links */}
         {showDocumentOutlineView ? (
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 thin-scrollbar flex flex-col font-sans select-none text-left">
-            {/* Header / Meta */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Document Outline</span>
-                <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">
-                  {outlineTreeData.length} Sections
-                </span>
-              </div>
-              
+            {/* Header Title */}
+            <div className="px-1">
+              <h2 className="text-[13px] font-bold text-slate-800 tracking-wide uppercase">Document Outline</h2>
+            </div>
+
+            {/* Document Outline Meta Panel */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-4">
               <div className="flex items-center gap-3">
-                <div className="relative shrink-0">
-                  <svg className="w-11 h-11 transform -rotate-90">
-                    <circle cx="22" cy="22" r="18" fill="transparent" stroke="#f1f5f9" strokeWidth="3.5" />
-                    <circle cx="22" cy="22" r="18" fill="transparent" stroke="#7c3aed" strokeWidth="3.5" strokeDasharray={2 * Math.PI * 18} strokeDashoffset={2 * Math.PI * 18 * (1 - 0.84)} />
+                <div className="relative shrink-0 flex items-center justify-center">
+                  <svg className="w-12 h-12 transform -rotate-90">
+                    <circle cx="24" cy="24" r="20" fill="transparent" stroke="#f1f5f9" strokeWidth="3.5" />
+                    <circle 
+                      cx="24" 
+                      cy="24" 
+                      r="20" 
+                      fill="transparent" 
+                      stroke={brandColor || '#7c3aed'} 
+                      strokeWidth="3.5" 
+                      strokeDasharray={2 * Math.PI * 20} 
+                      strokeDashoffset={2 * Math.PI * 20 * (1 - 0.84)} 
+                    />
                   </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-800">84%</span>
+                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-slate-800">84%</span>
                 </div>
-                <div className="min-w-0">
-                  <h4 className="text-sm font-bold text-slate-900 truncate flex items-center gap-1">
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-bold text-slate-800 truncate flex items-center gap-1">
                     {docTitleDisplay}
-                    <ChevronDown size={14} className="text-slate-400 cursor-pointer" />
+                    <ChevronDown size={14} className="text-slate-400 cursor-pointer shrink-0" />
                   </h4>
-                  <p className="text-[10px] text-slate-450 font-medium">
+                  <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
                     {outlineTreeData.length} Sections &bull; 4,821 Words &bull; 18 min read
                   </p>
                 </div>
@@ -24555,182 +24586,201 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     showToast('AI appended a new strategic section!');
                   }, 1200);
                 }}
-                className="w-full py-2 flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-750 text-xs font-semibold text-white shadow-sm transition-all"
+                className="w-full py-2 flex items-center justify-center gap-2 rounded-xl bg-white border text-xs font-semibold shadow-sm transition-all hover:bg-slate-50"
+                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#cbd5e1' }}
               >
-                <Sparkles size={13} />
+                <Sparkles size={13} style={{ color: brandColor || '#7c3aed' }} />
                 Generate Structure
               </button>
             </div>
 
-            {/* Outline Tree List */}
+            {/* Tree List container */}
             <div className="flex-1 bg-white rounded-2xl p-3 border border-slate-100 shadow-sm overflow-y-auto max-h-[35vh] space-y-1 relative">
-              {outlineTreeData.map((section) => (
-                <div key={section.id} className="space-y-1">
-                  <div className="group flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 transition-colors relative">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
-                        }}
-                        className="text-slate-400 hover:text-slate-600 transition-colors"
-                      >
-                        {section.subsections?.length > 0 ? (
-                          section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
-                        ) : (
-                          <span className="w-3.5 block" />
-                        )}
-                      </button>
-                      
-                      {editingOutlineId === section.id ? (
-                        <input
-                          type="text"
-                          value={editingOutlineText}
-                          onChange={(e) => setEditingOutlineText(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
-                              setEditingOutlineId(null);
-                              showToast('Section renamed');
-                            }
-                          }}
-                          onBlur={() => {
-                            setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
-                            setEditingOutlineId(null);
-                          }}
-                          autoFocus
-                          className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
-                        />
-                      ) : (
-                        <span className="text-xs font-semibold text-slate-700 truncate cursor-pointer hover:text-slate-900">
-                          {section.title}
-                        </span>
-                      )}
-                    </div>
+              {outlineTreeData.map((section) => {
+                let badgeColorClass = "bg-slate-50 text-slate-600 border border-slate-200";
+                if (section.completed || section.progress >= 80) {
+                  badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                } else if (section.progress >= 40) {
+                  badgeColorClass = "bg-amber-50 text-amber-600 border border-amber-100";
+                } else if (section.progress > 0) {
+                  badgeColorClass = "bg-rose-50 text-rose-600 border border-rose-100";
+                }
 
-                    <div className="flex items-center gap-1.5 pl-2">
-                      {section.completed ? (
-                        <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] text-emerald-700 font-bold">✓</span>
-                      ) : (
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1 rounded">
-                          {section.progress}%
-                        </span>
-                      )}
-
-                      <div className="relative">
+                return (
+                  <div key={section.id} className="space-y-1 font-sans">
+                    <div className="group flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 transition-colors relative">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         <button
                           type="button"
-                          onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
-                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                          onClick={() => {
+                            setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
+                          }}
+                          className="text-slate-400 hover:text-slate-600 transition-colors"
                         >
-                          <MoreVertical size={13} />
+                          {section.subsections?.length > 0 ? (
+                            section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+                          ) : (
+                            <span className="w-3.5 block" />
+                          )}
                         </button>
                         
-                        {activeOutlineMenuId === section.id && (
-                          <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left font-sans">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingOutlineId(section.id);
-                                setEditingOutlineText(section.title);
-                                setActiveOutlineMenuId(null);
-                              }}
-                              className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                            >
-                              Rename
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                showToast(`AI Summary of ${section.title}: Focus on core strategies and optimization.`);
-                                setActiveOutlineMenuId(null);
-                              }}
-                              className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                            >
-                              Summarize
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: true } : s));
-                                setActiveOutlineMenuId(null);
-                              }}
-                              className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                            >
-                              Expand
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                showToast(`AI Rewriting ${section.title}...`);
-                                setActiveOutlineMenuId(null);
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                            >
-                              Rewrite
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setOutlineTreeData(prev => prev.map(s => s.id === section.id ? {
-                                  ...s,
-                                  subsections: [...s.subsections, { id: `sub-${Date.now()}`, title: 'Generated Subsection' }],
-                                  expanded: true
-                                } : s));
-                                showToast('AI generated subsections');
-                                setActiveOutlineMenuId(null);
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                            >
-                              Generate Subsections
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const idx = outlineTreeData.findIndex(s => s.id === section.id);
-                                if (idx > 0) {
-                                  const list = [...outlineTreeData];
-                                  const temp = list[idx];
-                                  list[idx] = list[idx - 1];
-                                  list[idx - 1] = temp;
-                                  setOutlineTreeData(list);
-                                }
-                                setActiveOutlineMenuId(null);
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                            >
-                              Move Up
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setOutlineTreeData(prev => prev.filter(s => s.id !== section.id));
-                                showToast('Section deleted');
-                                setActiveOutlineMenuId(null);
-                              }}
-                              className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-600 font-bold flex items-center gap-2 border-t border-slate-100"
-                            >
-                              Delete
-                            </button>
-                          </div>
+                        {editingOutlineId === section.id ? (
+                          <input
+                            type="text"
+                            value={editingOutlineText}
+                            onChange={(e) => setEditingOutlineText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                                setEditingOutlineId(null);
+                                showToast('Section renamed');
+                              }
+                            }}
+                            onBlur={() => {
+                              setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                              setEditingOutlineId(null);
+                            }}
+                            autoFocus
+                            className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
+                          />
+                        ) : (
+                          <span 
+                            onClick={() => {
+                              setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
+                            }}
+                            className="text-xs font-bold text-slate-700 truncate cursor-pointer hover:text-slate-900"
+                          >
+                            {section.title}
+                          </span>
                         )}
                       </div>
-                    </div>
-                  </div>
 
-                  {/* Render Subsections */}
-                  {section.expanded && section.subsections && section.subsections.length > 0 && (
-                    <div className="pl-6 space-y-1 border-l border-slate-100 ml-3">
-                      {section.subsections.map(sub => (
-                        <div key={sub.id} className="flex items-center gap-2 py-1">
-                          <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
-                          <span className="text-[11px] text-slate-550 font-medium truncate">{sub.title}</span>
+                      <div className="flex items-center gap-1.5 pl-2 shrink-0">
+                        {section.completed ? (
+                          <span className="w-5 h-5 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[10px] text-emerald-600 font-bold">✓</span>
+                        ) : (
+                          section.progress > 0 && (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${badgeColorClass}`}>
+                              {section.progress}%
+                            </span>
+                          )
+                        )}
+
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                          >
+                            <MoreVertical size={13} />
+                          </button>
+                          
+                          {activeOutlineMenuId === section.id && (
+                            <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left font-sans">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingOutlineId(section.id);
+                                  setEditingOutlineText(section.title);
+                                  setActiveOutlineMenuId(null);
+                                }}
+                                className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                              >
+                                Rename
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  showToast(`AI Summary of ${section.title}: Focus on core strategies and optimization.`);
+                                  setActiveOutlineMenuId(null);
+                                }}
+                                className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                              >
+                                Summarize
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: true } : s));
+                                  setActiveOutlineMenuId(null);
+                                }}
+                                className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                              >
+                                Expand
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  showToast(`AI Rewriting ${section.title}...`);
+                                  setActiveOutlineMenuId(null);
+                                }}
+                                className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                              >
+                                Rewrite
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOutlineTreeData(prev => prev.map(s => s.id === section.id ? {
+                                    ...s,
+                                    subsections: [...s.subsections, { id: `sub-${Date.now()}`, title: 'Generated Subsection' }],
+                                    expanded: true
+                                  } : s));
+                                  showToast('AI generated subsections');
+                                  setActiveOutlineMenuId(null);
+                                }}
+                                className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                              >
+                                Generate Subsections
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const idx = outlineTreeData.findIndex(s => s.id === section.id);
+                                  if (idx > 0) {
+                                    const list = [...outlineTreeData];
+                                    const temp = list[idx];
+                                    list[idx] = list[idx - 1];
+                                    list[idx - 1] = temp;
+                                    setOutlineTreeData(list);
+                                  }
+                                  setActiveOutlineMenuId(null);
+                                }}
+                                className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                              >
+                                Move Up
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOutlineTreeData(prev => prev.filter(s => s.id !== section.id));
+                                  showToast('Section deleted');
+                                  setActiveOutlineMenuId(null);
+                                }}
+                                className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-600 font-bold flex items-center gap-2 border-t border-slate-100"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+
+                    {/* Render Subsections */}
+                    {section.expanded && section.subsections && section.subsections.length > 0 && (
+                      <div className="pl-6 space-y-1.5 border-l border-slate-100 ml-3.5">
+                        {section.subsections.map(sub => (
+                          <div key={sub.id} className="flex items-center gap-2.5 py-1">
+                            <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
+                            <span className="text-[11px] text-slate-500 font-bold truncate">{sub.title}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Tree Buttons */}
@@ -24746,7 +24796,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     ]);
                   }
                 }}
-                className="py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 text-center shadow-sm"
+                className="py-2 rounded-xl border bg-white hover:bg-slate-50 text-xs font-semibold text-center shadow-sm"
+                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#cbd5e1' }}
               >
                 + Add Section
               </button>
@@ -24756,7 +24807,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   setOutlineTreeData(prev => prev.map(s => ({ ...s, expanded: true })));
                   showToast('Outline expanded');
                 }}
-                className="py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 text-center shadow-sm"
+                className="py-2 rounded-xl border bg-white hover:bg-slate-50 text-xs font-semibold text-center shadow-sm"
+                style={{ color: brandColor || '#7c3aed', borderColor: brandColor ? `${brandColor}33` : '#cbd5e1' }}
               >
                 + Expand Outline
               </button>
@@ -24766,15 +24818,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="bg-[#FAF9FC] border border-violet-100/70 rounded-2xl p-4 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-bold text-slate-700">Document Health</span>
-                <span className="text-xs font-bold text-violet-600">84%</span>
+                <span className="text-xs font-bold text-violet-600" style={{ color: brandColor || '#7c3aed' }}>84%</span>
               </div>
               <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                <div className="bg-violet-600 h-full rounded-full" style={{ width: '84%' }}></div>
+                <div className="h-full rounded-full" style={{ width: '84%', backgroundColor: brandColor || '#10b981' }}></div>
               </div>
-              <div className="space-y-1.5 text-xs text-slate-600 font-medium">
+              <div className="space-y-1.5 text-xs text-slate-650 font-medium">
                 <div className="flex items-center justify-between py-1 bg-white rounded-lg px-2.5 border border-slate-100/50">
                   <span className="flex items-center gap-1.5">🪄 AI Suggestions</span>
-                  <span className="text-[10px] font-bold bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded-full">3</span>
+                  <span className="text-[10px] font-bold bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded-full" style={{ color: brandColor || '#7c3aed', backgroundColor: brandColor ? `${brandColor}12` : undefined }}>3</span>
                 </div>
                 <div className="flex items-center justify-between py-1 bg-white rounded-lg px-2.5 border border-slate-100/50">
                   <span className="flex items-center gap-1.5 text-amber-600">⚠ Missing Conclusion</span>
@@ -28269,7 +28321,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               docTheme === 'amber' ? 'bg-[#FEFBE8] border-[#FEF08A] text-amber-950 font-serif' :
               docTheme === 'rose' ? 'bg-[#FFF1F2] border-[#FECDD3] text-rose-950 font-sans' :
               docTheme === 'slate' ? 'bg-[#F8FAFC] border-[#E2E8F0] text-slate-900 font-mono' :
-              'bg-[#FAF5FF] border-[#E9D5FF] text-gray-900 font-sans'
+              'bg-white border-gray-150 text-gray-900 font-sans'
             }`}
             style={{ 
               width: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
@@ -28378,7 +28430,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               data-doc-id={activeDocId || ''}
               className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold title-editable"
               style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              data-placeholder={AI_NATIVE_PLACEHOLDER}
+              data-placeholder={showHeaderGhostPlaceholder ? AI_NATIVE_PLACEHOLDER : ""}
             />
             
             <div
@@ -28396,7 +28448,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               data-doc-id={activeDocId || ''}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14 subtitle-editable"
               style={{ fontFamily: editorFont, fontSize: `${subtitleSize}px`, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              data-placeholder={AI_NATIVE_PLACEHOLDER}
+              data-placeholder={showHeaderGhostPlaceholder ? "Compose anything. AI will handle the rest." : ""}
             />
 
             {isBlankDocument && (

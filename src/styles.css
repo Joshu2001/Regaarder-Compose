@@ -794,3 +794,63 @@ body { margin: 0; background: #ffffff; }
   width: 100% !important;
   height: 100% !important;
 }
+
+/* Page Separation & Page-break Plus Button (Image 2 & 3) */
+.compose-editor-surface {
+  background-color: #ffffff !important;
+}
+
+[data-enterprise-page="true"] {
+  position: relative !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(148,163,184,0.18) !important;
+  border-left: 1px solid rgba(148,163,184,0.18) !important;
+  border-right: 1px solid rgba(148,163,184,0.18) !important;
+  border-radius: 0 0 20px 20px !important;
+  box-shadow: 0 10px 25px -20px rgba(15,23,42,0.18) !important;
+  
+  /* Break out of parent page margins to display grey gap */
+  margin-left: -48px !important;
+  margin-right: -48px !important;
+  padding-left: 48px !important;
+  padding-right: 48px !important;
+  padding-top: 64px !important;
+  padding-bottom: 78px !important;
+  
+  /* The grey background page break separation */
+  border-top: 36px solid #f1f5f9 !important; 
+  display: block !important;
+}
+
+/* Page break vertical oval/pill Add button */
+.page-break-plus-btn {
+  position: absolute !important;
+  top: -27px !important; /* Centered inside the 36px grey border-top */
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: 20px !important;
+  height: 32px !important;
+  background: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 9999px !important;
+  color: #64748b !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  z-index: 50 !important;
+  box-shadow: 0 3px 6px -2px rgba(15,23,42,0.12) !important;
+  transition: all 120ms ease-in-out !important;
+  outline: none !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+.page-break-plus-btn:hover {
+  background: #f8fafc !important;
+  color: #7c3aed !important;
+  border-color: #94a3b8 !important;
+  transform: translateX(-50%) scale(1.08) !important;
+}
