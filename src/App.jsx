@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { io } from 'socket.io-client';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { Parser } from 'hot-formula-parser';
 import { 
   Menu, Search, Plus, Sparkles, Bell, 
   ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
@@ -15,7 +16,7 @@ import {
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
-  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -996,6 +997,7 @@ export default function App() {
   const [deckCustomChip, setDeckCustomChip] = useState('');
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
   const [deckZoomLevel, setDeckZoomLevel] = useState(100);
+  const [deckToolbarExpanded, setDeckToolbarExpanded] = useState(false);
   const [isPresentingDeck, setIsPresentingDeck] = useState(false);
   const [showDeckNotes, setShowDeckNotes] = useState(false);
   const [deckTimerSeconds, setDeckTimerSeconds] = useState(0);
@@ -15344,7 +15346,47 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [activeDeckSlide?.speakerNotes, chatAttachments, deckSlides, promptAttachments]);
 
   const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
-  const activeSheetGrid = sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+  const activeSheetGridRaw = sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+  
+  const activeSheetGrid = useMemo(() => {
+    if (!activeSheetGridRaw) return null;
+    const parser = new Parser();
+    
+    parser.on('callCellValue', (cellCoord, done) => {
+      const rowIndex = cellCoord.row.index;
+      const colIndex = cellCoord.column.index;
+      const val = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex];
+      done(val);
+    });
+
+    parser.on('callRangeValue', (startCellCoord, endCellCoord, done) => {
+      const fragment = [];
+      for (let row = startCellCoord.row.index; row <= endCellCoord.row.index; row++) {
+        const rowData = activeSheetGridRaw.cells[row];
+        const colFragment = [];
+        for (let col = startCellCoord.column.index; col <= endCellCoord.column.index; col++) {
+          colFragment.push(rowData ? rowData[col] : null);
+        }
+        fragment.push(colFragment);
+      }
+      done(fragment);
+    });
+
+    const evaluatedCells = activeSheetGridRaw.cells.map((row, r) => 
+      row.map((cell, c) => {
+        if (typeof cell === 'string' && cell.startsWith('=')) {
+          const result = parser.parse(cell.substring(1));
+          return result.error ? result.error : result.result;
+        }
+        return cell;
+      })
+    );
+
+    return {
+      ...activeSheetGridRaw,
+      cells: evaluatedCells
+    };
+  }, [activeSheetGridRaw]);
   const isSheetsMode = productMode === 'sheets';
   const updateDeckSlideField = (slideId, field, value) => {
     setDeckSlidesData((prev) => prev.map((slide) => (slide.id === slideId ? { ...slide, [field]: value } : slide)));
@@ -15488,6 +15530,36 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
     return label;
   };
+  const formatCellValue = (val, formatType) => {
+    if (val === null || val === undefined || val === '') return val;
+    const num = Number(val);
+    if (isNaN(num)) return val;
+    if (formatType === 'currency') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+    if (formatType === 'percent') return new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 2 }).format(num);
+    if (formatType === 'decimal') return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+    return val;
+  };
+
+  const updateSheetCellFormat = (sheetId, formatType) => {
+    if (!selectedSheetRange && !selectedSheetCell) return;
+    setSheetGrids((prev) => {
+      const target = prev[sheetId];
+      if (!target) return prev;
+      const nextFormats = target.formats ? target.formats.map(row => [...row]) : Array.from({ length: target.rows }, () => Array.from({ length: target.cols }, () => null));
+      const startRow = selectedSheetRange ? Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1 : selectedSheetCell.row - 1;
+      const endRow = selectedSheetRange ? Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1 : selectedSheetCell.row - 1;
+      const startCol = selectedSheetRange ? Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
+      const endCol = selectedSheetRange ? Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
+      for (let r = startRow; r <= endRow; r++) {
+        if (!nextFormats[r]) nextFormats[r] = [];
+        for (let c = startCol; c <= endCol; c++) {
+          nextFormats[r][c] = nextFormats[r][c] === formatType ? null : formatType;
+        }
+      }
+      return { ...prev, [sheetId]: { ...target, formats: nextFormats } };
+    });
+  };
+
   const updateSheetCell = (sheetId, rowIndex, colIndex, value) => {
     setSheetGrids((prev) => {
       const target = prev[sheetId];
@@ -22410,7 +22482,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={undoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
                 <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
                 <button onClick={openReplayPanel} className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><Clock size={16} /></button>
-                <button className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Comments"><MessageSquare size={16} /></button>
+                <button className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Comments"><MessageSquareText size={16} /></button>
               </div>
 
               <div className="w-px h-5 bg-gray-200 mx-1"></div>
@@ -22491,8 +22563,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </header>
 
           <div className="flex-1 min-h-0 flex gap-4 p-4">
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#F3F4F6] p-4 pr-4' : 'rounded-2xl border border-gray-200 bg-white p-4'}`}>
-              <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'mx-auto w-full max-w-[980px] pb-4'}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#F3F4F6] p-4 pr-4' : ''}`}>
+              <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'w-full flex-1'}`}>
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
                     <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
@@ -22638,9 +22710,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">-</button>
                       <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">=</button>
                       <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">...</button>
-                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">$</button>
-                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">%</button>
-                      <button type="button" className="w-9 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">.0</button>
+                      <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'currency')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">$</button>
+                      <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'percent')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">%</button>
+                      <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'decimal')} className="w-9 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">.0</button>
                       <span className="mx-1 text-gray-200">|</span>
                       <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Row</button>
                       <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
@@ -22653,7 +22725,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <span className="text-gray-400">fx</span>
                       <input
                         type="text"
-                        value={activeSheetGrid.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || ''}
+                        value={activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || ''}
                         onChange={(event) => updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, event.target.value)}
                         className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-violet-500 font-normal"
                         placeholder="Enter value or formula"
@@ -22710,7 +22782,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   }}
                                 >
                                   <input
-                                    value={activeSheetGrid.cells?.[rowIndex]?.[colIndex] || ''}
+                                    value={isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], activeSheetGridRaw.formats?.[rowIndex]?.[colIndex])}
                                     onFocus={() => { setSelectedSheetCell({ row: rowIndex + 1, col: colIndex + 1 }); setSelectedSheetRange(null); }}
                                     onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
                                     className="w-full h-full px-2 text-xs bg-transparent focus:outline-none"
@@ -22830,7 +22902,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     )}
 
                     <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full ${isPresentingDeck ? 'h-full bg-[#10162f] justify-center fixed inset-0 z-50' : ''}`}>
-                      <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative rounded-[24px] overflow-hidden w-full aspect-[4/3] mx-auto bg-[#10162f] group/canvas shrink-0 ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 max-w-[90%] shadow-[0_12px_40px_rgba(0,0,0,0.08)]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 4 / 3))' : '100%', transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 0.75 )` }}>
+                      <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative rounded-[24px] overflow-hidden w-full aspect-[4/3] mx-auto bg-[#10162f] group/canvas shrink-0 ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 max-w-[90%] shadow-[0_12px_40px_rgba(0,0,0,0.08)]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 4 / 3))' : '100%', transform: isPresentingDeck ? 'scale(1)' : `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 0.75 )` }}>
                         <div className={`absolute inset-0 ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-8 md:p-12`}>
 
                         <div>
@@ -22898,24 +22970,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                         
                         <div className="flex items-center gap-5 text-[13px] font-semibold text-gray-600">
-                          <button className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
-                            <Maximize size={16} /> Fit
-                          </button>
-                          <button className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
-                            <MonitorPlay size={16} /> Fill
-                          </button>
-                          
-                          <div className="w-px h-5 bg-gray-200"></div>
-                          
-                          <div className="flex items-center gap-2 bg-gray-50/50 rounded-lg">
-                            <button onClick={() => setDeckZoomLevel(z => Math.max(z - 10, 10))} className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-900 transition-colors">
-                              <Minus size={14} strokeWidth={2.5} />
+                          {(!isPresentingDeck && !deckToolbarExpanded) ? (
+                            <button onClick={() => setDeckToolbarExpanded(true)} className="flex items-center gap-1.5 hover:text-gray-900 transition-colors px-2 py-1 rounded hover:bg-gray-50 border border-gray-200">
+                              <MoreHorizontal size={16} /> More
                             </button>
-                            <span className="w-12 text-center text-gray-900">{deckZoomLevel}%</span>
-                            <button onClick={() => setDeckZoomLevel(z => Math.min(z + 10, 200))} className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-900 transition-colors">
-                              <Plus size={14} strokeWidth={2.5} />
-                            </button>
-                          </div>
+                          ) : (
+                            <>
+                              <button className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
+                                <Maximize size={16} /> Fit
+                              </button>
+                              <button className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
+                                <MonitorPlay size={16} /> Fill
+                              </button>
+                              
+                              <div className="w-px h-5 bg-gray-200"></div>
+                              
+                              <div className="flex items-center gap-2 bg-gray-50/50 rounded-lg">
+                                <button onClick={() => setDeckZoomLevel(z => Math.max(z - 10, 10))} className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-900 transition-colors">
+                                  <Minus size={14} strokeWidth={2.5} />
+                                </button>
+                                <span className="w-12 text-center text-gray-900">{deckZoomLevel}%</span>
+                                <button onClick={() => setDeckZoomLevel(z => Math.min(z + 10, 200))} className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-900 transition-colors">
+                                  <Plus size={14} strokeWidth={2.5} />
+                                </button>
+                              </div>
+
+                              {!isPresentingDeck && (
+                                <button onClick={() => setDeckToolbarExpanded(false)} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-900 transition-colors" title="Less">
+                                  <X size={16} />
+                                </button>
+                              )}
+                            </>
+                          )}
                           
                           <button onClick={handlePresentDeck} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-900 transition-colors" title="Fullscreen">
                             <Expand size={18} strokeWidth={2} />
