@@ -1015,6 +1015,8 @@ export default function App() {
   const [pageSizeDropdownOpen, setPageSizeDropdownOpen] = useState(false);
   const [pageMarginDropdownOpen, setPageMarginDropdownOpen] = useState(false);
   const [headerTextEditing, setHeaderTextEditing] = useState(false);
+  const [docState, setDocState] = useState('draft');
+  const [docStateDropdownOpen, setDocStateDropdownOpen] = useState(false);
 
   const [pageOptionsMenuOpen, setPageOptionsMenuOpen] = useState(false);
   const [brandColor, setBrandColor] = useState('#7c3aed');
@@ -24552,15 +24554,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
               
               <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
                 <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Focused document</div>
-                <div className="text-xs font-bold text-gray-950 truncate mt-0.5" title={docTitleDisplay}>
+                <div className="text-xs font-bold text-gray-955 truncate mt-0.5" title={docTitleDisplay}>
                   {docTitleDisplay}
                 </div>
               </div>
 
               {outlineTreeData.length > 0 ? (
-                <div className="max-h-[50vh] overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
+                <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
                   {outlineTreeData.map((section) => {
-                    let badgeColorClass = "bg-slate-50 text-slate-650 border border-slate-150";
+                    let badgeColorClass = "bg-slate-50 text-slate-655 border border-slate-150";
                     if (section.completed || section.progress >= 80) {
                       badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
                     } else if (section.progress >= 40) {
@@ -24571,19 +24573,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     return (
                       <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
-                        <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50 transition-colors relative">
+                        <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50/70 transition-colors relative">
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <button
                               type="button"
                               onClick={() => {
                                 setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
                               }}
-                              className="text-slate-400 hover:text-slate-600 transition-colors"
+                              className="text-slate-400 hover:text-slate-650 transition-colors"
                             >
                               {section.subsections?.length > 0 ? (
-                                section.expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />
+                                section.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />
                               ) : (
-                                <span className="w-3 block" />
+                                <span className="w-3.5 block" />
                               )}
                             </button>
                             
@@ -24612,7 +24614,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 onClick={() => {
                                   setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
                                 }}
-                                className="text-[11px] font-bold text-slate-700 truncate cursor-pointer hover:text-slate-900"
+                                className="text-[12.5px] font-bold text-slate-800 truncate cursor-pointer hover:text-slate-955"
                               >
                                 {section.title}
                               </span>
@@ -24634,9 +24636,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <button
                                 type="button"
                                 onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
-                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
                               >
-                                <MoreVertical size={12} />
+                                <MoreVertical size={13} />
                               </button>
                               
                               {activeOutlineMenuId === section.id && (
@@ -24693,7 +24695,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       showToast('AI generated subsections');
                                       setActiveOutlineMenuId(null);
                                     }}
-                                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-705 font-semibold flex items-center gap-2"
                                   >
                                     Generate Subsections
                                   </button>
@@ -24721,7 +24723,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       showToast('Section deleted');
                                       setActiveOutlineMenuId(null);
                                     }}
-                                    className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-600 font-bold flex items-center gap-2 border-t border-slate-100"
+                                    className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-650 font-bold flex items-center gap-2 border-t border-slate-100"
                                   >
                                     Delete
                                   </button>
@@ -24733,11 +24735,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         {/* Render Subsections */}
                         {section.expanded && section.subsections && section.subsections.length > 0 && (
-                          <div className="pl-4 space-y-1 border-l border-slate-200 ml-2.5">
+                          <div className="pl-4 space-y-1.5 border-l border-slate-200 ml-2.5">
                             {section.subsections.map(sub => (
                               <div key={sub.id} className="flex items-center gap-2 py-0.5">
                                 <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
-                                <span className="text-[10px] text-slate-500 font-semibold truncate">{sub.title}</span>
+                                <span className="text-[11.5px] text-slate-500 font-semibold truncate">{sub.title}</span>
                               </div>
                             ))}
                           </div>
@@ -24751,6 +24753,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   Generate or format headings to populate the outline.
                 </div>
               )}
+
+              {/* Add New Page Button resembling standard slide additions */}
+              <button
+                type="button"
+                onClick={() => {
+                  insertEnterprisePage();
+                  showToast('New page inserted successfully');
+                }}
+                className="w-full py-2.5 mt-1 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                style={{ fontFamily: editorFont }}
+              >
+                + New page
+              </button>
             </div>
           </div>
         ) : (
@@ -28355,7 +28370,51 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {docHeaderText}
                   </span>
                 )}
-                <span className="text-[9px] font-bold bg-gray-50 border border-gray-150 rounded px-1 text-gray-500">Draft</span>
+                
+                {/* State Badge with Dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDocStateDropdownOpen(!docStateDropdownOpen)}
+                    className={`text-[9px] font-bold border rounded px-1.5 py-0.5 cursor-pointer select-none transition-all uppercase flex items-center gap-1 ${
+                      docState === 'draft' ? 'bg-violet-50 text-violet-600 border-violet-200' :
+                      docState === 'ready' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
+                      docState === 'review' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                      'bg-amber-50 text-amber-600 border-amber-200'
+                    }`}
+                  >
+                    {docState === 'draft' && '📝 Draft'}
+                    {docState === 'ready' && '✅ Ready'}
+                    {docState === 'review' && '👥 In Review'}
+                    {docState === 'archived' && '📦 Archived'}
+                  </button>
+
+                  {docStateDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Document State</div>
+                      {[
+                        { key: 'draft', label: '📝 Draft', desc: 'Actively being written', color: 'hover:bg-violet-50 text-violet-700' },
+                        { key: 'ready', label: '✅ Ready', desc: 'Completed and ready for use', color: 'hover:bg-emerald-50 text-emerald-700' },
+                        { key: 'review', label: '👥 In Review', desc: 'Awaiting feedback', color: 'hover:bg-blue-50 text-blue-700' },
+                        { key: 'archived', label: '📦 Archived', desc: 'Stored and inactive', color: 'hover:bg-amber-50 text-amber-700' }
+                      ].map((item) => (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => {
+                            setDocState(item.key);
+                            setDocStateDropdownOpen(false);
+                            showToast(`Document marked as ${item.key.toUpperCase()}`);
+                          }}
+                          className={`w-full text-left px-2 py-1.5 rounded-xl transition-colors ${item.color} ${docState === item.key ? 'bg-slate-50' : ''}`}
+                        >
+                          <div className="text-[11px] font-bold">{item.label}</div>
+                          <div className="text-[9px] text-slate-405 font-semibold">{item.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
