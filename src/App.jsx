@@ -22951,7 +22951,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     <div className="flex w-full gap-4 relative items-start justify-center">
                       <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center flex-1 min-w-0 ${isPresentingDeck ? 'h-full bg-[#10162f] justify-center fixed inset-0 z-50' : ''}`}>
-                        <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas shrink-0 @container ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 shadow-[0_12px_40px_rgba(0,0,0,0.08)] rounded-[24px]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 140px) * 16 / 9))' : 'min(100%, calc(65vh * 16 / 9))', transform: isPresentingDeck ? 'scale(1)' : `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 9 / 16 )` }}>
+                        <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas shrink-0 @container ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 shadow-[0_12px_40px_rgba(0,0,0,0.08)] rounded-[24px]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 140px) * 16 / 9))' : 'min(100%, calc(50vh * 16 / 9))', transform: isPresentingDeck ? 'scale(1)' : `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 9 / 16 )` }}>
                           <div className={`absolute top-0 left-0 w-[1600px] h-[900px] origin-top-left ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-[80px] md:p-[120px]`} style={{ transform: 'scale(calc(100cqw / 1600))' }}>
                             <div>
                               <h1
@@ -22988,7 +22988,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
 
                       {showDeckComments && !isPresentingDeck && (
-                        <div className="w-[340px] shrink-0 bg-white rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-100 flex flex-col overflow-hidden mt-2 animate-fade-in z-10 sticky top-4" style={{ height: 'min(500px, calc(65vh * 16 / 9))' }}>
+                        <div className="w-[340px] shrink-0 bg-white rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-100 flex flex-col overflow-hidden mt-2 animate-fade-in z-10 sticky top-4" style={{ height: 'min(400px, calc(50vh * 16 / 9))' }}>
                           <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
                             <h3 className="font-semibold text-gray-900 text-[14px]">Comments</h3>
                             <button onClick={() => setShowDeckComments(false)} className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"><X size={16} /></button>
@@ -23005,20 +23005,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </div>
                           </div>
                           
-                          <div className="p-4 bg-white border-t border-gray-100 shrink-0">
-                            <div className="border border-violet-500 rounded-xl focus-within:ring-4 focus-within:ring-violet-500/10 p-2.5 transition-all bg-white shadow-sm">
-                              <input type="text" placeholder="Add feedback, suggestion, or task..." className="w-full text-[13px] outline-none bg-transparent mb-3 placeholder-gray-400 font-medium text-gray-800" />
+                          <div className="p-3 bg-white border-t border-gray-100 shrink-0">
+                            <div className="border border-gray-200 rounded-lg focus-within:border-violet-500 focus-within:ring-1 focus-within:ring-violet-500 p-2 transition-all bg-white">
+                              <textarea placeholder="Add a comment..." className="w-full text-[13px] outline-none bg-transparent mb-1 placeholder-gray-400 text-gray-800 resize-none min-h-[60px]" />
                               
-                              <div className="flex items-center justify-between mt-1">
-                                <div className="flex items-center gap-0.5">
-                                  <button className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-md hover:text-gray-700 transition-colors" title="Mention"><AtSign size={15} strokeWidth={2.5} /></button>
-                                  <button className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-md hover:text-gray-700 transition-colors" title="Reaction"><Smile size={15} strokeWidth={2.5} /></button>
-                                  <button className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-md hover:text-gray-700 transition-colors" title="Attach"><Paperclip size={15} strokeWidth={2.5} /></button>
-                                  <button className="p-1.5 text-violet-500 hover:bg-violet-50 rounded-md hover:text-violet-600 transition-colors" title="AI Assist"><Sparkles size={15} strokeWidth={2.5} /></button>
-                                  <button className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-md hover:text-gray-700 transition-colors" title="Convert to task"><CheckSquare size={15} strokeWidth={2.5} /></button>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1">
+                                  <button className="text-gray-400 hover:text-gray-700 transition-colors" title="Mention"><AtSign size={14} strokeWidth={2} /></button>
+                                  <button className="text-gray-400 hover:text-gray-700 transition-colors" title="Attach"><Paperclip size={14} strokeWidth={2} /></button>
                                 </div>
-                                <button className="w-8 h-8 flex items-center justify-center bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-colors shadow-sm">
-                                  <ArrowRight size={14} strokeWidth={2.5} />
+                                <button className="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white text-[12px] font-semibold rounded-md transition-colors">
+                                  Comment
                                 </button>
                               </div>
                             </div>
