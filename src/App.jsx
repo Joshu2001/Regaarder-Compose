@@ -1014,6 +1014,68 @@ export default function App() {
   const [docTheme, setDocTheme] = useState('violet');
 
   const [pageOptionsMenuOpen, setPageOptionsMenuOpen] = useState(false);
+  const [brandColor, setBrandColor] = useState('#7c3aed');
+  const [brandColorPickerOpen, setBrandColorPickerOpen] = useState(false);
+  const [brandKitModalOpen, setBrandKitModalOpen] = useState(false);
+  const [uploadedBrandLogo, setUploadedBrandLogo] = useState(null);
+
+  const [activeOutlineMenuId, setActiveOutlineMenuId] = useState(null);
+  const [editingOutlineId, setEditingOutlineId] = useState(null);
+  const [editingOutlineText, setEditingOutlineText] = useState('');
+  const [outlineTreeData, setOutlineTreeData] = useState([
+    {
+      id: 'sec-1',
+      title: 'Introduction',
+      completed: true,
+      progress: 100,
+      subsections: [],
+      expanded: false
+    },
+    {
+      id: 'sec-2',
+      title: 'Market Structure',
+      completed: false,
+      progress: 87,
+      subsections: [
+        { id: 'sub-2-1', title: 'Liquidity' },
+        { id: 'sub-2-2', title: 'Fair Value Gaps' },
+        { id: 'sub-2-3', title: 'Order Blocks' }
+      ],
+      expanded: true
+    },
+    {
+      id: 'sec-3',
+      title: 'Risk Management',
+      completed: false,
+      progress: 42,
+      subsections: [],
+      expanded: false
+    },
+    {
+      id: 'sec-4',
+      title: 'Psychology',
+      completed: false,
+      progress: 65,
+      subsections: [],
+      expanded: false
+    },
+    {
+      id: 'sec-5',
+      title: 'Execution',
+      completed: true,
+      progress: 91,
+      subsections: [],
+      expanded: false
+    },
+    {
+      id: 'sec-6',
+      title: 'Conclusion',
+      completed: false,
+      progress: 12,
+      subsections: [],
+      expanded: false
+    }
+  ]);
 
   const [activeEmojiEl, setActiveEmojiEl] = useState(null);
   const [emojiControlsPosition, setEmojiControlsPosition] = useState({ top: 0, left: 0 });
@@ -5710,6 +5772,177 @@ export default function App() {
     }
   };
 
+  const performPagination = (editorEl) => {
+    if (!editorEl) return;
+    
+    const pageHeightVal = pageOrientation === 'landscape' 
+      ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) 
+      : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123);
+      
+    const maxContentHeightFirstPage = pageHeightVal - 220; // safe space for title, subtitle, headers, footers
+    const maxContentHeightSubsequent = pageHeightVal - 150; // safe space for headers/footers
+    
+    // Flatten elements in editorEl
+    const blocks = [];
+    const collectBlocks = (node) => {
+      if (!node) return;
+      if (node.nodeType === 1 && node.getAttribute('data-enterprise-page') === 'true') {
+        Array.from(node.childNodes).forEach(child => {
+          if (child.nodeType === 1 && (
+            child.getAttribute('contenteditable') === 'false' ||
+            child.style.position === 'absolute' ||
+            child.className?.includes('select-none')
+          )) {
+            return;
+          }
+          blocks.push(child);
+        });
+      } else {
+        blocks.push(node);
+      }
+    };
+    
+    const topLevelChildren = Array.from(editorEl.childNodes);
+    topLevelChildren.forEach(child => {
+      if (child.nodeType === 1 && (
+        child.getAttribute('contenteditable') === 'false' ||
+        child.style.position === 'absolute' ||
+        child.className?.includes('select-none')
+      )) {
+        return;
+      }
+      collectBlocks(child);
+    });
+    
+    editorEl.innerHTML = '';
+    
+    let currentPage = null;
+    let pageIndex = 1;
+    
+    const createPageNode = (num) => {
+      const pageWrapper = document.createElement('div');
+      pageWrapper.setAttribute('data-enterprise-page', 'true');
+      pageWrapper.setAttribute('contenteditable', 'true');
+      pageWrapper.style.position = 'relative';
+      pageWrapper.style.minHeight = `${pageHeightVal}px`;
+      pageWrapper.style.maxHeight = `${pageHeightVal}px`;
+      pageWrapper.style.overflow = 'hidden';
+      pageWrapper.style.marginTop = '24px';
+      pageWrapper.style.padding = '64px 48px 78px';
+      pageWrapper.style.background = '#ffffff';
+      pageWrapper.style.border = '1px solid rgba(148,163,184,0.22)';
+      pageWrapper.style.borderRadius = '20px';
+      pageWrapper.style.boxShadow = '0 10px 22px -18px rgba(15,23,42,0.22)';
+      
+      // Page theme colors
+      if (docTheme === 'emerald') {
+        pageWrapper.style.backgroundColor = '#F0FDF4';
+        pageWrapper.style.color = '#064E3B';
+      } else if (docTheme === 'amber') {
+        pageWrapper.style.backgroundColor = '#FEFBE8';
+        pageWrapper.style.color = '#451A03';
+      } else if (docTheme === 'rose') {
+        pageWrapper.style.backgroundColor = '#FFF1F2';
+        pageWrapper.style.color = '#4C0519';
+      } else if (docTheme === 'slate') {
+        pageWrapper.style.backgroundColor = '#F8FAFC';
+        pageWrapper.style.color = '#0F172A';
+      }
+      
+      if (docHeaderText) {
+        const headerEl = document.createElement('div');
+        headerEl.setAttribute('contenteditable', 'false');
+        headerEl.className = 'select-none';
+        headerEl.style.position = 'absolute';
+        headerEl.style.top = '24px';
+        headerEl.style.left = '48px';
+        headerEl.style.right = '48px';
+        headerEl.style.fontSize = '10px';
+        headerEl.style.color = '#94a3b8';
+        headerEl.style.borderBottom = '1px solid #f1f5f9';
+        headerEl.style.paddingBottom = '6px';
+        headerEl.style.display = 'flex';
+        headerEl.style.justifyContent = 'space-between';
+        headerEl.innerHTML = `<span>${docHeaderText}</span><span style="font-weight:bold;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:0 4px;">Draft</span>`;
+        pageWrapper.appendChild(headerEl);
+      }
+      
+      if (docFooterText) {
+        const footerEl = document.createElement('div');
+        footerEl.setAttribute('contenteditable', 'false');
+        footerEl.className = 'select-none';
+        footerEl.style.position = 'absolute';
+        footerEl.style.bottom = '24px';
+        footerEl.style.left = '48px';
+        footerEl.style.right = '48px';
+        footerEl.style.fontSize = '10px';
+        footerEl.style.color = '#94a3b8';
+        footerEl.style.borderTop = '1px solid #f1f5f9';
+        footerEl.style.paddingTop = '6px';
+        footerEl.textContent = docFooterText;
+        pageWrapper.appendChild(footerEl);
+      }
+      
+      if (showPageNumbers) {
+        const pageNumEl = document.createElement('div');
+        pageNumEl.setAttribute('contenteditable', 'false');
+        pageNumEl.className = 'select-none';
+        pageNumEl.style.position = 'absolute';
+        pageNumEl.style.bottom = '24px';
+        if (pageNumberPos === 'bottom-left') {
+          pageNumEl.style.left = '48px';
+        } else if (pageNumberPos === 'bottom-right') {
+          pageNumEl.style.right = '48px';
+        } else {
+          pageNumEl.style.left = '50%';
+          pageNumEl.style.transform = 'translateX(-50%)';
+        }
+        pageNumEl.style.fontSize = '11px';
+        pageNumEl.style.color = '#94a3b8';
+        pageNumEl.textContent = String(num);
+        pageWrapper.appendChild(pageNumEl);
+      }
+      
+      return pageWrapper;
+    };
+    
+    blocks.forEach(block => {
+      let nodeToAppend = block;
+      if (block.nodeType === 3) {
+        if (!block.textContent.trim()) return;
+        nodeToAppend = document.createElement('p');
+        nodeToAppend.appendChild(block);
+      }
+      
+      if (!currentPage) {
+        editorEl.appendChild(nodeToAppend);
+        const currentHeight = editorEl.offsetHeight || 0;
+        if (currentHeight > maxContentHeightFirstPage) {
+          editorEl.removeChild(nodeToAppend);
+          pageIndex = 2;
+          currentPage = createPageNode(pageIndex);
+          editorEl.appendChild(currentPage);
+          currentPage.appendChild(nodeToAppend);
+        }
+      } else {
+        currentPage.appendChild(nodeToAppend);
+        let contentHeight = 0;
+        Array.from(currentPage.childNodes).forEach(c => {
+          if (c.nodeType === 1 && c.style.position !== 'absolute') {
+            contentHeight += c.offsetHeight || 18;
+          }
+        });
+        if (contentHeight > maxContentHeightSubsequent) {
+          currentPage.removeChild(nodeToAppend);
+          pageIndex++;
+          currentPage = createPageNode(pageIndex);
+          editorEl.appendChild(currentPage);
+          currentPage.appendChild(nodeToAppend);
+        }
+      }
+    });
+  };
+
   const handleEditablePaste = (event, placeholder, afterPaste) => {
     const target = event.currentTarget;
     const plainText = event.clipboardData?.getData('text/plain') || '';
@@ -5752,6 +5985,9 @@ export default function App() {
       }
     }
     normalizeEditableDirection(target);
+    if (isBodyTarget) {
+      performPagination(target);
+    }
     if (afterPaste) {
       afterPaste(target);
     }
@@ -16942,17 +17178,58 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                 <div>
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Brand Settings</div>
-                  <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4 shadow-sm">
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-4 shadow-sm relative">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-medium text-slate-600">Primary Font</span>
-                      <span className="text-xs font-semibold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg">Inter</span>
+                      <select
+                        value={editorFont}
+                        onChange={(e) => {
+                          setEditorFont(e.target.value);
+                          showToast(`Primary font updated to ${e.target.value}`);
+                        }}
+                        className="text-xs font-semibold bg-slate-100 text-slate-700 px-2 py-1 rounded-lg border-none outline-none cursor-pointer focus:ring-1 focus:ring-violet-500"
+                      >
+                        {['Inter', 'Charter', 'Manrope', 'Georgia', 'Arial', 'Courier New', 'Trebuchet MS'].map(f => (
+                          <option key={f} value={f}>{f}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between relative">
                       <span className="text-xs font-medium text-slate-600">Brand Color</span>
-                      <div className="w-5 h-5 rounded-full bg-violet-600 shadow-sm border border-slate-200"></div>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setBrandColorPickerOpen(!brandColorPickerOpen)}
+                          className="w-6 h-6 rounded-full shadow-sm border border-slate-200 cursor-pointer transition-transform hover:scale-110"
+                          style={{ backgroundColor: brandColor }}
+                        />
+                        {brandColorPickerOpen && (
+                          <div className="absolute right-0 bottom-full mb-2 z-50 bg-white border border-gray-200 rounded-xl p-2.5 shadow-xl grid grid-cols-4 gap-1.5 w-36">
+                            {['#7c3aed', '#059669', '#d97706', '#db2777', '#2563eb', '#dc2626', '#4b5563', '#0f172a'].map((c) => (
+                              <button
+                                key={c}
+                                type="button"
+                                onClick={() => {
+                                  setBrandColor(c);
+                                  setBrandColorPickerOpen(false);
+                                  showToast(`Brand color updated to ${c}`);
+                                }}
+                                className="w-5 h-5 rounded-full border border-gray-150 transition-transform hover:scale-110"
+                                style={{ backgroundColor: c }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="pt-2">
-                      <button type="button" onClick={() => showToast('Brand kit opened')} className="w-full py-2 rounded-lg bg-slate-50 text-xs text-violet-600 font-semibold hover:bg-violet-50 transition-colors">Edit brand kit</button>
+                      <button 
+                        type="button" 
+                        onClick={() => setBrandKitModalOpen(true)} 
+                        className="w-full py-2 rounded-lg bg-slate-50 text-xs text-violet-600 font-semibold hover:bg-violet-50 transition-colors"
+                      >
+                        Edit brand kit
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -24237,34 +24514,273 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {/* Main Nav Links */}
         {showDocumentOutlineView ? (
-          <div className="flex-1 overflow-y-auto px-3 py-3">
-            <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)]">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
-                <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5">{Math.max(0, documentOutlineItems.length - 1)} Sections</span>
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-4 thin-scrollbar flex flex-col font-sans select-none text-left">
+            {/* Header / Meta */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Document Outline</span>
+                <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full">
+                  {outlineTreeData.length} Sections
+                </span>
               </div>
-              <div className="mb-3 rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
-                <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Focused document</div>
-                <div className="text-sm font-semibold text-gray-900 truncate mt-1" title={docTitle}>{docTitleDisplay}</div>
-              </div>
-              {documentOutlineItems.length > 1 ? (
-                <div className="max-h-[52vh] overflow-y-auto pr-1 space-y-0.5 thin-scrollbar">
-                  {documentOutlineItems.map((item, index) => (
-                    <button
-                      key={`${item.id}-${index}`}
-                      type="button"
-                      onClick={() => jumpToOutlineItem(item)}
-                      className={`w-full text-left rounded-lg py-1.5 text-xs transition-colors ${item.isTitle ? 'font-semibold text-gray-900 hover:bg-violet-50 px-2' : 'text-gray-600 hover:bg-gray-100'}`}
-                      style={item.isTitle ? undefined : { paddingLeft: `${10 + Math.max(0, item.level - 1) * 12}px`, paddingRight: '6px' }}
-                      title={item.label}
-                    >
-                      <span className="block truncate">{item.label}</span>
-                    </button>
-                  ))}
+              
+              <div className="flex items-center gap-3">
+                <div className="relative shrink-0">
+                  <svg className="w-11 h-11 transform -rotate-90">
+                    <circle cx="22" cy="22" r="18" fill="transparent" stroke="#f1f5f9" strokeWidth="3.5" />
+                    <circle cx="22" cy="22" r="18" fill="transparent" stroke="#7c3aed" strokeWidth="3.5" strokeDasharray={2 * Math.PI * 18} strokeDashoffset={2 * Math.PI * 18 * (1 - 0.84)} />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-slate-800">84%</span>
                 </div>
-              ) : (
-                <div className="text-[11px] text-gray-500 px-1.5 py-2">Generate or format headings to populate the outline.</div>
-              )}
+                <div className="min-w-0">
+                  <h4 className="text-sm font-bold text-slate-900 truncate flex items-center gap-1">
+                    {docTitleDisplay}
+                    <ChevronDown size={14} className="text-slate-400 cursor-pointer" />
+                  </h4>
+                  <p className="text-[10px] text-slate-450 font-medium">
+                    {outlineTreeData.length} Sections &bull; 4,821 Words &bull; 18 min read
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  showToast('AI outline generation started...');
+                  setTimeout(() => {
+                    setOutlineTreeData(prev => [
+                      ...prev,
+                      { id: `sec-${Date.now()}`, title: 'Advanced Strategies', completed: false, progress: 0, subsections: [] }
+                    ]);
+                    showToast('AI appended a new strategic section!');
+                  }, 1200);
+                }}
+                className="w-full py-2 flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-750 text-xs font-semibold text-white shadow-sm transition-all"
+              >
+                <Sparkles size={13} />
+                Generate Structure
+              </button>
+            </div>
+
+            {/* Outline Tree List */}
+            <div className="flex-1 bg-white rounded-2xl p-3 border border-slate-100 shadow-sm overflow-y-auto max-h-[35vh] space-y-1 relative">
+              {outlineTreeData.map((section) => (
+                <div key={section.id} className="space-y-1">
+                  <div className="group flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 transition-colors relative">
+                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
+                        }}
+                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        {section.subsections?.length > 0 ? (
+                          section.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+                        ) : (
+                          <span className="w-3.5 block" />
+                        )}
+                      </button>
+                      
+                      {editingOutlineId === section.id ? (
+                        <input
+                          type="text"
+                          value={editingOutlineText}
+                          onChange={(e) => setEditingOutlineText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                              setEditingOutlineId(null);
+                              showToast('Section renamed');
+                            }
+                          }}
+                          onBlur={() => {
+                            setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                            setEditingOutlineId(null);
+                          }}
+                          autoFocus
+                          className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
+                        />
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-700 truncate cursor-pointer hover:text-slate-900">
+                          {section.title}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 pl-2">
+                      {section.completed ? (
+                        <span className="w-4 h-4 rounded-full bg-emerald-100 flex items-center justify-center text-[10px] text-emerald-700 font-bold">✓</span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1 rounded">
+                          {section.progress}%
+                        </span>
+                      )}
+
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                        >
+                          <MoreVertical size={13} />
+                        </button>
+                        
+                        {activeOutlineMenuId === section.id && (
+                          <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left font-sans">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingOutlineId(section.id);
+                                setEditingOutlineText(section.title);
+                                setActiveOutlineMenuId(null);
+                              }}
+                              className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                            >
+                              Rename
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                showToast(`AI Summary of ${section.title}: Focus on core strategies and optimization.`);
+                                setActiveOutlineMenuId(null);
+                              }}
+                              className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                            >
+                              Summarize
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: true } : s));
+                                setActiveOutlineMenuId(null);
+                              }}
+                              className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                            >
+                              Expand
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                showToast(`AI Rewriting ${section.title}...`);
+                                setActiveOutlineMenuId(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                            >
+                              Rewrite
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOutlineTreeData(prev => prev.map(s => s.id === section.id ? {
+                                  ...s,
+                                  subsections: [...s.subsections, { id: `sub-${Date.now()}`, title: 'Generated Subsection' }],
+                                  expanded: true
+                                } : s));
+                                showToast('AI generated subsections');
+                                setActiveOutlineMenuId(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                            >
+                              Generate Subsections
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const idx = outlineTreeData.findIndex(s => s.id === section.id);
+                                if (idx > 0) {
+                                  const list = [...outlineTreeData];
+                                  const temp = list[idx];
+                                  list[idx] = list[idx - 1];
+                                  list[idx - 1] = temp;
+                                  setOutlineTreeData(list);
+                                }
+                                setActiveOutlineMenuId(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                            >
+                              Move Up
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOutlineTreeData(prev => prev.filter(s => s.id !== section.id));
+                                showToast('Section deleted');
+                                setActiveOutlineMenuId(null);
+                              }}
+                              className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-600 font-bold flex items-center gap-2 border-t border-slate-100"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Render Subsections */}
+                  {section.expanded && section.subsections && section.subsections.length > 0 && (
+                    <div className="pl-6 space-y-1 border-l border-slate-100 ml-3">
+                      {section.subsections.map(sub => (
+                        <div key={sub.id} className="flex items-center gap-2 py-1">
+                          <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
+                          <span className="text-[11px] text-slate-550 font-medium truncate">{sub.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Tree Buttons */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const title = prompt('Enter section title:');
+                  if (title) {
+                    setOutlineTreeData(prev => [
+                      ...prev,
+                      { id: `sec-${Date.now()}`, title, completed: false, progress: 0, subsections: [] }
+                    ]);
+                  }
+                }}
+                className="py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 text-center shadow-sm"
+              >
+                + Add Section
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOutlineTreeData(prev => prev.map(s => ({ ...s, expanded: true })));
+                  showToast('Outline expanded');
+                }}
+                className="py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 text-center shadow-sm"
+              >
+                + Expand Outline
+              </button>
+            </div>
+
+            {/* Health / Suggestions Card */}
+            <div className="bg-[#FAF9FC] border border-violet-100/70 rounded-2xl p-4 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-slate-700">Document Health</span>
+                <span className="text-xs font-bold text-violet-600">84%</span>
+              </div>
+              <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div className="bg-violet-600 h-full rounded-full" style={{ width: '84%' }}></div>
+              </div>
+              <div className="space-y-1.5 text-xs text-slate-600 font-medium">
+                <div className="flex items-center justify-between py-1 bg-white rounded-lg px-2.5 border border-slate-100/50">
+                  <span className="flex items-center gap-1.5">🪄 AI Suggestions</span>
+                  <span className="text-[10px] font-bold bg-violet-50 text-violet-600 px-1.5 py-0.5 rounded-full">3</span>
+                </div>
+                <div className="flex items-center justify-between py-1 bg-white rounded-lg px-2.5 border border-slate-100/50">
+                  <span className="flex items-center gap-1.5 text-amber-600">⚠ Missing Conclusion</span>
+                  <span className="text-[10px] font-bold bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full">!</span>
+                </div>
+              </div>
             </div>
           </div>
         ) : (
@@ -27704,12 +28220,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
             className="mx-auto"
             style={{
               width: '100%',
-              maxWidth: `${ENTERPRISE_PAGE_WIDTH_PX}px`,
+              maxWidth: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`,
               transform: `scale(${zoomLevel / 100})`,
               transformOrigin: 'top center',
               transition: 'transform 180ms ease-out',
             }}
           >
+            <div className="flex justify-between items-center mb-3 px-6 select-none bg-slate-50 border border-slate-100 rounded-full py-1 text-[11px] font-bold text-slate-500 shadow-sm">
+              <span className="capitalize text-violet-600 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-violet-500 animate-pulse"></span>
+                {docPageSize} &bull; {pageOrientation} ({pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)} x {pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)} px)
+              </span>
+              <span className="text-[10px] text-slate-400 bg-white border border-slate-150 px-2.5 py-0.5 rounded-full">
+                Margin: {docMargins}
+              </span>
+            </div>
+
           <div
             ref={documentCardRef}
             onKeyDownCapture={(event) => {
@@ -27738,12 +28264,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
               insertEnterprisePage();
             }}
-            className={`compose-editor-surface mx-auto bg-white rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] border border-gray-100/70 pt-16 pb-36 relative ${
-              docTheme === 'emerald' ? 'font-sans text-emerald-950' :
-              docTheme === 'amber' ? 'font-serif text-amber-950 bg-amber-50/5' :
-              docTheme === 'rose' ? 'font-sans text-rose-950 bg-rose-50/5' :
-              docTheme === 'slate' ? 'font-mono text-slate-900 bg-slate-50/5' :
-              'font-sans text-gray-900'
+            className={`compose-editor-surface mx-auto rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] pt-16 pb-36 relative border transition-all ${
+              docTheme === 'emerald' ? 'bg-[#F0FDF4] border-[#BBF7D0] text-emerald-950 font-sans' :
+              docTheme === 'amber' ? 'bg-[#FEFBE8] border-[#FEF08A] text-amber-950 font-serif' :
+              docTheme === 'rose' ? 'bg-[#FFF1F2] border-[#FECDD3] text-rose-950 font-sans' :
+              docTheme === 'slate' ? 'bg-[#F8FAFC] border-[#E2E8F0] text-slate-900 font-mono' :
+              'bg-[#FAF5FF] border-[#E9D5FF] text-gray-900 font-sans'
             }`}
             style={{ 
               width: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
@@ -28606,6 +29132,116 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </button>
               );
             })}
+        </div>
+      )}
+
+      {brandKitModalOpen && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left font-sans">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Sparkles className="text-violet-600" size={18} />
+                Brand Kit Settings
+              </h3>
+              <button
+                type="button"
+                onClick={() => setBrandKitModalOpen(false)}
+                className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Logo Upload */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Brand Logo</label>
+                <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center gap-2 hover:bg-slate-50 transition-colors relative">
+                  {uploadedBrandLogo ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img src={uploadedBrandLogo} alt="Brand logo" className="h-12 object-contain" />
+                      <button
+                        type="button"
+                        onClick={() => setUploadedBrandLogo(null)}
+                        className="text-[10px] text-red-500 font-bold hover:underline"
+                      >
+                        Remove Logo
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <Upload size={24} className="text-slate-400" />
+                      <span className="text-xs text-slate-500">Upload your logo (PNG, JPG)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const url = URL.createObjectURL(file);
+                            setUploadedBrandLogo(url);
+                            showToast('Brand logo uploaded successfully!');
+                          }
+                        }}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Brand Typography */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Brand Typography</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" className={`p-2 border rounded-lg text-left transition-all ${editorFont === 'Inter' ? 'border-violet-600 bg-violet-50/50' : 'border-slate-150 bg-white hover:border-slate-300'}`} onClick={() => setEditorFont('Inter')}>
+                    <span className="text-xs font-bold block">Inter</span>
+                    <span className="text-[10px] text-slate-400">Modern sans-serif</span>
+                  </button>
+                  <button type="button" className={`p-2 border rounded-lg text-left transition-all ${editorFont === 'Charter' ? 'border-violet-600 bg-violet-50/50' : 'border-slate-150 bg-white hover:border-slate-300'}`} onClick={() => setEditorFont('Charter')}>
+                    <span className="text-xs font-serif font-bold block">Charter</span>
+                    <span className="text-[10px] text-slate-400">Classic editorial serif</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Theme Color Presets */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Brand Palette Presets</label>
+                <div className="flex gap-2">
+                  {['#7c3aed', '#059669', '#d97706', '#db2777', '#2563eb'].map(col => (
+                    <button
+                      key={col}
+                      type="button"
+                      onClick={() => setBrandColor(col)}
+                      className={`w-7 h-7 rounded-full border border-gray-200 transition-all ${brandColor === col ? 'scale-110 ring-2 ring-violet-500' : 'hover:scale-105'}`}
+                      style={{ backgroundColor: col }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-3 mt-2">
+              <button
+                type="button"
+                onClick={() => setBrandKitModalOpen(false)}
+                className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBrandKitModalOpen(false);
+                  showToast('Brand Kit saved and applied to workspace!');
+                }}
+                className="px-4 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-750"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
