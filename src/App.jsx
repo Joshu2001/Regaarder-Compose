@@ -22757,27 +22757,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col h-full bg-[#f5f7fc]">
-                    <div className="h-12 border-b border-gray-200 bg-[#f5f7fc] flex items-center px-4 justify-between text-[13px] font-medium text-gray-600">
-                      <div className="flex items-center gap-3">
-                        <button type="button" onClick={addDeckSlide} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
-                          <Plus size={14} />
-                          <span>Add Slide</span>
-                        </button>
-                        <button type="button" onClick={handlePresentDeck} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
-                          <MonitorPlay size={14} />
-                          <span>Present</span>
-                        </button>
+                  <div className="flex flex-col h-full bg-[#f5f7fc] p-4 md:p-6 overflow-hidden">
+                    <div className="flex-1 flex flex-col bg-white rounded-[24px] border border-gray-200 shadow-sm overflow-hidden">
+                      <div className="h-16 border-b border-gray-100 bg-white flex items-center px-6 justify-between text-[13px] font-medium text-gray-600 shrink-0">
+                        <div className="flex items-center gap-3">
+                          <button type="button" onClick={addDeckSlide} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                            <Plus size={14} />
+                            <span>Add Slide</span>
+                          </button>
+                          <button type="button" onClick={handlePresentDeck} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                            <MonitorPlay size={14} />
+                            <span>Present</span>
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button type="button" onClick={() => { setActiveRightTab('properties'); setRightSidebarOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                            <Settings size={14} />
+                            <span>Properties</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <button type="button" onClick={() => { setActiveRightTab('properties'); setRightSidebarOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
-                          <Settings size={14} />
-                          <span>Properties</span>
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 overflow-hidden p-4 md:p-8 flex justify-center items-start gap-8 bg-[#f5f7fc]">
+                      
+                      <div className="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start gap-8 bg-white relative">
 
                     {deckContextRailTab === 'Template' && (
                       <div className="mt-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/40 to-white p-3 shadow-[0_16px_30px_-24px_rgba(109,40,217,0.45)]">
@@ -22828,8 +22829,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
 
-                    <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full h-full bg-[#f5f7fc] ${isPresentingDeck ? 'justify-center' : ''}`}>
-                      <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-[24px] overflow-hidden mt-4 w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas" style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 16 / 9))' : 'min(1100px, calc((100vh - 220px) * 16 / 9))' }}>
+                    <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full h-full ${isPresentingDeck ? 'bg-[#f5f7fc] justify-center fixed inset-0 z-50' : ''}`}>
+                      <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative rounded-[24px] overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas ${isPresentingDeck ? 'mt-0' : 'mt-4'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 16 / 9))' : 'min(1100px, calc((100vh - 220px) * 16 / 9))' }}>
                         <div className={`absolute inset-0 ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-8 md:p-12`} style={{ zoom: `${deckZoomLevel}%`, transition: 'zoom 140ms ease' }}>
 
                         <div>
@@ -22866,7 +22867,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
 
                       {/* Bottom Toolbar & Notes */}
-                      <div className="mt-6 mb-8 flex items-center justify-between bg-white rounded-[24px] shadow-sm px-5 py-2.5 w-[95%] max-w-[1100px]">
+                      <div className={`mt-6 mb-8 flex items-center justify-between bg-white rounded-[24px] border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] px-5 py-2.5 w-[95%] max-w-[1100px] ${isPresentingDeck ? 'fixed bottom-6 left-1/2 -translate-x-1/2' : ''}`}>
                         <div className="flex items-center gap-6">
                           <button 
                             onClick={() => setShowDeckNotes(!showDeckNotes)} 
@@ -22934,6 +22935,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       )}
                     </div>
                     </div>
+                  </div>
                   </div>
                   </div>
                 )}
