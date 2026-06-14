@@ -995,7 +995,7 @@ export default function App() {
   const [deckPromptChips, setDeckPromptChips] = useState(['Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft']);
   const [deckCustomChip, setDeckCustomChip] = useState('');
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
-  const [deckZoomLevel, setDeckZoomLevel] = useState(150);
+  const [deckZoomLevel, setDeckZoomLevel] = useState(100);
   const [isPresentingDeck, setIsPresentingDeck] = useState(false);
   const [showDeckNotes, setShowDeckNotes] = useState(false);
   const [deckTimerSeconds, setDeckTimerSeconds] = useState(0);
@@ -12135,7 +12135,7 @@ Rules:
       return;
     }
     if (productMode === 'deck') {
-      const deckPrompt = `${prompt}\n\nDeck Assistant mode: produce visual-first slide output with narrative pacing, clear hierarchy, and speaker notes where useful.`;
+      const deckPrompt = `${prompt}\n\nContext: Target and reference the currently selected slide (Slide ${activeDeckSlideId}). Deck Assistant mode: produce visual-first slide output with narrative pacing, clear hierarchy, and speaker notes where useful.`;
       handleAISubmit(deckPrompt, {
         source: 'chat',
         tone: promptTone,
@@ -12145,8 +12145,12 @@ Rules:
       });
       setRightSidebarOpen(true);
       setActiveRightTab('assistant');
+    } else if (productMode === 'sheet') {
+      const sheetPrompt = `${prompt}\n\nContext: Target specific elements of Sheet ${activeSheetId}. Assistant mode: analyze spreadsheet data.`;
+      handleAISubmit(sheetPrompt, { source: 'chat' });
     } else {
-      handleAISubmit(prompt, { source: 'chat' });
+      const docPrompt = `${prompt}\n\nContext: Operate on the active document/text context. Assistant mode: draft and edit.`;
+      handleAISubmit(docPrompt, { source: 'chat' });
     }
     setAssistantQuickPrompt('');
   };
@@ -16879,13 +16883,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </button>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button type="button" className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"><Maximize2 size={16} /></button>
+                        <button type="button" className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"><Maximize2 size={16} strokeWidth={2.5} /></button>
                         <button 
                           type="submit" 
                           disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady}
                           className={`p-2 rounded-xl transition-colors ${(isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady) ? 'bg-violet-50 text-violet-400 cursor-not-allowed' : 'bg-violet-600 text-white shadow-sm hover:bg-violet-700'}`}
                         >
-                          <Send size={16} />
+                          <Send size={16} strokeWidth={2.5} />
                         </button>
                       </div>
                     </div>
@@ -22825,7 +22829,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     )}
 
                     <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full h-full bg-[#f5f7fc] ${isPresentingDeck ? 'justify-center' : ''}`}>
-                      <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-[0_8px_30px_rgba(0,0,0,0.06)] mt-4 w-full max-w-[1100px] h-full max-h-[calc(100vh-220px)] aspect-[16/9] object-contain bg-[#10162f] group/canvas mx-auto">
+                      <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-[24px] overflow-hidden mt-4 w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas" style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 16 / 9))' : 'min(1100px, calc((100vh - 220px) * 16 / 9))' }}>
                         <div className={`absolute inset-0 ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-8 md:p-12`} style={{ zoom: `${deckZoomLevel}%`, transition: 'zoom 140ms ease' }}>
 
                         <div>
