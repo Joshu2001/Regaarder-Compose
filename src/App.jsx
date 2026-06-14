@@ -13537,7 +13537,7 @@ Rules:
     setDeckTitle('Untitled deck');
     setDeckSlidesData([createBlankDeckSlide(1)]);
     setActiveDeckSlideId(1);
-    setDeckZoomLevel(150);
+    setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
     setDeckToolbarMenuOpen(false);
     setDeckContextRailTab('Design');
@@ -14287,7 +14287,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         setDeckTitle(docTitle || 'Converted Deck');
         setDeckSlidesData(slides);
         setActiveDeckSlideId(1);
-        setDeckZoomLevel(150);
+        setDeckZoomLevel(100);
         setDeckToolbarFont('Inter');
         setDeckSlidesPanelOpen(true);
         setRightSidebarOpen(false);
@@ -16783,7 +16783,8 @@ Respond with a JSON array of slide objects matching the schema.`;
           {activeRightTab === 'assistant' && (
             <div className="flex-1 flex flex-col min-h-0 bg-white">
               <div className="flex-1 overflow-y-auto p-5">
-                <div className="flex flex-col items-center justify-center h-full text-center mt-2 pb-8">
+                <div className="flex flex-col items-center justify-start min-h-full text-center mt-2 pb-8">
+                  <div className="w-full max-w-[280px] text-[13px] font-semibold text-gray-800 text-left mb-2">Currently editing</div>
                   <div className="w-full max-w-[280px] mb-8 bg-white border border-gray-200 rounded-xl p-3 shadow-sm text-left flex items-center justify-between">
                     <div className="flex items-center gap-3 overflow-hidden">
                       <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
@@ -22410,7 +22411,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
                 <button onClick={openReplayPanel} className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><Clock size={16} /></button>
                 <button className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Comments"><MessageSquare size={16} /></button>
-                <button className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Edit"><PenTool size={16} /></button>
               </div>
 
               <div className="w-px h-5 bg-gray-200 mx-1"></div>
@@ -22757,28 +22757,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col h-full bg-[#f5f7fc] p-4 md:p-6 overflow-hidden">
-                    <div className="flex-1 flex flex-col bg-white rounded-[24px] border border-gray-200 shadow-sm overflow-hidden">
-                      <div className="h-16 border-b border-gray-100 bg-white flex items-center px-6 justify-between text-[13px] font-medium text-gray-600 shrink-0">
+                  <div className="flex flex-col h-full bg-[#FAFAFC] overflow-hidden">
+                    <div className="flex-1 flex flex-col overflow-hidden">
+                      <div className="h-16 flex items-center px-6 justify-between text-[13px] font-medium text-gray-600 shrink-0">
                         <div className="flex items-center gap-3">
-                          <button type="button" onClick={addDeckSlide} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                          <button type="button" onClick={addDeckSlide} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
                             <Plus size={14} />
                             <span>Add Slide</span>
                           </button>
-                          <button type="button" onClick={handlePresentDeck} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                          <button type="button" onClick={handlePresentDeck} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
                             <MonitorPlay size={14} />
                             <span>Present</span>
                           </button>
                         </div>
                         <div className="flex items-center gap-3">
-                          <button type="button" onClick={() => { setActiveRightTab('properties'); setRightSidebarOpen(true); }} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
+                          <button type="button" onClick={() => { setActiveRightTab('properties'); setRightSidebarOpen(true); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
                             <Settings size={14} />
                             <span>Properties</span>
                           </button>
                         </div>
                       </div>
                       
-                      <div className="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start gap-8 bg-white relative">
+                      <div className="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start gap-8 relative">
 
                     {deckContextRailTab === 'Template' && (
                       <div className="mt-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/40 to-white p-3 shadow-[0_16px_30px_-24px_rgba(109,40,217,0.45)]">
@@ -22829,8 +22829,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
 
-                    <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full h-full ${isPresentingDeck ? 'bg-[#f5f7fc] justify-center fixed inset-0 z-50' : ''}`}>
-                      <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative rounded-[24px] overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas ${isPresentingDeck ? 'mt-0' : 'mt-4'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 16 / 9))' : 'min(1100px, calc((100vh - 220px) * 16 / 9))' }}>
+                    <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full h-full ${isPresentingDeck ? 'bg-[#10162f] justify-center fixed inset-0 z-50' : ''}`}>
+                      <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative rounded-[24px] overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 max-w-[90%] shadow-[0_12px_40px_rgba(0,0,0,0.08)]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 120px) * 16 / 9))' : '100%' }}>
                         <div className={`absolute inset-0 ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-8 md:p-12`} style={{ zoom: `${deckZoomLevel}%`, transition: 'zoom 140ms ease' }}>
 
                         <div>
@@ -22938,179 +22938,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                   </div>
                   </div>
-                )}
-                {!deckPromptMinimized && !isComposing && !isSheetsMode && (
-                  <form
-                    className="mt-4 rounded-[24px] border border-violet-100 bg-gradient-to-br from-white via-violet-50/30 to-white p-3 shadow-[0_18px_40px_-28px_rgba(76,29,149,0.45)] cursor-grab active:cursor-grabbing"
-                    style={{ transform: `translate(${deckPromptOffset.x}px, ${deckPromptOffset.y}px)` }}
-                    onPointerDown={(event) => beginPanelResize('deckPrompt', event)}
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      const prompt = deckPromptInput.trim();
-                      if ((!prompt && !promptAttachments.length) || isComposing) {
-                        return;
-                      }
-                      const finalPrompt = prompt || (isSheetsMode ? 'Analyze this sheet and produce insights.' : 'Generate content for this deck slide.');
-                      setActiveRightTab(productMode === 'deck' ? 'assistant' : 'chat');
-                      setRightSidebarOpen(true);
-                      handleAISubmit(finalPrompt, { source: 'chat', attachments: promptAttachments });
-                      setDeckPromptInput('');
-                    }}
-                  >
-                    <div className="flex items-center justify-end mb-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setDeckPromptMinimized(true)}
-                        className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                        title="Minimize prompt"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                    <div className="mb-2 flex flex-wrap items-center gap-1.5">
-                      {[
-                        'Turn this into investor tone',
-                        'Generate competitor comparison slide',
-                        'Make more visual',
-                        'Reduce to 8 slides',
-                        'Simplify for students',
-                      ].map((command) => (
-                        <button
-                          key={command}
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setDeckPromptInput(command);
-                          }}
-                          className="px-2.5 py-1 rounded-full text-[10px] border border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                        >
-                          {command}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="rounded-full border border-gray-200 bg-[#fcfcfe] px-2 py-1.5 flex items-center gap-2">
-                      <input
-                        ref={promptFileInputRef}
-                        type="file"
-                        multiple
-                        className="hidden"
-                        onChange={(event) => {
-                          attachFilesToPrompt(event.target.files);
-                          event.target.value = '';
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={() => promptFileInputRef.current?.click()}
-                        className="w-7 h-7 rounded-full text-gray-500 hover:bg-gray-100 flex items-center justify-center"
-                        title="Attach images, docs, audio, or files"
-                      >
-                        <Plus size={14} />
-                      </button>
-                      <textarea
-                        value={deckPromptInput}
-                        onChange={(event) => setDeckPromptInput(event.target.value)}
-                        onPointerDown={(event) => event.stopPropagation()}
-                        rows={1}
-                        placeholder={isSheetsMode ? 'Ask Sheets AI to analyze, model, or forecast...' : 'Ask AI to generate or refine this slide...'}
-                        className="flex-1 resize-none bg-transparent border-none text-sm outline-none px-1 py-1.5 min-h-[26px] max-h-[110px]"
-                      />
-                      <button
-                        type="button"
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={async () => {
-                          await toggleVoiceRecording('chat');
-                        }}
-                        className="w-7 h-7 rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center"
-                        title="Voice prompt"
-                      >
-                        <Mic size={13} />
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isComposing || (!deckPromptInput.trim() && !promptAttachments.length)}
-                        className={`w-7 h-7 rounded-full text-white flex items-center justify-center ${isComposing || (!deckPromptInput.trim() && !promptAttachments.length) ? 'bg-violet-300 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}`}
-                        title="Send to AI"
-                      >
-                        {isComposing ? <Loader2 size={13} className="animate-spin" /> : <ArrowUp size={13} />}
-                      </button>
-                    </div>
-                    {promptAttachments.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {promptAttachments.slice(0, 8).map((attachment) => (
-                          <button
-                            key={attachment.id}
-                            type="button"
-                            onPointerDown={(event) => event.stopPropagation()}
-                            onClick={() => removePromptAttachment(attachment.id)}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-600"
-                            title="Click to remove"
-                          >
-                            <File size={11} />
-                            <span className="truncate max-w-[130px]">{attachment.name}</span>
-                            <X size={11} className="text-gray-400" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    <div className="mt-2 flex items-center gap-2 flex-wrap">
-                      {deckPromptChips.map((chip) => (
-                        <button
-                          key={chip}
-                          type="button"
-                          onClick={() => {
-                            if (isSheetsMode) {
-                              const formatPrompt = `Format: ${chip}.\n\n${deckPromptInput.trim() || 'Analyze this sheet and produce insights.'}`;
-                              setDeckPromptInput(formatPrompt);
-                              return;
-                            }
-                            setDeckPromptInput(chip);
-                          }}
-                          className="px-2.5 py-1.5 rounded-full text-xs border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-700"
-                        >
-                          {chip}
-                        </button>
-                      ))}
-                      {isSheetsMode && (
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleGenerateSheetFilePrompt();
-                          }}
-                          className="px-2.5 py-1.5 rounded-full text-xs border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                        >
-                          Generate new sheet file
-                        </button>
-                      )}
-                      <div className="ml-auto flex items-center gap-1.5">
-                        <input
-                          type="text"
-                          value={deckCustomChip}
-                          onPointerDown={(event) => event.stopPropagation()}
-                          onChange={(event) => setDeckCustomChip(event.target.value)}
-                          placeholder="Custom chip"
-                          className="h-8 w-28 px-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-violet-300"
-                        />
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            const chip = deckCustomChip.trim();
-                            if (!chip) return;
-                            if (!deckPromptChips.includes(chip)) {
-                              setDeckPromptChips((prev) => [...prev, chip]);
-                            }
-                            setDeckCustomChip('');
-                          }}
-                          className="h-8 px-2 rounded-lg text-xs border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-700"
-                        >
-                          Add
-                        </button>
-                      </div>
-                    </div>
-                  </form>
                 )}
               </div>
             </section>
