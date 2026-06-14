@@ -995,7 +995,7 @@ export default function App() {
   const [deckPromptChips, setDeckPromptChips] = useState(['Timeline', 'Checklist', 'Risk Analysis', 'Article', 'Presentation Draft']);
   const [deckCustomChip, setDeckCustomChip] = useState('');
   const [deckSlidesPanelOpen, setDeckSlidesPanelOpen] = useState(true);
-  const [deckZoomLevel, setDeckZoomLevel] = useState(100);
+  const [deckZoomLevel, setDeckZoomLevel] = useState(150);
   const [isPresentingDeck, setIsPresentingDeck] = useState(false);
   const [showDeckNotes, setShowDeckNotes] = useState(false);
   const [deckTimerSeconds, setDeckTimerSeconds] = useState(0);
@@ -13517,7 +13517,7 @@ Rules:
     setDeckTitle('Untitled deck');
     setDeckSlidesData([createBlankDeckSlide(1)]);
     setActiveDeckSlideId(1);
-    setDeckZoomLevel(100);
+    setDeckZoomLevel(150);
     setDeckToolbarFont('Inter');
     setDeckToolbarMenuOpen(false);
     setDeckContextRailTab('Design');
@@ -14267,7 +14267,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         setDeckTitle(docTitle || 'Converted Deck');
         setDeckSlidesData(slides);
         setActiveDeckSlideId(1);
-        setDeckZoomLevel(100);
+        setDeckZoomLevel(150);
         setDeckToolbarFont('Inter');
         setDeckSlidesPanelOpen(true);
         setRightSidebarOpen(false);
@@ -16379,7 +16379,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
-        <div className="h-14 flex border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC]">
+        <div className="h-14 flex items-center border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC] px-2">
           {productMode !== 'sheets' ? (
           <div
             className="flex-1 min-w-0 overflow-x-auto no-scrollbar"
@@ -16387,7 +16387,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
           >
-            <div className="inline-flex min-w-max">
+            <div className="inline-flex items-center gap-1 min-w-max px-1">
               {[
                 { key: 'chat', label: 'AI Chat' },
                 { key: 'assistant', label: 'AI Assistant' },
@@ -16402,7 +16402,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               ].map((tab) => (
                 <button
                   key={tab.key}
-                  className={`shrink-0 px-3 flex items-center transition-all border-b-2 ${activeRightTab === tab.key ? 'text-violet-600 border-violet-600 bg-white' : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-full transition-all ${activeRightTab === tab.key ? 'bg-white text-gray-900 shadow-sm border border-gray-200/60' : 'text-gray-500 border border-transparent hover:text-gray-700 hover:bg-gray-100/50'}`}
                   onClick={() => {
                     if (tab.key === 'manageen') {
                       createManageenExperience();
@@ -16763,7 +16763,14 @@ Respond with a JSON array of slide objects matching the schema.`;
           {activeRightTab === 'assistant' && (
             <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc]">
               <div className="flex-1 overflow-y-auto p-5">
-                <div className="flex flex-col items-center justify-center h-full text-center mt-8">
+                <div className="flex flex-col items-center justify-center h-full text-center mt-4 pb-8">
+                  <div className="w-full max-w-[280px] mb-8 bg-white border border-gray-200 rounded-xl p-3 shadow-sm text-left relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-1 h-full bg-violet-500"></div>
+                    <div className="text-[10px] font-bold text-violet-600 uppercase tracking-wider mb-1">Currently Editing</div>
+                    <div className="text-sm font-semibold text-gray-900 truncate">Slide {activeDeckSlide?.id || 1}</div>
+                    <div className="text-[11px] text-gray-500 truncate">{activeDeckSlide?.headline || 'Untitled Slide'}</div>
+                  </div>
+
                   <h3 className="text-[16px] font-bold text-gray-900 mb-6 tracking-tight">How can I help with this deck?</h3>
                   
                   <div className="flex flex-col w-full max-w-[280px] gap-2 mx-auto">
@@ -16780,10 +16787,15 @@ Respond with a JSON array of slide objects matching the schema.`;
                         <button 
                           key={idx}
                           onClick={() => setAssistantQuickPrompt(item.label)} 
-                          className="px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50 text-[13px] font-medium text-gray-700 transition-colors flex items-center justify-start gap-3 shadow-sm"
+                          className="group px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50 hover:-translate-y-0.5 hover:shadow-md text-[13px] font-medium text-gray-700 transition-all flex items-center justify-between w-full"
                         >
-                          <Icon size={16} className="text-violet-500" />
-                          {item.label}
+                          <div className="flex items-center gap-3">
+                            <div className="p-1.5 rounded-lg bg-violet-50 text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                              <Icon size={16} />
+                            </div>
+                            {item.label}
+                          </div>
+                          <ArrowRight size={14} className="text-gray-300 group-hover:text-violet-600 transition-colors" />
                         </button>
                       );
                     })}
@@ -16819,32 +16831,32 @@ Respond with a JSON array of slide objects matching the schema.`;
                         }
                       }}
                       placeholder="Ask AI Assistant from here..."
-                      rows={1}
-                      className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-4 pb-2 text-gray-700 placeholder-gray-400 resize-none min-h-[50px]"
+                      rows={3}
+                      className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-4 pb-2 text-gray-700 placeholder-gray-400 resize-none min-h-[80px]"
                     />
                     <div className="flex items-center justify-between px-2 pb-2">
                       <div className="flex items-center gap-1">
                         <button
                           type="button"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                           title="Attach files"
                         >
-                          <Plus size={18} strokeWidth={2.5} />
+                          <Plus size={20} strokeWidth={2.5} />
                         </button>
                         <button
                           type="button"
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                           title="Voice dictation"
                         >
-                          <Mic size={18} />
+                          <Mic size={20} />
                         </button>
                       </div>
                       <button 
                         type="submit" 
                         disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady}
-                        className={`p-1.5 rounded-lg transition-colors ${(isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady) ? 'bg-violet-50 text-violet-400 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm'}`}
+                        className={`p-2 rounded-lg transition-colors ${(isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady) ? 'bg-violet-50 text-violet-400 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm'}`}
                       >
-                        <Send size={16} />
+                        <Send size={18} />
                       </button>
                     </div>
                   </div>
@@ -22259,8 +22271,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     className={`w-full relative rounded-xl p-2 text-left transition-colors ${isActive ? 'bg-violet-50' : 'bg-transparent hover:bg-gray-50/80'}`}
                   >
                     {isActive && <div className="absolute left-0 top-3 bottom-3 w-[3px] bg-violet-500 rounded-r-full" />}
-                    <div className="flex items-start gap-2">
-                      <div className="w-20 h-12 rounded-md shrink-0 relative overflow-hidden border border-gray-200 bg-white">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-[108px] h-[61px] rounded-lg shrink-0 relative overflow-hidden border border-gray-200 bg-white shadow-sm">
                         <img
                           src={isSheetsMode
                             ? (sheetSnapshotPreviews[item.id] || buildSheetPreviewDataUri(item))
@@ -22270,10 +22282,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           loading="lazy"
                         />
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-[10px] text-gray-400">{String(item.id).padStart(2, '0')}</div>
-                        <div className="text-xs font-semibold text-gray-800 truncate">{item.title}</div>
-                        <div className="text-[11px] text-gray-500 truncate">{item.subtitle}</div>
+                      <div className="min-w-0 py-0.5">
+                        <div className="text-[10px] font-bold text-gray-400 mb-0.5">{String(item.id).padStart(2, '0')}</div>
+                        <div className="text-[11px] font-medium text-gray-700 leading-snug line-clamp-2">{item.title}</div>
                       </div>
                     </div>
                   </button>
@@ -22337,48 +22348,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {isSheetsMode ? (sheetsTitle || 'Unsaved draft') : (deckTitle || 'Unsaved draft')}
                 </button>
               )}
-              <div className="flex items-center gap-1.5 text-xs text-gray-400 ml-2 hidden sm:flex">
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 ml-4 hidden sm:flex">
                 <Cloud size={14} /> {savedStatusLabel}
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 mr-2">
-                <button onClick={undoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Undo (Ctrl+Z)"><Undo2 size={15} /></button>
-                <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={15} /></button>
-                <button onClick={openReplayPanel} className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><Clock size={15} /></button>
-                <button onClick={saveDocumentLocally} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Save locally (Ctrl+S)"><Save size={15} /></button>
+            
+            <div className="flex items-center gap-1">
+              {/* History Group */}
+              <div className="flex items-center gap-0.5 px-2">
+                <button onClick={undoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
+                <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
+                <button onClick={openReplayPanel} className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><Clock size={16} /></button>
+                <button onClick={saveDocumentLocally} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Save locally (Ctrl+S)"><Save size={16} /></button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsDarkMode((prev) => !prev)}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
-              </button>
-              <button
-                type="button"
-                onClick={toggleDocumentImmersiveMode}
-                className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'}`}
-                title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
-                aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
-              >
-                {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
-              </button>
-              <button
-                type="button"
-                onClick={() => openShareModal(activeDocId || documents[0]?.id)}
-                className="bg-violet-600 hover:bg-violet-700 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-2"
-              >
-                <Users size={14} /> Share
-              </button>
-              <div className="flex -space-x-2">
-                <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80" alt="Sarah" />
-                <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" alt="Mike" />
-                <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" alt="Maya" />
-              </div>
-              <div className="relative" ref={notificationsPanelRef}>
+
+              <div className="w-px h-5 bg-gray-200 mx-1"></div>
+
+              {/* Display Group */}
+              <div className="flex items-center gap-0.5 px-2">
                 <button
+                  type="button"
+                  onClick={() => setIsDarkMode((prev) => !prev)}
+                  className="p-1.5 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleDocumentImmersiveMode}
+                  className={`p-1.5 flex items-center justify-center rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                  title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
+                >
+                  {isDocumentImmersive ? <Minimize2 size={16} /> : <Expand size={16} />}
+                </button>
+              </div>
+
+              <div className="w-px h-5 bg-gray-200 mx-1"></div>
+
+              {/* Collaboration Group */}
+              <div className="flex items-center gap-4 pl-3">
+                <button
+                  type="button"
+                  onClick={() => openShareModal(activeDocId || documents[0]?.id)}
+                  className="bg-violet-600 hover:bg-violet-700 text-white text-[13px] font-semibold px-4 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all hover:-translate-y-0.5"
+                >
+                  <Users size={14} /> Share
+                </button>
+                <div className="flex items-center gap-4">
+                  <div className="flex -space-x-2">
+                    <img className="w-7 h-7 rounded-full border-2 border-white shadow-sm" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80" alt="Sarah" />
+                    <img className="w-7 h-7 rounded-full border-2 border-white shadow-sm" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" alt="Mike" />
+                    <img className="w-7 h-7 rounded-full border-2 border-white shadow-sm" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" alt="Maya" />
+                  </div>
+                  <div className="relative" ref={notificationsPanelRef}>
+                    <button
                   type="button"
                   onClick={() => {
                     setReplaySpeedMenuOpen(false);
@@ -22700,7 +22724,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
                     
-                    <div className="flex-1 overflow-auto p-4 flex justify-center">
+                    <div className="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start gap-8">
 
                     {deckContextRailTab === 'Template' && (
                       <div className="mt-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/40 to-white p-3 shadow-[0_16px_30px_-24px_rgba(109,40,217,0.45)]">
@@ -22751,8 +22775,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
 
-                    <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg mt-4 max-w-[900px] w-full bg-[#10162f] group/canvas">
-                      <div className={`relative p-8 md:p-12 ${resolvedDeckSlideDesign.preset.background} min-h-[430px] flex flex-col justify-between w-full h-full`} style={{ transform: `scale(${deckZoomLevel / 100})`, transformOrigin: 'center top', transition: 'transform 140ms ease' }}>
+                    <div className="flex flex-col items-center w-full max-w-[1200px]">
+                      <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-lg mt-4 w-[95%] aspect-[16/9] bg-[#10162f] group/canvas">
+                        <div className={`absolute inset-0 ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-8 md:p-12`} style={{ zoom: `${deckZoomLevel}%`, transition: 'zoom 140ms ease' }}>
 
                         <div>
                           <h1
@@ -22856,7 +22881,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {/* Group 4: Fullscreen */}
                           <button 
                             type="button" 
-                            onClick={() => setDeckZoomLevel(100)} 
+                            onClick={() => setDeckZoomLevel(150)} 
                             className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-lg transition-colors"
                             title="Fit to screen"
                           >
@@ -22877,6 +22902,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           />
                         </div>
                       )}
+                    </div>
                     </div>
                   </div>
                   </div>
