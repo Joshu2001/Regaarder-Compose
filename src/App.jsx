@@ -2648,6 +2648,21 @@ export default function App() {
   const [chatFeedbackDrafts, setChatFeedbackDrafts] = useState({});
   const [deckSnapshotPreviews, setDeckSnapshotPreviews] = useState({});
   const [sheetSnapshotPreviews, setSheetSnapshotPreviews] = useState({});
+
+  // Smart Input Proofreading Logic
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (assistantQuickPrompt && /\b(um|uh)\b/i.test(assistantQuickPrompt)) {
+        let cleaned = assistantQuickPrompt.replace(/\b(um|uh)\b/gi, '').replace(/\s+/g, ' ').trim();
+        if (cleaned.length > 0) {
+          cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+          if (!/[.!?]$/.test(cleaned)) cleaned += '.';
+          setAssistantQuickPrompt(cleaned);
+        }
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [assistantQuickPrompt]);
   const [sheetToolbarFont, setSheetToolbarFont] = useState('Manrope');
   const [sheetToolbarSize, setSheetToolbarSize] = useState(14);
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
@@ -16825,7 +16840,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   if (!assistantQuickPrompt.trim()) return;
                   handleAssistantQuickPromptSend(e);
                 }}>
-                  <div className="mb-3 text-[12px] font-medium text-gray-500 px-1">Ask AI anything about this slide...</div>
+                  <div className="mb-3 text-[12px] font-medium text-gray-700 px-1">Ask AI anything about this slide...</div>
                   <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-sm">
                     <textarea
                       value={assistantQuickPrompt}
@@ -16844,12 +16859,24 @@ Respond with a JSON array of slide objects matching the schema.`;
                       }}
                       placeholder="Ask AI Assistant from here..."
                       rows={3}
-                      className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-4 pb-2 text-gray-700 placeholder-gray-400 resize-none min-h-[80px]"
+                      className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-4 pb-2 text-gray-800 placeholder-gray-500 resize-none min-h-[80px]"
                     />
                     <div className="flex items-center justify-between px-2 pb-2">
                       <div className="flex items-center gap-1">
-                        <button type="button" className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"><Plus size={18} strokeWidth={2.5} /></button>
-                        <button type="button" className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"><Mic size={18} /></button>
+                        <label
+                          className="p-2 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer"
+                          title="Attach files"
+                        >
+                          <Plus size={18} strokeWidth={2.5} />
+                          <input type="file" multiple className="hidden" />
+                        </label>
+                        <button
+                          type="button"
+                          className="p-2 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
+                          title="Voice dictation"
+                        >
+                          <Mic size={18} />
+                        </button>
                       </div>
                       <div className="flex items-center gap-1">
                         <button type="button" className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"><Maximize2 size={16} /></button>
@@ -22203,8 +22230,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </div>
 
-          <div className="p-4 border-t border-gray-100 bg-[#FAFAFC]">
-            <button className="flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 w-full transition-colors"><Settings size={16} /> Settings</button>
+          <div className="p-4 border-t border-gray-100 bg-[#FAFAFC] flex items-center justify-between mt-auto">
+            <div className="text-[12px] font-medium text-gray-500">{isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? 'sheets' : 'slides'}</div>
+            <div className="flex items-center gap-1.5 text-[12px] font-medium text-gray-600">
+              <div className="w-2 h-2 rounded-full bg-violet-500"></div>
+              {isSheetsMode ? 'Sheet style' : 'Deck style'}
+            </div>
           </div>
         </aside>
 
@@ -22213,9 +22244,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="h-14 px-4 border-b border-gray-200 flex flex-col justify-center">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <div className="text-sm font-semibold text-gray-800">{isSheetsMode ? 'Sheets' : 'Narrative'}</div>
+                <div 
+                  contentEditable 
+                  suppressContentEditableWarning
+                  className="text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:ring-1 focus:ring-violet-200 rounded px-1 -mx-1"
+                >
+                  {isSheetsMode ? 'Sheets' : 'Narrative'}
+                </div>
                 {(!isSheetsMode || sheetsData.length > 1) && (
-                  <div className="text-[11px] text-gray-500 mt-1">{isSheetsMode ? 'Financial models' : 'Investor Pitch'}</div>
+                  <div 
+                    contentEditable 
+                    suppressContentEditableWarning
+                    className="text-[11px] text-gray-500 mt-0.5 outline-none focus:bg-white focus:ring-1 focus:ring-violet-200 rounded px-1 -mx-1"
+                  >
+                    {isSheetsMode ? 'Financial models' : 'Investor Pitch'}
+                  </div>
                 )}
               </div>
               <button
@@ -22362,7 +22405,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={undoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
                 <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
                 <button onClick={openReplayPanel} className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><Clock size={16} /></button>
-                <button onClick={saveDocumentLocally} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Save locally (Ctrl+S)"><Save size={16} /></button>
+                <button className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Comments"><MessageSquare size={16} /></button>
+                <button className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Edit"><PenTool size={16} /></button>
               </div>
 
               <div className="w-px h-5 bg-gray-200 mx-1"></div>
@@ -22710,7 +22754,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 ) : (
                   <div className="flex flex-col h-full bg-[#f5f7fc]">
-                    <div className="h-12 border-b border-gray-200 bg-white flex items-center px-4 justify-between text-[13px] font-medium text-gray-600">
+                    <div className="h-12 border-b border-gray-200 bg-[#f5f7fc] flex items-center px-4 justify-between text-[13px] font-medium text-gray-600">
                       <div className="flex items-center gap-3">
                         <button type="button" onClick={addDeckSlide} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors">
                           <Plus size={14} />
@@ -22729,7 +22773,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
                     
-                    <div className="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start gap-8">
+                    <div className="flex-1 overflow-hidden p-4 md:p-8 flex justify-center items-start gap-8 bg-[#f5f7fc]">
 
                     {deckContextRailTab === 'Template' && (
                       <div className="mt-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/40 to-white p-3 shadow-[0_16px_30px_-24px_rgba(109,40,217,0.45)]">
@@ -22780,8 +22824,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     )}
 
-                    <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full bg-[#f5f7fc] ${isPresentingDeck ? 'h-screen justify-center' : ''}`}>
-                      <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-[0_8px_30px_rgba(0,0,0,0.06)] mt-8 w-[95%] max-w-[1100px] aspect-[16/9] bg-[#10162f] group/canvas">
+                    <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center w-full h-full bg-[#f5f7fc] ${isPresentingDeck ? 'justify-center' : ''}`}>
+                      <div ref={deckCanvasPreviewRef} className="deck-canvas-preview relative rounded-2xl overflow-hidden border border-slate-200/60 shadow-[0_8px_30px_rgba(0,0,0,0.06)] mt-4 w-full max-w-[1100px] h-full max-h-[calc(100vh-220px)] aspect-[16/9] object-contain bg-[#10162f] group/canvas mx-auto">
                         <div className={`absolute inset-0 ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-8 md:p-12`} style={{ zoom: `${deckZoomLevel}%`, transition: 'zoom 140ms ease' }}>
 
                         <div>
