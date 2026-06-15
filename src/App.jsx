@@ -22,7 +22,28 @@ import {
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
-import AIChatAttachmentChip from './AIChatAttachmentChip';
+
+// Inline attachment chip — avoids module-order TDZ in the production bundle
+function AIChatAttachmentChip({ file, onRemove }) {
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '4px',
+      background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)',
+      borderRadius: '6px', padding: '2px 8px', fontSize: '0.78rem',
+      color: '#5b21b6', margin: '2px', maxWidth: '160px',
+    }}>
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '120px' }}>
+        {file.name}
+      </span>
+      <button
+        type="button"
+        aria-label="Remove attachment"
+        onClick={onRemove}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', lineHeight: 1, padding: '0 2px', fontSize: '1rem' }}
+      >×</button>
+    </span>
+  );
+}
 
 const ensureHtmlList = (rawOutput, type) => {
   let clean = String(rawOutput || '').trim();
