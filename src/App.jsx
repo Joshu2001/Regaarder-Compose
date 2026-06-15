@@ -24645,8 +24645,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="flex-1 overflow-y-auto px-3 py-3" style={{ fontFamily: editorFont }}>
             <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-750 uppercase">Document Outline</span>
-                <span className="text-[10px] font-semibold text-violet-650 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
+                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
+                <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
                   {outlineTreeData.length} Sections
                 </span>
               </div>
@@ -24857,8 +24857,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 onClick={() => {
-                  insertEnterprisePage();
-                  showToast('New page inserted successfully');
+                  createNewComposition();
+                  showToast('New document created');
                 }}
                 className="w-full py-2.5 mt-1 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
                 style={{ fontFamily: editorFont }}
@@ -28503,7 +28503,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     type="button"
                     onClick={() => setDocStateDropdownOpen(!docStateDropdownOpen)}
                     className={`text-[9px] font-bold border rounded-lg px-2 py-1.5 cursor-pointer select-none transition-all duration-200 uppercase flex items-center gap-1.5 hover:shadow-sm ${
-                      docState === 'draft' ? 'bg-violet-50 hover:bg-violet-100/80 text-violet-750 border-violet-250' :
+                      docState === 'draft' ? 'bg-violet-50 hover:bg-violet-100/80 text-violet-700 border-violet-250' :
                       docState === 'ready' ? 'bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border-emerald-250' :
                       docState === 'review' ? 'bg-blue-50 hover:bg-blue-100/80 text-blue-700 border-blue-250' :
                       'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-250'
