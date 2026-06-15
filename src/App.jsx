@@ -3272,7 +3272,66 @@ export default function App() {
     return `Auto detect (${locale})`;
   };
 
+  const syncPageFooters = useCallback(() => {
+    if (!blankBodyRef.current) return;
+    const pages = blankBodyRef.current.querySelectorAll('[data-enterprise-page="true"]');
+    pages.forEach((page, index) => {
+      const pageNum = index + 2;
+      
+      let footerEl = page.querySelector('.page-sheet-footer');
+      if (!footerEl) {
+        footerEl = document.createElement('div');
+        footerEl.setAttribute('contenteditable', 'false');
+        footerEl.className = 'page-sheet-footer select-none';
+        footerEl.style.position = 'absolute';
+        footerEl.style.bottom = '24px';
+        footerEl.style.fontSize = '10px';
+        footerEl.style.fontWeight = '600';
+        footerEl.style.color = '#94a3b8';
+        footerEl.style.borderTop = '1px solid rgba(148, 163, 184, 0.1)';
+        footerEl.style.paddingTop = '12px';
+        page.appendChild(footerEl);
+      }
+
+      const marginPadding = docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px';
+      footerEl.style.left = marginPadding;
+      footerEl.style.right = marginPadding;
+      footerEl.style.display = showPageNumbers || docFooterText ? 'flex' : 'none';
+      footerEl.style.justifyContent = 'space-between';
+
+      footerEl.innerHTML = '';
+
+      if (docFooterText) {
+        const textSpan = document.createElement('span');
+        textSpan.className = 'page-footer-text';
+        textSpan.textContent = docFooterText;
+        footerEl.appendChild(textSpan);
+      } else {
+        const spacer = document.createElement('span');
+        footerEl.appendChild(spacer);
+      }
+
+      if (showPageNumbers) {
+        const numSpan = document.createElement('span');
+        numSpan.className = 'page-footer-num';
+        numSpan.textContent = pageNumberPos === 'bottom-center' ? `Page ${pageNum}` : `${pageNum}`;
+        
+        if (pageNumberPos === 'bottom-left') {
+          footerEl.style.flexDirection = 'row-reverse';
+        } else if (pageNumberPos === 'bottom-center') {
+          numSpan.style.position = 'absolute';
+          numSpan.style.left = '50%';
+          numSpan.style.transform = 'translateX(-50%)';
+        } else {
+          footerEl.style.flexDirection = 'row';
+        }
+        footerEl.appendChild(numSpan);
+      }
+    });
+  }, [docFooterText, showPageNumbers, pageNumberPos, docMargins]);
+
   const computeDocumentStats = useCallback(() => {
+    syncPageFooters();
     const rawText = String(documentCardRef.current?.innerText || '')
       .replace(/\u00a0/g, ' ')
       .replace(/\s+/g, ' ')
@@ -3280,7 +3339,7 @@ export default function App() {
     const words = rawText ? rawText.split(' ').filter(Boolean).length : 0;
     const characters = rawText.length;
     setDocumentStats({ words, characters });
-  }, []);
+  }, [syncPageFooters]);
 
   const computeDocumentOutline = useCallback(() => {
     if (!documentCardRef.current) {
@@ -3589,18 +3648,7 @@ export default function App() {
     paragraph.innerHTML = '<br/>';
     pageWrapper.appendChild(paragraph);
 
-    const pageNumberEl = document.createElement('div');
-    pageNumberEl.setAttribute('contenteditable', 'false');
-    pageNumberEl.style.position = 'absolute';
-    pageNumberEl.style.left = '50%';
-    pageNumberEl.style.bottom = '38px';
-    pageNumberEl.style.transform = 'translateX(-50%)';
-    pageNumberEl.style.fontSize = '11px';
-    pageNumberEl.style.fontWeight = '500';
-    pageNumberEl.style.color = '#94a3b8';
-    pageNumberEl.style.whiteSpace = 'nowrap';
-    pageNumberEl.textContent = `Page ${pageNumber}`;
-    pageWrapper.appendChild(pageNumberEl);
+
 
     let inserted = false;
     if (selection && selection.rangeCount) {
@@ -5189,6 +5237,10 @@ export default function App() {
     observer.observe(documentCardRef.current);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    syncPageFooters();
+  }, [syncPageFooters]);
 
   useEffect(() => {
     if (!documentCardRef.current) {
