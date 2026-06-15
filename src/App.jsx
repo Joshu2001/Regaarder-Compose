@@ -28666,7 +28666,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}
                   dir="ltr"
                   data-doc-id={activeDocId || ''}
-                  className="mb-4 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed relative"
+                  className="mb-4 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed"
                   style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                   dangerouslySetInnerHTML={{ __html: docBodyHtml }}
                 />
