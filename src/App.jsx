@@ -1400,8 +1400,6 @@ export default function App() {
   const shapeDragRef = useRef(null);
   const shapeResizeRef = useRef(null);
   const panDragRef = useRef(null);
-const dmAnyAttachmentInputRef = useRef(null);
-const [promptAttachments, setPromptAttachments] = useState([]);
   const eraserActiveRef = useRef(false);
   const eraserLastPointRef = useRef(null);
   const [dragTarget, setDragTarget] = useState(null);
@@ -18059,18 +18057,18 @@ Respond with a JSON array of slide objects matching the schema.`;
                     {productMode === 'compose' ? 'Ask AI anything about this doc...' : 'Ask AI anything about this slide...'}
                   </div>
                   <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-sm">
-  {promptAttachments.length > 0 && (
-    <div className="flex flex-wrap gap-1 mb-2 px-2">
-      {promptAttachments.map((file, idx) => (
-        <AIChatAttachmentChip
-          key={idx}
-          file={file}
-          onRemove={() => setPromptAttachments(prev => prev.filter((_, i) => i !== idx))}
-        />
-      ))}
-    </div>
-  )}
-  <textarea
+                    {promptAttachments.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-2 px-3">
+                        {promptAttachments.map((file, idx) => (
+                          <AIChatAttachmentChip
+                            key={idx}
+                            file={file}
+                            onRemove={() => setPromptAttachments(prev => prev.filter((_, i) => i !== idx))}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    <textarea
                       value={assistantQuickPrompt}
                       onChange={(e) => setAssistantQuickPrompt(e.target.value)}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
@@ -18096,7 +18094,19 @@ Respond with a JSON array of slide objects matching the schema.`;
                           title="Attach files"
                         >
                           <Plus size={18} strokeWidth={2.5} />
-                          <input type="file" multiple className="hidden" />
+                          <input
+                            ref={dmAnyAttachmentInputRef}
+                            type="file"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              if (files.length > 0) {
+                                setPromptAttachments(prev => [...prev, ...files.map(f => ({ name: f.name, type: f.type }))]);
+                              }
+                              e.target.value = '';
+                            }}
+                          />
                         </label>
                         <button
                           type="button"
