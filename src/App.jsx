@@ -3353,7 +3353,7 @@ export default function App() {
       // Release loop lock after microtask or immediately
       isSyncingFootersRef.current = false;
     }
-  }, [docFooterText, showPageNumbers, pageNumberPos, docMargins, docHeaderText, docState, docTitle, docSubtitle, editorSize, subtitleSize, editorFont]);
+  }, [docFooterText, showPageNumbers, pageNumberPos, docMargins]);
 
   const computeDocumentStats = useCallback(() => {
     syncPageFooters();
