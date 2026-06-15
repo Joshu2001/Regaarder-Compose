@@ -28423,21 +28423,49 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
               insertEnterprisePage();
             }}
-            className={`compose-editor-surface mx-auto rounded-[24px] shadow-[0_2px_24px_-4px_rgba(0,0,0,0.04)] pt-16 pb-36 relative border transition-all ${
-              docTheme === 'emerald' ? 'bg-[#F0FDF4] border-[#BBF7D0] text-emerald-950 font-sans' :
-              docTheme === 'amber' ? 'bg-[#FEFBE8] border-[#FEF08A] text-amber-950 font-serif' :
-              docTheme === 'rose' ? 'bg-[#FFF1F2] border-[#FECDD3] text-rose-950 font-sans' :
-              docTheme === 'slate' ? 'bg-[#F8FAFC] border-[#E2E8F0] text-slate-900 font-mono' :
-              'bg-white border-gray-150 text-gray-900 font-sans'
-            }`}
+            className="compose-editor-surface mx-auto relative bg-transparent border-none transition-all"
             style={{ 
               width: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
-              minHeight: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
-              paddingLeft: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
-              paddingRight: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
               '--page-padding': docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
             }}
           >
+            {/* Page 1 Sheet Wrapper */}
+            <div
+              className="w-full rounded-[24px] shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] border transition-all relative"
+              style={{
+                backgroundColor: 
+                  docTheme === 'emerald' ? '#F0FDF4' :
+                  docTheme === 'amber' ? '#FEFBE8' :
+                  docTheme === 'rose' ? '#FFF1F2' :
+                  docTheme === 'slate' ? '#F8FAFC' :
+                  '#ffffff',
+                borderColor:
+                  docTheme === 'emerald' ? '#BBF7D0' :
+                  docTheme === 'amber' ? '#FEF08A' :
+                  docTheme === 'rose' ? '#FECDD3' :
+                  docTheme === 'slate' ? '#E2E8F0' :
+                  'rgba(148, 163, 184, 0.22)',
+                color:
+                  docTheme === 'emerald' ? '#052e16' :
+                  docTheme === 'amber' ? '#451a03' :
+                  docTheme === 'rose' ? '#4c0519' :
+                  docTheme === 'slate' ? '#0f172a' :
+                  '#0f172a',
+                fontFamily:
+                  docTheme === 'emerald' ? 'sans-serif' :
+                  docTheme === 'amber' ? 'serif' :
+                  docTheme === 'rose' ? 'sans-serif' :
+                  docTheme === 'slate' ? 'monospace' :
+                  'sans-serif',
+                minHeight: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
+                height: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
+                paddingLeft: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
+                paddingRight: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
+                paddingTop: '64px',
+                paddingBottom: '78px',
+                boxSizing: 'border-box',
+              }}
+            >
             {docHeaderText && (
               <div 
                 className="absolute top-6 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-1.5 flex justify-between select-none"
@@ -28799,6 +28827,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 1
               </div>
             )}
+
+            </div> {/* End Page 1 Sheet Wrapper */}
 
             {/* Composing / Analyzing State Glow - Non-blocking floating status */}
             {isComposing && (
