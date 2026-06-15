@@ -462,7 +462,9 @@ const SLASH_OPTIONS = [
   { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text' },
   { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark/anchor' },
   { key: 'shapes', label: 'Shapes', desc: 'Insert interactive shapes' },
-  { key: 'icon', label: 'Icon', desc: 'Insert an emoji or icon' }
+  { key: 'icon', label: 'Icon', desc: 'Insert an emoji or icon' },
+  { key: 'watermark', label: 'Watermark', desc: 'Add text or image watermark' },
+  { key: 'comment', label: 'Comment', desc: 'Insert inline comment box' }
 ];
 
 export default function App() {
@@ -1243,14 +1245,37 @@ export default function App() {
       if (pageOptionsMenuRef.current && !pageOptionsMenuRef.current.contains(e.target)) {
         setPageOptionsMenuOpen(false);
       }
+      if (slashMenuRef.current?.open && slashMenuContainerRef.current && !slashMenuContainerRef.current.contains(e.target)) {
+        setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+      }
+      if (deckSlashMenuRef.current?.open && deckSlashMenuContainerRef.current && !deckSlashMenuContainerRef.current.contains(e.target)) {
+        setDeckSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+      }
+      if (watermarkMenuRef.current && !watermarkMenuRef.current.contains(e.target)) {
+        setShowWatermarkMenu(false);
+      }
     };
     document.addEventListener('mousedown', handleOutsideClick);
+
+    const handleGlobalEscape = (e) => {
+      if (e.key === 'Escape') {
+        if (slashMenuRef.current?.open) {
+          setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+        }
+        if (deckSlashMenuRef.current?.open) {
+          setDeckSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+        }
+        setShowWatermarkMenu(false);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalEscape);
 
     return () => {
       delete window.handleEmojiClick;
       delete window.showCreateEmojiForm;
       delete window.showSavedEmojisList;
       document.removeEventListener('mousedown', handleOutsideClick);
+      window.removeEventListener('keydown', handleGlobalEscape);
     };
   }, []);
 
@@ -2804,6 +2829,84 @@ export default function App() {
       slashMenuContainerRef.current.scrollTop = 0;
     }
   }, [slashMenu.open]);
+
+  // Watermark state
+  const [docWatermark, setDocWatermark] = useState(null); // { type: 'text' | 'image', value: string }
+  const [showWatermarkMenu, setShowWatermarkMenu] = useState(false);
+  const [watermarkMenuPos, setWatermarkMenuPos] = useState({ left: 0, top: 0 });
+  const watermarkMenuRef = useRef(null);
+
+  // Page Indicator state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showPageIndicator, setShowPageIndicator] = useState(false);
+  const pageIndicatorTimeoutRef = useRef(null);
+  const documentScrollContainerRef = useRef(null);
+
+  // File picker active indicator (guard for immersive mode exit)
+  const isFilePickerActiveRef = useRef(false);
+
+  // Ref for deck slash menu container to handle outside clicks
+  const deckSlashMenuContainerRef = useRef(null);
+  const deckSlashMenuRef = useRef(null);
+  useEffect(() => {
+    deckSlashMenuRef.current = deckSlashMenu;
+  }, [deckSlashMenu]);
+
+  useEffect(() => {
+    window.submitInlineComment = (commentId) => {
+      const container = document.getElementById(commentId);
+      const textarea = document.getElementById(`textarea-${commentId}`);
+      if (!container || !textarea) return;
+      
+      const text = textarea.value.trim();
+      if (!text) {
+        window.cancelInlineComment(commentId);
+        return;
+      }
+      
+      container.innerHTML = `
+        <div class="inline-comment-header flex items-center justify-between mb-1.5">
+          <div class="flex items-center gap-1.5">
+            <div class="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold">U</div>
+            <span class="text-[11px] font-bold text-gray-800">Alex R.</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="text-[9px] text-gray-400">Just now</span>
+            <button type="button" class="p-0.5 rounded text-gray-450 hover:text-rose-600 hover:bg-rose-50" onclick="window.deleteInlineComment('${commentId}')" title="Delete comment">&times;</button>
+          </div>
+        </div>
+        <div class="inline-comment-content text-xs text-gray-700 leading-normal pl-6">
+          ${text}
+        </div>
+      `;
+      
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+      showToast('Comment saved');
+    };
+    
+    window.cancelInlineComment = (commentId) => {
+      const container = document.getElementById(commentId);
+      if (container) {
+        container.remove();
+        if (blankBodyRef.current) {
+          setDocBodyHtml(blankBodyRef.current.innerHTML);
+        }
+      }
+    };
+    
+    window.deleteInlineComment = (commentId) => {
+      window.cancelInlineComment(commentId);
+      showToast('Comment deleted');
+    };
+    
+    return () => {
+      delete window.submitInlineComment;
+      delete window.cancelInlineComment;
+      delete window.deleteInlineComment;
+    };
+  }, []);
 
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
@@ -9476,6 +9579,57 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
   };
 
+  const insertInlineCommentBox = () => {
+    if (isSelectionInHeader()) {
+      showToast('Cannot insert comments inside title or subtitle');
+      return;
+    }
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
+    
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    
+    const commentId = `comment_${Date.now()}`;
+    const container = document.createElement('div');
+    container.className = 'inline-comment-widget p-3 rounded-xl border border-violet-100 bg-violet-50/20 my-2 shadow-xs';
+    container.setAttribute('contenteditable', 'false');
+    container.setAttribute('id', commentId);
+    
+    container.innerHTML = `
+      <div class="inline-comment-header flex items-center justify-between mb-1.5">
+        <div class="flex items-center gap-1.5">
+          <div class="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold">U</div>
+          <span class="text-[11px] font-bold text-gray-800">Add Comment</span>
+        </div>
+      </div>
+      <div class="flex flex-col gap-2">
+        <textarea
+          id="textarea-${commentId}"
+          placeholder="Write a comment..."
+          rows="2"
+          class="w-full text-xs p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 resize-none"
+        ></textarea>
+        <div class="flex items-center justify-end gap-1.5">
+          <button type="button" class="px-2.5 py-1 text-[10px] font-semibold text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50 border border-gray-250 rounded-lg transition-colors" onclick="window.cancelInlineComment('${commentId}')">Cancel</button>
+          <button type="button" class="px-2.5 py-1 text-[10px] font-semibold text-white bg-violet-600 hover:bg-violet-750 rounded-lg transition-colors" onclick="window.submitInlineComment('${commentId}')">Comment</button>
+        </div>
+      </div>
+    `;
+    
+    range.insertNode(container);
+    
+    const spacer = document.createElement('p');
+    spacer.innerHTML = '<br>';
+    container.parentNode.insertBefore(spacer, container.nextSibling);
+    
+    const newRange = document.createRange();
+    newRange.setStartAfter(spacer);
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+  };
+
   const insertInlineShapeBox = () => {
     if (isSelectionInHeader()) {
       showToast('Cannot insert shapes inside title or subtitle');
@@ -9749,6 +9903,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
       applyFormatCommand('insertUnorderedList');
     } else if (key === 'icon') {
       insertInlineIconSelector();
+    } else if (key === 'watermark') {
+      let left = 100, top = 200;
+      if (slashMenu.left || slashMenu.top) {
+        left = slashMenu.left;
+        top = slashMenu.top;
+      }
+      setWatermarkMenuPos({ left, top });
+      setShowWatermarkMenu(true);
+    } else if (key === 'comment') {
+      insertInlineCommentBox();
     }
     
     // Sync DOM back to React state
@@ -13474,14 +13638,35 @@ Rules:
   // Listen for fullscreen changes and sync state
   useEffect(() => {
     const handleFullscreenChange = () => {
+      if (isFilePickerActiveRef.current) {
+        return; // Guard to prevent exit during native file picker dialog
+      }
       if (!document.fullscreenElement && isDocumentImmersive) {
         setIsDocumentImmersive(false);
         setIsFocusMode(false);
       }
     };
     
+    const handleWindowFocus = () => {
+      if (isFilePickerActiveRef.current) {
+        isFilePickerActiveRef.current = false;
+        // Re-request native fullscreen if we are in immersive mode but native fullscreen exited
+        if (isDocumentImmersive && !document.fullscreenElement) {
+          if (appShellRef.current?.requestFullscreen) {
+            appShellRef.current.requestFullscreen().catch(err => {
+              console.log('Could not re-request native fullscreen:', err);
+            });
+          }
+        }
+      }
+    };
+    
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('focus', handleWindowFocus);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
   }, [isDocumentImmersive]);
 
   const formatMeetingElapsed = useCallback((startedAt) => {
@@ -17462,12 +17647,24 @@ Respond with a JSON array of slide objects matching the schema.`;
               {/* Chat Input Bar */}
               <form onSubmit={handleSidebarSend} className="p-3 border-t border-gray-100 bg-[#FAFAFC]">
                 {chatAttachments.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    {chatAttachments.map((attachment) => (
-                      <span key={attachment.id} className="text-[10px] px-2 py-0.5 rounded-full border border-gray-200 bg-white text-gray-600">
-                        {attachment.name}
-                      </span>
-                    ))}
+                  <div className="mb-2.5 flex flex-wrap gap-2 px-1">
+                    {chatAttachments.map((attachment) => {
+                      const isImage = attachment.type?.startsWith('image/');
+                      return (
+                        <div key={attachment.id} className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-xl border border-violet-100 bg-violet-50/50 text-violet-800 text-[11px] font-semibold shadow-xs transition-all hover:bg-violet-50">
+                          {isImage ? <ImageIcon size={12} className="text-violet-500" /> : <FileText size={12} className="text-violet-500" />}
+                          <span className="max-w-[120px] truncate">{attachment.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => setChatAttachments(prev => prev.filter(att => att.id !== attachment.id))}
+                            className="p-0.5 rounded-md hover:bg-violet-200/60 text-violet-500 hover:text-violet-750 transition-colors"
+                            title="Remove attachment"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
                 <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
@@ -17501,7 +17698,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => chatFileInputRef.current?.click()}
+                        onClick={() => {
+                          isFilePickerActiveRef.current = true;
+                          chatFileInputRef.current?.click();
+                        }}
                         className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                         title="Attach files"
                       >
