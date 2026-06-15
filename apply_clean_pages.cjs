@@ -2,6 +2,9 @@ const fs = require('fs');
 
 let code = fs.readFileSync('src/App.jsx', 'utf8');
 
+// Normalize carriage returns to prevent string mismatch
+code = code.replace(/\r\n/g, '\n');
+
 // ============================================================
 // PART 1: Remove duplicate/old page number render from Page 1
 // ============================================================
@@ -13,10 +16,7 @@ const oldFirstPageNum = `            {showPageNumbers && showPageNumberOnFirstPa
 code = code.replace(oldFirstPageNum, '');
 
 // ============================================================
-// PART 2: Unify Page 1 footer structure to match requirements 8 & 9:
-// - Footer content (like "Confidential") remains consistent
-// - Page number increments automatically (Page 1 has "1", not "Page 1")
-// - No visible text such as "Page" in the footer, only the page number itself
+// PART 2: Unify Page 1 footer structure to match requirements 8 & 9
 // ============================================================
 const oldPage1Footer = `            {docFooterText && (
               <div 
@@ -65,13 +65,15 @@ const newPage1Footer = `            {(docFooterText || (showPageNumbers && showP
 code = code.replace(oldPage1Footer, newPage1Footer);
 
 // ============================================================
-// PART 3: Add extraPages state near other page states
+// PART 3: Add extraPages state near other page states ONLY IF NOT ALREADY THERE
 // ============================================================
-const stateAnchor = `const [showPageNumberOnFirstPage, setShowPageNumberOnFirstPage] = useState(true);`;
-const stateInsert = `const [showPageNumberOnFirstPage, setShowPageNumberOnFirstPage] = useState(true);
+if (!code.includes('const [extraPages, setExtraPages] = useState')) {
+  const stateAnchor = `const [showPageNumberOnFirstPage, setShowPageNumberOnFirstPage] = useState(true);`;
+  const stateInsert = `const [showPageNumberOnFirstPage, setShowPageNumberOnFirstPage] = useState(true);
   const [extraPages, setExtraPages] = useState([]);
   const extraPageRefs = useRef({});`;
-code = code.replace(stateAnchor, stateInsert);
+  code = code.replace(stateAnchor, stateInsert);
+}
 
 // ============================================================
 // PART 4: Rewrite insertEnterprisePage to add a new page via React state instead of DOM insertion
@@ -182,7 +184,7 @@ const newInsert = `  const insertEnterprisePage = useCallback(() => {
 code = code.replace(oldInsertStart, newInsert);
 
 // ============================================================
-// PART 5: Replace syncPageFooters to be a no-op since footers are fully React-rendered on demand
+// PART 5: Replace syncPageFooters to be a no-op
 // ============================================================
 const simpleSyncStart = '  const syncPageFooters = useCallback(() => {';
 const idx = code.indexOf(simpleSyncStart);
@@ -319,6 +321,9 @@ const autoPageInsert = `              if (!shouldInsertNewPageOnEnter()) {
 const autoPageInsertReplacement = `              // Auto page-insert on Enter disabled; pages are now created on-demand via the "+ New page" CTA
               return;`;
 code = code.replace(autoPageInsert, autoPageInsertReplacement);
+
+// Re-convert carriage returns to match Windows format if preferred
+code = code.replace(/\n/g, '\r\n');
 
 fs.writeFileSync('src/App.jsx', code);
 console.log('Script execution complete!');
