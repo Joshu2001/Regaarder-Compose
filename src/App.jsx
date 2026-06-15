@@ -656,6 +656,8 @@ export default function App() {
   useEffect(() => {
     const handleEvents = () => {
       updateTableToolbarPosition();
+      // Update dynamic active page
+      setCurrentActivePage(getCurrentPageNumber());
       setImageToolbar(prev => {
         if (prev.open && prev.node) {
           const rect = prev.node.getBoundingClientRect();
@@ -3155,6 +3157,8 @@ export default function App() {
   const [showPageNumberOnFirstPage, setShowPageNumberOnFirstPage] = useState(true);
   const [extraPages, setExtraPages] = useState([]);
   const extraPageRefs = useRef({});
+  const [currentActivePage, setCurrentActivePage] = useState(1);
+  const [isEditingTitleFromPanel, setIsEditingTitleFromPanel] = useState(false);
   const [pageNumberPosition, setPageNumberPosition] = useState('center');
   const [docSearchPanelOpen, setDocSearchPanelOpen] = useState(false);
   const [docSearchMode, setDocSearchMode] = useState('find');
@@ -17533,21 +17537,69 @@ Respond with a JSON array of slide objects matching the schema.`;
                 <div className="flex flex-col items-center justify-start min-h-full text-center mt-2 pb-8">
                   <div className="w-full max-w-[280px] text-[13px] font-semibold text-gray-800 text-left mb-2">Currently editing</div>
                   <div className="w-full max-w-[280px] mb-8 bg-white border border-gray-200 rounded-xl p-3 shadow-sm text-left flex items-center justify-between">
-                    <div className="flex items-center gap-3 overflow-hidden">
+                    <div className="flex items-center gap-3 overflow-hidden w-full mr-2">
                       {productMode === 'compose' ? (
                         <div className="w-12 h-8 rounded shrink-0 bg-gray-100 flex items-center justify-center border border-gray-200 text-violet-600">
-                          <FileText size={16} />
+                          {shareAccess === 'Viewer' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                          )}
+                          {shareAccess === 'Commenter' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                          )}
+                          {shareAccess === 'Editor' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 20h9"></path>
+                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg>
+                          )}
+                          {shareAccess === 'Full access' && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                              <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                            </svg>
+                          )}
                         </div>
                       ) : (
                         <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
                           <img src={deckSnapshotPreviews[activeDeckSlideId] || buildDeckPreviewDataUri(deckSlidesData.find(s => s.id === activeDeckSlideId) || deckSlidesData[0])} className="w-full h-full object-cover" alt="thumbnail" />
                         </div>
                       )}
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         {productMode === 'compose' ? (
                           <>
-                            <div className="text-[12px] font-bold text-gray-900 truncate">Page {getCurrentPageNumber()}</div>
-                            <div className="text-[11px] text-gray-500 truncate">{docTitle || 'Untitled Document'}</div>
+                            <div className="text-[12px] font-bold text-gray-900 truncate">Page {currentActivePage}</div>
+                            {isEditingTitleFromPanel ? (
+                              <input
+                                type="text"
+                                value={docTitle}
+                                onChange={(e) => {
+                                  setDocTitle(e.target.value);
+                                  if (titleEditableRef.current) {
+                                    titleEditableRef.current.textContent = e.target.value;
+                                  }
+                                }}
+                                onBlur={() => setIsEditingTitleFromPanel(false)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    setIsEditingTitleFromPanel(false);
+                                  }
+                                }}
+                                autoFocus
+                                className="w-full bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 text-[11px] text-gray-800 outline-none"
+                              />
+                            ) : (
+                              <div 
+                                onClick={() => setIsEditingTitleFromPanel(true)}
+                                className="text-[11px] text-gray-500 truncate hover:text-gray-800 hover:bg-slate-50 rounded px-1 -mx-1 py-0.5 cursor-text border border-transparent hover:border-slate-150 transition-all"
+                              >
+                                {docTitle || 'Untitled Document'}
+                              </div>
+                            )}
                           </>
                         ) : (
                           <>
@@ -17557,9 +17609,15 @@ Respond with a JSON array of slide objects matching the schema.`;
                         )}
                       </div>
                     </div>
-                    <button className="p-1.5 text-gray-400 hover:text-gray-700 transition-colors shrink-0">
-                      <PenTool size={14} />
-                    </button>
+                    {!isEditingTitleFromPanel && productMode === 'compose' && (
+                      <button 
+                        type="button"
+                        onClick={() => setIsEditingTitleFromPanel(true)}
+                        className="p-1.5 text-gray-400 hover:text-gray-700 transition-colors shrink-0"
+                      >
+                        <PenTool size={14} />
+                      </button>
+                    )}
                   </div>
 
                   <h3 className="text-[14px] font-bold text-gray-900 mb-4 tracking-tight text-left w-full max-w-[280px]">
@@ -24361,9 +24419,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-5">
               {[
-                { key: 'friends', label: 'Copy link', sub: 'Share instantly' },
-                { key: 'apps', label: 'Native apps', sub: 'Use system sheet' },
-                { key: 'downloads', label: 'Download', sub: 'Export file' },
+                { 
+                  key: 'friends', 
+                  label: 'Copy link', 
+                  sub: 'Share instantly',
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 inline">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                    </svg>
+                  )
+                },
+                { 
+                  key: 'apps', 
+                  label: 'Native apps', 
+                  sub: 'Use system sheet',
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 inline">
+                      <circle cx="18" cy="5" r="3"></circle>
+                      <circle cx="6" cy="12" r="3"></circle>
+                      <circle cx="18" cy="19" r="3"></circle>
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                    </svg>
+                  )
+                },
+                { 
+                  key: 'downloads', 
+                  label: 'Download', 
+                  sub: 'Export file',
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 inline">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                  )
+                },
               ].map((destination) => (
                 <button
                   key={destination.key}
@@ -24371,7 +24463,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onClick={() => setShareDestination(destination.key)}
                   className={`text-left rounded-xl border px-3 py-2.5 transition-colors ${shareDestination === destination.key ? 'border-violet-300 bg-violet-50/70 text-violet-700' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
                 >
-                  <div className="text-sm font-semibold">{destination.label}</div>
+                  <div className="text-sm font-semibold flex items-center gap-1">
+                    {destination.icon}
+                    <span>{destination.label}</span>
+                  </div>
                   <div className="text-[11px] text-slate-500">{destination.sub}</div>
                 </button>
               ))}
@@ -24380,14 +24475,51 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="mb-4">
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-2">Access level</label>
               <div className="flex flex-wrap items-center gap-2">
-                {['Viewer', 'Commenter', 'Editor', 'Full access'].map((level) => (
+                {[
+                  {
+                    level: 'Viewer',
+                    icon: (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 inline">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                    )
+                  },
+                  {
+                    level: 'Commenter',
+                    icon: (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 inline">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                      </svg>
+                    )
+                  },
+                  {
+                    level: 'Editor',
+                    icon: (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 inline">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                      </svg>
+                    )
+                  },
+                  {
+                    level: 'Full access',
+                    icon: (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 inline">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                      </svg>
+                    )
+                  }
+                ].map(({ level, icon }) => (
                   <button
                     key={level}
                     type="button"
                     onClick={() => setShareAccess(level)}
-                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${shareAccess === level ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors flex items-center ${shareAccess === level ? 'bg-violet-50 border-violet-300 text-violet-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
                   >
-                    {level}
+                    {icon}
+                    <span>{level}</span>
                   </button>
                 ))}
               </div>
@@ -28426,15 +28558,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {(docFooterText || (showPageNumbers && showPageNumberOnFirstPage)) && (
               <div 
-                className="absolute bottom-6 text-[10px] font-semibold text-gray-400 border-t border-gray-100 pt-1.5 flex justify-between select-none"
+                className="absolute bottom-6 text-[10px] font-semibold text-gray-400 border-t border-gray-100 pt-1.5 select-none"
                 style={{ 
                   left: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px', 
-                  right: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px' 
+                  right: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
+                  display: 'block',
+                  position: 'absolute'
                 }}
               >
-                <span>{docFooterText || ''}</span>
+                {/* Editable Footer Text container */}
+                <div 
+                  contentEditable
+                  suppressContentEditableWarning
+                  onBlur={(e) => setDocFooterText(e.currentTarget.textContent || '')}
+                  className="outline-none hover:bg-slate-50 cursor-text px-1 py-0.5 rounded transition-all max-w-[50%] truncate"
+                  style={{ display: 'inline-block', position: 'absolute', left: 0 }}
+                >
+                  {docFooterText || 'Confidential'}
+                </div>
+
+                {/* Dynamic Page Number aligned according to pageNumberPosition settings */}
                 {showPageNumbers && showPageNumberOnFirstPage && (
-                  <span>1</span>
+                  <span 
+                    style={{ 
+                      position: 'absolute',
+                      left: pageNumberPosition === 'left' ? '0' : pageNumberPosition === 'right' ? 'auto' : '50%',
+                      right: pageNumberPosition === 'right' ? '0' : 'auto',
+                      transform: pageNumberPosition === 'center' ? 'translateX(-50%)' : 'none'
+                    }}
+                  >
+                    1
+                  </span>
                 )}
               </div>
             )}
@@ -28747,12 +28901,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {/* Footer content - clean and increments page number automatically (No "Page" text) */}
                   {(docFooterText || showPageNumbers) && (
                     <div
-                      className="absolute bottom-6 text-[10px] font-semibold text-gray-400 flex justify-between select-none"
-                      style={{ left: pgPadding, right: pgPadding, borderTop: '1px solid rgba(148,163,184,0.1)', paddingTop: '12px' }}
+                      className="absolute bottom-6 text-[10px] font-semibold text-gray-400 select-none"
+                      style={{ 
+                        left: pgPadding, 
+                        right: pgPadding, 
+                        borderTop: '1px solid rgba(148,163,184,0.1)', 
+                        paddingTop: '12px',
+                        display: 'block',
+                        position: 'absolute'
+                      }}
                     >
-                      <span>{docFooterText || ''}</span>
+                      <div 
+                        contentEditable
+                        suppressContentEditableWarning
+                        onBlur={(e) => setDocFooterText(e.currentTarget.textContent || '')}
+                        className="outline-none hover:bg-slate-50 cursor-text px-1 py-0.5 rounded transition-all max-w-[50%] truncate"
+                        style={{ display: 'inline-block', position: 'absolute', left: 0 }}
+                      >
+                        {docFooterText || 'Confidential'}
+                      </div>
                       {showPageNumbers && (
-                        <span>{pgNum}</span>
+                        <span 
+                          style={{ 
+                            position: 'absolute',
+                            left: pageNumberPosition === 'left' ? '0' : pageNumberPosition === 'right' ? 'auto' : '50%',
+                            right: pageNumberPosition === 'right' ? '0' : 'auto',
+                            transform: pageNumberPosition === 'center' ? 'translateX(-50%)' : 'none'
+                          }}
+                        >
+                          {pgNum}
+                        </span>
                       )}
                     </div>
                   )}
@@ -28818,7 +28996,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             />
           </div>
         )}
-        {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
+        {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
           className={`pointer-events-none fixed bottom-14 z-[1210] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
           style={{
