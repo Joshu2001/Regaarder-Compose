@@ -24857,8 +24857,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 onClick={() => {
-                  createNewComposition();
-                  showToast('New document created');
+                  insertEnterprisePage();
+                  showToast('New page inserted successfully');
                 }}
                 className="w-full py-2.5 mt-1 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
                 style={{ fontFamily: editorFont }}
