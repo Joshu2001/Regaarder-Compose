@@ -847,25 +847,6 @@ body { margin: 0; background: #ffffff; }
   transform: translateX(-50%) scale(1.08) !important;
 }
 
-/* Apple-style stacking pages configuration */
-:root {
-  --workspace-page-gap-color: #f8fafc;
-}
-.app-dark {
-  --workspace-page-gap-color: #0b1220;
-}
-
 [data-enterprise-page="true"] {
-  position: absolute !important;
-  left: 0 !important;
-  right: 0 !important;
-  background: white !important;
-  border: 1px solid rgba(148, 163, 184, 0.22) !important;
-  border-radius: 24px !important;
-  box-shadow: 0 4px 24px -6px rgba(15, 23, 42, 0.08) !important;
-  box-sizing: border-box !important;
-  padding-left: var(--page-padding, 48px) !important;
-  padding-right: var(--page-padding, 48px) !important;
-  padding-top: 64px !important;
-  padding-bottom: 78px !important;
+  display: none !important;
 }
