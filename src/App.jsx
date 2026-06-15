@@ -2958,6 +2958,7 @@ export default function App() {
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
   const documentCardRef = useRef(null);
+  const isSyncingFootersRef = useRef(false);
   const blankBodyRef = useRef(null);
   const pageOptionsMenuRef = useRef(null);
   const emojiControlsRef = useRef(null);
@@ -3273,61 +3274,85 @@ export default function App() {
   };
 
   const syncPageFooters = useCallback(() => {
-    if (!blankBodyRef.current) return;
-    const pages = blankBodyRef.current.querySelectorAll('[data-enterprise-page="true"]');
-    pages.forEach((page, index) => {
-      const pageNum = index + 2;
-      
-      let footerEl = page.querySelector('.page-sheet-footer');
-      if (!footerEl) {
-        footerEl = document.createElement('div');
-        footerEl.setAttribute('contenteditable', 'false');
-        footerEl.className = 'page-sheet-footer select-none';
-        footerEl.style.position = 'absolute';
-        footerEl.style.bottom = '24px';
-        footerEl.style.fontSize = '10px';
-        footerEl.style.fontWeight = '600';
-        footerEl.style.color = '#94a3b8';
-        footerEl.style.borderTop = '1px solid rgba(148, 163, 184, 0.1)';
-        footerEl.style.paddingTop = '12px';
-        page.appendChild(footerEl);
-      }
-
-      const marginPadding = docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px';
-      footerEl.style.left = marginPadding;
-      footerEl.style.right = marginPadding;
-      footerEl.style.display = showPageNumbers || docFooterText ? 'flex' : 'none';
-      footerEl.style.justifyContent = 'space-between';
-
-      footerEl.innerHTML = '';
-
-      if (docFooterText) {
-        const textSpan = document.createElement('span');
-        textSpan.className = 'page-footer-text';
-        textSpan.textContent = docFooterText;
-        footerEl.appendChild(textSpan);
-      } else {
-        const spacer = document.createElement('span');
-        footerEl.appendChild(spacer);
-      }
-
-      if (showPageNumbers) {
-        const numSpan = document.createElement('span');
-        numSpan.className = 'page-footer-num';
-        numSpan.textContent = pageNumberPos === 'bottom-center' ? `Page ${pageNum}` : `${pageNum}`;
+    if (!blankBodyRef.current || isSyncingFootersRef.current) return;
+    isSyncingFootersRef.current = true;
+    try {
+      const pages = blankBodyRef.current.querySelectorAll('[data-enterprise-page="true"]');
+      pages.forEach((page, index) => {
+        const pageNum = index + 2;
         
-        if (pageNumberPos === 'bottom-left') {
-          footerEl.style.flexDirection = 'row-reverse';
-        } else if (pageNumberPos === 'bottom-center') {
-          numSpan.style.position = 'absolute';
-          numSpan.style.left = '50%';
-          numSpan.style.transform = 'translateX(-50%)';
-        } else {
-          footerEl.style.flexDirection = 'row';
+        let footerEl = page.querySelector('.page-sheet-footer');
+        if (!footerEl) {
+          footerEl = document.createElement('div');
+          footerEl.setAttribute('contenteditable', 'false');
+          footerEl.className = 'page-sheet-footer select-none';
+          footerEl.style.position = 'absolute';
+          footerEl.style.bottom = '24px';
+          footerEl.style.fontSize = '10px';
+          footerEl.style.fontWeight = '600';
+          footerEl.style.color = '#94a3b8';
+          footerEl.style.borderTop = '1px solid rgba(148, 163, 184, 0.1)';
+          footerEl.style.paddingTop = '12px';
+          page.appendChild(footerEl);
         }
-        footerEl.appendChild(numSpan);
-      }
-    });
+
+        const marginPadding = docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px';
+        if (footerEl.style.left !== marginPadding) footerEl.style.left = marginPadding;
+        if (footerEl.style.right !== marginPadding) footerEl.style.right = marginPadding;
+        
+        const targetDisplay = showPageNumbers || docFooterText ? 'flex' : 'none';
+        if (footerEl.style.display !== targetDisplay) footerEl.style.display = targetDisplay;
+        if (footerEl.style.justifyContent !== 'space-between') footerEl.style.justifyContent = 'space-between';
+
+        let textSpan = footerEl.querySelector('.page-footer-text');
+        if (docFooterText) {
+          if (!textSpan) {
+            textSpan = document.createElement('span');
+            textSpan.className = 'page-footer-text';
+            footerEl.appendChild(textSpan);
+          }
+          if (textSpan.textContent !== docFooterText) {
+            textSpan.textContent = docFooterText;
+          }
+        } else if (textSpan) {
+          textSpan.remove();
+        }
+
+        let numSpan = footerEl.querySelector('.page-footer-num');
+        if (showPageNumbers) {
+          const expectedNumText = pageNumberPos === 'bottom-center' ? `Page ${pageNum}` : `${pageNum}`;
+          if (!numSpan) {
+            numSpan = document.createElement('span');
+            numSpan.className = 'page-footer-num';
+            footerEl.appendChild(numSpan);
+          }
+          if (numSpan.textContent !== expectedNumText) {
+            numSpan.textContent = expectedNumText;
+          }
+          
+          if (pageNumberPos === 'bottom-left') {
+            if (footerEl.style.flexDirection !== 'row-reverse') footerEl.style.flexDirection = 'row-reverse';
+            if (numSpan.style.position) numSpan.style.position = '';
+            if (numSpan.style.left) numSpan.style.left = '';
+            if (numSpan.style.transform) numSpan.style.transform = '';
+          } else if (pageNumberPos === 'bottom-center') {
+            if (numSpan.style.position !== 'absolute') numSpan.style.position = 'absolute';
+            if (numSpan.style.left !== '50%') numSpan.style.left = '50%';
+            if (numSpan.style.transform !== 'translateX(-50%)') numSpan.style.transform = 'translateX(-50%)';
+          } else {
+            if (footerEl.style.flexDirection !== 'row') footerEl.style.flexDirection = 'row';
+            if (numSpan.style.position) numSpan.style.position = '';
+            if (numSpan.style.left) numSpan.style.left = '';
+            if (numSpan.style.transform) numSpan.style.transform = '';
+          }
+        } else if (numSpan) {
+          numSpan.remove();
+        }
+      });
+    } finally {
+      // Release loop lock after microtask or immediately
+      isSyncingFootersRef.current = false;
+    }
   }, [docFooterText, showPageNumbers, pageNumberPos, docMargins]);
 
   const computeDocumentStats = useCallback(() => {
