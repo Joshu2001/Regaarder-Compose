@@ -22,6 +22,7 @@ import {
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
+import AIChatAttachmentChip from './AIChatAttachmentChip';
 
 const ensureHtmlList = (rawOutput, type) => {
   let clean = String(rawOutput || '').trim();
@@ -1399,6 +1400,8 @@ export default function App() {
   const shapeDragRef = useRef(null);
   const shapeResizeRef = useRef(null);
   const panDragRef = useRef(null);
+const dmAnyAttachmentInputRef = useRef(null);
+const [promptAttachments, setPromptAttachments] = useState([]);
   const eraserActiveRef = useRef(false);
   const eraserLastPointRef = useRef(null);
   const [dragTarget, setDragTarget] = useState(null);
@@ -2842,6 +2845,37 @@ export default function App() {
   const pageIndicatorTimeoutRef = useRef(null);
   const documentScrollContainerRef = useRef(null);
 
+  const handleEditorScroll = (e) => {
+    setShowPageIndicator(true);
+    if (pageIndicatorTimeoutRef.current) {
+      clearTimeout(pageIndicatorTimeoutRef.current);
+    }
+    pageIndicatorTimeoutRef.current = setTimeout(() => {
+      setShowPageIndicator(false);
+    }, 1500);
+
+    const container = e.currentTarget;
+    const containerCenter = container.scrollTop + (container.clientHeight / 2);
+    const sheets = container.querySelectorAll('[data-enterprise-page="true"]');
+    
+    let closestPage = 1;
+    let minDistance = Infinity;
+    
+    sheets.forEach((sheet, idx) => {
+      const sheetTop = sheet.offsetTop;
+      const sheetHeight = sheet.clientHeight;
+      const sheetCenter = sheetTop + (sheetHeight / 2);
+      
+      const distance = Math.abs(containerCenter - sheetCenter);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestPage = idx + 1;
+      }
+    });
+    
+    setCurrentPage(closestPage);
+  };
+
   // File picker active indicator (guard for immersive mode exit)
   const isFilePickerActiveRef = useRef(false);
 
@@ -2851,6 +2885,13 @@ export default function App() {
   useEffect(() => {
     deckSlashMenuRef.current = deckSlashMenu;
   }, [deckSlashMenu]);
+
+  useEffect(() => {
+    window.setActiveDocIdGlobal = setActiveDocId;
+    return () => {
+      delete window.setActiveDocIdGlobal;
+    };
+  }, [setActiveDocId]);
 
   useEffect(() => {
     window.submitInlineComment = (commentId) => {
@@ -2864,19 +2905,25 @@ export default function App() {
         return;
       }
       
+      // Preserve HTML formatting for links, emojis, etc.
+      // Convert linebreaks to <br> and parse simple markdown links [label](url) to standard HTML links
+      const formattedText = text
+        .replace(/\n/g, '<br>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-violet-600 underline font-semibold">$1</a>');
+
       container.innerHTML = `
         <div class="inline-comment-header flex items-center justify-between mb-1.5">
           <div class="flex items-center gap-1.5">
             <div class="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold">U</div>
-            <span class="text-[11px] font-bold text-gray-800">Alex R.</span>
+            <span class="text-[11px] font-bold text-gray-800">User</span>
           </div>
           <div class="flex items-center gap-1">
             <span class="text-[9px] text-gray-400">Just now</span>
-            <button type="button" class="p-0.5 rounded text-gray-450 hover:text-rose-600 hover:bg-rose-50" onclick="window.deleteInlineComment('${commentId}')" title="Delete comment">&times;</button>
+            <button type="button" class="p-0.5 rounded text-gray-450 hover:text-rose-600 hover:bg-rose-50 font-bold" onclick="window.deleteInlineComment('${commentId}')" title="Delete comment">&times;</button>
           </div>
         </div>
         <div class="inline-comment-content text-xs text-gray-700 leading-normal pl-6">
-          ${text}
+          ${formattedText}
         </div>
       `;
       
@@ -2900,13 +2947,90 @@ export default function App() {
       window.cancelInlineComment(commentId);
       showToast('Comment deleted');
     };
+
+    window.insertCommentEmoji = (commentId, emoji) => {
+      const textarea = document.getElementById(`textarea-${commentId}`);
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        textarea.value = val.substring(0, start) + emoji + val.substring(end);
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+      }
+    };
+
+    window.insertCommentLink = (commentId) => {
+      const label = window.prompt("Link label (e.g. Google):") || "Link";
+      const url = window.prompt("Link URL:", "https://");
+      if (url) {
+        const formatted = `[${label}](${url})`;
+        const textarea = document.getElementById(`textarea-${commentId}`);
+        if (textarea) {
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const val = textarea.value;
+          textarea.value = val.substring(0, start) + formatted + val.substring(end);
+          textarea.focus();
+          textarea.selectionStart = textarea.selectionEnd = start + formatted.length;
+        }
+      }
+    };
+
+    window.toggleCommentEmojiDrawer = (commentId) => {
+      const drawer = document.getElementById(`emoji-drawer-${commentId}`);
+      if (drawer) {
+        drawer.classList.toggle('hidden');
+      }
+    };
+
+    window.toggleCommentFileDropdown = (commentId) => {
+      const dropdown = document.getElementById(`file-dropdown-${commentId}`);
+      if (dropdown) {
+        dropdown.classList.toggle('hidden');
+      }
+    };
+
+    window.insertCommentFileLink = (commentId, docId, docTitle) => {
+      const textarea = document.getElementById(`textarea-${commentId}`);
+      if (textarea) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const val = textarea.value;
+        const htmlLink = `<a href="#" class="workspace-doc-link text-violet-600 font-semibold underline" data-doc-id="${docId}">📄 ${docTitle}</a>`;
+        textarea.value = val.substring(0, start) + htmlLink + val.substring(end);
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = start + htmlLink.length;
+      }
+      const dropdown = document.getElementById(`file-dropdown-${commentId}`);
+      if (dropdown) dropdown.classList.add('hidden');
+    };
     
+    const handleDocumentClick = (e) => {
+      const docLink = e.target.closest('.workspace-doc-link');
+      if (docLink) {
+        e.preventDefault();
+        const docIdStr = docLink.getAttribute('data-doc-id');
+        if (docIdStr) {
+          const docId = parseInt(docIdStr, 10);
+          window.setActiveDocIdGlobal?.(docId);
+        }
+      }
+    };
+    document.addEventListener('click', handleDocumentClick);
+
     return () => {
       delete window.submitInlineComment;
       delete window.cancelInlineComment;
       delete window.deleteInlineComment;
+      delete window.insertCommentEmoji;
+      delete window.insertCommentLink;
+      delete window.toggleCommentEmojiDrawer;
+      delete window.toggleCommentFileDropdown;
+      delete window.insertCommentFileLink;
+      document.removeEventListener('click', handleDocumentClick);
     };
-  }, []);
+  }, [documents]);
 
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
@@ -5407,6 +5531,9 @@ export default function App() {
 
   useEffect(() => {
     const handleDocumentImmersiveFullscreen = () => {
+      if (isFilePickerActiveRef.current) {
+        return; // Guard to prevent exit during native file picker dialog
+      }
       const immersiveActive = document.fullscreenElement === appShellRef.current;
       if (immersiveActive && !isDocumentImmersive) {
         setIsDocumentImmersive(true);
@@ -5417,8 +5544,26 @@ export default function App() {
       }
     };
 
+    const handleWindowFocus = () => {
+      if (isFilePickerActiveRef.current) {
+        isFilePickerActiveRef.current = false;
+        // Re-request native fullscreen if we are in immersive mode but native fullscreen exited
+        if (isDocumentImmersive && !document.fullscreenElement) {
+          if (appShellRef.current?.requestFullscreen) {
+            appShellRef.current.requestFullscreen().catch(err => {
+              console.log('Could not re-request native fullscreen:', err);
+            });
+          }
+        }
+      }
+    };
+
     document.addEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
-    return () => document.removeEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
+    window.addEventListener('focus', handleWindowFocus);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
   }, [isDocumentImmersive]);
 
   useEffect(() => {
@@ -9596,6 +9741,12 @@ Generate the updated output according to the instruction. Preserve layout and ta
     container.setAttribute('contenteditable', 'false');
     container.setAttribute('id', commentId);
     
+    const docsListHtml = documents.map(doc => `
+      <button type="button" class="w-full text-left px-2 py-1 text-[10px] font-semibold hover:bg-violet-50 text-slate-700 truncate" onclick="window.insertCommentFileLink('${commentId}', '${doc.id}', '${(doc.title || 'Untitled Document').replace(/'/g, "\\'")}')">
+        📄 ${doc.title || 'Untitled Document'}
+      </button>
+    `).join('');
+
     container.innerHTML = `
       <div class="inline-comment-header flex items-center justify-between mb-1.5">
         <div class="flex items-center gap-1.5">
@@ -9606,13 +9757,43 @@ Generate the updated output according to the instruction. Preserve layout and ta
       <div class="flex flex-col gap-2">
         <textarea
           id="textarea-${commentId}"
-          placeholder="Write a comment..."
+          placeholder="Write a comment... (markdown links e.g. [label](url) supported)"
           rows="2"
           class="w-full text-xs p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 resize-none"
         ></textarea>
-        <div class="flex items-center justify-end gap-1.5">
-          <button type="button" class="px-2.5 py-1 text-[10px] font-semibold text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50 border border-gray-250 rounded-lg transition-colors" onclick="window.cancelInlineComment('${commentId}')">Cancel</button>
-          <button type="button" class="px-2.5 py-1 text-[10px] font-semibold text-white bg-violet-600 hover:bg-violet-750 rounded-lg transition-colors" onclick="window.submitInlineComment('${commentId}')">Comment</button>
+        
+        <div class="flex items-center justify-between gap-1 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100 relative">
+          <div class="flex items-center gap-1">
+            <button type="button" class="p-1 rounded hover:bg-slate-200/50 text-slate-500 hover:text-slate-700 transition-colors" onclick="window.insertCommentLink('${commentId}')" title="Insert Link">
+              🔗
+            </button>
+            
+            <div class="relative">
+              <button type="button" class="p-1 rounded hover:bg-slate-200/50 text-slate-500 hover:text-slate-700 transition-colors" onclick="window.toggleCommentEmojiDrawer('${commentId}')" title="Insert Emoji">
+                😀
+              </button>
+              <div id="emoji-drawer-${commentId}" class="hidden absolute left-0 bottom-full mb-1.5 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 flex gap-1 z-50">
+                ${['👍', '🎉', '🚀', '🔥', '❤️', '👀', '💡', '👏'].map(emoji => `
+                  <button type="button" class="hover:scale-125 transition-transform" onclick="window.insertCommentEmoji('${commentId}', '${emoji}')">${emoji}</button>
+                `).join('')}
+              </div>
+            </div>
+
+            <div class="relative">
+              <button type="button" class="p-1 rounded hover:bg-slate-200/50 text-slate-500 hover:text-slate-700 transition-colors" onclick="window.toggleCommentFileDropdown('${commentId}')" title="Link Workspace File">
+                📁
+              </button>
+              <div id="file-dropdown-${commentId}" class="hidden absolute left-0 bottom-full mb-1.5 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 w-44 max-h-32 overflow-y-auto thin-scrollbar z-50">
+                <div class="px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-slate-400">Workspace Files</div>
+                ${docsListHtml || '<div class="px-2 py-1 text-[9px] text-slate-450">No files found</div>'}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button type="button" class="px-2.5 py-1 text-[10px] font-semibold text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50 border border-gray-250 rounded-lg transition-colors" onclick="window.cancelInlineComment('${commentId}')">Cancel</button>
+            <button type="button" class="px-2.5 py-1 text-[10px] font-semibold text-white bg-violet-600 hover:bg-violet-750 rounded-lg transition-colors" onclick="window.submitInlineComment('${commentId}')">Comment</button>
+          </div>
         </div>
       </div>
     `;
@@ -17878,7 +18059,18 @@ Respond with a JSON array of slide objects matching the schema.`;
                     {productMode === 'compose' ? 'Ask AI anything about this doc...' : 'Ask AI anything about this slide...'}
                   </div>
                   <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-sm">
-                    <textarea
+  {promptAttachments.length > 0 && (
+    <div className="flex flex-wrap gap-1 mb-2 px-2">
+      {promptAttachments.map((file, idx) => (
+        <AIChatAttachmentChip
+          key={idx}
+          file={file}
+          onRemove={() => setPromptAttachments(prev => prev.filter((_, i) => i !== idx))}
+        />
+      ))}
+    </div>
+  )}
+  <textarea
                       value={assistantQuickPrompt}
                       onChange={(e) => setAssistantQuickPrompt(e.target.value)}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
@@ -26543,7 +26735,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100">
+        <div
+          ref={documentScrollContainerRef}
+          onScroll={handleEditorScroll}
+          className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100"
+        >
           {activeRightTab === 'whiteboard' && (
             <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-[340] p-0 bg-white' : isWhiteboardFloatingUiOpen ? 'z-[320] p-6 md:p-8 bg-[#F7F7F9]' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
               <div className={`h-full w-full bg-white overflow-hidden flex flex-col ${isWhiteboardImmersive ? 'rounded-none border-0 shadow-none' : 'rounded-[24px] border border-violet-100 shadow-[0_20px_60px_-30px_rgba(124,58,237,0.45)]'}`}>
@@ -28639,6 +28835,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           >
             {/* Page 1 Sheet Wrapper */}
             <div
+              data-enterprise-page="true"
               className="w-full rounded-[24px] shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] border transition-all relative"
               style={{
                 backgroundColor: 
