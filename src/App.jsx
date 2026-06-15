@@ -3570,18 +3570,14 @@ export default function App() {
     const selection = window.getSelection();
     const existingPages = blankBodyRef.current.querySelectorAll('[data-enterprise-page="true"]').length;
     const pageNumber = existingPages + 2;
+
+    const pageHeight = pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123);
     
     const pageWrapper = document.createElement('div');
     pageWrapper.setAttribute('data-enterprise-page', 'true');
     pageWrapper.style.position = 'relative';
-    pageWrapper.style.minHeight = `${ENTERPRISE_PAGE_HEIGHT_PX}px`;
-    pageWrapper.style.marginTop = '36px';
-    pageWrapper.style.padding = '64px 48px 78px';
-    pageWrapper.style.background = '#ffffff';
-    pageWrapper.style.border = '1px solid rgba(148,163,184,0.22)';
-    pageWrapper.style.borderTop = '36px solid #f8fafc';
-    pageWrapper.style.borderRadius = '20px';
-    pageWrapper.style.boxShadow = '0 10px 22px -18px rgba(15,23,42,0.22)';
+    pageWrapper.style.minHeight = `${pageHeight}px`;
+    pageWrapper.style.height = `${pageHeight}px`;
     pageWrapper.style.cursor = 'text';
 
     // Click handler to remove placeholder/ghost elements
@@ -3610,9 +3606,16 @@ export default function App() {
     if (selection && selection.rangeCount) {
       try {
         const range = selection.getRangeAt(0);
-        if (blankBodyRef.current.contains(range.commonAncestorContainer)) {
-          range.insertNode(pageWrapper);
-          inserted = true;
+        const container = range.commonAncestorContainer;
+        if (blankBodyRef.current.contains(container)) {
+          let targetNode = container;
+          while (targetNode && targetNode.parentNode !== blankBodyRef.current) {
+            targetNode = targetNode.parentNode;
+          }
+          if (targetNode) {
+            blankBodyRef.current.insertBefore(pageWrapper, targetNode.nextSibling);
+            inserted = true;
+          }
         }
       } catch (e) {
         // Fall back to append
@@ -3642,7 +3645,7 @@ export default function App() {
       computeDocumentStats();
       computeDocumentOutline();
     });
-  }, [computeDocumentOutline, computeDocumentStats, setIsBlankDocument]);
+  }, [computeDocumentOutline, computeDocumentStats, setIsBlankDocument, docPageSize, pageOrientation]);
 
   const buildHeadingPlanFromText = useCallback((sourceText, maxLevels = 3) => {
     const normalized = String(sourceText || '').replace(/\r/g, '').trim();
@@ -28353,10 +28356,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             style={{ 
               width: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
               minHeight: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
-              maxHeight: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
-              overflow: 'hidden',
               paddingLeft: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
               paddingRight: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
+              '--page-padding': docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
             }}
           >
             {docHeaderText && (

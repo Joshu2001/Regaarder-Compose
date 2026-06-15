@@ -854,3 +854,32 @@ body { margin: 0; background: #ffffff; }
   border-color: #94a3b8 !important;
   transform: translateX(-50%) scale(1.08) !important;
 }
+
+/* Apple-style stacking pages configuration */
+:root {
+  --workspace-page-gap-color: #f8fafc;
+}
+.app-dark {
+  --workspace-page-gap-color: #0b1220;
+}
+
+[data-enterprise-page="true"] {
+  position: relative !important;
+  display: block !important;
+  margin-left: calc(-1 * var(--page-padding, 48px)) !important;
+  margin-right: calc(-1 * var(--page-padding, 48px)) !important;
+  margin-top: 48px !important;
+  margin-bottom: -78px !important;
+  padding-left: var(--page-padding, 48px) !important;
+  padding-right: var(--page-padding, 48px) !important;
+  padding-top: 64px !important;
+  padding-bottom: 78px !important;
+  background: inherit !important;
+  border-top: 32px solid var(--workspace-page-gap-color, #f8fafc) !important;
+  border-bottom: 1.5px solid rgba(148, 163, 184, 0.12) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+}
