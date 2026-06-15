@@ -14,6 +14,7 @@ import {
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
+  FileEdit, CheckCircle2, Users2, Archive,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign
@@ -3562,36 +3563,31 @@ export default function App() {
   }, []);
 
   const insertEnterprisePage = useCallback(() => {
-    const selection = window.getSelection();
-    if (!selection || !selection.rangeCount || !blankBodyRef.current) {
+    if (!blankBodyRef.current) {
       return;
     }
 
+    const selection = window.getSelection();
     const existingPages = blankBodyRef.current.querySelectorAll('[data-enterprise-page="true"]').length;
     const pageNumber = existingPages + 2;
-    const range = selection.getRangeAt(0);
+    
     const pageWrapper = document.createElement('div');
     pageWrapper.setAttribute('data-enterprise-page', 'true');
     pageWrapper.style.position = 'relative';
     pageWrapper.style.minHeight = `${ENTERPRISE_PAGE_HEIGHT_PX}px`;
-    pageWrapper.style.marginTop = '24px';
+    pageWrapper.style.marginTop = '36px';
     pageWrapper.style.padding = '64px 48px 78px';
     pageWrapper.style.background = '#ffffff';
     pageWrapper.style.border = '1px solid rgba(148,163,184,0.22)';
+    pageWrapper.style.borderTop = '36px solid #f8fafc';
     pageWrapper.style.borderRadius = '20px';
     pageWrapper.style.boxShadow = '0 10px 22px -18px rgba(15,23,42,0.22)';
+    pageWrapper.style.cursor = 'text';
 
-    // Add page-break-plus-btn
-    const plusBtn = document.createElement('button');
-    plusBtn.type = 'button';
-    plusBtn.className = 'page-break-plus-btn select-none';
-    plusBtn.setAttribute('contenteditable', 'false');
-    plusBtn.innerHTML = '+';
-    plusBtn.onclick = (e) => {
-      e.stopPropagation();
-      insertEnterprisePage();
+    // Click handler to remove placeholder/ghost elements
+    pageWrapper.onclick = (e) => {
+      setIsBlankDocument(false);
     };
-    pageWrapper.appendChild(plusBtn);
 
     const paragraph = document.createElement('p');
     paragraph.innerHTML = '<br/>';
@@ -3606,16 +3602,39 @@ export default function App() {
     pageNumberEl.style.fontSize = '11px';
     pageNumberEl.style.fontWeight = '500';
     pageNumberEl.style.color = '#94a3b8';
-    pageNumberEl.textContent = String(pageNumber);
+    pageNumberEl.style.whiteSpace = 'nowrap';
+    pageNumberEl.textContent = `Page ${pageNumber}`;
     pageWrapper.appendChild(pageNumberEl);
 
-    range.insertNode(pageWrapper);
+    let inserted = false;
+    if (selection && selection.rangeCount) {
+      try {
+        const range = selection.getRangeAt(0);
+        if (blankBodyRef.current.contains(range.commonAncestorContainer)) {
+          range.insertNode(pageWrapper);
+          inserted = true;
+        }
+      } catch (e) {
+        // Fall back to append
+      }
+    }
 
-    const nextRange = document.createRange();
-    nextRange.selectNodeContents(paragraph);
-    nextRange.collapse(true);
-    selection.removeAllRanges();
-    selection.addRange(nextRange);
+    if (!inserted) {
+      blankBodyRef.current.appendChild(pageWrapper);
+    }
+
+    // Set editor focus to the new page content
+    try {
+      const nextRange = document.createRange();
+      nextRange.selectNodeContents(paragraph);
+      nextRange.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(nextRange);
+    } catch (e) {
+      // Ignore focus errors
+    }
+
+    showToast(`Page ${pageNumber} created`);
 
     requestAnimationFrame(() => {
       pageWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3623,7 +3642,7 @@ export default function App() {
       computeDocumentStats();
       computeDocumentOutline();
     });
-  }, [computeDocumentOutline, computeDocumentStats]);
+  }, [computeDocumentOutline, computeDocumentStats, setIsBlankDocument]);
 
   const buildHeadingPlanFromText = useCallback((sourceText, maxLevels = 3) => {
     const normalized = String(sourceText || '').replace(/\r/g, '').trim();
@@ -24573,14 +24592,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                     return (
                       <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
-                        <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50/70 transition-colors relative">
+                        <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50/70 transition-colors relative flex-nowrap min-w-0">
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <button
                               type="button"
                               onClick={() => {
                                 setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
                               }}
-                              className="text-slate-400 hover:text-slate-650 transition-colors"
+                              className="text-slate-400 hover:text-slate-650 transition-colors shrink-0"
                             >
                               {section.subsections?.length > 0 ? (
                                 section.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />
@@ -24614,7 +24633,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 onClick={() => {
                                   setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
                                 }}
-                                className="text-[12.5px] font-bold text-slate-800 truncate cursor-pointer hover:text-slate-955"
+                                className="text-[12.5px] font-bold text-slate-800 truncate cursor-pointer hover:text-slate-955 whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1"
                               >
                                 {section.title}
                               </span>
@@ -24737,9 +24756,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         {section.expanded && section.subsections && section.subsections.length > 0 && (
                           <div className="pl-4 space-y-1.5 border-l border-slate-200 ml-2.5">
                             {section.subsections.map(sub => (
-                              <div key={sub.id} className="flex items-center gap-2 py-0.5">
+                              <div key={sub.id} className="flex items-center gap-2 py-0.5 min-w-0 flex-nowrap">
                                 <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
-                                <span className="text-[11.5px] text-slate-500 font-semibold truncate">{sub.title}</span>
+                                <span className="text-[11.5px] text-slate-500 font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1">{sub.title}</span>
                               </div>
                             ))}
                           </div>
@@ -28376,27 +28395,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <button
                     type="button"
                     onClick={() => setDocStateDropdownOpen(!docStateDropdownOpen)}
-                    className={`text-[9px] font-bold border rounded px-1.5 py-0.5 cursor-pointer select-none transition-all uppercase flex items-center gap-1 ${
-                      docState === 'draft' ? 'bg-violet-50 text-violet-600 border-violet-200' :
-                      docState === 'ready' ? 'bg-emerald-50 text-emerald-600 border-emerald-200' :
-                      docState === 'review' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                      'bg-amber-50 text-amber-600 border-amber-200'
+                    className={`text-[9px] font-bold border rounded-lg px-2 py-1.5 cursor-pointer select-none transition-all duration-200 uppercase flex items-center gap-1.5 hover:shadow-sm ${
+                      docState === 'draft' ? 'bg-violet-50 hover:bg-violet-100/80 text-violet-750 border-violet-250' :
+                      docState === 'ready' ? 'bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border-emerald-250' :
+                      docState === 'review' ? 'bg-blue-50 hover:bg-blue-100/80 text-blue-700 border-blue-250' :
+                      'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-250'
                     }`}
                   >
-                    {docState === 'draft' && '📝 Draft'}
-                    {docState === 'ready' && '✅ Ready'}
-                    {docState === 'review' && '👥 In Review'}
-                    {docState === 'archived' && '📦 Archived'}
+                    {docState === 'draft' && <FileEdit size={10} className="stroke-[2.5]" />}
+                    {docState === 'ready' && <CheckCircle2 size={10} className="stroke-[2.5]" />}
+                    {docState === 'review' && <Users2 size={10} className="stroke-[2.5]" />}
+                    {docState === 'archived' && <Archive size={10} className="stroke-[2.5]" />}
+                    <span>{docState}</span>
                   </button>
 
                   {docStateDropdownOpen && (
                     <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
                       <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Document State</div>
                       {[
-                        { key: 'draft', label: '📝 Draft', desc: 'Actively being written', color: 'hover:bg-violet-50 text-violet-700' },
-                        { key: 'ready', label: '✅ Ready', desc: 'Completed and ready for use', color: 'hover:bg-emerald-50 text-emerald-700' },
-                        { key: 'review', label: '👥 In Review', desc: 'Awaiting feedback', color: 'hover:bg-blue-50 text-blue-700' },
-                        { key: 'archived', label: '📦 Archived', desc: 'Stored and inactive', color: 'hover:bg-amber-50 text-amber-700' }
+                        { key: 'draft', label: 'Draft', desc: 'Actively being written', color: 'hover:bg-violet-50 text-violet-700', icon: <FileEdit size={12} className="stroke-[2]" /> },
+                        { key: 'ready', label: 'Ready', desc: 'Completed and ready for use', color: 'hover:bg-emerald-50 text-emerald-700', icon: <CheckCircle2 size={12} className="stroke-[2]" /> },
+                        { key: 'review', label: 'In Review', desc: 'Awaiting feedback', color: 'hover:bg-blue-50 text-blue-700', icon: <Users2 size={12} className="stroke-[2]" /> },
+                        { key: 'archived', label: 'Archived', desc: 'Stored and inactive', color: 'hover:bg-slate-550 text-slate-600', icon: <Archive size={12} className="stroke-[2]" /> }
                       ].map((item) => (
                         <button
                           key={item.key}
@@ -28406,10 +28426,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             setDocStateDropdownOpen(false);
                             showToast(`Document marked as ${item.key.toUpperCase()}`);
                           }}
-                          className={`w-full text-left px-2 py-1.5 rounded-xl transition-colors ${item.color} ${docState === item.key ? 'bg-slate-50' : ''}`}
+                          className={`w-full text-left px-2.5 py-2 rounded-xl transition-all duration-150 flex items-start gap-2 ${item.color} ${docState === item.key ? 'bg-slate-50/80' : ''}`}
                         >
-                          <div className="text-[11px] font-bold">{item.label}</div>
-                          <div className="text-[9px] text-slate-405 font-semibold">{item.desc}</div>
+                          <div className="mt-0.5 shrink-0">{item.icon}</div>
+                          <div>
+                            <div className="text-[11px] font-bold">{item.label}</div>
+                            <div className="text-[9px] text-slate-405 font-semibold">{item.desc}</div>
+                          </div>
                         </button>
                       ))}
                     </div>

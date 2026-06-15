@@ -705,8 +705,8 @@ body { margin: 0; background: #ffffff; }
   content: attr(data-placeholder);
   color: #94a3b8 !important;
   pointer-events: none;
-  display: inline-block;
-  position: absolute;
+  display: block;
+  position: relative;
   left: 0;
   top: 0;
 }
@@ -720,8 +720,8 @@ body { margin: 0; background: #ffffff; }
   content: attr(data-placeholder);
   color: #94a3b8 !important;
   pointer-events: none;
-  display: inline-block;
-  position: absolute;
+  display: block;
+  position: relative;
   left: 0;
   top: 0;
 }
