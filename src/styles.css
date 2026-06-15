@@ -797,7 +797,7 @@ body { margin: 0; background: #ffffff; }
 
 /* Page Separation & Page-break Plus Button (Image 2 & 3) */
 .compose-editor-surface {
-  background-color: #ffffff !important;
+  background-color: transparent !important;
 }
 
 [data-enterprise-page="true"] {
