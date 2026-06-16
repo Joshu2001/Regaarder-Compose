@@ -847,6 +847,3 @@ body { margin: 0; background: #ffffff; }
   transform: translateX(-50%) scale(1.08) !important;
 }
 
-[data-enterprise-page="true"] {
-  display: none !important;
-}
