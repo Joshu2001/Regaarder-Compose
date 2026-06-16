@@ -9905,6 +9905,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
       range.insertNode(span);
     }
     
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+
     setComments(prev => [...prev, {
       id: commentId,
       text: '',
@@ -30256,7 +30260,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-              <Image size={14} className="text-violet-500" />
+              <ImageIcon size={14} className="text-violet-500" />
               Watermark
             </span>
             <button onClick={() => setShowWatermarkMenu(false)} className="text-gray-400 hover:text-gray-600">
