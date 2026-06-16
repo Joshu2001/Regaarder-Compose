@@ -17,7 +17,7 @@ import {
   FileEdit, CheckCircle2, Users2, Archive,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
-  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -2885,7 +2885,7 @@ export default function App() {
   const watermarkMenuRef = useRef(null);
 
   // Link Popover State
-  const [linkPopover, setLinkPopover] = useState({ open: false, top: 0, left: 0, range: null, url: '', commentId: null });
+  const [linkPopover, setLinkPopover] = useState({ open: false, top: 0, left: 0, range: null, url: '', label: '', commentId: null });
   const linkPopoverRef = useRef(null);
 
   // Hover-Based Comments State
@@ -3298,6 +3298,21 @@ export default function App() {
   const activeDocIdRef = useRef(null);
   const titleEditableRef = useRef(null);
   const subtitleEditableRef = useRef(null);
+
+  const [blockDragHandle, setBlockDragHandle] = useState({ visible: false, top: 0, left: 0, node: null });
+  const findNearestBlockElement = (node) => {
+    let curr = node;
+    while (curr && curr !== blankBodyRef.current) {
+      if (curr.nodeType === 1) {
+        const tag = curr.tagName.toUpperCase();
+        if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'PRE', 'BLOCKQUOTE', 'TD', 'TH'].includes(tag)) {
+          return curr;
+        }
+      }
+      curr = curr.parentNode;
+    }
+    return null;
+  };
   const formattingMenuRef = useRef(null);
   const savedSelectionRef = useRef(null);
   const speechRecognitionRef = useRef(null);
@@ -6334,6 +6349,33 @@ export default function App() {
       document.execCommand('insertHTML', false, cleanHtml);
     } else if (plainText) {
       if (isBodyTarget) {
+        const trimmed = plainText.trim();
+        const isUrl = /^https?:\/\/[^\s]+$/.test(trimmed);
+        if (isUrl && trimmed.split('\n').length === 1) {
+          let embedHtml = '';
+          try {
+            if (trimmed.includes('youtube.com/watch?v=') || trimmed.includes('youtu.be/')) {
+              const videoId = trimmed.includes('youtu.be/') ? trimmed.split('youtu.be/')[1].split('?')[0] : new URLSearchParams(new URL(trimmed).search).get('v');
+              if (videoId) {
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio: 16/9;"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+              }
+            } else if (trimmed.includes('figma.com/')) {
+              embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio: 16/9;"><iframe width="100%" height="100%" src="https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(trimmed)}" allowfullscreen></iframe></div><p><br></p>`;
+            } else if (trimmed.toLowerCase().endsWith('.pdf')) {
+              embedHtml = `<div contenteditable="false" class="my-4 p-4 rounded-xl bg-red-50 border border-red-100 flex items-center gap-3"><div class="w-10 h-10 bg-red-100 text-red-600 rounded-lg flex items-center justify-center font-bold">PDF</div><div class="flex-1"><div class="text-sm font-bold text-slate-800">PDF Document</div><div class="text-xs text-slate-500 truncate max-w-[300px]">${trimmed}</div></div><a href="${trimmed}" target="_blank" class="px-3 py-1.5 bg-white text-xs font-semibold text-slate-700 rounded border border-slate-200 hover:bg-slate-50">View File</a></div><p><br></p>`;
+            }
+          } catch (e) {
+            console.error('Failed to parse URL for embed:', e);
+          }
+          
+          if (!embedHtml) {
+            embedHtml = `<a href="${trimmed}" target="_blank" class="workspace-doc-link text-violet-600 font-semibold underline">${trimmed}</a>`;
+          }
+          document.execCommand('insertHTML', false, embedHtml);
+          if (afterPaste) setTimeout(() => afterPaste(target), 0);
+          return;
+        }
+
         const formatted = plainText
           .split(/\r?\n/)
           .map(line => {
@@ -7195,17 +7237,23 @@ export default function App() {
         range = selection.getRangeAt(0);
       }
     }
-    if (!range || range.collapsed) {
-      showToast('Please select text to link');
+    if (!range) {
+      showToast('No active position to insert link');
       return;
     }
     const rect = range.getBoundingClientRect();
+    let initialLabel = '';
+    if (!range.collapsed) {
+      initialLabel = range.toString().trim();
+    }
+    
     setLinkPopover({
       open: true,
       top: rect.bottom + window.scrollY + 10,
       left: Math.max(10, rect.left + window.scrollX - 150),
       range: range.cloneRange(),
       url: '',
+      label: initialLabel,
       commentId: null
     });
   };
@@ -7217,9 +7265,38 @@ export default function App() {
     selection.removeAllRanges();
     selection.addRange(linkPopover.range);
     
-    document.execCommand('createLink', false, linkPopover.url.trim());
+    const label = linkPopover.label.trim() || linkPopover.url.trim();
+    const url = linkPopover.url.trim();
     
-    setLinkPopover({ open: false, top: 0, left: 0, range: null, url: '', commentId: null });
+    // Instead of execCommand, we manually create the rich link element
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.className = 'workspace-doc-link text-violet-600 font-semibold underline';
+    a.textContent = label;
+    
+    if (url.startsWith('#') || url.includes('workspace')) {
+      a.setAttribute('data-internal-link', 'true');
+    }
+    
+    const range = linkPopover.range;
+    if (!range.collapsed) {
+      range.deleteContents();
+    }
+    range.insertNode(a);
+    
+    // Move cursor after the link
+    const newRange = document.createRange();
+    newRange.setStartAfter(a);
+    newRange.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(newRange);
+    
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+    
+    setLinkPopover({ open: false, top: 0, left: 0, range: null, url: '', label: '', commentId: null });
     showToast('Link added');
   };
 
@@ -10292,20 +10369,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
     }
     
-    const findNearestBlockElement = (node) => {
-      let curr = node;
-      while (curr && curr !== blankBodyRef.current) {
-        if (curr.nodeType === 1) {
-          const tag = curr.tagName.toUpperCase();
-          if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'PRE', 'BLOCKQUOTE', 'TD', 'TH'].includes(tag)) {
-            return curr;
-          }
-        }
-        curr = curr.parentNode;
-      }
-      return null;
-    };
-    
     if (key === 'shapes') {
       insertInlineShapeBox();
     } else if (key === 'hyperlink') {
@@ -10505,6 +10568,36 @@ Generate the updated output according to the instruction. Preserve layout and ta
       target.closest('.ai-preview-action-banner')
     )) {
       return;
+    }
+
+    if (event.key === ' ' || event.code === 'Space') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        if (range.collapsed) {
+          const node = range.startContainer;
+          if (node.nodeType === Node.TEXT_NODE && range.startOffset === node.textContent.length) {
+            const text = node.textContent;
+            let formatTag = null;
+            if (text === '#') formatTag = 'H1';
+            else if (text === '##') formatTag = 'H2';
+            else if (text === '###') formatTag = 'H3';
+            else if (text === '>') formatTag = 'BLOCKQUOTE';
+            else if (text === '-') formatTag = 'UL';
+            
+            if (formatTag) {
+              event.preventDefault();
+              node.textContent = '';
+              if (formatTag === 'UL') {
+                document.execCommand('insertUnorderedList', false, null);
+              } else {
+                document.execCommand('formatBlock', false, formatTag);
+              }
+              return;
+            }
+          }
+        }
+      }
     }
 
     if (event.key === 'ArrowUp' && isSelectionAtStartOfNode(blankBodyRef.current)) {
@@ -29364,6 +29457,68 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onInput={(e) => normalizeEditableDirection(e.currentTarget)}
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
                   onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}
+                  onMouseMove={(e) => {
+                    const block = findNearestBlockElement(e.target);
+                    if (block) {
+                      const rect = block.getBoundingClientRect();
+                      setBlockDragHandle({
+                        visible: true,
+                        top: rect.top + window.scrollY,
+                        left: Math.max(10, rect.left + window.scrollX - 28),
+                        node: block
+                      });
+                    } else {
+                      setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (e.relatedTarget && e.relatedTarget.closest('.block-drag-handle')) return;
+                    setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+                  }}
+                  onDragOver={(e) => {
+                    if (window.__draggedBlock) {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      const targetBlock = findNearestBlockElement(e.target);
+                      if (targetBlock && targetBlock !== window.__draggedBlock) {
+                        const rect = targetBlock.getBoundingClientRect();
+                        if (e.clientY < rect.top + rect.height / 2) {
+                          targetBlock.style.borderTop = '2px solid #8b5cf6';
+                          targetBlock.style.borderBottom = '';
+                        } else {
+                          targetBlock.style.borderBottom = '2px solid #8b5cf6';
+                          targetBlock.style.borderTop = '';
+                        }
+                      }
+                    }
+                  }}
+                  onDragLeave={(e) => {
+                    const targetBlock = findNearestBlockElement(e.target);
+                    if (targetBlock) {
+                      targetBlock.style.borderTop = '';
+                      targetBlock.style.borderBottom = '';
+                    }
+                  }}
+                  onDrop={(e) => {
+                    if (window.__draggedBlock) {
+                      e.preventDefault();
+                      const targetBlock = findNearestBlockElement(e.target);
+                      if (targetBlock && targetBlock !== window.__draggedBlock) {
+                        targetBlock.style.borderTop = '';
+                        targetBlock.style.borderBottom = '';
+                        const rect = targetBlock.getBoundingClientRect();
+                        if (e.clientY < rect.top + rect.height / 2) {
+                          targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
+                        } else {
+                          targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
+                        }
+                        if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+                      }
+                      window.__draggedBlock.style.opacity = '1';
+                      window.__draggedBlock = null;
+                      setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+                    }
+                  }}
                   dir="ltr"
                   data-doc-id={activeDocId || ''}
                   className="mb-4 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed"
@@ -30309,34 +30464,52 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
       {linkPopover.open && (
-        <div
-          ref={linkPopoverRef}
-          className="fixed bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-[9999] flex items-center gap-2 w-[320px] font-sans"
-          style={{ top: `${linkPopover.top}px`, left: `${linkPopover.left}px` }}
-        >
-          <div className="flex-1 flex items-center gap-2 px-2 bg-slate-50 rounded-lg border border-slate-200 focus-within:border-violet-400 focus-within:ring-1 focus-within:ring-violet-400">
-            <Search size={14} className="text-slate-400" />
-            <input
-              type="text"
-              autoFocus
-              placeholder="Paste URL or search documents..."
-              value={linkPopover.url}
-              onChange={(e) => setLinkPopover({ ...linkPopover, url: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleApplyLink();
-              }}
-              className="w-full text-xs py-2 bg-transparent outline-none border-none text-slate-700 placeholder-slate-400"
-            />
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans">
+          <div className="bg-white rounded-xl shadow-2xl w-80 overflow-hidden flex flex-col border border-slate-200">
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5"><Link size={13} className="text-violet-500" /> Insert Link</span>
+              <button onClick={() => setLinkPopover(prev => ({ ...prev, open: false }))} className="text-slate-400 hover:text-slate-600 rounded p-0.5"><X size={14} /></button>
+            </div>
+            <div className="p-4 flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Text to display</label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400" 
+                  placeholder="e.g. Reference Document"
+                  value={linkPopover.label || ''}
+                  onChange={(e) => setLinkPopover(p => ({ ...p, label: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">URL or Search</label>
+                <div className="relative flex items-center">
+                  <Search size={12} className="absolute left-2.5 text-slate-400" />
+                  <input 
+                    type="text" 
+                    className="w-full text-xs py-2 pl-7 pr-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400" 
+                    placeholder="https:// or search workspace..."
+                    value={linkPopover.url}
+                    onChange={(e) => setLinkPopover(p => ({ ...p, url: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleApplyLink();
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+              <button onClick={() => setLinkPopover(prev => ({ ...prev, open: false }))} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700">Cancel</button>
+              <button 
+                onClick={() => handleApplyLink()}
+                className="px-4 py-1.5 text-xs font-bold bg-violet-600 text-white rounded-lg hover:bg-violet-700 shadow-sm"
+              >Insert</button>
+            </div>
           </div>
-          <button 
-            onClick={() => handleApplyLink()} 
-            className="p-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors shadow-sm"
-            title="Apply Link"
-          >
-            <Check size={14} />
-          </button>
         </div>
       )}
+
 
       {commentPopover.open && (() => {
         const comment = comments.find(c => c.id === commentPopover.commentId);
@@ -30709,6 +30882,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
               >Insert</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {blockDragHandle.visible && blockDragHandle.node && (
+        <div
+          className="block-drag-handle fixed z-[9000] cursor-grab text-slate-300 hover:text-slate-500 hover:bg-slate-100 rounded flex items-center justify-center transition-colors p-0.5"
+          style={{ top: `${blockDragHandle.top + 2}px`, left: `${blockDragHandle.left}px` }}
+          draggable="true"
+          onDragStart={(e) => {
+            e.dataTransfer.setData('text/plain', 'regaarder-block-drag');
+            e.dataTransfer.effectAllowed = 'move';
+            window.__draggedBlock = blockDragHandle.node;
+            blockDragHandle.node.style.opacity = '0.4';
+          }}
+          onDragEnd={(e) => {
+            if (window.__draggedBlock) {
+              window.__draggedBlock.style.opacity = '1';
+              window.__draggedBlock = null;
+            }
+          }}
+          title="Drag to move"
+        >
+          <GripVertical size={16} />
         </div>
       )}
 
