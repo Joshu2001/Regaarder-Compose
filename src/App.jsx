@@ -1276,6 +1276,12 @@ export default function App() {
       if (watermarkMenuRef.current && !watermarkMenuRef.current.contains(e.target)) {
         setShowWatermarkMenu(false);
       }
+      if (linkPopoverRef.current && !linkPopoverRef.current.contains(e.target)) {
+        setLinkPopover(prev => ({ ...prev, open: false }));
+      }
+      if (commentPopoverRef.current && !commentPopoverRef.current.contains(e.target)) {
+        setHoveredCommentId(null);
+      }
     };
     document.addEventListener('mousedown', handleOutsideClick);
 
@@ -1288,6 +1294,8 @@ export default function App() {
           setDeckSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
         }
         setShowWatermarkMenu(false);
+        setLinkPopover(prev => ({ ...prev, open: false }));
+        setHoveredCommentId(null);
       }
     };
     window.addEventListener('keydown', handleGlobalEscape);
@@ -2853,10 +2861,67 @@ export default function App() {
   }, [slashMenu.open]);
 
   // Watermark state
-  const [docWatermark, setDocWatermark] = useState(null); // { type: 'text' | 'image', value: string }
+  const [docWatermark, setDocWatermark] = useState({
+    active: false,
+    type: 'draft',
+    content: 'DRAFT',
+    opacity: 0.15,
+    size: 100,
+    rotation: -45,
+    placement: 'center'
+  });
   const [showWatermarkMenu, setShowWatermarkMenu] = useState(false);
   const [watermarkMenuPos, setWatermarkMenuPos] = useState({ left: 0, top: 0 });
   const watermarkMenuRef = useRef(null);
+
+  // Link Popover State
+  const [linkPopover, setLinkPopover] = useState({ open: false, top: 0, left: 0, range: null, url: '', commentId: null });
+  const linkPopoverRef = useRef(null);
+
+  // Hover-Based Comments State
+  const [comments, setComments] = useState([]);
+  const [activeCommentId, setActiveCommentId] = useState(null);
+  const [hoveredCommentId, setHoveredCommentId] = useState(null);
+  const [commentPopover, setCommentPopover] = useState({ open: false, top: 0, left: 0, commentId: null });
+  const commentPopoverRef = useRef(null);
+
+  // Comment hover tracking
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const target = e.target;
+      if (target && target.classList && target.classList.contains('comment-highlight')) {
+        const cId = target.getAttribute('data-comment-id');
+        if (cId && (!commentPopover.open || commentPopover.commentId !== cId)) {
+          const rect = target.getBoundingClientRect();
+          setHoveredCommentId(cId);
+          setCommentPopover({
+            open: true,
+            top: rect.bottom + window.scrollY + 10,
+            left: Math.max(10, rect.left + window.scrollX - 150),
+            commentId: cId
+          });
+        }
+      }
+    };
+    
+    // Also handle clicking outside to close comment popover
+    const handleOutsideClick = (e) => {
+      if (commentPopover.open && 
+          commentPopoverRef.current && 
+          !commentPopoverRef.current.contains(e.target) &&
+          (!e.target.classList || !e.target.classList.contains('comment-highlight'))) {
+        setCommentPopover(prev => ({ ...prev, open: false }));
+        setHoveredCommentId(null);
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [commentPopover.open, commentPopover.commentId]);
 
   // Page Indicator state
   const [currentPage, setCurrentPage] = useState(1);
@@ -7095,6 +7160,42 @@ export default function App() {
     }, 2800);
   };
 
+  const handleOpenLinkPopover = (rangeParam = null) => {
+    let range = rangeParam;
+    if (!range) {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        range = selection.getRangeAt(0);
+      }
+    }
+    if (!range || range.collapsed) {
+      showToast('Please select text to link');
+      return;
+    }
+    const rect = range.getBoundingClientRect();
+    setLinkPopover({
+      open: true,
+      top: rect.bottom + window.scrollY + 10,
+      left: Math.max(10, rect.left + window.scrollX - 150),
+      range: range.cloneRange(),
+      url: '',
+      commentId: null
+    });
+  };
+
+  const handleApplyLink = () => {
+    if (!linkPopover.url.trim() || !linkPopover.range) return;
+    
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(linkPopover.range);
+    
+    document.execCommand('createLink', false, linkPopover.url.trim());
+    
+    setLinkPopover({ open: false, top: 0, left: 0, range: null, url: '', commentId: null });
+    showToast('Link added');
+  };
+
   const handleWhiteboardAssistantAction = (action) => {
     if (!action?.prompt) {
       return;
@@ -9744,6 +9845,37 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
   };
 
+  const renderWatermark = () => {
+    if (!docWatermark?.active) return null;
+    return (
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden z-0 select-none flex items-center justify-center"
+        style={{ opacity: docWatermark.opacity }}
+      >
+        {docWatermark.placement === 'tiled' ? (
+          <div className="absolute inset-[-100%] flex flex-wrap content-start justify-start opacity-50" style={{ transform: `rotate(${docWatermark.rotation}deg)` }}>
+            {Array.from({length: 40}).map((_, i) => (
+               <div key={i} className="p-8 whitespace-nowrap text-slate-300 font-bold uppercase" style={{ fontSize: `${docWatermark.size}%` }}>{docWatermark.content}</div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="text-slate-300 font-bold uppercase whitespace-nowrap"
+            style={{
+              transform: `rotate(${docWatermark.rotation}deg)`,
+              fontSize: `${docWatermark.size}%`,
+              position: 'absolute',
+              ...(docWatermark.placement === 'header' ? { top: '10%', transform: 'none' } : {}),
+              ...(docWatermark.placement === 'footer' ? { bottom: '10%', transform: 'none' } : {}),
+            }}
+          >
+            {docWatermark.content}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const insertInlineCommentBox = () => {
     if (isSelectionInHeader()) {
       showToast('Cannot insert comments inside title or subtitle');
@@ -9753,82 +9885,45 @@ Generate the updated output according to the instruction. Preserve layout and ta
     if (!selection || !selection.rangeCount) return;
     
     const range = selection.getRangeAt(0);
-    range.deleteContents();
+    if (range.collapsed) {
+      showToast('Please select text to comment on');
+      return;
+    }
     
     const commentId = `comment_${Date.now()}`;
-    const container = document.createElement('div');
-    container.className = 'inline-comment-widget p-3 rounded-xl border border-violet-100 bg-violet-50/20 my-2 shadow-xs';
-    container.setAttribute('contenteditable', 'false');
-    container.setAttribute('id', commentId);
+    const span = document.createElement('span');
+    span.className = 'comment-highlight';
+    span.setAttribute('data-comment-id', commentId);
+    span.style.backgroundColor = '#fef08a'; // yellow-200
+    span.style.cursor = 'pointer';
     
-    const docsListHtml = documents.map(doc => `
-      <button type="button" class="w-full text-left px-2 py-1 text-[10px] font-semibold hover:bg-violet-50 text-slate-700 truncate" onclick="window.insertCommentFileLink('${commentId}', '${doc.id}', '${(doc.title || 'Untitled Document').replace(/'/g, "\\'")}')">
-        📄 ${doc.title || 'Untitled Document'}
-      </button>
-    `).join('');
-
-    container.innerHTML = `
-      <div class="inline-comment-header flex items-center justify-between mb-1.5">
-        <div class="flex items-center gap-1.5">
-          <div class="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold">U</div>
-          <span class="text-[11px] font-bold text-gray-800">Add Comment</span>
-        </div>
-      </div>
-      <div class="flex flex-col gap-2">
-        <textarea
-          id="textarea-${commentId}"
-          placeholder="Write a comment... (markdown links e.g. [label](url) supported)"
-          rows="2"
-          class="w-full text-xs p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 resize-none"
-        ></textarea>
-        
-        <div class="flex items-center justify-between gap-1 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100 relative">
-          <div class="flex items-center gap-1">
-            <button type="button" class="p-1 rounded hover:bg-slate-200/50 text-slate-500 hover:text-slate-700 transition-colors" onclick="window.insertCommentLink('${commentId}')" title="Insert Link">
-              🔗
-            </button>
-            
-            <div class="relative">
-              <button type="button" class="p-1 rounded hover:bg-slate-200/50 text-slate-500 hover:text-slate-700 transition-colors" onclick="window.toggleCommentEmojiDrawer('${commentId}')" title="Insert Emoji">
-                😀
-              </button>
-              <div id="emoji-drawer-${commentId}" class="hidden absolute left-0 bottom-full mb-1.5 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 flex gap-1 z-50">
-                ${['👍', '🎉', '🚀', '🔥', '❤️', '👀', '💡', '👏'].map(emoji => `
-                  <button type="button" class="hover:scale-125 transition-transform" onclick="window.insertCommentEmoji('${commentId}', '${emoji}')">${emoji}</button>
-                `).join('')}
-              </div>
-            </div>
-
-            <div class="relative">
-              <button type="button" class="p-1 rounded hover:bg-slate-200/50 text-slate-500 hover:text-slate-700 transition-colors" onclick="window.toggleCommentFileDropdown('${commentId}')" title="Link Workspace File">
-                📁
-              </button>
-              <div id="file-dropdown-${commentId}" class="hidden absolute left-0 bottom-full mb-1.5 bg-white border border-slate-200 rounded-xl shadow-lg p-1.5 w-44 max-h-32 overflow-y-auto thin-scrollbar z-50">
-                <div class="px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-slate-400">Workspace Files</div>
-                ${docsListHtml || '<div class="px-2 py-1 text-[9px] text-slate-450">No files found</div>'}
-              </div>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-1.5">
-            <button type="button" class="px-2.5 py-1 text-[10px] font-semibold text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-50 border border-gray-250 rounded-lg transition-colors" onclick="window.cancelInlineComment('${commentId}')">Cancel</button>
-            <button type="button" class="px-2.5 py-1 text-[10px] font-semibold text-white bg-violet-600 hover:bg-violet-750 rounded-lg transition-colors" onclick="window.submitInlineComment('${commentId}')">Comment</button>
-          </div>
-        </div>
-      </div>
-    `;
+    try {
+      range.surroundContents(span);
+    } catch (e) {
+      const fragment = range.extractContents();
+      span.appendChild(fragment);
+      range.insertNode(span);
+    }
     
-    range.insertNode(container);
+    setComments(prev => [...prev, {
+      id: commentId,
+      text: '',
+      author: 'U',
+      createdAt: Date.now(),
+      resolved: false
+    }]);
     
-    const spacer = document.createElement('p');
-    spacer.innerHTML = '<br>';
-    container.parentNode.insertBefore(spacer, container.nextSibling);
+    setHoveredCommentId(commentId);
     
-    const newRange = document.createRange();
-    newRange.setStartAfter(spacer);
-    newRange.collapse(true);
+    const rect = span.getBoundingClientRect();
+    setCommentPopover({
+      open: true,
+      top: rect.bottom + window.scrollY + 10,
+      left: Math.max(10, rect.left + window.scrollX - 150),
+      commentId: commentId
+    });
+    
     selection.removeAllRanges();
-    selection.addRange(newRange);
   };
 
   const insertInlineShapeBox = () => {
@@ -10066,7 +10161,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     if (key === 'shapes') {
       insertInlineShapeBox();
-    } else if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule', 'hyperlink', 'bookmark'].includes(key)) {
+    } else if (key === 'hyperlink') {
+      handleOpenLinkPopover(targetRange);
+    } else if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule', 'bookmark'].includes(key)) {
       const selectedText = targetRange && !targetRange.collapsed ? targetRange.toString().trim() : '';
       if (selectedText) {
         if (key === 'proofread') {
@@ -26518,6 +26615,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button onClick={() => applyFormatCommand('italic')} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
             <button onClick={() => applyFormatCommand('underline')} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
             <button onClick={() => applyFormatCommand('strikeThrough')} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
+            <button onClick={() => handleOpenLinkPopover()} className="hover:text-violet-600 text-gray-500" title="Insert Link">
+              <LinkIcon size={14} />
+            </button>
             <div
               className="relative text-style-menu-container"
               onMouseEnter={() => setIsTextStyleMenuHovered(true)}
@@ -28903,6 +29003,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 boxSizing: 'border-box',
               }}
             >
+            {renderWatermark()}
             {docHeaderText && (
               <div 
                 className="absolute top-6 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-1.5 flex justify-between select-none"
@@ -29317,6 +29418,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     cursor: 'text',
                   }}
                 >
+                  {renderWatermark()}
                   {/* Header text on extra page */}
                   {docHeaderText && (
                     <div
@@ -30047,6 +30149,198 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 className="px-4 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-750"
               >
                 Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {linkPopover.open && (
+        <div
+          ref={linkPopoverRef}
+          className="fixed bg-white border border-gray-200 rounded-xl shadow-xl p-2 z-[9999] flex items-center gap-2 w-[320px] font-sans"
+          style={{ top: `${linkPopover.top}px`, left: `${linkPopover.left}px` }}
+        >
+          <div className="flex-1 flex items-center gap-2 px-2 bg-slate-50 rounded-lg border border-slate-200 focus-within:border-violet-400 focus-within:ring-1 focus-within:ring-violet-400">
+            <Search size={14} className="text-slate-400" />
+            <input
+              type="text"
+              autoFocus
+              placeholder="Paste URL or search documents..."
+              value={linkPopover.url}
+              onChange={(e) => setLinkPopover({ ...linkPopover, url: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleApplyLink();
+              }}
+              className="w-full text-xs py-2 bg-transparent outline-none border-none text-slate-700 placeholder-slate-400"
+            />
+          </div>
+          <button 
+            onClick={() => handleApplyLink()} 
+            className="p-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors shadow-sm"
+            title="Apply Link"
+          >
+            <Check size={14} />
+          </button>
+        </div>
+      )}
+
+      {commentPopover.open && (
+        <div
+          ref={commentPopoverRef}
+          className="fixed bg-white border border-gray-200 rounded-xl shadow-2xl p-3 z-[9999] flex flex-col gap-2 w-80 font-sans"
+          style={{ top: `${commentPopover.top}px`, left: `${commentPopover.left}px` }}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-6 h-6 rounded-full bg-violet-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">U</div>
+            <span className="text-xs font-bold text-slate-800">New Comment</span>
+          </div>
+          
+          <textarea
+            autoFocus
+            placeholder="Mention with @ or write a comment..."
+            rows="2"
+            className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 resize-none placeholder-slate-400 text-slate-700 bg-slate-50"
+            value={comments.find(c => c.id === commentPopover.commentId)?.text || ''}
+            onChange={(e) => {
+              setComments(prev => prev.map(c => 
+                c.id === commentPopover.commentId ? { ...c, text: e.target.value } : c
+              ));
+            }}
+          />
+          
+          <div className="flex items-center justify-between gap-1 mt-1 bg-slate-50/80 p-1.5 rounded-lg border border-slate-100">
+            <div className="flex items-center gap-0.5">
+              <button className="p-1.5 rounded hover:bg-slate-200/80 text-slate-500 hover:text-slate-700 transition-colors" title="Attach Image">
+                <ImageIcon size={14} />
+              </button>
+              <button className="p-1.5 rounded hover:bg-slate-200/80 text-slate-500 hover:text-slate-700 transition-colors" title="Insert Emoji">
+                <Smile size={14} />
+              </button>
+              <button className="p-1.5 rounded hover:bg-slate-200/80 text-slate-500 hover:text-slate-700 transition-colors" title="Attach Document">
+                <FileText size={14} />
+              </button>
+              <button className="p-1.5 rounded hover:bg-slate-200/80 text-slate-500 hover:text-slate-700 transition-colors" title="Mention User">
+                <AtSign size={14} />
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setCommentPopover({ ...commentPopover, open: false })}
+                className="text-[10px] font-semibold text-slate-500 hover:text-slate-700 transition-colors px-1"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  setCommentPopover({ ...commentPopover, open: false });
+                  showToast('Comment saved');
+                }}
+                className="p-1.5 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors shadow-sm"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showWatermarkMenu && (
+        <div
+          ref={watermarkMenuRef}
+          className="fixed bg-white border border-gray-200 rounded-2xl shadow-2xl p-4 z-[9999] flex flex-col gap-4 w-72 text-left font-sans"
+          style={{
+            top: `${Math.min(watermarkMenuPos.top, window.innerHeight - 400)}px`,
+            left: `${Math.min(watermarkMenuPos.left, window.innerWidth - 300)}px`,
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+              <Image size={14} className="text-violet-500" />
+              Watermark
+            </span>
+            <button onClick={() => setShowWatermarkMenu(false)} className="text-gray-400 hover:text-gray-600">
+              <X size={14} />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {/* Type Selection */}
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Type</label>
+              <div className="flex flex-wrap gap-1.5">
+                {['draft', 'confidential', 'company', 'custom', 'image'].map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setDocWatermark(prev => ({ ...prev, active: true, type: t, content: t === 'custom' ? prev.content : t.toUpperCase() }))}
+                    className={`px-2 py-1 text-[10px] font-semibold border rounded-lg capitalize transition-colors ${docWatermark?.type === t ? 'bg-violet-50 text-violet-700 border-violet-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Content Input */}
+            {docWatermark?.type === 'custom' && (
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Text Content</label>
+                <input
+                  type="text"
+                  value={docWatermark.content}
+                  onChange={(e) => setDocWatermark(prev => ({ ...prev, content: e.target.value }))}
+                  className="w-full text-xs p-1.5 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                />
+              </div>
+            )}
+
+            {/* Placement */}
+            <div>
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Placement</label>
+              <select
+                value={docWatermark?.placement || 'center'}
+                onChange={(e) => setDocWatermark(prev => ({ ...prev, placement: e.target.value }))}
+                className="w-full text-xs p-1.5 rounded border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              >
+                <option value="center">Center</option>
+                <option value="diagonal">Diagonal</option>
+                <option value="header">Header</option>
+                <option value="footer">Footer</option>
+                <option value="tiled">Tiled</option>
+              </select>
+            </div>
+
+            {/* Sliders: Opacity, Size, Rotation */}
+            <div className="space-y-2 pt-1 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Opacity ({Math.round((docWatermark?.opacity || 0.15) * 100)}%)</label>
+                <input type="range" min="0.05" max="1" step="0.05" value={docWatermark?.opacity || 0.15} onChange={(e) => setDocWatermark(prev => ({ ...prev, opacity: parseFloat(e.target.value) }))} className="w-32 accent-violet-500" />
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Size ({(docWatermark?.size || 100)}%)</label>
+                <input type="range" min="20" max="300" step="10" value={docWatermark?.size || 100} onChange={(e) => setDocWatermark(prev => ({ ...prev, size: parseInt(e.target.value) }))} className="w-32 accent-violet-500" />
+              </div>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Rotation ({(docWatermark?.rotation || -45)}°)</label>
+                <input type="range" min="-180" max="180" step="15" value={docWatermark?.rotation || -45} onChange={(e) => setDocWatermark(prev => ({ ...prev, rotation: parseInt(e.target.value) }))} className="w-32 accent-violet-500" />
+              </div>
+            </div>
+
+            <div className="pt-2 flex gap-2 border-t border-gray-100">
+              <button
+                onClick={() => setDocWatermark(prev => ({ ...prev, active: false }))}
+                className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+              >
+                Remove
+              </button>
+              <button
+                onClick={() => {
+                  setDocWatermark(prev => ({ ...prev, active: true }));
+                  setShowWatermarkMenu(false);
+                }}
+                className="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors"
+              >
+                Apply
               </button>
             </div>
           </div>
