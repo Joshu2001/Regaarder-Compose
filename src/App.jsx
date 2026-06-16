@@ -2906,13 +2906,6 @@ export default function App() {
   }, [deckSlashMenu]);
 
   useEffect(() => {
-    window.setActiveDocIdGlobal = setActiveDocId;
-    return () => {
-      delete window.setActiveDocIdGlobal;
-    };
-  }, [setActiveDocId]);
-
-  useEffect(() => {
     window.submitInlineComment = (commentId) => {
       const container = document.getElementById(commentId);
       const textarea = document.getElementById(`textarea-${commentId}`);
@@ -3049,7 +3042,7 @@ export default function App() {
       delete window.insertCommentFileLink;
       document.removeEventListener('click', handleDocumentClick);
     };
-  }, [documents]);
+  }, []);
 
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
@@ -3360,6 +3353,14 @@ export default function App() {
     },
   ]);
   const [activeDocId, setActiveDocId] = useState(null);
+
+  useEffect(() => {
+    window.setActiveDocIdGlobal = setActiveDocId;
+    return () => {
+      delete window.setActiveDocIdGlobal;
+    };
+  }, [setActiveDocId]);
+
   const [docBodyHtml, setDocBodyHtml] = useState('');
   const [closeConfirmDocId, setCloseConfirmDocId] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
