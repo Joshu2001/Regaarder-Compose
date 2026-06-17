@@ -4801,11 +4801,25 @@ export default function App() {
   }, [voiceTarget]);
 
   useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    const docParam = query.get('doc');
+    
+    if (docParam && !replayLoadedFromUrlRef.current) {
+      setDocuments(prev => {
+        const exists = prev.find(d => d.id === docParam);
+        if (exists) return prev;
+        return [{ id: docParam, title: 'Shared Document', updatedAt: Date.now() }, ...prev];
+      });
+      setActiveDocId(docParam);
+      setIsBlankDocument(true);
+      // We don't return here so that if there's both a doc and a replay, it might handle both,
+      // but usually they are separate.
+    }
+
     if (replayLoadedFromUrlRef.current) {
       return;
     }
 
-    const query = new URLSearchParams(window.location.search);
     const replayParam = query.get('replay');
     if (!replayParam) {
       return;
