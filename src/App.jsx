@@ -2892,8 +2892,8 @@ export default function App() {
   const [comments, setComments] = useState([]);
   const [activeCommentId, setActiveCommentId] = useState(null);
   const [hoveredCommentId, setHoveredCommentId] = useState(null);
-  const [commentPopover, setCommentPopover] = useState({ open: false, top: 0, left: 0, commentId: null });
-  const commentPopoverRef = useRef(null);
+  const [activeCommentThreadId, setActiveCommentThreadId] = useState(null);
+  const [commentMarkerPositions, setCommentMarkerPositions] = useState([]);
   const savedCommentRangeRef = useRef(null); // Saves selection before slash menu closes
   const [commentDraftText, setCommentDraftText] = useState('');
   const [commentDraftRich, setCommentDraftRich] = useState([]); // [{type, content}]
@@ -2913,46 +2913,32 @@ export default function App() {
     { icon: '📅', label: 'Schedule', key: 'schedule' },
   ];
 
-  // Comment hover tracking
+  // Comment marker tracking
   useEffect(() => {
-    const handleMouseOver = (e) => {
-      const target = e.target?.closest?.('.comment-highlight') || (e.target?.classList?.contains('comment-highlight') ? e.target : null);
-      if (target) {
-        const cId = target.getAttribute('data-comment-id');
-        if (cId) {
-          const rect = target.getBoundingClientRect();
-          setHoveredCommentId(cId);
-          setCommentPopover(prev => (prev.open && prev.commentId === cId) ? prev : {
-            open: true,
-            top: Math.min(rect.bottom + 10, window.innerHeight - 280),
-            left: Math.max(10, Math.min(rect.left - 40, window.innerWidth - 340)),
-            commentId: cId
-          });
-        }
-      }
-    };
-    
-    const handleOutsideClick = (e) => {
-      if (commentPopover.open && 
-          commentPopoverRef.current && 
-          !commentPopoverRef.current.contains(e.target) &&
-          !e.target?.closest?.('.comment-highlight')) {
-        setCommentPopover(prev => ({ ...prev, open: false }));
-        setHoveredCommentId(null);
-      }
+    const updatePositions = () => {
+      if (!blankBodyRef.current) return;
+      const spans = Array.from(blankBodyRef.current.querySelectorAll('.comment-highlight'));
+      const editorRect = blankBodyRef.current.getBoundingClientRect();
+      const positions = spans.map(span => {
+        const rect = span.getBoundingClientRect();
+        return {
+          id: span.getAttribute('data-comment-id'),
+          top: rect.top - editorRect.top,
+          right: rect.right - editorRect.left,
+          text: span.textContent?.substring(0, 30) + '...'
+        };
+      });
+      setCommentMarkerPositions(positions);
     };
 
-    document.addEventListener('mouseover', handleMouseOver);
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => {
-      document.removeEventListener('mouseover', handleMouseOver);
-      document.removeEventListener('mousedown', handleOutsideClick);
-    };
-  }, [commentPopover.open, commentPopover.commentId]);
-
+    updatePositions();
+    const interval = setInterval(updatePositions, 1000);
+    return () => clearInterval(interval);
+  }, [docBodyHtml, comments]);
   // Page Indicator state
   const [currentPage, setCurrentPage] = useState(1);
   const [showPageIndicator, setShowPageIndicator] = useState(false);
+  const [pageIndicatorLeft, setPageIndicatorLeft] = useState(0);
   const pageIndicatorTimeoutRef = useRef(null);
   const documentScrollContainerRef = useRef(null);
 
@@ -2967,6 +2953,8 @@ export default function App() {
 
     const container = e.currentTarget;
     const containerCenter = container.scrollTop + (container.clientHeight / 2);
+    const rect = container.getBoundingClientRect();
+    setPageIndicatorLeft(rect.left + container.clientWidth / 2);
     const sheets = container.querySelectorAll('[data-enterprise-page="true"]');
     
     let closestPage = 1;
@@ -10154,13 +10142,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
         setComments(prev => [...prev, { id: commentId, text: '', author: 'U', createdAt: Date.now(), resolved: false, replies: [] }]);
         setHoveredCommentId(commentId);
         setCommentDraftText('');
-        setCommentPopover({
-          open: true,
-          top: Math.min(window.innerHeight / 2 - 180, window.innerHeight - 420),
-          left: Math.max(10, window.innerWidth / 2 - 180),
-          commentId,
-          noHighlight: true
-        });
+        setActiveCommentThreadId(commentId);
+        setRightSidebarOpen(true);
+        setActiveRightTab('comments');
         return;
       }
       range = selection.getRangeAt(0);
@@ -10219,13 +10203,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     // Use viewport coords since popover is position:fixed
     const rect = span.getBoundingClientRect();
-    setCommentPopover({
-      open: true,
-      top: Math.min(rect.bottom + 10, window.innerHeight - 420),
-      left: Math.max(10, Math.min(rect.left - 40, window.innerWidth - 380)),
-      commentId,
-      noHighlight: false
-    });
+    setActiveCommentThreadId(commentId);
+    setRightSidebarOpen(true);
+    setActiveRightTab('comments');
     
     window.getSelection()?.removeAllRanges();
   };
@@ -18991,7 +18971,78 @@ Respond with a JSON array of slide objects matching the schema.`;
             </div>
           )}
 
-          {/* E. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
+
+          {/* F. ACTIVE TAB: COMMENTS */}
+          {activeRightTab === 'comments' && (
+            <div className="flex-1 min-h-0 flex flex-col relative bg-[#fbfbfe]">
+              <div className="flex-1 overflow-y-auto thin-scrollbar p-5 space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-sm text-slate-800">All Comments</h3>
+                  <button className="text-[10px] text-violet-600 font-medium hover:text-violet-700">Show resolved</button>
+                </div>
+                {comments.length === 0 ? (
+                  <div className="text-center py-10 px-4 text-slate-400 text-xs">
+                    <MessageSquareText size={24} className="mx-auto mb-2 opacity-50" />
+                    No comments yet. Highlight text and click Comment to start a discussion.
+                  </div>
+                ) : (
+                  comments.map(c => (
+                    <div 
+                      key={c.id} 
+                      className={`rounded-xl border p-3 cursor-pointer transition-all ${activeCommentThreadId === c.id ? 'border-violet-300 bg-violet-50/30 shadow-sm' : 'border-slate-100 bg-white hover:border-violet-200'}`}
+                      onClick={() => setActiveCommentThreadId(c.id)}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-1.5">
+                          <MessageSquareText size={12} className={activeCommentThreadId === c.id ? 'text-violet-500' : 'text-slate-400'} />
+                          <span className="text-xs font-semibold text-slate-700">Thread</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400">{(c.replies?.length || 0) + 1} msg</span>
+                      </div>
+                      <div className="text-xs text-slate-600 line-clamp-2" dangerouslySetInnerHTML={{ __html: c.text || '<i>Empty comment</i>' }} />
+                      
+                      {activeCommentThreadId === c.id && (
+                        <div className="mt-4 space-y-3 pt-3 border-t border-slate-100">
+                          {c.replies?.map((r, i) => (
+                            <div key={i} className="flex gap-2">
+                              <div className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[9px] font-bold shrink-0">{r.author[0]}</div>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-semibold text-slate-700">{r.author}</span>
+                                  <span className="text-[9px] text-slate-400">{r.time}</span>
+                                </div>
+                                <div className="text-[11px] text-slate-600 mt-0.5" dangerouslySetInnerHTML={{ __html: r.html || r.text }} />
+                              </div>
+                            </div>
+                          ))}
+                          <div className="pt-2">
+                            <input 
+                              type="text"
+                              placeholder="Reply..."
+                              className="w-full text-[11px] px-2.5 py-1.5 rounded-lg border border-slate-200 focus:border-violet-400 focus:outline-none bg-white"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && e.target.value.trim()) {
+                                  const text = e.target.value;
+                                  setComments(prev => prev.map(comp => comp.id === c.id ? {
+                                    ...comp,
+                                    text: comp.text || text, // If initial text is empty, set it
+                                    replies: comp.text ? [...(comp.replies || []), { author: 'You', time: 'Just now', text, html: text }] : (comp.replies || [])
+                                  } : comp));
+                                  e.target.value = '';
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* G. ACTIVE TAB: INTEGRATED CALENDAR & TIMELINE SCHEDULE */}
           {activeRightTab === 'calendar' && (
             <div className="flex-1 min-h-0 flex flex-col relative">
               <div className="flex-1 overflow-y-auto thin-scrollbar px-4 pt-1 pb-3 bg-[linear-gradient(180deg,#f6f7fb_0%,#f4f5f9_100%)]">
@@ -20452,6 +20503,23 @@ Respond with a JSON array of slide objects matching the schema.`;
             <MessageCircle size={20} />
           </div>
           <span className="text-[9px] font-semibold">Chat</span>
+        </div>
+
+        <div
+          onClick={() => handleMiniSidebarClick('comments')}
+          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+            activeRightTab === 'comments' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+          }`}
+        >
+          <div className={`p-2 rounded-xl transition-all relative ${activeRightTab === 'comments' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <MessageSquareText size={20} />
+            {comments.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold">
+                {comments.filter(c => !c.resolved).length}
+              </span>
+            )}
+          </div>
+          <span className="text-[9px] font-semibold">Comments</span>
         </div>
 
         <div
@@ -29537,6 +29605,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onInput={(e) => normalizeEditableDirection(e.currentTarget)}
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
                   onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}
+                  onClick={(e) => {
+                    const link = e.target.closest('a');
+                    if (link && link.href) {
+                      if (e.ctrlKey || e.metaKey || e.altKey) {
+                        e.preventDefault();
+                        window.open(link.href, link.target || '_blank');
+                      } else {
+                        showToast('Ctrl+Click (or Cmd+Click) to open link');
+                      }
+                    }
+                  }}
                   onMouseMove={(e) => {
                     if (dragHandleTimeoutRef.current) clearTimeout(dragHandleTimeoutRef.current);
                     const block = findNearestBlockElement(e.target);
@@ -29568,37 +29647,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       if (targetBlock && targetBlock !== window.__draggedBlock) {
                         const rect = targetBlock.getBoundingClientRect();
                         if (e.clientY < rect.top + rect.height / 2) {
-                          targetBlock.style.borderTop = '2px solid #8b5cf6';
-                          targetBlock.style.borderBottom = '';
+                          if (window.__draggedBlock.nextSibling !== targetBlock) {
+                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
+                          }
                         } else {
-                          targetBlock.style.borderBottom = '2px solid #8b5cf6';
-                          targetBlock.style.borderTop = '';
+                          if (targetBlock.nextSibling !== window.__draggedBlock) {
+                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
+                          }
                         }
                       }
                     }
                   }}
                   onDragLeave={(e) => {
-                    const targetBlock = findNearestBlockElement(e.target);
-                    if (targetBlock) {
-                      targetBlock.style.borderTop = '';
-                      targetBlock.style.borderBottom = '';
-                    }
+                    // Borders are no longer used for drop target highlighting
                   }}
                   onDrop={(e) => {
                     if (window.__draggedBlock) {
                       e.preventDefault();
-                      const targetBlock = findNearestBlockElement(e.target);
-                      if (targetBlock && targetBlock !== window.__draggedBlock) {
-                        targetBlock.style.borderTop = '';
-                        targetBlock.style.borderBottom = '';
-                        const rect = targetBlock.getBoundingClientRect();
-                        if (e.clientY < rect.top + rect.height / 2) {
-                          targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
-                        } else {
-                          targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
-                        }
-                        if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
-                      }
+                      if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
                       window.__draggedBlock.style.opacity = '1';
                       window.__draggedBlock = null;
                       setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
@@ -29876,6 +29942,53 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               );
             })}
+
+            {/* Comment Markers Layer */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-10">
+              {commentMarkerPositions.map(pos => {
+                const c = comments.find(x => x.id === pos.id);
+                if (!c) return null;
+                const isActive = activeCommentThreadId === pos.id;
+                const isHovered = hoveredCommentId === pos.id;
+                return (
+                  <div 
+                    key={pos.id}
+                    className="absolute pointer-events-auto flex items-center group cursor-pointer"
+                    style={{ top: `${pos.top - 12}px`, left: `${pos.right + 2}px` }}
+                    onMouseEnter={() => setHoveredCommentId(pos.id)}
+                    onMouseLeave={() => setHoveredCommentId(null)}
+                    onClick={() => {
+                      setActiveCommentThreadId(pos.id);
+                      setRightSidebarOpen(true);
+                      setActiveRightTab('comments');
+                    }}
+                  >
+                    <div className={`flex items-center justify-center h-5 px-1.5 rounded-full border shadow-sm transition-all ${isActive ? 'bg-violet-600 text-white border-violet-700 scale-110' : 'bg-white text-violet-600 border-violet-200 hover:scale-105'}`}>
+                      <MessageSquareText size={10} className={isActive ? 'text-white' : 'text-violet-600'} />
+                      {c.replies?.length > 0 && <span className="text-[9px] font-bold ml-1">{c.replies.length}</span>}
+                    </div>
+                    
+                    {/* Hover Preview Tooltip */}
+                    {isHovered && !isActive && (
+                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 z-50">
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <div className="w-4 h-4 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[8px] font-bold">{c.author?.[0] || 'U'}</div>
+                          <span className="text-[10px] font-semibold text-slate-700">{c.author || 'User'}</span>
+                          <span className="text-[9px] text-slate-400">Just now</span>
+                        </div>
+                        <div className="text-[10px] text-slate-600 line-clamp-2" dangerouslySetInnerHTML={{ __html: c.text || '<i>Empty comment</i>' }} />
+                        {c.replies?.length > 0 && (
+                          <div className="mt-1.5 text-[9px] font-medium text-violet-600 flex items-center gap-1">
+                            <span>{c.replies.length} replies</span>
+                            <ChevronRight size={10} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
             {/* Composing / Analyzing State Glow - Non-blocking floating status */}
             {isComposing && (
@@ -30596,327 +30709,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
 
-      {commentPopover.open && (() => {
-        const comment = comments.find(c => c.id === commentPopover.commentId);
-        const replies = comment?.replies || [];
-        return (
-          <div
-            ref={commentPopoverRef}
-            className="fixed z-[9999] flex flex-col font-sans"
-            style={{
-              top: `${commentPopover.top}px`,
-              left: `${commentPopover.left}px`,
-              width: '380px',
-              maxHeight: '500px',
-              filter: 'drop-shadow(0 8px 40px rgba(0,0,0,0.18))',
-            }}
-          >
-            {/* Main Panel */}
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col" style={{ maxHeight: '500px' }}>
-
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gradient-to-r from-violet-50/80 to-white">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">U</div>
-                  <div>
-                    <span className="text-[11px] font-bold text-gray-800">You</span>
-                    <span className="text-[10px] text-gray-400 ml-1.5">· Just now</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  {comment && !comment.resolved && (
-                    <button
-                      onClick={() => {
-                        setComments(prev => prev.map(c => c.id === commentPopover.commentId ? { ...c, resolved: true } : c));
-                        setCommentPopover(p => ({ ...p, open: false }));
-                        showToast('Comment resolved ✓');
-                      }}
-                      className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200"
-                      title="Resolve"
-                    >Resolve</button>
-                  )}
-                  <button
-                    onClick={() => setCommentPopover(p => ({ ...p, open: false }))}
-                    className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                  ><X size={13} /></button>
-                </div>
-              </div>
-
-              {/* Existing replies thread */}
-              {replies.length > 0 && (
-                <div className="px-4 py-2 space-y-3 border-b border-gray-50 overflow-y-auto" style={{ maxHeight: '140px' }}>
-                  {replies.map((r, i) => (
-                    <div key={i} className="flex gap-2">
-                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">{r.author?.[0] || 'U'}</div>
-                      <div>
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[10px] font-bold text-gray-700">{r.author || 'You'}</span>
-                          <span className="text-[9px] text-gray-400">{r.time || 'Just now'}</span>
-                        </div>
-                        <div className="text-[11px] text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: r.html || r.text || '' }} />
-                        {r.attachments?.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {r.attachments.map((att, ai) => (
-                              <span key={ai} className="inline-flex items-center gap-1 text-[9px] bg-gray-100 text-gray-600 rounded px-1.5 py-0.5"><Paperclip size={9} />{att.name}</span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Compose area */}
-              <div className="p-3 flex flex-col gap-2">
-                {/* Rich text toolbar */}
-                <div className="flex items-center gap-0.5 pb-1.5 border-b border-gray-100">
-                  <button
-                    onClick={() => {
-                      const ta = commentTextareaRef.current;
-                      if (!ta) return;
-                      const s = ta.selectionStart, e = ta.selectionEnd;
-                      const val = ta.value;
-                      const selected = val.slice(s, e);
-                      const newVal = val.slice(0, s) + `**${selected || 'bold text'}**` + val.slice(e);
-                      setCommentDraftText(newVal);
-                    }}
-                    className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors font-bold text-[11px]"
-                    title="Bold"
-                  ><strong>B</strong></button>
-                  <button
-                    onClick={() => {
-                      const ta = commentTextareaRef.current;
-                      if (!ta) return;
-                      const s = ta.selectionStart, e = ta.selectionEnd;
-                      const val = ta.value;
-                      const newVal = val.slice(0, s) + `_${val.slice(s, e) || 'italic'}_ ` + val.slice(e);
-                      setCommentDraftText(newVal);
-                    }}
-                    className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-[11px] italic"
-                    title="Italic"
-                  ><em>I</em></button>
-                  <div className="w-px h-3 bg-gray-200 mx-0.5" />
-                  <button
-                    onClick={() => setCommentLinkModal({ open: true, commentId: commentPopover.commentId, label: '', url: '' })}
-                    className="p-1 rounded text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
-                    title="Insert Link"
-                  ><Link size={12} /></button>
-                  <button
-                    onClick={() => setCommentWorkspaceRefOpen(v => !v)}
-                    className={`p-1 rounded transition-colors ${commentWorkspaceRefOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-400 hover:text-violet-600 hover:bg-violet-50'}`}
-                    title="Reference workspace item"
-                  ><FileText size={12} /></button>
-                  <button
-                    onClick={() => setCommentEmojiOpen(v => !v)}
-                    className={`p-1 rounded transition-colors ${commentEmojiOpen ? 'text-yellow-500 bg-yellow-50' : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'}`}
-                    title="Emoji"
-                  ><Smile size={12} /></button>
-                  <button
-                    onClick={() => {
-                      const ta = commentTextareaRef.current;
-                      if (!ta) return;
-                      const s = ta.selectionStart;
-                      const val = ta.value;
-                      const newVal = val.slice(0, s) + '@' + val.slice(s);
-                      setCommentDraftText(newVal);
-                      setTimeout(() => { ta.focus(); ta.selectionStart = ta.selectionEnd = s + 1; }, 10);
-                    }}
-                    className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                    title="Mention someone"
-                  ><AtSign size={12} /></button>
-                  <label className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer" title="Attach file">
-                    <Paperclip size={12} />
-                    <input type="file" className="hidden" onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) return;
-                      setComments(prev => prev.map(c => c.id === commentPopover.commentId
-                        ? { ...c, attachments: [...(c.attachments || []), { name: f.name, size: f.size }] }
-                        : c
-                      ));
-                      showToast(`Attached: ${f.name}`);
-                    }} />
-                  </label>
-                </div>
-
-                {/* Emoji picker */}
-                {commentEmojiOpen && (
-                  <div className="flex flex-wrap gap-1 p-2 bg-gray-50 rounded-lg border border-gray-100">
-                    {COMMENT_EMOJIS.map(em => (
-                      <button
-                        key={em}
-                        onClick={() => {
-                          const ta = commentTextareaRef.current;
-                          if (!ta) return;
-                          const s = ta.selectionStart;
-                          const val = ta.value;
-                          const newVal = val.slice(0, s) + em + val.slice(s);
-                          setCommentDraftText(newVal);
-                          setCommentEmojiOpen(false);
-                          setTimeout(() => { ta.focus(); ta.selectionStart = ta.selectionEnd = s + em.length; }, 10);
-                        }}
-                        className="text-base hover:scale-125 transition-transform"
-                      >{em}</button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Workspace reference picker */}
-                {commentWorkspaceRefOpen && (
-                  <div className="bg-gray-50 rounded-lg border border-gray-100 p-2">
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Reference Workspace Item</p>
-                    <div className="space-y-0.5">
-                      {COMMENT_WORKSPACE_TYPES.map(wt => (
-                        <button
-                          key={wt.key}
-                          onClick={() => {
-                            const label = `${wt.icon} ${wt.label}`;
-                            const ta = commentTextareaRef.current;
-                            if (ta) {
-                              const s = ta.selectionStart;
-                              const val = ta.value;
-                              setCommentDraftText(val.slice(0, s) + `[[${label}]]` + val.slice(s));
-                            }
-                            setCommentWorkspaceRefOpen(false);
-                            showToast(`Linked to ${wt.label}`);
-                          }}
-                          className="w-full flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white hover:shadow-sm text-left text-[11px] text-gray-600 transition-all"
-                        >
-                          <span>{wt.icon}</span><span>{wt.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Attachments preview */}
-                {(comment?.attachments?.length ?? 0) > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {comment.attachments.map((att, ai) => (
-                      <div key={ai} className="inline-flex items-center gap-1 text-[10px] bg-violet-50 text-violet-700 rounded-lg px-2 py-1 border border-violet-100">
-                        <Paperclip size={9} />
-                        <span className="max-w-[120px] truncate">{att.name}</span>
-                        <button onClick={() => setComments(prev => prev.map(c => c.id === commentPopover.commentId ? { ...c, attachments: c.attachments.filter((_, idx) => idx !== ai) } : c))} className="text-violet-400 hover:text-rose-500 ml-0.5"><X size={9} /></button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Textarea */}
-                <textarea
-                  ref={commentTextareaRef}
-                  autoFocus
-                  placeholder="Add a comment, @mention, or [[reference]]..."
-                  rows={3}
-                  className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-none placeholder-gray-300 text-gray-700 bg-white leading-relaxed transition-all"
-                  value={commentDraftText}
-                  onChange={(e) => {
-                    setCommentDraftText(e.target.value);
-                    // Auto-detect @mention
-                    const val = e.target.value;
-                    const lastAt = val.lastIndexOf('@');
-                    if (lastAt !== -1 && lastAt >= val.length - 20) {
-                      setCommentMentionQuery(val.slice(lastAt + 1));
-                      setCommentMentionOpen(true);
-                    } else {
-                      setCommentMentionOpen(false);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      e.preventDefault();
-                      // Submit on Ctrl+Enter
-                      if (commentDraftText.trim()) {
-                        const htmlContent = commentDraftText
-                          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-                          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/_(.+?)_/g, '<em>$1</em>')
-                          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-violet-600 underline font-semibold">$1</a>')
-                          .replace(/\[\[([^\]]+)\]\]/g, '<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-violet-50 text-violet-700 rounded text-[10px] font-semibold border border-violet-100">$1</span>')
-                          .replace(/@(\w+)/g, '<span class="text-blue-600 font-semibold">@$1</span>')
-                          .replace(/\n/g, '<br>');
-                        setComments(prev => prev.map(c => c.id === commentPopover.commentId
-                          ? { ...c, text: commentDraftText, replies: [...(c.replies || []), { author: 'You', time: 'Just now', text: commentDraftText, html: htmlContent, attachments: c.attachments || [] }] }
-                          : c
-                        ));
-                        setCommentDraftText('');
-                        showToast('Comment posted ✓');
-                      }
-                    }
-                  }}
-                />
-
-                {/* Mention autocomplete */}
-                {commentMentionOpen && (
-                  <div className="bg-white border border-gray-200 rounded-xl shadow-lg p-1">
-                    {['Alice', 'Bob', 'Carol', 'Dave', 'Eve'].filter(n => n.toLowerCase().startsWith(commentMentionQuery.toLowerCase())).map(name => (
-                      <button
-                        key={name}
-                        onClick={() => {
-                          const lastAt = commentDraftText.lastIndexOf('@');
-                          setCommentDraftText(commentDraftText.slice(0, lastAt) + `@${name} `);
-                          setCommentMentionOpen(false);
-                        }}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-violet-50 text-left"
-                      >
-                        <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold">{name[0]}</div>
-                        <span className="text-[11px] font-semibold text-gray-700">{name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-gray-300">Ctrl+Enter to post</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setCommentPopover(p => ({ ...p, open: false }));
-                        setCommentDraftText('');
-                        setCommentEmojiOpen(false);
-                        setCommentWorkspaceRefOpen(false);
-                      }}
-                      className="text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
-                    >Cancel</button>
-                    <button
-                      onClick={() => {
-                        if (!commentDraftText.trim() && (comment?.attachments?.length ?? 0) === 0) {
-                          showToast('Write something first');
-                          return;
-                        }
-                        const htmlContent = commentDraftText
-                          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-                          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/_(.+?)_/g, '<em>$1</em>')
-                          .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-violet-600 underline font-semibold">$1</a>')
-                          .replace(/\[\[([^\]]+)\]\]/g, '<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-violet-50 text-violet-700 rounded text-[10px] font-semibold border border-violet-100">$1</span>')
-                          .replace(/@(\w+)/g, '<span class="text-blue-600 font-semibold">@$1</span>')
-                          .replace(/\n/g, '<br>');
-                        setComments(prev => prev.map(c => c.id === commentPopover.commentId
-                          ? { ...c, text: commentDraftText, replies: [...(c.replies || []), { author: 'You', time: 'Just now', text: commentDraftText, html: htmlContent, attachments: c.attachments || [] }] }
-                          : c
-                        ));
-                        setCommentDraftText('');
-                        setCommentEmojiOpen(false);
-                        setCommentWorkspaceRefOpen(false);
-                        showToast('Comment posted ✓');
-                      }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-[11px] font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-sm"
-                    >
-                      <Send size={11} />
-                      Post
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Caret pointer */}
-            <div className="absolute -top-1.5 left-10 w-3 h-3 bg-white border-l border-t border-gray-100 rotate-45" />
-          </div>
-        );
-      })()}
 
       {commentLinkModal.open && (
         <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans">
@@ -30986,6 +30778,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           onDragStart={(e) => {
             e.dataTransfer.setData('text/plain', 'regaarder-block-drag');
             e.dataTransfer.effectAllowed = 'move';
+            if (blockDragHandle.node) {
+              e.dataTransfer.setDragImage(blockDragHandle.node, 10, 10);
+            }
             window.__draggedBlock = blockDragHandle.node;
             blockDragHandle.node.style.opacity = '0.4';
           }}
@@ -31002,7 +30797,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {showPageIndicator && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm shadow-[0_4px_24px_-6px_rgba(15,23,42,0.12)] border border-slate-200 text-slate-600 font-semibold text-xs px-4 py-2 rounded-full z-[9999] transition-all opacity-100 flex items-center justify-center pointer-events-none">
+        <div className="fixed bottom-24 bg-white/95 backdrop-blur-sm shadow-[0_4px_24px_-6px_rgba(15,23,42,0.12)] border border-slate-200 text-slate-600 font-semibold text-xs px-4 py-2 rounded-full z-[9999] transition-all opacity-100 flex items-center justify-center pointer-events-none -translate-x-1/2" style={{ left: pageIndicatorLeft ? `${pageIndicatorLeft}px` : '50%' }}>
           {currentPage} <span className="text-slate-400 mx-1">of</span> {extraPages.length + 1}
         </div>
       )}
