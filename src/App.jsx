@@ -6369,7 +6369,9 @@ export default function App() {
           }
           
           if (!embedHtml) {
-            embedHtml = `<a href="${trimmed}" target="_blank" class="workspace-doc-link text-violet-600 font-semibold underline">${trimmed}</a>`;
+            let hostname = trimmed;
+            try { hostname = new URL(trimmed).hostname; } catch (e) {}
+            embedHtml = `<div contenteditable="false" class="my-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-violet-200 transition-colors flex items-center gap-3"><div class="w-10 h-10 bg-white shadow-sm text-violet-600 rounded-lg flex items-center justify-center font-bold"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div><div class="flex-1 min-w-0"><div class="text-sm font-bold text-slate-800 truncate">${hostname}</div><div class="text-xs text-slate-500 truncate mt-0.5">${trimmed}</div></div><a href="${trimmed}" target="_blank" class="shrink-0 px-3 py-1.5 bg-white text-xs font-semibold text-slate-700 rounded border border-slate-200 hover:bg-slate-50">Open Link</a></div><p><br></p>`;
           }
           document.execCommand('insertHTML', false, embedHtml);
           if (afterPaste) setTimeout(() => afterPaste(target), 0);
@@ -10116,6 +10118,17 @@ Generate the updated output according to the instruction. Preserve layout and ta
     } else {
       // Collapsed range — insert at cursor position
       range.insertNode(span);
+    }
+
+    const zws = document.createTextNode('\u200B');
+    span.parentNode.insertBefore(zws, span.nextSibling);
+    
+    range.setStartAfter(zws);
+    range.setEndAfter(zws);
+    const sel = window.getSelection();
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(range);
     }
     
     if (blankBodyRef.current) {
@@ -29213,7 +29226,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {/* Page 1 Sheet Wrapper */}
             <div
               data-enterprise-page="true"
-              className="w-full rounded-[24px] shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] border transition-all relative"
+              className="w-full mx-auto rounded-[24px] shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] border transition-all relative"
               style={{
                 backgroundColor: 
                   docTheme === 'emerald' ? '#F0FDF4' :
@@ -29688,7 +29701,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <div
                   key={pg.id}
                   ref={(el) => { if (el) extraPageRefs.current[pg.id] = el; }}
-                  className="w-full rounded-[24px] shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] border transition-all relative"
+                  className="w-full mx-auto rounded-[24px] shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] border transition-all relative"
                   style={{
                     marginTop: '32px',
                     backgroundColor:
@@ -30903,6 +30916,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
           title="Drag to move"
         >
           <GripVertical size={16} />
+        </div>
+      )}
+
+      {showPageIndicator && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm shadow-[0_4px_24px_-6px_rgba(15,23,42,0.12)] border border-slate-200 text-slate-600 font-semibold text-xs px-4 py-2 rounded-full z-[9999] transition-all opacity-100 flex items-center justify-center pointer-events-none">
+          {currentPage} <span className="text-slate-400 mx-1">of</span> {extraPages.length + 1}
         </div>
       )}
 
