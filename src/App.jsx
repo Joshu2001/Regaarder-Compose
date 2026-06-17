@@ -3116,8 +3116,15 @@ export default function App() {
         e.preventDefault();
         const docIdStr = docLink.getAttribute('data-doc-id');
         if (docIdStr) {
+          // Internal workspace doc link
           const docId = parseInt(docIdStr, 10);
           window.setActiveDocIdGlobal?.(docId);
+        } else {
+          // External URL link — open in new tab
+          const href = docLink.getAttribute('href');
+          if (href && href !== '#') {
+            window.open(href, '_blank', 'noopener,noreferrer');
+          }
         }
       }
     };
@@ -6354,20 +6361,63 @@ export default function App() {
         if (isUrl && trimmed.split('\n').length === 1) {
           let embedHtml = '';
           try {
-            if (trimmed.includes('youtube.com/watch?v=') || trimmed.includes('youtu.be/')) {
-              const videoId = trimmed.includes('youtu.be/') ? trimmed.split('youtu.be/')[1].split('?')[0] : new URLSearchParams(new URL(trimmed).search).get('v');
+            const u = new URL(trimmed);
+            const host = u.hostname.replace('www.', '');
+
+            if (host === 'youtube.com' || host === 'youtu.be') {
+              // YouTube
+              const videoId = host === 'youtu.be'
+                ? u.pathname.split('/')[1].split('?')[0]
+                : u.searchParams.get('v');
               if (videoId) {
-                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio: 16/9;"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
               }
-            } else if (trimmed.includes('dailymotion.com/video/')) {
-              const videoId = trimmed.split('dailymotion.com/video/')[1].split('?')[0];
+            } else if (host === 'dailymotion.com') {
+              // Dailymotion
+              const videoId = trimmed.split('dailymotion.com/video/')[1]?.split('?')[0];
               if (videoId) {
-                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio: 16/9;"><iframe width="100%" height="100%" src="https://www.dailymotion.com/embed/video/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://www.dailymotion.com/embed/video/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
               }
+            } else if (host === 'vimeo.com') {
+              // Vimeo
+              const videoId = u.pathname.split('/').filter(Boolean)[0];
+              if (videoId && /^\d+$/.test(videoId)) {
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://player.vimeo.com/video/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+              }
+            } else if (host === 'twitch.tv') {
+              // Twitch
+              const parts = u.pathname.split('/').filter(Boolean);
+              if (parts[0] === 'videos' && parts[1]) {
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://player.twitch.tv/?video=${parts[1]}&parent=${window.location.hostname}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+              } else if (parts[0]) {
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://player.twitch.tv/?channel=${parts[0]}&parent=${window.location.hostname}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+              }
+            } else if (host === 'streamable.com') {
+              // Streamable
+              const videoId = u.pathname.split('/').filter(Boolean)[0];
+              if (videoId) {
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://streamable.com/e/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+              }
+            } else if (host === 'loom.com') {
+              // Loom
+              const videoId = u.pathname.split('/share/')[1]?.split('?')[0];
+              if (videoId) {
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://www.loom.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+              }
+            } else if (host === 'wistia.com' || host.endsWith('.wistia.com')) {
+              // Wistia
+              const videoId = u.pathname.split('/medias/')[1]?.split('?')[0];
+              if (videoId) {
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://fast.wistia.net/embed/iframe/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+              }
+            } else if (trimmed.match(/\.(mp4|webm|ogg|ogv)$/i)) {
+              // Direct video file
+              embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100"><video controls class="w-full rounded-xl" src="${trimmed}"></video></div><p><br></p>`;
             } else if (trimmed.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)) {
+              // Direct image
               embedHtml = `<div contenteditable="false" class="my-4 flex justify-center"><img src="${trimmed}" alt="Pasted image" class="max-w-full rounded-xl shadow-sm border border-slate-100" /></div><p><br></p>`;
-            } else if (trimmed.includes('figma.com/')) {
-              embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio: 16/9;"><iframe width="100%" height="100%" src="https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(trimmed)}" allowfullscreen></iframe></div><p><br></p>`;
+            } else if (host === 'figma.com') {
+              embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(trimmed)}" allowfullscreen></iframe></div><p><br></p>`;
             } else if (trimmed.toLowerCase().endsWith('.pdf')) {
               embedHtml = `<div contenteditable="false" class="my-4 p-4 rounded-xl bg-red-50 border border-red-100 flex items-center gap-3"><div class="w-10 h-10 bg-red-100 text-red-600 rounded-lg flex items-center justify-center font-bold">PDF</div><div class="flex-1"><div class="text-sm font-bold text-slate-800">PDF Document</div><div class="text-xs text-slate-500 truncate max-w-[300px]">${trimmed}</div></div><a href="${trimmed}" target="_blank" class="px-3 py-1.5 bg-white text-xs font-semibold text-slate-700 rounded border border-slate-200 hover:bg-slate-50">View File</a></div><p><br></p>`;
             }

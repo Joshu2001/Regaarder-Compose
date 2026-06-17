@@ -803,8 +803,6 @@ body { margin: 0; background: #ffffff; }
 [data-enterprise-page="true"] {
   position: relative !important;
   display: block !important;
-  margin-left: calc(-1 * var(--page-padding, 48px)) !important;
-  margin-right: calc(-1 * var(--page-padding, 48px)) !important;
   background: white !important;
   border: 1px solid rgba(148, 163, 184, 0.22) !important;
   border-radius: 24px !important;
