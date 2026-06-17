@@ -2913,28 +2913,7 @@ export default function App() {
     { icon: '📅', label: 'Schedule', key: 'schedule' },
   ];
 
-  // Comment marker tracking
-  useEffect(() => {
-    const updatePositions = () => {
-      if (!blankBodyRef.current) return;
-      const spans = Array.from(blankBodyRef.current.querySelectorAll('.comment-highlight'));
-      const editorRect = blankBodyRef.current.getBoundingClientRect();
-      const positions = spans.map(span => {
-        const rect = span.getBoundingClientRect();
-        return {
-          id: span.getAttribute('data-comment-id'),
-          top: rect.top - editorRect.top,
-          right: rect.right - editorRect.left,
-          text: span.textContent?.substring(0, 30) + '...'
-        };
-      });
-      setCommentMarkerPositions(positions);
-    };
 
-    updatePositions();
-    const interval = setInterval(updatePositions, 1000);
-    return () => clearInterval(interval);
-  }, [docBodyHtml, comments]);
   // Page Indicator state
   const [currentPage, setCurrentPage] = useState(1);
   const [showPageIndicator, setShowPageIndicator] = useState(false);
@@ -3465,6 +3444,29 @@ export default function App() {
   }, [setActiveDocId]);
 
   const [docBodyHtml, setDocBodyHtml] = useState('');
+
+  // Comment marker tracking
+  useEffect(() => {
+    const updatePositions = () => {
+      if (!blankBodyRef.current) return;
+      const spans = Array.from(blankBodyRef.current.querySelectorAll('.comment-highlight'));
+      const editorRect = blankBodyRef.current.getBoundingClientRect();
+      const positions = spans.map(span => {
+        const rect = span.getBoundingClientRect();
+        return {
+          id: span.getAttribute('data-comment-id'),
+          top: rect.top - editorRect.top,
+          right: rect.right - editorRect.left,
+          text: span.textContent?.substring(0, 30) + '...'
+        };
+      });
+      setCommentMarkerPositions(positions);
+    };
+
+    updatePositions();
+    const interval = setInterval(updatePositions, 1000);
+    return () => clearInterval(interval);
+  }, [docBodyHtml, comments, setCommentMarkerPositions]);
   const [closeConfirmDocId, setCloseConfirmDocId] = useState(null);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [headingSearch, setHeadingSearch] = useState('');
