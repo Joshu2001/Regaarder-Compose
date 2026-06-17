@@ -6359,6 +6359,13 @@ export default function App() {
               if (videoId) {
                 embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio: 16/9;"><iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
               }
+            } else if (trimmed.includes('dailymotion.com/video/')) {
+              const videoId = trimmed.split('dailymotion.com/video/')[1].split('?')[0];
+              if (videoId) {
+                embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio: 16/9;"><iframe width="100%" height="100%" src="https://www.dailymotion.com/embed/video/${videoId}" frameborder="0" allowfullscreen></iframe></div><p><br></p>`;
+              }
+            } else if (trimmed.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)) {
+              embedHtml = `<div contenteditable="false" class="my-4 flex justify-center"><img src="${trimmed}" alt="Pasted image" class="max-w-full rounded-xl shadow-sm border border-slate-100" /></div><p><br></p>`;
             } else if (trimmed.includes('figma.com/')) {
               embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio: 16/9;"><iframe width="100%" height="100%" src="https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(trimmed)}" allowfullscreen></iframe></div><p><br></p>`;
             } else if (trimmed.toLowerCase().endsWith('.pdf')) {
@@ -10104,6 +10111,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
     const span = document.createElement('span');
     span.className = 'comment-highlight';
     span.setAttribute('data-comment-id', commentId);
+    span.style.backgroundColor = 'rgba(250, 204, 21, 0.35)';
+    span.style.borderBottom = '2px solid #eab308';
     span.style.cursor = 'pointer';
     span.style.borderRadius = '2px';
     
@@ -29217,7 +29226,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               // Auto page-insert on Enter disabled; pages are now created on-demand via the "+ New page" CTA
               return;
             }}
-            className="compose-editor-surface mx-auto relative bg-transparent border-none transition-all"
+            className="compose-editor-surface box-border mx-auto relative bg-transparent border-none transition-all"
             style={{ 
               width: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
               '--page-padding': docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
@@ -30920,7 +30929,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {showPageIndicator && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm shadow-[0_4px_24px_-6px_rgba(15,23,42,0.12)] border border-slate-200 text-slate-600 font-semibold text-xs px-4 py-2 rounded-full z-[9999] transition-all opacity-100 flex items-center justify-center pointer-events-none">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-sm shadow-[0_4px_24px_-6px_rgba(15,23,42,0.12)] border border-slate-200 text-slate-600 font-semibold text-xs px-4 py-2 rounded-full z-[9999] transition-all opacity-100 flex items-center justify-center pointer-events-none">
           {currentPage} <span className="text-slate-400 mx-1">of</span> {extraPages.length + 1}
         </div>
       )}
