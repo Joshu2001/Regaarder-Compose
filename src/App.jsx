@@ -29824,7 +29824,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     if (window.__draggedBlock) {
                       e.preventDefault();
                       e.dataTransfer.dropEffect = 'move';
-                      const targetBlock = findNearestBlockElement(e.target);
+                      let targetBlock = findNearestBlockElement(e.target);
+                      if (!targetBlock && (e.target === blankBodyRef.current || blankBodyRef.current.contains(e.target))) {
+                        const children = Array.from(blankBodyRef.current.children);
+                        let closest = null;
+                        let minDist = Infinity;
+                        for (let child of children) {
+                          const rect = child.getBoundingClientRect();
+                          const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
+                          if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                            closest = child; break;
+                          }
+                          if (dist < minDist) { minDist = dist; closest = child; }
+                        }
+                        targetBlock = closest;
+                      }
                       if (targetBlock && targetBlock !== window.__draggedBlock) {
                         const rect = targetBlock.getBoundingClientRect();
                         if (e.clientY < rect.top + rect.height / 2) {
@@ -29868,6 +29882,65 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </button>
                   </div>
                 )}
+
+                {/* Comment Markers Layer */}
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-10">
+                  {commentMarkerPositions.map(pos => {
+                    const c = comments.find(x => x.id === pos.id);
+                    if (!c || c.isDraft) return null;
+                    const isActive = activeCommentThreadId === pos.id;
+                    const isHovered = hoveredCommentId === pos.id;
+                    return (
+                      <div 
+                        key={pos.id}
+                        className="absolute pointer-events-auto flex items-center group cursor-pointer"
+                        style={{ top: `${pos.top - 12}px`, left: `${pos.right + 2}px` }}
+                        onMouseEnter={() => setHoveredCommentId(pos.id)}
+                        onMouseLeave={() => setHoveredCommentId(null)}
+                        onClick={() => {
+                          setActiveCommentThreadId(pos.id);
+                          setRightSidebarOpen(true);
+                          setActiveRightTab('comments');
+                        }}
+                      >
+                        <div className={`flex items-center justify-center h-5 px-1.5 rounded-full border shadow-sm transition-all ${isActive ? 'bg-violet-600 text-white border-violet-700 scale-110' : 'bg-white text-violet-600 border-violet-200 hover:scale-105'}`}>
+                          <MessageSquareText size={10} className={isActive ? 'text-white' : 'text-violet-600'} />
+                          {c.replies?.length > 0 && <span className="text-[9px] font-bold ml-1">{c.replies.length}</span>}
+                        </div>
+                        
+                        {isHovered && !isActive && (
+                          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 z-50 cursor-default">
+                            <div className="flex items-center gap-1.5 mb-1.5">
+                              <div className="w-4 h-4 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[8px] font-bold">{c.author?.[0] || 'U'}</div>
+                              <span className="text-[10px] font-semibold text-slate-700">{c.author || 'User'}</span>
+                              <span className="text-[9px] text-slate-400">Just now</span>
+                            </div>
+                            <div className="text-[10px] text-slate-600 line-clamp-2" dangerouslySetInnerHTML={{ __html: c.text || '<i>Empty comment</i>' }} />
+                            <div className="mt-1.5 pt-1.5 border-t border-slate-100">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCommentPopover({
+                                    open: true,
+                                    top: pos.top + 20,
+                                    left: pos.right + 20,
+                                    text: '',
+                                    commentId: pos.id
+                                  });
+                                  setHoveredCommentId(null);
+                                }}
+                                className="text-[10px] font-medium text-violet-600 hover:text-violet-700 flex items-center justify-between w-full"
+                              >
+                                <span>{c.replies?.length || 0} replies</span>
+                                <ChevronRight size={10} />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -30124,64 +30197,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               );
             })}
 
-            {/* Comment Markers Layer */}
-            <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-10">
-              {commentMarkerPositions.map(pos => {
-                const c = comments.find(x => x.id === pos.id);
-                if (!c || c.isDraft) return null;
-                const isActive = activeCommentThreadId === pos.id;
-                const isHovered = hoveredCommentId === pos.id;
-                return (
-                  <div 
-                    key={pos.id}
-                    className="absolute pointer-events-auto flex items-center group cursor-pointer"
-                    style={{ top: `${pos.top - 12}px`, left: `${pos.right + 2}px` }}
-                    onMouseEnter={() => setHoveredCommentId(pos.id)}
-                    onMouseLeave={() => setHoveredCommentId(null)}
-                    onClick={() => {
-                      setActiveCommentThreadId(pos.id);
-                      setRightSidebarOpen(true);
-                      setActiveRightTab('comments');
-                    }}
-                  >
-                    <div className={`flex items-center justify-center h-5 px-1.5 rounded-full border shadow-sm transition-all ${isActive ? 'bg-violet-600 text-white border-violet-700 scale-110' : 'bg-white text-violet-600 border-violet-200 hover:scale-105'}`}>
-                      <MessageSquareText size={10} className={isActive ? 'text-white' : 'text-violet-600'} />
-                      {c.replies?.length > 0 && <span className="text-[9px] font-bold ml-1">{c.replies.length}</span>}
-                    </div>
-                    
-                    {isHovered && !isActive && (
-                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 z-50 cursor-default">
-                        <div className="flex items-center gap-1.5 mb-1.5">
-                          <div className="w-4 h-4 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[8px] font-bold">{c.author?.[0] || 'U'}</div>
-                          <span className="text-[10px] font-semibold text-slate-700">{c.author || 'User'}</span>
-                          <span className="text-[9px] text-slate-400">Just now</span>
-                        </div>
-                        <div className="text-[10px] text-slate-600 line-clamp-2" dangerouslySetInnerHTML={{ __html: c.text || '<i>Empty comment</i>' }} />
-                        <div className="mt-1.5 pt-1.5 border-t border-slate-100">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCommentPopover({
-                                open: true,
-                                top: pos.top + 20,
-                                left: pos.right + 20,
-                                text: '',
-                                commentId: pos.id
-                              });
-                              setHoveredCommentId(null);
-                            }}
-                            className="text-[10px] font-medium text-violet-600 hover:text-violet-700 flex items-center justify-between w-full"
-                          >
-                            <span>{c.replies?.length || 0} replies</span>
-                            <ChevronRight size={10} />
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+
 
             {/* Composing / Analyzing State Glow - Non-blocking floating status */}
             {isComposing && (
@@ -30928,7 +30944,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  {comment && !comment.resolved && !comment.isDraft && (
+                  {comment && !comment.resolved && (
                     <button
                       onClick={() => {
                         setComments(prev => prev.map(c => c.id === commentPopover.commentId ? { ...c, resolved: true } : c));
@@ -30978,6 +30994,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
               )}
 
               <div className="p-3 flex flex-col gap-2">
+                <div className="flex items-center gap-1 mb-1 px-1 text-slate-400">
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500 font-bold text-[11px] font-serif">B</button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500 italic text-[11px] font-serif">I</button>
+                  <div className="w-px h-3 bg-slate-200 mx-1"></div>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><LinkIcon size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><FileText size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><Smile size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><AtSign size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><Paperclip size={12} /></button>
+                </div>
                 <textarea
                   ref={commentTextareaRef}
                   autoFocus
