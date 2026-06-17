@@ -23,7 +23,10 @@ import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
 
-// Inline attachment chip — avoids module-order TDZ in the production bundle
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
+import { diff_match_patch as DiffMatchPatch } from 'diff-match-patch';
+import randomColor from 'randomcolor';// Inline attachment chip — avoids module-order TDZ in the production bundle
 function AIChatAttachmentChip({ file, onRemove }) {
   return (
     <span style={{
@@ -1281,6 +1284,26 @@ export default function App() {
       }
       if (commentPopoverRef.current && !commentPopoverRef.current.contains(e.target)) {
         setHoveredCommentId(null);
+        setCommentPopover(prev => {
+          if (prev.open) {
+            setTimeout(() => {
+              setComments(cs => {
+                const c = cs.find(x => x.id === prev.commentId);
+                if (c && c.isDraft) {
+                  const span = document.querySelector(`.comment-highlight[data-comment-id="${prev.commentId}"]`);
+                  if (span) {
+                    const text = document.createTextNode(span.textContent);
+                    span.parentNode.replaceChild(text, span);
+                  }
+                  return cs.filter(x => x.id !== prev.commentId);
+                }
+                return cs;
+              });
+            }, 0);
+            return { ...prev, open: false };
+          }
+          return prev;
+        });
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -1295,6 +1318,26 @@ export default function App() {
         }
         setShowWatermarkMenu(false);
         setLinkPopover(prev => ({ ...prev, open: false }));
+        setCommentPopover(prev => {
+          if (prev.open) {
+            setTimeout(() => {
+              setComments(cs => {
+                const c = cs.find(x => x.id === prev.commentId);
+                if (c && c.isDraft) {
+                  const span = document.querySelector(`.comment-highlight[data-comment-id="${prev.commentId}"]`);
+                  if (span) {
+                    const text = document.createTextNode(span.textContent);
+                    span.parentNode.replaceChild(text, span);
+                  }
+                  return cs.filter(x => x.id !== prev.commentId);
+                }
+                return cs;
+              });
+            }, 0);
+            return { ...prev, open: false };
+          }
+          return prev;
+        });
         setHoveredCommentId(null);
       }
     };
@@ -2894,15 +2937,19 @@ export default function App() {
   const [hoveredCommentId, setHoveredCommentId] = useState(null);
   const [activeCommentThreadId, setActiveCommentThreadId] = useState(null);
   const [commentMarkerPositions, setCommentMarkerPositions] = useState([]);
-  const savedCommentRangeRef = useRef(null); // Saves selection before slash menu closes
+  const savedCommentRangeRef = useRef(null);
   const [commentDraftText, setCommentDraftText] = useState('');
+  const [showResolvedComments, setShowResolvedComments] = useState(false);
   const [commentDraftRich, setCommentDraftRich] = useState([]); // [{type, content}]
   const [commentLinkModal, setCommentLinkModal] = useState({ open: false, commentId: null, label: '', url: '' });
   const [commentEmojiOpen, setCommentEmojiOpen] = useState(false);
   const [commentMentionQuery, setCommentMentionQuery] = useState('');
   const [commentMentionOpen, setCommentMentionOpen] = useState(false);
   const [commentWorkspaceRefOpen, setCommentWorkspaceRefOpen] = useState(false);
+  const [commentPopover, setCommentPopover] = useState({ open: false, top: 0, left: 0, text: '', commentId: null });
+  
   const commentTextareaRef = useRef(null);
+  const commentPopoverRef = useRef(null);
   const COMMENT_EMOJIS = ['👍','👎','❤️','😂','😮','😢','😡','🎉','🔥','✅','❌','💡','📌','⚠️','🙏','💬','📎','🔗'];
   const COMMENT_WORKSPACE_TYPES = [
     { icon: '📄', label: 'Compose Document', key: 'compose' },
@@ -3284,6 +3331,9 @@ export default function App() {
           return curr;
         }
       }
+      if (curr.parentNode === blankBodyRef.current) {
+        return curr;
+      }
       curr = curr.parentNode;
     }
     return null;
@@ -3445,7 +3495,103 @@ export default function App() {
 
   const [docBodyHtml, setDocBodyHtml] = useState('');
 
-  // Comment marker tracking
+  // Yjs state for Real-Time Collaboration
+  const yDocRef = useRef(null);
+  const providerRef = useRef(null);
+  const yTextRef = useRef(null);
+  const isLocalUpdateRef = useRef(false);
+  const [awarenessUsers, setAwarenessUsers] = useState(new Map());
+  const dmpRef = useRef(new DiffMatchPatch());
+  
+  useEffect(() => {
+    yDocRef.current = new Y.Doc();
+    yTextRef.current = yDocRef.current.getText('docBodyHtml');
+
+    const wsUrl = 'ws://localhost:3001/yjs';
+    const roomName = `compose-room-${activeDocId || 'default'}`;
+    providerRef.current = new WebsocketProvider(wsUrl, roomName, yDocRef.current);
+
+    const awareness = providerRef.current.awareness;
+    awareness.setLocalStateField('user', {
+      name: `User ${Math.floor(Math.random() * 1000)}`,
+      color: randomColor({ luminosity: 'dark' })
+    });
+
+    awareness.on('change', () => {
+      const states = awareness.getStates();
+      const newUsers = new Map();
+      states.forEach((state, clientID) => {
+        if (clientID !== awareness.clientID && state.user) {
+          newUsers.set(clientID, state);
+        }
+      });
+      setAwarenessUsers(newUsers);
+    });
+
+    yTextRef.current.observe((event, transaction) => {
+      if (transaction.local) return;
+      
+      const newHtml = yTextRef.current.toString();
+      
+      const sel = window.getSelection();
+      let anchorNode = null, anchorOffset = 0, focusNode = null, focusOffset = 0;
+      if (sel.rangeCount > 0 && blankBodyRef.current && blankBodyRef.current.contains(sel.anchorNode)) {
+          anchorNode = sel.anchorNode;
+          anchorOffset = sel.anchorOffset;
+          focusNode = sel.focusNode;
+          focusOffset = sel.focusOffset;
+      }
+
+      setDocBodyHtml(newHtml);
+      if (blankBodyRef.current) {
+         blankBodyRef.current.innerHTML = newHtml;
+      }
+      
+      try {
+         if (anchorNode && document.body.contains(anchorNode)) {
+            const range = document.createRange();
+            range.setStart(anchorNode, anchorOffset);
+            range.setEnd(focusNode, focusOffset);
+            sel.removeAllRanges();
+            sel.addRange(range);
+         }
+      } catch (e) {
+         // Silently fail if nodes were completely replaced
+      }
+    });
+
+    return () => {
+      providerRef.current?.destroy();
+      yDocRef.current?.destroy();
+    };
+  }, [activeDocId]);
+
+  useEffect(() => {
+    if (!yTextRef.current || isLocalUpdateRef.current) return;
+    
+    const currentYText = yTextRef.current.toString();
+    if (docBodyHtml !== currentYText) {
+      isLocalUpdateRef.current = true;
+      const dmp = dmpRef.current;
+      const diffs = dmp.diff_main(currentYText, docBodyHtml);
+      dmp.diff_cleanupSemantic(diffs);
+      
+      yDocRef.current.transact(() => {
+        let index = 0;
+        diffs.forEach(([op, text]) => {
+          if (op === 0) {
+            index += text.length;
+          } else if (op === -1) {
+            yTextRef.current.delete(index, text.length);
+          } else if (op === 1) {
+            yTextRef.current.insert(index, text);
+            index += text.length;
+          }
+        });
+      }, 'local');
+      isLocalUpdateRef.current = false;
+    }
+  }, [docBodyHtml]);
   useEffect(() => {
     const updatePositions = () => {
       if (!blankBodyRef.current) return;
@@ -10155,12 +10301,12 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     const commentId = `comment_${Date.now()}`;
     const span = document.createElement('span');
-    span.className = 'comment-highlight';
+    span.className = 'comment-highlight comment-draft';
     span.setAttribute('data-comment-id', commentId);
-    span.style.backgroundColor = 'rgba(250, 204, 21, 0.35)';
-    span.style.borderBottom = '2px solid #eab308';
-    span.style.cursor = 'pointer';
-    span.style.borderRadius = '2px';
+    span.style.backgroundColor = 'transparent';
+    span.style.borderBottom = 'none';
+    span.style.cursor = 'text';
+    span.style.borderRadius = '0px';
     
     if (!range.collapsed) {
       try {
@@ -10198,16 +10344,19 @@ Generate the updated output according to the instruction. Preserve layout and ta
       resolved: false,
       replies: [],
       attachments: [],
+      isDraft: true,
     }]);
     
-    setHoveredCommentId(commentId);
     setCommentDraftText('');
     
-    // Use viewport coords since popover is position:fixed
     const rect = span.getBoundingClientRect();
-    setActiveCommentThreadId(commentId);
-    setRightSidebarOpen(true);
-    setActiveRightTab('comments');
+    setCommentPopover({
+      open: true,
+      top: rect.bottom + 10,
+      left: Math.max(10, rect.left - 190),
+      text: '',
+      commentId: commentId
+    });
     
     window.getSelection()?.removeAllRanges();
   };
@@ -18980,19 +19129,30 @@ Respond with a JSON array of slide objects matching the schema.`;
               <div className="flex-1 overflow-y-auto thin-scrollbar p-5 space-y-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-sm text-slate-800">All Comments</h3>
-                  <button className="text-[10px] text-violet-600 font-medium hover:text-violet-700">Show resolved</button>
+                  <button 
+                    onClick={() => setShowResolvedComments(prev => !prev)}
+                    className="text-[10px] text-violet-600 font-medium hover:text-violet-700"
+                  >
+                    {showResolvedComments ? 'Hide resolved' : 'Show resolved'}
+                  </button>
                 </div>
-                {comments.length === 0 ? (
+                {comments.filter(c => !c.isDraft && (showResolvedComments || !c.resolved)).length === 0 ? (
                   <div className="text-center py-10 px-4 text-slate-400 text-xs">
                     <MessageSquareText size={24} className="mx-auto mb-2 opacity-50" />
-                    No comments yet. Highlight text and click Comment to start a discussion.
+                    No comments found. Highlight text and click Comment to start a discussion.
                   </div>
                 ) : (
-                  comments.map(c => (
+                  comments.filter(c => !c.isDraft && (showResolvedComments || !c.resolved)).map(c => (
                     <div 
                       key={c.id} 
-                      className={`rounded-xl border p-3 cursor-pointer transition-all ${activeCommentThreadId === c.id ? 'border-violet-300 bg-violet-50/30 shadow-sm' : 'border-slate-100 bg-white hover:border-violet-200'}`}
-                      onClick={() => setActiveCommentThreadId(c.id)}
+                      className={`rounded-xl border p-3 cursor-pointer transition-all ${activeCommentThreadId === c.id ? 'border-violet-300 bg-violet-50/30 shadow-sm' : 'border-slate-100 bg-white hover:border-violet-200'} ${c.resolved ? 'opacity-60' : ''}`}
+                      onClick={() => {
+                        setActiveCommentThreadId(c.id);
+                        const span = blankBodyRef.current?.querySelector(`.comment-highlight[data-comment-id="${c.id}"]`);
+                        if (span) {
+                          span.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                      }}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-1.5">
@@ -29598,7 +29758,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
             />
 
             {isBlankDocument && (
-              <>
+              <div style={{ position: 'relative' }}>
+                {Array.from(awarenessUsers.values()).map((userState, idx) => (
+                  <div key={idx} style={{
+                    position: 'absolute',
+                    top: '-25px',
+                    right: `${idx * 150}px`,
+                    backgroundColor: userState.user.color,
+                    color: 'white',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    zIndex: 100,
+                    opacity: 0.9,
+                    pointerEvents: 'none',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {userState.user.name} is editing...
+                  </div>
+                ))}
                 <div
                   ref={blankBodyRef}
                   contentEditable
@@ -29689,7 +29868,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </button>
                   </div>
                 )}
-              </>
+              </div>
             )}
 
             {!isBlankDocument && (
@@ -29949,7 +30128,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-10">
               {commentMarkerPositions.map(pos => {
                 const c = comments.find(x => x.id === pos.id);
-                if (!c) return null;
+                if (!c || c.isDraft) return null;
                 const isActive = activeCommentThreadId === pos.id;
                 const isHovered = hoveredCommentId === pos.id;
                 return (
@@ -29970,21 +30149,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {c.replies?.length > 0 && <span className="text-[9px] font-bold ml-1">{c.replies.length}</span>}
                     </div>
                     
-                    {/* Hover Preview Tooltip */}
                     {isHovered && !isActive && (
-                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 z-50">
+                      <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 z-50 cursor-default">
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <div className="w-4 h-4 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[8px] font-bold">{c.author?.[0] || 'U'}</div>
                           <span className="text-[10px] font-semibold text-slate-700">{c.author || 'User'}</span>
                           <span className="text-[9px] text-slate-400">Just now</span>
                         </div>
                         <div className="text-[10px] text-slate-600 line-clamp-2" dangerouslySetInnerHTML={{ __html: c.text || '<i>Empty comment</i>' }} />
-                        {c.replies?.length > 0 && (
-                          <div className="mt-1.5 text-[9px] font-medium text-violet-600 flex items-center gap-1">
-                            <span>{c.replies.length} replies</span>
+                        <div className="mt-1.5 pt-1.5 border-t border-slate-100">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCommentPopover({
+                                open: true,
+                                top: pos.top + 20,
+                                left: pos.right + 20,
+                                text: '',
+                                commentId: pos.id
+                              });
+                              setHoveredCommentId(null);
+                            }}
+                            className="text-[10px] font-medium text-violet-600 hover:text-violet-700 flex items-center justify-between w-full"
+                          >
+                            <span>{c.replies?.length || 0} replies</span>
                             <ChevronRight size={10} />
-                          </div>
-                        )}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -30711,6 +30902,164 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
 
+
+      {commentPopover.open && (() => {
+        const comment = comments.find(c => c.id === commentPopover.commentId);
+        const replies = comment?.replies || [];
+        return (
+          <div
+            ref={commentPopoverRef}
+            className="fixed z-[9999] flex flex-col font-sans"
+            style={{
+              top: `${commentPopover.top}px`,
+              left: `${commentPopover.left}px`,
+              width: '380px',
+              maxHeight: '500px',
+              filter: 'drop-shadow(0 8px 40px rgba(0,0,0,0.18))',
+            }}
+          >
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col" style={{ maxHeight: '500px' }}>
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gradient-to-r from-violet-50/80 to-white">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">U</div>
+                  <div>
+                    <span className="text-[11px] font-bold text-gray-800">You</span>
+                    <span className="text-[10px] text-gray-400 ml-1.5">· Just now</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  {comment && !comment.resolved && !comment.isDraft && (
+                    <button
+                      onClick={() => {
+                        setComments(prev => prev.map(c => c.id === commentPopover.commentId ? { ...c, resolved: true } : c));
+                        setCommentPopover(p => ({ ...p, open: false }));
+                        showToast('Comment resolved ✓');
+                      }}
+                      className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200"
+                      title="Resolve"
+                    >Resolve</button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setCommentPopover(p => ({ ...p, open: false }));
+                      setComments(cs => {
+                        const c = cs.find(x => x.id === commentPopover.commentId);
+                        if (c && c.isDraft) {
+                          const span = document.querySelector(`.comment-highlight[data-comment-id="${commentPopover.commentId}"]`);
+                          if (span) {
+                            const text = document.createTextNode(span.textContent);
+                            span.parentNode.replaceChild(text, span);
+                          }
+                          return cs.filter(x => x.id !== commentPopover.commentId);
+                        }
+                        return cs;
+                      });
+                    }}
+                    className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                  ><X size={13} /></button>
+                </div>
+              </div>
+
+              {replies.length > 0 && !comment.isDraft && (
+                <div className="px-4 py-2 space-y-3 border-b border-gray-50 overflow-y-auto" style={{ maxHeight: '140px' }}>
+                  {replies.map((r, i) => (
+                    <div key={i} className="flex gap-2">
+                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">{r.author?.[0] || 'U'}</div>
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-[10px] font-bold text-gray-700">{r.author || 'You'}</span>
+                          <span className="text-[9px] text-gray-400">{r.time || 'Just now'}</span>
+                        </div>
+                        <div className="text-[11px] text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: r.html || r.text || '' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="p-3 flex flex-col gap-2">
+                <textarea
+                  ref={commentTextareaRef}
+                  autoFocus
+                  placeholder="Add a comment, @mention, or [[reference]]..."
+                  rows={3}
+                  className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-none placeholder-gray-300 text-gray-700 bg-white leading-relaxed transition-all"
+                  value={commentDraftText}
+                  onChange={(e) => setCommentDraftText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      document.getElementById('post-comment-btn')?.click();
+                    }
+                  }}
+                />
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] text-gray-300">Ctrl+Enter to post</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setCommentPopover(p => ({ ...p, open: false }));
+                        setComments(cs => {
+                          const c = cs.find(x => x.id === commentPopover.commentId);
+                          if (c && c.isDraft) {
+                            const span = document.querySelector(`.comment-highlight[data-comment-id="${commentPopover.commentId}"]`);
+                            if (span) {
+                              const text = document.createTextNode(span.textContent);
+                              span.parentNode.replaceChild(text, span);
+                            }
+                            return cs.filter(x => x.id !== commentPopover.commentId);
+                          }
+                          return cs;
+                        });
+                      }}
+                      className="text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                    >Cancel</button>
+                    <button
+                      id="post-comment-btn"
+                      onClick={() => {
+                        if (!commentDraftText.trim()) {
+                          showToast('Write something first');
+                          return;
+                        }
+                        const htmlContent = commentDraftText.replace(/\n/g, '<br>');
+                        setComments(prev => prev.map(c => c.id === commentPopover.commentId
+                          ? { 
+                              ...c, 
+                              text: c.isDraft ? commentDraftText : c.text,
+                              isDraft: false, 
+                              replies: [...(c.replies || []), { author: 'You', time: 'Just now', text: commentDraftText, html: htmlContent }] 
+                            }
+                          : c
+                        ));
+                        
+                        const span = document.querySelector(`.comment-highlight[data-comment-id="${commentPopover.commentId}"]`);
+                        if (span) {
+                           span.classList.remove('comment-draft');
+                           span.style.backgroundColor = 'rgba(250, 204, 21, 0.35)';
+                           span.style.borderBottom = '2px solid #eab308';
+                           span.style.cursor = 'pointer';
+                           span.style.borderRadius = '2px';
+                           if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+                        }
+
+                        setCommentDraftText('');
+                        setCommentPopover(p => ({ ...p, open: false }));
+                        showToast('Comment posted ✓');
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-[11px] font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-sm"
+                    >
+                      <Send size={11} />
+                      Post
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -top-1.5 left-10 w-3 h-3 bg-white border-l border-t border-gray-100 rotate-45" />
+          </div>
+        );
+      })()}
 
       {commentLinkModal.open && (
         <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans">
