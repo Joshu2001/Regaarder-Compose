@@ -10102,8 +10102,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
     const span = document.createElement('span');
     span.className = 'comment-highlight';
     span.setAttribute('data-comment-id', commentId);
-    span.style.backgroundColor = 'rgba(250, 204, 21, 0.35)';
-    span.style.borderBottom = '2px solid #eab308';
     span.style.cursor = 'pointer';
     span.style.borderRadius = '2px';
     
@@ -29727,7 +29725,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     cursor: 'text',
                   }}
                 >
-                  {renderWatermark(extraPageIndex + 1)}
+                  {renderWatermark(idx + 1)}
                   {/* Header text on extra page */}
                   {docHeaderText && (
                     <div
