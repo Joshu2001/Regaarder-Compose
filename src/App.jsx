@@ -29873,6 +29873,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onDrop={(e) => {
                     if (window.__draggedBlock) {
                       e.preventDefault();
+                      let targetBlock = findNearestBlockElement(e.target);
+                      if (!targetBlock && (e.target === blankBodyRef.current || blankBodyRef.current.contains(e.target))) {
+                        const children = Array.from(blankBodyRef.current.children);
+                        let closest = null;
+                        let minDist = Infinity;
+                        for (let child of children) {
+                          const rect = child.getBoundingClientRect();
+                          const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
+                          if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                            closest = child; break;
+                          }
+                          if (dist < minDist) { minDist = dist; closest = child; }
+                        }
+                        targetBlock = closest;
+                      }
+
+                      if (targetBlock && targetBlock !== window.__draggedBlock) {
+                        const rect = targetBlock.getBoundingClientRect();
+                        if (e.clientY < rect.top + rect.height / 2) {
+                          if (window.__draggedBlock.nextSibling !== targetBlock) {
+                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
+                          }
+                        } else {
+                          if (targetBlock.nextSibling !== window.__draggedBlock) {
+                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
+                          }
+                        }
+                      }
+                      
                       if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
                       window.__draggedBlock.style.opacity = '1';
                       window.__draggedBlock = null;
@@ -29908,7 +29937,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div 
                         key={pos.id}
                         className="absolute pointer-events-auto flex items-center group cursor-pointer"
-                        style={{ top: `${pos.top - 12}px`, left: `${pos.right + 2}px` }}
+                        style={{ top: `${pos.top - 2}px`, left: `${pos.right + 2}px` }}
                         onMouseEnter={() => setHoveredCommentId(pos.id)}
                         onMouseLeave={() => setHoveredCommentId(null)}
                         onClick={() => {
@@ -29923,31 +29952,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                         
                         {isHovered && !isActive && (
-                          <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5 z-50 cursor-default">
-                            <div className="flex items-center gap-1.5 mb-1.5">
-                              <div className="w-4 h-4 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[8px] font-bold">{c.author?.[0] || 'U'}</div>
-                              <span className="text-[10px] font-semibold text-slate-700">{c.author || 'User'}</span>
-                              <span className="text-[9px] text-slate-400">Just now</span>
-                            </div>
-                            <div className="text-[10px] text-slate-600 line-clamp-2" dangerouslySetInnerHTML={{ __html: c.text || '<i>Empty comment</i>' }} />
-                            <div className="mt-1.5 pt-1.5 border-t border-slate-100">
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setCommentPopover({
-                                    open: true,
-                                    top: pos.top + 20,
-                                    left: pos.right + 20,
-                                    text: '',
-                                    commentId: pos.id
-                                  });
-                                  setHoveredCommentId(null);
-                                }}
-                                className="text-[10px] font-medium text-violet-600 hover:text-violet-700 flex items-center justify-between w-full"
-                              >
-                                <span>{c.replies?.length || 0} replies</span>
-                                <ChevronRight size={10} />
-                              </button>
+                          <div className="absolute left-full pl-2 top-1/2 -translate-y-1/2 z-50 cursor-default">
+                            <div className="w-48 bg-white border border-slate-200 rounded-lg shadow-lg p-2.5">
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <div className="w-4 h-4 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-[8px] font-bold">{c.author?.[0] || 'U'}</div>
+                                <span className="text-[10px] font-semibold text-slate-700">{c.author || 'User'}</span>
+                                <span className="text-[9px] text-slate-400">Just now</span>
+                              </div>
+                              <div className="text-[10px] text-slate-600 line-clamp-2" dangerouslySetInnerHTML={{ __html: c.text || '<i>Empty comment</i>' }} />
+                              <div className="mt-1.5 pt-1.5 border-t border-slate-100">
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCommentPopover({
+                                      open: true,
+                                      top: pos.top + 20,
+                                      left: pos.right + 20,
+                                      text: '',
+                                      commentId: pos.id
+                                    });
+                                    setHoveredCommentId(null);
+                                  }}
+                                  className="text-[10px] font-medium text-violet-600 hover:text-violet-700 flex items-center justify-between w-full"
+                                >
+                                  <span>{c.replies?.length || 0} replies</span>
+                                  <ChevronRight size={10} />
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )}
