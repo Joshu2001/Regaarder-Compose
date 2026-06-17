@@ -3307,6 +3307,7 @@ export default function App() {
   const subtitleEditableRef = useRef(null);
 
   const [blockDragHandle, setBlockDragHandle] = useState({ visible: false, top: 0, left: 0, node: null });
+  const dragHandleTimeoutRef = useRef(null);
   const findNearestBlockElement = (node) => {
     let curr = node;
     while (curr && curr !== blankBodyRef.current) {
@@ -6358,6 +6359,15 @@ export default function App() {
       if (isBodyTarget) {
         const trimmed = plainText.trim();
         const isUrl = /^https?:\/\/[^\s]+$/.test(trimmed);
+        const isBase64Image = trimmed.startsWith('data:image/') && !trimmed.includes('\n');
+        
+        if (isBase64Image) {
+          const embedHtml = `<div contenteditable="false" class="my-4 flex justify-center"><img src="${trimmed}" alt="Pasted image" class="max-w-full rounded-xl shadow-sm border border-slate-100" /></div><p><br></p>`;
+          document.execCommand('insertHTML', false, embedHtml);
+          if (afterPaste) setTimeout(() => afterPaste(target), 0);
+          return;
+        }
+
         if (isUrl && trimmed.split('\n').length === 1) {
           let embedHtml = '';
           try {
@@ -6415,7 +6425,7 @@ export default function App() {
               embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100"><video controls class="w-full rounded-xl" src="${trimmed}"></video></div><p><br></p>`;
             } else if (trimmed.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i)) {
               // Direct image
-              embedHtml = `<div contenteditable="false" class="my-4 flex justify-center"><img src="${trimmed}" alt="Pasted image" class="max-w-full rounded-xl shadow-sm border border-slate-100" /></div><p><br></p>`;
+              embedHtml = `<div contenteditable="false" class="my-4 flex justify-center"><img src="${trimmed}" alt="Pasted image" class="max-w-full rounded-xl shadow-sm border border-slate-100" onerror="this.outerHTML='<a href=&quot;${trimmed}&quot; target=&quot;_blank&quot; class=&quot;workspace-doc-link text-violet-600 font-semibold underline&quot;>Image (Failed to Load)</a>'" /></div><p><br></p>`;
             } else if (host === 'figma.com') {
               embedHtml = `<div contenteditable="false" class="my-4 rounded-xl overflow-hidden shadow-sm border border-slate-100" style="aspect-ratio:16/9"><iframe width="100%" height="100%" src="https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(trimmed)}" allowfullscreen></iframe></div><p><br></p>`;
             } else if (trimmed.toLowerCase().endsWith('.pdf')) {
@@ -29528,6 +29538,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
                   onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}
                   onMouseMove={(e) => {
+                    if (dragHandleTimeoutRef.current) clearTimeout(dragHandleTimeoutRef.current);
                     const block = findNearestBlockElement(e.target);
                     if (block) {
                       const rect = block.getBoundingClientRect();
@@ -29538,12 +29549,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         node: block
                       });
                     } else {
-                      setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+                      dragHandleTimeoutRef.current = setTimeout(() => {
+                        setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+                      }, 250);
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (e.relatedTarget && e.relatedTarget.closest('.block-drag-handle')) return;
-                    setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+                    dragHandleTimeoutRef.current = setTimeout(() => {
+                      setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+                    }, 250);
                   }}
                   onDragOver={(e) => {
                     if (window.__draggedBlock) {
@@ -30960,6 +30975,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
           className="block-drag-handle fixed z-[9000] cursor-grab text-slate-300 hover:text-slate-500 hover:bg-slate-100 rounded flex items-center justify-center transition-colors p-0.5"
           style={{ top: `${blockDragHandle.top + 2}px`, left: `${blockDragHandle.left}px` }}
           draggable="true"
+          onMouseEnter={() => {
+            if (dragHandleTimeoutRef.current) clearTimeout(dragHandleTimeoutRef.current);
+          }}
+          onMouseLeave={() => {
+            dragHandleTimeoutRef.current = setTimeout(() => {
+              setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+            }, 250);
+          }}
           onDragStart={(e) => {
             e.dataTransfer.setData('text/plain', 'regaarder-block-drag');
             e.dataTransfer.effectAllowed = 'move';
