@@ -5736,13 +5736,6 @@ export default function App() {
           
           providerRef.current.awareness.setLocalStateField('pointer', { x, y });
           frameId = null;
-
-          if (inactivityTimeout) clearTimeout(inactivityTimeout);
-          inactivityTimeout = setTimeout(() => {
-            if (providerRef.current?.awareness) {
-              providerRef.current.awareness.setLocalStateField('pointer', null);
-            }
-          }, 1500);
         });
       }
     };
@@ -26356,9 +26349,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
             
             {/* Avatars */}
             <div className="flex -space-x-2">
-              <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Sarah" />
-              <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" alt="Alex" />
-              <img className="w-7 h-7 rounded-full border-2 border-white" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80" alt="Maya" />
+              {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
+                if (!userState.user) return null;
+                return (
+                  <div
+                    key={`immersive-avatar-${idx}`}
+                    className="w-7 h-7 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-[11px] font-bold text-white relative group"
+                    style={{ backgroundColor: userState.user.color }}
+                  >
+                    {userState.user.name.charAt(0).toUpperCase()}
+                    <div className="absolute top-full mt-1 bg-black text-white text-[10px] py-0.5 px-1.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-[100]">
+                      {userState.user.name}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <button
