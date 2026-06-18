@@ -849,25 +849,44 @@ body { margin: 0; background: #ffffff; }
   cursor: pointer !important;
 }
 
-/* Zero-Knowledge Protected Layer Visual Indicators */
+/* Zero-Knowledge Protected Layer — solid black redaction bars */
 .protected-layer {
-  background-color: rgba(139, 92, 246, 0.08) !important;
-  border: 1.5px dashed rgba(139, 92, 246, 0.45) !important;
-  border-radius: 6px !important;
-  padding: 2px 6px !important;
+  background-color: #111111 !important;
+  color: transparent !important;
+  border: none !important;
+  border-radius: 3px !important;
+  padding: 0 4px !important;
   position: relative !important;
-  box-shadow: 0 1px 2px rgba(139, 92, 246, 0.05) !important;
-  transition: all 0.2s ease-in-out !important;
-}
-
-.protected-layer::before {
-  content: '🔒' !important;
-  font-size: 11px !important;
-  margin-right: 4px !important;
+  box-shadow: none !important;
+  transition: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  pointer-events: none !important;
   display: inline-block !important;
+  /* ensure children are also invisible */
+  visibility: hidden !important;
+  min-width: 60px !important;
+  min-height: 1em !important;
 }
 
-/* Structural block elements that are protected (like tables, images, headings, etc.) */
+/* Override visibility to keep the bar itself visible */
+.protected-layer::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background-color: #111111 !important;
+  border-radius: 3px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
+/* Remove any lock emoji or pseudo-element text */
+.protected-layer::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Block-level elements: full-width bars */
 table.protected-layer,
 img.protected-layer,
 div.protected-layer,
@@ -876,12 +895,92 @@ h1.protected-layer,
 h2.protected-layer,
 h3.protected-layer {
   display: block !important;
-  border-width: 2px !important;
+  width: 100% !important;
+  min-height: 1.4em !important;
+  background-color: #111111 !important;
+  border: none !important;
+  border-radius: 3px !important;
+  margin: 4px 0 !important;
+  visibility: hidden !important;
+  position: relative !important;
+}
+
+table.protected-layer::after,
+img.protected-layer::after,
+div.protected-layer::after,
+p.protected-layer::after,
+h1.protected-layer::after,
+h2.protected-layer::after,
+h3.protected-layer::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  background-color: #111111 !important;
+  border-radius: 3px !important;
+  display: block !important;
+  visibility: visible !important;
 }
 
 img.protected-layer {
-  display: inline-block !important;
-  opacity: 0.8 !important;
+  opacity: 0 !important;
 }
+
+/* ── Preview Modal Owner-View Override ───────────────────────────────
+   Within .preview-owner-view, protected content is displayed as a
+   soft violet pill so the owner can see *what* is protected.
+   The global black-bar styles are reset here. */
+.preview-owner-view .protected-layer {
+  background-color: rgba(139, 92, 246, 0.12) !important;
+  color: inherit !important;
+  border: 2px solid rgba(139, 92, 246, 0.4) !important;
+  border-radius: 6px !important;
+  padding: 1px 8px !important;
+  visibility: visible !important;
+  display: inline-block !important;
+  min-width: unset !important;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08) !important;
+}
+
+.preview-owner-view .protected-layer::after {
+  display: none !important;
+  content: none !important;
+}
+
+.preview-owner-view .protected-layer::before {
+  content: '🔒 ' !important;
+  display: inline !important;
+  font-size: 11px !important;
+}
+
+.preview-owner-view table.protected-layer,
+.preview-owner-view img.protected-layer,
+.preview-owner-view div.protected-layer,
+.preview-owner-view p.protected-layer,
+.preview-owner-view h1.protected-layer,
+.preview-owner-view h2.protected-layer,
+.preview-owner-view h3.protected-layer {
+  width: auto !important;
+  visibility: visible !important;
+  background-color: rgba(139, 92, 246, 0.12) !important;
+  border: 2px solid rgba(139, 92, 246, 0.4) !important;
+  border-radius: 6px !important;
+}
+
+.preview-owner-view table.protected-layer::after,
+.preview-owner-view img.protected-layer::after,
+.preview-owner-view div.protected-layer::after,
+.preview-owner-view p.protected-layer::after,
+.preview-owner-view h1.protected-layer::after,
+.preview-owner-view h2.protected-layer::after,
+.preview-owner-view h3.protected-layer::after {
+  display: none !important;
+  content: none !important;
+}
+
+.preview-owner-view img.protected-layer {
+  opacity: 0.6 !important;
+}
+
+
 
 

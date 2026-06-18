@@ -3541,7 +3541,7 @@ export default function App() {
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
-  const selectionActionMenuEnabled = true;
+  const selectionActionMenuEnabled = false;
   const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
@@ -26512,10 +26512,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <p className="text-sm text-slate-500 mb-5">{docSubtitle}</p>
                   )}
                   {/* Owner Document Body */}
-                  <div
-                    className="prose prose-sm max-w-none text-slate-700 leading-relaxed [&_.protected-layer]:bg-violet-100 [&_.protected-layer]:outline [&_.protected-layer]:outline-2 [&_.protected-layer]:outline-violet-300 [&_.protected-layer]:rounded"
-                    dangerouslySetInnerHTML={{ __html: docBodyHtml }}
-                  />
+                  <div className="preview-owner-view">
+                    <div
+                      className="prose prose-sm max-w-none text-slate-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: docBodyHtml }}
+                    />
+                  </div>
                 </div>
               </div>
 
