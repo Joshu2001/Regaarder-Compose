@@ -3610,12 +3610,10 @@ export default function App() {
       const newHtml = yTextRef.current.toString();
       
       const sel = window.getSelection();
-      let anchorNode = null, anchorOffset = 0, focusNode = null, focusOffset = 0;
+      let absAnchor = -1, absFocus = -1;
       if (sel.rangeCount > 0 && blankBodyRef.current && blankBodyRef.current.contains(sel.anchorNode)) {
-          anchorNode = sel.anchorNode;
-          anchorOffset = sel.anchorOffset;
-          focusNode = sel.focusNode;
-          focusOffset = sel.focusOffset;
+          absAnchor = getAbsoluteOffset(blankBodyRef.current, sel.anchorNode, sel.anchorOffset);
+          absFocus = getAbsoluteOffset(blankBodyRef.current, sel.focusNode, sel.focusOffset);
       }
 
       setDocBodyHtml(newHtml);
@@ -3624,12 +3622,27 @@ export default function App() {
       }
       
       try {
-         if (anchorNode && document.body.contains(anchorNode)) {
-            const range = document.createRange();
-            range.setStart(anchorNode, anchorOffset);
-            range.setEnd(focusNode, focusOffset);
-            sel.removeAllRanges();
-            sel.addRange(range);
+         if (absAnchor !== -1 && absFocus !== -1 && blankBodyRef.current) {
+            const startLoc = getNodeAndOffset(blankBodyRef.current, Math.min(absAnchor, absFocus));
+            const endLoc = getNodeAndOffset(blankBodyRef.current, Math.max(absAnchor, absFocus));
+            if (startLoc.node && endLoc.node) {
+               const range = document.createRange();
+               if (absAnchor <= absFocus) {
+                 range.setStart(startLoc.node, startLoc.offset);
+                 range.setEnd(endLoc.node, endLoc.offset);
+                 sel.removeAllRanges();
+                 sel.addRange(range);
+               } else {
+                 if (sel.setBaseAndExtent) {
+                   sel.setBaseAndExtent(endLoc.node, endLoc.offset, startLoc.node, startLoc.offset);
+                 } else {
+                   range.setStart(startLoc.node, startLoc.offset);
+                   range.setEnd(endLoc.node, endLoc.offset);
+                   sel.removeAllRanges();
+                   sel.addRange(range);
+                 }
+               }
+            }
          }
       } catch (e) {
          // Silently fail if nodes were completely replaced
@@ -4149,6 +4162,10 @@ export default function App() {
   }, []);
 
   const insertEnterprisePage = useCallback(() => {
+    if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') {
+      showToast('Access Denied: Viewers and Commenters cannot create pages');
+      return;
+    }
     const newPageId = 'page-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     setExtraPages(prev => [...prev, { id: newPageId, html: '' }]);
     showToast(`Page ${extraPages.length + 2} created`);
@@ -6564,16 +6581,18 @@ export default function App() {
       }
       
       // Add page-break-plus-btn
-      const plusBtn = document.createElement('button');
-      plusBtn.type = 'button';
-      plusBtn.className = 'page-break-plus-btn select-none';
-      plusBtn.setAttribute('contenteditable', 'false');
-      plusBtn.innerHTML = '+';
-      plusBtn.onclick = (e) => {
-        e.stopPropagation();
-        insertEnterprisePage();
-      };
-      pageWrapper.appendChild(plusBtn);
+      if (currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter') {
+        const plusBtn = document.createElement('button');
+        plusBtn.type = 'button';
+        plusBtn.className = 'page-break-plus-btn select-none';
+        plusBtn.setAttribute('contenteditable', 'false');
+        plusBtn.innerHTML = '+';
+        plusBtn.onclick = (e) => {
+          e.stopPropagation();
+          insertEnterprisePage();
+        };
+        pageWrapper.appendChild(plusBtn);
+      }
       
       return pageWrapper;
     };
@@ -10575,9 +10594,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
 
   const handleDeckKeyDown = (event) => {
     if (deckSlashMenu.open && event.key !== '/') {
-      const filteredOptions = DECK_SLASH_OPTIONS.filter(opt => 
-        opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase())
-      );
+      const filteredOptions = DECK_SLASH_OPTIONS
+        .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
+        .filter(opt => 
+          opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase())
+        );
       
       if (event.key === 'ArrowDown') {
         event.preventDefault();
@@ -10636,6 +10657,17 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
 
     if (event.key === '/') {
+      if (currentAccessLevel === 'viewer') {
+        event.preventDefault();
+        return;
+      }
+      if (currentAccessLevel === 'commenter') {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || sel.toString().trim() === '') {
+          event.preventDefault();
+          return;
+        }
+      }
       const selection = window.getSelection();
       if (selection && selection.rangeCount) {
         const range = selection.getRangeAt(0);
@@ -10979,9 +11011,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
 
     // Handle slash menu key interactions FIRST (before opening a new menu)
     if (slashMenuRef.current?.open && event.key !== '/') {
-      const filteredOptions = SLASH_OPTIONS.filter(opt => 
-        opt.label.toLowerCase().includes(slashMenuRef.current.filterText.toLowerCase())
-      );
+      const filteredOptions = SLASH_OPTIONS
+        .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
+        .filter(opt => 
+          opt.label.toLowerCase().includes(slashMenuRef.current.filterText.toLowerCase())
+        );
       
       if (event.key === 'ArrowDown') {
         event.preventDefault();
@@ -11043,6 +11077,17 @@ Generate the updated output according to the instruction. Preserve layout and ta
 
     // Open slash menu when '/' is typed
     if (event.key === '/') {
+      if (currentAccessLevel === 'viewer') {
+        event.preventDefault();
+        return;
+      }
+      if (currentAccessLevel === 'commenter') {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed || sel.toString().trim() === '') {
+          event.preventDefault();
+          return;
+        }
+      }
       const selection = window.getSelection();
       if (selection && selection.rangeCount) {
         const range = selection.getRangeAt(0);
@@ -18127,7 +18172,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           
           {/* ACTIVE TAB: PROPERTIES */}
           {activeRightTab === 'properties' && (
-            <div className="flex-1 flex flex-col min-h-0 bg-[#f8fafc]">
+            <div className={`flex-1 flex flex-col min-h-0 bg-[#f8fafc] ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-60 select-none' : ''}`}>
               <div className="px-5 py-4 border-b border-slate-200 bg-white">
                 <h3 className="text-[14px] font-bold text-slate-800">{productMode === 'compose' ? 'Page Properties' : 'Slide Properties'}</h3>
                 <p className="text-[11px] text-slate-500 mt-1">{productMode === 'compose' ? 'Manage page layout and styling' : 'Manage global theme and styling'}</p>
@@ -24336,7 +24381,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="flex items-center justify-between gap-2">
               <div>
                 <div 
-                  contentEditable 
+                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                   suppressContentEditableWarning
                   className="text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:ring-1 focus:ring-violet-200 rounded px-1 -mx-1"
                 >
@@ -24344,7 +24389,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 {(!isSheetsMode || sheetsData.length > 1) && (
                   <div 
-                    contentEditable 
+                    contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                     suppressContentEditableWarning
                     className="text-[11px] text-gray-500 mt-0.5 outline-none focus:bg-white focus:ring-1 focus:ring-violet-200 rounded px-1 -mx-1"
                   >
@@ -24933,7 +24978,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <div className={`absolute top-0 left-0 w-[1600px] h-[900px] origin-top-left ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-[80px] md:p-[120px]`} style={{ transform: 'scale(calc(100cqw / 1600))' }}>
                             <div>
                               <h1
-                                contentEditable
+                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                 suppressContentEditableWarning
                                 onKeyDown={handleDeckKeyDown}
                                 onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
@@ -24942,7 +24987,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 {resolvedDeckSlideDesign.headline}
                               </h1>
                               <p
-                                contentEditable
+                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                 suppressContentEditableWarning
                                 onKeyDown={handleDeckKeyDown}
                                 onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
@@ -24953,7 +24998,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </div>
   
                             <div
-                              contentEditable
+                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                               suppressContentEditableWarning
                               onKeyDown={handleDeckKeyDown}
                               onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
@@ -25519,6 +25564,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
   return (
     <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'} ${roomState === 'active' && roomPanelMode === 'expanded' ? 'pt-[72px] pb-[80px] bg-[#f3f5fb]' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div className="fixed inset-0 pointer-events-none z-[9999]">
+        {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
+          if (!userState.user || !userState.pointer) return null;
+          if (clientID === providerRef.current?.awareness?.clientID) return null; // Don't render own cursor
+          return (
+            <div
+              key={`global-ptr-${idx}`}
+              className="absolute transition-all duration-75 pointer-events-none"
+              style={{
+                top: userState.pointer.y,
+                left: userState.pointer.x,
+                transform: 'translate(-2px, -2px)'
+              }}
+            >
+              <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
+                <path d="M2.5 19.5L1.5 2L15.5 11.5L8.5 13L12 19.5L9.5 21L6 14.5L2.5 19.5Z" fill={userState.user.color} stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+              </svg>
+              <div
+                className="absolute left-[14px] px-1.5 py-0.5 rounded-[4px] rounded-tl-none text-[10px] font-bold text-white shadow-sm transition-opacity duration-1000"
+                style={{
+                  top: '16px',
+                  backgroundColor: userState.user.color,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {userState.user.name}
+              </div>
+            </div>
+          );
+        })}
+      </div>
       {roomState === 'active' && roomPanelMode === 'expanded' && renderRoomTopHeader()}
       {roomState === 'active' && roomPanelMode === 'expanded' && renderRoomBottomBar()}
       
@@ -26009,104 +26085,106 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               )
                             )}
 
-                            <div className="relative">
-                              <button
-                                type="button"
-                                onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
-                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
-                              >
-                                <MoreVertical size={13} />
-                              </button>
-                              
-                              {activeOutlineMenuId === section.id && (
-                                <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left" style={{ fontFamily: editorFont }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setEditingOutlineId(section.id);
-                                      setEditingOutlineText(section.title);
-                                      setActiveOutlineMenuId(null);
-                                    }}
-                                    className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                  >
-                                    Rename
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      showToast(`AI Summary of ${section.title}: Focus on core strategies and optimization.`);
-                                      setActiveOutlineMenuId(null);
-                                    }}
-                                    className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                  >
-                                    Summarize
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: true } : s));
-                                      setActiveOutlineMenuId(null);
-                                    }}
-                                    className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                  >
-                                    Expand
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      showToast(`AI Rewriting ${section.title}...`);
-                                      setActiveOutlineMenuId(null);
-                                    }}
-                                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                  >
-                                    Rewrite
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setOutlineTreeData(prev => prev.map(s => s.id === section.id ? {
-                                        ...s,
-                                        subsections: [...s.subsections, { id: `sub-${Date.now()}`, title: 'Generated Subsection' }],
-                                        expanded: true
-                                      } : s));
-                                      showToast('AI generated subsections');
-                                      setActiveOutlineMenuId(null);
-                                    }}
-                                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-705 font-semibold flex items-center gap-2"
-                                  >
-                                    Generate Subsections
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const idx = outlineTreeData.findIndex(s => s.id === section.id);
-                                      if (idx > 0) {
-                                        const list = [...outlineTreeData];
-                                        const temp = list[idx];
-                                        list[idx] = list[idx - 1];
-                                        list[idx - 1] = temp;
-                                        setOutlineTreeData(list);
-                                      }
-                                      setActiveOutlineMenuId(null);
-                                    }}
-                                    className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                  >
-                                    Move Up
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setOutlineTreeData(prev => prev.filter(s => s.id !== section.id));
-                                      showToast('Section deleted');
-                                      setActiveOutlineMenuId(null);
-                                    }}
-                                    className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-650 font-bold flex items-center gap-2 border-t border-slate-100"
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                            {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
+                                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
+                                >
+                                  <MoreVertical size={13} />
+                                </button>
+                                
+                                {activeOutlineMenuId === section.id && (
+                                  <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left" style={{ fontFamily: editorFont }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingOutlineId(section.id);
+                                        setEditingOutlineText(section.title);
+                                        setActiveOutlineMenuId(null);
+                                      }}
+                                      className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                    >
+                                      Rename
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        showToast(`AI Summary of ${section.title}: Focus on core strategies and optimization.`);
+                                        setActiveOutlineMenuId(null);
+                                      }}
+                                      className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                    >
+                                      Summarize
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: true } : s));
+                                        setActiveOutlineMenuId(null);
+                                      }}
+                                      className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                    >
+                                      Expand
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        showToast(`AI Rewriting ${section.title}...`);
+                                        setActiveOutlineMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                    >
+                                      Rewrite
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOutlineTreeData(prev => prev.map(s => s.id === section.id ? {
+                                          ...s,
+                                          subsections: [...s.subsections, { id: `sub-${Date.now()}`, title: 'Generated Subsection' }],
+                                          expanded: true
+                                        } : s));
+                                        showToast('AI generated subsections');
+                                        setActiveOutlineMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-705 font-semibold flex items-center gap-2"
+                                    >
+                                      Generate Subsections
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const idx = outlineTreeData.findIndex(s => s.id === section.id);
+                                        if (idx > 0) {
+                                          const list = [...outlineTreeData];
+                                          const temp = list[idx];
+                                          list[idx] = list[idx - 1];
+                                          list[idx - 1] = temp;
+                                          setOutlineTreeData(list);
+                                        }
+                                        setActiveOutlineMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
+                                    >
+                                      Move Up
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOutlineTreeData(prev => prev.filter(s => s.id !== section.id));
+                                        showToast('Section deleted');
+                                        setActiveOutlineMenuId(null);
+                                      }}
+                                      className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-655 font-bold flex items-center gap-2 border-t border-slate-100"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -26132,17 +26210,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
               )}
 
               {/* Add New Page Button resembling standard slide additions */}
-              <button
-                type="button"
-                onClick={() => {
-                  insertEnterprisePage();
-                  showToast('New page inserted successfully');
-                }}
-                className="w-full py-2.5 mt-1 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                style={{ fontFamily: editorFont }}
-              >
-                + New page
-              </button>
+              {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertEnterprisePage();
+                    showToast('New page inserted successfully');
+                  }}
+                  className="w-full py-2.5 mt-1 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                  style={{ fontFamily: editorFont }}
+                >
+                  + New page
+                </button>
+              )}
             </div>
           </div>
         ) : (
@@ -27124,7 +27204,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''}`}
+          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
@@ -29786,8 +29866,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   />
                 ) : (
                   <span 
-                    onClick={() => setHeaderTextEditing(true)}
-                    className="hover:text-slate-600 cursor-pointer border-b border-transparent hover:border-slate-300 transition-all"
+                    onClick={() => {
+                      if (currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter') {
+                        setHeaderTextEditing(true);
+                      }
+                    }}
+                    className={`border-b border-transparent transition-all ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'cursor-default' : 'hover:text-slate-600 cursor-pointer hover:border-slate-300'}`}
                   >
                     {docHeaderText}
                   </span>
@@ -29797,13 +29881,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setDocStateDropdownOpen(!docStateDropdownOpen)}
+                    onClick={() => {
+                      if (currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter') {
+                        setDocStateDropdownOpen(!docStateDropdownOpen);
+                      }
+                    }}
                     className={`text-[9px] font-bold border rounded-lg px-2 py-1.5 cursor-pointer select-none transition-all duration-200 uppercase flex items-center gap-1.5 hover:shadow-sm ${
                       docState === 'draft' ? 'bg-violet-50 hover:bg-violet-100/80 text-violet-700 border-violet-250' :
                       docState === 'ready' ? 'bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border-emerald-250' :
                       docState === 'review' ? 'bg-blue-50 hover:bg-blue-100/80 text-blue-700 border-blue-250' :
                       'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-250'
-                    }`}
+                    } ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
                   >
                     {docState === 'draft' && <FileEdit size={10} className="stroke-[2.5]" />}
                     {docState === 'ready' && <CheckCircle2 size={10} className="stroke-[2.5]" />}
@@ -29856,7 +29944,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               >
                 {/* Editable Footer Text container */}
                 <div 
-                  contentEditable
+                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                   suppressContentEditableWarning
                   onBlur={(e) => setDocFooterText(e.currentTarget.textContent || '')}
                   className="outline-none hover:bg-slate-50 cursor-text px-1 py-0.5 rounded transition-all max-w-[50%] truncate"
@@ -30208,19 +30296,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <>
                 {/* 1. Objective */}
                 <div className="mb-10 group relative">
-                  <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
+                  <h2 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
                     <span className="text-2xl">1.</span> Objective
                   </h2>
-                  <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
+                  <p contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Launch Regaarder Compose to establish it as the most intuitive AI-native productivity workspace for modern teams and individuals.
                   </p>
                 </div>
 
                 {/* 2. Key Initiatives Table */}
                 <div className="mb-10 group relative">
-                  <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
+                  <h2 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
                     <span className="text-2xl">2.</span> Key Initiatives
-                    <span className="text-[10px] font-normal text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">Click Status to Cycle</span>
+                    {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                      <span className="text-[10px] font-normal text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">Click Status to Cycle</span>
+                    )}
                   </h2>
                   
                   <div className="border border-gray-100 rounded-lg overflow-hidden mt-6 bg-[#FAFAFC]/30">
@@ -30236,17 +30326,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <tbody className="divide-y divide-gray-50 text-gray-700">
                         {initiatives.map((row) => (
                           <tr key={row.id} className="hover:bg-white/60 transition-colors">
-                            <td contentEditable suppressContentEditableWarning className="py-3 px-4 font-medium outline-none">{row.name}</td>
-                            <td contentEditable suppressContentEditableWarning className="py-3 px-4 text-gray-500 outline-none">{row.owner}</td>
-                            <td contentEditable suppressContentEditableWarning className="py-3 px-4 text-gray-500 text-xs outline-none">{row.timeline}</td>
+                            <td contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="py-3 px-4 font-medium outline-none">{row.name}</td>
+                            <td contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="py-3 px-4 text-gray-500 outline-none">{row.owner}</td>
+                            <td contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="py-3 px-4 text-gray-500 text-xs outline-none">{row.timeline}</td>
                             <td className="py-3 px-4">
                               <button 
-                                onClick={() => toggleStatus(row.id)}
+                                onClick={() => {
+                                  if (currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter') {
+                                    toggleStatus(row.id);
+                                  }
+                                }}
                                 className={`text-xs px-2.5 py-1 rounded-full font-medium transition-all ${
                                   row.status === 'Completed' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
                                   row.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border border-blue-100' :
                                   'bg-violet-50 text-violet-600 border border-violet-100'
-                                }`}
+                                } ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
                               >
                                 {row.status}
                               </button>
@@ -30260,10 +30354,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 {/* 3. Target Audience */}
                 <div className="mb-10">
-                  <h2 contentEditable suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
+                  <h2 contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-xl font-bold text-gray-900 flex items-center gap-3 mb-4 outline-none">
                     <span className="text-2xl">3.</span> Target Audience
                   </h2>
-                  <p contentEditable suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
+                  <p contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'} suppressContentEditableWarning className="text-gray-600 text-base leading-relaxed outline-none">
                     Knowledge workers, founders, creators, marketers, and teams who want a smarter, calmer, and more connected workspace.
                   </p>
                 </div>
@@ -30417,7 +30511,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }}
                     >
                       <div 
-                        contentEditable
+                        contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                         suppressContentEditableWarning
                         onBlur={(e) => setDocFooterText(e.currentTarget.textContent || '')}
                         className="outline-none hover:bg-slate-50 cursor-text px-1 py-0.5 rounded transition-all max-w-[50%] truncate"
@@ -30442,7 +30536,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                   {/* Independent editable area */}
                   <div
-                    contentEditable
+                    contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                     suppressContentEditableWarning
                     dir="ltr"
                     onInput={(e) => {
@@ -30973,12 +31067,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }}
         >
           {SLASH_OPTIONS
+            .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
             .filter(opt => opt.label.toLowerCase().includes(slashMenu.filterText.toLowerCase()))
             .map((opt, idx) => {
               const isActive = idx === slashMenu.activeIndex;
               return (
                 <button
-                  key={opt.key}
+                   key={opt.key}
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => executeSlashCommand(opt.key)}
@@ -31002,6 +31097,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }}
         >
           {DECK_SLASH_OPTIONS
+            .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
             .filter(opt => opt.label.toLowerCase().includes(deckSlashMenu.filterText.toLowerCase()))
             .map((opt, idx) => {
               const isActive = idx === deckSlashMenu.activeIndex;
