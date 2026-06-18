@@ -27422,14 +27422,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             )}
           </div>
-          <button
-            onClick={openCreationPicker}
-            className="h-7 w-7 rounded-full border border-gray-200 hover:border-violet-300 hover:bg-violet-50 text-gray-600 hover:text-violet-700 flex items-center justify-center"
-            title="Create new composition"
-            aria-label="Create new composition"
-          >
-            <Plus size={14} />
-          </button>
+
           <div
             className="relative"
             onMouseEnter={() => setIsFormattingDropdownHovered(true)}
@@ -27441,7 +27434,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
               }}
-              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded text-xs"
+              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded text-xs whitespace-nowrap"
               title="Page numbering"
             >
               Page # <ChevronDown size={13} className="text-gray-400" />
@@ -27491,7 +27484,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
               }}
-              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded"
+              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap"
             >
               {editorFont} <ChevronDown size={14} className="text-gray-400" />
             </button>
