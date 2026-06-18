@@ -489,7 +489,8 @@ const SLASH_OPTIONS = [
   { key: 'shapes', label: 'Shapes', desc: 'Insert interactive shapes' },
   { key: 'icon', label: 'Icon', desc: 'Insert an emoji or icon' },
   { key: 'watermark', label: 'Watermark', desc: 'Add text or image watermark' },
-  { key: 'comment', label: 'Comment', desc: 'Insert inline comment box' }
+  { key: 'comment', label: 'Comment', desc: 'Insert inline comment box' },
+  { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' }
 ];
 const getAbsoluteOffset = (container, node, offset) => {
   if (!container || !node) return 0;
@@ -3312,6 +3313,43 @@ export default function App() {
   const [isPasswordConfirmed, setIsPasswordConfirmed] = useState(false);
   const [zeroKnowledgePreviewMode, setZeroKnowledgePreviewMode] = useState(false);
   const [isReadingAloud, setIsReadingAloud] = useState(false);
+  const [volumeBtnPos, setVolumeBtnPos] = useState({ x: null, y: null });
+  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+  const volumeDragStartPos = useRef({ x: 0, y: 0, startX: 0, startY: 0 });
+  const volumeDraggedRef = useRef(false);
+
+  const handleVolumePointerDown = (e) => {
+    volumeDraggedRef.current = false;
+    setIsDraggingVolume(true);
+    const rect = e.currentTarget.getBoundingClientRect();
+    volumeDragStartPos.current = {
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      startX: e.clientX,
+      startY: e.clientY
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const handleVolumePointerMove = (e) => {
+    if (!isDraggingVolume) return;
+    const dist = Math.hypot(e.clientX - volumeDragStartPos.current.startX, e.clientY - volumeDragStartPos.current.startY);
+    if (dist > 5) {
+      volumeDraggedRef.current = true;
+    }
+    const newX = e.clientX - volumeDragStartPos.current.offsetX;
+    const newY = e.clientY - volumeDragStartPos.current.offsetY;
+    const x = Math.max(10, Math.min(window.innerWidth - 70, newX));
+    const y = Math.max(10, Math.min(window.innerHeight - 70, newY));
+    setVolumeBtnPos({ x, y });
+  };
+
+  const handleVolumePointerUp = (e) => {
+    if (isDraggingVolume) {
+      setIsDraggingVolume(false);
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
 
   // Zero-Knowledge Redaction / Protection Helpers
   const protectSelectedRange = (type = 'text') => {
@@ -3541,7 +3579,7 @@ export default function App() {
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
-  const selectionActionMenuEnabled = false;
+  const selectionActionMenuEnabled = true;
   const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
@@ -11050,6 +11088,13 @@ Generate the updated output according to the instruction. Preserve layout and ta
         savedCommentRangeRef.current = null;
       }
       setTimeout(() => insertInlineCommentBox(savedCommentRangeRef.current), 50);
+    } else if (key === 'redact') {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && !sel.getRangeAt(0).collapsed) {
+        protectSelectedRange('text');
+      } else {
+        protectCurrentElement('block');
+      }
     }
     
     // Sync DOM back to React state
@@ -27288,7 +27333,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className="w-full flex items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-violet-700 hover:bg-violet-50 transition-colors border border-transparent hover:border-violet-100 bg-white shadow-sm"
                 >
                   <EyeOff size={14} className="text-violet-600" />
-                  <span>Hide Selection from Shared View</span>
+                  <span>Redact Selection</span>
                 </button>
                 <button
                   type="button"
@@ -27303,7 +27348,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className="w-full flex items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-violet-700 hover:bg-violet-50 transition-colors border border-transparent hover:border-violet-100 bg-white shadow-sm"
                 >
                   <Lock size={14} className="text-violet-600" />
-                  <span>Protect Current Block (Table/Image/Section)</span>
+                  <span>Redact Block (Table/Image/Section)</span>
                 </button>
               </div>
             </div>
@@ -32599,7 +32644,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* Floating Volume Icon for Text-to-Speech */}
       <button
-        onClick={() => {
+        onPointerDown={handleVolumePointerDown}
+        onPointerMove={handleVolumePointerMove}
+        onPointerUp={handleVolumePointerUp}
+        onClick={(e) => {
+          if (volumeDraggedRef.current) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
           if (isReadingAloud) {
             window.speechSynthesis.cancel();
             setIsReadingAloud(false);
@@ -32629,10 +32682,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
           window.speechSynthesis.speak(utterance);
           setIsReadingAloud(true);
         }}
-        className={`fixed bottom-6 right-6 p-4 rounded-full shadow-lg z-50 transition-colors ${
+        className={`fixed p-4 rounded-full shadow-lg z-50 transition-colors ${
           isReadingAloud ? 'bg-violet-600 text-white animate-pulse' : 'bg-white text-violet-600 border border-violet-200 hover:bg-violet-50'
         }`}
-        title="Read document out loud"
+        style={{
+          left: volumeBtnPos.x !== null ? `${volumeBtnPos.x}px` : 'auto',
+          top: volumeBtnPos.y !== null ? `${volumeBtnPos.y}px` : 'auto',
+          bottom: volumeBtnPos.y !== null ? 'auto' : '1.5rem',
+          right: volumeBtnPos.x !== null ? 'auto' : '1.5rem',
+          touchAction: 'none',
+          cursor: isDraggingVolume ? 'grabbing' : 'grab',
+        }}
+        title="Read document out loud (Drag to reposition)"
       >
         <Volume2 size={24} />
       </button>
