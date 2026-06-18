@@ -3300,6 +3300,10 @@ export default function App() {
   const [shareExpiringAccess, setShareExpiringAccess] = useState(false);
   const [shareExpirationValue, setShareExpirationValue] = useState(7);
   const [shareExpirationUnit, setShareExpirationUnit] = useState('days');
+  const [shareExpirationDate, setShareExpirationDate] = useState('');
+  const [zeroKnowledgeRedactions, setZeroKnowledgeRedactions] = useState('');
+  const [isPasswordConfirmed, setIsPasswordConfirmed] = useState(false);
+  const [zeroKnowledgePreviewMode, setZeroKnowledgePreviewMode] = useState(false);
   const [isReadingAloud, setIsReadingAloud] = useState(false);
 
   const [shareLink, setShareLink] = useState('');
@@ -26042,8 +26046,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {shareAccess === 'Zero-Knowledge' && (
               <div className="mb-4 rounded-lg bg-violet-50 border border-violet-100 p-3 text-xs text-violet-800">
-                <div className="font-semibold mb-1 flex items-center gap-1"><EyeOff size={12} /> Semantic layers hidden</div>
-                Collaborators will only see or edit specific semantic layers. Your underlying private data, selected functions, or grouped words will be redacted and invisible to them.
+                <div className="font-semibold mb-2 flex items-center gap-1 justify-between">
+                  <div className="flex items-center gap-1"><EyeOff size={14} /> Semantic layers hidden</div>
+                  <button 
+                    onClick={() => setZeroKnowledgePreviewMode(!zeroKnowledgePreviewMode)} 
+                    className="px-2 py-1 rounded bg-violet-200 hover:bg-violet-300 text-violet-900 font-medium"
+                  >
+                    {zeroKnowledgePreviewMode ? 'Hide Preview' : 'Show Preview'}
+                  </button>
+                </div>
+                <div className="mb-2">Collaborators will only see or edit specific semantic layers. Enter specific words, functions, or sentences to redact below (comma separated):</div>
+                <textarea
+                  value={zeroKnowledgeRedactions}
+                  onChange={(e) => setZeroKnowledgeRedactions(e.target.value)}
+                  placeholder="e.g., Q3 Revenue, secret_function, project alpha"
+                  className="w-full text-xs px-2 py-1.5 border border-violet-200 rounded-md focus:outline-none focus:border-violet-400 bg-white"
+                  rows="2"
+                />
+                {zeroKnowledgePreviewMode && (
+                  <div className="mt-3 p-2 bg-white border border-violet-200 rounded-md">
+                    <div className="font-semibold text-violet-900 mb-1">Viewer Preview:</div>
+                    <div className="text-slate-600 font-mono text-[10px]">
+                      The latest update on <span className="bg-slate-900 text-slate-900 select-none">██████████</span> reveals a 20% increase in <span className="bg-slate-900 text-slate-900 select-none">██████████</span>. Our <span className="bg-slate-900 text-slate-900 select-none">██████████</span> remains highly confidential.
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -26066,16 +26093,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       type="password"
                       placeholder="Enter password"
                       value={sharePassword}
-                      onChange={(e) => setSharePassword(e.target.value)}
+                      onChange={(e) => { setSharePassword(e.target.value); setIsPasswordConfirmed(false); }}
                       className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
                     />
                     <input
                       type="password"
                       placeholder="Confirm password"
                       value={sharePasswordConfirm}
-                      onChange={(e) => setSharePasswordConfirm(e.target.value)}
+                      onChange={(e) => { setSharePasswordConfirm(e.target.value); setIsPasswordConfirmed(false); }}
                       className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
                     />
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          if (sharePassword && sharePassword === sharePasswordConfirm) {
+                            setIsPasswordConfirmed(true);
+                            showToast('Password successfully set!');
+                          } else {
+                            showToast('Passwords do not match or are empty.');
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-md bg-violet-600 text-white font-medium hover:bg-violet-700 transition-colors"
+                      >
+                        Set Password
+                      </button>
+                      {isPasswordConfirmed && <Check size={14} className="text-green-500" />}
+                    </div>
                   </div>
                 )}
                 
@@ -26090,23 +26133,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <span>Expiring access</span>
                 </label>
                 {shareExpiringAccess && (
-                  <div className="pl-6 flex gap-2 mt-1">
+                  <div className="pl-6 flex gap-2 mt-1 flex-col">
                     <input
-                      type="number"
-                      min="1"
-                      value={shareExpirationValue}
-                      onChange={(e) => setShareExpirationValue(e.target.value)}
-                      className="w-16 text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
+                      type="datetime-local"
+                      value={shareExpirationDate}
+                      onChange={(e) => setShareExpirationDate(e.target.value)}
+                      className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
                     />
-                    <select
-                      value={shareExpirationUnit}
-                      onChange={(e) => setShareExpirationUnit(e.target.value)}
-                      className="text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
-                    >
-                      <option value="minutes">Minutes</option>
-                      <option value="hours">Hours</option>
-                      <option value="days">Days</option>
-                    </select>
+                    <div className="text-[10px] text-slate-500">Access will be revoked after this date and time.</div>
                   </div>
                 )}
               </div>
