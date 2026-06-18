@@ -491,6 +491,81 @@ const SLASH_OPTIONS = [
   { key: 'watermark', label: 'Watermark', desc: 'Add text or image watermark' },
   { key: 'comment', label: 'Comment', desc: 'Insert inline comment box' }
 ];
+const getAbsoluteOffset = (container, node, offset) => {
+  if (!container || !node) return 0;
+  const range = document.createRange();
+  range.selectNodeContents(container);
+  try {
+    range.setEnd(node, offset);
+  } catch (e) { return 0; }
+  return range.toString().length;
+};
+
+const getNodeAndOffset = (container, targetOffset) => {
+  if (!container) return { node: null, offset: 0 };
+  let currentOffset = 0;
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
+  let node;
+  let lastNode = null;
+  while ((node = walker.nextNode())) {
+    lastNode = node;
+    const len = node.nodeValue.length;
+    if (currentOffset + len >= targetOffset) {
+      return { node, offset: targetOffset - currentOffset };
+    }
+    currentOffset += len;
+  }
+  if (lastNode) return { node: lastNode, offset: lastNode.nodeValue.length };
+  return { node: container, offset: 0 };
+};
+
+const getCursorRects = (container, anchor, focus) => {
+  if (!container) return null;
+  const start = Math.min(anchor, focus);
+  const end = Math.max(anchor, focus);
+  
+  const startLoc = getNodeAndOffset(container, start);
+  const endLoc = getNodeAndOffset(container, end);
+  
+  if (!startLoc.node || !endLoc.node) return null;
+  
+  try {
+    const range = document.createRange();
+    range.setStart(startLoc.node, startLoc.offset);
+    range.setEnd(endLoc.node, endLoc.offset);
+    
+    const containerRect = container.getBoundingClientRect();
+    const rects = Array.from(range.getClientRects()).map(r => ({
+      top: r.top - containerRect.top,
+      left: r.left - containerRect.left,
+      width: r.width,
+      height: r.height
+    }));
+    
+    const focusRange = document.createRange();
+    const focusLoc = focus >= anchor ? endLoc : startLoc;
+    focusRange.setStart(focusLoc.node, focusLoc.offset);
+    focusRange.collapse(true);
+    let focusRect = focusRange.getBoundingClientRect();
+    
+    // Fallback if client rect is empty (e.g. empty text node)
+    if (focusRect.width === 0 && focusRect.height === 0) {
+      const parentElement = focusLoc.node.nodeType === 3 ? focusLoc.node.parentElement : focusLoc.node;
+      focusRect = parentElement.getBoundingClientRect();
+    }
+    
+    return {
+      rects,
+      cursor: {
+        top: focusRect.top - containerRect.top,
+        left: focusRect.left - containerRect.left,
+        height: focusRect.height || 18
+      }
+    };
+  } catch (e) {
+    return null;
+  }
+};
 
 export default function App() {
   const defaultTitle = 'Product Launch Plan';
@@ -5619,6 +5694,27 @@ export default function App() {
     const maxAge = memoryRetentionDays * 24 * 60 * 60 * 1000;
     setMemoryEntries((prev) => prev.filter((entry) => now - entry.timestamp <= maxAge));
   }, [memoryRetentionDays]);
+
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      if (!blankBodyRef.current || !providerRef.current?.awareness) return;
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+      
+      const range = sel.getRangeAt(0);
+      if (!blankBodyRef.current.contains(range.commonAncestorContainer)) return;
+
+      const anchorOffset = getAbsoluteOffset(blankBodyRef.current, sel.anchorNode, sel.anchorOffset);
+      const focusOffset = getAbsoluteOffset(blankBodyRef.current, sel.focusNode, sel.focusOffset);
+
+      providerRef.current.awareness.setLocalStateField('cursor', {
+        anchor: anchorOffset,
+        focus: focusOffset
+      });
+    };
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => document.removeEventListener('selectionchange', handleSelectionChange);
+  }, []);
 
   useEffect(() => {
     if (!activeDocId) {
@@ -29773,25 +29869,52 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {isBlankDocument && (
               <div style={{ position: 'relative' }}>
-                {Array.from(awarenessUsers.values()).map((userState, idx) => (
-                  <div key={idx} style={{
-                    position: 'absolute',
-                    top: '-25px',
-                    right: `${idx * 150}px`,
-                    backgroundColor: userState.user.color,
-                    color: 'white',
-                    padding: '4px 10px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    zIndex: 100,
-                    opacity: 0.9,
-                    pointerEvents: 'none',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                    whiteSpace: 'nowrap'
-                  }}>
-                    {userState.user.name} is editing...
-                  </div>
-                ))}
+                <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-[60]">
+                  {Array.from(awarenessUsers.values()).map((userState, idx) => {
+                    if (!userState.user || !userState.cursor || !blankBodyRef.current) return null;
+                    const { anchor, focus } = userState.cursor;
+                    const cursorData = getCursorRects(blankBodyRef.current, anchor, focus);
+                    if (!cursorData) return null;
+                    
+                    return (
+                      <div key={idx}>
+                        {cursorData.rects.map((rect, i) => (
+                          <div
+                            key={i}
+                            className="absolute opacity-20"
+                            style={{
+                              top: rect.top,
+                              left: rect.left,
+                              width: rect.width,
+                              height: rect.height,
+                              backgroundColor: userState.user.color
+                            }}
+                          />
+                        ))}
+                        <div
+                          className="absolute w-[2px] transition-all duration-75"
+                          style={{
+                            top: cursorData.cursor.top,
+                            left: cursorData.cursor.left,
+                            height: cursorData.cursor.height,
+                            backgroundColor: userState.user.color
+                          }}
+                        >
+                          <div
+                            className="absolute left-0 px-1.5 py-0.5 rounded-[4px] rounded-bl-none text-[10px] font-bold text-white shadow-sm transition-opacity duration-1000"
+                            style={{
+                              top: '-20px',
+                              backgroundColor: userState.user.color,
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {userState.user.name}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
                 <div
                   ref={blankBodyRef}
                   contentEditable
