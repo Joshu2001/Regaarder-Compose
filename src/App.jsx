@@ -3597,7 +3597,7 @@ export default function App() {
       const states = awareness.getStates();
       const newUsers = new Map();
       states.forEach((state, clientID) => {
-        if (clientID !== awareness.clientID && state.user) {
+        if (state.user) {
           newUsers.set(clientID, state);
         }
       });
@@ -15270,6 +15270,7 @@ Rules:
   };
 
   const createItemForCurrentContext = () => {
+    if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
     if (activeRightTab === 'whiteboard') {
       createWhiteboardExperience();
       return;
@@ -16010,6 +16011,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const applyFormatCommand = (command, value) => {
+    if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
     let range = getEditorSelectionRange();
 
     if (!range && restoreSavedSelection()) {
@@ -17031,6 +17033,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const addDeckSlide = () => {
+    if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
     const preset = DECK_DESIGN_PRESETS[(nextId - 1) % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
     const newSlide = {
@@ -17054,6 +17057,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     showToast(`Slide ${nextId} created`);
   };
   const addWorksheet = () => {
+    if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
     const nextId = (sheetsData[sheetsData.length - 1]?.id || 0) + 1;
     const worksheet = {
       id: nextId,
@@ -24036,8 +24040,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div ref={appShellRef} className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <div className="fixed inset-0 pointer-events-none z-[9999]">
-          {Array.from(awarenessUsers.values()).map((userState, idx) => {
+          {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
+            if (clientID === providerRef.current?.awareness?.clientID) return null; // Don't render own cursor
             return (
               <div
                 key={`global-ptr-${idx}`}
@@ -29914,7 +29919,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {/* Title & Subtitle */}
             <div
               ref={titleEditableRef}
-              contentEditable={currentAccessLevel !== 'viewer'}
+              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
               suppressContentEditableWarning
               onInput={(e) => {
                 normalizeEditableDirection(e.currentTarget);
@@ -29932,7 +29937,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             
             <div
               ref={subtitleEditableRef}
-              contentEditable={currentAccessLevel !== 'viewer'}
+              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
               suppressContentEditableWarning
               onInput={(e) => {
                 normalizeEditableDirection(e.currentTarget);
@@ -29951,8 +29956,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {isBlankDocument && (
               <div style={{ position: 'relative' }}>
                 <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-[60]">
-                  {Array.from(awarenessUsers.values()).map((userState, idx) => {
+                  {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
                     if (!userState.user || !blankBodyRef.current) return null;
+                    if (clientID === providerRef.current?.awareness?.clientID) return null; // Don't render own text selection cursors
                     const cursorData = userState.cursor ? getCursorRects(blankBodyRef.current, userState.cursor.anchor, userState.cursor.focus) : null;
                     
                     return (
@@ -29998,7 +30004,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 <div
                   ref={blankBodyRef}
-                  contentEditable={currentAccessLevel !== 'viewer'}
+                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                   suppressContentEditableWarning
                   onKeyDown={handleEditorKeyDown}
                   onInput={(e) => normalizeEditableDirection(e.currentTarget)}
