@@ -5599,153 +5599,6 @@ export default function App() {
   }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument]);
 
   useEffect(() => {
-    const handleGlobalSlashMenu = (event) => {
-      const activeSlashMenu = slashMenuRef.current;
-      
-      // 1. If slash menu is open, intercept key events globally to allow keyboard navigation/closing
-      if (activeSlashMenu && activeSlashMenu.open) {
-        // Ignore if user is typing in standard AI chat inputs or search inputs
-        const target = event.target;
-        if (target && (target.id === 'ai-chat-input' || target.closest('.search-box'))) {
-          return;
-        }
-
-        const filteredOptions = SLASH_OPTIONS
-          .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
-          .filter(opt => 
-            opt.label.toLowerCase().includes(activeSlashMenu.filterText.toLowerCase())
-          );
-
-        if (event.key === 'ArrowDown') {
-          event.preventDefault();
-          setSlashMenu(prev => ({
-            ...prev,
-            activeIndex: (prev.activeIndex + 1) % Math.max(1, filteredOptions.length)
-          }));
-          return;
-        }
-        
-        if (event.key === 'ArrowUp') {
-          event.preventDefault();
-          setSlashMenu(prev => ({
-            ...prev,
-            activeIndex: (prev.activeIndex - 1 + filteredOptions.length) % Math.max(1, filteredOptions.length)
-          }));
-          return;
-        }
-        
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          const selected = filteredOptions[activeSlashMenu.activeIndex];
-          if (selected) {
-            executeSlashCommand(selected.key);
-          }
-          return;
-        }
-        
-        if (event.key === 'Escape') {
-          event.preventDefault();
-          setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
-          return;
-        }
-
-        if (event.key === 'Backspace') {
-          event.preventDefault();
-          setSlashMenu(prev => ({
-            ...prev,
-            filterText: prev.filterText.slice(0, -1),
-            activeIndex: 0
-          }));
-          return;
-        }
-
-        if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== '/') {
-          event.preventDefault();
-          setSlashMenu(prev => ({
-            ...prev,
-            filterText: prev.filterText + event.key,
-            activeIndex: 0
-          }));
-          return;
-        }
-      }
-
-      // 2. Open slash menu when '/' is pressed
-      if (event.key === '/') {
-        const target = event.target;
-        if (target && (
-          target.tagName === 'INPUT' || 
-          target.tagName === 'TEXTAREA' || 
-          target.tagName === 'BUTTON' ||
-          target.isContentEditable ||
-          target.closest('.inline-ai-prompt-box') ||
-          target.closest('.ai-preview-action-banner')
-        )) {
-          return;
-        }
-
-        if (currentAccessLevel === 'viewer') {
-          event.preventDefault();
-          return;
-        }
-        
-        if (currentAccessLevel === 'commenter') {
-          const selection = window.getSelection();
-          if (!selection || selection.isCollapsed || selection.toString().trim() === '') {
-            return;
-          }
-
-          const isInsideDoc = blankBodyRef.current?.contains(selection.anchorNode) || 
-                              Object.values(extraPageRefs.current).some(el => el?.contains(selection.anchorNode));
-          if (!isInsideDoc) return;
-
-          const range = selection.getRangeAt(0);
-          event.preventDefault();
-
-          let rect = range.getBoundingClientRect();
-          if (rect.width === 0 && rect.height === 0) {
-            const dummy = document.createElement('span');
-            dummy.innerHTML = '&#8203;';
-            range.insertNode(dummy);
-            rect = dummy.getBoundingClientRect();
-            dummy.parentNode.removeChild(dummy);
-          }
-          
-          const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
-          let topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
-          let bottomCoord = 'auto';
-          
-          const menuHeight = 380;
-          if (topCoord + menuHeight > window.innerHeight) {
-            if (rect.top - menuHeight > 10) {
-              bottomCoord = `${window.innerHeight - rect.top + 4}px`;
-              topCoord = 'auto';
-            } else {
-              topCoord = `${Math.max(10, window.innerHeight - menuHeight - 15)}px`;
-              bottomCoord = 'auto';
-            }
-          } else {
-            topCoord = `${topCoord}px`;
-          }
-          
-          setSlashMenu({
-            open: true,
-            left: leftCoord,
-            top: topCoord,
-            bottom: bottomCoord,
-            filterText: '',
-            activeIndex: 0,
-            range: range.cloneRange()
-          });
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalSlashMenu, true);
-    return () => window.removeEventListener('keydown', handleGlobalSlashMenu, true);
-  }, [currentAccessLevel, executeSlashCommand]);
-
-  useEffect(() => {
     const handlePaste = (event) => {
       if (!wholeDocSelectionRef.current) {
         return;
@@ -10978,6 +10831,153 @@ Generate the updated output according to the instruction. Preserve layout and ta
       setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
   };
+
+  useEffect(() => {
+    const handleGlobalSlashMenu = (event) => {
+      const activeSlashMenu = slashMenuRef.current;
+      
+      // 1. If slash menu is open, intercept key events globally to allow keyboard navigation/closing
+      if (activeSlashMenu && activeSlashMenu.open) {
+        // Ignore if user is typing in standard AI chat inputs or search inputs
+        const target = event.target;
+        if (target && (target.id === 'ai-chat-input' || target.closest('.search-box'))) {
+          return;
+        }
+
+        const filteredOptions = SLASH_OPTIONS
+          .filter(opt => currentAccessLevel === 'commenter' ? opt.key === 'comment' : true)
+          .filter(opt => 
+            opt.label.toLowerCase().includes(activeSlashMenu.filterText.toLowerCase())
+          );
+
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          setSlashMenu(prev => ({
+            ...prev,
+            activeIndex: (prev.activeIndex + 1) % Math.max(1, filteredOptions.length)
+          }));
+          return;
+        }
+        
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          setSlashMenu(prev => ({
+            ...prev,
+            activeIndex: (prev.activeIndex - 1 + filteredOptions.length) % Math.max(1, filteredOptions.length)
+          }));
+          return;
+        }
+        
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          const selected = filteredOptions[activeSlashMenu.activeIndex];
+          if (selected) {
+            executeSlashCommand(selected.key);
+          }
+          return;
+        }
+        
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+          return;
+        }
+
+        if (event.key === 'Backspace') {
+          event.preventDefault();
+          setSlashMenu(prev => ({
+            ...prev,
+            filterText: prev.filterText.slice(0, -1),
+            activeIndex: 0
+          }));
+          return;
+        }
+
+        if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== '/') {
+          event.preventDefault();
+          setSlashMenu(prev => ({
+            ...prev,
+            filterText: prev.filterText + event.key,
+            activeIndex: 0
+          }));
+          return;
+        }
+      }
+
+      // 2. Open slash menu when '/' is pressed
+      if (event.key === '/') {
+        const target = event.target;
+        if (target && (
+          target.tagName === 'INPUT' || 
+          target.tagName === 'TEXTAREA' || 
+          target.tagName === 'BUTTON' ||
+          target.isContentEditable ||
+          target.closest('.inline-ai-prompt-box') ||
+          target.closest('.ai-preview-action-banner')
+        )) {
+          return;
+        }
+
+        if (currentAccessLevel === 'viewer') {
+          event.preventDefault();
+          return;
+        }
+        
+        if (currentAccessLevel === 'commenter') {
+          const selection = window.getSelection();
+          if (!selection || selection.isCollapsed || selection.toString().trim() === '') {
+            return;
+          }
+
+          const isInsideDoc = blankBodyRef.current?.contains(selection.anchorNode) || 
+                              Object.values(extraPageRefs.current).some(el => el?.contains(selection.anchorNode));
+          if (!isInsideDoc) return;
+
+          const range = selection.getRangeAt(0);
+          event.preventDefault();
+
+          let rect = range.getBoundingClientRect();
+          if (rect.width === 0 && rect.height === 0) {
+            const dummy = document.createElement('span');
+            dummy.innerHTML = '&#8203;';
+            range.insertNode(dummy);
+            rect = dummy.getBoundingClientRect();
+            dummy.parentNode.removeChild(dummy);
+          }
+          
+          const leftCoord = rect.left > 0 ? rect.left : window.innerWidth / 2 - 100;
+          let topCoord = rect.bottom > 0 ? rect.bottom : window.innerHeight / 2;
+          let bottomCoord = 'auto';
+          
+          const menuHeight = 380;
+          if (topCoord + menuHeight > window.innerHeight) {
+            if (rect.top - menuHeight > 10) {
+              bottomCoord = `${window.innerHeight - rect.top + 4}px`;
+              topCoord = 'auto';
+            } else {
+              topCoord = `${Math.max(10, window.innerHeight - menuHeight - 15)}px`;
+              bottomCoord = 'auto';
+            }
+          } else {
+            topCoord = `${topCoord}px`;
+          }
+          
+          setSlashMenu({
+            open: true,
+            left: leftCoord,
+            top: topCoord,
+            bottom: bottomCoord,
+            filterText: '',
+            activeIndex: 0,
+            range: range.cloneRange()
+          });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalSlashMenu, true);
+    return () => window.removeEventListener('keydown', handleGlobalSlashMenu, true);
+  }, [currentAccessLevel, executeSlashCommand]);
 
   const focusEditableNode = (node, atEnd = true) => {
     if (!node) return;
