@@ -925,61 +925,6 @@ img.protected-layer {
   opacity: 0 !important;
 }
 
-/* ── Preview Modal Owner-View Override ───────────────────────────────
-   Within .preview-owner-view, protected content is displayed as a
-   soft violet pill so the owner can see *what* is protected.
-   The global black-bar styles are reset here. */
-.preview-owner-view .protected-layer {
-  background-color: rgba(139, 92, 246, 0.12) !important;
-  color: inherit !important;
-  border: 2px solid rgba(139, 92, 246, 0.4) !important;
-  border-radius: 6px !important;
-  padding: 1px 8px !important;
-  visibility: visible !important;
-  display: inline-block !important;
-  min-width: unset !important;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08) !important;
-}
-
-.preview-owner-view .protected-layer::after {
-  display: none !important;
-  content: none !important;
-}
-
-.preview-owner-view .protected-layer::before {
-  content: '🔒 ' !important;
-  display: inline !important;
-  font-size: 11px !important;
-}
-
-.preview-owner-view table.protected-layer,
-.preview-owner-view img.protected-layer,
-.preview-owner-view div.protected-layer,
-.preview-owner-view p.protected-layer,
-.preview-owner-view h1.protected-layer,
-.preview-owner-view h2.protected-layer,
-.preview-owner-view h3.protected-layer {
-  width: auto !important;
-  visibility: visible !important;
-  background-color: rgba(139, 92, 246, 0.12) !important;
-  border: 2px solid rgba(139, 92, 246, 0.4) !important;
-  border-radius: 6px !important;
-}
-
-.preview-owner-view table.protected-layer::after,
-.preview-owner-view img.protected-layer::after,
-.preview-owner-view div.protected-layer::after,
-.preview-owner-view p.protected-layer::after,
-.preview-owner-view h1.protected-layer::after,
-.preview-owner-view h2.protected-layer::after,
-.preview-owner-view h3.protected-layer::after {
-  display: none !important;
-  content: none !important;
-}
-
-.preview-owner-view img.protected-layer {
-  opacity: 0.6 !important;
-}
 
 
 

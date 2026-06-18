@@ -27352,6 +27352,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'wrap-right')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Float Right / Wrap Left"><AlignRight size={14}/> Wrap Right</button>
           <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'behind')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Send Behind Document Text"><Layers size={14} className="text-gray-400"/> Behind</button>
           <button onClick={() => window.arrangeImageBlock(imageToolbar.node, 'front')} className="p-1 hover:bg-slate-100 rounded flex items-center gap-1 text-xs" title="Bring in Front of Document Text"><Layers size={14} className="text-violet-600"/> In Front</button>
+          <button onClick={() => { protectCurrentElement('block'); setImageToolbar({ open: false, node: null, top: 0, left: 0 }); }} className="p-1 hover:bg-red-50 text-red-600 hover:text-red-700 rounded flex items-center gap-1 text-xs font-semibold" title="Redact/Protect Image"><EyeOff size={14}/> Redact</button>
           <div className="w-px h-4 bg-gray-200 mx-1"></div>
           <div className="flex items-center gap-1.5 px-1">
             <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Prefix:</span>
@@ -27594,6 +27595,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               )}
             </div>
+
+            {/* Redact Table Action */}
+            <button
+              type="button"
+              onClick={() => {
+                protectCurrentElement('block');
+                setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+              }}
+              className="group relative p-1.5 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-md transition-all duration-150 active:scale-90"
+            >
+              <EyeOff size={14} />
+              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-semibold text-white bg-slate-900 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-[300] shadow-md">
+                Redact Table
+              </span>
+            </button>
 
             {/* Trash Action */}
             <button
@@ -28196,6 +28212,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button key={c} onClick={() => { applyFormatCommand('hiliteColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
                       ))}
                     </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1 border-t border-gray-100 pt-2 mt-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1">Collaboration Security</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        protectSelectedRange('text');
+                        setTextStyleMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2 py-1 text-xs rounded hover:bg-red-50 hover:text-red-650 flex items-center gap-1.5 font-medium"
+                    >
+                      <span>⬛</span> Redact Selection
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        protectCurrentElement('block');
+                        setTextStyleMenuOpen(false);
+                      }}
+                      className="w-full text-left px-2 py-1 text-xs rounded hover:bg-red-50 hover:text-red-650 flex items-center gap-1.5 font-medium"
+                    >
+                      <span>⬛</span> Redact Element (Table/Image/etc)
+                    </button>
                   </div>
                 </div>
               )}
@@ -30535,7 +30575,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   docTheme === 'slate' ? 'monospace' :
                   'sans-serif',
                 minHeight: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
-                height: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794) : (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123)}px`,
                 paddingLeft: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
                 paddingRight: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
                 paddingTop: '64px',
@@ -31178,7 +31217,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       docTheme === 'rose' ? 'sans-serif' :
                       docTheme === 'slate' ? 'monospace' :
                       'sans-serif',
-                    height: pgHeight + 'px',
                     minHeight: pgHeight + 'px',
                     paddingLeft: pgPadding,
                     paddingRight: pgPadding,
