@@ -3294,6 +3294,8 @@ export default function App() {
   const [shareFormat, setShareFormat] = useState('Compose (.cmp)');
   const [shareAccess, setShareAccess] = useState('Viewer');
   const [currentAccessLevel, setCurrentAccessLevel] = useState('editor');
+  const [sharePasswordProtected, setSharePasswordProtected] = useState(false);
+  const [shareExpiringAccess, setShareExpiringAccess] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [composeOutputFormat, setComposeOutputFormat] = useState('Auto (Compose decides)');
   const [customComposeFormat, setCustomComposeFormat] = useState('');
@@ -26023,6 +26025,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <span>{level}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-2">Advanced sharing controls</label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sharePasswordProtected}
+                    onChange={(e) => setSharePasswordProtected(e.target.checked)}
+                    className="accent-violet-600 rounded border-slate-300"
+                  />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  <span>Password-protected links</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={shareExpiringAccess}
+                    onChange={(e) => setShareExpiringAccess(e.target.checked)}
+                    className="accent-violet-600 rounded border-slate-300"
+                  />
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span>Expiring access</span>
+                </label>
               </div>
             </div>
 
