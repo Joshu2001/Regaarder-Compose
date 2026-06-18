@@ -17,7 +17,7 @@ import {
   FileEdit, CheckCircle2, Users2, Archive,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
-  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -3295,7 +3295,13 @@ export default function App() {
   const [shareAccess, setShareAccess] = useState('Viewer');
   const [currentAccessLevel, setCurrentAccessLevel] = useState('editor');
   const [sharePasswordProtected, setSharePasswordProtected] = useState(false);
+  const [sharePassword, setSharePassword] = useState('');
+  const [sharePasswordConfirm, setSharePasswordConfirm] = useState('');
   const [shareExpiringAccess, setShareExpiringAccess] = useState(false);
+  const [shareExpirationValue, setShareExpirationValue] = useState(7);
+  const [shareExpirationUnit, setShareExpirationUnit] = useState('days');
+  const [isReadingAloud, setIsReadingAloud] = useState(false);
+
   const [shareLink, setShareLink] = useState('');
   const [composeOutputFormat, setComposeOutputFormat] = useState('Auto (Compose decides)');
   const [customComposeFormat, setCustomComposeFormat] = useState('');
@@ -25980,6 +25986,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex flex-wrap items-center gap-2">
                 {[
                   {
+                    level: 'Zero-Knowledge',
+                    icon: (
+                      <EyeOff size={12} className="mr-1 inline" />
+                    )
+                  },
+                  {
                     level: 'Viewer',
                     icon: (
                       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 inline">
@@ -26028,6 +26040,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             </div>
 
+            {shareAccess === 'Zero-Knowledge' && (
+              <div className="mb-4 rounded-lg bg-violet-50 border border-violet-100 p-3 text-xs text-violet-800">
+                <div className="font-semibold mb-1 flex items-center gap-1"><EyeOff size={12} /> Semantic layers hidden</div>
+                Collaborators will only see or edit specific semantic layers. Your underlying private data, selected functions, or grouped words will be redacted and invisible to them.
+              </div>
+            )}
+
             <div className="mb-4">
               <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide block mb-2">Advanced sharing controls</label>
               <div className="space-y-2">
@@ -26038,25 +26057,58 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     onChange={(e) => setSharePasswordProtected(e.target.checked)}
                     className="accent-violet-600 rounded border-slate-300"
                   />
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                  </svg>
+                  <Lock size={14} className="text-slate-400" />
                   <span>Password-protected links</span>
                 </label>
-                <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                {sharePasswordProtected && (
+                  <div className="pl-6 space-y-2 mt-1">
+                    <input
+                      type="password"
+                      placeholder="Enter password"
+                      value={sharePassword}
+                      onChange={(e) => setSharePassword(e.target.value)}
+                      className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Confirm password"
+                      value={sharePasswordConfirm}
+                      onChange={(e) => setSharePasswordConfirm(e.target.value)}
+                      className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
+                    />
+                  </div>
+                )}
+                
+                <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer mt-2">
                   <input
                     type="checkbox"
                     checked={shareExpiringAccess}
                     onChange={(e) => setShareExpiringAccess(e.target.checked)}
                     className="accent-violet-600 rounded border-slate-300"
                   />
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
+                  <Clock size={14} className="text-slate-400" />
                   <span>Expiring access</span>
                 </label>
+                {shareExpiringAccess && (
+                  <div className="pl-6 flex gap-2 mt-1">
+                    <input
+                      type="number"
+                      min="1"
+                      value={shareExpirationValue}
+                      onChange={(e) => setShareExpirationValue(e.target.value)}
+                      className="w-16 text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
+                    />
+                    <select
+                      value={shareExpirationUnit}
+                      onChange={(e) => setShareExpirationUnit(e.target.value)}
+                      className="text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
+                    >
+                      <option value="minutes">Minutes</option>
+                      <option value="hours">Hours</option>
+                      <option value="days">Days</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -32041,6 +32093,46 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </button>
         </div>
       )}
+
+      {/* Floating Volume Icon for Text-to-Speech */}
+      <button
+        onClick={() => {
+          if (isReadingAloud) {
+            window.speechSynthesis.cancel();
+            setIsReadingAloud(false);
+            return;
+          }
+          
+          const textToRead = blankBodyRef.current ? blankBodyRef.current.innerText : "";
+          if (!textToRead || textToRead.trim() === '') {
+            // Note: blankBodyRef is the ref for the editor content in some parts, 
+            // but if we are not focused on it, let's just fall back to selecting text or finding compose-editor-blank.
+            const editorDiv = document.querySelector('.compose-editor-blank');
+            const fallbackText = editorDiv ? editorDiv.innerText : document.body.innerText;
+            if (!fallbackText || fallbackText.trim() === '') {
+                showToast('Document is empty.');
+                return;
+            }
+            
+            const utterance = new SpeechSynthesisUtterance(fallbackText);
+            utterance.onend = () => setIsReadingAloud(false);
+            window.speechSynthesis.speak(utterance);
+            setIsReadingAloud(true);
+            return;
+          }
+          
+          const utterance = new SpeechSynthesisUtterance(textToRead);
+          utterance.onend = () => setIsReadingAloud(false);
+          window.speechSynthesis.speak(utterance);
+          setIsReadingAloud(true);
+        }}
+        className={`fixed bottom-6 right-6 p-4 rounded-full shadow-lg z-50 transition-colors ${
+          isReadingAloud ? 'bg-violet-600 text-white animate-pulse' : 'bg-white text-violet-600 border border-violet-200 hover:bg-violet-50'
+        }`}
+        title="Read document out loud"
+      >
+        <Volume2 size={24} />
+      </button>
 
     </div>
   );
