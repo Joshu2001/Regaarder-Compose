@@ -17,7 +17,7 @@ import {
   FileEdit, CheckCircle2, Users2, Archive,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
-  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -3301,10 +3301,224 @@ export default function App() {
   const [shareExpirationValue, setShareExpirationValue] = useState(7);
   const [shareExpirationUnit, setShareExpirationUnit] = useState('days');
   const [shareExpirationDate, setShareExpirationDate] = useState('');
-  const [zeroKnowledgeRedactions, setZeroKnowledgeRedactions] = useState('');
+  const [zeroKnowledgeRedactions, setZeroKnowledgeRedactions] = useState([
+    { id: 'def_1', text: 'Financial Forecast', fullText: 'Financial Forecast', type: 'keyword' },
+    { id: 'def_2', text: 'Internal Notes', fullText: 'Internal Notes', type: 'keyword' },
+    { id: 'def_3', text: 'Executive Comments', fullText: 'Executive Comments', type: 'keyword' },
+    { id: 'def_4', text: 'AI Instructions', fullText: 'AI Instructions', type: 'keyword' }
+  ]);
+  const [newRedactionKeyword, setNewRedactionKeyword] = useState('');
+  const [zeroKnowledgePreviewOpen, setZeroKnowledgePreviewOpen] = useState(false);
   const [isPasswordConfirmed, setIsPasswordConfirmed] = useState(false);
   const [zeroKnowledgePreviewMode, setZeroKnowledgePreviewMode] = useState(false);
   const [isReadingAloud, setIsReadingAloud] = useState(false);
+
+  // Zero-Knowledge Redaction / Protection Helpers
+  const protectSelectedRange = (type = 'text') => {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    const selectedText = range.toString().trim();
+    if (!selectedText) return;
+
+    const id = 'prot_' + Math.random().toString(36).substr(2, 9);
+    const textLabel = selectedText.length > 25 ? selectedText.substring(0, 25) + '...' : selectedText;
+    
+    const newChip = {
+      id,
+      text: textLabel,
+      fullText: selectedText,
+      type
+    };
+    
+    setZeroKnowledgeRedactions(prev => [...prev, newChip]);
+
+    // Create wrapper span
+    const span = document.createElement('span');
+    span.className = 'protected-layer';
+    span.setAttribute('data-protected-id', id);
+    span.textContent = selectedText;
+
+    // Use insertHTML to insert it safely and robustly into contentEditable
+    const tempDiv = document.createElement('div');
+    tempDiv.appendChild(span);
+    
+    try {
+      document.execCommand('insertHTML', false, tempDiv.innerHTML);
+    } catch (e) {
+      // Fallback range wrapping
+      range.deleteContents();
+      range.insertNode(span);
+    }
+    
+    if (blankBodyRef.current) {
+      setDocBodyHtml(blankBodyRef.current.innerHTML);
+    }
+    showToast('Selection added to protected layers.');
+  };
+
+  const protectCurrentElement = (type = 'block') => {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    
+    let element = range.commonAncestorContainer;
+    if (element.nodeType === Node.TEXT_NODE) {
+      element = element.parentNode;
+    }
+    
+    // Find closest structural elements (table, img, block, paragraph, heading, list)
+    const block = element.closest('table, img, blockquote, pre, h1, h2, h3, h4, h5, h6, p, ul, ol, li, div');
+    
+    if (block && block !== blankBodyRef.current) {
+      const id = 'prot_' + Math.random().toString(36).substr(2, 9);
+      let label = block.tagName.toLowerCase();
+      if (label === 'p') label = 'Paragraph';
+      else if (label === 'img') label = 'Image';
+      else if (label === 'table') label = 'Table';
+      else label = label.toUpperCase();
+
+      const newChip = {
+        id,
+        text: `🔒 Protected ${label}`,
+        fullText: block.innerText || `Protected ${label}`,
+        type: 'block'
+      };
+      
+      setZeroKnowledgeRedactions(prev => [...prev, newChip]);
+      
+      block.classList.add('protected-layer');
+      block.setAttribute('data-protected-id', id);
+      
+      if (blankBodyRef.current) {
+        setDocBodyHtml(blankBodyRef.current.innerHTML);
+      }
+      showToast(`${label} added to protected layers.`);
+    } else {
+      protectSelectedRange('text');
+    }
+  };
+
+  const protectKeywordInEditor = (keyword) => {
+    if (!keyword.trim() || !blankBodyRef.current) return;
+    
+    // Check if keyword is already in the list
+    if (zeroKnowledgeRedactions.some(c => c.text.toLowerCase() === keyword.toLowerCase())) {
+      showToast('Keyword is already protected.');
+      return;
+    }
+
+    const id = 'prot_' + Math.random().toString(36).substr(2, 9);
+    const newChip = {
+      id,
+      text: keyword,
+      fullText: keyword,
+      type: 'keyword'
+    };
+    
+    setZeroKnowledgeRedactions(prev => [...prev, newChip]);
+    
+    const wrapTextInNode = (node, term) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.nodeValue;
+        const index = text.toLowerCase().indexOf(term.toLowerCase());
+        if (index >= 0) {
+          const matchedText = text.substring(index, index + term.length);
+          const before = text.substring(0, index);
+          const after = text.substring(index + term.length);
+          
+          const span = document.createElement('span');
+          span.className = 'protected-layer';
+          span.setAttribute('data-protected-id', id);
+          span.textContent = matchedText;
+          
+          const parent = node.parentNode;
+          if (parent && !parent.classList.contains('protected-layer')) {
+            node.nodeValue = before;
+            parent.insertBefore(span, node.nextSibling);
+            if (after) {
+              const afterNode = document.createTextNode(after);
+              parent.insertBefore(afterNode, span.nextSibling);
+              wrapTextInNode(afterNode, term);
+            }
+          }
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE && node.childNodes) {
+        if (!node.classList.contains('protected-layer') && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+          const children = Array.from(node.childNodes);
+          children.forEach(child => wrapTextInNode(child, term));
+        }
+      }
+    };
+    
+    wrapTextInNode(blankBodyRef.current, keyword);
+    setDocBodyHtml(blankBodyRef.current.innerHTML);
+    showToast(`Keyword "${keyword}" protected and highlighted.`);
+  };
+
+  const removeProtection = (id) => {
+    setZeroKnowledgeRedactions(prev => prev.filter(chip => chip.id !== id));
+    
+    if (!blankBodyRef.current) return;
+    
+    const elements = blankBodyRef.current.querySelectorAll(`[data-protected-id="${id}"]`);
+    elements.forEach(el => {
+      if (el.classList.contains('protected-layer') && el.tagName !== 'SPAN') {
+        el.classList.remove('protected-layer');
+        el.removeAttribute('data-protected-id');
+      } else {
+        const parent = el.parentNode;
+        if (parent) {
+          while (el.firstChild) {
+            parent.insertBefore(el.firstChild, el);
+          }
+          parent.removeChild(el);
+        }
+      }
+    });
+    
+    setDocBodyHtml(blankBodyRef.current.innerHTML);
+    showToast('Protected layer removed.');
+  };
+
+  const escapeRegExp = (string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  };
+
+  const getRecipientTitle = () => {
+    let cleanTitle = docTitle || '';
+    zeroKnowledgeRedactions.forEach(chip => {
+      if (chip.type === 'keyword' || chip.type === 'text') {
+        const regex = new RegExp(escapeRegExp(chip.fullText || chip.text), 'gi');
+        cleanTitle = cleanTitle.replace(regex, '');
+      }
+    });
+    return cleanTitle.replace(/\s+/g, ' ').trim() || 'Untitled Document';
+  };
+
+  const getRecipientSubtitle = () => {
+    let cleanSubtitle = docSubtitle || '';
+    zeroKnowledgeRedactions.forEach(chip => {
+      if (chip.type === 'keyword' || chip.type === 'text') {
+        const regex = new RegExp(escapeRegExp(chip.fullText || chip.text), 'gi');
+        cleanSubtitle = cleanSubtitle.replace(regex, '');
+      }
+    });
+    return cleanSubtitle.replace(/\s+/g, ' ').trim();
+  };
+
+  const getRecipientHtml = () => {
+    if (!docBodyHtml) return '';
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = docBodyHtml;
+    
+    const protectedElements = tempDiv.querySelectorAll('.protected-layer, [data-protected-id]');
+    protectedElements.forEach(el => {
+      el.remove();
+    });
+    
+    return tempDiv.innerHTML;
+  };
 
   const [shareLink, setShareLink] = useState('');
   const [composeOutputFormat, setComposeOutputFormat] = useState('Auto (Compose decides)');
@@ -3327,7 +3541,7 @@ export default function App() {
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
-  const selectionActionMenuEnabled = false;
+  const selectionActionMenuEnabled = true;
   const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
@@ -26045,32 +26259,83 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
 
             {shareAccess === 'Zero-Knowledge' && (
-              <div className="mb-4 rounded-lg bg-violet-50 border border-violet-100 p-3 text-xs text-violet-800">
-                <div className="font-semibold mb-2 flex items-center gap-1 justify-between">
-                  <div className="flex items-center gap-1"><EyeOff size={14} /> Semantic layers hidden</div>
+              <div className="mb-4 rounded-2xl bg-slate-50 border border-slate-100 p-4 text-xs text-slate-700 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-800 text-sm">
+                    <EyeOff size={16} className="text-violet-600" />
+                    <span>Protected content</span>
+                  </div>
                   <button 
-                    onClick={() => setZeroKnowledgePreviewMode(!zeroKnowledgePreviewMode)} 
-                    className="px-2 py-1 rounded bg-violet-200 hover:bg-violet-300 text-violet-900 font-medium"
+                    type="button"
+                    onClick={() => setZeroKnowledgePreviewOpen(true)} 
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-semibold shadow-sm transition-all hover:scale-[1.02]"
                   >
-                    {zeroKnowledgePreviewMode ? 'Hide Preview' : 'Show Preview'}
+                    <Eye size={13} />
+                    <span>Preview Shared Version</span>
                   </button>
                 </div>
-                <div className="mb-2">Collaborators will only see or edit specific semantic layers. Enter specific words, functions, or sentences to redact below (comma separated):</div>
-                <textarea
-                  value={zeroKnowledgeRedactions}
-                  onChange={(e) => setZeroKnowledgeRedactions(e.target.value)}
-                  placeholder="e.g., Q3 Revenue, secret_function, project alpha"
-                  className="w-full text-xs px-2 py-1.5 border border-violet-200 rounded-md focus:outline-none focus:border-violet-400 bg-white"
-                  rows="2"
-                />
-                {zeroKnowledgePreviewMode && (
-                  <div className="mt-3 p-2 bg-white border border-violet-200 rounded-md">
-                    <div className="font-semibold text-violet-900 mb-1">Viewer Preview:</div>
-                    <div className="text-slate-600 font-mono text-[10px]">
-                      The latest update on <span className="bg-slate-900 text-slate-900 select-none">██████████</span> reveals a 20% increase in <span className="bg-slate-900 text-slate-900 select-none">██████████</span>. Our <span className="bg-slate-900 text-slate-900 select-none">██████████</span> remains highly confidential.
+                
+                <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">
+                  Collaborators cannot see protected content. Highlight text or blocks in the document to protect them directly, or add keywords below.
+                </p>
+
+                {/* Protected Chips List */}
+                <div className="flex flex-wrap gap-1.5 mb-3 max-h-[120px] overflow-y-auto pr-1">
+                  {zeroKnowledgeRedactions.length === 0 ? (
+                    <div className="w-full text-center py-3 text-[11px] text-slate-400 border border-dashed border-slate-200 rounded-xl bg-white">
+                      No items protected yet.
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    zeroKnowledgeRedactions.map(chip => (
+                      <span 
+                        key={chip.id} 
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-100 text-[11px] font-medium"
+                      >
+                        <span>🔒</span>
+                        <span className="truncate max-w-[150px]" title={chip.fullText}>{chip.text}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeProtection(chip.id)}
+                          className="w-3.5 h-3.5 rounded-full flex items-center justify-center hover:bg-violet-200 hover:text-violet-900 transition-colors ml-0.5 text-[10px]"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                {/* Add Keyword Input */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter keyword or phrase to redact..."
+                    value={newRedactionKeyword}
+                    onChange={(e) => setNewRedactionKeyword(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newRedactionKeyword.trim()) {
+                          protectKeywordInEditor(newRedactionKeyword.trim());
+                          setNewRedactionKeyword('');
+                        }
+                      }
+                    }}
+                    className="flex-1 text-xs px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:border-violet-400 bg-white shadow-inner placeholder:text-slate-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newRedactionKeyword.trim()) {
+                        protectKeywordInEditor(newRedactionKeyword.trim());
+                        setNewRedactionKeyword('');
+                      }
+                    }}
+                    className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
               </div>
             )}
 
@@ -26182,6 +26447,132 @@ if (productMode === 'deck' || productMode === 'sheets') {
               >
                 {shareDestination === 'downloads' ? `Export ${shareFormat}` : shareDestination === 'apps' ? 'Share to Apps' : 'Copy Link'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Zero-Knowledge Side-by-Side Preview Modal ── */}
+      {zeroKnowledgePreviewOpen && (
+        <div className="fixed inset-0 z-[530] bg-slate-900/50 backdrop-blur-md flex items-start justify-center p-6 overflow-auto">
+          <div className="w-full max-w-[1100px] rounded-3xl bg-white border border-slate-200 shadow-[0_60px_120px_-40px_rgba(15,23,42,0.5)] flex flex-col overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-violet-50/30 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-200">
+                  <EyeOff size={18} className="text-white" />
+                </div>
+                <div>
+                  <div className="text-base font-bold text-slate-900">Preview Shared Version</div>
+                  <div className="text-xs text-slate-500 mt-0.5">
+                    {zeroKnowledgeRedactions.length === 0
+                      ? 'No content is currently protected — both views are identical.'
+                      : `${zeroKnowledgeRedactions.length} protected item${zeroKnowledgeRedactions.length !== 1 ? 's' : ''} hidden from recipient`}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setZeroKnowledgePreviewOpen(false)}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Protected Chips Summary Bar */}
+            {zeroKnowledgeRedactions.length > 0 && (
+              <div className="flex items-center gap-2 px-8 py-3 bg-violet-50/50 border-b border-violet-100/60 flex-wrap">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-violet-400 mr-1">Protected:</span>
+                {zeroKnowledgeRedactions.map(chip => (
+                  <span key={chip.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[11px] font-medium border border-violet-200">
+                    🔒 <span className="max-w-[120px] truncate" title={chip.fullText}>{chip.text}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Two-Column Compare */}
+            <div className="flex flex-1 overflow-hidden min-h-[500px]">
+              
+              {/* ── Owner View (left) ── */}
+              <div className="flex-1 flex flex-col border-r border-slate-100 overflow-hidden">
+                <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 border-b border-slate-100 shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                  <span className="text-xs font-bold text-slate-700">Your view</span>
+                  <span className="text-[10px] text-slate-400 ml-auto">All content visible</span>
+                </div>
+                <div className="flex-1 overflow-auto px-8 py-6 bg-white">
+                  {/* Owner Title */}
+                  {docTitle && (
+                    <h1 className="text-2xl font-bold text-slate-900 mb-1 leading-tight">{docTitle}</h1>
+                  )}
+                  {docSubtitle && (
+                    <p className="text-sm text-slate-500 mb-5">{docSubtitle}</p>
+                  )}
+                  {/* Owner Document Body */}
+                  <div
+                    className="prose prose-sm max-w-none text-slate-700 leading-relaxed [&_.protected-layer]:bg-violet-100 [&_.protected-layer]:outline [&_.protected-layer]:outline-2 [&_.protected-layer]:outline-violet-300 [&_.protected-layer]:rounded"
+                    dangerouslySetInnerHTML={{ __html: docBodyHtml }}
+                  />
+                </div>
+              </div>
+
+              {/* ── Recipient View (right) ── */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 border-b border-slate-100 shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-violet-400"></div>
+                  <span className="text-xs font-bold text-slate-700">Recipient view</span>
+                  <span className="text-[10px] text-slate-400 ml-auto">Protected content omitted</span>
+                </div>
+                <div className="flex-1 overflow-auto px-8 py-6 bg-white">
+                  {/* Recipient Title — keywords stripped */}
+                  {getRecipientTitle() && (
+                    <h1 className="text-2xl font-bold text-slate-900 mb-1 leading-tight">{getRecipientTitle()}</h1>
+                  )}
+                  {getRecipientSubtitle() && (
+                    <p className="text-sm text-slate-500 mb-5">{getRecipientSubtitle()}</p>
+                  )}
+                  {/* Recipient Document Body — protected nodes removed */}
+                  {getRecipientHtml() ? (
+                    <div
+                      className="prose prose-sm max-w-none text-slate-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: getRecipientHtml() }}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-sm gap-2">
+                      <EyeOff size={32} className="text-slate-200" />
+                      <span>All content is protected — nothing visible to recipient.</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-8 py-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
+              <p className="text-[11px] text-slate-400 max-w-md leading-relaxed">
+                Protected content is completely omitted from the recipient view — no redaction marks or warnings are shown.
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setZeroKnowledgePreviewOpen(false); setShareModalOpen(true); }}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 text-sm text-slate-600 font-semibold hover:bg-slate-100 transition-colors"
+                >
+                  <Lock size={14} />
+                  Edit Protection
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZeroKnowledgePreviewOpen(false)}
+                  className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold shadow-sm transition-colors"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -26875,6 +27266,44 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="mt-0.5 text-[11px] text-slate-500">{item.subtitle}</div>
                 </button>
               ))}
+            </div>
+
+            <div className="border-t border-[#f0eefc] px-3 py-2 bg-slate-50/50">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 px-1 flex items-center gap-1">
+                <Lock size={10} /> Collaboration security
+              </div>
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={() => {
+                    protectSelectedRange('text');
+                    setSelectionActionMenu({ open: false, left: 0, top: 0 });
+                  }}
+                  className="w-full flex items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-violet-700 hover:bg-violet-50 transition-colors border border-transparent hover:border-violet-100 bg-white shadow-sm"
+                >
+                  <EyeOff size={14} className="text-violet-600" />
+                  <span>Hide Selection from Shared View</span>
+                </button>
+                <button
+                  type="button"
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={() => {
+                    protectCurrentElement('block');
+                    setSelectionActionMenu({ open: false, left: 0, top: 0 });
+                  }}
+                  className="w-full flex items-center gap-2 rounded-xl px-2.5 py-2 text-left text-xs font-semibold text-violet-700 hover:bg-violet-50 transition-colors border border-transparent hover:border-violet-100 bg-white shadow-sm"
+                >
+                  <Lock size={14} className="text-violet-600" />
+                  <span>Protect Current Block (Table/Image/Section)</span>
+                </button>
+              </div>
             </div>
 
             <div className="border-t border-[#f0eefc] px-3 py-3">
