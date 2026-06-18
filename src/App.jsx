@@ -5717,6 +5717,29 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let timeout;
+    const handlePointerMove = (e) => {
+      if (!blankBodyRef.current || !providerRef.current?.awareness) return;
+      if (!timeout) {
+        timeout = requestAnimationFrame(() => {
+          const rect = blankBodyRef.current.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          
+          providerRef.current.awareness.setLocalStateField('pointer', { x, y });
+          timeout = null;
+        });
+      }
+    };
+    
+    window.addEventListener('mousemove', handlePointerMove);
+    return () => {
+      window.removeEventListener('mousemove', handlePointerMove);
+      if (timeout) cancelAnimationFrame(timeout);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!activeDocId) {
       return;
     }
@@ -29871,16 +29894,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div style={{ position: 'relative' }}>
                 <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-[60]">
                   {Array.from(awarenessUsers.values()).map((userState, idx) => {
-                    if (!userState.user || !userState.cursor || !blankBodyRef.current) return null;
-                    const { anchor, focus } = userState.cursor;
-                    const cursorData = getCursorRects(blankBodyRef.current, anchor, focus);
-                    if (!cursorData) return null;
+                    if (!userState.user || !blankBodyRef.current) return null;
+                    const cursorData = userState.cursor ? getCursorRects(blankBodyRef.current, userState.cursor.anchor, userState.cursor.focus) : null;
                     
                     return (
                       <div key={idx}>
-                        {cursorData.rects.map((rect, i) => (
+                        {cursorData && cursorData.rects.map((rect, i) => (
                           <div
-                            key={i}
+                            key={`sel-${i}`}
                             className="absolute opacity-20"
                             style={{
                               top: rect.top,
@@ -29891,26 +29912,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }}
                           />
                         ))}
-                        <div
-                          className="absolute w-[2px] transition-all duration-75"
-                          style={{
-                            top: cursorData.cursor.top,
-                            left: cursorData.cursor.left,
-                            height: cursorData.cursor.height,
-                            backgroundColor: userState.user.color
-                          }}
-                        >
+                        {cursorData && (
                           <div
-                            className="absolute left-0 px-1.5 py-0.5 rounded-[4px] rounded-bl-none text-[10px] font-bold text-white shadow-sm transition-opacity duration-1000"
+                            className="absolute w-[2px] transition-all duration-75"
                             style={{
-                              top: '-20px',
-                              backgroundColor: userState.user.color,
-                              whiteSpace: 'nowrap'
+                              top: cursorData.cursor.top,
+                              left: cursorData.cursor.left,
+                              height: cursorData.cursor.height,
+                              backgroundColor: userState.user.color
                             }}
                           >
-                            {userState.user.name}
+                            {!userState.pointer && (
+                              <div
+                                className="absolute left-0 px-1.5 py-0.5 rounded-[4px] rounded-bl-none text-[10px] font-bold text-white shadow-sm transition-opacity duration-1000"
+                                style={{
+                                  top: '-20px',
+                                  backgroundColor: userState.user.color,
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {userState.user.name}
+                              </div>
+                            )}
                           </div>
-                        </div>
+                        )}
+                        {userState.pointer && (
+                          <div
+                            className="absolute transition-all duration-75 z-50 pointer-events-none"
+                            style={{
+                              top: userState.pointer.y,
+                              left: userState.pointer.x,
+                              transform: 'translate(-2px, -2px)'
+                            }}
+                          >
+                            <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
+                              <path d="M2.5 19.5L1.5 2L15.5 11.5L8.5 13L12 19.5L9.5 21L6 14.5L2.5 19.5Z" fill={userState.user.color} stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                            </svg>
+                            <div
+                              className="absolute left-[14px] px-1.5 py-0.5 rounded-[4px] rounded-tl-none text-[10px] font-bold text-white shadow-sm transition-opacity duration-1000"
+                              style={{
+                                top: '16px',
+                                backgroundColor: userState.user.color,
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              {userState.user.name}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
