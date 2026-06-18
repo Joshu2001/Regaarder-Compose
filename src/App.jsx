@@ -5717,17 +5717,27 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    let timeout;
+    let frameId;
+    let inactivityTimeout;
+
     const handlePointerMove = (e) => {
       if (!blankBodyRef.current || !providerRef.current?.awareness) return;
-      if (!timeout) {
-        timeout = requestAnimationFrame(() => {
+
+      if (!frameId) {
+        frameId = requestAnimationFrame(() => {
           const rect = blankBodyRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const y = e.clientY - rect.top;
           
           providerRef.current.awareness.setLocalStateField('pointer', { x, y });
-          timeout = null;
+          frameId = null;
+
+          if (inactivityTimeout) clearTimeout(inactivityTimeout);
+          inactivityTimeout = setTimeout(() => {
+            if (providerRef.current?.awareness) {
+              providerRef.current.awareness.setLocalStateField('pointer', null);
+            }
+          }, 1500);
         });
       }
     };
@@ -5735,7 +5745,8 @@ export default function App() {
     window.addEventListener('mousemove', handlePointerMove);
     return () => {
       window.removeEventListener('mousemove', handlePointerMove);
-      if (timeout) cancelAnimationFrame(timeout);
+      if (frameId) cancelAnimationFrame(frameId);
+      if (inactivityTimeout) clearTimeout(inactivityTimeout);
     };
   }, []);
 
@@ -29922,18 +29933,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               backgroundColor: userState.user.color
                             }}
                           >
-                            {!userState.pointer && (
-                              <div
-                                className="absolute left-0 px-1.5 py-0.5 rounded-[4px] rounded-bl-none text-[10px] font-bold text-white shadow-sm transition-opacity duration-1000"
-                                style={{
-                                  top: '-20px',
-                                  backgroundColor: userState.user.color,
-                                  whiteSpace: 'nowrap'
-                                }}
-                              >
-                                {userState.user.name}
-                              </div>
-                            )}
+                          <div
+                            className="absolute left-0 px-1.5 py-0.5 rounded-[4px] rounded-bl-none text-[10px] font-bold text-white shadow-sm transition-opacity duration-1000"
+                            style={{
+                              top: '-20px',
+                              backgroundColor: userState.user.color,
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {userState.user.name}
+                          </div>
                           </div>
                         )}
                         {userState.pointer && (
