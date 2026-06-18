@@ -3293,6 +3293,7 @@ export default function App() {
   const [shareDestination, setShareDestination] = useState('friends');
   const [shareFormat, setShareFormat] = useState('Compose (.cmp)');
   const [shareAccess, setShareAccess] = useState('Viewer');
+  const [currentAccessLevel, setCurrentAccessLevel] = useState('editor');
   const [shareLink, setShareLink] = useState('');
   const [composeOutputFormat, setComposeOutputFormat] = useState('Auto (Compose decides)');
   const [customComposeFormat, setCustomComposeFormat] = useState('');
@@ -4878,6 +4879,11 @@ export default function App() {
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     const docParam = query.get('doc');
+    const accessParam = query.get('access');
+    
+    if (accessParam) {
+      setCurrentAccessLevel(accessParam.toLowerCase());
+    }
     
     if (docParam && !replayLoadedFromUrlRef.current) {
       setDocuments(prev => {
@@ -5721,13 +5727,12 @@ export default function App() {
     let inactivityTimeout;
 
     const handlePointerMove = (e) => {
-      if (!blankBodyRef.current || !providerRef.current?.awareness) return;
+      if (!providerRef.current?.awareness) return;
 
       if (!frameId) {
         frameId = requestAnimationFrame(() => {
-          const rect = blankBodyRef.current.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
+          const x = e.clientX;
+          const y = e.clientY;
           
           providerRef.current.awareness.setLocalStateField('pointer', { x, y });
           frameId = null;
@@ -24030,6 +24035,36 @@ const renderRoomTopHeader = () => (
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div ref={appShellRef} className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+        <div className="fixed inset-0 pointer-events-none z-[9999]">
+          {Array.from(awarenessUsers.values()).map((userState, idx) => {
+            if (!userState.user || !userState.pointer) return null;
+            return (
+              <div
+                key={`global-ptr-${idx}`}
+                className="absolute transition-all duration-75 pointer-events-none"
+                style={{
+                  top: userState.pointer.y,
+                  left: userState.pointer.x,
+                  transform: 'translate(-2px, -2px)'
+                }}
+              >
+                <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
+                  <path d="M2.5 19.5L1.5 2L15.5 11.5L8.5 13L12 19.5L9.5 21L6 14.5L2.5 19.5Z" fill={userState.user.color} stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+                </svg>
+                <div
+                  className="absolute left-[14px] px-1.5 py-0.5 rounded-[4px] rounded-tl-none text-[10px] font-bold text-white shadow-sm transition-opacity duration-1000"
+                  style={{
+                    top: '16px',
+                    backgroundColor: userState.user.color,
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {userState.user.name}
+                </div>
+              </div>
+            );
+          })}
+        </div>
         {toastMessage && (
           <div className="absolute top-16 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
             <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
@@ -24501,9 +24536,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </button>
                 <div className="flex items-center gap-4">
                   <div className="flex -space-x-2">
-                    <img className="w-7 h-7 rounded-full border-2 border-white shadow-sm" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80" alt="Sarah" />
-                    <img className="w-7 h-7 rounded-full border-2 border-white shadow-sm" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" alt="Mike" />
-                    <img className="w-7 h-7 rounded-full border-2 border-white shadow-sm" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" alt="Maya" />
+                    {Array.from(awarenessUsers.values()).map((userState, idx) => {
+                      if (!userState.user) return null;
+                      return (
+                        <div
+                          key={`avatar-${idx}`}
+                          className="w-7 h-7 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-[11px] font-bold text-white relative group"
+                          style={{ backgroundColor: userState.user.color }}
+                        >
+                          {userState.user.name.charAt(0).toUpperCase()}
+                          <div className="absolute top-full mt-1 bg-black text-white text-[10px] py-0.5 px-1.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-[100]">
+                            {userState.user.name}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="relative" ref={notificationsPanelRef}>
                     <button
@@ -29867,7 +29914,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {/* Title & Subtitle */}
             <div
               ref={titleEditableRef}
-              contentEditable
+              contentEditable={currentAccessLevel !== 'viewer'}
               suppressContentEditableWarning
               onInput={(e) => {
                 normalizeEditableDirection(e.currentTarget);
@@ -29885,7 +29932,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             
             <div
               ref={subtitleEditableRef}
-              contentEditable
+              contentEditable={currentAccessLevel !== 'viewer'}
               suppressContentEditableWarning
               onInput={(e) => {
                 normalizeEditableDirection(e.currentTarget);
@@ -29945,37 +29992,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                           </div>
                         )}
-                        {userState.pointer && (
-                          <div
-                            className="absolute transition-all duration-75 z-50 pointer-events-none"
-                            style={{
-                              top: userState.pointer.y,
-                              left: userState.pointer.x,
-                              transform: 'translate(-2px, -2px)'
-                            }}
-                          >
-                            <svg width="18" height="24" viewBox="0 0 18 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
-                              <path d="M2.5 19.5L1.5 2L15.5 11.5L8.5 13L12 19.5L9.5 21L6 14.5L2.5 19.5Z" fill={userState.user.color} stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                            </svg>
-                            <div
-                              className="absolute left-[14px] px-1.5 py-0.5 rounded-[4px] rounded-tl-none text-[10px] font-bold text-white shadow-sm transition-opacity duration-1000"
-                              style={{
-                                top: '16px',
-                                backgroundColor: userState.user.color,
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              {userState.user.name}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
                 </div>
                 <div
                   ref={blankBodyRef}
-                  contentEditable
+                  contentEditable={currentAccessLevel !== 'viewer'}
                   suppressContentEditableWarning
                   onKeyDown={handleEditorKeyDown}
                   onInput={(e) => normalizeEditableDirection(e.currentTarget)}
