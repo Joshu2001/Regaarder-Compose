@@ -3298,6 +3298,7 @@ export default function App() {
   const [sharePasswordProtected, setSharePasswordProtected] = useState(false);
   const [sharePassword, setSharePassword] = useState('');
   const [sharePasswordConfirm, setSharePasswordConfirm] = useState('');
+  const [showSharePassword, setShowSharePassword] = useState(false);
   const [shareExpiringAccess, setShareExpiringAccess] = useState(false);
   const [shareExpirationValue, setShareExpirationValue] = useState(7);
   const [shareExpirationUnit, setShareExpirationUnit] = useState('days');
@@ -3313,6 +3314,8 @@ export default function App() {
   const [isPasswordConfirmed, setIsPasswordConfirmed] = useState(false);
   const [zeroKnowledgePreviewMode, setZeroKnowledgePreviewMode] = useState(false);
   const [isReadingAloud, setIsReadingAloud] = useState(false);
+  const [ttsPaused, setTtsPaused] = useState(false);
+  const [ttsUtterance, setTtsUtterance] = useState(null);
   const [volumeBtnPos, setVolumeBtnPos] = useState({ x: null, y: null });
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const volumeDragStartPos = useRef({ x: 0, y: 0, startX: 0, startY: 0 });
@@ -4187,6 +4190,9 @@ export default function App() {
   const [docSearchMatchCount, setDocSearchMatchCount] = useState(0);
   const [docSearchAutoPlay, setDocSearchAutoPlay] = useState(false);
   const [docSearchSummary, setDocSearchSummary] = useState('');
+  const [semanticRedactCategory, setSemanticRedactCategory] = useState('Finance');
+  const [semanticRedactMatches, setSemanticRedactMatches] = useState([]);
+  const [semanticRedactUndoStack, setSemanticRedactUndoStack] = useState(null);
   const [outlineLevelMenuOpen, setOutlineLevelMenuOpen] = useState(false);
   const [outlineLevels, setOutlineLevels] = useState(3);
   const [shapesModalOpen, setShapesModalOpen] = useState(false);
@@ -26482,21 +26488,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <span>Password-protected links</span>
                 </label>
                 {sharePasswordProtected && (
-                  <div className="pl-6 space-y-2 mt-1">
-                    <input
-                      type="password"
-                      placeholder="Enter password"
-                      value={sharePassword}
-                      onChange={(e) => { setSharePassword(e.target.value); setIsPasswordConfirmed(false); }}
-                      className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
-                    />
-                    <input
-                      type="password"
-                      placeholder="Confirm password"
-                      value={sharePasswordConfirm}
-                      onChange={(e) => { setSharePasswordConfirm(e.target.value); setIsPasswordConfirmed(false); }}
-                      className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400"
-                    />
+                  <div className="pl-6 space-y-2 mt-1 relative">
+                    <div className="relative">
+                      <input
+                        type={showSharePassword ? "text" : "password"}
+                        placeholder="Enter password"
+                        value={sharePassword}
+                        onChange={(e) => { setSharePassword(e.target.value); setIsPasswordConfirmed(false); }}
+                        className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400 pr-8"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSharePassword(!showSharePassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                      >
+                        {showSharePassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showSharePassword ? "text" : "password"}
+                        placeholder="Confirm password"
+                        value={sharePasswordConfirm}
+                        onChange={(e) => { setSharePasswordConfirm(e.target.value); setIsPasswordConfirmed(false); }}
+                        className="w-full text-xs px-2 py-1.5 border border-slate-200 rounded-md focus:outline-none focus:border-violet-400 pr-8"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSharePassword(!showSharePassword)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                      >
+                        {showSharePassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
                     <div className="flex items-center gap-2">
                       <button 
                         onClick={() => {
@@ -28294,6 +28318,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       { key: 'find', label: 'Find' },
                       { key: 'replace', label: 'Replace' },
                       { key: 'goTo', label: 'Go To' },
+                      { key: 'redact', label: 'Redact' },
                     ].map((item) => (
                       <button
                         key={item.key}
@@ -28400,6 +28425,53 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       >
                         Go To Page
                       </button>
+                    </div>
+                  </>
+                )}
+
+                {docSearchMode === 'redact' && (
+                  <>
+                    <select
+                      value={semanticRedactCategory}
+                      onChange={(e) => {
+                        setSemanticRedactCategory(e.target.value);
+                        clearSemanticRedactPreview();
+                      }}
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400 bg-white"
+                    >
+                      <option value="Finance">Finance (e.g. revenue, budget)</option>
+                      <option value="Legal">Legal (e.g. lawsuit, contract)</option>
+                      <option value="PII">Personal Info (e.g. email, phone)</option>
+                      <option value="Company Names">Company Names</option>
+                    </select>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={performSemanticRedactPreview}
+                        className="px-2.5 py-1.5 text-[11px] rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50"
+                      >
+                        Preview Matches
+                      </button>
+                      <button
+                        type="button"
+                        onClick={applySemanticRedaction}
+                        disabled={semanticRedactMatches.length === 0}
+                        className="px-2.5 py-1.5 text-[11px] rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                      >
+                        Redact All
+                      </button>
+                      {semanticRedactUndoStack && (
+                        <button
+                          type="button"
+                          onClick={undoSemanticRedaction}
+                          className="px-2.5 py-1.5 text-[11px] rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 ml-auto"
+                        >
+                          Undo
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2 text-[11px] text-gray-500">
+                      {semanticRedactMatches.length} items found
                     </div>
                   </>
                 )}
@@ -32559,48 +32631,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {/* Floating Volume Icon for Text-to-Speech */}
-      <button
+      {/* Floating Volume Icon / TTS Controls */}
+      <div
         onPointerDown={handleVolumePointerDown}
         onPointerMove={handleVolumePointerMove}
         onPointerUp={handleVolumePointerUp}
-        onClick={(e) => {
-          if (volumeDraggedRef.current) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-          }
-          if (isReadingAloud) {
-            window.speechSynthesis.cancel();
-            setIsReadingAloud(false);
-            return;
-          }
-          
-          const textToRead = blankBodyRef.current ? blankBodyRef.current.innerText : "";
-          if (!textToRead || textToRead.trim() === '') {
-            // Note: blankBodyRef is the ref for the editor content in some parts, 
-            // but if we are not focused on it, let's just fall back to selecting text or finding compose-editor-blank.
-            const editorDiv = document.querySelector('.compose-editor-blank');
-            const fallbackText = editorDiv ? editorDiv.innerText : document.body.innerText;
-            if (!fallbackText || fallbackText.trim() === '') {
-                showToast('Document is empty.');
-                return;
-            }
-            
-            const utterance = new SpeechSynthesisUtterance(fallbackText);
-            utterance.onend = () => setIsReadingAloud(false);
-            window.speechSynthesis.speak(utterance);
-            setIsReadingAloud(true);
-            return;
-          }
-          
-          const utterance = new SpeechSynthesisUtterance(textToRead);
-          utterance.onend = () => setIsReadingAloud(false);
-          window.speechSynthesis.speak(utterance);
-          setIsReadingAloud(true);
-        }}
-        className={`fixed p-4 rounded-full shadow-lg z-50 transition-colors ${
-          isReadingAloud ? 'bg-violet-600 text-white animate-pulse' : 'bg-white text-violet-600 border border-violet-200 hover:bg-violet-50'
+        className={`fixed flex items-center gap-2 rounded-full shadow-lg z-50 transition-colors ${
+          isReadingAloud ? 'bg-white border border-violet-200 text-violet-600 p-2' : 'bg-white text-violet-600 border border-violet-200 hover:bg-violet-50 p-4 cursor-pointer'
         }`}
         style={{
           left: volumeBtnPos.x !== null ? `${volumeBtnPos.x}px` : 'auto',
@@ -32611,9 +32648,130 @@ if (productMode === 'deck' || productMode === 'sheets') {
           cursor: isDraggingVolume ? 'grabbing' : 'grab',
         }}
         title="Read document out loud (Drag to reposition)"
+        onClick={(e) => {
+          if (volumeDraggedRef.current || isReadingAloud) return;
+          
+          let textToRead = '';
+          let startNode = null;
+          
+          const selection = window.getSelection();
+          if (selection && selection.toString().trim() !== '') {
+            textToRead = selection.toString();
+          } else {
+            if (selection && selection.rangeCount > 0 && blankBodyRef.current && blankBodyRef.current.contains(selection.anchorNode)) {
+              startNode = selection.anchorNode;
+              const range = new Range();
+              range.setStart(startNode, selection.anchorOffset);
+              range.setEndAfter(blankBodyRef.current.lastChild || blankBodyRef.current);
+              textToRead = range.toString();
+            } else {
+              textToRead = blankBodyRef.current ? blankBodyRef.current.innerText : document.body.innerText;
+            }
+          }
+          
+          if (!textToRead || textToRead.trim() === '') {
+            showToast('No text available to read.');
+            return;
+          }
+          
+          const utterance = new SpeechSynthesisUtterance(textToRead);
+          setTtsUtterance(utterance);
+          
+          let lastMark = null;
+          
+          utterance.onboundary = (event) => {
+            if (event.name !== 'word') return;
+            
+            // Clean up last highlight
+            if (lastMark && lastMark.parentNode) {
+              const parent = lastMark.parentNode;
+              parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
+              parent.normalize();
+              lastMark = null;
+            }
+            
+            const word = event.currentTarget.text.substring(event.charIndex).split(/[\s.,!?]/)[0];
+            if (!word || !blankBodyRef.current) return;
+            
+            const walker = document.createTreeWalker(blankBodyRef.current, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+            while ((node = walker.nextNode())) {
+              const idx = node.nodeValue.indexOf(word);
+              if (idx !== -1) {
+                const mark = document.createElement('mark');
+                mark.className = 'tts-highlight';
+                mark.textContent = word;
+                const parent = node.parentNode;
+                
+                const before = node.nodeValue.substring(0, idx);
+                const after = node.nodeValue.substring(idx + word.length);
+                
+                const fragment = document.createDocumentFragment();
+                if (before) fragment.appendChild(document.createTextNode(before));
+                fragment.appendChild(mark);
+                if (after) fragment.appendChild(document.createTextNode(after));
+                
+                parent.replaceChild(fragment, node);
+                lastMark = mark;
+                mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                break;
+              }
+            }
+          };
+          
+          utterance.onend = () => {
+            setIsReadingAloud(false);
+            setTtsPaused(false);
+            setTtsUtterance(null);
+            if (lastMark && lastMark.parentNode) {
+              const parent = lastMark.parentNode;
+              parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
+              parent.normalize();
+            }
+          };
+          
+          window.speechSynthesis.speak(utterance);
+          setIsReadingAloud(true);
+          setTtsPaused(false);
+        }}
       >
-        <Volume2 size={24} />
-      </button>
+        {!isReadingAloud ? (
+          <Volume2 size={24} className="pointer-events-none" />
+        ) : (
+          <div className="flex items-center gap-1.5 px-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (ttsPaused) {
+                  window.speechSynthesis.resume();
+                  setTtsPaused(false);
+                } else {
+                  window.speechSynthesis.pause();
+                  setTtsPaused(true);
+                }
+              }}
+              className="p-1.5 hover:bg-violet-100 rounded-full text-violet-700 transition-colors"
+              title={ttsPaused ? 'Resume' : 'Pause'}
+            >
+              {ttsPaused ? <Play size={18} /> : <Pause size={18} />}
+            </button>
+            <div className="w-px h-4 bg-violet-200"></div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                window.speechSynthesis.cancel();
+                setIsReadingAloud(false);
+                setTtsPaused(false);
+                setTtsUtterance(null);
+              }}
+              className="p-1.5 hover:bg-red-50 text-red-600 rounded-full transition-colors"
+              title="Stop"
+            >
+              <Square size={16} fill="currentColor" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Gesture visual cues */}
       {gestureRipples.map(r => (
