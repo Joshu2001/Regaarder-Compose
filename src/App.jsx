@@ -3351,6 +3351,172 @@ export default function App() {
     }
   };
 
+  const [isDictationHiddenByGesture, setIsDictationHiddenByGesture] = useState(false);
+  const [gestureNotification, setGestureNotification] = useState(null);
+  const [gestureRipples, setGestureRipples] = useState([]);
+  
+  const gestureHistory = useRef([]);
+  const lastGestureTime = useRef(0);
+  const gestureTimeoutRef = useRef(null);
+
+  const createGestureCue = (type, x, y) => {
+    const rippleId = 'ripple-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    setGestureRipples(prev => [...prev, { id: rippleId, x, y }]);
+    setTimeout(() => {
+      setGestureRipples(prev => prev.filter(r => r.id !== rippleId));
+    }, 800);
+
+    let label = '';
+    if (type === '2-vertical') {
+      label = isPromptMinimized ? 'Show Compose AI Bar' : 'Hide Compose AI Bar';
+    } else if (type === '3-vertical') {
+      label = isDictationHiddenByGesture ? 'Show Voice Dictation' : 'Hide Voice Dictation';
+    } else if (type === '2-horizontal') {
+      label = 'Voice Command Mode';
+    }
+    
+    setGestureNotification({
+      id: Date.now(),
+      label
+    });
+  };
+
+  const triggerGestureAction = (type, x, y) => {
+    const now = Date.now();
+    if (now - lastGestureTime.current < 1200) return;
+    lastGestureTime.current = now;
+    
+    gestureHistory.current = [];
+    createGestureCue(type, x, y);
+
+    if (type === '2-vertical') {
+      setIsPromptMinimized(prev => !prev);
+    } else if (type === '3-vertical') {
+      setIsDictationHiddenByGesture(prev => !prev);
+    } else if (type === '2-horizontal') {
+      setIsVoiceCommandMode(true);
+      isVoiceCommandModeRef.current = true;
+      if (!isVoiceActiveRef.current) {
+        toggleVoiceRecording('document');
+      }
+      showToast('Voice Command Mode Active');
+    }
+  };
+
+  const handleVerticalGesture = (count, clientX, clientY) => {
+    if (gestureTimeoutRef.current) {
+      clearTimeout(gestureTimeoutRef.current);
+      gestureTimeoutRef.current = null;
+    }
+
+    if (count >= 6) {
+      triggerGestureAction('3-vertical', clientX, clientY);
+    } else if (count >= 4) {
+      gestureTimeoutRef.current = setTimeout(() => {
+        triggerGestureAction('2-vertical', clientX, clientY);
+        gestureTimeoutRef.current = null;
+      }, 280);
+    }
+  };
+
+  useEffect(() => {
+    if (gestureNotification) {
+      const timer = setTimeout(() => {
+        setGestureNotification(null);
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [gestureNotification]);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const now = Date.now();
+      gestureHistory.current.push({ x: e.clientX, y: e.clientY, t: now });
+      gestureHistory.current = gestureHistory.current.filter(pt => now - pt.t < 1200);
+      
+      if (gestureHistory.current.length < 5) return;
+      
+      const yExtrema = [];
+      let currentDirY = 0;
+      let lastExtremumY = gestureHistory.current[0].y;
+      
+      for (let i = 1; i < gestureHistory.current.length; i++) {
+        const pt = gestureHistory.current[i];
+        const dy = pt.y - lastExtremumY;
+        
+        if (currentDirY === 0) {
+          if (Math.abs(dy) > 35) {
+            currentDirY = dy > 0 ? -1 : 1;
+            lastExtremumY = pt.y;
+            yExtrema.push({ y: pt.y, t: pt.t, type: currentDirY });
+          }
+        } else if (currentDirY === 1) {
+          if (dy > 35) {
+            currentDirY = -1;
+            lastExtremumY = pt.y;
+            yExtrema.push({ y: pt.y, t: pt.t, type: -1 });
+          } else if (pt.y < lastExtremumY) {
+            lastExtremumY = pt.y;
+          }
+        } else if (currentDirY === -1) {
+          if (dy < -35) {
+            currentDirY = 1;
+            lastExtremumY = pt.y;
+            yExtrema.push({ y: pt.y, t: pt.t, type: 1 });
+          } else if (pt.y > lastExtremumY) {
+            lastExtremumY = pt.y;
+          }
+        }
+      }
+      
+      const xExtrema = [];
+      let currentDirX = 0;
+      let lastExtremumX = gestureHistory.current[0].x;
+      
+      for (let i = 1; i < gestureHistory.current.length; i++) {
+        const pt = gestureHistory.current[i];
+        const dx = pt.x - lastExtremumX;
+        
+        if (currentDirX === 0) {
+          if (Math.abs(dx) > 35) {
+            currentDirX = dx > 0 ? 1 : -1;
+            lastExtremumX = pt.x;
+            xExtrema.push({ x: pt.x, t: pt.t, type: currentDirX });
+          }
+        } else if (currentDirX === 1) {
+          if (dx < -35) {
+            currentDirX = -1;
+            lastExtremumX = pt.x;
+            xExtrema.push({ x: pt.x, t: pt.t, type: -1 });
+          } else if (pt.x > lastExtremumX) {
+            lastExtremumX = pt.x;
+          }
+        } else if (currentDirX === -1) {
+          if (dx > 35) {
+            currentDirX = 1;
+            lastExtremumX = pt.x;
+            xExtrema.push({ x: pt.x, t: pt.t, type: 1 });
+          } else if (pt.x < lastExtremumX) {
+            lastExtremumX = pt.x;
+          }
+        }
+      }
+
+      if (yExtrema.length >= 4) {
+        handleVerticalGesture(yExtrema.length, e.clientX, e.clientY);
+      }
+      
+      if (xExtrema.length >= 4) {
+        triggerGestureAction('2-horizontal', e.clientX, e.clientY);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [isPromptMinimized, isDictationHiddenByGesture, isVoiceActive, voiceTarget]);
+
   // Zero-Knowledge Redaction / Protection Helpers
   const protectSelectedRange = (type = 'text') => {
     const selection = window.getSelection();
@@ -6723,179 +6889,97 @@ export default function App() {
     const maxContentHeightFirstPage = pageHeightVal - 220; // safe space for title, subtitle, headers, footers
     const maxContentHeightSubsequent = pageHeightVal - 150; // safe space for headers/footers
     
-    // Flatten elements in editorEl
     const blocks = [];
-    const collectBlocks = (node) => {
-      if (!node) return;
-      if (node.nodeType === 1 && node.getAttribute('data-enterprise-page') === 'true') {
-        Array.from(node.childNodes).forEach(child => {
-          if (child.nodeType === 1 && (
+    
+    const processNodeList = (childNodes) => {
+      Array.from(childNodes).forEach(child => {
+        if (child.nodeType === 1) {
+          if (
             child.getAttribute('contenteditable') === 'false' ||
             child.style.position === 'absolute' ||
-            child.className?.includes('select-none')
-          )) {
+            child.className?.includes('select-none') ||
+            child.className?.includes('page-break-plus-btn')
+          ) {
             return;
           }
-          blocks.push(child);
-        });
-      } else {
-        blocks.push(node);
-      }
+          
+          if (child.getAttribute('data-enterprise-page') === 'true') {
+            processNodeList(child.childNodes);
+            return;
+          }
+        }
+        blocks.push(child.cloneNode(true));
+      });
     };
     
-    const topLevelChildren = Array.from(editorEl.childNodes);
-    topLevelChildren.forEach(child => {
-      if (child.nodeType === 1 && (
-        child.getAttribute('contenteditable') === 'false' ||
-        child.style.position === 'absolute' ||
-        child.className?.includes('select-none')
-      )) {
-        return;
-      }
-      collectBlocks(child);
+    processNodeList(editorEl.childNodes);
+    
+    extraPages.forEach(p => {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = p.html;
+      processNodeList(tempDiv.childNodes);
     });
     
     editorEl.innerHTML = '';
     
-    let currentPage = null;
-    let pageIndex = 1;
+    const tempPage = document.createElement('div');
+    tempPage.style.position = 'absolute';
+    tempPage.style.visibility = 'hidden';
+    tempPage.style.width = `${editorEl.offsetWidth || 720}px`;
+    const computedStyle = window.getComputedStyle(editorEl);
+    tempPage.style.padding = computedStyle.padding || '64px 48px 78px';
+    tempPage.style.fontFamily = computedStyle.fontFamily;
+    tempPage.style.fontSize = computedStyle.fontSize;
+    tempPage.style.lineHeight = computedStyle.lineHeight;
+    tempPage.style.boxSizing = 'border-box';
+    document.body.appendChild(tempPage);
     
-    const createPageNode = (num) => {
-      const pageWrapper = document.createElement('div');
-      pageWrapper.setAttribute('data-enterprise-page', 'true');
-      pageWrapper.setAttribute('contenteditable', 'true');
-      pageWrapper.style.position = 'relative';
-      pageWrapper.style.minHeight = `${pageHeightVal}px`;
-      pageWrapper.style.maxHeight = `${pageHeightVal}px`;
-      pageWrapper.style.overflow = 'hidden';
-      pageWrapper.style.marginTop = '24px';
-      pageWrapper.style.padding = '64px 48px 78px';
-      pageWrapper.style.background = '#ffffff';
-      pageWrapper.style.border = '1px solid rgba(148,163,184,0.22)';
-      pageWrapper.style.borderRadius = '20px';
-      pageWrapper.style.boxShadow = '0 10px 22px -18px rgba(15,23,42,0.22)';
-      
-      // Page theme colors
-      if (docTheme === 'emerald') {
-        pageWrapper.style.backgroundColor = '#F0FDF4';
-        pageWrapper.style.color = '#064E3B';
-      } else if (docTheme === 'amber') {
-        pageWrapper.style.backgroundColor = '#FEFBE8';
-        pageWrapper.style.color = '#451A03';
-      } else if (docTheme === 'rose') {
-        pageWrapper.style.backgroundColor = '#FFF1F2';
-        pageWrapper.style.color = '#4C0519';
-      } else if (docTheme === 'slate') {
-        pageWrapper.style.backgroundColor = '#F8FAFC';
-        pageWrapper.style.color = '#0F172A';
-      }
-      
-      if (docHeaderText) {
-        const headerEl = document.createElement('div');
-        headerEl.setAttribute('contenteditable', 'false');
-        headerEl.className = 'select-none';
-        headerEl.style.position = 'absolute';
-        headerEl.style.top = '24px';
-        headerEl.style.left = '48px';
-        headerEl.style.right = '48px';
-        headerEl.style.fontSize = '10px';
-        headerEl.style.color = '#94a3b8';
-        headerEl.style.borderBottom = '1px solid #f1f5f9';
-        headerEl.style.paddingBottom = '6px';
-        headerEl.style.display = 'flex';
-        headerEl.style.justifyContent = 'space-between';
-        headerEl.innerHTML = `<span>${docHeaderText}</span><span style="font-weight:bold;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:0 4px;">Draft</span>`;
-        pageWrapper.appendChild(headerEl);
-      }
-      
-      if (docFooterText) {
-        const footerEl = document.createElement('div');
-        footerEl.setAttribute('contenteditable', 'false');
-        footerEl.className = 'select-none';
-        footerEl.style.position = 'absolute';
-        footerEl.style.bottom = '24px';
-        footerEl.style.left = '48px';
-        footerEl.style.right = '48px';
-        footerEl.style.fontSize = '10px';
-        footerEl.style.color = '#94a3b8';
-        footerEl.style.borderTop = '1px solid #f1f5f9';
-        footerEl.style.paddingTop = '6px';
-        footerEl.textContent = docFooterText;
-        pageWrapper.appendChild(footerEl);
-      }
-      
-      if (showPageNumbers) {
-        const pageNumEl = document.createElement('div');
-        pageNumEl.setAttribute('contenteditable', 'false');
-        pageNumEl.className = 'select-none';
-        pageNumEl.style.position = 'absolute';
-        pageNumEl.style.bottom = '24px';
-        if (pageNumberPos === 'bottom-left') {
-          pageNumEl.style.left = '48px';
-        } else if (pageNumberPos === 'bottom-right') {
-          pageNumEl.style.right = '48px';
-        } else {
-          pageNumEl.style.left = '50%';
-          pageNumEl.style.transform = 'translateX(-50%)';
-        }
-        pageNumEl.style.fontSize = '11px';
-        pageNumEl.style.color = '#94a3b8';
-        pageNumEl.textContent = String(num);
-        pageWrapper.appendChild(pageNumEl);
-      }
-      
-      // Add page-break-plus-btn
-      if (currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter') {
-        const plusBtn = document.createElement('button');
-        plusBtn.type = 'button';
-        plusBtn.className = 'page-break-plus-btn select-none';
-        plusBtn.setAttribute('contenteditable', 'false');
-        plusBtn.innerHTML = '+';
-        plusBtn.onclick = (e) => {
-          e.stopPropagation();
-          insertEnterprisePage();
-        };
-        pageWrapper.appendChild(plusBtn);
-      }
-      
-      return pageWrapper;
-    };
+    const subsequentPagesData = [];
+    let isOnPage1 = true;
     
     blocks.forEach(block => {
+      if (block.nodeType === 3 && !block.textContent.trim()) {
+        return;
+      }
+      
       let nodeToAppend = block;
       if (block.nodeType === 3) {
-        if (!block.textContent.trim()) return;
         nodeToAppend = document.createElement('p');
         nodeToAppend.appendChild(block);
       }
       
-      if (!currentPage) {
+      if (isOnPage1) {
         editorEl.appendChild(nodeToAppend);
-        const currentHeight = editorEl.offsetHeight || 0;
-        if (currentHeight > maxContentHeightFirstPage) {
+        if (editorEl.offsetHeight > maxContentHeightFirstPage) {
           editorEl.removeChild(nodeToAppend);
-          pageIndex = 2;
-          currentPage = createPageNode(pageIndex);
-          editorEl.appendChild(currentPage);
-          currentPage.appendChild(nodeToAppend);
+          isOnPage1 = false;
+          tempPage.appendChild(nodeToAppend);
         }
       } else {
-        currentPage.appendChild(nodeToAppend);
-        let contentHeight = 0;
-        Array.from(currentPage.childNodes).forEach(c => {
-          if (c.nodeType === 1 && c.style.position !== 'absolute') {
-            contentHeight += c.offsetHeight || 18;
-          }
-        });
-        if (contentHeight > maxContentHeightSubsequent) {
-          currentPage.removeChild(nodeToAppend);
-          pageIndex++;
-          currentPage = createPageNode(pageIndex);
-          editorEl.appendChild(currentPage);
-          currentPage.appendChild(nodeToAppend);
+        tempPage.appendChild(nodeToAppend);
+        if (tempPage.offsetHeight > maxContentHeightSubsequent) {
+          tempPage.removeChild(nodeToAppend);
+          subsequentPagesData.push({
+            id: 'page-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+            html: tempPage.innerHTML
+          });
+          tempPage.innerHTML = '';
+          tempPage.appendChild(nodeToAppend);
         }
       }
     });
+    
+    if (!isOnPage1 && tempPage.innerHTML.trim()) {
+      subsequentPagesData.push({
+        id: 'page-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        html: tempPage.innerHTML
+      });
+    }
+    
+    document.body.removeChild(tempPage);
+    
+    setDocBodyHtml(editorEl.innerHTML);
+    setExtraPages(subsequentPagesData);
   };
 
   const handleEditablePaste = (event, placeholder, afterPaste) => {
@@ -31622,7 +31706,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
           </div>
 
-        {!isComposing && !shouldHideDictationOverlay && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
+        {!isComposing && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
           <div 
             className="pointer-events-none fixed z-[300] flex items-center justify-center"
             style={{
@@ -32697,6 +32781,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
       >
         <Volume2 size={24} />
       </button>
+
+      {/* Gesture visual cues */}
+      {gestureRipples.map(r => (
+        <div
+          key={r.id}
+          className="fixed pointer-events-none z-[99999] rounded-full border border-violet-500/30 bg-violet-500/10 animate-gesture-ripple"
+          style={{
+            left: r.x - 20,
+            top: r.y - 20,
+            width: 40,
+            height: 40,
+          }}
+        />
+      ))}
+
+      {gestureNotification && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] pointer-events-none animate-gesture-pill-in">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/90 backdrop-blur-md text-white text-xs font-semibold shadow-xl border border-white/10">
+            <Sparkles size={14} className="text-violet-400 animate-pulse" />
+            <span>{gestureNotification.label}</span>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -925,6 +925,42 @@ img.protected-layer {
   opacity: 0 !important;
 }
 
+@keyframes gestureRipple {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+.animate-gesture-ripple {
+  animation: gestureRipple 750ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes gesturePillIn {
+  0% {
+    transform: translate(-50%, -20px) scale(0.9);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+  85% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -10px) scale(0.95);
+    opacity: 0;
+  }
+}
+.animate-gesture-pill-in {
+  animation: gesturePillIn 1800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 
 
 
