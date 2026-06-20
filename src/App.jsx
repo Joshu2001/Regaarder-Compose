@@ -18187,9 +18187,15 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     updateDictationAnchor();
     window.addEventListener('resize', updateDictationAnchor);
+    
+    // Poll to keep anchor perfectly in sync during CSS transitions (e.g., sidebar toggling)
+    const interval = setInterval(updateDictationAnchor, 16); // ~60fps
+    const timeout = setTimeout(() => clearInterval(interval), 400); // Stop after transition completes
 
     return () => {
       window.removeEventListener('resize', updateDictationAnchor);
+      clearInterval(interval);
+      clearTimeout(timeout);
     };
   }, [
     productMode,
