@@ -3351,172 +3351,6 @@ export default function App() {
     }
   };
 
-  const [isDictationHiddenByGesture, setIsDictationHiddenByGesture] = useState(false);
-  const [gestureNotification, setGestureNotification] = useState(null);
-  const [gestureRipples, setGestureRipples] = useState([]);
-  
-  const gestureHistory = useRef([]);
-  const lastGestureTime = useRef(0);
-  const gestureTimeoutRef = useRef(null);
-
-  const createGestureCue = (type, x, y) => {
-    const rippleId = 'ripple-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
-    setGestureRipples(prev => [...prev, { id: rippleId, x, y }]);
-    setTimeout(() => {
-      setGestureRipples(prev => prev.filter(r => r.id !== rippleId));
-    }, 800);
-
-    let label = '';
-    if (type === '2-vertical') {
-      label = isPromptMinimized ? 'Show Compose AI Bar' : 'Hide Compose AI Bar';
-    } else if (type === '3-vertical') {
-      label = isDictationHiddenByGesture ? 'Show Voice Dictation' : 'Hide Voice Dictation';
-    } else if (type === '2-horizontal') {
-      label = 'Voice Command Mode';
-    }
-    
-    setGestureNotification({
-      id: Date.now(),
-      label
-    });
-  };
-
-  const triggerGestureAction = (type, x, y) => {
-    const now = Date.now();
-    if (now - lastGestureTime.current < 1200) return;
-    lastGestureTime.current = now;
-    
-    gestureHistory.current = [];
-    createGestureCue(type, x, y);
-
-    if (type === '2-vertical') {
-      setIsPromptMinimized(prev => !prev);
-    } else if (type === '3-vertical') {
-      setIsDictationHiddenByGesture(prev => !prev);
-    } else if (type === '2-horizontal') {
-      setIsVoiceCommandMode(true);
-      isVoiceCommandModeRef.current = true;
-      if (!isVoiceActiveRef.current) {
-        toggleVoiceRecording('document');
-      }
-      showToast('Voice Command Mode Active');
-    }
-  };
-
-  const handleVerticalGesture = (count, clientX, clientY) => {
-    if (gestureTimeoutRef.current) {
-      clearTimeout(gestureTimeoutRef.current);
-      gestureTimeoutRef.current = null;
-    }
-
-    if (count >= 6) {
-      triggerGestureAction('3-vertical', clientX, clientY);
-    } else if (count >= 4) {
-      gestureTimeoutRef.current = setTimeout(() => {
-        triggerGestureAction('2-vertical', clientX, clientY);
-        gestureTimeoutRef.current = null;
-      }, 280);
-    }
-  };
-
-  useEffect(() => {
-    if (gestureNotification) {
-      const timer = setTimeout(() => {
-        setGestureNotification(null);
-      }, 1800);
-      return () => clearTimeout(timer);
-    }
-  }, [gestureNotification]);
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      const now = Date.now();
-      gestureHistory.current.push({ x: e.clientX, y: e.clientY, t: now });
-      gestureHistory.current = gestureHistory.current.filter(pt => now - pt.t < 1200);
-      
-      if (gestureHistory.current.length < 5) return;
-      
-      const yExtrema = [];
-      let currentDirY = 0;
-      let lastExtremumY = gestureHistory.current[0].y;
-      
-      for (let i = 1; i < gestureHistory.current.length; i++) {
-        const pt = gestureHistory.current[i];
-        const dy = pt.y - lastExtremumY;
-        
-        if (currentDirY === 0) {
-          if (Math.abs(dy) > 35) {
-            currentDirY = dy > 0 ? -1 : 1;
-            lastExtremumY = pt.y;
-            yExtrema.push({ y: pt.y, t: pt.t, type: currentDirY });
-          }
-        } else if (currentDirY === 1) {
-          if (dy > 35) {
-            currentDirY = -1;
-            lastExtremumY = pt.y;
-            yExtrema.push({ y: pt.y, t: pt.t, type: -1 });
-          } else if (pt.y < lastExtremumY) {
-            lastExtremumY = pt.y;
-          }
-        } else if (currentDirY === -1) {
-          if (dy < -35) {
-            currentDirY = 1;
-            lastExtremumY = pt.y;
-            yExtrema.push({ y: pt.y, t: pt.t, type: 1 });
-          } else if (pt.y > lastExtremumY) {
-            lastExtremumY = pt.y;
-          }
-        }
-      }
-      
-      const xExtrema = [];
-      let currentDirX = 0;
-      let lastExtremumX = gestureHistory.current[0].x;
-      
-      for (let i = 1; i < gestureHistory.current.length; i++) {
-        const pt = gestureHistory.current[i];
-        const dx = pt.x - lastExtremumX;
-        
-        if (currentDirX === 0) {
-          if (Math.abs(dx) > 35) {
-            currentDirX = dx > 0 ? 1 : -1;
-            lastExtremumX = pt.x;
-            xExtrema.push({ x: pt.x, t: pt.t, type: currentDirX });
-          }
-        } else if (currentDirX === 1) {
-          if (dx < -35) {
-            currentDirX = -1;
-            lastExtremumX = pt.x;
-            xExtrema.push({ x: pt.x, t: pt.t, type: -1 });
-          } else if (pt.x > lastExtremumX) {
-            lastExtremumX = pt.x;
-          }
-        } else if (currentDirX === -1) {
-          if (dx > 35) {
-            currentDirX = 1;
-            lastExtremumX = pt.x;
-            xExtrema.push({ x: pt.x, t: pt.t, type: 1 });
-          } else if (pt.x < lastExtremumX) {
-            lastExtremumX = pt.x;
-          }
-        }
-      }
-
-      if (yExtrema.length >= 4) {
-        handleVerticalGesture(yExtrema.length, e.clientX, e.clientY);
-      }
-      
-      if (xExtrema.length >= 4) {
-        triggerGestureAction('2-horizontal', e.clientX, e.clientY);
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [isPromptMinimized, isDictationHiddenByGesture, isVoiceActive, voiceTarget]);
-
   // Zero-Knowledge Redaction / Protection Helpers
   const protectSelectedRange = (type = 'text') => {
     const selection = window.getSelection();
@@ -3814,6 +3648,172 @@ export default function App() {
     });
     return result;
   });
+
+  const [isDictationHiddenByGesture, setIsDictationHiddenByGesture] = useState(false);
+  const [gestureNotification, setGestureNotification] = useState(null);
+  const [gestureRipples, setGestureRipples] = useState([]);
+  
+  const gestureHistory = useRef([]);
+  const lastGestureTime = useRef(0);
+  const gestureTimeoutRef = useRef(null);
+
+  const createGestureCue = (type, x, y) => {
+    const rippleId = 'ripple-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    setGestureRipples(prev => [...prev, { id: rippleId, x, y }]);
+    setTimeout(() => {
+      setGestureRipples(prev => prev.filter(r => r.id !== rippleId));
+    }, 800);
+
+    let label = '';
+    if (type === '2-vertical') {
+      label = isPromptMinimized ? 'Show Compose AI Bar' : 'Hide Compose AI Bar';
+    } else if (type === '3-vertical') {
+      label = isDictationHiddenByGesture ? 'Show Voice Dictation' : 'Hide Voice Dictation';
+    } else if (type === '2-horizontal') {
+      label = 'Voice Command Mode';
+    }
+    
+    setGestureNotification({
+      id: Date.now(),
+      label
+    });
+  };
+
+  const triggerGestureAction = (type, x, y) => {
+    const now = Date.now();
+    if (now - lastGestureTime.current < 1200) return;
+    lastGestureTime.current = now;
+    
+    gestureHistory.current = [];
+    createGestureCue(type, x, y);
+
+    if (type === '2-vertical') {
+      setIsPromptMinimized(prev => !prev);
+    } else if (type === '3-vertical') {
+      setIsDictationHiddenByGesture(prev => !prev);
+    } else if (type === '2-horizontal') {
+      setIsVoiceCommandMode(true);
+      isVoiceCommandModeRef.current = true;
+      if (!isVoiceActiveRef.current) {
+        toggleVoiceRecording('document');
+      }
+      showToast('Voice Command Mode Active');
+    }
+  };
+
+  const handleVerticalGesture = (count, clientX, clientY) => {
+    if (gestureTimeoutRef.current) {
+      clearTimeout(gestureTimeoutRef.current);
+      gestureTimeoutRef.current = null;
+    }
+
+    if (count >= 6) {
+      triggerGestureAction('3-vertical', clientX, clientY);
+    } else if (count >= 4) {
+      gestureTimeoutRef.current = setTimeout(() => {
+        triggerGestureAction('2-vertical', clientX, clientY);
+        gestureTimeoutRef.current = null;
+      }, 280);
+    }
+  };
+
+  useEffect(() => {
+    if (gestureNotification) {
+      const timer = setTimeout(() => {
+        setGestureNotification(null);
+      }, 1800);
+      return () => clearTimeout(timer);
+    }
+  }, [gestureNotification]);
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const now = Date.now();
+      gestureHistory.current.push({ x: e.clientX, y: e.clientY, t: now });
+      gestureHistory.current = gestureHistory.current.filter(pt => now - pt.t < 1200);
+      
+      if (gestureHistory.current.length < 5) return;
+      
+      const yExtrema = [];
+      let currentDirY = 0;
+      let lastExtremumY = gestureHistory.current[0].y;
+      
+      for (let i = 1; i < gestureHistory.current.length; i++) {
+        const pt = gestureHistory.current[i];
+        const dy = pt.y - lastExtremumY;
+        
+        if (currentDirY === 0) {
+          if (Math.abs(dy) > 35) {
+            currentDirY = dy > 0 ? -1 : 1;
+            lastExtremumY = pt.y;
+            yExtrema.push({ y: pt.y, t: pt.t, type: currentDirY });
+          }
+        } else if (currentDirY === 1) {
+          if (dy > 35) {
+            currentDirY = -1;
+            lastExtremumY = pt.y;
+            yExtrema.push({ y: pt.y, t: pt.t, type: -1 });
+          } else if (pt.y < lastExtremumY) {
+            lastExtremumY = pt.y;
+          }
+        } else if (currentDirY === -1) {
+          if (dy < -35) {
+            currentDirY = 1;
+            lastExtremumY = pt.y;
+            yExtrema.push({ y: pt.y, t: pt.t, type: 1 });
+          } else if (pt.y > lastExtremumY) {
+            lastExtremumY = pt.y;
+          }
+        }
+      }
+      
+      const xExtrema = [];
+      let currentDirX = 0;
+      let lastExtremumX = gestureHistory.current[0].x;
+      
+      for (let i = 1; i < gestureHistory.current.length; i++) {
+        const pt = gestureHistory.current[i];
+        const dx = pt.x - lastExtremumX;
+        
+        if (currentDirX === 0) {
+          if (Math.abs(dx) > 35) {
+            currentDirX = dx > 0 ? 1 : -1;
+            lastExtremumX = pt.x;
+            xExtrema.push({ x: pt.x, t: pt.t, type: currentDirX });
+          }
+        } else if (currentDirX === 1) {
+          if (dx < -35) {
+            currentDirX = -1;
+            lastExtremumX = pt.x;
+            xExtrema.push({ x: pt.x, t: pt.t, type: -1 });
+          } else if (pt.x > lastExtremumX) {
+            lastExtremumX = pt.x;
+          }
+        } else if (currentDirX === -1) {
+          if (dx > 35) {
+            currentDirX = 1;
+            lastExtremumX = pt.x;
+            xExtrema.push({ x: pt.x, t: pt.t, type: 1 });
+          } else if (pt.x < lastExtremumX) {
+            lastExtremumX = pt.x;
+          }
+        }
+      }
+
+      if (yExtrema.length >= 4) {
+        handleVerticalGesture(yExtrema.length, e.clientX, e.clientY);
+      }
+      
+      if (xExtrema.length >= 4) {
+        triggerGestureAction('2-horizontal', e.clientX, e.clientY);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [isPromptMinimized, isDictationHiddenByGesture, isVoiceActive, voiceTarget]);
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
