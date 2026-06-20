@@ -4203,7 +4203,7 @@ export default function App() {
   const [docSearchMatchCount, setDocSearchMatchCount] = useState(0);
   const [docSearchAutoPlay, setDocSearchAutoPlay] = useState(false);
   const [docSearchSummary, setDocSearchSummary] = useState('');
-  const [semanticRedactCategory, setSemanticRedactCategory] = useState('Finance');
+  const [semanticRedactQuery, setSemanticRedactQuery] = useState('');
   const [semanticRedactMatches, setSemanticRedactMatches] = useState([]);
   const [semanticRedactUndoStack, setSemanticRedactUndoStack] = useState(null);
   const [outlineLevelMenuOpen, setOutlineLevelMenuOpen] = useState(false);
@@ -4400,17 +4400,10 @@ export default function App() {
 
   const performSemanticRedactPreview = () => {
     clearSemanticRedactPreview();
-    if (!semanticRedactCategory || !blankBodyRef.current) return;
+    if (!semanticRedactQuery.trim() || !blankBodyRef.current) return;
     
-    const categoryMap = {
-      'Finance': ['revenue', 'profit', 'ebitda', 'valuation', 'expenses', 'budget', 'financial', 'margin'],
-      'Legal': ['liability', 'sue', 'lawsuit', 'attorney', 'court', 'plaintiff', 'defendant', 'contract', 'agreement'],
-      'PII': ['ssn', 'social security', 'phone', 'email', 'address', 'credit card'],
-      'Company Names': ['google', 'apple', 'microsoft', 'amazon', 'facebook', 'meta']
-    };
-    
-    const keywords = categoryMap[semanticRedactCategory] || [];
-    if (keywords.length === 0) return;
+    const query = semanticRedactQuery.trim();
+    if (query.length < 2) return; // Prevent highlighting single characters too aggressively
     
     const walker = document.createTreeWalker(blankBodyRef.current, NodeFilter.SHOW_TEXT, null, false);
     const textNodes = [];
@@ -4420,7 +4413,8 @@ export default function App() {
     }
     
     let matchCount = 0;
-    const regex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'gi');
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b(${escapedQuery})\\b`, 'gi');
     
     textNodes.forEach(textNode => {
       const text = textNode.nodeValue;
@@ -18167,32 +18161,27 @@ Respond with a JSON array of slide objects matching the schema.`;
     const updateDictationAnchor = () => {
       const card = documentCardRef.current;
       if (!card) {
-        setDictationAnchor({ left: window.innerWidth - 100, top: window.innerHeight / 2 });
+        setDictationAnchor({ left: window.innerWidth - 150, top: window.innerHeight / 2 });
         return;
       }
 
       const rect = card.getBoundingClientRect();
-      const visibleLeft = Math.max(rect.left, 0);
-      const visibleRight = Math.min(rect.right, window.innerWidth);
-      const visibleTop = Math.max(rect.top, 0);
-      const visibleBottom = Math.min(rect.bottom, window.innerHeight);
+      const visibleRight = rect.right;
+      const visibleTop = Math.max(0, rect.top);
+      const visibleBottom = Math.min(window.innerHeight, rect.bottom);
 
-      const hasVisibleWidth = visibleRight > visibleLeft;
-      const hasVisibleHeight = visibleBottom > visibleTop;
-
-      const rightX = hasVisibleWidth ? visibleRight - 80 : window.innerWidth - 100;
-      const centerY = hasVisibleHeight ? visibleTop + (visibleBottom - visibleTop) / 2 : window.innerHeight / 2;
+      const rightSidebarEdge = window.innerWidth - (rightSidebarOpen ? rightSidebarWidth : 0);
+      const rightX = (visibleRight + rightSidebarEdge) / 2;
+      const centerY = (visibleTop + visibleBottom) / 2;
 
       setDictationAnchor({ left: rightX, top: centerY });
     };
 
     updateDictationAnchor();
     window.addEventListener('resize', updateDictationAnchor);
-    window.addEventListener('scroll', updateDictationAnchor, true);
 
     return () => {
       window.removeEventListener('resize', updateDictationAnchor);
-      window.removeEventListener('scroll', updateDictationAnchor, true);
     };
   }, [
     productMode,
@@ -28567,19 +28556,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 {docSearchMode === 'redact' && (
                   <>
-                    <select
-                      value={semanticRedactCategory}
+                    <input
+                      type="text"
+                      placeholder="Type a word or sentence to redact..."
+                      value={semanticRedactQuery}
                       onChange={(e) => {
-                        setSemanticRedactCategory(e.target.value);
+                        setSemanticRedactQuery(e.target.value);
                         clearSemanticRedactPreview();
                       }}
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400 bg-white"
-                    >
-                      <option value="Finance">Finance (e.g. revenue, budget)</option>
-                      <option value="Legal">Legal (e.g. lawsuit, contract)</option>
-                      <option value="PII">Personal Info (e.g. email, phone)</option>
-                      <option value="Company Names">Company Names</option>
-                    </select>
+                    />
                     <div className="mt-2 flex items-center gap-1.5">
                       <button
                         type="button"
