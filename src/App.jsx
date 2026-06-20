@@ -800,6 +800,32 @@ export default function App() {
 
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  
+  const [recentDocumentsList, setRecentDocumentsList] = useState([]);
+  
+  useEffect(() => {
+    if (recentDocumentsModalOpen) {
+      const docs = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('rc.savedDoc.')) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key));
+            docs.push({
+              id: Number(key.replace('rc.savedDoc.', '')),
+              title: data.docTitle || data.title || 'Untitled Document',
+              savedAt: data.savedAt || 0,
+              data: data
+            });
+          } catch (e) {
+            console.error('Error parsing document', e);
+          }
+        }
+      }
+      docs.sort((a, b) => b.savedAt - a.savedAt);
+      setRecentDocumentsList(docs);
+    }
+  }, [recentDocumentsModalOpen]);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
   const [productMode, setProductMode] = useState('landing');
@@ -5918,12 +5944,12 @@ export default function App() {
       return undefined;
     }
 
-    const timer = window.setTimeout(() => {
+    const timer = window.setInterval(() => {
       saveDocumentLocally({ silent: true, trackAction: false });
-    }, 1200);
+    }, 3000);
 
-    return () => window.clearTimeout(timer);
-  }, [activeDocId, docTitle, docSubtitle, initiatives, appendedSections, docBodyHtml, isBlankDocument, sheetsTitle, sheetsData, deckTitle, deckSlidesData]);
+    return () => window.clearInterval(timer);
+  }, [activeDocId]);
 
   const undoDocumentChange = () => {
     flushPendingHistoryRecord();
@@ -16213,9 +16239,12 @@ Rules:
 
     const target = documents.find((doc) => doc.id === docId);
     if (target) {
+      const isCurrent = activeDocId === docId;
       return {
         ...target,
-        bodyHtml: sanitizeHtmlForExport(target.bodyHtml)
+        title: isCurrent ? (titleEditableRef.current?.innerText || target.title) : target.title,
+        subtitle: isCurrent ? (subtitleEditableRef.current?.innerText || target.subtitle) : target.subtitle,
+        bodyHtml: isCurrent ? sanitizeHtmlForExport(blankBodyRef.current?.innerHTML || target.bodyHtml) : sanitizeHtmlForExport(target.bodyHtml)
       };
     }
     return fallback;
@@ -26862,33 +26891,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
             </div>
             <div className="overflow-y-auto p-2">
-              <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => { setRecentDocumentsModalOpen(false); showToast('Opening Q2 Launch Brief...'); }}>
-                <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center text-violet-600">
-                  <FileText size={20} />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-gray-900">Q2 Launch Brief (Orb)</div>
-                  <div className="text-xs text-gray-500">Last edited just now</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => { setRecentDocumentsModalOpen(false); showToast('Opening Product Roadmap...'); }}>
-                <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
-                  <FileText size={20} />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-gray-900">Product Roadmap 2026</div>
-                  <div className="text-xs text-gray-500">Last edited 2 hours ago</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => { setRecentDocumentsModalOpen(false); showToast('Opening Marketing Plan...'); }}>
-                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
-                  <FileText size={20} />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-gray-900">Marketing Plan Draft</div>
-                  <div className="text-xs text-gray-500">Last edited yesterday</div>
-                </div>
-              </div>
+              {recentDocumentsList.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-sm">No recent documents found. Start typing to auto-save!</div>
+              ) : (
+                recentDocumentsList.map(doc => (
+                  <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => { 
+                    setRecentDocumentsModalOpen(false); 
+                    showToast(`Opening ${doc.title}...`); 
+                    const isAlreadyOpen = documents.find(d => d.id === doc.id);
+                    if (!isAlreadyOpen) {
+                       setDocuments(prev => [...prev, { ...doc.data, id: doc.id }]);
+                    }
+                    setActiveDocId(doc.id);
+                    setDocTitle(doc.data.title || '');
+                    setDocSubtitle(doc.data.subtitle || '');
+                    setInitiatives(doc.data.initiatives || defaultInitiatives);
+                    setAppendedSections(doc.data.appendedSections || []);
+                    setIsBlankDocument(doc.data.isBlank || false);
+                    setDocBodyHtml(doc.data.bodyHtml || '');
+                  }}>
+                    <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center text-violet-600">
+                      <FileText size={20} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-gray-900">{doc.title}</div>
+                      <div className="text-xs text-gray-500">Last edited {new Date(doc.savedAt).toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
