@@ -27158,7 +27158,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
                                     setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id);
                                   }}
-                                  className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
+                                  className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
                                 >
                                   <MoreVertical size={13} />
                                 </button>
@@ -27239,7 +27239,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onClick={() => {
                     const id = Date.now() + Math.floor(Math.random() * 1000);
                     const newPageHtml = `<div class="compose-generated-page" style="margin-top:36px;padding-bottom:36px;page-break-after:always;"><p><br></p></div>`;
-                    setDocBodyHtml(prev => prev + newPageHtml);
+                    if (blankBodyRef.current) {
+                      blankBodyRef.current.innerHTML += newPageHtml;
+                      setDocBodyHtml(blankBodyRef.current.innerHTML);
+                    } else {
+                      setDocBodyHtml(prev => prev + newPageHtml);
+                    }
                     showToast('New page inserted successfully');
                   }}
                   className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
