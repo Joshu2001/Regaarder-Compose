@@ -4371,6 +4371,121 @@ export default function App() {
     }
   };
 
+  const [ttsSpeed, setTtsSpeed] = useState(1);
+
+  const clearSemanticRedactPreview = useCallback(() => {
+    if (!blankBodyRef.current) return;
+    const marks = Array.from(blankBodyRef.current.querySelectorAll('mark.redact-candidate'));
+    marks.forEach(mark => {
+      const parent = mark.parentNode;
+      if (!parent) return;
+      parent.replaceChild(document.createTextNode(mark.textContent), mark);
+      parent.normalize();
+    });
+    setSemanticRedactMatches([]);
+  }, []);
+
+  const performSemanticRedactPreview = () => {
+    clearSemanticRedactPreview();
+    if (!semanticRedactCategory || !blankBodyRef.current) return;
+    
+    const categoryMap = {
+      'Finance': ['revenue', 'profit', 'ebitda', 'valuation', 'expenses', 'budget', 'financial', 'margin'],
+      'Legal': ['liability', 'sue', 'lawsuit', 'attorney', 'court', 'plaintiff', 'defendant', 'contract', 'agreement'],
+      'PII': ['ssn', 'social security', 'phone', 'email', 'address', 'credit card'],
+      'Company Names': ['google', 'apple', 'microsoft', 'amazon', 'facebook', 'meta']
+    };
+    
+    const keywords = categoryMap[semanticRedactCategory] || [];
+    if (keywords.length === 0) return;
+    
+    const walker = document.createTreeWalker(blankBodyRef.current, NodeFilter.SHOW_TEXT, null, false);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+      textNodes.push(node);
+    }
+    
+    let matchCount = 0;
+    const regex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'gi');
+    
+    textNodes.forEach(textNode => {
+      const text = textNode.nodeValue;
+      if (regex.test(text)) {
+        const parent = textNode.parentNode;
+        if (parent.classList && parent.classList.contains('redact-candidate')) return;
+        
+        const fragment = document.createDocumentFragment();
+        let lastIdx = 0;
+        let match;
+        regex.lastIndex = 0;
+        while ((match = regex.exec(text)) !== null) {
+          matchCount++;
+          if (match.index > lastIdx) {
+            fragment.appendChild(document.createTextNode(text.substring(lastIdx, match.index)));
+          }
+          const mark = document.createElement('mark');
+          mark.className = 'redact-candidate bg-red-200 text-red-900 border-b border-red-500 rounded px-0.5';
+          mark.textContent = match[0];
+          fragment.appendChild(mark);
+          lastIdx = regex.lastIndex;
+        }
+        if (lastIdx < text.length) {
+          fragment.appendChild(document.createTextNode(text.substring(lastIdx)));
+        }
+        parent.replaceChild(fragment, textNode);
+      }
+    });
+    setSemanticRedactMatches(new Array(matchCount).fill(true));
+  };
+
+  const applySemanticRedaction = () => {
+    if (!blankBodyRef.current) return;
+    setSemanticRedactUndoStack({
+      html: blankBodyRef.current.innerHTML,
+      redactions: [...zeroKnowledgeRedactions]
+    });
+    
+    const candidates = Array.from(blankBodyRef.current.querySelectorAll('mark.redact-candidate'));
+    if (candidates.length === 0) {
+      showToast('No preview matches to redact.');
+      return;
+    }
+    
+    let newRedactions = [];
+    candidates.forEach(mark => {
+      const id = 'prot_' + Math.random().toString(36).substr(2, 9);
+      const text = mark.textContent;
+      const textLabel = text.length > 25 ? text.substring(0, 25) + '...' : text;
+      
+      newRedactions.push({ id, text: textLabel, fullText: text, type: 'text' });
+      
+      const span = document.createElement('span');
+      span.className = 'protected-layer';
+      span.setAttribute('data-protected-id', id);
+      span.textContent = '?? Protected';
+      
+      const parent = mark.parentNode;
+      parent.replaceChild(span, mark);
+    });
+    
+    setZeroKnowledgeRedactions(prev => [...prev, ...newRedactions]);
+    setDocBodyHtml(blankBodyRef.current.innerHTML);
+    setSemanticRedactMatches([]);
+    showToast(`${candidates.length} items redacted automatically.`);
+  };
+
+  const undoSemanticRedaction = () => {
+    if (semanticRedactUndoStack && blankBodyRef.current) {
+      blankBodyRef.current.innerHTML = semanticRedactUndoStack.html;
+      setZeroKnowledgeRedactions(semanticRedactUndoStack.redactions);
+      setDocBodyHtml(semanticRedactUndoStack.html);
+      setSemanticRedactUndoStack(null);
+      setSemanticRedactMatches([]);
+      showToast('Redaction undone.');
+    }
+  };
+
   const clearDocumentSearchHighlights = useCallback(() => {
     if (!documentCardRef.current) {
       return;
@@ -32658,15 +32773,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           if (selection && selection.toString().trim() !== '') {
             textToRead = selection.toString();
           } else {
-            if (selection && selection.rangeCount > 0 && blankBodyRef.current && blankBodyRef.current.contains(selection.anchorNode)) {
-              startNode = selection.anchorNode;
-              const range = new Range();
-              range.setStart(startNode, selection.anchorOffset);
-              range.setEndAfter(blankBodyRef.current.lastChild || blankBodyRef.current);
-              textToRead = range.toString();
-            } else {
-              textToRead = blankBodyRef.current ? blankBodyRef.current.innerText : document.body.innerText;
-            }
+            textToRead = blankBodyRef.current ? blankBodyRef.current.innerText : document.body.innerText;
           }
           
           if (!textToRead || textToRead.trim() === '') {
@@ -32675,6 +32782,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }
           
           const utterance = new SpeechSynthesisUtterance(textToRead);
+          utterance.rate = ttsSpeed;
           setTtsUtterance(utterance);
           
           let lastMark = null;
@@ -32740,6 +32848,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         ) : (
           <div className="flex items-center gap-1.5 px-2">
             <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 if (ttsPaused) {
@@ -32755,8 +32865,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             >
               {ttsPaused ? <Play size={18} /> : <Pause size={18} />}
             </button>
-            <div className="w-px h-4 bg-violet-200"></div>
             <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 window.speechSynthesis.cancel();
@@ -32769,6 +32880,37 @@ if (productMode === 'deck' || productMode === 'sheets') {
             >
               <Square size={16} fill="currentColor" />
             </button>
+            <div className="w-px h-4 bg-violet-200 mx-1"></div>
+            <select
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              value={ttsSpeed}
+              onChange={(e) => {
+                e.stopPropagation();
+                const newSpeed = parseFloat(e.target.value);
+                setTtsSpeed(newSpeed);
+                // Changing speed mid-speech isn't universally supported in all browsers without restarting utterance.
+                // But we can try setting the rate. Note: standard synthesis might need a cancel & restart to take effect properly.
+                if (ttsUtterance) {
+                    window.speechSynthesis.cancel();
+                    // Just reset the state; the user can click play again to restart from the beginning with the new speed
+                    setIsReadingAloud(false);
+                    setTtsPaused(false);
+                    setTtsUtterance(null);
+                    showToast('Speed changed. Click play again.');
+                }
+              }}
+              className="bg-transparent text-[10px] font-bold text-violet-700 outline-none cursor-pointer"
+              title="Reading Speed"
+            >
+              <option value="0.75">0.75x</option>
+              <option value="1">1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+              <option value="2.5">2.5x</option>
+            </select>
           </div>
         )}
       </div>
