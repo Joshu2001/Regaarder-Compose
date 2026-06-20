@@ -32551,6 +32551,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
+      {activeOutlineMenuId && (
+        <div
+          className="fixed bg-white border border-slate-200 rounded-lg shadow-lg py-1.5 z-[9999] min-w-[150px]"
+          style={{ top: `${outlineMenuCoords.top + 4}px`, left: `${outlineMenuCoords.left}px`, fontFamily: editorFont }}
+        >
+          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-violet-600 flex items-center gap-2 transition-colors" onClick={() => { setEditingOutlineId(activeOutlineMenuId); const section = outlineTreeData.find(s => s.id === activeOutlineMenuId); setEditingOutlineText(section ? section.title : ''); setActiveOutlineMenuId(null); }}><FileEdit size={14} /> Rename Section</button>
+          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-violet-600 flex items-center gap-2 transition-colors" onClick={() => { setActiveOutlineMenuId(null); setOutlineTreeData(prev => prev.map(s => s.id === activeOutlineMenuId ? { ...s, completed: !s.completed } : s)); }}><CheckCircle2 size={14} /> Toggle Status</button>
+          <div className="h-px bg-slate-100 my-1.5 mx-2" />
+          <button type="button" className="w-full text-left px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition-colors" onClick={() => { setOutlineTreeData(prev => prev.filter(s => s.id !== activeOutlineMenuId)); setActiveOutlineMenuId(null); }}><Trash size={14} /> Delete Section</button>
+        </div>
+      )}
+
       {figureMenuTarget && (
         <div 
           className="fixed z-[9999] bg-white border border-slate-200 shadow-lg rounded-xl p-2 flex items-center gap-2 transform -translate-x-1/2"
