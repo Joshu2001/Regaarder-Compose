@@ -27036,7 +27036,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
               
               <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
                 <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Focused document</div>
-                <div className="text-xs font-bold text-gray-955 truncate mt-0.5" title={docTitleDisplay}>
+                <div 
+                  className="text-xs font-bold text-gray-955 truncate mt-0.5 outline-none cursor-text" 
+                  title={docTitleDisplay}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onBlur={(e) => setDocTitle(e.target.textContent)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.target.blur();
+                    }
+                  }}
+                >
                   {docTitleDisplay}
                 </div>
               </div>
@@ -27093,9 +27105,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             ) : (
                               <span 
                                 onClick={() => {
-                                  setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
+                                  setEditingOutlineId(section.id);
+                                  setEditingOutlineText(section.title);
                                 }}
-                                className="text-[12.5px] font-bold text-slate-800 truncate cursor-pointer hover:text-slate-955 whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1"
+                                className="text-[12.5px] font-bold text-slate-800 truncate cursor-text hover:text-slate-955 whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1"
                               >
                                 {section.title}
                               </span>
@@ -27118,13 +27131,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <button
                                   type="button"
                                   onClick={(e) => {
-                                    if (activeOutlineMenuId === section.id) {
-                                      setActiveOutlineMenuId(null);
-                                    } else {
-                                      const rect = e.currentTarget.getBoundingClientRect();
-                                      setOutlineMenuCoords({ top: rect.bottom + 4, left: rect.right - 176 });
-                                      setActiveOutlineMenuId(section.id);
-                                    }
+                                    e.stopPropagation();
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
+                                    setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id);
                                   }}
                                   className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
                                 >
@@ -27199,6 +27209,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <Sparkles size={13} /> AI Section
                   </button>
                 </div>
+              )}
+              
+              {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const id = Date.now() + Math.floor(Math.random() * 1000);
+                    const newPageHtml = `<div class="compose-generated-page" style="margin-top:36px;padding-bottom:36px;page-break-after:always;"><p><br></p></div>`;
+                    setDocBodyHtml(prev => prev + newPageHtml);
+                    showToast('New page inserted successfully');
+                  }}
+                  className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                  style={{ fontFamily: editorFont }}
+                >
+                  + New page
+                </button>
               )}
             </div>
           </div>
@@ -31141,7 +31167,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   }}
                   dir="ltr"
                   data-doc-id={activeDocId || ''}
-                  className="mb-4 min-h-[220px] outline-none text-sm text-gray-700 leading-relaxed"
+                  className="mb-4 min-h-[70vh] cursor-text outline-none text-sm text-gray-700 leading-relaxed"
                   style={{ fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
                   dangerouslySetInnerHTML={{ __html: docBodyHtml }}
                 />
