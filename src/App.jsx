@@ -800,32 +800,7 @@ export default function App() {
 
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
-  
-  const [recentDocumentsList, setRecentDocumentsList] = useState([]);
-  
-  useEffect(() => {
-    if (recentDocumentsModalOpen) {
-      const docs = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('rc.savedDoc.')) {
-          try {
-            const data = JSON.parse(localStorage.getItem(key));
-            docs.push({
-              id: Number(key.replace('rc.savedDoc.', '')),
-              title: data.docTitle || data.title || 'Untitled Document',
-              savedAt: data.savedAt || 0,
-              data: data
-            });
-          } catch (e) {
-            console.error('Error parsing document', e);
-          }
-        }
-      }
-      docs.sort((a, b) => b.savedAt - a.savedAt);
-      setRecentDocumentsList(docs);
-    }
-  }, [recentDocumentsModalOpen]);
+
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
   const [productMode, setProductMode] = useState('landing');
@@ -1160,6 +1135,31 @@ export default function App() {
 
   const [activeOutlineMenuId, setActiveOutlineMenuId] = useState(null);
   const [recentDocumentsModalOpen, setRecentDocumentsModalOpen] = useState(false);
+  const [recentDocumentsList, setRecentDocumentsList] = useState([]);
+  
+  useEffect(() => {
+    if (recentDocumentsModalOpen) {
+      const docs = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('rc.savedDoc.')) {
+          try {
+            const data = JSON.parse(localStorage.getItem(key));
+            docs.push({
+              id: Number(key.replace('rc.savedDoc.', '')),
+              title: data.docTitle || data.title || 'Untitled Document',
+              savedAt: data.savedAt || 0,
+              data: data
+            });
+          } catch (e) {
+            console.error('Error parsing document', e);
+          }
+        }
+      }
+      docs.sort((a, b) => b.savedAt - a.savedAt);
+      setRecentDocumentsList(docs);
+    }
+  }, [recentDocumentsModalOpen]);
   const [outlineMenuCoords, setOutlineMenuCoords] = useState({ top: 0, left: 0 });
   const [editingOutlineId, setEditingOutlineId] = useState(null);
   const [editingOutlineText, setEditingOutlineText] = useState('');
