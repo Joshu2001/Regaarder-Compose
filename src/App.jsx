@@ -1552,6 +1552,9 @@ export default function App() {
 
   const [dictationAnchor, setDictationAnchor] = useState({ left: 0, top: 0 });
   const [aiAttachmentMenuOpen, setAiAttachmentMenuOpen] = useState(false);
+  const [figureMenuTarget, setFigureMenuTarget] = useState(null);
+  const [figureMenuCoords, setFigureMenuCoords] = useState({ top: 0, left: 0 });
+  const [figureNameInput, setFigureNameInput] = useState('');
   const [promptCollapsed, setPromptCollapsed] = useState(false);
   const [rotatingExampleSetIndex, setRotatingExampleSetIndex] = useState(0);
 
@@ -7104,6 +7107,25 @@ export default function App() {
       // Strip Word/Office/WPS conditional comments and XML namespaces
       cleanHtml = cleanHtml.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/g, '');
       cleanHtml = cleanHtml.replace(/<[\/]?([oxwm]:|xml)[^>]*?>/gi, '');
+      
+      // Parse HTML to strip compose-generated-page containers
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(cleanHtml, 'text/html');
+      const pages = doc.querySelectorAll('.compose-generated-page');
+      pages.forEach(page => {
+        const fragment = document.createDocumentFragment();
+        while (page.firstChild) {
+          fragment.appendChild(page.firstChild);
+        }
+        page.parentNode.replaceChild(fragment, page);
+      });
+      // Remove inline page-break styles that might break layout
+      doc.body.querySelectorAll('[style*="page-break"]').forEach(el => {
+        el.style.pageBreakAfter = '';
+        el.style.pageBreakBefore = '';
+      });
+      cleanHtml = doc.body.innerHTML;
+
       document.execCommand('insertHTML', false, cleanHtml);
     } else if (plainText) {
       if (isBodyTarget) {
@@ -31058,6 +31080,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocBodyHtml(target.innerHTML))}
                   onBlur={(e) => commitEditableHtmlForActiveDoc(e.currentTarget, setDocBodyHtml, e)}
                   onClick={(e) => {
+                    const targetElement = e.target;
+                    if (targetElement.tagName === 'IMG' || targetElement.closest('table')) {
+                      const figureEl = targetElement.tagName === 'IMG' ? targetElement : targetElement.closest('table');
+                      const rect = figureEl.getBoundingClientRect();
+                      setFigureMenuTarget(figureEl);
+                      setFigureMenuCoords({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX + (rect.width / 2) });
+                      setFigureNameInput(figureEl.getAttribute('data-figure-name') || '');
+                    } else {
+                      setFigureMenuTarget(null);
+                    }
+
                     const link = e.target.closest('a');
                     if (link && link.href) {
                       if (e.ctrlKey || e.metaKey || e.altKey) {
@@ -32510,6 +32543,80 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {showPageIndicator && (
         <div className="fixed bottom-24 bg-white/95 backdrop-blur-sm shadow-[0_4px_24px_-6px_rgba(15,23,42,0.12)] border border-slate-200 text-slate-600 font-semibold text-xs px-4 py-2 rounded-full z-[9999] transition-all opacity-100 flex items-center justify-center pointer-events-none -translate-x-1/2" style={{ left: pageIndicatorLeft ? `${pageIndicatorLeft}px` : '50%' }}>
           {currentPage} <span className="text-slate-400 mx-1">of</span> {extraPages.length + 1}
+        </div>
+      )}
+
+      {figureMenuTarget && (
+        <div 
+          className="fixed z-[9999] bg-white border border-slate-200 shadow-lg rounded-xl p-2 flex items-center gap-2 transform -translate-x-1/2"
+          style={{ top: `${figureMenuCoords.top + 8}px`, left: `${figureMenuCoords.left}px`, fontFamily: editorFont }}
+        >
+          <input
+            type="text"
+            placeholder="Name this figure/table..."
+            value={figureNameInput}
+            onChange={(e) => setFigureNameInput(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (figureNameInput.trim()) {
+                  figureMenuTarget.setAttribute('data-figure-name', figureNameInput.trim());
+                  let captionEl = figureMenuTarget.nextElementSibling;
+                  if (captionEl && captionEl.classList.contains('figure-caption')) {
+                    captionEl.textContent = `Figure: ${figureNameInput.trim()}`;
+                  } else {
+                    captionEl = document.createElement('div');
+                    captionEl.className = 'figure-caption text-xs text-center text-slate-500 font-medium mt-2 mb-4 italic';
+                    captionEl.contentEditable = 'false';
+                    captionEl.textContent = `Figure: ${figureNameInput.trim()}`;
+                    if (figureMenuTarget.parentNode) {
+                      figureMenuTarget.parentNode.insertBefore(captionEl, figureMenuTarget.nextSibling);
+                    }
+                  }
+                  if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+                  showToast('Figure named successfully');
+                  setFigureMenuTarget(null);
+                }
+              } else if (e.key === 'Escape') {
+                setFigureMenuTarget(null);
+              }
+            }}
+            className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-violet-500 w-48 transition-all"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (figureNameInput.trim()) {
+                figureMenuTarget.setAttribute('data-figure-name', figureNameInput.trim());
+                let captionEl = figureMenuTarget.nextElementSibling;
+                if (captionEl && captionEl.classList.contains('figure-caption')) {
+                  captionEl.textContent = `Figure: ${figureNameInput.trim()}`;
+                } else {
+                  captionEl = document.createElement('div');
+                  captionEl.className = 'figure-caption text-xs text-center text-slate-500 font-medium mt-2 mb-4 italic';
+                  captionEl.contentEditable = 'false';
+                  captionEl.textContent = `Figure: ${figureNameInput.trim()}`;
+                  if (figureMenuTarget.parentNode) {
+                    figureMenuTarget.parentNode.insertBefore(captionEl, figureMenuTarget.nextSibling);
+                  }
+                }
+                if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+                showToast('Figure named successfully');
+                setFigureMenuTarget(null);
+              }
+            }}
+            className="px-2.5 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={() => setFigureMenuTarget(null)}
+            className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+          >
+            <X size={14} />
+          </button>
         </div>
       )}
 
