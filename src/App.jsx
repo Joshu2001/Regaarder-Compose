@@ -27201,7 +27201,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               )}
             </div>
-            )}
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
