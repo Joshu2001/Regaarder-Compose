@@ -1133,6 +1133,8 @@ export default function App() {
   const [uploadedBrandLogo, setUploadedBrandLogo] = useState(null);
 
   const [activeOutlineMenuId, setActiveOutlineMenuId] = useState(null);
+  const [recentDocumentsModalOpen, setRecentDocumentsModalOpen] = useState(false);
+  const [outlineMenuCoords, setOutlineMenuCoords] = useState({ top: 0, left: 0 });
   const [editingOutlineId, setEditingOutlineId] = useState(null);
   const [editingOutlineText, setEditingOutlineText] = useState('');
   const [outlineTreeData, setOutlineTreeData] = useState([]);
@@ -26849,6 +26851,58 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
+      {/* Recent Documents Modal */}
+      {recentDocumentsModalOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[600px] max-h-[90vh] overflow-hidden border border-gray-200 flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">Recent Documents</h2>
+              <button onClick={() => setRecentDocumentsModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-2">
+              <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => { setRecentDocumentsModalOpen(false); showToast('Opening Q2 Launch Brief...'); }}>
+                <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center text-violet-600">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">Q2 Launch Brief (Orb)</div>
+                  <div className="text-xs text-gray-500">Last edited just now</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => { setRecentDocumentsModalOpen(false); showToast('Opening Product Roadmap...'); }}>
+                <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">Product Roadmap 2026</div>
+                  <div className="text-xs text-gray-500">Last edited 2 hours ago</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => { setRecentDocumentsModalOpen(false); showToast('Opening Marketing Plan...'); }}>
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-600">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">Marketing Plan Draft</div>
+                  <div className="text-xs text-gray-500">Last edited yesterday</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Brand Kit Modal */}
+      {brandKitModalOpen && (
+        <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[600px] max-h-[90vh] overflow-auto border border-gray-200">
+            {/* Modal Content */}
+          </div>
+        </div>
+      )}
+
       {previewAttachment && (
         <div className="fixed inset-0 z-[130] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-[640px] max-w-[95vw] max-h-[90vh] overflow-auto rounded-2xl bg-white border border-gray-200 shadow-2xl p-4">
@@ -26889,7 +26943,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
       >
         {roomState === 'active' && roomPanelMode === 'expanded' ? renderRoomLeftSidebar() : showDocumentOutlineView ? (
           <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
-            <div className="flex items-center gap-2 text-gray-900 font-semibold">
+            <div 
+              className="flex items-center gap-2 text-gray-900 font-semibold cursor-pointer hover:text-violet-600 transition-colors"
+              onClick={() => setRecentDocumentsModalOpen(true)}
+              title="Open Recent Documents"
+            >
               <FileText size={16} className="text-violet-600" />
               <span>Document Outline</span>
             </div>
@@ -26989,14 +27047,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 onChange={(e) => setEditingOutlineText(e.target.value)}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
-                                    setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
-                                    setEditingOutlineId(null);
-                                    showToast('Section renamed');
+                                    e.target.blur(); // Triggers the onBlur save
                                   }
                                 }}
                                 onBlur={() => {
                                   setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
                                   setEditingOutlineId(null);
+                                  showToast('Section renamed');
                                 }}
                                 autoFocus
                                 className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
@@ -27029,100 +27086,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <div className="relative">
                                 <button
                                   type="button"
-                                  onClick={() => setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id)}
+                                  onClick={(e) => {
+                                    if (activeOutlineMenuId === section.id) {
+                                      setActiveOutlineMenuId(null);
+                                    } else {
+                                      const rect = e.currentTarget.getBoundingClientRect();
+                                      setOutlineMenuCoords({ top: rect.bottom + 4, left: rect.right - 176 });
+                                      setActiveOutlineMenuId(section.id);
+                                    }
+                                  }}
                                   className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
                                 >
                                   <MoreVertical size={13} />
                                 </button>
-                                
-                                {activeOutlineMenuId === section.id && (
-                                  <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-150 rounded-xl py-1 shadow-2xl w-44 text-left" style={{ fontFamily: editorFont }}>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setEditingOutlineId(section.id);
-                                        setEditingOutlineText(section.title);
-                                        setActiveOutlineMenuId(null);
-                                      }}
-                                      className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                    >
-                                      Rename
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        showToast(`AI Summary of ${section.title}: Focus on core strategies and optimization.`);
-                                        setActiveOutlineMenuId(null);
-                                      }}
-                                      className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                    >
-                                      Summarize
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: true } : s));
-                                        setActiveOutlineMenuId(null);
-                                      }}
-                                      className="w-full px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                    >
-                                      Expand
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        showToast(`AI Rewriting ${section.title}...`);
-                                        setActiveOutlineMenuId(null);
-                                      }}
-                                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                    >
-                                      Rewrite
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setOutlineTreeData(prev => prev.map(s => s.id === section.id ? {
-                                          ...s,
-                                          subsections: [...s.subsections, { id: `sub-${Date.now()}`, title: 'Generated Subsection' }],
-                                          expanded: true
-                                        } : s));
-                                        showToast('AI generated subsections');
-                                        setActiveOutlineMenuId(null);
-                                      }}
-                                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-705 font-semibold flex items-center gap-2"
-                                    >
-                                      Generate Subsections
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const idx = outlineTreeData.findIndex(s => s.id === section.id);
-                                        if (idx > 0) {
-                                          const list = [...outlineTreeData];
-                                          const temp = list[idx];
-                                          list[idx] = list[idx - 1];
-                                          list[idx - 1] = temp;
-                                          setOutlineTreeData(list);
-                                        }
-                                        setActiveOutlineMenuId(null);
-                                      }}
-                                      className="w-full text-left px-3 py-1.5 hover:bg-slate-50 text-xs text-slate-700 font-semibold flex items-center gap-2"
-                                    >
-                                      Move Up
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setOutlineTreeData(prev => prev.filter(s => s.id !== section.id));
-                                        showToast('Section deleted');
-                                        setActiveOutlineMenuId(null);
-                                      }}
-                                      className="w-full text-left px-3 py-1.5 hover:bg-rose-50 text-xs text-red-655 font-bold flex items-center gap-2 border-t border-slate-100"
-                                    >
-                                      Delete
-                                    </button>
-                                  </div>
-                                )}
                               </div>
                             )}
                           </div>
@@ -27158,21 +27134,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               )}
 
-              {/* Add New Page Button resembling standard slide additions */}
+              {/* Add New Section Buttons */}
               {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    insertEnterprisePage();
-                    showToast('New page inserted successfully');
-                  }}
-                  className="w-full py-2.5 mt-1 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                  style={{ fontFamily: editorFont }}
-                >
-                  + New page
-                </button>
+                <div className="flex gap-2 w-full mt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newId = `sec-${Date.now()}`;
+                      setOutlineTreeData(prev => [...prev, { id: newId, title: 'Untitled', progress: 0, completed: false, subsections: [], expanded: false }]);
+                      setEditingOutlineId(newId);
+                      setEditingOutlineText('Untitled');
+                    }}
+                    className="flex-1 py-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                    style={{ fontFamily: editorFont }}
+                  >
+                    + Add Section
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      showToast('Generating AI Section...');
+                      setTimeout(() => {
+                        const newId = `sec-ai-${Date.now()}`;
+                        setOutlineTreeData(prev => [...prev, { id: newId, title: 'AI Generated Insights', progress: 0, completed: false, subsections: [], expanded: false }]);
+                        setEditingOutlineId(newId);
+                        setEditingOutlineText('AI Generated Insights');
+                        showToast('AI Section Generated');
+                      }, 1000);
+                    }}
+                    className="flex-1 py-2 rounded-xl border border-dashed border-violet-300 hover:border-violet-500 bg-violet-50/50 hover:bg-violet-100 text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                    style={{ fontFamily: editorFont }}
+                  >
+                    <Sparkles size={13} /> AI Section
+                  </button>
+                </div>
               )}
             </div>
+            )}
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
@@ -27196,7 +27194,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <Star size={15} /> Favorites
               </button>
               <button
-                onClick={() => setActivePrimaryNav('recent')}
+                onClick={() => { setActivePrimaryNav('recent'); setRecentDocumentsModalOpen(true); }}
                 className={`w-full flex items-center gap-3 px-2.5 py-2 text-sm rounded-lg transition-colors ${activePrimaryNav === 'recent' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-700 hover:bg-gray-100'}`}
               >
                 <Clock size={15} /> Recent
@@ -33010,11 +33008,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                   
                   <div className="space-y-4 mb-6">
-                    <button className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
+                    <button onClick={() => showToast('Redirecting to Apple authentication...')} className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.126 3.805 3.06 1.514-.067 2.09-.982 3.924-.982 1.832 0 2.37.95 3.96.982 1.63.027 2.65-1.464 3.65-2.91 1.155-1.685 1.63-3.322 1.65-3.407-.035-.015-3.195-1.226-3.23-4.88-.035-3.053 2.502-4.524 2.613-4.59-1.423-2.08-3.633-2.365-4.42-2.42-1.89-.187-3.693 1.088-4.55 1.088zm-.835-2.025c.805-.97 1.346-2.32 1.198-3.65-1.127.045-2.528.75-3.353 1.73-.733.86-1.346 2.23-1.166 3.54 1.265.1 2.515-.65 3.32-1.62z"/></svg>
                       Continue with Apple
                     </button>
-                    <button className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
+                    <button onClick={() => showToast('Redirecting to Google authentication...')} className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
                       <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                       Continue with Google
                     </button>
@@ -33028,7 +33026,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                   <div className="space-y-4">
                     <input type="email" placeholder="Email Address" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-[13px] text-slate-800 placeholder-slate-400 outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm" />
-                    <button className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-3 text-[13px] font-bold shadow-md transition-colors">Continue with Email</button>
+                    <button onClick={() => showToast('Sending magic link to email...')} className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-3 text-[13px] font-bold shadow-md transition-colors">Continue with Email</button>
                   </div>
                 </div>
               )}
@@ -33041,15 +33039,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div>
                       <h3 className="text-[13px] font-bold text-slate-800 mb-4">Appearance</h3>
                       <div className="flex items-center gap-4">
-                        <button className={`flex-1 p-4 rounded-2xl border-2 transition-all ${!isDarkMode ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                        <button onClick={() => setIsDarkMode(false)} className={`flex-1 p-4 rounded-2xl border-2 transition-all ${!isDarkMode ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
                           <div className="w-full h-16 rounded-lg bg-slate-100 border border-slate-200 mb-3 flex items-center justify-center"><Sun size={20} className="text-slate-400" /></div>
                           <span className="text-[12px] font-semibold text-slate-700">Light</span>
                         </button>
-                        <button className={`flex-1 p-4 rounded-2xl border-2 transition-all ${isDarkMode ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                        <button onClick={() => setIsDarkMode(true)} className={`flex-1 p-4 rounded-2xl border-2 transition-all ${isDarkMode ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
                           <div className="w-full h-16 rounded-lg bg-slate-800 border border-slate-700 mb-3 flex items-center justify-center"><Moon size={20} className="text-slate-400" /></div>
                           <span className="text-[12px] font-semibold text-slate-700">Dark</span>
                         </button>
-                        <button className="flex-1 p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all">
+                        <button onClick={() => { setIsDarkMode(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); showToast('System theme applied'); }} className="flex-1 p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all">
                           <div className="w-full h-16 rounded-lg bg-gradient-to-br from-slate-100 to-slate-800 border border-slate-300 mb-3 flex items-center justify-center"><Settings size={20} className="text-slate-400" /></div>
                           <span className="text-[12px] font-semibold text-slate-700">System</span>
                         </button>
@@ -33060,7 +33058,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <h3 className="text-[13px] font-bold text-slate-800 mb-4">Accent Color</h3>
                       <div className="flex items-center gap-3">
                         {['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'].map(color => (
-                          <button key={color} className="w-8 h-8 rounded-full shadow-sm border-2 border-white ring-2 ring-transparent focus:ring-violet-500 transition-all" style={{ backgroundColor: color }} />
+                          <button key={color} onClick={() => { setBrandColor(color); showToast('Accent color updated'); }} className={`w-8 h-8 rounded-full shadow-sm border-2 ${brandColor === color ? 'border-slate-400 ring-2 ring-slate-200' : 'border-white'} focus:ring-violet-500 transition-all`} style={{ backgroundColor: color }} />
                         ))}
                       </div>
                     </div>
