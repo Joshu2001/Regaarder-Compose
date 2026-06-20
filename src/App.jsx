@@ -81,7 +81,7 @@ const ensureHtmlList = (rawOutput, type) => {
   return `<${tag}>${lines.join('')}</${tag}>`;
 };
 
-const AI_NATIVE_PLACEHOLDER = 'Type, ask Compose AI, or speak to start';
+const AI_NATIVE_PLACEHOLDER = 'Create at the speed of thought.';
 const UNTITLED_WHITEBOARD_LABEL = 'Untitled whiteboard';
 const SAVED_DRAFT_LABEL = 'Saved Drafts';
 const ENTERPRISE_PAGE_WIDTH_PX = 794;
@@ -8046,14 +8046,7 @@ export default function App() {
   };
 
   // Conversational state with pre-loaded AI response cards
-  const [chatMessages, setChatMessages] = useState([
-    {
-      id: 1,
-      sender: 'ai',
-      text: 'Compose AI is ready. Ask, summarize, or instruct to update your document.',
-      type: 'welcome',
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState([]);
 
   // Handle status cycle on initiatives
   const toggleStatus = (id) => {
@@ -19050,32 +19043,44 @@ Respond with a JSON array of slide objects matching the schema.`;
               {/* Chat Stream */}
               <div className="flex-1 overflow-y-auto thin-scrollbar p-4 space-y-4">
                 {chatMessages.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center px-4 pt-10">
-                    <div className="w-16 h-16 bg-violet-50 rounded-[20px] flex items-center justify-center mb-5 text-violet-600 relative border border-violet-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
-                      <MessageSquare size={26} strokeWidth={2.5} />
-                      <Sparkles size={16} className="absolute -top-1.5 -right-1.5 text-violet-400" fill="currentColor" />
+                  <div className="flex flex-col items-center justify-center h-full text-center px-5 pt-8 pb-6">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mb-5 shadow-xl shadow-violet-500/20 relative overflow-hidden">
+                      <Sparkles size={24} className="text-white" fill="white" />
                     </div>
-                    <h3 className="text-[16px] font-bold text-gray-900 mb-2.5 tracking-tight">Your AI Co-pilot</h3>
-                    <p className="text-[13px] text-gray-500 max-w-[260px] leading-relaxed mb-8">
-                      I can help you write, summarize, brainstorm, and more. Start a conversation below.
+                    <h3 className="text-[17px] font-semibold text-slate-800 mb-1.5 tracking-tight">Compose AI Assistant</h3>
+                    <p className="text-[13px] text-slate-500 max-w-[260px] leading-relaxed mb-8">
+                      Your intelligent copilot. Ask questions, extract insights, or draft new content effortlessly.
                     </p>
                     
-                    <div className="grid grid-cols-2 gap-2 w-full max-w-[340px]">
-                      <button onClick={() => setChatInput('Summarize this document ')} className="px-3 py-3 rounded-[12px] border border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50 text-[11px] font-semibold text-gray-700 transition-colors flex items-center justify-center gap-2">
-                        <FileText size={14} className="text-violet-500" />
-                        Summarize doc
+                    <div className="flex flex-col gap-3 w-full max-w-[290px]">
+                      <button onClick={() => setChatInput('Summarize this document ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
+                        <div className="p-1.5 rounded-lg bg-violet-50 text-violet-600 group-hover:bg-violet-100 transition-colors">
+                          <FileText size={16} strokeWidth={2.5} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[12.5px] font-semibold text-slate-700">Summarize Document</div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">Extract the key points instantly</div>
+                        </div>
                       </button>
-                      <button onClick={() => setChatInput('Extract key points from ')} className="px-3 py-3 rounded-[12px] border border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50 text-[11px] font-semibold text-gray-700 transition-colors flex items-center justify-center gap-2">
-                        <Sparkles size={14} className="text-violet-500" />
-                        Extract points
+                      
+                      <button onClick={() => setChatInput('Suggest improvements for ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
+                        <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100 transition-colors">
+                          <PenTool size={16} strokeWidth={2.5} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[12.5px] font-semibold text-slate-700">Refine Writing</div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">Improve clarity and tone</div>
+                        </div>
                       </button>
-                      <button onClick={() => setChatInput('Suggest improvements for ')} className="px-3 py-3 rounded-[12px] border border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50 text-[11px] font-semibold text-gray-700 transition-colors flex items-center justify-center gap-2">
-                        <PenTool size={14} className="text-violet-500" />
-                        Improve text
-                      </button>
-                      <button onClick={() => setChatInput('Generate action items ')} className="px-3 py-3 rounded-[12px] border border-gray-200 bg-white hover:border-violet-300 hover:bg-violet-50 text-[11px] font-semibold text-gray-700 transition-colors flex items-center justify-center gap-2">
-                        <CheckSquare size={14} className="text-violet-500" />
-                        Action items
+
+                      <button onClick={() => setChatInput('Generate action items ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
+                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
+                          <CheckSquare size={16} strokeWidth={2.5} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[12.5px] font-semibold text-slate-700">Action Items</div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">Create tasks from text</div>
+                        </div>
                       </button>
                     </div>
                   </div>
@@ -30957,7 +30962,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               data-doc-id={activeDocId || ''}
               className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14 subtitle-editable"
               style={{ fontFamily: editorFont, fontSize: `${subtitleSize}px`, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              data-placeholder={showHeaderGhostPlaceholder ? "Compose anything. AI will handle the rest." : ""}
+              data-placeholder={showHeaderGhostPlaceholder ? "Write, speak, or collaborate. Compose handles the rest." : ""}
             />
 
             {isBlankDocument && (
