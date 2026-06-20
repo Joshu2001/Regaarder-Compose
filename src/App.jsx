@@ -30739,7 +30739,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }}
             >
             {renderWatermark(0)}
-            {docHeaderText && (
+            {true && (
               <div 
                 className="absolute top-6 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-1.5 flex justify-between select-none"
                 style={{ 
