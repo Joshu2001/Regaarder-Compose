@@ -587,6 +587,8 @@ export default function App() {
 
   // Sidebar states
   const [leftSidebarOpen, setLeftSidebarOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('account');
   const [imageToolbar, setImageToolbar] = useState({ open: false, top: 0, left: 0, node: null });
   const [tableToolbar, setTableToolbar] = useState({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
   const [tableColorPickerOpen, setTableColorPickerOpen] = useState(false);
@@ -1133,60 +1135,7 @@ export default function App() {
   const [activeOutlineMenuId, setActiveOutlineMenuId] = useState(null);
   const [editingOutlineId, setEditingOutlineId] = useState(null);
   const [editingOutlineText, setEditingOutlineText] = useState('');
-  const [outlineTreeData, setOutlineTreeData] = useState([
-    {
-      id: 'sec-1',
-      title: 'Introduction',
-      completed: true,
-      progress: 100,
-      subsections: [],
-      expanded: false
-    },
-    {
-      id: 'sec-2',
-      title: 'Market Structure',
-      completed: false,
-      progress: 87,
-      subsections: [
-        { id: 'sub-2-1', title: 'Liquidity' },
-        { id: 'sub-2-2', title: 'Fair Value Gaps' },
-        { id: 'sub-2-3', title: 'Order Blocks' }
-      ],
-      expanded: true
-    },
-    {
-      id: 'sec-3',
-      title: 'Risk Management',
-      completed: false,
-      progress: 42,
-      subsections: [],
-      expanded: false
-    },
-    {
-      id: 'sec-4',
-      title: 'Psychology',
-      completed: false,
-      progress: 65,
-      subsections: [],
-      expanded: false
-    },
-    {
-      id: 'sec-5',
-      title: 'Execution',
-      completed: true,
-      progress: 91,
-      subsections: [],
-      expanded: false
-    },
-    {
-      id: 'sec-6',
-      title: 'Conclusion',
-      completed: false,
-      progress: 12,
-      subsections: [],
-      expanded: false
-    }
-  ]);
+  const [outlineTreeData, setOutlineTreeData] = useState([]);
 
   const [activeEmojiEl, setActiveEmojiEl] = useState(null);
   const [emojiControlsPosition, setEmojiControlsPosition] = useState({ top: 0, left: 0 });
@@ -7346,6 +7295,24 @@ export default function App() {
     } else if (target === blankBodyRef.current) {
       setIsBlankDocument(true);
       setDocBodyHtml(target.innerHTML);
+      
+      // Auto-detect outline on paste
+      setTimeout(() => {
+        if (blankBodyRef.current) {
+          const headingNodes = Array.from(blankBodyRef.current.querySelectorAll('h1, h2, h3'));
+          if (headingNodes.length > 0) {
+            const newTreeData = headingNodes.map((n, i) => ({
+              id: `sec-auto-${Date.now()}-${i}`,
+              title: String(n.textContent || '').trim() || 'Untitled Section',
+              progress: 0,
+              completed: false,
+              subsections: [],
+              expanded: false
+            }));
+            setOutlineTreeData(newTreeData);
+          }
+        }
+      }, 50);
     }
   };
 
@@ -15730,7 +15697,7 @@ Rules:
     setInitiatives([]);
     setDocBodyHtml(initialHtml);
     setLastComposeRun(null);
-    setLeftSidebarOpen(true);
+    setLeftSidebarOpen(false);
     trackMemoryAction('document', silent ? 'Created new blank composition (auto)' : 'Created new blank composition', {
       documentId: String(newDoc.id),
     });
@@ -15756,7 +15723,7 @@ Rules:
     enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('compose');
-    setLeftSidebarOpen(true);
+    setLeftSidebarOpen(false);
     setActiveDocView('document');
     createNewComposition(options);
   };
@@ -18173,6 +18140,9 @@ Respond with a JSON array of slide objects matching the schema.`;
         rightX = rightSidebarEdge - 100;
       }
       
+      // Shift the widget 10px to the left to bring it closer to the document
+      rightX -= 10;
+      
       const centerY = (visibleTop + visibleBottom) / 2;
 
       setDictationAnchor({ left: rightX, top: centerY });
@@ -18783,7 +18753,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               ].map((tab) => (
                 <button
                   key={tab.key}
-                  className={`shrink-0 px-3 py-1.5 rounded-full transition-all ${activeRightTab === tab.key ? 'bg-white text-gray-900 shadow-sm border border-gray-200/60' : 'text-gray-500 border border-transparent hover:text-gray-700 hover:bg-gray-100/50'}`}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-full transition-all text-[12.5px] font-semibold ${activeRightTab === tab.key ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-500 border border-transparent hover:text-slate-800 hover:bg-slate-100/80'}`}
                   onClick={() => {
                     if (tab.key === 'manageen') {
                       createManageenExperience();
@@ -18800,20 +18770,22 @@ Respond with a JSON array of slide objects matching the schema.`;
           ) : (
             <div className="flex-1 min-w-0" />
           )}
-          <div className="w-14 shrink-0 flex items-center justify-center border-l border-gray-100 gap-2 px-2">
+          <div className="w-16 shrink-0 flex items-center justify-center border-l border-gray-100 gap-1 px-1">
             <button
               type="button"
               title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
               onClick={() => { setRightPanelMaximized((p) => !p); if (!rightSidebarOpen) setRightSidebarOpen(true); }}
-              className="p-1.5 rounded-md text-gray-400 hover:bg-violet-50 hover:text-gray-700 transition-colors"
+              className="p-1.5 rounded-md text-slate-400 hover:bg-violet-50 hover:text-violet-600 transition-colors"
             >
-              {rightPanelMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              {rightPanelMaximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
             </button>
-            <X 
-              size={14} 
-              className="text-gray-400 cursor-pointer hover:text-gray-600" 
+            <button
+              type="button"
+              className="p-1.5 rounded-md text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
               onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
-            />
+            >
+              <X size={16} strokeWidth={2.5} />
+            </button>
           </div>
         </div>
         )}
@@ -22541,8 +22513,8 @@ You can recommend task creations on the board.`;
     return (
       <div ref={appShellRef} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
-          <div className="absolute top-5 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
-            <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+          <div className="fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500"></span>
             <span>{toastMessage}</span>
           </div>
         )}
@@ -24772,8 +24744,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
           })}
         </div>
         {toastMessage && (
-          <div className="absolute top-16 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
-            <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+          <div className="fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500"></span>
             <span>{toastMessage}</span>
           </div>
         )}
@@ -26016,7 +25988,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <Users size={18} />
                 <span>People</span>
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-colors">
+              <button onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-colors">
                 <Settings size={18} />
                 <span>Settings</span>
               </button>
@@ -26263,8 +26235,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
       
       {/* Dynamic Toast System */}
       {toastMessage && (
-        <div className="absolute top-16 right-6 max-w-[380px] bg-white/95 backdrop-blur border border-violet-100 text-slate-700 text-xs font-medium px-4 py-2.5 rounded-xl shadow-[0_12px_35px_-18px_rgba(91,33,182,0.45)] z-[420] flex items-center gap-2 transition-all duration-300">
-          <span className="inline-block w-2 h-2 rounded-full bg-violet-500"></span>
+        <div className="fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500"></span>
           <span>{toastMessage}</span>
         </div>
       )}
@@ -27172,8 +27144,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   })}
                 </div>
               ) : (
-                <div className="text-[11px] text-gray-555 px-1.5 py-2">
-                  Generate or format headings to populate the outline.
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center mt-2">
+                  <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <AlignLeft size={20} className="text-slate-300" />
+                  </div>
+                  <p className="text-[13px] font-bold text-slate-700 mb-1">Outline is empty</p>
+                  <p className="text-[11.5px] text-slate-400 mb-5 leading-relaxed max-w-[180px]">Paste content or start typing to automatically build your outline.</p>
+                  <button type="button" onClick={() => {
+                    setOutlineTreeData([{ id: `sec-${Date.now()}`, title: 'New Section', progress: 0, completed: false, subsections: [], expanded: false }]);
+                  }} className="text-[11.5px] font-semibold text-violet-700 bg-violet-50 border border-violet-100 hover:bg-violet-100 px-5 py-2 rounded-full transition-all shadow-sm">
+                    Add Section
+                  </button>
                 </div>
               )}
 
@@ -27281,7 +27262,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {/* Footer Settings */}
         <div className="p-4 border-t border-gray-100 bg-[#FAFAFC]">
-          <button className="flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 w-full transition-colors">
+          <button onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }} className="flex items-center gap-3 text-sm text-gray-600 hover:text-gray-900 w-full transition-colors">
             <Settings size={16} /> Settings
           </button>
         </div>
@@ -32992,6 +32973,130 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
+      {/* SETTINGS MODAL */}
+      {settingsModalOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
+          {/* Backdrop with a very subtle blur */}
+          <div className="absolute inset-0 bg-black/5 backdrop-blur-md" onClick={() => setSettingsModalOpen(false)}></div>
+          
+          {/* Modal Container */}
+          <div className="relative bg-white/70 backdrop-blur-3xl shadow-[0_30px_100px_-20px_rgba(0,0,0,0.15)] rounded-3xl w-full max-w-[850px] min-h-[550px] flex overflow-hidden border border-white/40 transform transition-all">
+            
+            {/* Sidebar Navigation */}
+            <div className="w-[240px] bg-slate-50/50 border-r border-slate-200/50 p-6 flex flex-col shrink-0">
+              <div className="flex items-center gap-2 mb-8 px-2">
+                <Settings size={18} className="text-slate-700" />
+                <span className="font-bold text-slate-800 tracking-tight">Settings</span>
+              </div>
+              
+              <div className="flex flex-col gap-1.5 flex-1">
+                <button onClick={() => setSettingsTab('account')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'account' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>Account</button>
+                <button onClick={() => setSettingsTab('personalization')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'personalization' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>Personalization</button>
+                <button onClick={() => setSettingsTab('general')} className={`text-left px-3 py-2 rounded-xl text-[13px] font-semibold transition-all ${settingsTab === 'general' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:bg-slate-100/50 hover:text-slate-700'}`}>General</button>
+              </div>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="flex-1 bg-white/40 p-10 overflow-y-auto relative">
+              <button onClick={() => setSettingsModalOpen(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-200/50 text-slate-400 hover:text-slate-600 transition-colors">
+                <X size={18} strokeWidth={2.5} />
+              </button>
+
+              {settingsTab === 'account' && (
+                <div className="max-w-[400px] mx-auto mt-6">
+                  <div className="text-center mb-8">
+                    <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-2">Sign in to Compose</h2>
+                    <p className="text-[13px] text-slate-500">Access your workspaces across all your devices.</p>
+                  </div>
+                  
+                  <div className="space-y-4 mb-6">
+                    <button className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.126 3.805 3.06 1.514-.067 2.09-.982 3.924-.982 1.832 0 2.37.95 3.96.982 1.63.027 2.65-1.464 3.65-2.91 1.155-1.685 1.63-3.322 1.65-3.407-.035-.015-3.195-1.226-3.23-4.88-.035-3.053 2.502-4.524 2.613-4.59-1.423-2.08-3.633-2.365-4.42-2.42-1.89-.187-3.693 1.088-4.55 1.088zm-.835-2.025c.805-.97 1.346-2.32 1.198-3.65-1.127.045-2.528.75-3.353 1.73-.733.86-1.346 2.23-1.166 3.54 1.265.1 2.515-.65 3.32-1.62z"/></svg>
+                      Continue with Apple
+                    </button>
+                    <button className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
+                      <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                      Continue with Google
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="flex-1 h-px bg-slate-200"></div>
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase">or</span>
+                    <div className="flex-1 h-px bg-slate-200"></div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <input type="email" placeholder="Email Address" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-[13px] text-slate-800 placeholder-slate-400 outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all shadow-sm" />
+                    <button className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-4 py-3 text-[13px] font-bold shadow-md transition-colors">Continue with Email</button>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'personalization' && (
+                <div className="max-w-[500px]">
+                  <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-8">Personalization</h2>
+                  
+                  <div className="space-y-8">
+                    <div>
+                      <h3 className="text-[13px] font-bold text-slate-800 mb-4">Appearance</h3>
+                      <div className="flex items-center gap-4">
+                        <button className={`flex-1 p-4 rounded-2xl border-2 transition-all ${!isDarkMode ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                          <div className="w-full h-16 rounded-lg bg-slate-100 border border-slate-200 mb-3 flex items-center justify-center"><Sun size={20} className="text-slate-400" /></div>
+                          <span className="text-[12px] font-semibold text-slate-700">Light</span>
+                        </button>
+                        <button className={`flex-1 p-4 rounded-2xl border-2 transition-all ${isDarkMode ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
+                          <div className="w-full h-16 rounded-lg bg-slate-800 border border-slate-700 mb-3 flex items-center justify-center"><Moon size={20} className="text-slate-400" /></div>
+                          <span className="text-[12px] font-semibold text-slate-700">Dark</span>
+                        </button>
+                        <button className="flex-1 p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all">
+                          <div className="w-full h-16 rounded-lg bg-gradient-to-br from-slate-100 to-slate-800 border border-slate-300 mb-3 flex items-center justify-center"><Settings size={20} className="text-slate-400" /></div>
+                          <span className="text-[12px] font-semibold text-slate-700">System</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-[13px] font-bold text-slate-800 mb-4">Accent Color</h3>
+                      <div className="flex items-center gap-3">
+                        {['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'].map(color => (
+                          <button key={color} className="w-8 h-8 rounded-full shadow-sm border-2 border-white ring-2 ring-transparent focus:ring-violet-500 transition-all" style={{ backgroundColor: color }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsTab === 'general' && (
+                <div className="max-w-[500px]">
+                  <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-8">General</h2>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-800">Auto-detect Language</h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Automatically select spelling dictionary based on input.</p>
+                      </div>
+                      <div className="w-10 h-6 bg-violet-500 rounded-full relative cursor-pointer shadow-inner">
+                        <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5 shadow-sm"></div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-800">Analytics</h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Share anonymous usage data to improve Compose.</p>
+                      </div>
+                      <div className="w-10 h-6 bg-slate-200 rounded-full relative cursor-pointer shadow-inner">
+                        <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5 shadow-sm"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
