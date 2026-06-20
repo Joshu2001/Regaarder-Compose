@@ -1115,8 +1115,8 @@ export default function App() {
   const [docPageSize, setDocPageSize] = useState('a4');
   const [showPageNumbers, setShowPageNumbers] = useState(true);
   const [pageNumberPos, setPageNumberPos] = useState('bottom-center');
-  const [docHeaderText, setDocHeaderText] = useState('Product Launch Plan');
-  const [docFooterText, setDocFooterText] = useState('Confidential');
+  const [docHeaderText, setDocHeaderText] = useState('');
+  const [docFooterText, setDocFooterText] = useState('');
   const [docTheme, setDocTheme] = useState('violet');
   const [pageSizeDropdownOpen, setPageSizeDropdownOpen] = useState(false);
   const [pageMarginDropdownOpen, setPageMarginDropdownOpen] = useState(false);
@@ -1560,8 +1560,21 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [hasVoiceInteraction, setHasVoiceInteraction] = useState(false);
   const [miniPromptOffset, setMiniPromptOffset] = useState({ x: 0, y: 0 });
-  const [dictationOffset, setDictationOffset] = useState({ x: 0, y: 0 });
+  const [dictationOffset, setDictationOffset] = useState(() => {
+    try {
+      const saved = localStorage.getItem('regaarderDictationOffset');
+      return saved ? JSON.parse(saved) : { x: 0, y: 0 };
+    } catch {
+      return { x: 0, y: 0 };
+    }
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('regaarderDictationOffset', JSON.stringify(dictationOffset));
+  }, [dictationOffset]);
+
   const [dictationAnchor, setDictationAnchor] = useState({ left: 0, top: 0 });
+  const [aiAttachmentMenuOpen, setAiAttachmentMenuOpen] = useState(false);
   const [promptCollapsed, setPromptCollapsed] = useState(false);
   const [rotatingExampleSetIndex, setRotatingExampleSetIndex] = useState(0);
 
@@ -7740,7 +7753,15 @@ export default function App() {
           insertTranscriptIntoDocumentRef.current?.(textToInsert, { forceAppendToEnd: true });
           lastDocumentTranscriptRef.current = { text: normalizedText, source, at: Date.now() };
         } else {
-          setFloatingPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+          setFloatingPrompt((prev) => {
+            const newPrompt = `${prev}${prev ? ' ' : ''}${normalizedText}`;
+            if (source === 'final' && activeVoiceTarget === 'compose') {
+              setTimeout(() => {
+                handleFloatingSend({ preventDefault: () => {} });
+              }, 300);
+            }
+            return newPrompt;
+          });
           requestAnimationFrame(() => {
             const promptEl = floatingPromptRef.current;
             if (promptEl && typeof promptEl.setSelectionRange === 'function') {
@@ -31700,15 +31721,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 </div>
               ) : (
-                <div className="relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-end gap-2">
+                <div className="relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-center gap-2">
                   <button
                     type="button"
                     onPointerDown={(event) => beginPanelResize('prompt', event)}
-                    className="p-2 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 cursor-move touch-none shrink-0"
+                    className="p-1.5 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 cursor-move touch-none shrink-0"
                     title="Move prompt bar"
                   >
                     <Move size={14} />
                   </button>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setAiAttachmentMenuOpen(!aiAttachmentMenuOpen)}
+                      className="p-1.5 rounded-full text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                      title="Add attachments"
+                    >
+                      <Plus size={18} />
+                    </button>
+                    {aiAttachmentMenuOpen && (
+                      <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                        <button type="button" onClick={() => setAiAttachmentMenuOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"><ImageIcon size={14} /> Image</button>
+                        <button type="button" onClick={() => setAiAttachmentMenuOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"><FileText size={14} /> Document</button>
+                        <button type="button" onClick={() => setAiAttachmentMenuOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"><Mic size={14} /> Audio</button>
+                        <button type="button" onClick={() => setAiAttachmentMenuOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"><File size={14} /> File</button>
+                      </div>
+                    )}
+                  </div>
                   <textarea
                     value={floatingPrompt}
                     onChange={(e) => setFloatingPrompt(e.target.value)}
@@ -31716,8 +31755,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     placeholder="Ask Compose AI..."
                     rows={1}
                     style={{ textAlign: alignMode }}
-                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-2 resize-none overflow-hidden min-h-[38px]"
+                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1"
                   />
+                  <button
+                    type="submit"
+                    disabled={isComposing || !floatingPrompt.trim()}
+                    className={`p-1.5 rounded-full transition-colors flex shrink-0 ${isComposing || !floatingPrompt.trim() ? 'text-gray-300 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm'}`}
+                  >
+                    {isComposing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                  </button>
                 </div>
               )}
             </form>
