@@ -18171,7 +18171,13 @@ Respond with a JSON array of slide objects matching the schema.`;
       const visibleBottom = Math.min(window.innerHeight, rect.bottom);
 
       const rightSidebarEdge = window.innerWidth - (rightSidebarOpen ? rightSidebarWidth : 0);
-      const rightX = (visibleRight + rightSidebarEdge) / 2;
+      let rightX = (visibleRight + rightSidebarEdge) / 2;
+      
+      // Prevent cramped positioning when document is wide or in fullscreen
+      if (rightSidebarEdge - visibleRight < 120) {
+        rightX = rightSidebarEdge - 100;
+      }
+      
       const centerY = (visibleTop + visibleBottom) / 2;
 
       setDictationAnchor({ left: rightX, top: centerY });
@@ -30798,8 +30804,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </button>
 
                   {docStateDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
-                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Document State</div>
+                    <>
+                      <div className="fixed inset-0 z-[290]" onClick={() => setDocStateDropdownOpen(false)} />
+                      <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
+                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Document State</div>
                       {[
                         { key: 'draft', label: 'Draft', desc: 'Actively being written', color: 'hover:bg-violet-50 text-violet-700', icon: <FileEdit size={12} className="stroke-[2]" /> },
                         { key: 'ready', label: 'Ready', desc: 'Completed and ready for use', color: 'hover:bg-emerald-50 text-emerald-700', icon: <CheckCircle2 size={12} className="stroke-[2]" /> },
@@ -30824,6 +30832,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       ))}
                     </div>
+                    </>
                   )}
                 </div>
               </div>
