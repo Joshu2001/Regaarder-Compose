@@ -18173,8 +18173,10 @@ Respond with a JSON array of slide objects matching the schema.`;
       const rightSidebarEdge = window.innerWidth - (rightSidebarOpen ? rightSidebarWidth : 0);
       let rightX = (visibleRight + rightSidebarEdge) / 2;
       
-      // Prevent cramped positioning when document is wide or in fullscreen
-      if (rightSidebarEdge - visibleRight < 120) {
+      // Enforce a strict boundary: the center of the widget (rightX) 
+      // must never be closer than 100px to the right edge/sidebar.
+      // This guarantees it will never get clipped or cramped.
+      if (rightX > rightSidebarEdge - 100) {
         rightX = rightSidebarEdge - 100;
       }
       
