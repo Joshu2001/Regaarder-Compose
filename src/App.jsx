@@ -24704,6 +24704,11 @@ const renderRoomTopHeader = () => (
         </div>
         <div className="text-slate-900 font-semibold text-[24px] leading-[32px] flex items-center gap-2">Product Strategy Meeting <ChevronDown size={18} className="text-slate-400" /></div>
       </div>
+      <div className="flex items-center gap-3">
+        <button onClick={() => { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else if (document.exitFullscreen) { document.exitFullscreen(); } }} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors" title="Toggle Fullscreen">
+          <Expand size={20} />
+        </button>
+      </div>
     </div>
   );
 
@@ -26117,7 +26122,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
 
               <div className="relative z-10 w-1/2 pl-4 pr-8">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-100/50 text-violet-700 text-[13px] font-medium mb-4 backdrop-blur-sm">
+                <div className="absolute top-0 right-8 z-50">
+                  <button onClick={() => { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else if (document.exitFullscreen) { document.exitFullscreen(); } }} className="p-2.5 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors bg-white shadow-sm border border-gray-200" title="Toggle Fullscreen">
+                    <Expand size={20} />
+                  </button>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-100/50 text-violet-700 text-[13px] font-medium mb-4 backdrop-blur-sm mt-8">
                   Good afternoon, Joshua <span className="text-base leading-none">👋</span>
                 </div>
                 <h1 className="text-[36px] font-bold text-slate-900 leading-tight mb-3 tracking-tight">Ready to collaborate?</h1>
@@ -27237,15 +27247,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   onClick={() => {
-                    const id = Date.now() + Math.floor(Math.random() * 1000);
-                    const newPageHtml = `<div class="compose-generated-page" style="margin-top:36px;padding-bottom:36px;page-break-after:always;"><p><br></p></div>`;
-                    if (blankBodyRef.current) {
-                      blankBodyRef.current.innerHTML += newPageHtml;
-                      setDocBodyHtml(blankBodyRef.current.innerHTML);
-                    } else {
-                      setDocBodyHtml(prev => prev + newPageHtml);
-                    }
-                    showToast('New page inserted successfully');
+                    insertEnterprisePage();
                   }}
                   className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
                   style={{ fontFamily: editorFont }}
