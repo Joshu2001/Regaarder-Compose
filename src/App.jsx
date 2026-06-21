@@ -22615,7 +22615,7 @@ You can recommend task creations on the board.`;
     };
 
     return (
-      <div ref={appShellRef} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
           <div className="fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300">
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500"></span>
@@ -24141,7 +24141,7 @@ You can recommend task creations on the board.`;
       );
     })();
     return (
-      <div ref={appShellRef} className={`flex bg-[#f5f6fb] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex bg-[#f5f6fb] text-slate-800 overflow-hidden relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <style>{`@keyframes manageenFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
         <aside className={`${isDocumentImmersive ? 'hidden' : 'w-[220px]'} shrink-0 border-r border-slate-200 bg-white flex flex-col`}>
           <div className="px-5 h-16 border-b border-slate-100 flex items-center gap-2.5">
@@ -24844,7 +24844,7 @@ const renderRoomTopHeader = () => (
 
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
-      <div ref={appShellRef} className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <div className="fixed inset-0 pointer-events-none z-[9999]">
           {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
@@ -26088,7 +26088,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
   if (productMode === 'room' && roomState !== 'active') {
 
     return (
-      <div ref={appShellRef} className={`flex bg-[#FAFAFC] text-slate-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} h-screen`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex bg-[#FAFAFC] text-slate-800 overflow-hidden relative h-screen`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         
         {/* Left Sidebar */}
         <aside className="w-[240px] shrink-0 border-r border-slate-200/60 bg-[#FAFAFC] flex flex-col justify-between">
@@ -26587,7 +26587,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
   };
 
   return (
-    <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'} ${roomState === 'active' && roomPanelMode === 'expanded' ? 'pt-[72px] pb-[80px] bg-[#f3f5fb]' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+    <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'} ${roomState === 'active' && roomPanelMode === 'expanded' ? 'pt-[72px] pb-[80px] bg-[#f3f5fb]' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
       <div className="fixed inset-0 pointer-events-none z-[9999]">
         {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
           if (!userState.user || !userState.pointer) return null;
@@ -30961,7 +30961,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               // Auto page-insert on Enter disabled; pages are now created on-demand via the "+ New page" CTA
               return;
             }}
-            className="compose-editor-surface box-border mx-auto relative bg-transparent border-none transition-all"
+            className={`compose-editor-surface box-border mx-auto relative bg-transparent border-none transition-all ${isDarkMode ? 'app-dark' : ''}`}
             style={{ 
               width: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`, 
               '--page-padding': docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
@@ -33053,6 +33053,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* Floating Volume Icon / TTS Controls */}
+      {productMode !== 'landing' && (
       <div
         onPointerDown={handleVolumePointerDown}
         onPointerMove={handleVolumePointerMove}
@@ -33220,6 +33221,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
       </div>
+      )}
 
       {/* Gesture visual cues */}
       {gestureRipples.map(r => (
@@ -33244,7 +33246,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        {!isComposing && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
+        {!isComposing && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
           <div 
             className="pointer-events-none fixed z-[300] flex items-center justify-center"
             style={{
@@ -33290,7 +33292,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </>
                 )}
               </button>
-              <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
+              <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-xl px-4 py-2 max-w-[200px] text-center break-words shadow-sm">
                 {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
               </div>
               {isVoiceActive && voiceTarget === 'document' && (
@@ -33377,11 +33379,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                   
                   <div className="space-y-4 mb-6">
-                    <button onClick={() => showToast('Redirecting to Apple authentication...')} className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
+                    <button onClick={() => { window.location.href = 'https://apple.com'; }} className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.126 3.805 3.06 1.514-.067 2.09-.982 3.924-.982 1.832 0 2.37.95 3.96.982 1.63.027 2.65-1.464 3.65-2.91 1.155-1.685 1.63-3.322 1.65-3.407-.035-.015-3.195-1.226-3.23-4.88-.035-3.053 2.502-4.524 2.613-4.59-1.423-2.08-3.633-2.365-4.42-2.42-1.89-.187-3.693 1.088-4.55 1.088zm-.835-2.025c.805-.97 1.346-2.32 1.198-3.65-1.127.045-2.528.75-3.353 1.73-.733.86-1.346 2.23-1.166 3.54 1.265.1 2.515-.65 3.32-1.62z"/></svg>
                       Continue with Apple
                     </button>
-                    <button onClick={() => showToast('Redirecting to Google authentication...')} className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
+                    <button onClick={() => { window.location.href = 'https://google.com'; }} className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[13px] font-semibold text-slate-700 transition-all shadow-sm">
                       <svg viewBox="0 0 24 24" width="18" height="18"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
                       Continue with Google
                     </button>
