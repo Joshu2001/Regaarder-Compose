@@ -25255,52 +25255,97 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <main className="flex-1 min-w-0 flex flex-col bg-[#f5f7fc]">
           <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between">
             <div className="flex items-center gap-4 min-w-0">
-              <button
-                type="button"
-                onClick={() => setLeftSidebarOpen((prev) => !prev)}
-                className={`p-1.5 rounded-md border transition-colors ${leftSidebarOpen ? 'text-violet-700 border-violet-200 bg-violet-50 hover:bg-violet-100' : 'text-gray-400 border-gray-200 hover:text-gray-700 hover:bg-gray-100'}`}
-                title={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
-                aria-label={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
-              >
-                <Sidebar size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
-                className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                title={deckSlidesPanelOpen ? 'Hide slides panel' : 'Show slides panel'}
-              >
-                {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-              </button>
-              <div className="text-sm font-semibold text-gray-900 truncate">{isSheetsMode ? 'Regaarder Sheets' : 'Regaarder Deck'}</div>
-              {isEditingUnsavedDraftName ? (
-                <input
-                  autoFocus
-                  type="text"
-                  value={isSheetsMode ? sheetsTitle : deckTitle}
-                  onChange={(event) => isSheetsMode ? setSheetsTitle(event.target.value) : setDeckTitle(event.target.value)}
-                  onBlur={() => setIsEditingUnsavedDraftName(false)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === 'Escape') {
-                      e.preventDefault();
-                      setIsEditingUnsavedDraftName(false);
-                    }
-                  }}
-                  className="text-sm text-gray-500 font-medium italic bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
-                  placeholder={isSheetsMode ? 'Untitled sheetbook' : 'Untitled deck'}
-                />
+              {isSheetsMode ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setLeftSidebarOpen((prev) => !prev)}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                    title={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    {isEditingUnsavedDraftName ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        value={sheetsTitle}
+                        onChange={(event) => setSheetsTitle(event.target.value)}
+                        onBlur={() => setIsEditingUnsavedDraftName(false)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === 'Escape') {
+                            e.preventDefault();
+                            setIsEditingUnsavedDraftName(false);
+                          }
+                        }}
+                        className="text-sm text-gray-800 font-semibold italic bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
+                        placeholder="Saved Drafts"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingUnsavedDraftName(true)}
+                        className="text-sm font-semibold text-gray-800 italic hover:text-gray-600 px-1 py-0.5 rounded text-left truncate"
+                      >
+                        {sheetsTitle || 'Saved Drafts'}
+                      </button>
+                    )}
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 ml-2 hidden sm:flex">
+                      <Cloud size={14} /> {savedStatusLabel}
+                    </div>
+                  </div>
+                </>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingUnsavedDraftName(true)}
-                  className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left truncate"
-                >
-                  {isSheetsMode ? (sheetsTitle || 'Unsaved draft') : (deckTitle || 'Unsaved draft')}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setLeftSidebarOpen((prev) => !prev)}
+                    className={`p-1.5 rounded-md border transition-colors ${leftSidebarOpen ? 'text-violet-700 border-violet-200 bg-violet-50 hover:bg-violet-100' : 'text-gray-400 border-gray-200 hover:text-gray-700 hover:bg-gray-100'}`}
+                    title={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
+                    aria-label={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
+                  >
+                    <Sidebar size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                    title={deckSlidesPanelOpen ? 'Hide slides panel' : 'Show slides panel'}
+                  >
+                    {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                  </button>
+                  <div className="text-sm font-semibold text-gray-900 truncate">Regaarder Deck</div>
+                  {isEditingUnsavedDraftName ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={deckTitle}
+                      onChange={(event) => setDeckTitle(event.target.value)}
+                      onBlur={() => setIsEditingUnsavedDraftName(false)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === 'Escape') {
+                          e.preventDefault();
+                          setIsEditingUnsavedDraftName(false);
+                        }
+                      }}
+                      className="text-sm text-gray-500 font-medium italic bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
+                      placeholder="Untitled deck"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingUnsavedDraftName(true)}
+                      className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left truncate"
+                    >
+                      {deckTitle || 'Unsaved draft'}
+                    </button>
+                  )}
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 ml-4 hidden sm:flex">
+                    <Cloud size={14} /> {savedStatusLabel}
+                  </div>
+                </>
               )}
-              <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 ml-4 hidden sm:flex">
-                <Cloud size={14} /> {savedStatusLabel}
-              </div>
             </div>
             
             <div className="flex items-center gap-1">
@@ -25309,7 +25354,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button onClick={undoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
                 <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
                 <button onClick={openReplayPanel} className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><Clock size={16} /></button>
-                <button onClick={() => setShowDeckComments(s => !s)} className={`p-1.5 rounded-md transition-colors ${showDeckComments ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="Comments"><MessageSquareText size={16} /></button>
+                {!isSheetsMode && (
+                  <button onClick={() => setShowDeckComments(s => !s)} className={`p-1.5 rounded-md transition-colors ${showDeckComments ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="Comments"><MessageSquareText size={16} /></button>
+                )}
               </div>
 
               <div className="w-px h-5 bg-gray-200 mx-1"></div>
@@ -25401,8 +25448,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </header>
 
-          <div className="flex-1 min-h-0 flex gap-4 p-4">
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar ${isSheetsMode ? 'bg-[#F3F4F6] p-4 pr-4' : ''}`}>
+          <div className="flex-1 min-h-0 flex gap-4 p-4 relative">
+            {isSheetsMode && (
+              <button className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-violet-600 rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgba(124,58,237,0.3)] hover:bg-violet-700 hover:scale-105 transition-all z-20">
+                <PenTool size={20} />
+              </button>
+            )}
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative ${isSheetsMode ? 'bg-[#F3F4F6] p-4 pl-12 pr-4' : ''}`}>
               <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'w-full flex-1'}`}>
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
@@ -25643,6 +25695,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
                     </div>
+                    {isSheetsMode && (
+                      <button className="absolute bottom-16 right-8 w-14 h-14 bg-white rounded-full flex items-center justify-center text-violet-600 shadow-[0_8px_30px_rgba(15,23,42,0.12)] ring-1 ring-black/5 hover:scale-105 hover:bg-violet-50 transition-all z-30">
+                        <Volume2 size={24} strokeWidth={2.5} />
+                      </button>
+                    )}
                     <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
                         {sheetsData.map((sheet) => (
@@ -25659,6 +25716,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </button>
                         ))}
                         <button type="button" onClick={addWorksheet} className="px-2 py-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">+</button>
+                      </div>
+                      <div className="flex items-center gap-4 text-[12px] font-medium text-gray-500 shrink-0 mr-auto ml-8 hidden md:flex">
+                         <span>12 cells selected</span>
+                         <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                         <span>Sum: 1,234.56</span>
+                         <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                         <span>Focus Mode</span>
                       </div>
                       <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
                         <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom out" onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}>-</button>
