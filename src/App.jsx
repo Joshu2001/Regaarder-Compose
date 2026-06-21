@@ -28766,8 +28766,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
              </div>
            </div>
 
-        <div className={`flex-1 flex min-h-0 bg-[#f8f9fc] relative ${mainView === 'document' ? '' : 'hidden'}`}>
-          
+        <div className={`flex-1 flex flex-col min-h-0 bg-[#f8f9fc] relative ${mainView === 'document' ? '' : 'hidden'}`}>
+          <div className="flex-1 flex min-h-0">
           {roomState === 'active' && showDocumentOutlineView && (
             <div className="w-[260px] shrink-0 border-r border-gray-200 bg-[#FAFAFC] hidden lg:flex flex-col shadow-[inset_-10px_0_15px_-15px_rgba(0,0,0,0.05)] z-10">
               {renderDocumentOutlineContent()}
@@ -32074,6 +32074,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </div>
         )}
+          </div>
 
         {/* Bottom Status Bar */}
         {activeRightTab !== 'whiteboard' && (
