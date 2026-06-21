@@ -3241,6 +3241,7 @@ export default function App() {
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
   const [roomPanelMode, setRoomPanelMode] = useState('expanded');
+  const [activeRoomSidebarTab, setActiveRoomSidebarTab] = useState('chat');
   const [isRoomFullscreen, setIsRoomFullscreen] = useState(false);
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
@@ -15364,7 +15365,7 @@ Rules:
     showToast(`Meeting ready: ${normalizedCode}`);
   };
 
-  const startMeetingNow = (providedCode) => {
+  const startMeetingNow = async (providedCode) => {
     const code = normalizeRoomCode(providedCode || roomId) || generateRoomCode();
     setRoomId(code);
     setJoinCode(code);
@@ -15375,7 +15376,13 @@ Rules:
     setMeetingSummary(null);
     setMeetingStartedAt(Date.now());
     setMeetingDurationLabel('00:00');
-    requestMediaPermissions();
+    
+    const wasFullscreen = !!document.fullscreenElement;
+    await requestMediaPermissions();
+    if (wasFullscreen && !document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+    
     showToast(`Joined meeting: ${code}`);
   };
 
@@ -21136,9 +21143,15 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <div className="flex-1 overflow-y-auto pb-24 space-y-5 px-4 pt-4 relative z-0">
 
                     {mainView === 'room' && (
-                      <div className="bg-violet-50 text-violet-700 text-xs px-3 py-2 rounded-lg flex items-center justify-between border border-violet-100 mb-2">
-                        <span>Room is expanded</span>
-                        <Maximize2 size={12} className="opacity-50" />
+                      <div 
+                        onClick={() => setMainView('document')}
+                        className="bg-white hover:bg-violet-50 text-slate-800 text-xs p-3 rounded-xl flex flex-col gap-2 border border-violet-100 mb-3 shadow-[0_4px_20px_rgba(124,58,237,0.05)] cursor-pointer transition-all hover:border-violet-300 group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-violet-700 flex items-center gap-1.5"><FileText size={14} /> Document minimized</span>
+                          <Maximize2 size={12} className="text-violet-400 group-hover:text-violet-600" />
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium truncate">{docTitleDisplay}</div>
                       </div>
                     )}
 
@@ -24651,45 +24664,69 @@ You can recommend task creations on the board.`;
       {/* Tabs at bottom */}
       <div className="shrink-0 bg-white border-t border-gray-200 flex flex-col h-1/3">
         <div className="flex items-center border-b border-gray-200">
-          <div className="px-4 py-3 text-[13px] font-semibold text-violet-700 border-b-[3px] border-violet-600">Chat</div>
-          <div className="px-4 py-3 text-[13px] font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Notes</div>
-          <div className="px-4 py-3 text-[13px] font-medium text-slate-500 hover:text-slate-800 cursor-pointer">Highlights</div>
+          <div onClick={() => setActiveRoomSidebarTab('chat')} className={`px-4 py-3 text-[13px] font-semibold cursor-pointer ${activeRoomSidebarTab === 'chat' ? 'text-violet-700 border-b-[3px] border-violet-600' : 'text-slate-500 hover:text-slate-800'}`}>Chat</div>
+          <div onClick={() => setActiveRoomSidebarTab('notes')} className={`px-4 py-3 text-[13px] font-semibold cursor-pointer ${activeRoomSidebarTab === 'notes' ? 'text-violet-700 border-b-[3px] border-violet-600' : 'text-slate-500 hover:text-slate-800'}`}>Notes</div>
+          <div onClick={() => setActiveRoomSidebarTab('highlights')} className={`px-4 py-3 text-[13px] font-semibold cursor-pointer ${activeRoomSidebarTab === 'highlights' ? 'text-violet-700 border-b-[3px] border-violet-600' : 'text-slate-500 hover:text-slate-800'}`}>Highlights</div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
-          <div className="flex gap-2.5">
-            <img src={meetingParticipants[0]?.img} className="w-6 h-6 rounded-full shrink-0" alt="" />
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-xs font-bold text-gray-900">Joshua</span>
-                <span className="text-[10px] text-gray-400">9:40 AM</span>
+        {activeRoomSidebarTab === 'chat' && (
+          <>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
+              <div className="flex gap-2.5">
+                <img src={meetingParticipants[0]?.img} className="w-6 h-6 rounded-full shrink-0" alt="" />
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-bold text-gray-900">Joshua</span>
+                    <span className="text-[10px] text-gray-400">9:40 AM</span>
+                  </div>
+                  <div className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded-xl rounded-tl-none border border-gray-100">
+                    Let's launch the new template system in September.
+                  </div>
+                  <div className="inline-flex mt-1 bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded-full text-[10px] border border-violet-100">🙌 2</div>
+                </div>
               </div>
-              <div className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded-xl rounded-tl-none border border-gray-100">
-                Let's launch the new template system in September.
+              <div className="flex gap-2.5">
+                <img src={meetingParticipants[2]?.img} className="w-6 h-6 rounded-full shrink-0" alt="" />
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-xs font-bold text-gray-900">Michelle</span>
+                    <span className="text-[10px] text-gray-400">9:41 AM</span>
+                  </div>
+                  <div className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded-xl rounded-tl-none border border-gray-100">
+                    Sounds good! I'll share some inspiration in the whiteboard.
+                  </div>
+                </div>
               </div>
-              <div className="inline-flex mt-1 bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded-full text-[10px] border border-violet-100">?? 2</div>
             </div>
-          </div>
-          <div className="flex gap-2.5">
-            <img src={meetingParticipants[2]?.img} className="w-6 h-6 rounded-full shrink-0" alt="" />
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-xs font-bold text-gray-900">Michelle</span>
-                <span className="text-[10px] text-gray-400">9:41 AM</span>
-              </div>
-              <div className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded-xl rounded-tl-none border border-gray-100">
-                Sounds good! I'll share some inspiration in the whiteboard.
+            <div className="p-3 bg-white border-t border-gray-100">
+              <div className="relative">
+                <input type="text" placeholder="Message everyone..." className="w-full bg-gray-50 border border-gray-200 rounded-[24px] py-0 pl-4 pr-12 text-[13px] outline-none focus:border-violet-300 min-h-[48px]" />
+                <button className="absolute right-2 top-2 w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.06)] hover:bg-violet-700">
+                  <Send size={10} />
+                </button>
               </div>
             </div>
+          </>
+        )}
+        
+        {activeRoomSidebarTab === 'notes' && (
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 mb-3">
+              <FileText size={24} />
+            </div>
+            <div className="text-sm font-semibold text-slate-800">No notes yet</div>
+            <div className="text-xs text-slate-500 mt-1">Take notes during the meeting to see them here.</div>
           </div>
-        </div>
-        <div className="p-3 bg-white border-t border-gray-100">
-          <div className="relative">
-            <input type="text" placeholder="Message everyone..." className="w-full bg-gray-50 border border-gray-200 rounded-[24px] py-0 pl-4 pr-12 text-[13px] outline-none focus:border-violet-300 min-h-[48px]" />
-            <button className="absolute right-2 top-2 w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.06)] hover:bg-violet-700">
-              <Send size={10} />
-            </button>
+        )}
+        
+        {activeRoomSidebarTab === 'highlights' && (
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
+            <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 mb-3">
+              <Sparkles size={24} />
+            </div>
+            <div className="text-sm font-semibold text-slate-800">No highlights yet</div>
+            <div className="text-xs text-slate-500 mt-1">Important moments will be highlighted here automatically.</div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
@@ -24739,7 +24776,7 @@ const renderRoomTopHeader = () => (
           <ArrowUp size={18} /> Present <ChevronUp size={14} className="ml-1 opacity-50" />
         </button>
 
-        <button className="flex items-center gap-2 px-8 h-[48px] rounded-[999px] bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] text-white text-[15px] font-bold shadow-[0_8px_30px_rgba(139,92,246,0.3)] hover:shadow-[0_12px_40px_rgba(139,92,246,0.4)] transition-all hover:-translate-y-0.5">
+        <button className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-1.5 rounded-md flex items-center gap-2 transition-all active:scale-95">
           <Sparkles size={16} /> Room AI
         </button>
 
@@ -26999,65 +27036,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {/* 1. Left Navigation Sidebar */}
-      <div
-        className={`flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200 ${roomState === 'active' && roomPanelMode === 'expanded' ? '' : 'border-r border-gray-100'}`}
-        style={{ width: (roomState === 'active' && roomPanelMode === 'expanded') ? '280px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
-      >
-        {roomState === 'active' && roomPanelMode === 'expanded' ? renderRoomLeftSidebar() : showDocumentOutlineView ? (
-          <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
-            <div 
-              className="flex items-center gap-2 text-gray-900 font-semibold cursor-pointer hover:text-violet-600 transition-colors"
-              onClick={() => setRecentDocumentsModalOpen(true)}
-              title="Open Recent Documents"
-            >
-              <FileText size={16} className="text-violet-600" />
-              <span>Document Outline</span>
-            </div>
-            <div className="mt-2 text-[11px] text-gray-500 truncate" title={docTitle}>{docTitleDisplay}</div>
-          </div>
-        ) : (
-          <>
-            <div className="h-16 flex items-center justify-between px-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 text-white flex items-center justify-center shadow-[0_12px_24px_-14px_rgba(139,92,246,0.95)]">
-                  <Sparkles size={16} />
-                </div>
-                <div className="leading-tight">
-                  <div className="text-[17px] font-semibold tracking-tight text-gray-900">Orb</div>
-                  <div className="text-[11px] text-gray-500">by Regaarder</div>
-                </div>
-              </div>
-              <button
-                onClick={openCreationPicker}
-                className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
-              >
-                <Upload size={13} />
-                Upload
-              </button>
-            </div>
-
-            <div className="px-4 pb-3">
-              <div
-                className="relative"
-                onMouseEnter={() => setIsFormattingDropdownHovered(true)}
-                onMouseLeave={() => setIsFormattingDropdownHovered(false)}
-              >
-                <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search Orb..." 
-                  className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
-                />
-                <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Main Nav Links */}
-        {showDocumentOutlineView ? (
-          <div className="flex-1 overflow-y-auto px-3 py-3" style={{ fontFamily: editorFont }}>
+            const renderDocumentOutlineContent = () => (
+        <div className="flex-1 overflow-y-auto px-3 py-3" style={{ fontFamily: editorFont }}>
             <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
@@ -27257,7 +27237,68 @@ if (productMode === 'deck' || productMode === 'sheets') {
               )}
             </div>
           </div>
+      );
+
+      {/* 1. Left Navigation Sidebar */}
+      <div
+        className={`flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200 ${roomState === 'active' && roomPanelMode === 'expanded' ? '' : 'border-r border-gray-100'}`}
+        style={{ width: (roomState === 'active' && roomPanelMode === 'expanded') ? '280px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+      >
+        {roomState === 'active' && roomPanelMode === 'expanded' ? renderRoomLeftSidebar() : showDocumentOutlineView ? (
+          <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
+            <div 
+              className="flex items-center gap-2 text-gray-900 font-semibold cursor-pointer hover:text-violet-600 transition-colors"
+              onClick={() => setRecentDocumentsModalOpen(true)}
+              title="Open Recent Documents"
+            >
+              <FileText size={16} className="text-violet-600" />
+              <span>Document Outline</span>
+            </div>
+            <div className="mt-2 text-[11px] text-gray-500 truncate" title={docTitle}>{docTitleDisplay}</div>
+          </div>
         ) : (
+          <>
+            <div className="h-16 flex items-center justify-between px-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 text-white flex items-center justify-center shadow-[0_12px_24px_-14px_rgba(139,92,246,0.95)]">
+                  <Sparkles size={16} />
+                </div>
+                <div className="leading-tight">
+                  <div className="text-[17px] font-semibold tracking-tight text-gray-900">Orb</div>
+                  <div className="text-[11px] text-gray-500">by Regaarder</div>
+                </div>
+              </div>
+              <button
+                onClick={openCreationPicker}
+                className="px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                <Upload size={13} />
+                Upload
+              </button>
+            </div>
+
+            <div className="px-4 pb-3">
+              <div
+                className="relative"
+                onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+                onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+              >
+                <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search Orb..." 
+                  className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
+                />
+                <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Main Nav Links */}
+        {showDocumentOutlineView && roomState !== 'active' ? (
+          renderDocumentOutlineContent()
+        ) : !showDocumentOutlineView ? (
           <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
             <div className="space-y-0.5">
               <button
@@ -28686,11 +28727,57 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div
-          ref={documentScrollContainerRef}
-          onScroll={handleEditorScroll}
-          className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100"
-        >
+        {mainView === 'room' ? (
+           <div className="flex-1 bg-gray-900 flex flex-col relative overflow-hidden">
+             {/* Large focused video */}
+             <div className="flex-1 relative flex items-center justify-center p-4">
+                <div className="w-full h-full max-w-5xl max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 bg-black relative group">
+                  {isVideoOff ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
+                      <div className="w-24 h-24 rounded-full bg-violet-600 flex items-center justify-center text-white text-3xl font-bold">
+                        J
+                      </div>
+                    </div>
+                  ) : (
+                    <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
+                  )}
+                  {!!isMicMuted && <div className="absolute top-4 right-4 bg-red-500/80 p-2 rounded-full backdrop-blur-sm"><MicOff size={16} className="text-white" /></div>}
+                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg text-white font-medium text-sm">
+                    Joshua (You)
+                  </div>
+                </div>
+             </div>
+             
+             {/* Bottom Controls inside the room view */}
+             <div className="h-20 bg-gray-900/90 border-t border-gray-800 flex items-center justify-center gap-4 shrink-0 px-6">
+                <button onClick={toggleRoomMic} className={`p-3 rounded-full transition-all ${!isMicMuted ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-red-500 text-white hover:bg-red-600'}`}>
+                  {!isMicMuted ? <Mic size={20} /> : <MicOff size={20} />}
+                </button>
+                <button onClick={toggleRoomCamera} className={`p-3 rounded-full transition-all ${!isVideoOff ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-red-500 text-white hover:bg-red-600'}`}>
+                  {!isVideoOff ? <Video size={20} /> : <VideoOff size={20} />}
+                </button>
+                <button onClick={() => setMainView('document')} className="p-3 rounded-full bg-gray-800 text-white hover:bg-gray-700 transition-colors ml-4" title="Return to Document">
+                  <FileText size={20} />
+                </button>
+                <button onClick={leaveRoom} className="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors ml-2" title="Leave Room">
+                  <PhoneOff size={20} />
+                </button>
+             </div>
+           </div>
+        ) : (
+        <div className="flex-1 flex min-h-0 bg-[#f8f9fc] relative">
+          
+          {roomState === 'active' && showDocumentOutlineView && (
+            <div className="w-[260px] shrink-0 border-r border-gray-200 bg-[#FAFAFC] hidden lg:flex flex-col shadow-[inset_-10px_0_15px_-15px_rgba(0,0,0,0.05)] z-10">
+              {renderDocumentOutlineContent()}
+            </div>
+          )}
+
+          <div
+            ref={documentScrollContainerRef}
+            onScroll={handleEditorScroll}
+            className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100"
+          >
           {activeRightTab === 'whiteboard' && (
             <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-[340] p-0 bg-white' : isWhiteboardFloatingUiOpen ? 'z-[320] p-6 md:p-8 bg-[#F7F7F9]' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
               <div className={`h-full w-full bg-white overflow-hidden flex flex-col ${isWhiteboardImmersive ? 'rounded-none border-0 shadow-none' : 'rounded-[24px] border border-violet-100 shadow-[0_20px_60px_-30px_rgba(124,58,237,0.45)]'}`}>
@@ -32045,6 +32132,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
         )}
+      </div>
+        </div>
+      )}
       </div>
       )}
 
