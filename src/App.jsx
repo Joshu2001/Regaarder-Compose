@@ -33499,16 +33499,42 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <h4 className="text-[13px] font-bold text-slate-800">UI Language</h4>
                         <p className="text-[11px] text-slate-500 mt-0.5">Select your preferred language for the interface.</p>
                       </div>
-                      <select
-                        value={currentLanguage}
-                        onChange={(e) => { setCurrentLanguage(e.target.value); showToast(`Language changed to ${e.target.value}`); }}
-                        className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg focus:ring-violet-500 focus:border-violet-500 block p-2 outline-none font-semibold cursor-pointer"
-                      >
-                        <option value="English">English</option>
-                        <option value="French">Français</option>
-                        <option value="Traditional Chinese">繁體中文</option>
-                        <option value="Auto detect">Auto detect</option>
-                      </select>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
+                          className="flex items-center gap-2 bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-100 px-3 py-2 outline-none font-semibold cursor-pointer transition-colors"
+                        >
+                          {currentLanguage}
+                          <ChevronDown size={14} className="text-slate-400" />
+                        </button>
+                        
+                        {languageMenuOpen && (
+                          <>
+                            <div className="fixed inset-0 z-[100]" onClick={() => setLanguageMenuOpen(false)}></div>
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl overflow-hidden z-[110] animate-in fade-in slide-in-from-top-2 duration-200">
+                              <div className="p-1">
+                                {['English', 'French', 'Traditional Chinese', 'Auto detect'].map((lang) => (
+                                  <button
+                                    key={lang}
+                                    onClick={() => {
+                                      setCurrentLanguage(lang);
+                                      setLanguageMenuOpen(false);
+                                      showToast(`Language changed to ${lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}`);
+                                    }}
+                                    className="w-full flex items-center justify-between px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-50 transition-colors group"
+                                  >
+                                    <span className={`font-medium ${currentLanguage === lang ? 'text-violet-600' : 'text-slate-700 group-hover:text-slate-900'}`}>
+                                      {lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}
+                                    </span>
+                                    {currentLanguage === lang && <Check size={14} className="text-violet-600" />}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
                       <div>

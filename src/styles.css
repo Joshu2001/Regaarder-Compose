@@ -53,8 +53,8 @@ body { margin: 0; background: #ffffff; }
 }
 
 .app-dark {
-	background: #0b1220 !important;
-	color: #dbe7ff;
+	background: #0d0d0d !important;
+	color: #e5e5e5;
 }
 
 .app-dark .bg-white,
@@ -62,15 +62,25 @@ body { margin: 0; background: #ffffff; }
 .app-dark .bg-\[\#FAFAFC\],
 .app-dark .bg-\[\#FDFDFD\],
 .app-dark .bg-\[\#f5f7fc\],
-.app-dark .bg-\[\#f3f5fb\] {
-	background-color: #111b2f !important;
+.app-dark .bg-\[\#f3f5fb\],
+.app-dark .bg-gray-50,
+.app-dark .bg-slate-50 {
+	background-color: #1a1a1a !important;
+}
+
+.app-dark .bg-white\/90 {
+	background-color: rgba(26, 26, 26, 0.9) !important;
+}
+
+.app-dark .bg-white\/80 {
+	background-color: rgba(26, 26, 26, 0.8) !important;
 }
 
 .app-dark .text-gray-900,
 .app-dark .text-gray-800,
 .app-dark .text-slate-900,
 .app-dark .text-slate-800 {
-	color: #e6eeff !important;
+	color: #f5f5f5 !important;
 }
 
 .app-dark .text-gray-700,
@@ -79,14 +89,14 @@ body { margin: 0; background: #ffffff; }
 .app-dark .text-gray-400,
 .app-dark .text-slate-600,
 .app-dark .text-slate-500 {
-	color: #9fb3d9 !important;
+	color: #a3a3a3 !important;
 }
 
 .app-dark .border-gray-100,
 .app-dark .border-gray-200,
 .app-dark .border-slate-100,
 .app-dark .border-violet-100 {
-	border-color: #253451 !important;
+	border-color: #2d2d2d !important;
 }
 
 .brand-select {
