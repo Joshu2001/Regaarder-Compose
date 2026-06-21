@@ -569,6 +569,53 @@ const getCursorRects = (container, anchor, focus) => {
 };
 
 export default function App() {
+  useEffect(() => {
+    const handleSheetResizeMouseDown = (e) => {
+      const resizer = e.target.closest('.sheet-grid-resizer');
+      if (!resizer) return;
+      e.preventDefault();
+      
+      const colIndex = resizer.getAttribute('data-col-index');
+      const rowIndex = resizer.getAttribute('data-row-index');
+      const isCol = colIndex !== null;
+      
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const root = document.documentElement;
+      
+      const currentWidthStr = getComputedStyle(root).getPropertyValue(`--col-${colIndex}-width`).trim();
+      const currentHeightStr = getComputedStyle(root).getPropertyValue(`--row-${rowIndex}-height`).trim();
+      
+      const startSize = isCol 
+        ? parseFloat(currentWidthStr) || 100 
+        : parseFloat(currentHeightStr) || 36;
+
+      const handleMouseMove = (moveEvent) => {
+        if (isCol) {
+          const newWidth = Math.max(40, startSize + (moveEvent.clientX - startX));
+          root.style.setProperty(`--col-${colIndex}-width`, `${newWidth}px`);
+        } else {
+          const newHeight = Math.max(20, startSize + (moveEvent.clientY - startY));
+          root.style.setProperty(`--row-${rowIndex}-height`, `${newHeight}px`);
+        }
+      };
+
+      const handleMouseUp = () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+      };
+
+      document.body.style.cursor = isCol ? 'col-resize' : 'row-resize';
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousedown', handleSheetResizeMouseDown);
+    return () => {
+      document.removeEventListener('mousedown', handleSheetResizeMouseDown);
+    };
+  }, []);
   const defaultTitle = 'Product Launch Plan';
   const defaultSubtitle = 'A strategic plan to successfully launch Regaarder Compose and drive adoption, engagement, and growth.';
   const defaultInitiatives = [
@@ -25640,8 +25687,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400" />
                       </div>
                       {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => (
-                        <div key={col} ref={el => { if (el && window.__sheetGridRO) window.__sheetGridRO.observe(el) }} data-col-index={colIndex} className={`h-8 relative border-r border-gray-200 last:border-r-0 ${selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ resize: 'horizontal', overflow: 'hidden', width: `var(--col-${colIndex}-width, 100px)` }}>
+                        <div key={col} className={`h-8 relative border-r border-gray-200 last:border-r-0 ${selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ overflow: 'hidden', width: `var(--col-${colIndex}-width, 100px)` }}>
                           <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={col} onClick={() => setSelectedSheetCell({ row: selectedSheetCell.row, col: colIndex + 1 })} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }} />
+                          <div data-col-index={colIndex} className="sheet-grid-resizer absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400 opacity-0 hover:opacity-100 z-10" />
                         </div>
                       ))}
                     </div>
@@ -25654,8 +25702,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content', display: 'grid', gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, minmax(100px, 1fr))`).join(' ')}` }}>
                         <div className="border-r border-gray-200 bg-slate-50">
                           {Array.from({ length: activeSheetGrid.rows }, (_, idx) => idx + 1).map((num) => (
-                            <div key={num} ref={el => { if (el && window.__sheetGridRO) window.__sheetGridRO.observe(el) }} data-row-index={num - 1} className={`relative border-b border-gray-200 text-[11px] font-semibold flex items-center justify-center ${selectedSheetCell.row === num ? 'bg-violet-100 text-violet-800' : 'text-slate-700'}`} style={{ resize: 'vertical', overflow: 'hidden', height: `var(--row-${num-1}-height, 36px)` }}>
+                            <div key={num} className={`relative border-b border-gray-200 text-[11px] font-semibold flex items-center justify-center ${selectedSheetCell.row === num ? 'bg-violet-100 text-violet-800' : 'text-slate-700'}`} style={{ overflow: 'hidden', height: `var(--row-${num-1}-height, 36px)` }}>
                               <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={num} onClick={() => setSelectedSheetCell({ row: num, col: selectedSheetCell.col })} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'row', index: num - 1 }); }} />
+                              <div data-row-index={num - 1} className="sheet-grid-resizer absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-violet-400 opacity-0 hover:opacity-100 z-10" />
                             </div>
                           ))}
                         </div>
