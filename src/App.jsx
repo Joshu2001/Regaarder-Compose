@@ -569,22 +569,6 @@ const getCursorRects = (container, anchor, focus) => {
 };
 
 export default function App() {
-  useEffect(() => {
-    if (!window.__sheetGridRO) {
-      window.__sheetGridRO = new ResizeObserver((entries) => {
-        const root = document.documentElement;
-        for (let entry of entries) {
-          const el = entry.target;
-          if (el.dataset.colIndex !== undefined) {
-            root.style.setProperty(`--col-${el.dataset.colIndex}-width`, `${entry.contentRect.width}px`);
-          } else if (el.dataset.rowIndex !== undefined) {
-            root.style.setProperty(`--row-${el.dataset.rowIndex}-height`, `${entry.contentRect.height}px`);
-          }
-        }
-      });
-    }
-  }, []);
-
   const defaultTitle = 'Product Launch Plan';
   const defaultSubtitle = 'A strategic plan to successfully launch Regaarder Compose and drive adoption, engagement, and growth.';
   const defaultInitiatives = [
@@ -25656,7 +25640,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400" />
                       </div>
                       {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => (
-                        <div key={col} ref={el => { if (el && window.__sheetGridRO) window.__sheetGridRO.observe(el) }} data-col-index={colIndex} className={`sheet-header h-8 relative border-r border-gray-200 last:border-r-0 ${selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ resize: 'horizontal', overflow: 'hidden', width: `var(--col-${colIndex}-width, 100px)` }}>
+                        <div key={col} ref={el => { if (el && window.__sheetGridRO) window.__sheetGridRO.observe(el) }} data-col-index={colIndex} className={`h-8 relative border-r border-gray-200 last:border-r-0 ${selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ resize: 'horizontal', overflow: 'hidden', width: `var(--col-${colIndex}-width, 100px)` }}>
                           <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={col} onClick={() => setSelectedSheetCell({ row: selectedSheetCell.row, col: colIndex + 1 })} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }} />
                         </div>
                       ))}
@@ -25670,7 +25654,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content', display: 'grid', gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, minmax(100px, 1fr))`).join(' ')}` }}>
                         <div className="border-r border-gray-200 bg-slate-50">
                           {Array.from({ length: activeSheetGrid.rows }, (_, idx) => idx + 1).map((num) => (
-                            <div key={num} ref={el => { if (el && window.__sheetGridRO) window.__sheetGridRO.observe(el) }} data-row-index={num - 1} className={`sheet-header relative border-b border-gray-200 text-[11px] font-semibold flex items-center justify-center ${selectedSheetCell.row === num ? 'bg-violet-100 text-violet-800' : 'text-slate-700'}`} style={{ resize: 'vertical', overflow: 'hidden', height: `var(--row-${num-1}-height, 36px)` }}>
+                            <div key={num} ref={el => { if (el && window.__sheetGridRO) window.__sheetGridRO.observe(el) }} data-row-index={num - 1} className={`relative border-b border-gray-200 text-[11px] font-semibold flex items-center justify-center ${selectedSheetCell.row === num ? 'bg-violet-100 text-violet-800' : 'text-slate-700'}`} style={{ resize: 'vertical', overflow: 'hidden', height: `var(--row-${num-1}-height, 36px)` }}>
                               <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={num} onClick={() => setSelectedSheetCell({ row: num, col: selectedSheetCell.col })} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'row', index: num - 1 }); }} />
                             </div>
                           ))}
