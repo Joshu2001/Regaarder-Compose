@@ -25454,10 +25454,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <PenTool size={20} />
               </button>
             )}
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative ${isSheetsMode ? 'bg-[#FAFAFC] p-4 pl-12 pr-4' : ''}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative ${isSheetsMode ? 'bg-[#FAFAFC]' : ''}`}>
               <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'w-full flex-1'}`}>
                 {isSheetsMode ? (
-                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
+                  <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
                     <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                       {['Data', 'Insert', 'Analyze', 'Visualize', 'AI'].map((tab) => (
                         <button
