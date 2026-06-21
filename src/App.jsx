@@ -25265,6 +25265,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   >
                     <ChevronRight size={16} />
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
+                    className={`p-1.5 rounded-md border transition-colors ${deckSlidesPanelOpen ? 'text-violet-700 border-violet-200 bg-violet-50 hover:bg-violet-100' : 'text-gray-400 border-gray-200 hover:text-gray-700 hover:bg-gray-100'}`}
+                    title={deckSlidesPanelOpen ? 'Hide sheets panel' : 'Show sheets panel'}
+                  >
+                    <Sidebar size={16} />
+                  </button>
                   <div className="flex items-center gap-2">
                     {isEditingUnsavedDraftName ? (
                       <input
