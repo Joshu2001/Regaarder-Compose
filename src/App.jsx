@@ -25454,7 +25454,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <PenTool size={20} />
               </button>
             )}
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative ${isSheetsMode ? 'bg-[#F3F4F6] p-4 pl-12 pr-4' : ''}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative ${isSheetsMode ? 'bg-[#FAFAFC] p-4 pl-12 pr-4' : ''}`}>
               <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'w-full flex-1'}`}>
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-white flex flex-col relative rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
