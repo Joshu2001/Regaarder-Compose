@@ -3228,6 +3228,8 @@ export default function App() {
 
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [mainView, setMainView] = useState('document');
+  const [focusedModule, setFocusedModule] = useState('compose'); // 'compose', 'room', 'assistant', 'notes', 'whiteboard'
+  const [dockedModules, setDockedModules] = useState([]);
   const [roomState, setRoomState] = useState('lobby');
   const [roomMode, setRoomMode] = useState('meetings');
   const [roomId, setRoomId] = useState('');
@@ -26499,7 +26501,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
       );
 
+  const handleWorkspaceModuleClick = (moduleName) => {
+    if (focusedModule === moduleName) return;
 
+    setDockedModules((prev) => {
+      const newDocked = prev.filter((m) => m !== moduleName && m !== focusedModule);
+      return [focusedModule, ...newDocked];
+    });
+    setFocusedModule(moduleName);
+  };
+
+  const getWorkspaceModuleStyle = (moduleName) => {
+    if (focusedModule === moduleName) {
+      return {
+        position: 'absolute',
+        inset: '0',
+        zIndex: 10,
+        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        transform: 'scale(1) translate3d(0,0,0)',
+        opacity: 1,
+        borderRadius: '0px',
+      };
+    }
+
+    const dockedIndex = dockedModules.indexOf(moduleName);
+    if (dockedIndex !== -1) {
+      return {
+        position: 'absolute',
+        left: '16px',
+        top: `${16 + dockedIndex * 180}px`,
+        width: '240px',
+        height: '160px',
+        zIndex: 5,
+        transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+        transform: 'scale(1) translate3d(0,0,0)',
+        opacity: 1,
+        borderRadius: '16px',
+        cursor: 'pointer',
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        pointerEvents: 'auto',
+      };
+    }
+
+    return {
+      display: 'none',
+      opacity: 0,
+      pointerEvents: 'none',
+    };
+  };
 
   return (
     <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${isDarkMode ? 'app-dark' : ''} ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'} ${roomState === 'active' && roomPanelMode === 'expanded' ? 'pt-[72px] pb-[80px] bg-[#f3f5fb]' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
@@ -28729,7 +28778,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
-        <div className={`flex-1 bg-gray-900 flex flex-col relative overflow-hidden ${mainView === 'room' ? '' : 'hidden'}`}>
+        <div className="flex-1 relative w-full h-full overflow-hidden bg-[#F7F7F9]">
+          
+          <div 
+            className="bg-gray-900 flex flex-col overflow-hidden border border-gray-800 rounded-2xl shadow-xl z-50 cursor-pointer"
+            style={getWorkspaceModuleStyle('room')}
+            onClick={() => handleWorkspaceModuleClick('room')}
+          >
              {/* Large focused video */}
              <div className="flex-1 relative flex items-center justify-center p-4">
                 <div className="w-full h-full max-w-5xl max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 bg-black relative group">
@@ -28766,7 +28821,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
              </div>
            </div>
 
-        <div className={`flex-1 flex flex-col min-h-0 bg-[#f8f9fc] relative ${mainView === 'document' ? '' : 'hidden'}`}>
+        <div 
+          className="flex-1 flex flex-col min-h-0 bg-[#f8f9fc] border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 cursor-pointer"
+          style={getWorkspaceModuleStyle('compose')}
+          onClick={() => handleWorkspaceModuleClick('compose')}
+        >
           <div className="flex-1 flex min-h-0">
           {roomState === 'active' && showDocumentOutlineView && (
             <div className="w-[260px] shrink-0 border-r border-gray-200 bg-[#FAFAFC] hidden lg:flex flex-col shadow-[inset_-10px_0_15px_-15px_rgba(0,0,0,0.05)] z-10">
@@ -32134,6 +32193,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
         )}
+        </div>
       </div>
 
       </div>
