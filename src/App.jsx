@@ -25047,6 +25047,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
+        {!isSheetsMode && (
         <aside
           className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
           style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
@@ -25142,6 +25143,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </div>
         </aside>
+        )}
 
         {deckSlidesPanelOpen && (
         <aside className="w-[220px] border-r border-gray-200 bg-[#f8f9fd] flex flex-col">
