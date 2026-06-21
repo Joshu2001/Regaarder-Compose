@@ -1129,6 +1129,42 @@ export default function App() {
 
   const [pageOptionsMenuOpen, setPageOptionsMenuOpen] = useState(false);
   const [brandColor, setBrandColor] = useState('#7c3aed');
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const palettes = {
+      '#7c3aed': { // Violet
+        50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#c4b5fd', 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95', 950: '#2e1065',
+        s50: '#eef2ff', s100: '#e0e7ff', s200: '#c7d2fe', s300: '#a5b4fc', s400: '#818cf8', s500: '#6366f1', s600: '#4f46e5', s700: '#4338ca', s800: '#3730a3', s900: '#312e81', s950: '#1e1b4b'
+      },
+      '#3b82f6': { // Blue
+        50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a', 950: '#172554',
+        s50: '#f0f9ff', s100: '#e0f2fe', s200: '#bae6fd', s300: '#7dd3fc', s400: '#38bdf8', s500: '#0ea5e9', s600: '#0284c7', s700: '#0369a1', s800: '#075985', s900: '#0c4a6e', s950: '#082f49'
+      },
+      '#10b981': { // Emerald
+        50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399', 500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b', 950: '#022c22',
+        s50: '#f0fdf4', s100: '#dcfce7', s200: '#bbf7d0', s300: '#86efac', s400: '#4ade80', s500: '#22c55e', s600: '#16a34a', s700: '#15803d', s800: '#166534', s900: '#14532d', s950: '#052e16'
+      },
+      '#f59e0b': { // Amber
+        50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f', 950: '#451a03',
+        s50: '#fff7ed', s100: '#ffedd5', s200: '#fed7aa', s300: '#fdba74', s400: '#fb923c', s500: '#f97316', s600: '#ea580c', s700: '#c2410c', s800: '#9a3412', s900: '#7c2d12', s950: '#431407'
+      },
+      '#ef4444': { // Red
+        50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 300: '#fca5a5', 400: '#f87171', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c', 800: '#991b1b', 900: '#7f1d1d', 950: '#450a0a',
+        s50: '#fff1f2', s100: '#ffe4e6', s200: '#fecdd3', s300: '#fda4af', s400: '#fb7185', s500: '#f43f5e', s600: '#e11d48', s700: '#be123c', s800: '#9f1239', s900: '#881337', s950: '#4c0519'
+      },
+      '#ec4899': { // Pink
+        50: '#fdf2f8', 100: '#fce7f3', 200: '#fbcfe8', 300: '#f9a8d4', 400: '#f472b6', 500: '#ec4899', 600: '#db2777', 700: '#be185d', 800: '#9d174d', 900: '#831843', 950: '#500724',
+        s50: '#faf5ff', s100: '#f3e8ff', s200: '#e9d5ff', s300: '#d8b4fe', s400: '#c084fc', s500: '#a855f7', s600: '#9333ea', s700: '#7e22ce', s800: '#6b21a8', s900: '#581c87', s950: '#3b0764'
+      }
+    };
+    
+    const p = palettes[brandColor] || palettes['#7c3aed'];
+    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].forEach(weight => {
+      root.style.setProperty(`--accent-${weight}`, p[weight]);
+      root.style.setProperty(`--secondary-${weight}`, p[`s${weight}`]);
+    });
+  }, [brandColor]);
   const [brandColorPickerOpen, setBrandColorPickerOpen] = useState(false);
   const [brandKitModalOpen, setBrandKitModalOpen] = useState(false);
   const [uploadedBrandLogo, setUploadedBrandLogo] = useState(null);
