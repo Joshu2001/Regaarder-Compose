@@ -25696,7 +25696,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
                     {isSheetsMode && (
-                      <button className="absolute bottom-16 right-8 w-14 h-14 bg-white rounded-full flex items-center justify-center text-violet-600 shadow-[0_8px_30px_rgba(15,23,42,0.12)] ring-1 ring-black/5 hover:scale-105 hover:bg-violet-50 transition-all z-30">
+                      <button className="absolute bottom-16 right-8 w-14 h-14 bg-white rounded-full flex items-center justify-center text-violet-600 shadow-lg ring-1 ring-black/5 hover:scale-105 hover:bg-violet-50 transition-all z-30">
                         <Volume2 size={24} strokeWidth={2.5} />
                       </button>
                     )}
@@ -25718,11 +25718,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button type="button" onClick={addWorksheet} className="px-2 py-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">+</button>
                       </div>
                       <div className="flex items-center gap-4 text-[12px] font-medium text-gray-500 shrink-0 mr-auto ml-8 hidden md:flex">
-                         <span>12 cells selected</span>
-                         <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                         <span>Sum: 1,234.56</span>
-                         <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                         <span>Focus Mode</span>
+                        <span>12 cells selected</span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                        <span>Sum: 1,234.56</span>
+                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                        <span>Focus Mode</span>
                       </div>
                       <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
                         <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom out" onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}>-</button>
