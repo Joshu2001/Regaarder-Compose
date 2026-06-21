@@ -32038,102 +32038,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
           </div>
 
-        {!isComposing && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
-          <div 
-            className="pointer-events-none fixed z-[300] flex items-center justify-center"
-            style={{
-              left: `${dictationAnchor.left}px`,
-              top: `${dictationAnchor.top}px`,
-              transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
-            }}
-          >
-            <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/70 backdrop-blur-sm px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.35)] border border-white/70">
-              <button
-                type="button"
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  beginPanelResize('dictation', event);
-                }}
-                className="inline-flex items-center gap-2 text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1 cursor-move touch-none hover:border-violet-300 hover:text-violet-700"
-                title="Drag dictation"
-              >
-                <Move size={12} />
-                Drag dictation
-              </button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={async () => {
-                  await toggleVoiceRecording('document');
-                }}
-                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${
-                  isVoiceActive && voiceTarget === 'document' 
-                    ? (isVoiceCommandMode 
-                        ? 'border-indigo-400 bg-indigo-50 shadow-[0_0_0_6px_rgba(99,102,241,0.22),0_0_35px_rgba(99,102,241,0.65)] animate-pulse' 
-                        : 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]') 
-                    : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'
-                }`}
-                title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
-              >
-                <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
-                {isVoiceActive && voiceTarget === 'document' && (
-                  <>
-                    <span className={`absolute inset-0 rounded-full border-2 animate-ping ${isVoiceCommandMode ? 'border-indigo-300' : 'border-violet-300'}`}></span>
-                    <span className={`absolute -inset-2 rounded-full border animate-pulse ${isVoiceCommandMode ? 'border-indigo-200/80' : 'border-violet-200/80'}`}></span>
-                  </>
-                )}
-              </button>
-              <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
-                {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
-              </div>
-              {isVoiceActive && voiceTarget === 'document' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    isVoiceActiveRef.current = false;
-                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
-                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
-                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
-                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
-                    const tracks = audioStreamRef.current?.getTracks(); if (tracks) tracks.forEach(t => t.stop());
-                    audioStreamRef.current = null;
-                    setIsVoiceActive(false);
-                    setLiveSpeechInterimText('');
-                    setIsVoiceCommandMode(false);
-                    isVoiceCommandModeRef.current = false;
-                    setVoiceCommandBuffer('');
-        voiceCommandBufferRef.current = '';
-        commandModeActivatedAtRef.current = 0;
-        commandModeLastInputAtRef.current = 0;
-                  }}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    isVoiceActiveRef.current = false;
-                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
-                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
-                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
-                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
-                    const trk = audioStreamRef.current?.getTracks(); if (trk) trk.forEach(t => t.stop());
-                    audioStreamRef.current = null;
-                    setIsVoiceActive(false);
-                    setLiveSpeechInterimText('');
-                    setIsVoiceCommandMode(false);
-                    isVoiceCommandModeRef.current = false;
-                    setVoiceCommandBuffer('');
-        voiceCommandBufferRef.current = '';
-        commandModeActivatedAtRef.current = 0;
-        commandModeLastInputAtRef.current = 0;
-                  }}
-                  className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
-                >
-                  {isVoiceCommandMode ? 'Cancel AI Prompt' : 'Dismiss'}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
 
         {isPromptMinimized && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
@@ -33340,6 +33244,102 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
+        {!isComposing && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && (
+          <div 
+            className="pointer-events-none fixed z-[300] flex items-center justify-center"
+            style={{
+              left: `${dictationAnchor.left}px`,
+              top: `${dictationAnchor.top}px`,
+              transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
+            }}
+          >
+            <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/70 backdrop-blur-sm px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.35)] border border-white/70">
+              <button
+                type="button"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  beginPanelResize('dictation', event);
+                }}
+                className="inline-flex items-center gap-2 text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1 cursor-move touch-none hover:border-violet-300 hover:text-violet-700"
+                title="Drag dictation"
+              >
+                <Move size={12} />
+                Drag dictation
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={async () => {
+                  await toggleVoiceRecording('document');
+                }}
+                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${
+                  isVoiceActive && voiceTarget === 'document' 
+                    ? (isVoiceCommandMode 
+                        ? 'border-indigo-400 bg-indigo-50 shadow-[0_0_0_6px_rgba(99,102,241,0.22),0_0_35px_rgba(99,102,241,0.65)] animate-pulse' 
+                        : 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]') 
+                    : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'
+                }`}
+                title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
+              >
+                <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
+                {isVoiceActive && voiceTarget === 'document' && (
+                  <>
+                    <span className={`absolute inset-0 rounded-full border-2 animate-ping ${isVoiceCommandMode ? 'border-indigo-300' : 'border-violet-300'}`}></span>
+                    <span className={`absolute -inset-2 rounded-full border animate-pulse ${isVoiceCommandMode ? 'border-indigo-200/80' : 'border-violet-200/80'}`}></span>
+                  </>
+                )}
+              </button>
+              <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1">
+                {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
+              </div>
+              {isVoiceActive && voiceTarget === 'document' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    isVoiceActiveRef.current = false;
+                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
+                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
+                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
+                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
+                    const tracks = audioStreamRef.current?.getTracks(); if (tracks) tracks.forEach(t => t.stop());
+                    audioStreamRef.current = null;
+                    setIsVoiceActive(false);
+                    setLiveSpeechInterimText('');
+                    setIsVoiceCommandMode(false);
+                    isVoiceCommandModeRef.current = false;
+                    setVoiceCommandBuffer('');
+        voiceCommandBufferRef.current = '';
+        commandModeActivatedAtRef.current = 0;
+        commandModeLastInputAtRef.current = 0;
+                  }}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    isVoiceActiveRef.current = false;
+                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
+                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
+                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
+                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
+                    const trk = audioStreamRef.current?.getTracks(); if (trk) trk.forEach(t => t.stop());
+                    audioStreamRef.current = null;
+                    setIsVoiceActive(false);
+                    setLiveSpeechInterimText('');
+                    setIsVoiceCommandMode(false);
+                    isVoiceCommandModeRef.current = false;
+                    setVoiceCommandBuffer('');
+        voiceCommandBufferRef.current = '';
+        commandModeActivatedAtRef.current = 0;
+        commandModeLastInputAtRef.current = 0;
+                  }}
+                  className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
+                >
+                  {isVoiceCommandMode ? 'Cancel AI Prompt' : 'Dismiss'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       {/* SETTINGS MODAL */}
       {settingsModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
@@ -33408,21 +33408,76 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div>
                       <h3 className="text-[13px] font-bold text-slate-800 mb-4">Appearance</h3>
                       <div className="flex items-center gap-4">
-                        <button onClick={() => setIsDarkMode(false)} className={`flex-1 p-4 rounded-2xl border-2 transition-all ${!isDarkMode ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
-                          <div className="w-full h-16 rounded-lg bg-slate-100 border border-slate-200 mb-3 flex items-center justify-center"><Sun size={20} className="text-slate-400" /></div>
-                          <span className="text-[12px] font-semibold text-slate-700">Light</span>
+                        <button onClick={() => setIsDarkMode(false)} className={`flex-1 p-3 rounded-2xl border-2 transition-all group ${!isDarkMode ? 'border-violet-500 bg-violet-50/50' : 'border-transparent hover:bg-slate-50'}`}>
+                          <div className={`w-full h-20 rounded-lg bg-[#F5F5F5] border mb-3 flex overflow-hidden relative shadow-sm transition-all ${!isDarkMode ? 'border-violet-300 ring-4 ring-violet-500/10' : 'border-slate-200 group-hover:border-slate-300'}`}>
+                            <div className="w-1/3 bg-[#E8E8E8] h-full border-r border-slate-300/50 p-1.5 flex flex-col gap-1">
+                              <div className="flex gap-1 mb-1">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                              </div>
+                              <div className="w-full h-2 bg-slate-300/60 rounded-[2px]"></div>
+                              <div className="w-3/4 h-2 bg-slate-300/60 rounded-[2px]"></div>
+                            </div>
+                            <div className="flex-1 p-2 flex flex-col gap-1.5 bg-white">
+                              <div className="w-1/2 h-2 bg-slate-200 rounded-[2px]"></div>
+                              <div className="w-full h-1 bg-slate-100 rounded-[2px]"></div>
+                              <div className="w-4/5 h-1 bg-slate-100 rounded-[2px]"></div>
+                            </div>
+                          </div>
+                          <span className={`text-[12px] font-semibold ${!isDarkMode ? 'text-violet-700' : 'text-slate-600'}`}>Light</span>
                         </button>
-                        <button onClick={() => setIsDarkMode(true)} className={`flex-1 p-4 rounded-2xl border-2 transition-all ${isDarkMode ? 'border-violet-500 bg-violet-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}>
-                          <div className="w-full h-16 rounded-lg bg-slate-800 border border-slate-700 mb-3 flex items-center justify-center"><Moon size={20} className="text-slate-400" /></div>
-                          <span className="text-[12px] font-semibold text-slate-700">Dark</span>
+
+                        <button onClick={() => setIsDarkMode(true)} className={`flex-1 p-3 rounded-2xl border-2 transition-all group ${isDarkMode ? 'border-violet-500 bg-violet-50/50' : 'border-transparent hover:bg-slate-50'}`}>
+                          <div className={`w-full h-20 rounded-lg bg-[#1E1E1E] border mb-3 flex overflow-hidden relative shadow-sm transition-all ${isDarkMode ? 'border-violet-400 ring-4 ring-violet-500/10' : 'border-slate-700 group-hover:border-slate-600'}`}>
+                            <div className="w-1/3 bg-[#2D2D2D] h-full border-r border-slate-600/50 p-1.5 flex flex-col gap-1">
+                              <div className="flex gap-1 mb-1">
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-600"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-600"></div>
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-600"></div>
+                              </div>
+                              <div className="w-full h-2 bg-slate-600 rounded-[2px]"></div>
+                              <div className="w-3/4 h-2 bg-slate-600 rounded-[2px]"></div>
+                            </div>
+                            <div className="flex-1 p-2 flex flex-col gap-1.5 bg-[#121212]">
+                              <div className="w-1/2 h-2 bg-slate-700 rounded-[2px]"></div>
+                              <div className="w-full h-1 bg-slate-800 rounded-[2px]"></div>
+                              <div className="w-4/5 h-1 bg-slate-800 rounded-[2px]"></div>
+                            </div>
+                          </div>
+                          <span className={`text-[12px] font-semibold ${isDarkMode ? 'text-violet-700' : 'text-slate-600'}`}>Dark</span>
                         </button>
-                        <button onClick={() => { setIsDarkMode(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); showToast('System theme applied'); }} className="flex-1 p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-slate-300 transition-all">
-                          <div className="w-full h-16 rounded-lg bg-gradient-to-br from-slate-100 to-slate-800 border border-slate-300 mb-3 flex items-center justify-center"><Settings size={20} className="text-slate-400" /></div>
-                          <span className="text-[12px] font-semibold text-slate-700">System</span>
+
+                        <button onClick={() => { setIsDarkMode(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); showToast('System theme applied'); }} className="flex-1 p-3 rounded-2xl border-2 border-transparent hover:bg-slate-50 transition-all group">
+                          <div className="w-full h-20 rounded-lg border border-slate-300 group-hover:border-slate-400 mb-3 flex overflow-hidden relative shadow-sm transition-all">
+                            <div className="w-1/2 h-full flex">
+                              <div className="w-full bg-[#F5F5F5] h-full flex">
+                                <div className="w-2/3 bg-[#E8E8E8] h-full border-r border-slate-300/50 p-1.5 flex flex-col gap-1">
+                                  <div className="flex gap-0.5 mb-1">
+                                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                                    <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                                  </div>
+                                  <div className="w-full h-1.5 bg-slate-300/60 rounded-[2px]"></div>
+                                </div>
+                                <div className="flex-1 p-1.5 flex flex-col gap-1 bg-white">
+                                  <div className="w-full h-1.5 bg-slate-200 rounded-[2px]"></div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="w-1/2 h-full flex border-l border-slate-400/30">
+                              <div className="w-full bg-[#1E1E1E] h-full flex">
+                                <div className="w-full p-1.5 flex flex-col gap-1 bg-[#121212]">
+                                  <div className="w-3/4 h-1.5 bg-slate-700 rounded-[2px] mt-1"></div>
+                                  <div className="w-full h-1 bg-slate-800 rounded-[2px]"></div>
+                                  <div className="w-4/5 h-1 bg-slate-800 rounded-[2px]"></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-[12px] font-semibold text-slate-600">System</span>
                         </button>
                       </div>
                     </div>
-
                     <div>
                       <h3 className="text-[13px] font-bold text-slate-800 mb-4">Accent Color</h3>
                       <div className="flex items-center gap-3">
@@ -33439,6 +33494,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <div className="max-w-[500px]">
                   <h2 className="text-2xl font-bold text-slate-800 tracking-tight mb-8">General</h2>
                   <div className="space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                      <div>
+                        <h4 className="text-[13px] font-bold text-slate-800">UI Language</h4>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Select your preferred language for the interface.</p>
+                      </div>
+                      <select
+                        value={currentLanguage}
+                        onChange={(e) => { setCurrentLanguage(e.target.value); showToast(`Language changed to ${e.target.value}`); }}
+                        className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-lg focus:ring-violet-500 focus:border-violet-500 block p-2 outline-none font-semibold cursor-pointer"
+                      >
+                        <option value="English">English</option>
+                        <option value="French">Français</option>
+                        <option value="Traditional Chinese">繁體中文</option>
+                        <option value="Auto detect">Auto detect</option>
+                      </select>
+                    </div>
                     <div className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
                       <div>
                         <h4 className="text-[13px] font-bold text-slate-800">Auto-detect Language</h4>
