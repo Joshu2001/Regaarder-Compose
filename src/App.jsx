@@ -17,7 +17,8 @@ import {
   FileEdit, CheckCircle2, Users2, Archive,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
-  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
+  FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -566,6 +567,17 @@ const getCursorRects = (container, anchor, focus) => {
   } catch (e) {
     return null;
   }
+};
+
+const toColumnLabel = (index) => {
+  let current = index + 1;
+  let label = '';
+  while (current > 0) {
+    const rem = (current - 1) % 26;
+    label = String.fromCharCode(65 + rem) + label;
+    current = Math.floor((current - 1) / 26);
+  }
+  return label;
 };
 
 export default function App() {
@@ -1143,9 +1155,19 @@ export default function App() {
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
   const [sheetsTitle, setSheetsTitle] = useState('Untitled sheet');
   const [activeSheetId, setActiveSheetId] = useState(1);
+  const [selectedGridColumn, setSelectedGridColumn] = useState(null);
   const [sheetsData, setSheetsData] = useState([
     { id: 1, title: 'Sheet 1', subtitle: '' },
   ]);
+  const [dataPortalDragOver, setDataPortalDragOver] = useState(false);
+  const [dataPortalImports, setDataPortalImports] = useState([
+    { id: 1, name: 'Restaurant SOP.pdf', type: 'pdf', date: '2 days ago', icon: FileText, color: 'text-red-500 bg-red-50' },
+    { id: 2, name: 'Q2 Meeting Recording.mp4', type: 'video', date: '4 days ago', icon: Video, color: 'text-blue-500 bg-blue-50' },
+    { id: 3, name: 'Expense Report.png', type: 'image', date: '1 week ago', icon: ImageIcon, color: 'text-emerald-500 bg-emerald-50' },
+    { id: 4, name: 'Vendor List.csv', type: 'csv', date: '1 week ago', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' },
+    { id: 5, name: 'Customer Database.xlsx', type: 'xlsx', date: '2 weeks ago', icon: FileSpreadsheet, color: 'text-emerald-600 bg-emerald-50' },
+  ]);
+  const [dataPortalRelationshipPrompt, setDataPortalRelationshipPrompt] = useState(false);
   const [deckPromptInput, setDeckPromptInput] = useState('');
   const [deckPromptMinimized, setDeckPromptMinimized] = useState(false);
   const [deckPromptOffset, setDeckPromptOffset] = useState({ x: 0, y: 0 });
@@ -14458,8 +14480,12 @@ Rules:
       });
       setRightSidebarOpen(true);
       setActiveRightTab('assistant');
-    } else if (productMode === 'sheet') {
-      const sheetPrompt = `${prompt}\n\nContext: Target specific elements of Sheet ${activeSheetId}. Assistant mode: analyze spreadsheet data.`;
+    } else if (productMode === 'sheets') {
+      const colLabel = selectedGridColumn !== null && selectedGridColumn !== undefined ? toColumnLabel(selectedGridColumn) : null;
+      const contextStr = colLabel 
+        ? `Target column ${colLabel} of Sheet ${activeSheetId}.` 
+        : `Target specific elements of Sheet ${activeSheetId}.`;
+      const sheetPrompt = `${prompt}\n\nContext: ${contextStr} Assistant mode: analyze spreadsheet data.`;
       handleAISubmit(sheetPrompt, { source: 'chat' });
     } else {
       const docPrompt = `${prompt}\n\nContext: Operate on the active document/text context. Assistant mode: draft and edit.`;
@@ -17864,16 +17890,6 @@ Respond with a JSON array of slide objects matching the schema.`;
     setActiveSheetId(nextId);
     setSheetsTitle(worksheet.title);
     showToast(`${worksheet.title} created`);
-  };
-  const toColumnLabel = (index) => {
-    let current = index + 1;
-    let label = '';
-    while (current > 0) {
-      const rem = (current - 1) % 26;
-      label = String.fromCharCode(65 + rem) + label;
-      current = Math.floor((current - 1) / 26);
-    }
-    return label;
   };
   const formatCellValue = (val, formatType) => {
     if (val === null || val === undefined || val === '') return val;
@@ -25540,6 +25556,204 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </button>
                       ))}
                     </div>
+
+                      {sheetToolbarTab === 'Data' ? (
+                        /* ── DATA TAB: OMNI-IMPORT PORTAL ─────────────────────── */
+                        <div className="flex-1 overflow-y-auto thin-scrollbar bg-[#FAFAFC]">
+                          <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col gap-10">
+
+                            {/* Relationship Detection Banner */}
+                            {dataPortalRelationshipPrompt && (
+                              <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 shadow-sm">
+                                <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
+                                  <GitMerge size={15} className="text-violet-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[13px] font-semibold text-violet-900">Relationships detected</p>
+                                  <p className="text-[12px] text-violet-700 mt-0.5">Matching customer IDs found across your uploaded files. Would you like to connect these datasets automatically?</p>
+                                  <div className="flex items-center gap-2 mt-3">
+                                    <button type="button" onClick={() => { setDataPortalRelationshipPrompt(false); showToast('Datasets connected — no VLOOKUP required!'); }} className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors">Connect Datasets</button>
+                                    <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors">Dismiss</button>
+                                  </div>
+                                </div>
+                                <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="text-violet-400 hover:text-violet-600 shrink-0"><X size={15} /></button>
+                              </div>
+                            )}
+
+                            {/* ZONE 1: Omni-Import Portal */}
+                            <div
+                              className={`relative rounded-3xl border-2 border-dashed transition-all duration-200 ${dataPortalDragOver ? 'border-violet-400 bg-violet-50/60 scale-[1.01]' : 'border-gray-200 bg-white'} shadow-[0_4px_24px_-8px_rgba(0,0,0,0.06)]`}
+                              onDragOver={(e) => { e.preventDefault(); setDataPortalDragOver(true); }}
+                              onDragLeave={() => setDataPortalDragOver(false)}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                setDataPortalDragOver(false);
+                                const files = Array.from(e.dataTransfer.files);
+                                if (files.length > 1) setDataPortalRelationshipPrompt(true);
+                                files.forEach(f => {
+                                  setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
+                                });
+                                showToast(`${files.length} file${files.length > 1 ? 's' : ''} received — analyzing...`);
+                              }}
+                            >
+                              <div className="p-10 flex flex-col items-center text-center gap-6">
+                                {/* Hero Icon */}
+                                <div className="relative">
+                                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-[0_12px_40px_-8px_rgba(124,58,237,0.45)]">
+                                    <Cpu size={36} className="text-white" />
+                                  </div>
+                                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-400 border-2 border-white flex items-center justify-center">
+                                    <Zap size={12} className="text-white" />
+                                  </div>
+                                </div>
+
+                                {/* Headline */}
+                                <div>
+                                  <h2 className="text-[22px] font-bold text-slate-900 tracking-tight">What would you like to analyze?</h2>
+                                  <p className="text-[14px] text-slate-500 mt-2 max-w-sm">Drop any file or paste content — Regaarder converts it into structured, intelligent data.</p>
+                                </div>
+
+                                {/* Supported Type Pills */}
+                                <div className="flex flex-wrap justify-center gap-2">
+                                  {[
+                                    { label: 'Documents', icon: FileText },
+                                    { label: 'PDFs', icon: FileText },
+                                    { label: 'Screenshots', icon: ScanLine },
+                                    { label: 'CSV / Excel', icon: FileSpreadsheet },
+                                    { label: 'Audio', icon: Mic },
+                                    { label: 'Video', icon: Video },
+                                    { label: 'Websites', icon: Globe },
+                                    { label: 'Images', icon: ImageIcon },
+                                  ].map(({ label, icon: Icon }) => (
+                                    <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-[12px] font-medium text-slate-600">
+                                      <Icon size={11} />
+                                      {label}
+                                    </span>
+                                  ))}
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center gap-3 flex-wrap justify-center">
+                                  <label className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white text-[13px] font-semibold rounded-xl cursor-pointer hover:bg-violet-700 transition-colors shadow-[0_4px_16px_-4px_rgba(124,58,237,0.5)]">
+                                    <Upload size={14} />
+                                    Upload Files
+                                    <input type="file" multiple className="hidden" onChange={(e) => {
+                                      const files = Array.from(e.target.files || []);
+                                      if (files.length > 1) setDataPortalRelationshipPrompt(true);
+                                      files.forEach(f => {
+                                        setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
+                                      });
+                                      showToast(`${files.length} file${files.length > 1 ? 's' : ''} ready — converting to sheet...`);
+                                    }} />
+                                  </label>
+                                  <button type="button" className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+                                    <Layers size={14} />
+                                    Paste Content
+                                  </button>
+                                  <button type="button" onClick={() => showToast('AI generation ready — describe your sheet')} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
+                                    <Sparkles size={14} className="text-violet-500" />
+                                    Ask AI
+                                  </button>
+                                </div>
+
+                                {/* Example Prompts */}
+                                <div className="flex flex-col items-center gap-2 pt-2">
+                                  <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Try an example</p>
+                                  <div className="flex flex-wrap justify-center gap-2">
+                                    {[
+                                      'Turn this SOP into a tracker',
+                                      'Extract table from screenshot',
+                                      'Build a CRM from this PDF',
+                                      'Create budget from audio notes',
+                                    ].map((prompt) => (
+                                      <button
+                                        key={prompt}
+                                        type="button"
+                                        onClick={() => showToast(`"${prompt}" — AI is generating your sheet...`)}
+                                        className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[12px] text-slate-600 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors"
+                                      >
+                                        "{prompt}"
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {dataPortalDragOver && (
+                                  <div className="absolute inset-0 rounded-3xl bg-violet-50/80 flex items-center justify-center pointer-events-none z-10">
+                                    <div className="flex flex-col items-center gap-3">
+                                      <ArrowDownToLine size={40} className="text-violet-500" />
+                                      <p className="text-[16px] font-semibold text-violet-700">Release to import</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* ZONE 2: Quick Creation Templates */}
+                            <div>
+                              <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3">Start from a template</p>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {[
+                                  { label: 'Blank Sheet', icon: FilePlus2, color: 'text-slate-500', bg: 'bg-slate-50' },
+                                  { label: 'CRM', icon: Users2, color: 'text-blue-600', bg: 'bg-blue-50' },
+                                  { label: 'Budget Tracker', icon: BarChart2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+                                  { label: 'Inventory', icon: Database, color: 'text-amber-600', bg: 'bg-amber-50' },
+                                  { label: 'Project Tracker', icon: CheckSquare, color: 'text-violet-600', bg: 'bg-violet-50' },
+                                  { label: 'Content Calendar', icon: Calendar, color: 'text-pink-600', bg: 'bg-pink-50' },
+                                  { label: 'Sales Dashboard', icon: TrendingUp, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+                                  { label: 'Expense Tracker', icon: PieChart, color: 'text-orange-600', bg: 'bg-orange-50' },
+                                ].map(({ label, icon: Icon, color, bg }) => (
+                                  <button
+                                    key={label}
+                                    type="button"
+                                    onClick={() => { setSheetToolbarTab('AI'); showToast(`AI-generating "${label}" template...`); }}
+                                    className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all text-left group shadow-sm"
+                                  >
+                                    <div className={`w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
+                                      <Icon size={16} className={color} />
+                                    </div>
+                                    <span className="text-[13px] font-medium text-slate-700 group-hover:text-violet-700 transition-colors">{label}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* ZONE 3: Recent Data Sources */}
+                            {dataPortalImports.length > 0 && (
+                              <div>
+                                <div className="flex items-center justify-between mb-3">
+                                  <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Recent imports</p>
+                                  <button type="button" className="text-[12px] text-violet-600 hover:underline font-medium">View all</button>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                                  {dataPortalImports.slice(0, 5).map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                      <button
+                                        key={item.id}
+                                        type="button"
+                                        onClick={() => { setSheetToolbarTab('AI'); showToast(`Opening "${item.name}"...`); }}
+                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 transition-colors text-left first:rounded-t-2xl last:rounded-b-2xl"
+                                      >
+                                        <div className={`w-9 h-9 rounded-xl ${item.color} flex items-center justify-center shrink-0`}>
+                                          <Icon size={16} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-[13px] font-medium text-slate-800 truncate">{item.name}</p>
+                                          <p className="text-[11px] text-slate-400 mt-0.5">Imported {item.date}</p>
+                                        </div>
+                                        <ArrowRight size={14} className="text-slate-300 group-hover:text-violet-400 shrink-0" />
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                          </div>
+                        </div>
+                      ) : (
+                        <>
                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
                       <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
                         <button type="button" onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Undo"><Undo2 size={15} /></button>
@@ -25741,8 +25955,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400" />
                       </div>
                       {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => (
-                        <div key={col} className={`h-8 relative border-r border-gray-200 last:border-r-0 ${selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ overflow: 'hidden' }}>
-                          <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={col} onClick={() => setSelectedSheetCell({ row: selectedSheetCell.row, col: colIndex + 1 })} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }} />
+                        <div key={col} className={`h-8 relative border-r border-gray-200 last:border-r-0 ${selectedGridColumn === colIndex ? 'sheet-col-header-active text-violet-800 font-bold' : selectedSheetCell && selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ overflow: 'hidden' }}>
+                          <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={col} onClick={() => { setSelectedGridColumn(colIndex); setSelectedSheetRange(null); setSelectedSheetCell(prev => ({ row: prev ? prev.row : 1, col: colIndex + 1 })); }} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }} />
                           <div data-col-index={colIndex} className="sheet-grid-resizer absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400 opacity-0 hover:opacity-100 z-10" />
                         </div>
                       ))}
@@ -25792,7 +26006,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
-                                    className={`relative border-b border-r border-gray-200 ${isSelected ? 'ring-2 ring-violet-600 z-10' : ''}`}
+                                    className={`relative border-b border-r border-gray-200 ${isSelected ? 'ring-2 ring-violet-600 z-10' : ''} ${selectedGridColumn === colIndex ? 'bg-violet-50/50' : ''}`}
                                     style={{ height: rowHeight }}
                                     onMouseDown={(e) => {
                                       if (e.ctrlKey || e.metaKey) {
@@ -25807,7 +26021,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   >
                                     <input
                                       value={isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], activeSheetGridRaw.formats?.[rowIndex]?.[colIndex])}
-                                      onFocus={() => { setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange(null); }}
+                                      onFocus={() => { setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange(null); setSelectedGridColumn(null); }}
                                       onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
                                       className="w-full h-full px-2 text-xs bg-transparent focus:outline-none"
                                       style={{
@@ -25864,6 +26078,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom in" onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}>+</button>
                       </div>
                     </div>
+                      </>
+                      )}
                   </div>
                 ) : (
                   <div className="flex flex-col h-full bg-[#FAFAFC] overflow-hidden">

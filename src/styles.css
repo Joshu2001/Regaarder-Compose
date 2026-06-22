@@ -969,9 +969,29 @@ img.protected-layer {
 }
 .animate-gesture-pill-in {
   animation: gesturePillIn 1800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}.sheet-tab-item {
+  border-radius: 6px !important;
+  border: 1px solid transparent !important;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background-color: transparent;
+  color: #374151;
+  transition: all 0.2s ease;
 }
 
+.sheet-tab-item:hover {
+  background-color: #f3f4f6;
+}
 
+.sheet-tab-item.outline {
+  border-color: #7c3aed !important;
+  color: #7c3aed !important;
+  background-color: transparent !important;
+}
 
-
+.sheet-col-header-active {
+  background-color: rgb(237 233 254) !important;
+}
 
