@@ -3726,7 +3726,7 @@ export default function App() {
     [
       { id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 },
     ].forEach((item) => {
-      result[item.id] = { rows: 22, cols: 7, cells: makeCells(22, 7) };
+      result[item.id] = { rows: 22, cols: 26, cells: makeCells(22, 26) };
     });
     return result;
   });
@@ -32174,37 +32174,47 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="pointer-events-auto flex items-center gap-2 group">
               <button
                 type="button"
+                onClick={(e) => {
+                  if (window.__dragged_mini_prompt) {
+                    window.__dragged_mini_prompt = false;
+                    return;
+                  }
+                  setIsPromptDismissed(false);
+                  setIsPromptExpanded(true);
+                  setIsPromptMinimized(false);
+                  setIsPromptAutoVisible(true);
+                }}
                 onPointerDown={(event) => {
-                  if (event.button !== 0) return;
+                  if (event.button !== 0 && event.pointerType === 'mouse') return;
                   const startX = event.clientX;
                   const startY = event.clientY;
-                  const startOffsetX = miniPromptOffset.x;
-                  const startOffsetY = miniPromptOffset.y;
+                  let lastX = startX;
+                  let lastY = startY;
                   let dragged = false;
 
                   const handleMove = (moveEvent) => {
                     const dx = moveEvent.clientX - startX;
                     const dy = moveEvent.clientY - startY;
+                    const moveX = moveEvent.clientX - lastX;
+                    const moveY = moveEvent.clientY - lastY;
+                    lastX = moveEvent.clientX;
+                    lastY = moveEvent.clientY;
+                    
                     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
                       dragged = true;
+                      window.__dragged_mini_prompt = true;
                     }
                     if (dragged) {
-                      setMiniPromptOffset({
-                        x: Math.min(840, Math.max(-20, startOffsetX + dx)),
-                        y: Math.min(560, Math.max(-40, startOffsetY + dy)),
-                      });
+                      setMiniPromptOffset(prev => ({
+                        x: Math.min(840, Math.max(-20, prev.x + moveX)),
+                        y: Math.min(560, Math.max(-40, prev.y + moveY)),
+                      }));
                     }
                   };
 
                   const handleUp = () => {
                     window.removeEventListener('pointermove', handleMove);
                     window.removeEventListener('pointerup', handleUp);
-                    if (!dragged) {
-                      setIsPromptDismissed(false);
-                      setIsPromptExpanded(true);
-                      setIsPromptMinimized(false);
-                      setIsPromptAutoVisible(true);
-                    }
                   };
 
                   window.addEventListener('pointermove', handleMove);
