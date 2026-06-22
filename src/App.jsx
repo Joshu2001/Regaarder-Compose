@@ -487,6 +487,10 @@ const SHEET_SLASH_OPTIONS = [
   { key: 'clear_format', label: 'Clear Formatting', desc: 'Reset all cell styles' },
   { key: 'ai_summarize', label: 'Summarize', desc: 'AI summary of selected cells' },
   { key: 'ai_translate', label: 'Translate', desc: 'Translate text in cells' },
+  { key: 'table', label: 'Table', desc: 'Insert an AI table' },
+  { key: 'graph', label: 'Chart / Graph', desc: 'Insert an interactive SVG chart & grid' },
+  { key: 'shapes', label: 'Shapes', desc: 'Insert interactive shapes' },
+  { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
 ];
 
 const SLASH_OPTIONS = [
@@ -33084,7 +33088,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* ── Sheet Slash Menu ────────────────────────────────────── */}
-      {sheetSlashMenu.open && (() => {
+      {productMode === 'sheets' && sheetSlashMenu.open && (() => {
         const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
           opt.label.toLowerCase().includes((sheetSlashMenu.filterText || '').toLowerCase())
         );
@@ -33092,7 +33096,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <>
             {/* Click-outside overlay */}
             <div
-              className="fixed inset-0 z-[190]"
+              className="fixed inset-0 z-[99998]"
               onMouseDown={() => setSheetSlashMenu(prev => ({ ...prev, open: false }))}
             />
             <div
@@ -33103,19 +33107,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 left: '50%',
                 top: '50%',
                 transform: 'translate(-50%, -50%)',
-                zIndex: 200,
+                zIndex: 99999,
                 minWidth: '260px',
                 maxHeight: '360px',
                 overflowY: 'auto',
               }}
               onMouseDown={e => e.stopPropagation()}
             >
-              <div className="px-3 py-2 border-b border-gray-100 text-[11px] font-semibold text-violet-600 tracking-wide uppercase flex items-center gap-1.5">
-                <span>⚡</span> Sheet Actions
-                {sheetSlashMenu.filterText && (
-                  <span className="ml-auto text-gray-400 font-normal normal-case">"{sheetSlashMenu.filterText}"</span>
-                )}
-              </div>
+              {sheetSlashMenu.filterText && (
+                <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
+                  Search: <span className="font-semibold text-gray-700">"{sheetSlashMenu.filterText}"</span>
+                </div>
+              )}
               {filtered.length === 0 ? (
                 <div className="px-3 py-4 text-center text-xs text-gray-400">No matching actions</div>
               ) : (
