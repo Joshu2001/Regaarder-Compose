@@ -17,7 +17,7 @@ import {
   FileEdit, CheckCircle2, Users2, Archive,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
-  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye
+  Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -19164,23 +19164,43 @@ Respond with a JSON array of slide objects matching the schema.`;
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mb-5 shadow-xl shadow-violet-500/20 relative overflow-hidden">
                       <Sparkles size={24} className="text-white" fill="white" />
                     </div>
-                    <h3 className="text-[17px] font-semibold text-slate-800 mb-1.5 tracking-tight">Compose AI Assistant</h3>
+                    <h3 className="text-[17px] font-semibold text-slate-800 mb-1.5 tracking-tight">
+                      {productMode === 'compose' ? 'Compose AI Assistant' : productMode === 'sheets' ? 'Sheets AI Assistant' : 'Deck AI Assistant'}
+                    </h3>
                     <p className="text-[13px] text-slate-500 max-w-[260px] leading-relaxed mb-8">
-                      Your intelligent copilot. Ask questions, extract insights, or draft new content effortlessly.
+                      {productMode === 'compose' ? 'Your intelligent copilot. Ask questions, extract insights, or draft new content effortlessly.' :
+                       productMode === 'sheets' ? 'Your data copilot. Ask questions about your numbers, create formulas, or analyze trends.' :
+                       'Your presentation copilot. Ask for design tips, generate speaker notes, or refine slide content.'}
                     </p>
                     
                     <div className="flex flex-col gap-3 w-full max-w-[290px]">
-                      <button onClick={() => setChatInput('Summarize this document ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
+                      <button onClick={() => setChatInput(productMode === 'compose' ? 'Summarize this document ' : productMode === 'sheets' ? 'Summarize this sheet ' : 'Summarize this deck ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
                         <div className="p-1.5 rounded-lg bg-violet-50 text-violet-600 group-hover:bg-violet-100 transition-colors">
                           <FileText size={16} strokeWidth={2.5} />
                         </div>
                         <div className="flex-1">
-                          <div className="text-[12.5px] font-semibold text-slate-700">Summarize Document</div>
+                          <div className="text-[12.5px] font-semibold text-slate-700">
+                            {productMode === 'compose' ? 'Summarize Document' : productMode === 'sheets' ? 'Summarize Sheet' : 'Summarize Deck'}
+                          </div>
                           <div className="text-[11px] text-slate-400 mt-0.5">Extract the key points instantly</div>
                         </div>
                       </button>
                       
-                      <button onClick={() => setChatInput('Suggest improvements for ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
+                      <button onClick={() => setChatInput(productMode === 'compose' ? 'Extract action items from ' : productMode === 'sheets' ? 'Find trends in ' : 'Create speaker notes for ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
+                        <div className="p-1.5 rounded-lg bg-violet-50 text-violet-600 group-hover:bg-violet-100 transition-colors">
+                          <ListTodo size={16} strokeWidth={2.5} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[12.5px] font-semibold text-slate-700">
+                            {productMode === 'compose' ? 'Action Items' : productMode === 'sheets' ? 'Data Trends' : 'Speaker Notes'}
+                          </div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">
+                            {productMode === 'compose' ? 'Pull out tasks and next steps' : productMode === 'sheets' ? 'Highlight key metrics' : 'Generate talking points'}
+                          </div>
+                        </div>
+                      </button>
+
+                      <button onClick={() => setChatInput('Refine this ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
                         <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100 transition-colors">
                           <PenTool size={16} strokeWidth={2.5} />
                         </div>
@@ -19548,7 +19568,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
 
                   <h3 className="text-[14px] font-bold text-gray-900 mb-4 tracking-tight text-left w-full max-w-[280px]">
-                    {productMode === 'compose' ? 'How can I help you with this doc?' : 'How can I help with this slide?'}
+                    {productMode === 'compose' ? 'How can I help you with this doc?' : productMode === 'sheets' ? 'How can I help with this sheet?' : 'How can I help with this slide?'}
                   </h3>
                   
                   <div className="flex flex-col w-full max-w-[280px] gap-1 mx-auto">
@@ -19559,6 +19579,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                       { label: 'Summarize this document into key takeaways', subtitle: 'Extract main themes and core insights', icon: FileText },
                       { label: 'Extract action items from this meeting recording', subtitle: 'Action items and tasks checklist', icon: ListTodo },
                       { label: 'Build a report using data from these files', subtitle: 'Synthesize structured reports from inputs', icon: Database }
+                    ] : productMode === 'sheets' ? [
+                      { label: 'Analyze this data', subtitle: 'Find trends and insights', icon: TrendingUp },
+                      { label: 'Create pivot table', subtitle: 'Summarize your raw data', icon: Table },
+                      { label: 'Forecast next quarter', subtitle: 'Project future numbers', icon: LineChart },
+                      { label: 'Find anomalies', subtitle: 'Highlight outliers in data', icon: AlertCircle },
+                      { label: 'Compare to last year', subtitle: 'Year-over-year analysis', icon: BarChart2 },
+                      { label: 'Generate chart', subtitle: 'Visualize selected data', icon: PieChart }
                     ] : [
                       { label: 'Improve slide clarity', subtitle: 'Make your message stronger and easier to understand', icon: Sparkles },
                       { label: 'Rewrite content', subtitle: 'Improve wording, tone, and flow', icon: PenTool },
@@ -25518,7 +25545,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button type="button" onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Undo"><Undo2 size={15} /></button>
                         <button type="button" onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Redo"><Redo2 size={15} /></button>
                         <button type="button" onClick={openReplayPanel} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Edit replay"><Clock size={15} /></button>
-                        <button type="button" onClick={saveDocumentLocally} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Save"><Save size={15} /></button>
+                      <button type="button" onClick={saveDocumentLocally} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Save"><Save size={15} /></button>
                       </div>
                       <div className="relative">
                         <button type="button" onClick={() => { closeTransientMenus(); setDocSearchPanelOpen((prev) => !prev); setDocSearchAutoPlay(false); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-gray-600'}`} title="Search"><Search size={15} /></button>
@@ -25530,6 +25557,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   { key: 'find', label: 'Find' },
                                   { key: 'replace', label: 'Replace' },
                                   { key: 'goTo', label: 'Go To' },
+                                  { key: 'redact', label: 'Redact' },
                                 ].map((item) => (
                                   <button
                                     key={item.key}
@@ -25559,9 +25587,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   />
                                 )}
                                 <div className="mt-2 flex items-center gap-1.5">
-                                  <button type="button" onClick={() => highlightDocumentSearchTerms(docSearchQuery, false)} className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700">Find</button>
+                                  <button type="button" onClick={() => { highlightDocumentSearchTerms(docSearchQuery, false); setDocSearchPanelOpen(false); }} className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700">Find</button>
                                   {docSearchMode === 'replace' && (
-                                    <button type="button" onClick={replaceHighlightedSearchMatches} className="px-2.5 py-1.5 text-[11px] rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50">Replace</button>
+                                    <button type="button" onClick={() => { replaceHighlightedSearchMatches(); setDocSearchPanelOpen(false); }} className="px-2.5 py-1.5 text-[11px] rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50">Replace</button>
                                   )}
                                 </div>
                               </>
@@ -25570,7 +25598,50 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <>
                                 <input value={docGoToValue} onChange={(event) => setDocGoToValue(event.target.value)} placeholder="Sheet/Cell" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400" />
                                 <div className="mt-2 flex items-center gap-2">
-                                  <button type="button" onClick={goToDocumentPage} className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700">Go</button>
+                                  <button type="button" onClick={() => { goToDocumentPage(); setDocSearchPanelOpen(false); }} className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700">Go</button>
+                                </div>
+                              </>
+                            )}
+                            {docSearchMode === 'redact' && (
+                              <>
+                                <input
+                                  type="text"
+                                  placeholder="Type a word or sentence to redact..."
+                                  value={semanticRedactQuery}
+                                  onChange={(e) => {
+                                    setSemanticRedactQuery(e.target.value);
+                                    clearSemanticRedactPreview();
+                                  }}
+                                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400 bg-white"
+                                />
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={performSemanticRedactPreview}
+                                    className="px-2.5 py-1.5 text-[11px] rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50"
+                                  >
+                                    Preview Matches
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { applySemanticRedaction(); setDocSearchPanelOpen(false); }}
+                                    disabled={semanticRedactMatches.length === 0}
+                                    className="px-2.5 py-1.5 text-[11px] rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                                  >
+                                    Redact All
+                                  </button>
+                                  {semanticRedactUndoStack && (
+                                    <button
+                                      type="button"
+                                      onClick={undoSemanticRedaction}
+                                      className="px-2.5 py-1.5 text-[11px] rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 ml-auto"
+                                    >
+                                      Undo
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="mt-2 text-[11px] text-gray-500">
+                                  {semanticRedactMatches.length} items found
                                 </div>
                               </>
                             )}
@@ -28883,7 +28954,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className="mt-2 flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={goToDocumentPage}
+                        onClick={() => { goToDocumentPage(); setDocSearchPanelOpen(false); }}
                         className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700"
                       >
                         Go To Page
@@ -28914,7 +28985,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </button>
                       <button
                         type="button"
-                        onClick={applySemanticRedaction}
+                        onClick={() => { applySemanticRedaction(); setDocSearchPanelOpen(false); }}
                         disabled={semanticRedactMatches.length === 0}
                         className="px-2.5 py-1.5 text-[11px] rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
                       >
