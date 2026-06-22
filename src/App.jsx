@@ -624,8 +624,16 @@ export default function App() {
     };
 
     document.addEventListener('mousedown', handleSheetResizeMouseDown);
+    // Global mouseup to clear any active header drag selection
+    const clearHeaderDrag = () => {
+      if (window.__sheetHeaderDragRef) {
+        window.__sheetHeaderDragRef.active = false;
+      }
+    };
+    document.addEventListener('mouseup', clearHeaderDrag);
     return () => {
       document.removeEventListener('mousedown', handleSheetResizeMouseDown);
+      document.removeEventListener('mouseup', clearHeaderDrag);
     };
   }, []);
   const defaultTitle = 'Product Launch Plan';
@@ -3742,8 +3750,11 @@ export default function App() {
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
   // selectionMode tracks what kind of selection is active: 'cell' | 'col' | 'row' | 'all'
   const [sheetSelectionMode, setSheetSelectionMode] = useState('cell');
-  // Drag selection anchor for header drags
   const sheetHeaderDragRef = useRef({ active: false, type: null, startIndex: null });
+  // Expose ref globally so the document-level mouseup can clear it without closure issues
+  useEffect(() => {
+    window.__sheetHeaderDragRef = sheetHeaderDragRef.current;
+  }, []);
   const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
   const [headerContextMenu, setHeaderContextMenu] = useState({ open: false, x: 0, y: 0, type: '', index: -1 });
   const [sheetGrids, setSheetGrids] = useState(() => {
@@ -25994,15 +26005,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               style={{ overflow: 'hidden', userSelect: 'none' }}
                               onMouseDown={(e) => {
                                 e.preventDefault();
-                                const newColRange = { startRow: 1, endRow: activeSheetGrid.rows, startCol: colIndex + 1, endCol: colIndex + 1 };
                                 if (e.shiftKey && sheetSelectionMode === 'col' && selectedSheetRange) {
+                                  // Shift+Click: extend col range
                                   setSelectedSheetRange(prev => ({ ...prev, endCol: colIndex + 1 }));
                                 } else {
-                                  setSelectedSheetRange(newColRange);
+                                  setSelectedSheetRange({ startRow: 1, endRow: activeSheetGrid.rows, startCol: colIndex + 1, endCol: colIndex + 1 });
                                   setSheetSelectionMode('col');
                                   setSelectedGridColumn(colIndex);
                                 }
-                                sheetHeaderDragRef.current = { active: true, type: 'col', startIndex: colIndex };
+                                // Mutate in-place so window.__sheetHeaderDragRef stays in sync
+                                sheetHeaderDragRef.current.active = true;
+                                sheetHeaderDragRef.current.type = 'col';
+                                sheetHeaderDragRef.current.startIndex = colIndex;
                               }}
                               onMouseEnter={() => {
                                 if (sheetHeaderDragRef.current.active && sheetHeaderDragRef.current.type === 'col') {
@@ -26081,14 +26095,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 style={{ height: rowHeight, overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
                                   e.preventDefault();
-                                  const newRowRange = { startRow: num, endRow: num, startCol: 1, endCol: activeSheetGrid.cols };
                                   if (e.shiftKey && sheetSelectionMode === 'row' && selectedSheetRange) {
+                                    // Shift+Click: extend row range
                                     setSelectedSheetRange(prev => ({ ...prev, endRow: num }));
                                   } else {
-                                    setSelectedSheetRange(newRowRange);
+                                    setSelectedSheetRange({ startRow: num, endRow: num, startCol: 1, endCol: activeSheetGrid.cols });
                                     setSheetSelectionMode('row');
                                   }
-                                  sheetHeaderDragRef.current = { active: true, type: 'row', startIndex: rowIndex };
+                                  // Mutate in-place so window.__sheetHeaderDragRef stays in sync
+                                  sheetHeaderDragRef.current.active = true;
+                                  sheetHeaderDragRef.current.type = 'row';
+                                  sheetHeaderDragRef.current.startIndex = rowIndex;
                                 }}
                                 onMouseEnter={() => {
                                   if (sheetHeaderDragRef.current.active && sheetHeaderDragRef.current.type === 'row') {
@@ -26127,9 +26144,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     style={{ height: rowHeight }}
                                     onMouseDown={(e) => {
                                       if (e.shiftKey) {
+                                        // Shift+Click: extend from anchor
                                         setSelectedSheetRange(prev => {
                                           const base = prev || { startRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endRow: selectedSheetCell.row, endCol: selectedSheetCell.col };
                                           return { ...base, endRow: num, endCol: colIndex + 1 };
+                                        });
+                                        setSheetSelectionMode('cell');
+                                      } else if (e.ctrlKey || e.metaKey) {
+                                        // Ctrl/Cmd+Click: extend range to include new cell
+                                        setSelectedSheetRange(prev => {
+                                          if (!prev) return { startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 };
+                                          return {
+                                            startRow: Math.min(prev.startRow, num),
+                                            startCol: Math.min(prev.startCol, colIndex + 1),
+                                            endRow: Math.max(prev.endRow, num),
+                                            endCol: Math.max(prev.endCol, colIndex + 1),
+                                          };
                                         });
                                         setSheetSelectionMode('cell');
                                       } else {
