@@ -477,6 +477,18 @@ const RoomStageFeed = ({ stream, placeholder }) => {
   return <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />;
 };
 
+const SHEET_SLASH_OPTIONS = [
+  { key: 'ai_formula', label: 'Generate Formula', desc: 'Use AI to create a formula' },
+  { key: 'ai_extract', label: 'Extract Data', desc: 'Pull structured data from text' },
+  { key: 'format_currency', label: 'Format: Currency', desc: 'Apply $0.00 formatting' },
+  { key: 'format_percent', label: 'Format: Percent', desc: 'Apply 0% formatting' },
+  { key: 'sort_asc', label: 'Sort A-Z', desc: 'Sort selection alphabetically' },
+  { key: 'remove_dupes', label: 'Remove Duplicates', desc: 'Keep only unique rows' },
+  { key: 'clear_format', label: 'Clear Formatting', desc: 'Reset all cell styles' },
+  { key: 'ai_summarize', label: 'Summarize', desc: 'AI summary of selected cells' },
+  { key: 'ai_translate', label: 'Translate', desc: 'Translate text in cells' },
+];
+
 const SLASH_OPTIONS = [
   { key: 'table', label: 'Table', desc: 'Insert an AI table' },
   { key: 'bullets', label: 'Bullet points', desc: 'Insert bullet list' },
@@ -3748,6 +3760,15 @@ export default function App() {
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
+  const [additionalSheetRanges, setAdditionalSheetRanges] = useState([]);
+  
+  const [sheetSlashMenu, setSheetSlashMenu] = useState({ open: false, x: 0, y: 0, filterText: '', activeIndex: 0, anchorCell: null });
+  const sheetSlashMenuRef = useRef(null);
+  const sheetSlashMenuContainerRef = useRef(null);
+  useEffect(() => {
+    sheetSlashMenuRef.current = sheetSlashMenu;
+  }, [sheetSlashMenu]);
+
   // selectionMode tracks what kind of selection is active: 'cell' | 'col' | 'row' | 'all'
   const [sheetSelectionMode, setSheetSelectionMode] = useState('cell');
   const sheetHeaderDragRef = useRef({ active: false, type: null, startIndex: null });
@@ -11337,6 +11358,43 @@ Generate the updated output according to the instruction. Preserve layout and ta
         });
       }
     }
+  };
+
+  const executeSheetSlashCommand = (key) => {
+    setSheetSlashMenu({ open: false, x: 0, y: 0, filterText: '', activeIndex: 0, anchorCell: null });
+    
+    // Collect all selected ranges
+    const allRanges = [];
+    if (selectedSheetRange) allRanges.push(selectedSheetRange);
+    allRanges.push(...additionalSheetRanges);
+    
+    if (allRanges.length === 0) return;
+    
+    // Minimal mock formatting implementation for demo purposes
+    const newFormats = { ...activeSheetGridRaw.formats };
+    
+    allRanges.forEach(range => {
+      for (let r = Math.min(range.startRow, range.endRow); r <= Math.max(range.startRow, range.endRow); r++) {
+        for (let c = Math.min(range.startCol, range.endCol); c <= Math.max(range.startCol, range.endCol); c++) {
+          if (!newFormats[r-1]) newFormats[r-1] = {};
+          
+          if (key === 'clear_format') {
+            newFormats[r-1][c-1] = {};
+          } else if (key === 'format_currency') {
+            newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], type: 'currency' };
+          } else if (key === 'format_percent') {
+            newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], type: 'percent' };
+          } else if (key === 'sort_asc') {
+            console.log('Mock: Sorting selected range');
+          } else if (key.startsWith('ai_')) {
+            console.log(`Mock: Triggering AI action: ${key}`);
+            setInlineAIPrompt({ open: true, x: window.innerWidth/2 - 250, y: window.innerHeight/2 - 50, value: `Help me with ${key} on these cells`, anchorNode: null, range: null });
+          }
+        }
+      }
+    });
+    
+    updateSheetSettings(activeSheetId, { formats: newFormats });
   };
 
   const executeSlashCommand = (key) => {
@@ -25986,6 +26044,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={() => {
                             setSheetSelectionMode('all');
                             setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
+                            setAdditionalSheetRanges([]);
                             setSelectedGridColumn(null);
                           }}
                           title="Select all"
@@ -26008,8 +26067,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 if (e.shiftKey && sheetSelectionMode === 'col' && selectedSheetRange) {
                                   // Shift+Click: extend col range
                                   setSelectedSheetRange(prev => ({ ...prev, endCol: colIndex + 1 }));
+                                  setAdditionalSheetRanges([]);
                                 } else {
                                   setSelectedSheetRange({ startRow: 1, endRow: activeSheetGrid.rows, startCol: colIndex + 1, endCol: colIndex + 1 });
+                                  setAdditionalSheetRanges([]);
                                   setSheetSelectionMode('col');
                                   setSelectedGridColumn(colIndex);
                                 }
@@ -26042,8 +26103,52 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           e.preventDefault();
                           setSheetSelectionMode('all');
                           setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: totalRows, endCol: totalCols });
+                          setAdditionalSheetRanges([]);
                           return;
                         }
+                        if (sheetSlashMenuRef.current?.open) {
+                          if (e.key === 'Escape') {
+                            setSheetSlashMenu(prev => ({ ...prev, open: false }));
+                            return;
+                          }
+                          const filteredOptions = SHEET_SLASH_OPTIONS.filter(opt => opt.label.toLowerCase().includes(sheetSlashMenuRef.current.filterText.toLowerCase()));
+                          if (e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            setSheetSlashMenu(prev => ({ ...prev, activeIndex: (prev.activeIndex + 1) % Math.max(1, filteredOptions.length) }));
+                            return;
+                          }
+                          if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            setSheetSlashMenu(prev => ({ ...prev, activeIndex: (prev.activeIndex - 1 + filteredOptions.length) % Math.max(1, filteredOptions.length) }));
+                            return;
+                          }
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (filteredOptions.length > 0) {
+                              executeSheetSlashCommand(filteredOptions[sheetSlashMenuRef.current.activeIndex].key);
+                            }
+                            return;
+                          }
+                          if (e.key === 'Backspace') {
+                            setSheetSlashMenu(prev => {
+                              if (prev.filterText.length === 0) return { ...prev, open: false };
+                              return { ...prev, filterText: prev.filterText.slice(0, -1), activeIndex: 0 };
+                            });
+                            return;
+                          }
+                          if (e.key.length === 1 && e.key !== '/') {
+                            setSheetSlashMenu(prev => ({ ...prev, filterText: prev.filterText + e.key, activeIndex: 0 }));
+                            return;
+                          }
+                        }
+
+                        if (e.key === '/' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                          e.preventDefault();
+                          // Position roughly centered on the grid
+                          setSheetSlashMenu({ open: true, x: window.innerWidth / 2, y: window.innerHeight / 2, filterText: '', activeIndex: 0, anchorCell: selectedSheetCell });
+                          return;
+                        }
+
                         const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
                         if (!arrowKeys.includes(e.key)) return;
                         e.preventDefault();
@@ -26057,6 +26162,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             if (e.key === 'ArrowLeft') endCol = Math.max(1, endCol - 1);
                             return { ...base, endRow, endCol };
                           });
+                          setAdditionalSheetRanges([]);
                           setSheetSelectionMode('cell');
                         } else {
                           setSelectedSheetCell(prev => {
@@ -26068,6 +26174,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             return { row, col };
                           });
                           setSelectedSheetRange(null);
+                          setAdditionalSheetRanges([]);
                           setSheetSelectionMode('cell');
                         }
                       }}
@@ -26098,8 +26205,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   if (e.shiftKey && sheetSelectionMode === 'row' && selectedSheetRange) {
                                     // Shift+Click: extend row range
                                     setSelectedSheetRange(prev => ({ ...prev, endRow: num }));
+                                    setAdditionalSheetRanges([]);
                                   } else {
                                     setSelectedSheetRange({ startRow: num, endRow: num, startCol: 1, endCol: activeSheetGrid.cols });
+                                    setAdditionalSheetRanges([]);
                                     setSheetSelectionMode('row');
                                   }
                                   // Mutate in-place so window.__sheetHeaderDragRef stays in sync
@@ -26119,19 +26228,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </div>,
                               // Data cells for this row
                               ...Array.from({ length: activeSheetGrid.cols }, (__, colIndex) => {
-                                const isInRange = selectedSheetRange &&
-                                  num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
-                                  num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
-                                  colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) &&
-                                  colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
+                                const allRanges = [];
+                                if (selectedSheetRange) allRanges.push(selectedSheetRange);
+                                allRanges.push(...additionalSheetRanges);
+
+                                let isInRange = false;
+                                let isTopEdge = false;
+                                let isBottomEdge = false;
+                                let isLeftEdge = false;
+                                let isRightEdge = false;
+                                let isBottomRightCorner = false;
+
+                                for (const range of allRanges) {
+                                  const rMinRow = Math.min(range.startRow, range.endRow);
+                                  const rMaxRow = Math.max(range.startRow, range.endRow);
+                                  const rMinCol = Math.min(range.startCol, range.endCol);
+                                  const rMaxCol = Math.max(range.startCol, range.endCol);
+                                  
+                                  if (num >= rMinRow && num <= rMaxRow && colIndex + 1 >= rMinCol && colIndex + 1 <= rMaxCol) {
+                                    isInRange = true;
+                                    if (num === rMinRow) isTopEdge = true;
+                                    if (num === rMaxRow) isBottomEdge = true;
+                                    if (colIndex + 1 === rMinCol) isLeftEdge = true;
+                                    if (colIndex + 1 === rMaxCol) isRightEdge = true;
+                                    if (num === rMaxRow && colIndex + 1 === rMaxCol) isBottomRightCorner = true;
+                                  }
+                                }
+
                                 const isExplicitAnchor = selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1;
                                 const isSelected = isExplicitAnchor || isInRange;
-
-                                const isTopEdge = isInRange && num === Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow);
-                                const isBottomEdge = isInRange && num === Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow);
-                                const isLeftEdge = isInRange && colIndex + 1 === Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol);
-                                const isRightEdge = isInRange && colIndex + 1 === Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
-                                const isBottomRightCorner = isBottomEdge && isRightEdge;
 
                                 let shadows = [];
                                 if (isTopEdge) shadows.push('inset 0 2px 0 0 #7c3aed');
@@ -26164,22 +26289,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           const base = prev || { startRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endRow: selectedSheetCell.row, endCol: selectedSheetCell.col };
                                           return { ...base, endRow: num, endCol: colIndex + 1 };
                                         });
+                                        setAdditionalSheetRanges([]); // clear disjoint multi-select
                                         setSheetSelectionMode('cell');
                                       } else if (e.ctrlKey || e.metaKey) {
-                                        // Ctrl/Cmd+Click: extend range to include new cell
-                                        setSelectedSheetRange(prev => {
-                                          if (!prev) return { startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 };
-                                          return {
-                                            startRow: Math.min(prev.startRow, num),
-                                            startCol: Math.min(prev.startCol, colIndex + 1),
-                                            endRow: Math.max(prev.endRow, num),
-                                            endCol: Math.max(prev.endCol, colIndex + 1),
-                                          };
+                                        // Ctrl/Cmd+Click: add a new disjoint selection range
+                                        setAdditionalSheetRanges(prev => {
+                                          // If we already have a selection at this exact cell, we could toggle it off.
+                                          // For simplicity in this implementation, we just add the new range.
+                                          return [...prev, { startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }];
                                         });
+                                        // We move the explicit anchor to the newly clicked cell
+                                        setSelectedSheetCell({ row: num, col: colIndex + 1 });
                                         setSheetSelectionMode('cell');
                                       } else {
                                         setSelectedSheetCell({ row: num, col: colIndex + 1 });
                                         setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 });
+                                        setAdditionalSheetRanges([]); // clear disjoint multi-select
                                         setSheetSelectionMode('cell');
                                         setSelectedGridColumn(null);
                                       }
