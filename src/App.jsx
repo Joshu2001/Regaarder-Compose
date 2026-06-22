@@ -11661,47 +11661,29 @@ Generate the updated output according to the instruction. Preserve layout and ta
 
       // 2. Open slash menu when '/' is pressed
       if (event.key === '/') {
-        // Special case for sheets mode: open sheet slash menu
+        // Special case for sheets mode: open sheet slash menu.
+        // IMPORTANT: Cell <input> elements handle their own '/' trigger via onKeyDown.
+        // The global listener must NOT intercept '/' inside cell inputs — that breaks
+        // normal typing. Only handle non-input targets here (e.g., grid container focus).
         if (productMode === 'sheets') {
           const target = event.target;
-          // Ignore standard chat/comment boxes, but ALLOW cell inputs and formula bar
-          if (target && (target.id === 'ai-chat-input' || target.tagName === 'TEXTAREA' || target.closest('.inline-ai-prompt-box'))) {
+          // Let chat/comment boxes, textareas, and cell inputs handle themselves
+          if (target && (
+            target.id === 'ai-chat-input' ||
+            target.tagName === 'TEXTAREA' ||
+            target.tagName === 'INPUT' ||
+            target.closest('.inline-ai-prompt-box')
+          )) {
             return;
           }
           event.preventDefault();
 
-          let leftCoord = window.innerWidth / 2;
-          let topCoord = window.innerHeight / 2;
-          let bottomCoord = 'auto';
-
-          if (target && target.getBoundingClientRect) {
-            const rect = target.getBoundingClientRect();
-            if (rect.width > 0 || rect.height > 0) {
-              leftCoord = rect.left > 0 ? rect.left : leftCoord;
-              topCoord = rect.bottom > 0 ? rect.bottom : topCoord;
-              
-              const menuHeight = 360;
-              if (topCoord + menuHeight > window.innerHeight) {
-                if (rect.top - menuHeight > 10) {
-                  bottomCoord = `${window.innerHeight - rect.top + 4}px`;
-                  topCoord = 'auto';
-                } else {
-                  topCoord = `${Math.max(10, window.innerHeight - menuHeight - 15)}px`;
-                  bottomCoord = 'auto';
-                }
-              } else {
-                topCoord = `${topCoord}px`;
-              }
-            }
-          } else {
-            topCoord = `${topCoord}px`;
-          }
-
+          // Grid container is focused (no specific cell input) — center the menu
           setSheetSlashMenu({ 
             open: true, 
-            left: leftCoord, 
-            top: topCoord, 
-            bottom: bottomCoord,
+            left: window.innerWidth / 2, 
+            top: `${window.innerHeight / 2}px`,
+            bottom: 'auto',
             filterText: '', 
             activeIndex: 0, 
             anchorCell: selectedSheetCell 
@@ -26276,10 +26258,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }
                         }
 
+                        // '/' in a cell input is handled by the cell's own onKeyDown above.
+                        // This branch handles '/' when the grid container div itself is focused.
                         if (e.key === '/' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                           e.preventDefault();
-                          // Position roughly centered on the grid
-                          setSheetSlashMenu({ open: true, x: window.innerWidth / 2, y: window.innerHeight / 2, filterText: '', activeIndex: 0, anchorCell: selectedSheetCell });
+                          setSheetSlashMenu({ open: true, left: window.innerWidth / 2, top: `${window.innerHeight / 2}px`, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: selectedSheetCell });
                           return;
                         }
 
@@ -26453,6 +26436,73 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       value={isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], activeSheetGridRaw.formats?.[rowIndex]?.[colIndex])}
                                       onFocus={() => { setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }); setSheetSelectionMode('cell'); setSelectedGridColumn(null); }}
                                       onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
+                                      onKeyDown={(e) => {
+                                        // Intercept '/' to open the sheet slash menu positioned at this cell.
+                                        // We do this here (not in the global listener) so normal cell typing is preserved.
+                                        if (e.key === '/' && !sheetSlashMenuRef.current?.open) {
+                                          e.preventDefault();
+                                          const rect = e.target.getBoundingClientRect();
+                                          const menuHeight = 360;
+                                          let top;
+                                          let bottom = 'auto';
+                                          if (rect.bottom + menuHeight > window.innerHeight) {
+                                            bottom = `${window.innerHeight - rect.top + 4}px`;
+                                            top = 'auto';
+                                          } else {
+                                            top = `${rect.bottom + 2}px`;
+                                          }
+                                          setSheetSlashMenu({
+                                            open: true,
+                                            left: rect.left,
+                                            top,
+                                            bottom,
+                                            filterText: '',
+                                            activeIndex: 0,
+                                            anchorCell: { row: num, col: colIndex + 1 },
+                                          });
+                                          return;
+                                        }
+                                        // When the slash menu is open, intercept keys to filter/navigate it
+                                        // instead of typing into the cell.
+                                        if (sheetSlashMenuRef.current?.open) {
+                                          const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
+                                            opt.label.toLowerCase().includes(sheetSlashMenuRef.current.filterText.toLowerCase())
+                                          );
+                                          if (e.key === 'Escape') {
+                                            e.preventDefault();
+                                            setSheetSlashMenu(prev => ({ ...prev, open: false }));
+                                            return;
+                                          }
+                                          if (e.key === 'ArrowDown') {
+                                            e.preventDefault();
+                                            setSheetSlashMenu(prev => ({ ...prev, activeIndex: (prev.activeIndex + 1) % Math.max(1, filtered.length) }));
+                                            return;
+                                          }
+                                          if (e.key === 'ArrowUp') {
+                                            e.preventDefault();
+                                            setSheetSlashMenu(prev => ({ ...prev, activeIndex: (prev.activeIndex - 1 + filtered.length) % Math.max(1, filtered.length) }));
+                                            return;
+                                          }
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            if (filtered.length > 0) executeSheetSlashCommand(filtered[sheetSlashMenuRef.current.activeIndex]?.key);
+                                            return;
+                                          }
+                                          if (e.key === 'Backspace') {
+                                            e.preventDefault();
+                                            setSheetSlashMenu(prev => {
+                                              if (prev.filterText.length === 0) return { ...prev, open: false };
+                                              return { ...prev, filterText: prev.filterText.slice(0, -1), activeIndex: 0 };
+                                            });
+                                            return;
+                                          }
+                                          if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                                            e.preventDefault();
+                                            setSheetSlashMenu(prev => ({ ...prev, filterText: prev.filterText + e.key, activeIndex: 0 }));
+                                            return;
+                                          }
+                                        }
+                                      }}
                                       className="w-full h-full px-2 text-xs bg-transparent focus:outline-none"
                                       style={{
                                         fontFamily: sheetToolbarFont,
