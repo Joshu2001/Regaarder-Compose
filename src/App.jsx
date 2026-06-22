@@ -3740,6 +3740,10 @@ export default function App() {
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
+  // selectionMode tracks what kind of selection is active: 'cell' | 'col' | 'row' | 'all'
+  const [sheetSelectionMode, setSheetSelectionMode] = useState('cell');
+  // Drag selection anchor for header drags
+  const sheetHeaderDragRef = useRef({ active: false, type: null, startIndex: null });
   const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
   const [headerContextMenu, setHeaderContextMenu] = useState({ open: false, x: 0, y: 0, type: '', index: -1 });
   const [sheetGrids, setSheetGrids] = useState(() => {
@@ -17923,8 +17927,15 @@ Respond with a JSON array of slide objects matching the schema.`;
 
   const executeHeaderContextMenuAction = (actionKey, type, index) => {
     if (actionKey === 'select') {
-      if (type === 'col') setSelectedSheetRange({ startRow: 1, endRow: activeSheetGridRaw.rows, startCol: index + 1, endCol: index + 1 });
-      if (type === 'row') setSelectedSheetRange({ startRow: index + 1, endRow: index + 1, startCol: 1, endCol: activeSheetGridRaw.cols });
+      if (type === 'col') {
+        setSelectedSheetRange({ startRow: 1, endRow: activeSheetGridRaw.rows, startCol: index + 1, endCol: index + 1 });
+        setSheetSelectionMode('col');
+        setSelectedGridColumn(index);
+      }
+      if (type === 'row') {
+        setSelectedSheetRange({ startRow: index + 1, endRow: index + 1, startCol: 1, endCol: activeSheetGridRaw.cols });
+        setSheetSelectionMode('row');
+      }
       return;
     }
     setSheetGrids((prev) => {
@@ -25937,7 +25948,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <button className="ml-auto text-[11px] text-[#374151] px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 font-medium">More</button>
                     </div>
                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
-                      <div className="w-12 text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5">{toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}{selectedSheetCell.row}</div>
+                      <div className="min-w-[72px] text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight">
+                        {sheetSelectionMode === 'all' ? 'All' :
+                         sheetSelectionMode === 'col' && selectedSheetRange ? `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}` :
+                         sheetSelectionMode === 'row' && selectedSheetRange ? `${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}` :
+                         selectedSheetRange && !(selectedSheetRange.startRow === selectedSheetRange.endRow && selectedSheetRange.startCol === selectedSheetRange.endCol) ?
+                           `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}` :
+                         `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`}
+                      </div>
                       <span className="text-gray-400">fx</span>
                       <input
                         type="text"
@@ -25951,22 +25969,95 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       className="grid border-b border-gray-200 bg-slate-50 text-[11px] font-semibold text-slate-700"
                       style={{ gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`, minWidth: 'max-content' }}
                     >
-                      <div className="h-8 border-r border-gray-200 relative group">
-                        <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400" />
-                      </div>
-                      {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => (
-                        <div key={col} className={`h-8 relative border-r border-gray-200 last:border-r-0 ${selectedGridColumn === colIndex ? 'sheet-col-header-active text-violet-800 font-bold' : selectedSheetCell && selectedSheetCell.col === colIndex + 1 ? 'bg-violet-100 text-violet-800' : ''}`} style={{ overflow: 'hidden' }}>
-                          <input className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer" defaultValue={col} onClick={() => { setSelectedGridColumn(colIndex); setSelectedSheetRange(null); setSelectedSheetCell(prev => ({ row: prev ? prev.row : 1, col: colIndex + 1 })); }} onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }} />
-                          <div data-col-index={colIndex} className="sheet-grid-resizer absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400 opacity-0 hover:opacity-100 z-10" />
+                        {/* ── Corner Select-All Button ── */}
+                        <div
+                          className="h-8 border-r border-gray-200 relative group flex items-center justify-center cursor-pointer hover:bg-violet-50 transition-colors"
+                          onClick={() => {
+                            setSheetSelectionMode('all');
+                            setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
+                            setSelectedGridColumn(null);
+                          }}
+                          title="Select all"
+                        >
+                          <div className={`w-3 h-3 rounded-sm border-2 transition-colors ${sheetSelectionMode === 'all' ? 'border-violet-600 bg-violet-200' : 'border-slate-300'}`} />
                         </div>
-                      ))}
+                      {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => {
+                          const isColSelected = selectedSheetRange && sheetSelectionMode === 'col'
+                            ? colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol)
+                            : sheetSelectionMode === 'all';
+                          const isColActive = sheetSelectionMode === 'cell' && selectedSheetCell && selectedSheetCell.col === colIndex + 1;
+                          return (
+                            <div
+                              key={col}
+                              className={`h-8 relative border-r border-gray-200 last:border-r-0 flex items-center justify-center select-none cursor-pointer text-[11px] font-semibold transition-colors
+                                ${isColSelected ? 'bg-violet-200 text-violet-900 font-bold' : isColActive ? 'bg-violet-100 text-violet-800' : 'hover:bg-slate-100 text-slate-700'}`}
+                              style={{ overflow: 'hidden', userSelect: 'none' }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const newColRange = { startRow: 1, endRow: activeSheetGrid.rows, startCol: colIndex + 1, endCol: colIndex + 1 };
+                                if (e.shiftKey && sheetSelectionMode === 'col' && selectedSheetRange) {
+                                  setSelectedSheetRange(prev => ({ ...prev, endCol: colIndex + 1 }));
+                                } else {
+                                  setSelectedSheetRange(newColRange);
+                                  setSheetSelectionMode('col');
+                                  setSelectedGridColumn(colIndex);
+                                }
+                                sheetHeaderDragRef.current = { active: true, type: 'col', startIndex: colIndex };
+                              }}
+                              onMouseEnter={() => {
+                                if (sheetHeaderDragRef.current.active && sheetHeaderDragRef.current.type === 'col') {
+                                  setSelectedSheetRange(prev => prev ? { ...prev, endCol: colIndex + 1 } : { startRow: 1, endRow: activeSheetGrid.rows, startCol: sheetHeaderDragRef.current.startIndex + 1, endCol: colIndex + 1 });
+                                }
+                              }}
+                              onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }}
+                            >
+                              {col}
+                              <div data-col-index={colIndex} className="sheet-grid-resizer absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400 opacity-0 hover:opacity-100 z-10" />
+                            </div>
+                          );
+                        })}
                     </div>
-                    <div className="flex-1 overflow-auto thin-scrollbar relative bg-white" tabIndex={0} onKeyDown={(e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
-      e.preventDefault();
-      setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
-    }
-  }}>
+                    <div
+                      className="flex-1 overflow-auto thin-scrollbar relative bg-white"
+                      tabIndex={0}
+                      onMouseUp={() => { sheetHeaderDragRef.current = { active: false, type: null, startIndex: null }; }}
+                      onKeyDown={(e) => {
+                        const totalRows = activeSheetGrid.rows;
+                        const totalCols = activeSheetGrid.cols;
+                        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+                          e.preventDefault();
+                          setSheetSelectionMode('all');
+                          setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: totalRows, endCol: totalCols });
+                          return;
+                        }
+                        const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+                        if (!arrowKeys.includes(e.key)) return;
+                        e.preventDefault();
+                        if (e.shiftKey) {
+                          setSelectedSheetRange(prev => {
+                            const base = prev || { startRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endRow: selectedSheetCell.row, endCol: selectedSheetCell.col };
+                            let { endRow, endCol } = base;
+                            if (e.key === 'ArrowDown') endRow = Math.min(totalRows, endRow + 1);
+                            if (e.key === 'ArrowUp') endRow = Math.max(1, endRow - 1);
+                            if (e.key === 'ArrowRight') endCol = Math.min(totalCols, endCol + 1);
+                            if (e.key === 'ArrowLeft') endCol = Math.max(1, endCol - 1);
+                            return { ...base, endRow, endCol };
+                          });
+                          setSheetSelectionMode('cell');
+                        } else {
+                          setSelectedSheetCell(prev => {
+                            let { row, col } = prev;
+                            if (e.key === 'ArrowDown') row = Math.min(totalRows, row + 1);
+                            if (e.key === 'ArrowUp') row = Math.max(1, row - 1);
+                            if (e.key === 'ArrowRight') col = Math.min(totalCols, col + 1);
+                            if (e.key === 'ArrowLeft') col = Math.max(1, col - 1);
+                            return { row, col };
+                          });
+                          setSelectedSheetRange(null);
+                          setSheetSelectionMode('cell');
+                        }
+                      }}
+                    >
                       {/* Single unified flat grid: all rows rendered as grid children so header and body share the same column tracks */}
                       <div className="origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content' }}>
                         <div
@@ -25978,52 +26069,87 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {Array.from({ length: activeSheetGrid.rows }, (_, rowIndex) => {
                             const num = rowIndex + 1;
                             const rowHeight = `var(--row-${rowIndex}-height, 36px)`;
+                            const isRowSelected = selectedSheetRange && sheetSelectionMode === 'row'
+                              ? num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)
+                              : sheetSelectionMode === 'all';
+                            const isRowActive = sheetSelectionMode === 'cell' && selectedSheetCell && selectedSheetCell.row === num;
                             return [
-                              // Row number header cell
                               <div
                                 key={`rh-${rowIndex}`}
-                                className={`relative border-b border-r border-gray-200 bg-slate-50 text-[11px] font-semibold flex items-center justify-center ${selectedSheetCell.row === num ? 'bg-violet-100 text-violet-800' : 'text-slate-700'}`}
-                                style={{ height: rowHeight, overflow: 'hidden' }}
+                                className={`relative border-b border-r border-gray-200 text-[11px] font-semibold flex items-center justify-center select-none cursor-pointer transition-colors
+                                  ${isRowSelected ? 'bg-violet-200 text-violet-900 font-bold' : isRowActive ? 'bg-violet-100 text-violet-800' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                                style={{ height: rowHeight, overflow: 'hidden', userSelect: 'none' }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  const newRowRange = { startRow: num, endRow: num, startCol: 1, endCol: activeSheetGrid.cols };
+                                  if (e.shiftKey && sheetSelectionMode === 'row' && selectedSheetRange) {
+                                    setSelectedSheetRange(prev => ({ ...prev, endRow: num }));
+                                  } else {
+                                    setSelectedSheetRange(newRowRange);
+                                    setSheetSelectionMode('row');
+                                  }
+                                  sheetHeaderDragRef.current = { active: true, type: 'row', startIndex: rowIndex };
+                                }}
+                                onMouseEnter={() => {
+                                  if (sheetHeaderDragRef.current.active && sheetHeaderDragRef.current.type === 'row') {
+                                    setSelectedSheetRange(prev => prev ? { ...prev, endRow: num } : { startRow: sheetHeaderDragRef.current.startIndex + 1, endRow: num, startCol: 1, endCol: activeSheetGrid.cols });
+                                  }
+                                }}
+                                onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'row', index: rowIndex }); }}
                               >
-                                <input
-                                  className="w-full h-full bg-transparent text-center focus:outline-none cursor-pointer"
-                                  defaultValue={num}
-                                  onClick={() => setSelectedSheetCell({ row: num, col: selectedSheetCell.col })}
-                                  onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'row', index: rowIndex }); }}
-                                />
+                                {num}
                                 <div data-row-index={rowIndex} className="sheet-grid-resizer absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-violet-400 opacity-0 hover:opacity-100 z-10" />
                               </div>,
                               // Data cells for this row
                               ...Array.from({ length: activeSheetGrid.cols }, (__, colIndex) => {
-                                const isSelected = (
-                                  (selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1) ||
-                                  (selectedSheetRange &&
-                                    num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
-                                    num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
-                                    colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) &&
-                                    colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol))
-                                );
+                                const isInRange = selectedSheetRange &&
+                                  num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
+                                  num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
+                                  colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) &&
+                                  colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
+                                const isSingleCell = sheetSelectionMode === 'cell' && selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1;
+                                const isSelected = isSingleCell || isInRange;
+                                // Col/row highlight bands
+                                const isInColBand = sheetSelectionMode === 'col' && selectedSheetRange &&
+                                  colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) &&
+                                  colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
+                                const isInRowBand = sheetSelectionMode === 'row' && selectedSheetRange &&
+                                  num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
+                                  num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow);
+                                const isAllSelected = sheetSelectionMode === 'all';
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
-                                    className={`relative border-b border-r border-gray-200 ${isSelected ? 'ring-2 ring-violet-600 z-10' : ''} ${selectedGridColumn === colIndex ? 'bg-violet-50/50' : ''}`}
+                                    className={`relative border-b border-r border-gray-200 transition-colors
+                                      ${isInRange && sheetSelectionMode !== 'cell' ? 'bg-violet-100/70' : ''}
+                                      ${isInColBand || isInRowBand || isAllSelected ? 'bg-violet-50/60' : ''}
+                                      ${isSingleCell ? 'z-10' : ''}`}
                                     style={{ height: rowHeight }}
                                     onMouseDown={(e) => {
-                                      if (e.ctrlKey || e.metaKey) {
+                                      if (e.shiftKey) {
+                                        setSelectedSheetRange(prev => {
+                                          const base = prev || { startRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endRow: selectedSheetCell.row, endCol: selectedSheetCell.col };
+                                          return { ...base, endRow: num, endCol: colIndex + 1 };
+                                        });
+                                        setSheetSelectionMode('cell');
+                                      } else {
+                                        setSelectedSheetCell({ row: num, col: colIndex + 1 });
                                         setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 });
+                                        setSheetSelectionMode('cell');
+                                        setSelectedGridColumn(null);
                                       }
                                     }}
                                     onMouseEnter={(e) => {
-                                      if ((e.ctrlKey || e.metaKey) && e.buttons === 1 && selectedSheetRange) {
-                                        setSelectedSheetRange(prev => ({ ...prev, endRow: num, endCol: colIndex + 1 }));
+                                      if (e.buttons === 1 && sheetSelectionMode === 'cell' && selectedSheetRange) {
+                                        setSelectedSheetRange(prev => prev ? { ...prev, endRow: num, endCol: colIndex + 1 } : null);
                                       }
                                     }}
                                   >
                                     <input
                                       value={isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], activeSheetGridRaw.formats?.[rowIndex]?.[colIndex])}
-                                      onFocus={() => { setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange(null); setSelectedGridColumn(null); }}
+                                      onFocus={() => { setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }); setSheetSelectionMode('cell'); setSelectedGridColumn(null); }}
                                       onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
-                                      className="w-full h-full px-2 text-xs bg-transparent focus:outline-none"
+                                      className={`w-full h-full px-2 text-xs bg-transparent focus:outline-none ${isSingleCell ? 'ring-2 ring-inset ring-violet-600' : ''}`}
                                       style={{
                                         fontFamily: sheetToolbarFont,
                                         fontSize: `${sheetToolbarSize}px`,
@@ -26032,7 +26158,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         textDecoration: sheetToolbarUnderline ? 'underline' : 'none',
                                       }}
                                     />
-                                    {isSelected && (
+                                    {isSingleCell && (
                                       <div className="absolute -bottom-1 -right-1 w-[7px] h-[7px] rounded-full bg-violet-600 z-20 cursor-crosshair border border-white" />
                                     )}
                                   </div>
@@ -26066,11 +26192,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button type="button" onClick={addWorksheet} className="px-2 py-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">+</button>
                       </div>
                       <div className="flex items-center gap-4 text-[12px] font-medium text-gray-500 shrink-0 mr-auto ml-8 hidden md:flex">
-                        <span>12 cells selected</span>
-                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                        <span>Sum: 1,234.56</span>
-                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
-                        <span>Focus Mode</span>
+                        {(() => {
+                          if (!selectedSheetRange && sheetSelectionMode === 'cell') {
+                            return <span>1 cell selected</span>;
+                          }
+                          if (selectedSheetRange) {
+                            const rows = Math.abs(selectedSheetRange.endRow - selectedSheetRange.startRow) + 1;
+                            const cols = Math.abs(selectedSheetRange.endCol - selectedSheetRange.startCol) + 1;
+                            const total = rows * cols;
+                            const values = [];
+                            for (let r = Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1; r < Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow); r++) {
+                              for (let c = Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1; c < Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol); c++) {
+                                const v = parseFloat(activeSheetGridRaw.cells?.[r]?.[c]);
+                                if (!isNaN(v)) values.push(v);
+                              }
+                            }
+                            const sum = values.reduce((a, b) => a + b, 0);
+                            const avg = values.length ? (sum / values.length) : 0;
+                            return (
+                              <>
+                                <span>{total.toLocaleString()} cells selected</span>
+                                {values.length > 0 && <><span className="w-1 h-1 rounded-full bg-gray-300" /><span>Sum: {sum.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="w-1 h-1 rounded-full bg-gray-300" /><span>Avg: {avg.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span><span className="w-1 h-1 rounded-full bg-gray-300" /><span>Count: {values.length}</span></> }
+                              </>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                       <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
                         <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom out" onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}>-</button>
