@@ -26026,10 +26026,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                          `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`}
                       </div>
                       <span className="text-gray-400">fx</span>
-                      <input
+                                            <input
                         type="text"
                         value={activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || ''}
                         onChange={(event) => updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, event.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === '/' && e.target.tagName === 'INPUT') {
+                            e.preventDefault();
+                            setSheetSlashMenu({
+                              open: true,
+                              x: window.innerWidth / 2,
+                              y: window.innerHeight / 2,
+                              filterText: '',
+                              activeIndex: 0,
+                              anchorCell: selectedSheetCell,
+                            });
+                          }
+                        }}
                         className="flex-1 border border-gray-200 rounded-lg bg-gray-50 px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-violet-500 font-normal"
                         placeholder="Enter value or formula"
                       />
@@ -32984,6 +32997,67 @@ if (productMode === 'deck' || productMode === 'sheets') {
             })}
         </div>
       )}
+
+      {/* ── Sheet Slash Menu ────────────────────────────────────── */}
+      {sheetSlashMenu.open && (() => {
+        const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
+          opt.label.toLowerCase().includes((sheetSlashMenu.filterText || '').toLowerCase())
+        );
+        return (
+          <>
+            {/* Click-outside overlay */}
+            <div
+              className="fixed inset-0 z-[190]"
+              onMouseDown={() => setSheetSlashMenu(prev => ({ ...prev, open: false }))}
+            />
+            <div
+              ref={sheetSlashMenuContainerRef}
+              className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
+              style={{
+                position: 'fixed',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                zIndex: 200,
+                minWidth: '260px',
+                maxHeight: '360px',
+                overflowY: 'auto',
+              }}
+              onMouseDown={e => e.stopPropagation()}
+            >
+              <div className="px-3 py-2 border-b border-gray-100 text-[11px] font-semibold text-violet-600 tracking-wide uppercase flex items-center gap-1.5">
+                <span>⚡</span> Sheet Actions
+                {sheetSlashMenu.filterText && (
+                  <span className="ml-auto text-gray-400 font-normal normal-case">"{sheetSlashMenu.filterText}"</span>
+                )}
+              </div>
+              {filtered.length === 0 ? (
+                <div className="px-3 py-4 text-center text-xs text-gray-400">No matching actions</div>
+              ) : (
+                filtered.map((opt, idx) => {
+                  const isActive = idx === sheetSlashMenu.activeIndex;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onMouseDown={e => e.preventDefault()}
+                      onClick={() => {
+                        executeSheetSlashCommand(opt.key);
+                        setSheetSlashMenu(prev => ({ ...prev, open: false }));
+                      }}
+                      onMouseEnter={() => setSheetSlashMenu(prev => ({ ...prev, activeIndex: idx }))}
+                      className={`slash-menu-option ${isActive ? 'active' : ''}`}
+                    >
+                      <span className="slash-menu-option-label">{opt.label}</span>
+                      <span className="slash-menu-option-desc">{opt.desc}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {brandKitModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
