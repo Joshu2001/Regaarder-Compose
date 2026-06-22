@@ -25681,7 +25681,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                     <div
                       className="grid border-b border-gray-200 bg-slate-50 text-[11px] font-semibold text-slate-700"
-                      style={{ gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, minmax(100px, 1fr))`).join(' ')}`, minWidth: 'max-content' }}
+                      style={{ gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`, minWidth: 'max-content' }}
                     >
                       <div className="h-8 border-r border-gray-200 relative group">
                         <div className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400" />
