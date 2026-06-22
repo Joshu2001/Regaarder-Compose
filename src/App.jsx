@@ -1458,6 +1458,9 @@ export default function App() {
       if (deckSlashMenuRef.current?.open && deckSlashMenuContainerRef.current && !deckSlashMenuContainerRef.current.contains(e.target)) {
         setDeckSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
       }
+      if (sheetSlashMenuRef.current?.open && sheetSlashMenuContainerRef.current && !sheetSlashMenuContainerRef.current.contains(e.target)) {
+        setSheetSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: null });
+      }
       if (watermarkMenuRef.current && !watermarkMenuRef.current.contains(e.target)) {
         setShowWatermarkMenu(false);
       }
@@ -11522,13 +11525,12 @@ Generate the updated output according to the instruction. Preserve layout and ta
     const handleGlobalSlashMenu = (event) => {
       const activeSlashMenu = slashMenuRef.current;
       
-      
       // 1. If sheet slash menu is open in sheets mode, intercept key events globally
       if (productMode === 'sheets' && sheetSlashMenuRef.current?.open) {
         const activeSheetMenu = sheetSlashMenuRef.current;
         const target = event.target;
-        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('.inline-ai-prompt-box'))) {
-          return;
+        if (target && target.id === 'ai-chat-input') {
+          return; // only let standard chat boxes handle their own typing
         }
 
         const filteredOptions = SHEET_SLASH_OPTIONS.filter(opt => 
@@ -11667,10 +11669,39 @@ Generate the updated output according to the instruction. Preserve layout and ta
             return;
           }
           event.preventDefault();
+
+          let leftCoord = window.innerWidth / 2;
+          let topCoord = window.innerHeight / 2;
+          let bottomCoord = 'auto';
+
+          if (target && target.getBoundingClientRect) {
+            const rect = target.getBoundingClientRect();
+            if (rect.width > 0 || rect.height > 0) {
+              leftCoord = rect.left > 0 ? rect.left : leftCoord;
+              topCoord = rect.bottom > 0 ? rect.bottom : topCoord;
+              
+              const menuHeight = 360;
+              if (topCoord + menuHeight > window.innerHeight) {
+                if (rect.top - menuHeight > 10) {
+                  bottomCoord = `${window.innerHeight - rect.top + 4}px`;
+                  topCoord = 'auto';
+                } else {
+                  topCoord = `${Math.max(10, window.innerHeight - menuHeight - 15)}px`;
+                  bottomCoord = 'auto';
+                }
+              } else {
+                topCoord = `${topCoord}px`;
+              }
+            }
+          } else {
+            topCoord = `${topCoord}px`;
+          }
+
           setSheetSlashMenu({ 
             open: true, 
-            x: window.innerWidth / 2, 
-            y: window.innerHeight / 2, 
+            left: leftCoord, 
+            top: topCoord, 
+            bottom: bottomCoord,
             filterText: '', 
             activeIndex: 0, 
             anchorCell: selectedSheetCell 
@@ -33095,20 +33126,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
         );
         return (
           <>
-            {/* Click-outside overlay */}
-            <div
-              className="fixed inset-0 z-[99998]"
-              onMouseDown={() => setSheetSlashMenu(prev => ({ ...prev, open: false }))}
-            />
             <div
               ref={sheetSlashMenuContainerRef}
               className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
               style={{
-                position: 'fixed',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
-                zIndex: 99999,
+                left: `${sheetSlashMenu.left}px`,
+                top: sheetSlashMenu.top,
+                bottom: sheetSlashMenu.bottom,
                 minWidth: '260px',
                 maxHeight: '360px',
                 overflowY: 'auto',
