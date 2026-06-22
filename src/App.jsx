@@ -11749,7 +11749,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
 
     window.addEventListener('keydown', handleGlobalSlashMenu, true);
     return () => window.removeEventListener('keydown', handleGlobalSlashMenu, true);
-  }, [currentAccessLevel, executeSlashCommand]);
+  }, [currentAccessLevel, executeSlashCommand, productMode, selectedSheetCell]);
 
   const focusEditableNode = (node, atEnd = true) => {
     if (!node) return;
