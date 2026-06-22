@@ -33180,6 +33180,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               ref={sheetSlashMenuContainerRef}
               className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
               style={{
+                position: 'fixed',
+                zIndex: 99999,
                 left: `${sheetSlashMenu.left}px`,
                 top: sheetSlashMenu.top,
                 bottom: sheetSlashMenu.bottom,
