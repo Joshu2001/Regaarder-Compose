@@ -11662,8 +11662,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
         // Special case for sheets mode: open sheet slash menu
         if (productMode === 'sheets') {
           const target = event.target;
-          if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('.inline-ai-prompt-box'))) {
-            return; // let inputs handle their own typing
+          // Ignore standard chat/comment boxes, but ALLOW cell inputs and formula bar
+          if (target && (target.id === 'ai-chat-input' || target.tagName === 'TEXTAREA' || target.closest('.inline-ai-prompt-box'))) {
+            return;
           }
           event.preventDefault();
           setSheetSlashMenu({ 
