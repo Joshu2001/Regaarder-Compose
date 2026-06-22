@@ -11518,6 +11518,73 @@ Generate the updated output according to the instruction. Preserve layout and ta
     const handleGlobalSlashMenu = (event) => {
       const activeSlashMenu = slashMenuRef.current;
       
+      
+      // 1. If sheet slash menu is open in sheets mode, intercept key events globally
+      if (productMode === 'sheets' && sheetSlashMenuRef.current?.open) {
+        const activeSheetMenu = sheetSlashMenuRef.current;
+        const target = event.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('.inline-ai-prompt-box'))) {
+          return;
+        }
+
+        const filteredOptions = SHEET_SLASH_OPTIONS.filter(opt => 
+          opt.label.toLowerCase().includes(activeSheetMenu.filterText.toLowerCase())
+        );
+
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          setSheetSlashMenu(prev => ({
+            ...prev,
+            activeIndex: (prev.activeIndex + 1) % Math.max(1, filteredOptions.length)
+          }));
+          return;
+        }
+        
+        if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          setSheetSlashMenu(prev => ({
+            ...prev,
+            activeIndex: (prev.activeIndex - 1 + filteredOptions.length) % Math.max(1, filteredOptions.length)
+          }));
+          return;
+        }
+        
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          const selected = filteredOptions[activeSheetMenu.activeIndex];
+          if (selected) {
+            executeSheetSlashCommand(selected.key);
+          }
+          return;
+        }
+        
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          setSheetSlashMenu({ open: false, x: 0, y: 0, filterText: '', activeIndex: 0, anchorCell: null });
+          return;
+        }
+
+        if (event.key === 'Backspace') {
+          event.preventDefault();
+          setSheetSlashMenu(prev => ({
+            ...prev,
+            filterText: prev.filterText.slice(0, -1),
+            activeIndex: 0
+          }));
+          return;
+        }
+
+        if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey && event.key !== '/') {
+          event.preventDefault();
+          setSheetSlashMenu(prev => ({
+            ...prev,
+            filterText: prev.filterText + event.key,
+            activeIndex: 0
+          }));
+          return;
+        }
+      }
+
       // 1. If slash menu is open, intercept key events globally to allow keyboard navigation/closing
       if (activeSlashMenu && activeSlashMenu.open) {
         // Ignore if user is typing in standard AI chat inputs or search inputs
@@ -11588,6 +11655,24 @@ Generate the updated output according to the instruction. Preserve layout and ta
 
       // 2. Open slash menu when '/' is pressed
       if (event.key === '/') {
+        // Special case for sheets mode: open sheet slash menu
+        if (productMode === 'sheets') {
+          const target = event.target;
+          if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.closest('.inline-ai-prompt-box'))) {
+            return; // let inputs handle their own typing
+          }
+          event.preventDefault();
+          setSheetSlashMenu({ 
+            open: true, 
+            x: window.innerWidth / 2, 
+            y: window.innerHeight / 2, 
+            filterText: '', 
+            activeIndex: 0, 
+            anchorCell: selectedSheetCell 
+          });
+          return;
+        }
+
         const target = event.target;
         if (target && (
           target.tagName === 'INPUT' || 
