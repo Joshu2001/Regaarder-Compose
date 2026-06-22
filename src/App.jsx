@@ -11682,8 +11682,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
           // Grid container is focused (no specific cell input) — center the menu
           setSheetSlashMenu({ 
             open: true, 
-            left: window.innerWidth / 2, 
-            top: `${window.innerHeight / 2}px`,
+            left: event.target ? event.target.getBoundingClientRect().left : window.innerWidth / 2, 
+            top: event.target ? `${event.target.getBoundingClientRect().bottom}px` : `${window.innerHeight / 2}px`,
             bottom: 'auto',
             filterText: '', 
             activeIndex: 0, 
@@ -26172,7 +26172,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         // This branch handles '/' when the grid container div itself is focused.
                         if (e.key === '/' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                           e.preventDefault();
-                          setSheetSlashMenu({ open: true, left: window.innerWidth / 2, top: `${window.innerHeight / 2}px`, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: selectedSheetCell });
+                          setSheetSlashMenu({ open: true, left: e.target ? e.target.getBoundingClientRect().left : window.innerWidth / 2, top: e.target ? `${e.target.getBoundingClientRect().bottom}px` : `${window.innerHeight / 2}px`, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: selectedSheetCell });
                           return;
                         }
 
@@ -26905,6 +26905,100 @@ if (productMode === 'deck' || productMode === 'sheets') {
             ))}
           </div>
         )}
+
+      {/* ── Share Modal (Deck & Sheets) ── */}
+      {shareModalOpen && (
+        <ShareModal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          shareTargetDocTitle={shareTargetDocTitle}
+          shareDestination={shareDestination}
+          setShareDestination={setShareDestination}
+          shareAccess={shareAccess}
+          setShareAccess={setShareAccess}
+          shareFormat={shareFormat}
+          setShareFormat={setShareFormat}
+          shareLink={shareLink}
+          handleShareModalConfirm={handleShareModalConfirm}
+          zeroKnowledgeRedactions={zeroKnowledgeRedactions}
+          removeProtection={removeProtection}
+          newRedactionKeyword={newRedactionKeyword}
+          setNewRedactionKeyword={setNewRedactionKeyword}
+          protectKeywordInEditor={protectKeywordInEditor}
+          setZeroKnowledgePreviewOpen={setZeroKnowledgePreviewOpen}
+          sharePasswordProtected={sharePasswordProtected}
+          setSharePasswordProtected={setSharePasswordProtected}
+          sharePassword={sharePassword}
+          setSharePassword={setSharePassword}
+          sharePasswordConfirm={sharePasswordConfirm}
+          setSharePasswordConfirm={setSharePasswordConfirm}
+          showSharePassword={showSharePassword}
+          setShowSharePassword={setShowSharePassword}
+          isPasswordConfirmed={isPasswordConfirmed}
+          setIsPasswordConfirmed={setIsPasswordConfirmed}
+          shareExpiringAccess={shareExpiringAccess}
+          setShareExpiringAccess={setShareExpiringAccess}
+          shareExpirationValue={shareExpirationValue}
+          setShareExpirationValue={setShareExpirationValue}
+          shareExpirationUnit={shareExpirationUnit}
+          setShareExpirationUnit={setShareExpirationUnit}
+          shareExpirationDate={shareExpirationDate}
+          setShareExpirationDate={setShareExpirationDate}
+        />
+      )}
+
+      {/* ── Sheet Slash Menu ── */}
+      {productMode === 'sheets' && sheetSlashMenu.open && (() => {
+        const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
+          opt.label.toLowerCase().includes((sheetSlashMenu.filterText || '').toLowerCase())
+        );
+        return (
+          <div
+            ref={sheetSlashMenuContainerRef}
+            className="slash-menu-container animate-in fade-in zoom-in-95 duration-100"
+            style={{
+              position: 'fixed',
+              zIndex: 99999,
+              left: `${sheetSlashMenu.left}px`,
+              top: sheetSlashMenu.top,
+              bottom: sheetSlashMenu.bottom,
+              minWidth: '260px',
+              maxHeight: '360px',
+              overflowY: 'auto',
+            }}
+            onMouseDown={e => e.stopPropagation()}
+          >
+            {sheetSlashMenu.filterText && (
+              <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
+                Search: <span className="font-semibold text-gray-700">"{sheetSlashMenu.filterText}"</span>
+              </div>
+            )}
+            {filtered.length === 0 ? (
+              <div className="px-3 py-4 text-center text-xs text-gray-400">No matching actions</div>
+            ) : (
+              filtered.map((opt, idx) => {
+                const isActive = idx === sheetSlashMenu.activeIndex;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={() => {
+                      executeSheetSlashCommand(opt.key);
+                      setSheetSlashMenu(prev => ({ ...prev, open: false }));
+                    }}
+                    onMouseEnter={() => setSheetSlashMenu(prev => ({ ...prev, activeIndex: idx }))}
+                    className={`slash-menu-option ${isActive ? 'active' : ''}`}
+                  >
+                    <span className="slash-menu-option-label">{opt.label}</span>
+                    <span className="slash-menu-option-desc">{opt.desc}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        );
+      })()}
 
       </div>
     );
