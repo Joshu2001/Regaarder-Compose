@@ -26000,7 +26000,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           return (
                             <div
                               key={col}
-                              className={`h-8 relative border-r border-gray-200 last:border-r-0 flex items-center justify-center select-none cursor-pointer text-[11px] font-semibold transition-colors
+                              className={`h-8 relative border-r border-gray-200 last:border-r-0 flex items-center justify-center select-none sheet-col-select-cursor text-[11px] font-semibold transition-colors
                                 ${isColSelected ? 'bg-violet-200 text-violet-900 font-bold' : isColActive ? 'bg-violet-100 text-violet-800' : 'hover:bg-slate-100 text-slate-700'}`}
                               style={{ overflow: 'hidden', userSelect: 'none' }}
                               onMouseDown={(e) => {
@@ -26090,7 +26090,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             return [
                               <div
                                 key={`rh-${rowIndex}`}
-                                className={`relative border-b border-r border-gray-200 text-[11px] font-semibold flex items-center justify-center select-none cursor-pointer transition-colors
+                                className={`relative border-b border-r border-gray-200 text-[11px] font-semibold flex items-center justify-center select-none sheet-row-select-cursor transition-colors
                                   ${isRowSelected ? 'bg-violet-200 text-violet-900 font-bold' : isRowActive ? 'bg-violet-100 text-violet-800' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
                                 style={{ height: rowHeight, overflow: 'hidden', userSelect: 'none' }}
                                 onMouseDown={(e) => {
@@ -26124,9 +26124,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
                                   colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) &&
                                   colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
-                                const isSingleCell = sheetSelectionMode === 'cell' && selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1;
-                                const isSelected = isSingleCell || isInRange;
-                                // Col/row highlight bands
+                                const isExplicitAnchor = selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1;
+                                const isSelected = isExplicitAnchor || isInRange;
+
+                                const isTopEdge = isInRange && num === Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow);
+                                const isBottomEdge = isInRange && num === Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow);
+                                const isLeftEdge = isInRange && colIndex + 1 === Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol);
+                                const isRightEdge = isInRange && colIndex + 1 === Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
+                                const isBottomRightCorner = isBottomEdge && isRightEdge;
+
+                                let shadows = [];
+                                if (isTopEdge) shadows.push('inset 0 2px 0 0 #7c3aed');
+                                if (isBottomEdge) shadows.push('inset 0 -2px 0 0 #7c3aed');
+                                if (isLeftEdge) shadows.push('inset 2px 0 0 0 #7c3aed');
+                                if (isRightEdge) shadows.push('inset -2px 0 0 0 #7c3aed');
+                                const shadowStyle = shadows.length > 0 ? { boxShadow: shadows.join(', '), zIndex: 11 } : {};
+
                                 const isInColBand = sheetSelectionMode === 'col' && selectedSheetRange &&
                                   colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) &&
                                   colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
@@ -26134,14 +26147,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
                                   num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow);
                                 const isAllSelected = sheetSelectionMode === 'all';
+
+                                const cellBg = isExplicitAnchor && sheetSelectionMode === 'cell' 
+                                  ? 'bg-white' 
+                                  : (isInRange ? 'bg-[#ebf0fc]' : (isInColBand || isInRowBand || isAllSelected ? 'bg-slate-50' : ''));
+
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
-                                    className={`relative border-b border-r border-gray-200 transition-colors
-                                      ${isInRange && sheetSelectionMode !== 'cell' ? 'bg-violet-100/70' : ''}
-                                      ${isInColBand || isInRowBand || isAllSelected ? 'bg-violet-50/60' : ''}
-                                      ${isSingleCell ? 'z-10' : ''}`}
-                                    style={{ height: rowHeight }}
+                                    className={`relative border-b border-r border-gray-200 transition-colors ${cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
+                                    style={{ height: rowHeight, ...shadowStyle }}
                                     onMouseDown={(e) => {
                                       if (e.shiftKey) {
                                         // Shift+Click: extend from anchor
@@ -26179,7 +26194,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       value={isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], activeSheetGridRaw.formats?.[rowIndex]?.[colIndex])}
                                       onFocus={() => { setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }); setSheetSelectionMode('cell'); setSelectedGridColumn(null); }}
                                       onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
-                                      className={`w-full h-full px-2 text-xs bg-transparent focus:outline-none ${isSingleCell ? 'ring-2 ring-inset ring-violet-600' : ''}`}
+                                      className="w-full h-full px-2 text-xs bg-transparent focus:outline-none"
                                       style={{
                                         fontFamily: sheetToolbarFont,
                                         fontSize: `${sheetToolbarSize}px`,
@@ -26188,8 +26203,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         textDecoration: sheetToolbarUnderline ? 'underline' : 'none',
                                       }}
                                     />
-                                    {isSingleCell && (
-                                      <div className="absolute -bottom-1 -right-1 w-[7px] h-[7px] rounded-full bg-violet-600 z-20 cursor-crosshair border border-white" />
+                                    {isBottomRightCorner && (
+                                      <div className="absolute -bottom-[3px] -right-[3px] w-[6px] h-[6px] rounded-sm bg-violet-600 z-20 cursor-crosshair border border-white" />
                                     )}
                                   </div>
                                 );

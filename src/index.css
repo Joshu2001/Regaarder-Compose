@@ -19,3 +19,10 @@
   pointer-events: none;
   user-select: none;
 }
+
+.sheet-col-select-cursor {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="black"><path d="M11 2h2v14.17l3.59-3.59L18 14l-6 6-6-6 1.41-1.41L11 16.17V2z"/></svg>') 12 12, pointer;
+}
+.sheet-row-select-cursor {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="black"><path d="M2 11h14.17l-3.59-3.59L14 6l6 6-6 6-1.41-1.41L16.17 13H2v-2z"/></svg>') 12 12, pointer;
+}
