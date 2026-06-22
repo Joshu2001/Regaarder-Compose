@@ -15902,7 +15902,7 @@ Rules:
     setDeckPromptMinimized(false);
     setDeckPromptChips(['Analyze this data', 'Create pivot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year']);
     setDeckCustomChip('');
-    setDeckSlidesPanelOpen(true);
+    setDeckSlidesPanelOpen(false);
     setRightSidebarOpen(false);
     showToast('Sheets workspace ready');
   };
@@ -17689,7 +17689,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [activeDeckSlide?.speakerNotes, chatAttachments, deckSlides, promptAttachments]);
 
   const activeSheet = sheetsData.find((sheet) => sheet.id === activeSheetId) || sheetsData[0];
-  const activeSheetGridRaw = sheetGrids[activeSheetId] || { rows: 22, cols: 7, cells: Array.from({ length: 22 }, () => Array.from({ length: 7 }, () => '')) };
+  const activeSheetGridRaw = sheetGrids[activeSheetId] || { rows: 22, cols: 26, cells: Array.from({ length: 22 }, () => Array(26).fill('')), formats: {} };
   
   const activeSheetGrid = useMemo(() => {
     if (!activeSheetGridRaw) return null;
@@ -25214,15 +25214,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => setDeckSlidesPanelOpen(false)}
-                className="w-6 h-6 rounded-md border border-gray-200 bg-white text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex items-center justify-center"
-                title="Close panel"
-                aria-label="Close panel"
-              >
-                <X size={12} />
-              </button>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
@@ -25308,19 +25299,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <>
                   <button
                     type="button"
-                    onClick={() => setLeftSidebarOpen((prev) => !prev)}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                    title={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
-                    className={`p-1.5 rounded-md border transition-colors ${deckSlidesPanelOpen ? 'text-violet-700 border-violet-200 bg-violet-50 hover:bg-violet-100' : 'text-gray-400 border-gray-200 hover:text-gray-700 hover:bg-gray-100'}`}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
                     title={deckSlidesPanelOpen ? 'Hide sheets panel' : 'Show sheets panel'}
                   >
-                    <Sidebar size={16} />
+                    {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
                   </button>
                   <div className="flex items-center gap-2">
                     {isEditingUnsavedDraftName ? (
@@ -32192,20 +32175,40 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 onPointerDown={(event) => {
-                  event.currentTarget.dataset.startX = event.clientX;
-                  event.currentTarget.dataset.startY = event.clientY;
-                  beginPanelResize('miniPrompt', event);
-                }}
-                onPointerUp={(event) => {
-                  const startX = parseFloat(event.currentTarget.dataset.startX || event.clientX);
-                  const startY = parseFloat(event.currentTarget.dataset.startY || event.clientY);
-                  const dist = Math.abs(event.clientX - startX) + Math.abs(event.clientY - startY);
-                  if (dist < 5) {
-                    setIsPromptDismissed(false);
-                    setIsPromptExpanded(true);
-                    setIsPromptMinimized(false);
-                    setIsPromptAutoVisible(true);
-                  }
+                  if (event.button !== 0) return;
+                  const startX = event.clientX;
+                  const startY = event.clientY;
+                  const startOffsetX = miniPromptOffset.x;
+                  const startOffsetY = miniPromptOffset.y;
+                  let dragged = false;
+
+                  const handleMove = (moveEvent) => {
+                    const dx = moveEvent.clientX - startX;
+                    const dy = moveEvent.clientY - startY;
+                    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                      dragged = true;
+                    }
+                    if (dragged) {
+                      setMiniPromptOffset({
+                        x: Math.min(840, Math.max(-20, startOffsetX + dx)),
+                        y: Math.min(560, Math.max(-40, startOffsetY + dy)),
+                      });
+                    }
+                  };
+
+                  const handleUp = () => {
+                    window.removeEventListener('pointermove', handleMove);
+                    window.removeEventListener('pointerup', handleUp);
+                    if (!dragged) {
+                      setIsPromptDismissed(false);
+                      setIsPromptExpanded(true);
+                      setIsPromptMinimized(false);
+                      setIsPromptAutoVisible(true);
+                    }
+                  };
+
+                  window.addEventListener('pointermove', handleMove);
+                  window.addEventListener('pointerup', handleUp);
                 }}
                 className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-move touch-none"
                 title="Open AI prompt or drag to move"
