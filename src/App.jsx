@@ -32191,28 +32191,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="pointer-events-auto flex items-center gap-2 group">
               <button
                 type="button"
-                onClick={() => {
-                  setIsPromptDismissed(false);
-                  setIsPromptExpanded(true);
-                  setIsPromptMinimized(false);
-                  setIsPromptAutoVisible(true);
-                }}
-                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all"
-                title="Open AI prompt"
-              >
-                <PenTool size={18} className="mx-auto" />
-              </button>
-              <button
-                type="button"
                 onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
+                  event.currentTarget.dataset.startX = event.clientX;
+                  event.currentTarget.dataset.startY = event.clientY;
                   beginPanelResize('miniPrompt', event);
                 }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-full border border-violet-200 bg-white text-violet-600 cursor-move touch-none"
-                title="Drag prompt button"
+                onPointerUp={(event) => {
+                  const startX = parseFloat(event.currentTarget.dataset.startX || event.clientX);
+                  const startY = parseFloat(event.currentTarget.dataset.startY || event.clientY);
+                  const dist = Math.abs(event.clientX - startX) + Math.abs(event.clientY - startY);
+                  if (dist < 5) {
+                    setIsPromptDismissed(false);
+                    setIsPromptExpanded(true);
+                    setIsPromptMinimized(false);
+                    setIsPromptAutoVisible(true);
+                  }
+                }}
+                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-move touch-none"
+                title="Open AI prompt or drag to move"
               >
-                <Move size={12} />
+                <PenTool size={18} className="mx-auto" />
               </button>
             </div>
           </div>
