@@ -11589,8 +11589,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
     allRanges.push(...additionalSheetRanges);
     
-    if (allRanges.length === 0) return;
-
+    // Global commands (AI, shapes, comments, textboxes) do NOT require a selected cell to be present.
+    // We only enforce ranges for formatting commands below.
     if (key.startsWith('ai_')) {
       const actionNames = {
         'ai_formula': 'Generate Formula',
@@ -11639,6 +11639,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
       showToast(`${typeMap[key]} inserted`);
       return;
     }
+
+    if (allRanges.length === 0) return;
+
+    // Below this point, commands require an active selection range
+
 
     if (key === 'insert_table') {
       if (allRanges.length === 1 && allRanges[0].startRow === allRanges[0].endRow && allRanges[0].startCol === allRanges[0].endCol && !sheetDrawTableMode) {
@@ -27778,8 +27783,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <button
                     key={opt.key}
                     type="button"
-                    onMouseDown={e => e.preventDefault()}
-                    onClick={() => {
+                    onPointerDown={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       executeSheetSlashCommand(opt.key);
                       setSheetSlashMenu(prev => ({ ...prev, open: false }));
                     }}
@@ -33701,8 +33707,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       key={opt.key}
                       type="button"
-                      onMouseDown={e => e.preventDefault()}
-                      onClick={() => {
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         executeSheetSlashCommand(opt.key);
                         setSheetSlashMenu(prev => ({ ...prev, open: false }));
                       }}
