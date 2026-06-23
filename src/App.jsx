@@ -1474,13 +1474,9 @@ export default function App() {
       
       if (sheetShapeMenuRef.current && !sheetShapeMenuRef.current.contains(e.target)) {
         setSheetShapeMenu({ open: false, left: 0, top: 0, bottom: 'auto', anchorCell: null });
-      } else if (!sheetShapeMenuRef.current) {
-        setSheetShapeMenu({ open: false, left: 0, top: 0, bottom: 'auto', anchorCell: null });
       }
 
       if (sheetTablePresetMenuRef.current && !sheetTablePresetMenuRef.current.contains(e.target)) {
-        setSheetTablePresetMenu(prev => ({ ...prev, open: false }));
-      } else if (!sheetTablePresetMenuRef.current) {
         setSheetTablePresetMenu(prev => ({ ...prev, open: false }));
       }
 
@@ -26277,7 +26273,127 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       ) : (
                         <>
-                    <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
+                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
+                      {sheetToolbarTab === 'Insert' && (
+                        <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
+                          <button 
+                            type="button" 
+                            onClick={() => executeSheetSlashCommand('insert_table')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <Table size={14} /> Table
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setSheetShapeMenu({
+                                open: true,
+                                left: rect.left,
+                                top: `${rect.bottom + window.scrollY + 4}px`,
+                                bottom: 'auto',
+                                anchorCell: selectedSheetRange || { startRow: 1, startCol: 1 }
+                              });
+                            }} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <Shapes size={14} /> Shape
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => executeSheetSlashCommand('insert_textbox')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <Type size={14} /> Text Box
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => executeSheetSlashCommand('insert_comment')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <MessageSquare size={14} /> Comment
+                          </button>
+                        </div>
+                      )}
+                      
+                      {sheetToolbarTab === 'Analyze' && (
+                        <div className="flex items-center gap-1.5 border-r border-gray-200 pr-3 mr-1">
+                          <button 
+                            type="button" 
+                            onClick={() => executeSheetSlashCommand('remove_dupes')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <ShieldAlert size={14} /> Clean Data
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => executeSheetSlashCommand('filter')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <List size={14} /> Filter
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => executeSheetSlashCommand('sort_asc')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <ListOrdered size={14} /> Sort A-Z
+                          </button>
+                        </div>
+                      )}
+                      
+                      {sheetToolbarTab === 'Visualize' && (
+                        <div className="flex items-center gap-1.5 border-r border-gray-200 pr-3 mr-1">
+                          <button 
+                            type="button" 
+                            onClick={() => showToast('Bar Chart inserted')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <BarChart2 size={14} /> Bar Chart
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => showToast('Line Chart inserted')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <LineChart size={14} /> Line Chart
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => showToast('Pie Chart inserted')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
+                          >
+                            <PieChart size={14} /> Pie Chart
+                          </button>
+                        </div>
+                      )}
+                      
+                      {sheetToolbarTab === 'AI' && (
+                        <div className="flex items-center gap-1.5 border-r border-gray-200 pr-3 mr-1">
+                          <button 
+                            type="button" 
+                            onClick={() => executeSheetSlashCommand('ai_formula')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-violet-100 bg-violet-50 text-violet-700 font-semibold transition-colors flex items-center gap-1.5"
+                          >
+                            <Sparkles size={14} /> Formula AI
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => executeSheetSlashCommand('ai_analyze')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-violet-100 bg-violet-50 text-violet-700 font-semibold transition-colors flex items-center gap-1.5"
+                          >
+                            <TrendingUp size={14} /> Analyze AI
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => executeSheetSlashCommand('ai_summarize')} 
+                            className="px-2.5 py-1.5 rounded-lg hover:bg-violet-100 bg-violet-50 text-violet-700 font-semibold transition-colors flex items-center gap-1.5"
+                          >
+                            <FileText size={14} /> Summarize AI
+                          </button>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
                         <button type="button" onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Undo"><Undo2 size={15} /></button>
                         <button type="button" onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Redo"><Redo2 size={15} /></button>
