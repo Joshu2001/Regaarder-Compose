@@ -4003,6 +4003,7 @@ export default function App() {
   const chatEndRef = useRef(null);
   const sheetShapeMenuRef = useRef(null);
   const sheetTablePresetMenuRef = useRef(null);
+  const tableHoverTimeoutRef = useRef(null);
   const findWidgetRef = useRef(null);
   const documentCardRef = useRef(null);
   const isSyncingFootersRef = useRef(false);
@@ -11508,7 +11509,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     // Collect all selected ranges
     const allRanges = [];
-    if (selectedSheetRange) allRanges.push(selectedSheetRange);
+    if (selectedSheetRange) {
+      allRanges.push(selectedSheetRange);
+    } else if (selectedSheetCell) {
+      allRanges.push({ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col });
+    }
     allRanges.push(...additionalSheetRanges);
     
     if (allRanges.length === 0) return;
@@ -17905,20 +17910,34 @@ Respond with a JSON array of slide objects matching the schema.`;
     const handleGlobalSheetKeyDown = (e) => {
       if (productMode !== 'sheets') return;
       if (e.key === 'Backspace' || e.key === 'Delete') {
-        // If we have a range selected, and focus isn't inside an input element (or it's the cell input itself)
-        // actually if the focus is on a text input, we should only intercept if the range spans multiple cells.
         const isTextInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable;
         
-        if (selectedSheetRange && (selectedSheetRange.startRow !== selectedSheetRange.endRow || selectedSheetRange.startCol !== selectedSheetRange.endCol)) {
+        const range = selectedSheetRange || (selectedSheetCell ? { startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col } : null);
+        if (!range) return;
+        
+        const isMultiCell = range.startRow !== range.endRow || range.startCol !== range.endCol;
+        
+        if (isMultiCell || !isTextInput) {
           e.preventDefault();
           setSheetGrids(prev => {
             const grid = prev[activeSheetId];
             if (!grid) return prev;
-            const newCells = { ...grid.cells };
-            for (let r = selectedSheetRange.startRow; r <= selectedSheetRange.endRow; r++) {
-              if (!newCells[r - 1]) newCells[r - 1] = {};
-              for (let c = selectedSheetRange.startCol; c <= selectedSheetRange.endCol; c++) {
-                newCells[r - 1][c - 1] = '';
+            
+            // Clone cells as an array of arrays, not an object
+            const newCells = grid.cells.map(row => [...row]);
+            
+            const startR = Math.min(range.startRow, range.endRow);
+            const endR = Math.max(range.startRow, range.endRow);
+            const startC = Math.min(range.startCol, range.endCol);
+            const endC = Math.max(range.startCol, range.endCol);
+            
+            for (let r = startR; r <= endR; r++) {
+              if (newCells[r - 1]) {
+                for (let c = startC; c <= endC; c++) {
+                  if (c - 1 >= 0 && c - 1 < newCells[r - 1].length) {
+                    newCells[r - 1][c - 1] = '';
+                  }
+                }
               }
             }
             return { ...prev, [activeSheetId]: { ...grid, cells: newCells } };
@@ -17929,7 +17948,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     window.addEventListener('keydown', handleGlobalSheetKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalSheetKeyDown);
-  }, [productMode, selectedSheetRange, activeSheetId]);
+  }, [productMode, selectedSheetRange, selectedSheetCell, activeSheetId]);
 
   useEffect(() => {
     if (!draggingTable) return;
@@ -26541,7 +26560,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                              <div 
                                key={overlay.id}
                                className="absolute z-[100] shadow-md flex items-center justify-center text-sm"
-                               onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
+                               onClick={(e) => { e.stopPropagation(); }}
                                style={{
                                  left, top, 
                                  width: overlay.width, 
@@ -26555,6 +26574,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                onMouseDown={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
+                                  setSelectedSheetOverlayId(overlay.id);
                                   const startX = e.clientX;
                                   const startY = e.clientY;
                                   const startLeft = left;
@@ -26780,9 +26800,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       ...tableBorderStyles,
                                       borderRightWidth: tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px'),
                                       borderBottomWidth: tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px'),
-                                      borderColor: '#e5e7eb' // tailwind gray-200
+                                      borderColor: tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.blue.border) : '#e5e7eb',
+                                      zIndex: (tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol) ? 40 : undefined
                                     }}
                                     onMouseDown={(e) => {
+                                      setSelectedSheetOverlayId(null);
                                       if (e.shiftKey) {
                                         // Shift+Click: extend from anchor
                                         if (selectedSheetCell) {
@@ -26804,9 +26826,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }}
                                     onMouseEnter={(e) => {
                                       if (tableIntersections.length > 0) {
+                                        if (tableHoverTimeoutRef.current) {
+                                          clearTimeout(tableHoverTimeoutRef.current);
+                                          tableHoverTimeoutRef.current = null;
+                                        }
                                         setHoveredTableId(tableIntersections[tableIntersections.length - 1].id);
                                       } else {
-                                        setHoveredTableId(null);
+                                        if (!tableHoverTimeoutRef.current) {
+                                          tableHoverTimeoutRef.current = setTimeout(() => {
+                                            setHoveredTableId(null);
+                                            tableHoverTimeoutRef.current = null;
+                                          }, 300);
+                                        }
                                       }
                                       if (e.buttons === 1 && selectedSheetCell) {
                                         setSelectedSheetRange({
@@ -26822,7 +26853,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     {tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && 
                                      rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && 
                                      colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol && (
-                                      <div className="absolute -top-3 -left-3 flex gap-1 z-50 animate-in fade-in zoom-in duration-150">
+                                      <div 
+                                        className="absolute -top-3 -left-3 flex gap-1 z-50 animate-in fade-in zoom-in duration-150"
+                                        onMouseEnter={() => {
+                                          if (tableHoverTimeoutRef.current) {
+                                            clearTimeout(tableHoverTimeoutRef.current);
+                                            tableHoverTimeoutRef.current = null;
+                                          }
+                                        }}
+                                        onMouseLeave={() => {
+                                          if (!tableHoverTimeoutRef.current) {
+                                            tableHoverTimeoutRef.current = setTimeout(() => {
+                                              setHoveredTableId(null);
+                                              tableHoverTimeoutRef.current = null;
+                                            }, 300);
+                                          }
+                                        }}
+                                      >
                                         <div 
                                           className="w-6 h-6 bg-slate-800 text-white rounded shadow-md flex items-center justify-center cursor-move hover:bg-slate-700 transition-colors"
                                           onMouseDown={(e) => {
