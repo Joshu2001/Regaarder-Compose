@@ -1460,6 +1460,7 @@ export default function App() {
       if (pageOptionsMenuRef.current && !pageOptionsMenuRef.current.contains(e.target)) {
         setPageOptionsMenuOpen(false);
       }
+      setSelectedSheetOverlayId(null);
       if (slashMenuRef.current?.open && slashMenuContainerRef.current && !slashMenuContainerRef.current.contains(e.target)) {
         setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
       }
@@ -3775,6 +3776,7 @@ export default function App() {
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
+  const [selectedSheetOverlayId, setSelectedSheetOverlayId] = useState(null);
   const [additionalSheetRanges, setAdditionalSheetRanges] = useState([]);
   
   const [sheetSlashMenu, setSheetSlashMenu] = useState({ open: false, x: 0, y: 0, filterText: '', activeIndex: 0, anchorCell: null });
@@ -6342,8 +6344,10 @@ export default function App() {
         tsv += rowVals.join('\t') + '\n';
       }
       
-      event.clipboardData.setData('text/plain', tsv);
       event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      event.clipboardData.setData('text/plain', tsv);
       showToast('Cells copied to clipboard');
     };
 
@@ -6355,6 +6359,8 @@ export default function App() {
 
       if (pasted.includes('\t') || pasted.includes('\n')) {
         event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
         const rows = pasted.split('\n').map(r => r.split('\t'));
         const startRow = selectedSheetCell.row - 1;
         const startCol = selectedSheetCell.col - 1;
@@ -18348,6 +18354,21 @@ Respond with a JSON array of slide objects matching the schema.`;
       };
     });
   };
+
+  const updateSheetSettings = (sheetId, updates) => {
+    setSheetGrids((prev) => {
+      const target = prev[sheetId];
+      if (!target) return prev;
+      return {
+        ...prev,
+        [sheetId]: {
+          ...target,
+          ...updates
+        }
+      };
+    });
+  };
+
   const addSheetRow = () => {
     setSheetGrids((prev) => {
       const target = prev[activeSheetId];
@@ -26411,6 +26432,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                              <div 
                                key={overlay.id}
                                className="absolute z-[100] shadow-md flex items-center justify-center text-sm"
+                               onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
                                style={{
                                  left, top, 
                                  width: overlay.width, 
@@ -26453,9 +26475,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        const newOverlays = (activeSheetGridRaw.overlays || []).map(o => o.id === overlay.id ? { ...o, content: e.target.value } : o);
                                        updateSheetSettings(activeSheetId, { overlays: newOverlays });
                                     }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedSheetOverlayId(overlay.id);
+                                    }}
                                     onMouseDown={e => e.stopPropagation()}
                                   />
                                ) : overlay.content}
+                               
+                               {selectedSheetOverlayId === overlay.id && (
+                                 <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-[110] flex gap-2" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                                   <button className="w-6 h-6 rounded-full bg-red-500 hover:ring-2 ring-red-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#ef4444' } : o) })}></button>
+                                   <button className="w-6 h-6 rounded-full bg-blue-500 hover:ring-2 ring-blue-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#3b82f6' } : o) })}></button>
+                                   <button className="w-6 h-6 rounded-full bg-green-500 hover:ring-2 ring-green-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#22c55e' } : o) })}></button>
+                                   <button className="w-6 h-6 rounded-full bg-yellow-500 hover:ring-2 ring-yellow-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#eab308' } : o) })}></button>
+                                   <button className="w-6 h-6 rounded-full bg-violet-500 hover:ring-2 ring-violet-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#8b5cf6' } : o) })}></button>
+                                   <button className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-slate-100 ml-2" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.filter(o => o.id !== overlay.id) })}><Trash2 size={14} /></button>
+                                 </div>
+                               )}
                                
                                <div 
                                  className="absolute bottom-0 right-0 w-3 h-3 bg-white border border-gray-400 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2"
@@ -26586,45 +26623,63 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                 const customBgStyle = cellFormat.fill ? { backgroundColor: cellFormat.fill } : {};
                                 const customTextStyle = cellFormat.color ? { color: cellFormat.color } : {};
+                                const cellValue = isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], cellFormat);
 
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
-                                    className={`relative border-b border-r border-gray-200 transition-colors ${cellFormat.fill ? '' : cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
-                                    style={{ height: rowHeight, ...shadowStyle, ...customBgStyle }}
+                                    className={`relative border-gray-200 transition-colors ${cellFormat.fill ? '' : cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
+                                    style={{ 
+                                      height: rowHeight, 
+                                      ...shadowStyle, 
+                                      ...customBgStyle,
+                                      borderRightWidth: cellFormat.fill ? '0px' : '1px',
+                                      borderBottomWidth: cellFormat.fill ? '0px' : '1px'
+                                    }}
                                     onMouseDown={(e) => {
                                       if (e.shiftKey) {
                                         // Shift+Click: extend from anchor
-                                        setSelectedSheetRange(prev => {
-                                          const base = prev || { startRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endRow: selectedSheetCell.row, endCol: selectedSheetCell.col };
-                                          return { ...base, endRow: num, endCol: colIndex + 1 };
-                                        });
-                                        setAdditionalSheetRanges([]); // clear disjoint multi-select
-                                        setSheetSelectionMode('cell');
-                                      } else if (e.ctrlKey || e.metaKey) {
-                                        // Ctrl/Cmd+Click: add a new disjoint selection range
-                                        setAdditionalSheetRanges(prev => {
-                                          return [...prev, { startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }];
-                                        });
-                                        // We move the explicit anchor to the newly clicked cell
-                                        setSelectedSheetCell({ row: num, col: colIndex + 1 });
-                                        setSheetSelectionMode('cell');
+                                        if (selectedSheetCell) {
+                                          setSelectedSheetRange({
+                                            startRow: Math.min(selectedSheetCell.row, num),
+                                            startCol: Math.min(selectedSheetCell.col, colIndex + 1),
+                                            endRow: Math.max(selectedSheetCell.row, num),
+                                            endCol: Math.max(selectedSheetCell.col, colIndex + 1)
+                                          });
+                                          setSheetSelectionMode('cell');
+                                          setSelectedGridColumn(null);
+                                        }
                                       } else {
                                         setSelectedSheetCell({ row: num, col: colIndex + 1 });
                                         setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 });
-                                        setAdditionalSheetRanges([]); // clear disjoint multi-select
                                         setSheetSelectionMode('cell');
                                         setSelectedGridColumn(null);
                                       }
                                     }}
                                     onMouseEnter={(e) => {
-                                      if (e.buttons === 1 && sheetSelectionMode === 'cell' && selectedSheetRange) {
-                                        setSelectedSheetRange(prev => prev ? { ...prev, endRow: num, endCol: colIndex + 1 } : null);
+                                      if (e.buttons === 1 && selectedSheetCell) {
+                                        setSelectedSheetRange({
+                                          startRow: Math.min(selectedSheetCell.row, num),
+                                          startCol: Math.min(selectedSheetCell.col, colIndex + 1),
+                                          endRow: Math.max(selectedSheetCell.row, num),
+                                          endCol: Math.max(selectedSheetCell.col, colIndex + 1)
+                                        });
+                                        setSheetSelectionMode('cell');
                                       }
                                     }}
                                   >
                                     <input
-                                      value={isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], cellFormat)}
+                                      type="text"
+                                      className={`w-full h-full px-1.5 focus:outline-none bg-transparent cursor-cell text-[#374151] placeholder-gray-300 ${cellFormat.bold ? 'font-bold' : ''}`}
+                                      style={{
+                                        fontFamily: sheetToolbarFont,
+                                        fontSize: `${sheetToolbarSize}px`,
+                                        fontWeight: cellFormat.bold ? 700 : (sheetToolbarBold ? 700 : 400),
+                                        fontStyle: sheetToolbarItalic ? 'italic' : 'normal',
+                                        textDecoration: sheetToolbarUnderline ? 'underline' : 'none',
+                                        ...customTextStyle
+                                      }}
+                                      value={cellValue}
                                       onFocus={() => { setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }); setSheetSelectionMode('cell'); setSelectedGridColumn(null); }}
                                       onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
                                       onKeyDown={(e) => {
@@ -26704,6 +26759,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         ...customTextStyle
                                       }}
                                     />
+                                    {cellFormat.isHeader && (
+                                      <div className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 bg-slate-50/50 rounded px-0.5">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+                                      </div>
+                                    )}
                                     {isBottomRightCorner && (
                                       <div className="absolute -bottom-[3px] -right-[3px] w-[6px] h-[6px] rounded-sm bg-violet-600 z-20 cursor-crosshair border border-white" />
                                     )}
