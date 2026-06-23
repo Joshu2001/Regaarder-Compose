@@ -26600,7 +26600,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           if (e.key === 'Enter') {
                             e.preventDefault();
                             if (filteredOptions.length > 0) {
-                              executeSheetSlashCommand(filteredOptions[sheetSlashMenuRef.current.activeIndex].key);
+                              executeSheetSlashCommand(filteredOptions[sheetSlashMenu.activeIndex]?.key);
                             }
                             return;
                           }
@@ -26679,7 +26679,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  left, top, 
                                  width: overlay.width, 
                                  height: overlay.height, 
-                                 backgroundColor: (overlay.type === 'text' || overlay.type === 'comment') ? 'white' : (overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? overlay.color : 'transparent'),
+                                 backgroundColor: (overlay.type === 'text' || overlay.type === 'comment') ? overlay.color : (overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? overlay.color : 'transparent'),
                                  border: (overlay.type === 'text' || overlay.type === 'comment') ? '1px solid #e2e8f0' : (overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? 'none' : `2px solid transparent`),
                                  borderRadius: overlay.shapeType === 'circle' ? '50%' : (overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? '8px' : ((overlay.type === 'text' || overlay.type === 'comment') ? '4px' : '0px')),
                                  cursor: 'move',
@@ -27129,7 +27129,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           }
                                           if (e.key === 'Enter') {
                                             e.preventDefault();
-                                            if (filtered.length > 0) executeSheetSlashCommand(filtered[sheetSlashMenuRef.current.activeIndex]?.key);
+                                            if (filtered.length > 0) executeSheetSlashCommand(filtered[sheetSlashMenu.activeIndex]?.key);
                                             return;
                                           }
                                           if (e.key === 'Backspace') {
