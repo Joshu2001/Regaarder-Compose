@@ -479,10 +479,10 @@ const RoomStageFeed = ({ stream, placeholder }) => {
 };
 
 const TABLE_PRESETS = {
-  blue: { headerBg: '#4F81BD', headerColor: 'white', oddBg: 'white', evenBg: '#DCE6F1', border: '#4F81BD' },
-  green: { headerBg: '#9BBB59', headerColor: 'white', oddBg: 'white', evenBg: '#EBF1DE', border: '#9BBB59' },
-  orange: { headerBg: '#F79646', headerColor: 'white', oddBg: 'white', evenBg: '#FDE9D9', border: '#F79646' },
-  dark: { headerBg: '#333333', headerColor: 'white', oddBg: 'white', evenBg: '#E6E6E6', border: '#333333' }
+  blue: { headerBg: '#2563EB', headerColor: 'white', oddBg: 'white', evenBg: '#DBEAFE', border: '#2563EB' },
+  green: { headerBg: '#16A34A', headerColor: 'white', oddBg: 'white', evenBg: '#DCFCE7', border: '#16A34A' },
+  orange: { headerBg: '#EA580C', headerColor: 'white', oddBg: 'white', evenBg: '#FFEDD5', border: '#EA580C' },
+  dark: { headerBg: '#1E293B', headerColor: 'white', oddBg: 'white', evenBg: '#F1F5F9', border: '#1E293B' }
 };
 
 const SHEET_SLASH_OPTIONS = [
@@ -1468,8 +1468,19 @@ export default function App() {
         setPageOptionsMenuOpen(false);
       }
       setSelectedSheetOverlayId(null);
-      setSheetShapeMenu({ open: false, left: 0, top: 0, bottom: 'auto', anchorCell: null });
-      setSheetTablePresetMenu(prev => ({ ...prev, open: false }));
+      
+      if (sheetShapeMenuRef.current && !sheetShapeMenuRef.current.contains(e.target)) {
+        setSheetShapeMenu({ open: false, left: 0, top: 0, bottom: 'auto', anchorCell: null });
+      } else if (!sheetShapeMenuRef.current) {
+        setSheetShapeMenu({ open: false, left: 0, top: 0, bottom: 'auto', anchorCell: null });
+      }
+
+      if (sheetTablePresetMenuRef.current && !sheetTablePresetMenuRef.current.contains(e.target)) {
+        setSheetTablePresetMenu(prev => ({ ...prev, open: false }));
+      } else if (!sheetTablePresetMenuRef.current) {
+        setSheetTablePresetMenu(prev => ({ ...prev, open: false }));
+      }
+
       if (slashMenuRef.current?.open && slashMenuContainerRef.current && !slashMenuContainerRef.current.contains(e.target)) {
         setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
       }
@@ -3990,7 +4001,13 @@ export default function App() {
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
-  const documentCardRef = useRef(null);
+  const deckSlashMenuRef = useRef(null);
+  const deckSlashMenuContainerRef = useRef(null);
+  const sheetSlashMenuRef = useRef(null);
+  const sheetSlashMenuContainerRef = useRef(null);
+  const sheetShapeMenuRef = useRef(null);
+  const sheetTablePresetMenuRef = useRef(null);
+  const findWidgetRef = useRef(null);
   const isSyncingFootersRef = useRef(false);
   const blankBodyRef = useRef(null);
   const pageOptionsMenuRef = useRef(null);
@@ -17888,6 +17905,36 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   useEffect(() => {
+    const handleGlobalSheetKeyDown = (e) => {
+      if (productMode !== 'sheets') return;
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        // If we have a range selected, and focus isn't inside an input element (or it's the cell input itself)
+        // actually if the focus is on a text input, we should only intercept if the range spans multiple cells.
+        const isTextInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable;
+        
+        if (selectedSheetRange && (selectedSheetRange.startRow !== selectedSheetRange.endRow || selectedSheetRange.startCol !== selectedSheetRange.endCol)) {
+          e.preventDefault();
+          setSheetGrids(prev => {
+            const grid = prev[activeSheetId];
+            if (!grid) return prev;
+            const newCells = { ...grid.cells };
+            for (let r = selectedSheetRange.startRow; r <= selectedSheetRange.endRow; r++) {
+              if (!newCells[r - 1]) newCells[r - 1] = {};
+              for (let c = selectedSheetRange.startCol; c <= selectedSheetRange.endCol; c++) {
+                newCells[r - 1][c - 1] = '';
+              }
+            }
+            return { ...prev, [activeSheetId]: { ...grid, cells: newCells } };
+          });
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalSheetKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalSheetKeyDown);
+  }, [productMode, selectedSheetRange, activeSheetId]);
+
+  useEffect(() => {
     if (!draggingTable) return;
     const handleGlobalMouseMove = (e) => {
       const dx = e.clientX - draggingTable.initialMouseX;
@@ -26703,6 +26750,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   computedFormat.fill = isHeader ? preset.headerBg : ((rowIndex + 1 - table.startRow) % 2 === 0 ? preset.oddBg : preset.evenBg);
                                   computedFormat.color = isHeader ? preset.headerColor : '#333';
                                   computedFormat.bold = isHeader;
+                                  computedFormat.isHeader = isHeader;
                                   // Apply borders for the edges of the table
                                   const isTableTop = rowIndex + 1 === table.startRow;
                                   const isTableBottom = rowIndex + 1 === table.endRow;
@@ -26897,9 +26945,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         ...customTextStyle
                                       }}
                                     />
-                                    {cellFormat.isHeader && (
-                                      <div className="absolute right-1 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 bg-slate-50/50 rounded px-0.5">
-                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+                                    {computedFormat.isHeader && (
+                                      <div className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100 cursor-pointer pointer-events-auto flex items-center justify-center bg-white/20 rounded p-0.5" style={{ color: computedFormat.color }}>
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                       </div>
                                     )}
                                     {isBottomRightCorner && (
@@ -33437,6 +33485,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* ── Sheet Shape Menu ────────────────────────────────────── */}
       {productMode === 'sheets' && sheetTablePresetMenu.open && (
         <div
+          ref={sheetTablePresetMenuRef}
           className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
           style={{ left: `${sheetTablePresetMenu.left}px`, top: `${sheetTablePresetMenu.top}px` }}
           onMouseDown={e => e.stopPropagation()}
@@ -33467,6 +33516,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {productMode === 'sheets' && sheetShapeMenu.open && (
         <div
+          ref={sheetShapeMenuRef}
           className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
           style={{ left: `${sheetShapeMenu.left}px`, top: sheetShapeMenu.top, bottom: sheetShapeMenu.bottom }}
           onMouseDown={e => e.stopPropagation()}
