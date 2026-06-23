@@ -3786,6 +3786,7 @@ export default function App() {
 
   // selectionMode tracks what kind of selection is active: 'cell' | 'col' | 'row' | 'all'
   const [sheetSelectionMode, setSheetSelectionMode] = useState('cell');
+  const [sheetDrawTableMode, setSheetDrawTableMode] = useState(false);
   const sheetHeaderDragRef = useRef({ active: false, type: null, startIndex: null });
   // Expose ref globally so the document-level mouseup can clear it without closure issues
   useEffect(() => {
@@ -6315,6 +6316,93 @@ export default function App() {
     window.addEventListener('paste', handlePaste, true);
     return () => window.removeEventListener('paste', handlePaste, true);
   }, []);
+
+  useEffect(() => {
+    const handleSheetCopy = (event) => {
+      if (productMode !== 'sheets' || !selectedSheetRange) return;
+      const activeInput = document.activeElement;
+      if (activeInput && activeInput.tagName === 'INPUT' && activeInput.selectionStart !== activeInput.selectionEnd) {
+        return; // Normal text selection copy inside input
+      }
+      
+      const minR = Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow);
+      const maxR = Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow);
+      const minC = Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol);
+      const maxC = Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
+      
+      const grid = sheetGrids[activeSheetId];
+      if (!grid) return;
+      
+      let tsv = '';
+      for (let r = minR - 1; r < maxR; r++) {
+        let rowVals = [];
+        for (let c = minC - 1; c < maxC; c++) {
+          rowVals.push(grid.cells[r]?.[c] || '');
+        }
+        tsv += rowVals.join('\t') + '\n';
+      }
+      
+      event.clipboardData.setData('text/plain', tsv);
+      event.preventDefault();
+      showToast('Cells copied to clipboard');
+    };
+
+    const handleSheetPaste = (event) => {
+      if (productMode !== 'sheets' || !selectedSheetCell) return;
+      const activeInput = document.activeElement;
+      const pasted = event.clipboardData?.getData('text/plain');
+      if (!pasted) return;
+
+      if (pasted.includes('\t') || pasted.includes('\n')) {
+        event.preventDefault();
+        const rows = pasted.split('\n').map(r => r.split('\t'));
+        const startRow = selectedSheetCell.row - 1;
+        const startCol = selectedSheetCell.col - 1;
+
+        setSheetGrids(prev => {
+          const target = prev[activeSheetId];
+          if (!target) return prev;
+          const nextCells = target.cells.map(r => [...r]);
+          let maxRows = target.rows;
+          let maxCols = target.cols;
+
+          for (let i = 0; i < rows.length; i++) {
+            if (rows[i].length === 1 && rows[i][0].trim() === '') continue; // Skip trailing empty newlines
+            const rIdx = startRow + i;
+            if (rIdx >= maxRows) {
+              nextCells.push(Array(maxCols).fill(''));
+              maxRows++;
+            }
+            for (let j = 0; j < rows[i].length; j++) {
+              const cIdx = startCol + j;
+              if (cIdx >= maxCols) {
+                nextCells.forEach(row => row.push(''));
+                maxCols++;
+              }
+              nextCells[rIdx][cIdx] = rows[i][j];
+            }
+          }
+          return {
+            ...prev,
+            [activeSheetId]: {
+              ...target,
+              cells: nextCells,
+              rows: maxRows,
+              cols: maxCols
+            }
+          };
+        });
+        showToast('Cells pasted from clipboard');
+      }
+    };
+
+    window.addEventListener('copy', handleSheetCopy, true);
+    window.addEventListener('paste', handleSheetPaste, true);
+    return () => {
+      window.removeEventListener('copy', handleSheetCopy, true);
+      window.removeEventListener('paste', handleSheetPaste, true);
+    };
+  }, [productMode, selectedSheetRange, selectedSheetCell, sheetGrids, activeSheetId]);
 
   useEffect(() => {
     if (!docSearchAutoPlay || docSearchMatchCount <= 1) {
@@ -11424,25 +11512,31 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
 
     if (key === 'insert_table') {
-      const newFormats = { ...activeSheetGridRaw.formats };
+      if (allRanges.length === 1 && allRanges[0].startRow === allRanges[0].endRow && allRanges[0].startCol === allRanges[0].endCol && !sheetDrawTableMode) {
+        setSheetDrawTableMode(true);
+        showToast('Table Draw Mode: Click and drag to create a table');
+        return;
+      }
+      const newFormats = activeSheetGridRaw.formats ? activeSheetGridRaw.formats.map(row => [...row]) : Array.from({ length: activeSheetGridRaw.rows }, () => Array.from({ length: activeSheetGridRaw.cols }, () => null));
       allRanges.forEach(range => {
         // Apply table header style to first row
         for (let c = Math.min(range.startCol, range.endCol); c <= Math.max(range.startCol, range.endCol); c++) {
           const r = Math.min(range.startRow, range.endRow);
-          if (!newFormats[r-1]) newFormats[r-1] = {};
-          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], bold: true, fill: '#f3f4f6', isHeader: true };
+          if (!newFormats[r-1]) newFormats[r-1] = [];
+          newFormats[r-1][c-1] = { ...(newFormats[r-1][c-1] || {}), bold: true, fill: '#f3f4f6', isHeader: true };
         }
         // Apply banding to other rows
         for (let r = Math.min(range.startRow, range.endRow) + 1; r <= Math.max(range.startRow, range.endRow); r++) {
           for (let c = Math.min(range.startCol, range.endCol); c <= Math.max(range.startCol, range.endCol); c++) {
-            if (!newFormats[r-1]) newFormats[r-1] = {};
+            if (!newFormats[r-1]) newFormats[r-1] = [];
             if ((r - Math.min(range.startRow, range.endRow)) % 2 !== 0) {
-              newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], fill: '#f9fafb' };
+              newFormats[r-1][c-1] = { ...(newFormats[r-1][c-1] || {}), fill: '#f9fafb' };
             }
           }
         }
       });
       updateSheetSettings(activeSheetId, { formats: newFormats });
+      setSheetDrawTableMode(false);
       showToast('Table inserted');
       return;
     }
@@ -26299,7 +26393,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }}
                     >
                       {/* Single unified flat grid: all rows rendered as grid children so header and body share the same column tracks */}
-                      <div className="relative origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content' }}>
+                      <div 
+                        className="relative origin-top-left" 
+                        style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content', cursor: sheetDrawTableMode ? 'crosshair' : 'default' }}
+                        onMouseUp={() => {
+                          if (sheetDrawTableMode) {
+                            executeSheetSlashCommand('insert_table');
+                          }
+                        }}
+                      >
                         {/* Overlays */}
                         {(activeSheetGridRaw.overlays || []).map(overlay => {
                            const left = overlay.x !== undefined ? overlay.x : (overlay.col * 100);
