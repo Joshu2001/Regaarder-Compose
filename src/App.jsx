@@ -478,6 +478,13 @@ const RoomStageFeed = ({ stream, placeholder }) => {
   return <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />;
 };
 
+const TABLE_PRESETS = {
+  blue: { headerBg: '#4F81BD', headerColor: 'white', oddBg: 'white', evenBg: '#DCE6F1', border: '#4F81BD' },
+  green: { headerBg: '#9BBB59', headerColor: 'white', oddBg: 'white', evenBg: '#EBF1DE', border: '#9BBB59' },
+  orange: { headerBg: '#F79646', headerColor: 'white', oddBg: 'white', evenBg: '#FDE9D9', border: '#F79646' },
+  dark: { headerBg: '#333333', headerColor: 'white', oddBg: 'white', evenBg: '#E6E6E6', border: '#333333' }
+};
+
 const SHEET_SLASH_OPTIONS = [
   // --- AI Actions ---
   { key: 'ai_formula', label: 'Generate Formula', desc: 'Use AI to create a formula' },
@@ -1461,6 +1468,8 @@ export default function App() {
         setPageOptionsMenuOpen(false);
       }
       setSelectedSheetOverlayId(null);
+      setSheetShapeMenu({ open: false, left: 0, top: 0, bottom: 'auto', anchorCell: null });
+      setSheetTablePresetMenu(prev => ({ ...prev, open: false }));
       if (slashMenuRef.current?.open && slashMenuContainerRef.current && !slashMenuContainerRef.current.contains(e.target)) {
         setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
       }
@@ -3781,6 +3790,10 @@ export default function App() {
   
   const [sheetSlashMenu, setSheetSlashMenu] = useState({ open: false, x: 0, y: 0, filterText: '', activeIndex: 0, anchorCell: null });
   const [sheetShapeMenu, setSheetShapeMenu] = useState({ open: false, left: 0, top: 0, bottom: 'auto', anchorCell: null });
+  
+  const [sheetTablePresetMenu, setSheetTablePresetMenu] = useState({ open: false, left: 0, top: 0, tableId: null });
+  const [hoveredTableId, setHoveredTableId] = useState(null);
+  const [draggingTable, setDraggingTable] = useState(null);
   
   const sheetSlashMenuRef = useRef(null);
   const sheetSlashMenuContainerRef = useRef(null);
@@ -11541,25 +11554,18 @@ Generate the updated output according to the instruction. Preserve layout and ta
         showToast('Table Draw Mode: Click and drag to create a table');
         return;
       }
-      const newFormats = activeSheetGridRaw.formats ? activeSheetGridRaw.formats.map(row => [...row]) : Array.from({ length: activeSheetGridRaw.rows }, () => Array.from({ length: activeSheetGridRaw.cols }, () => null));
+      const newTables = [...(activeSheetGridRaw.tables || [])];
       allRanges.forEach(range => {
-        // Apply table header style to first row
-        for (let c = Math.min(range.startCol, range.endCol); c <= Math.max(range.startCol, range.endCol); c++) {
-          const r = Math.min(range.startRow, range.endRow);
-          if (!newFormats[r-1]) newFormats[r-1] = [];
-          newFormats[r-1][c-1] = { ...(newFormats[r-1][c-1] || {}), bold: true, fill: '#f3f4f6', isHeader: true };
-        }
-        // Apply banding to other rows
-        for (let r = Math.min(range.startRow, range.endRow) + 1; r <= Math.max(range.startRow, range.endRow); r++) {
-          for (let c = Math.min(range.startCol, range.endCol); c <= Math.max(range.startCol, range.endCol); c++) {
-            if (!newFormats[r-1]) newFormats[r-1] = [];
-            if ((r - Math.min(range.startRow, range.endRow)) % 2 !== 0) {
-              newFormats[r-1][c-1] = { ...(newFormats[r-1][c-1] || {}), fill: '#f9fafb' };
-            }
-          }
-        }
+        newTables.push({
+          id: 'table-' + Date.now() + Math.random(),
+          startRow: Math.min(range.startRow, range.endRow),
+          endRow: Math.max(range.startRow, range.endRow),
+          startCol: Math.min(range.startCol, range.endCol),
+          endCol: Math.max(range.startCol, range.endCol),
+          presetStyle: 'blue'
+        });
       });
-      updateSheetSettings(activeSheetId, { formats: newFormats });
+      updateSheetSettings(activeSheetId, { tables: newTables });
       setSheetDrawTableMode(false);
       showToast('Table inserted');
       return;
@@ -17880,6 +17886,47 @@ Respond with a JSON array of slide objects matching the schema.`;
     };
     setDragTarget(target);
   };
+
+  useEffect(() => {
+    if (!draggingTable) return;
+    const handleGlobalMouseMove = (e) => {
+      const dx = e.clientX - draggingTable.initialMouseX;
+      const dy = e.clientY - draggingTable.initialMouseY;
+      const dCol = Math.round(dx / 100);
+      const dRow = Math.round(dy / 36);
+      
+      const newStartRow = Math.max(1, draggingTable.initialStartRow + dRow);
+      const newStartCol = Math.max(1, draggingTable.initialStartCol + dCol);
+      const rowSpan = draggingTable.initialStartRow ? draggingTable.endRow - draggingTable.initialStartRow : 0;
+      const colSpan = draggingTable.initialStartCol ? draggingTable.endCol - draggingTable.initialStartCol : 0;
+      
+      setDraggingTable(prev => ({
+        ...prev,
+        startRow: newStartRow,
+        startCol: newStartCol,
+        endRow: newStartRow + rowSpan,
+        endCol: newStartCol + colSpan
+      }));
+      // live preview update
+      setSheetGrids(prev => {
+        const grid = prev[activeSheetId];
+        if (!grid || !grid.tables) return prev;
+        const newTables = grid.tables.map(t => t.id === draggingTable.id ? { ...t, startRow: newStartRow, startCol: newStartCol, endRow: newStartRow + rowSpan, endCol: newStartCol + colSpan } : t);
+        return { ...prev, [activeSheetId]: { ...grid, tables: newTables } };
+      });
+    };
+    
+    const handleGlobalMouseUp = () => {
+      setDraggingTable(null);
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [draggingTable, activeSheetId]);
 
   useEffect(() => {
     if (!dragTarget) {
@@ -26644,25 +26691,58 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const isAllSelected = sheetSelectionMode === 'all';
 
                                 const cellFormat = activeSheetGridRaw.formats?.[rowIndex]?.[colIndex] || {};
+                                let computedFormat = { ...cellFormat };
+                                let tableBorderStyles = {};
+                                const tableIntersections = (activeSheetGridRaw.tables || []).filter(t => 
+                                  rowIndex + 1 >= t.startRow && rowIndex + 1 <= t.endRow && colIndex + 1 >= t.startCol && colIndex + 1 <= t.endCol
+                                );
+                                if (tableIntersections.length > 0) {
+                                  const table = tableIntersections[tableIntersections.length - 1];
+                                  const preset = TABLE_PRESETS[table.presetStyle] || TABLE_PRESETS.blue;
+                                  const isHeader = rowIndex + 1 === table.startRow;
+                                  computedFormat.fill = isHeader ? preset.headerBg : ((rowIndex + 1 - table.startRow) % 2 === 0 ? preset.oddBg : preset.evenBg);
+                                  computedFormat.color = isHeader ? preset.headerColor : '#333';
+                                  computedFormat.bold = isHeader;
+                                  // Apply borders for the edges of the table
+                                  const isTableTop = rowIndex + 1 === table.startRow;
+                                  const isTableBottom = rowIndex + 1 === table.endRow;
+                                  const isTableLeft = colIndex + 1 === table.startCol;
+                                  const isTableRight = colIndex + 1 === table.endCol;
+                                  tableBorderStyles = {
+                                    borderTop: isTableTop ? `2px solid ${preset.border}` : '',
+                                    borderBottom: isTableBottom ? `2px solid ${preset.border}` : '',
+                                    borderLeft: isTableLeft ? `2px solid ${preset.border}` : '',
+                                    borderRight: isTableRight ? `2px solid ${preset.border}` : ''
+                                  };
+                                }
 
                                 const cellBg = isExplicitAnchor && sheetSelectionMode === 'cell' 
                                   ? 'bg-white' 
                                   : (isInRange ? 'bg-[#ebf0fc]' : (isInColBand || isInRowBand || isAllSelected ? 'bg-slate-50' : ''));
 
-                                const customBgStyle = cellFormat.fill ? { backgroundColor: cellFormat.fill } : {};
-                                const customTextStyle = cellFormat.color ? { color: cellFormat.color } : {};
-                                const cellValue = isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], cellFormat);
+                                const customBgStyle = computedFormat.fill ? { backgroundColor: computedFormat.fill } : {};
+                                const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
+                                const cellValue = isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], computedFormat);
 
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
-                                    className={`relative border-gray-200 transition-colors ${cellFormat.fill ? '' : cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
+                                    onMouseEnter={() => {
+                                      if (tableIntersections.length > 0) {
+                                        setHoveredTableId(tableIntersections[tableIntersections.length - 1].id);
+                                      } else {
+                                        setHoveredTableId(null);
+                                      }
+                                    }}
+                                    className={`relative transition-colors ${computedFormat.fill ? '' : cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
                                     style={{ 
                                       height: rowHeight, 
                                       ...shadowStyle, 
                                       ...customBgStyle,
-                                      borderRightWidth: cellFormat.fill ? '0px' : '1px',
-                                      borderBottomWidth: cellFormat.fill ? '0px' : '1px'
+                                      ...tableBorderStyles,
+                                      borderRightWidth: tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px'),
+                                      borderBottomWidth: tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px'),
+                                      borderColor: '#e5e7eb' // tailwind gray-200
                                     }}
                                     onMouseDown={(e) => {
                                       if (e.shiftKey) {
@@ -26685,6 +26765,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       }
                                     }}
                                     onMouseEnter={(e) => {
+                                      if (tableIntersections.length > 0) {
+                                        setHoveredTableId(tableIntersections[tableIntersections.length - 1].id);
+                                      } else {
+                                        setHoveredTableId(null);
+                                      }
                                       if (e.buttons === 1 && selectedSheetCell) {
                                         setSelectedSheetRange({
                                           startRow: Math.min(selectedSheetCell.row, num),
@@ -26696,6 +26781,31 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       }
                                     }}
                                   >
+                                    {tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && 
+                                     rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && 
+                                     colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol && (
+                                      <div className="absolute -top-3 -left-3 flex gap-1 z-50 animate-in fade-in zoom-in duration-150">
+                                        <div 
+                                          className="w-6 h-6 bg-slate-800 text-white rounded shadow-md flex items-center justify-center cursor-move hover:bg-slate-700 transition-colors"
+                                          onMouseDown={(e) => {
+                                            e.stopPropagation();
+                                            setDraggingTable({ ...tableIntersections[tableIntersections.length - 1], initialMouseY: e.clientY, initialMouseX: e.clientX, initialStartRow: tableIntersections[tableIntersections.length - 1].startRow, initialStartCol: tableIntersections[tableIntersections.length - 1].startCol });
+                                          }}
+                                        >
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                                        </div>
+                                        <div 
+                                          className="w-6 h-6 bg-blue-500 text-white rounded shadow-md flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setSheetTablePresetMenu({ open: true, left: rect.left, top: rect.bottom + 8, tableId: tableIntersections[tableIntersections.length - 1].id });
+                                          }}
+                                        >
+                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                        </div>
+                                      </div>
+                                    )}
                                     <input
                                       type="text"
                                       className={`w-full h-full px-1.5 focus:outline-none bg-transparent cursor-cell text-[#374151] placeholder-gray-300 ${cellFormat.bold ? 'font-bold' : ''}`}
@@ -33325,6 +33435,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
       })()}
 
       {/* ── Sheet Shape Menu ────────────────────────────────────── */}
+      {productMode === 'sheets' && sheetTablePresetMenu.open && (
+        <div
+          className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
+          style={{ left: `${sheetTablePresetMenu.left}px`, top: `${sheetTablePresetMenu.top}px` }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          <div className="text-xs font-semibold text-gray-500 mb-2 px-1">Table Presets</div>
+          <div className="grid grid-cols-2 gap-2">
+            {Object.entries(TABLE_PRESETS).map(([key, preset]) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setSheetGrids(prev => {
+                    const grid = prev[activeSheetId];
+                    if (!grid || !grid.tables) return prev;
+                    const newTables = grid.tables.map(t => t.id === sheetTablePresetMenu.tableId ? { ...t, presetStyle: key } : t);
+                    return { ...prev, [activeSheetId]: { ...grid, tables: newTables } };
+                  });
+                  setSheetTablePresetMenu(prev => ({ ...prev, open: false }));
+                }}
+                className="flex flex-col items-center p-2 hover:bg-slate-50 rounded border border-transparent hover:border-gray-200 transition-colors"
+              >
+                <div className="w-full h-8 rounded border mb-1" style={{ backgroundColor: preset.headerBg, borderColor: preset.border }} />
+                <span className="text-[10px] text-gray-600 capitalize">{key}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {productMode === 'sheets' && sheetShapeMenu.open && (
         <div
           className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
