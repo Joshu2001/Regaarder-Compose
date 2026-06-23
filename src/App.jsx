@@ -26061,7 +26061,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
                     <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
-                      {['Data', 'Insert', 'Analyze', 'Visualize', 'AI'].map((tab) => (
+                      {['Data', 'Insert', 'Analyze', 'Visualize'].map((tab) => (
                         <button
                           key={tab}
                           type="button"
@@ -26291,7 +26291,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setSheetShapeMenu({
                                 open: true,
                                 left: rect.left,
-                                top: `${rect.bottom + window.scrollY + 4}px`,
+                                top: `${rect.bottom + 4}px`,
                                 bottom: 'auto',
                                 anchorCell: selectedSheetRange || { startRow: 1, startCol: 1 }
                               });
@@ -26368,32 +26368,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </button>
                         </div>
                       )}
-                      
-                      {sheetToolbarTab === 'AI' && (
-                        <div className="flex items-center gap-1.5 border-r border-gray-200 pr-3 mr-1">
-                          <button 
-                            type="button" 
-                            onClick={() => executeSheetSlashCommand('ai_formula')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-violet-100 bg-violet-50 text-violet-700 font-semibold transition-colors flex items-center gap-1.5"
-                          >
-                            <Sparkles size={14} /> Formula AI
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => executeSheetSlashCommand('ai_analyze')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-violet-100 bg-violet-50 text-violet-700 font-semibold transition-colors flex items-center gap-1.5"
-                          >
-                            <TrendingUp size={14} /> Analyze AI
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => executeSheetSlashCommand('ai_summarize')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-violet-100 bg-violet-50 text-violet-700 font-semibold transition-colors flex items-center gap-1.5"
-                          >
-                            <FileText size={14} /> Summarize AI
-                          </button>
-                        </div>
-                      )}
+
                       <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
                         <button type="button" onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Undo"><Undo2 size={15} /></button>
                         <button type="button" onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Redo"><Redo2 size={15} /></button>
@@ -26834,12 +26809,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                ) : overlay.content}
                                
                                {selectedSheetOverlayId === overlay.id && (
-                                 <>
-                                   <div className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-violet-500 rounded-full cursor-nwse-resize" />
-                                   <div className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-violet-500 rounded-full cursor-nesw-resize" />
-                                   <div className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white border-2 border-violet-500 rounded-full cursor-nesw-resize" />
-                                   <div className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white border-2 border-violet-500 rounded-full cursor-nwse-resize" />
-                                 </>
+                                 <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-[110] flex gap-2" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                                   <button className="w-6 h-6 rounded-full bg-red-500 hover:ring-2 ring-red-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#ef4444' } : o) })}></button>
+                                   <button className="w-6 h-6 rounded-full bg-blue-500 hover:ring-2 ring-blue-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#3b82f6' } : o) })}></button>
+                                   <button className="w-6 h-6 rounded-full bg-green-500 hover:ring-2 ring-green-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#22c55e' } : o) })}></button>
+                                   <button className="w-6 h-6 rounded-full bg-yellow-500 hover:ring-2 ring-yellow-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#eab308' } : o) })}></button>
+                                   <button className="w-6 h-6 rounded-full bg-violet-500 hover:ring-2 ring-violet-300 ring-offset-1" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.map(o => o.id === overlay.id ? { ...o, color: '#8b5cf6' } : o) })}></button>
+                                   <button className="p-1 rounded text-slate-400 hover:text-red-500 hover:bg-slate-100 ml-2" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.filter(o => o.id !== overlay.id) })}><Trash2 size={14} /></button>
+                                 </div>
                                )}
                                
                                <div 
@@ -27065,7 +27042,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                      rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && 
                                      colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol && (
                                       <div 
-                                        className="absolute -top-3 -left-3 flex gap-1 z-50 animate-in fade-in zoom-in duration-150"
+                                        className="absolute -top-7 -left-3 flex items-center gap-1 z-50 bg-white border border-slate-200 rounded-lg p-1 shadow-lg animate-in fade-in zoom-in duration-150"
                                         onMouseEnter={() => {
                                           if (tableHoverTimeoutRef.current) {
                                             clearTimeout(tableHoverTimeoutRef.current);
@@ -27082,7 +27059,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         }}
                                       >
                                         <div 
-                                          className="w-6 h-6 bg-slate-800 text-white rounded shadow-md flex items-center justify-center cursor-move hover:bg-slate-700 transition-colors"
+                                          className="w-6 h-6 bg-slate-800 text-white rounded flex items-center justify-center cursor-move hover:bg-slate-700 transition-colors"
+                                          title="Drag Table"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
                                             setDraggingTable({ 
@@ -27097,6 +27075,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           }}
                                         >
                                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                                        </div>
+                                        <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+                                        <div className="flex gap-1">
+                                          {Object.entries(TABLE_PRESETS).map(([key, preset]) => (
+                                            <button
+                                              key={key}
+                                              type="button"
+                                              className={`rounded-full border hover:scale-110 hover:ring-2 hover:ring-slate-300 transition-all ${tableIntersections[tableIntersections.length - 1].presetStyle === key ? 'ring-2 ring-slate-400 scale-105 border-white' : 'border-slate-300'}`}
+                                              style={{ backgroundColor: preset.headerBg, width: '18px', height: '18px' }}
+                                              title={`${key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Preset`}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSheetGrids(prev => {
+                                                  const grid = prev[activeSheetId];
+                                                  if (!grid || !grid.tables) return prev;
+                                                  const newTables = grid.tables.map(t => t.id === tableIntersections[tableIntersections.length - 1].id ? { ...t, presetStyle: key } : t);
+                                                  return { ...prev, [activeSheetId]: { ...grid, tables: newTables } };
+                                                });
+                                              }}
+                                            />
+                                          ))}
                                         </div>
                                       </div>
                                     )}
@@ -27188,8 +27187,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           e.preventDefault();
-                                          const tbl = tableIntersections[tableIntersections.length - 1];
-                                          setSheetTablePresetMenu({ open: true, left: e.clientX, top: e.clientY, tableId: tbl.id });
+                                          setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex });
                                         }}
                                       >
                                         <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.blue).border }}>
@@ -33755,7 +33753,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       })()}
 
       {/* ── Sheet Shape Menu ────────────────────────────────────── */}
-      {sheetTablePresetMenu.open && (
+      {productMode === 'sheets' && sheetTablePresetMenu.open && (
         <div
           ref={sheetTablePresetMenuRef}
           className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
@@ -33786,7 +33784,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {sheetShapeMenu.open && (
+      {productMode === 'sheets' && sheetShapeMenu.open && (
         <div
           ref={sheetShapeMenuRef}
           className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
