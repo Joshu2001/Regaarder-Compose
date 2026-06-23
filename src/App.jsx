@@ -26057,7 +26057,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   onClick={() => openShareModal(activeDocId || documents[0]?.id)}
-                  className="bg-violet-600 hover:bg-violet-700 text-white text-[13px] font-semibold px-4 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all hover:-translate-y-0.5"
+                  className="bg-violet-50 text-violet-600 hover:bg-violet-100 text-[13px] font-medium px-4 py-1.5 rounded-lg flex items-center gap-1.5 transition-all"
                 >
                   <Users size={14} /> Share
                 </button>
@@ -26118,17 +26118,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </header>
 
           <div className="flex-1 min-h-0 flex gap-4 p-4 relative">
-            {isSheetsMode && (
-              <button 
-                className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-violet-600 rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgba(124,58,237,0.3)] hover:bg-violet-700 hover:scale-105 transition-all z-20"
-                onClick={() => {
-                  setProductMode('whiteboard');
-                  showToast('Drawing mode activated (Whiteboard)');
-                }}
-              >
-                <PenTool size={20} />
-              </button>
-            )}
+            {/* Floating button removed as per requirements */}
             <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative ${isSheetsMode ? 'bg-[#FAFAFC]' : ''}`}>
               <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'w-full flex-1'}`}>
                 {isSheetsMode ? (
@@ -26174,7 +26164,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                             {/* ZONE 1: Omni-Import Portal */}
                             <div
-                              className={`relative rounded-3xl border-2 border-dashed transition-all duration-200 ${dataPortalDragOver ? 'border-violet-400 bg-violet-50/60 scale-[1.01]' : 'border-gray-200 bg-white'} shadow-[0_4px_24px_-8px_rgba(0,0,0,0.06)]`}
+                              className={`relative rounded-3xl transition-all duration-200 bg-white shadow-sm border border-slate-100 ${dataPortalDragOver ? 'ring-2 ring-violet-200 bg-violet-50/20' : ''}`}
                               onDragOver={(e) => { e.preventDefault(); setDataPortalDragOver(true); }}
                               onDragLeave={() => setDataPortalDragOver(false)}
                               onDrop={(e) => {
@@ -26188,47 +26178,29 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 showToast(`${files.length} file${files.length > 1 ? 's' : ''} received — analyzing...`);
                               }}
                             >
-                              <div className="p-10 flex flex-col items-center text-center gap-6">
+                              <div className="p-16 flex flex-col items-center text-center gap-8">
                                 {/* Hero Icon */}
                                 <div className="relative">
-                                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center shadow-[0_12px_40px_-8px_rgba(124,58,237,0.45)]">
-                                    <Cpu size={36} className="text-white" />
-                                  </div>
-                                  <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-400 border-2 border-white flex items-center justify-center">
-                                    <Zap size={12} className="text-white" />
+                                  <div className="w-16 h-16 rounded-2xl bg-violet-600 flex items-center justify-center shadow-sm">
+                                    <Cpu size={32} className="text-white" />
                                   </div>
                                 </div>
 
                                 {/* Headline */}
                                 <div>
-                                  <h2 className="text-[22px] font-bold text-slate-900 tracking-tight">What would you like to analyze?</h2>
-                                  <p className="text-[14px] text-slate-500 mt-2 max-w-sm">Drop any file or paste content — Regaarder converts it into structured, intelligent data.</p>
+                                  <h2 className="text-[24px] font-semibold text-slate-800 tracking-tight">What would you like to analyze?</h2>
+                                  <p className="text-[14px] text-slate-500 mt-2 max-w-sm mx-auto">Drop any file or paste content — Regaarder converts it into structured, intelligent data.</p>
                                 </div>
 
-                                {/* Supported Type Pills */}
-                                <div className="flex flex-wrap justify-center gap-2">
-                                  {[
-                                    { label: 'Documents', icon: FileText },
-                                    { label: 'PDFs', icon: FileText },
-                                    { label: 'Screenshots', icon: ScanLine },
-                                    { label: 'CSV / Excel', icon: FileSpreadsheet },
-                                    { label: 'Audio', icon: Mic },
-                                    { label: 'Video', icon: Video },
-                                    { label: 'Websites', icon: Globe },
-                                    { label: 'Images', icon: ImageIcon },
-                                  ].map(({ label, icon: Icon }) => (
-                                    <span key={label} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-[12px] font-medium text-slate-600">
-                                      <Icon size={11} />
-                                      {label}
-                                    </span>
-                                  ))}
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="flex items-center gap-3 flex-wrap justify-center">
-                                  <label className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white text-[13px] font-semibold rounded-xl cursor-pointer hover:bg-violet-700 transition-colors shadow-[0_4px_16px_-4px_rgba(124,58,237,0.5)]">
-                                    <Upload size={14} />
-                                    Upload Files
+                                {/* Upload Area Dropzone */}
+                                <div className="w-full max-w-md mt-4 flex flex-col items-center gap-5 py-12 px-6 rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 hover:bg-violet-50/60 transition-colors relative">
+                                  <Upload size={32} className="text-slate-400" />
+                                  <div className="space-y-1">
+                                    <p className="text-[15px] text-slate-600 font-medium">Drag and drop file here</p>
+                                    <p className="text-[13px] text-slate-400">or</p>
+                                  </div>
+                                  <label className="px-6 py-2.5 bg-violet-100 text-violet-700 text-[13px] font-medium rounded-xl cursor-pointer hover:bg-violet-200 transition-colors">
+                                    Browse for file
                                     <input type="file" multiple className="hidden" onChange={(e) => {
                                       const files = Array.from(e.target.files || []);
                                       if (files.length > 1) setDataPortalRelationshipPrompt(true);
@@ -26238,42 +26210,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       showToast(`${files.length} file${files.length > 1 ? 's' : ''} ready — converting to sheet...`);
                                     }} />
                                   </label>
-                                  <button type="button" className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
-                                    <Layers size={14} />
-                                    Paste Content
-                                  </button>
-                                  <button type="button" onClick={() => showToast('AI generation ready — describe your sheet')} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold rounded-xl hover:bg-gray-50 transition-colors shadow-sm">
-                                    <Sparkles size={14} className="text-violet-500" />
-                                    Ask AI
-                                  </button>
                                 </div>
 
-                                {/* Example Prompts */}
-                                <div className="flex flex-col items-center gap-2 pt-2">
-                                  <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Try an example</p>
-                                  <div className="flex flex-wrap justify-center gap-2">
-                                    {[
-                                      'Turn this SOP into a tracker',
-                                      'Extract table from screenshot',
-                                      'Build a CRM from this PDF',
-                                      'Create budget from audio notes',
-                                    ].map((prompt) => (
-                                      <button
-                                        key={prompt}
-                                        type="button"
-                                        onClick={() => showToast(`"${prompt}" — AI is generating your sheet...`)}
-                                        className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-[12px] text-slate-600 hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50 transition-colors"
-                                      >
-                                        "{prompt}"
-                                      </button>
-                                    ))}
-                                  </div>
+                                {/* Secondary actions */}
+                                <div className="flex items-center gap-6 mt-2">
+                                  <button type="button" className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Paste Content</button>
+                                  <button type="button" onClick={() => showToast('AI generation ready — describe your sheet')} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Ask AI</button>
                                 </div>
 
                                 {dataPortalDragOver && (
-                                  <div className="absolute inset-0 rounded-3xl bg-violet-50/80 flex items-center justify-center pointer-events-none z-10">
+                                  <div className="absolute inset-0 rounded-3xl bg-violet-50/80 flex items-center justify-center pointer-events-none z-10 backdrop-blur-[1px]">
                                     <div className="flex flex-col items-center gap-3">
-                                      <ArrowDownToLine size={40} className="text-violet-500" />
+                                      <Upload size={40} className="text-violet-500" />
                                       <p className="text-[16px] font-semibold text-violet-700">Release to import</p>
                                     </div>
                                   </div>
