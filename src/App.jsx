@@ -3780,6 +3780,8 @@ export default function App() {
   const [additionalSheetRanges, setAdditionalSheetRanges] = useState([]);
   
   const [sheetSlashMenu, setSheetSlashMenu] = useState({ open: false, x: 0, y: 0, filterText: '', activeIndex: 0, anchorCell: null });
+  const [sheetShapeMenu, setSheetShapeMenu] = useState({ open: false, left: 0, top: 0, bottom: 'auto', anchorCell: null });
+  
   const sheetSlashMenuRef = useRef(null);
   const sheetSlashMenuContainerRef = useRef(null);
   useEffect(() => {
@@ -6322,8 +6324,9 @@ export default function App() {
   useEffect(() => {
     const handleSheetCopy = (event) => {
       if (productMode !== 'sheets' || !selectedSheetRange) return;
+      const isMultiCellSelected = selectedSheetRange.startRow !== selectedSheetRange.endRow || selectedSheetRange.startCol !== selectedSheetRange.endCol;
       const activeInput = document.activeElement;
-      if (activeInput && activeInput.tagName === 'INPUT' && activeInput.selectionStart !== activeInput.selectionEnd) {
+      if (!isMultiCellSelected && activeInput && activeInput.tagName === 'INPUT' && activeInput.selectionStart !== activeInput.selectionEnd) {
         return; // Normal text selection copy inside input
       }
       
@@ -11470,6 +11473,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const executeSheetSlashCommand = (key) => {
+    const sMenuLeft = sheetSlashMenu.left || window.innerWidth / 2;
+    const sMenuTop = sheetSlashMenu.top !== 'auto' ? sheetSlashMenu.top : (window.innerHeight / 2) + 'px';
+    const sMenuBottom = sheetSlashMenu.bottom;
+    
     setSheetSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: null });
     
     // Collect all selected ranges
@@ -11498,9 +11505,20 @@ Generate the updated output according to the instruction. Preserve layout and ta
       return;
     }
 
-    if (key === 'insert_shape' || key === 'insert_textbox' || key === 'insert_comment') {
+    if (key === 'insert_shape') {
+      setSheetShapeMenu({
+        open: true,
+        left: sMenuLeft,
+        top: sMenuTop,
+        bottom: sMenuBottom,
+        anchorCell: selectedSheetRange ? selectedSheetRange : { startRow: 1, startCol: 1 }
+      });
+      return;
+    }
+
+    if (key === 'insert_textbox' || key === 'insert_comment') {
       const newOverlays = [...(activeSheetGridRaw.overlays || [])];
-      const typeMap = { 'insert_shape': 'rectangle', 'insert_textbox': 'text', 'insert_comment': 'comment' };
+      const typeMap = { 'insert_textbox': 'text', 'insert_comment': 'comment' };
       const cellAnchor = selectedSheetRange ? selectedSheetRange : { startRow: 1, startCol: 1 };
       newOverlays.push({
         id: 'overlay-' + Date.now(),
@@ -11508,8 +11526,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
         row: cellAnchor.startRow,
         col: cellAnchor.startCol,
         width: 150,
-        height: key === 'insert_shape' ? 100 : 50,
-        content: key === 'insert_shape' ? '' : 'New ' + typeMap[key],
+        height: 50,
+        content: 'New ' + typeMap[key],
         color: '#8b5cf6'
       });
       updateSheetSettings(activeSheetId, { overlays: newOverlays });
@@ -26437,9 +26455,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  left, top, 
                                  width: overlay.width, 
                                  height: overlay.height, 
-                                 backgroundColor: overlay.type === 'rectangle' ? overlay.color : 'white',
+                                 backgroundColor: overlay.type === 'rectangle' && overlay.shapeType !== 'triangle' && overlay.shapeType !== 'diamond' ? overlay.color : 'transparent',
                                  border: overlay.type === 'rectangle' ? 'none' : `2px solid ${overlay.color}`,
-                                 borderRadius: overlay.type === 'rectangle' ? '8px' : '4px',
+                                 borderRadius: overlay.shapeType === 'circle' ? '50%' : (overlay.type === 'rectangle' ? '8px' : '4px'),
                                  cursor: 'move',
                                  color: overlay.type === 'rectangle' ? 'white' : 'black'
                                }}
@@ -26467,6 +26485,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   window.addEventListener('mouseup', onMouseUp);
                                }}
                              >
+                               {overlay.shapeType === 'triangle' && (
+                                 <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                   <polygon points="50,0 100,100 0,100" fill={overlay.color} />
+                                 </svg>
+                               )}
+                               {overlay.shapeType === 'diamond' && (
+                                 <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                   <polygon points="50,0 100,50 50,100 0,50" fill={overlay.color} />
+                                 </svg>
+                               )}
                                {overlay.type === 'text' || overlay.type === 'comment' ? (
                                   <textarea 
                                     className="w-full h-full p-2 bg-transparent resize-none focus:outline-none"
@@ -33295,6 +33323,52 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </>
         );
       })()}
+
+      {/* ── Sheet Shape Menu ────────────────────────────────────── */}
+      {productMode === 'sheets' && sheetShapeMenu.open && (
+        <div
+          className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
+          style={{ left: `${sheetShapeMenu.left}px`, top: sheetShapeMenu.top, bottom: sheetShapeMenu.bottom }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          <div className="text-[10px] font-bold text-gray-400 mb-2 uppercase tracking-wider px-1">Basic Shapes</div>
+          <div className="grid grid-cols-4 gap-1.5">
+            {[
+              { type: 'rectangle', icon: Square },
+              { type: 'circle', icon: Circle },
+              { type: 'triangle', icon: Triangle },
+              { type: 'diamond', icon: Diamond }
+            ].map(shape => {
+              const Icon = shape.icon;
+              return (
+                <button
+                  key={shape.type}
+                  className="flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 text-gray-700 transition-colors"
+                  onClick={() => {
+                    const newOverlays = [...(activeSheetGridRaw.overlays || [])];
+                    const cellAnchor = sheetShapeMenu.anchorCell || { startRow: 1, startCol: 1 };
+                    newOverlays.push({
+                      id: 'overlay-' + Date.now(),
+                      type: 'rectangle',
+                      shapeType: shape.type,
+                      row: cellAnchor.startRow,
+                      col: cellAnchor.startCol,
+                      width: 100,
+                      height: 100,
+                      content: '',
+                      color: '#8b5cf6'
+                    });
+                    updateSheetSettings(activeSheetId, { overlays: newOverlays });
+                    setSheetShapeMenu({ open: false, left: 0, top: 0, bottom: 'auto', anchorCell: null });
+                  }}
+                >
+                  <Icon size={18} strokeWidth={1.5} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {brandKitModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
