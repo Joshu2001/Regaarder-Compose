@@ -479,6 +479,7 @@ const RoomStageFeed = ({ stream, placeholder }) => {
 };
 
 const TABLE_PRESETS = {
+  purple: { headerBg: '#7C3AED', headerColor: 'white', oddBg: 'white', evenBg: '#F5F3FF', border: '#7C3AED' },
   dark_blue: { headerBg: '#1e3a8a', headerColor: 'white', oddBg: 'white', evenBg: '#eff6ff', border: '#1e3a8a' },
   blue: { headerBg: '#2563EB', headerColor: 'white', oddBg: 'white', evenBg: '#DBEAFE', border: '#2563EB' },
   red: { headerBg: '#DC2626', headerColor: 'white', oddBg: 'white', evenBg: '#FEE2E2', border: '#DC2626' },
@@ -1469,6 +1470,9 @@ export default function App() {
       }
       if (pageOptionsMenuRef.current && !pageOptionsMenuRef.current.contains(e.target)) {
         setPageOptionsMenuOpen(false);
+      }
+      if (headerContextMenuRef.current && !headerContextMenuRef.current.contains(e.target)) {
+        setHeaderContextMenu({ open: false, x: 0, y: 0, type: '', index: -1 });
       }
       setSelectedSheetOverlayId(null);
       
@@ -4108,6 +4112,7 @@ export default function App() {
   const deckFullscreenWrapperRef = useRef(null);
   const sheetCanvasPreviewRef = useRef(null);
   const pageContextMenuRef = useRef(null);
+  const headerContextMenuRef = useRef(null);
   const sheetToolbarMenuRef = useRef(null);
   const deckToolbarMenuRef = useRef(null);
   const selectionActionMenuRef = useRef(null);
@@ -11501,9 +11506,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const executeSheetSlashCommand = (key) => {
-    const sMenuLeft = sheetSlashMenu.left || window.innerWidth / 2;
-    const sMenuTop = sheetSlashMenu.top !== 'auto' ? sheetSlashMenu.top : (window.innerHeight / 2) + 'px';
-    const sMenuBottom = sheetSlashMenu.bottom;
+    const sMenuLeft = sheetSlashMenu.x || window.innerWidth / 2;
+    const sMenuTop = sheetSlashMenu.y || (window.innerHeight / 2);
+    const sMenuBottom = 'auto';
     
     setSheetSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: null });
     
@@ -27096,6 +27101,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               }}
                                             />
                                           ))}
+                                          <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+                                          <button
+                                            type="button"
+                                            className="rounded-full flex items-center justify-center bg-white border border-slate-300 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-all text-slate-400"
+                                            style={{ width: '18px', height: '18px' }}
+                                            title="Remove Table"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSheetGrids(prev => {
+                                                const grid = prev[activeSheetId];
+                                                if (!grid || !grid.tables) return prev;
+                                                const tblId = tableIntersections[tableIntersections.length - 1].id;
+                                                const newTables = grid.tables.filter(t => t.id !== tblId);
+                                                return { ...prev, [activeSheetId]: { ...grid, tables: newTables } };
+                                              });
+                                            }}
+                                          >
+                                            <X size={12} strokeWidth={2.5} />
+                                          </button>
                                         </div>
                                       </div>
                                     )}
@@ -27650,6 +27674,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {headerContextMenu.open && (
           <div
+            ref={headerContextMenuRef}
             className="fixed z-[700] w-[220px] rounded-xl border border-gray-200 bg-white shadow-[0_18px_45px_-24px_rgba(15,23,42,0.65)] p-2"
             style={{ left: Math.max(12, headerContextMenu.x - 20), top: Math.max(12, headerContextMenu.y - 12) }}
           >
