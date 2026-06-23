@@ -4001,10 +4001,6 @@ export default function App() {
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
-  const deckSlashMenuRef = useRef(null);
-  const deckSlashMenuContainerRef = useRef(null);
-  const sheetSlashMenuRef = useRef(null);
-  const sheetSlashMenuContainerRef = useRef(null);
   const sheetShapeMenuRef = useRef(null);
   const sheetTablePresetMenuRef = useRef(null);
   const findWidgetRef = useRef(null);
@@ -26775,13 +26771,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
-                                    onMouseEnter={() => {
-                                      if (tableIntersections.length > 0) {
-                                        setHoveredTableId(tableIntersections[tableIntersections.length - 1].id);
-                                      } else {
-                                        setHoveredTableId(null);
-                                      }
-                                    }}
                                     className={`relative transition-colors ${computedFormat.fill ? '' : cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
                                     style={{ 
                                       height: rowHeight, 
@@ -26934,15 +26923,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             return;
                                           }
                                         }
-                                      }}
-                                      className="w-full h-full px-2 text-xs bg-transparent focus:outline-none"
-                                      style={{
-                                        fontFamily: sheetToolbarFont,
-                                        fontSize: `${sheetToolbarSize}px`,
-                                        fontWeight: cellFormat.bold ? 700 : (sheetToolbarBold ? 700 : 400),
-                                        fontStyle: sheetToolbarItalic ? 'italic' : 'normal',
-                                        textDecoration: sheetToolbarUnderline ? 'underline' : 'none',
-                                        ...customTextStyle
                                       }}
                                     />
                                     {computedFormat.isHeader && (
