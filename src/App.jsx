@@ -479,10 +479,13 @@ const RoomStageFeed = ({ stream, placeholder }) => {
 };
 
 const TABLE_PRESETS = {
+  dark_blue: { headerBg: '#1e3a8a', headerColor: 'white', oddBg: 'white', evenBg: '#eff6ff', border: '#1e3a8a' },
   blue: { headerBg: '#2563EB', headerColor: 'white', oddBg: 'white', evenBg: '#DBEAFE', border: '#2563EB' },
-  green: { headerBg: '#16A34A', headerColor: 'white', oddBg: 'white', evenBg: '#DCFCE7', border: '#16A34A' },
+  red: { headerBg: '#DC2626', headerColor: 'white', oddBg: 'white', evenBg: '#FEE2E2', border: '#DC2626' },
+  gray: { headerBg: '#4B5563', headerColor: 'white', oddBg: 'white', evenBg: '#F3F4F6', border: '#4B5563' },
   orange: { headerBg: '#EA580C', headerColor: 'white', oddBg: 'white', evenBg: '#FFEDD5', border: '#EA580C' },
-  dark: { headerBg: '#1E293B', headerColor: 'white', oddBg: 'white', evenBg: '#F1F5F9', border: '#1E293B' }
+  light_blue: { headerBg: '#0ea5e9', headerColor: 'white', oddBg: 'white', evenBg: '#e0f2fe', border: '#0ea5e9' },
+  green: { headerBg: '#16A34A', headerColor: 'white', oddBg: 'white', evenBg: '#DCFCE7', border: '#16A34A' }
 };
 
 const SHEET_SLASH_OPTIONS = [
@@ -3805,6 +3808,7 @@ export default function App() {
   const [sheetTablePresetMenu, setSheetTablePresetMenu] = useState({ open: false, left: 0, top: 0, tableId: null });
   const [hoveredTableId, setHoveredTableId] = useState(null);
   const [draggingTable, setDraggingTable] = useState(null);
+  const [resizingTable, setResizingTable] = useState(null);
   
   const sheetSlashMenuRef = useRef(null);
   const sheetSlashMenuContainerRef = useRef(null);
@@ -17960,8 +17964,8 @@ Respond with a JSON array of slide objects matching the schema.`;
       
       const newStartRow = Math.max(1, draggingTable.initialStartRow + dRow);
       const newStartCol = Math.max(1, draggingTable.initialStartCol + dCol);
-      const rowSpan = draggingTable.initialStartRow ? draggingTable.endRow - draggingTable.initialStartRow : 0;
-      const colSpan = draggingTable.initialStartCol ? draggingTable.endCol - draggingTable.initialStartCol : 0;
+      const rowSpan = draggingTable.initialEndRow - draggingTable.initialStartRow;
+      const colSpan = draggingTable.initialEndCol - draggingTable.initialStartCol;
       
       setDraggingTable(prev => ({
         ...prev,
@@ -17980,9 +17984,64 @@ Respond with a JSON array of slide objects matching the schema.`;
     };
     
     const handleGlobalMouseUp = () => {
+      setSheetGrids(prev => {
+        const grid = prev[activeSheetId];
+        if (!grid || !grid.tables) return prev;
+        
+        const oldTable = grid.tables.find(t => t.id === draggingTable.id);
+        if (!oldTable) return prev;
+        
+        const finalStartRow = draggingTable.startRow;
+        const finalStartCol = draggingTable.startCol;
+        const rowSpan = draggingTable.initialEndRow - draggingTable.initialStartRow;
+        const colSpan = draggingTable.initialEndCol - draggingTable.initialStartCol;
+        const finalEndRow = finalStartRow + rowSpan;
+        const finalEndCol = finalStartCol + colSpan;
+        
+        const dRow = finalStartRow - draggingTable.initialStartRow;
+        const dCol = finalStartCol - draggingTable.initialStartCol;
+        
+        const newCells = grid.cells.map(row => [...row]);
+        
+        if (dRow !== 0 || dCol !== 0) {
+          // 1. Extract values of the table at the old location
+          const tempValues = [];
+          for (let r = draggingTable.initialStartRow; r <= draggingTable.initialEndRow; r++) {
+            const rowVals = [];
+            for (let c = draggingTable.initialStartCol; c <= draggingTable.initialEndCol; c++) {
+              rowVals.push(newCells[r - 1]?.[c - 1] || '');
+            }
+            tempValues.push(rowVals);
+          }
+          
+          // 2. Clear old cells
+          for (let r = draggingTable.initialStartRow; r <= draggingTable.initialEndRow; r++) {
+            if (newCells[r - 1]) {
+              for (let c = draggingTable.initialStartCol; c <= draggingTable.initialEndCol; c++) {
+                newCells[r - 1][c - 1] = '';
+              }
+            }
+          }
+          
+          // 3. Write to new cells
+          for (let r = finalStartRow; r <= finalEndRow; r++) {
+            while (newCells.length < r) {
+              newCells.push(Array(grid.cols || 26).fill(''));
+            }
+            const srcRowIdx = r - finalStartRow;
+            for (let c = finalStartCol; c <= finalEndCol; c++) {
+              const srcColIdx = c - finalStartCol;
+              newCells[r - 1][c - 1] = tempValues[srcRowIdx]?.[srcColIdx] || '';
+            }
+          }
+        }
+        
+        const newTables = grid.tables.map(t => t.id === draggingTable.id ? { ...t, startRow: finalStartRow, startCol: finalStartCol, endRow: finalEndRow, endCol: finalEndCol } : t);
+        return { ...prev, [activeSheetId]: { ...grid, cells: newCells, tables: newTables } };
+      });
       setDraggingTable(null);
     };
-
+ 
     window.addEventListener('mousemove', handleGlobalMouseMove);
     window.addEventListener('mouseup', handleGlobalMouseUp);
     return () => {
@@ -17990,6 +18049,42 @@ Respond with a JSON array of slide objects matching the schema.`;
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
   }, [draggingTable, activeSheetId]);
+
+  useEffect(() => {
+    if (!resizingTable) return;
+    
+    const handleGlobalMouseMove = (e) => {
+      const dx = e.clientX - resizingTable.initialMouseX;
+      const dy = e.clientY - resizingTable.initialMouseY;
+      const dCol = Math.round(dx / 100);
+      const dRow = Math.round(dy / 36);
+      
+      const newEndRow = Math.max(resizingTable.startRow + 1, resizingTable.initialEndRow + dRow);
+      const newEndCol = Math.max(resizingTable.startCol, resizingTable.initialEndCol + dCol);
+      
+      setSheetGrids(prev => {
+        const grid = prev[activeSheetId];
+        if (!grid || !grid.tables) return prev;
+        const newTables = grid.tables.map(t => 
+          t.id === resizingTable.tableId 
+            ? { ...t, endRow: newEndRow, endCol: newEndCol } 
+            : t
+        );
+        return { ...prev, [activeSheetId]: { ...grid, tables: newTables } };
+      });
+    };
+    
+    const handleGlobalMouseUp = () => {
+      setResizingTable(null);
+    };
+    
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove);
+      window.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [resizingTable, activeSheetId]);
 
   useEffect(() => {
     if (!dragTarget) {
@@ -26757,6 +26852,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 const cellFormat = activeSheetGridRaw.formats?.[rowIndex]?.[colIndex] || {};
                                 let computedFormat = { ...cellFormat };
                                 let tableBorderStyles = {};
+                                let isTableBottomRight = false;
                                 const tableIntersections = (activeSheetGridRaw.tables || []).filter(t => 
                                   rowIndex + 1 >= t.startRow && rowIndex + 1 <= t.endRow && colIndex + 1 >= t.startCol && colIndex + 1 <= t.endCol
                                 );
@@ -26773,11 +26869,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   const isTableBottom = rowIndex + 1 === table.endRow;
                                   const isTableLeft = colIndex + 1 === table.startCol;
                                   const isTableRight = colIndex + 1 === table.endCol;
+                                  isTableBottomRight = isTableBottom && isTableRight;
                                   tableBorderStyles = {
                                     borderTop: isTableTop ? `2px solid ${preset.border}` : '',
-                                    borderBottom: isTableBottom ? `2px solid ${preset.border}` : '',
+                                    borderBottom: isTableBottom ? `2px solid ${preset.border}` : `1px solid ${preset.border}`,
                                     borderLeft: isTableLeft ? `2px solid ${preset.border}` : '',
-                                    borderRight: isTableRight ? `2px solid ${preset.border}` : ''
+                                    borderRight: isTableRight ? `2px solid ${preset.border}` : `1px solid ${preset.border}`
                                   };
                                 }
 
@@ -26854,7 +26951,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                      rowIndex + 1 === tableIntersections[tableIntersections.length - 1].startRow && 
                                      colIndex + 1 === tableIntersections[tableIntersections.length - 1].startCol && (
                                       <div 
-                                        className="absolute -top-3 -left-3 flex gap-1 z-50 animate-in fade-in zoom-in duration-150"
+                                        className="absolute -top-7 -left-3 flex items-center gap-1 z-50 bg-white border border-slate-200 rounded-lg p-1 shadow-lg animate-in fade-in zoom-in duration-150"
                                         onMouseEnter={() => {
                                           if (tableHoverTimeoutRef.current) {
                                             clearTimeout(tableHoverTimeoutRef.current);
@@ -26871,23 +26968,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         }}
                                       >
                                         <div 
-                                          className="w-6 h-6 bg-slate-800 text-white rounded shadow-md flex items-center justify-center cursor-move hover:bg-slate-700 transition-colors"
+                                          className="w-6 h-6 bg-slate-800 text-white rounded flex items-center justify-center cursor-move hover:bg-slate-700 transition-colors"
+                                          title="Drag Table"
                                           onMouseDown={(e) => {
                                             e.stopPropagation();
-                                            setDraggingTable({ ...tableIntersections[tableIntersections.length - 1], initialMouseY: e.clientY, initialMouseX: e.clientX, initialStartRow: tableIntersections[tableIntersections.length - 1].startRow, initialStartCol: tableIntersections[tableIntersections.length - 1].startCol });
+                                            setDraggingTable({ 
+                                              ...tableIntersections[tableIntersections.length - 1], 
+                                              initialMouseY: e.clientY, 
+                                              initialMouseX: e.clientX, 
+                                              initialStartRow: tableIntersections[tableIntersections.length - 1].startRow, 
+                                              initialStartCol: tableIntersections[tableIntersections.length - 1].startCol,
+                                              initialEndRow: tableIntersections[tableIntersections.length - 1].endRow,
+                                              initialEndCol: tableIntersections[tableIntersections.length - 1].endCol
+                                            });
                                           }}
                                         >
                                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
                                         </div>
-                                        <div 
-                                          className="w-6 h-6 bg-blue-500 text-white rounded shadow-md flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            setSheetTablePresetMenu({ open: true, left: rect.left, top: rect.bottom + 8, tableId: tableIntersections[tableIntersections.length - 1].id });
-                                          }}
-                                        >
-                                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                        <div className="h-4 w-[1px] bg-slate-200 mx-1" />
+                                        <div className="flex gap-1">
+                                          {Object.entries(TABLE_PRESETS).map(([key, preset]) => (
+                                            <button
+                                              key={key}
+                                              type="button"
+                                              className={`rounded-full border hover:scale-110 hover:ring-2 hover:ring-slate-300 transition-all ${tableIntersections[tableIntersections.length - 1].presetStyle === key ? 'ring-2 ring-slate-400 scale-105 border-white' : 'border-slate-300'}`}
+                                              style={{ backgroundColor: preset.headerBg, width: '18px', height: '18px' }}
+                                              title={`${key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Preset`}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSheetGrids(prev => {
+                                                  const grid = prev[activeSheetId];
+                                                  if (!grid || !grid.tables) return prev;
+                                                  const newTables = grid.tables.map(t => t.id === tableIntersections[tableIntersections.length - 1].id ? { ...t, presetStyle: key } : t);
+                                                  return { ...prev, [activeSheetId]: { ...grid, tables: newTables } };
+                                                });
+                                              }}
+                                            />
+                                          ))}
                                         </div>
                                       </div>
                                     )}
@@ -26974,9 +27091,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       }}
                                     />
                                     {computedFormat.isHeader && (
-                                      <div className="absolute right-1.5 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100 cursor-pointer pointer-events-auto flex items-center justify-center bg-white/20 rounded p-0.5" style={{ color: computedFormat.color }}>
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                      <div 
+                                        className="absolute right-1 w-5 h-5 bg-white border border-slate-200 rounded flex items-center justify-center cursor-pointer pointer-events-auto z-10 shadow-sm hover:bg-slate-50 transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex });
+                                        }}
+                                      >
+                                        <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.blue).border }}>
+                                          <path d="M12 21l-12-18h24z"/>
+                                        </svg>
                                       </div>
+                                    )}
+                                    {isTableBottomRight && (
+                                      <svg 
+                                        width="8" 
+                                        height="8" 
+                                        viewBox="0 0 8 8" 
+                                        className="absolute bottom-0 right-0 cursor-se-resize z-20 select-none"
+                                        style={{ color: (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1]?.presetStyle] || TABLE_PRESETS.blue).border }}
+                                        onMouseDown={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
+                                          const tbl = tableIntersections[tableIntersections.length - 1];
+                                          setResizingTable({
+                                            tableId: tbl.id,
+                                            startRow: tbl.startRow,
+                                            startCol: tbl.startCol,
+                                            initialEndRow: tbl.endRow,
+                                            initialEndCol: tbl.endCol,
+                                            initialMouseX: e.clientX,
+                                            initialMouseY: e.clientY
+                                          });
+                                        }}
+                                      >
+                                        <polygon points="8,8 0,8 8,0" fill="currentColor" />
+                                      </svg>
                                     )}
                                     {isBottomRightCorner && (
                                       <div className="absolute -bottom-[3px] -right-[3px] w-[6px] h-[6px] rounded-sm bg-violet-600 z-20 cursor-crosshair border border-white" />
