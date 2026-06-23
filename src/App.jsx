@@ -33897,118 +33897,95 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {productMode === 'sheets' && sheetShapeMenu.open && (() => {
-        console.log('[DEBUG Shape Render IIFE] RENDERING. sheetShapeMenu=', sheetShapeMenu);
-        // ─── Shape catalogue ─────────────────────────────────────────────────
-        const FULL_SHAPE_SECTIONS = [
-          {
-            label: 'Recently Used',
-            shapes: recentlyUsedShapes.slice(0, 8),
-          },
-          ...SHAPE_SECTIONS
-        ];
-
-        const insertShape = (shapeType) => {
-          setRecentlyUsedShapes(prev => {
-            const next = [{ type: shapeType }, ...prev.filter(s => s.type !== shapeType)].slice(0, 8);
-            return next;
-          });
-          const newOverlays = [...(activeSheetGridRaw.overlays || [])];
-          const cellAnchor = sheetShapeMenu.anchorCell || { startRow: 1, startCol: 1 };
-          newOverlays.push({
-            id: 'overlay-' + Date.now(),
-            type: 'rectangle',
-            shapeType,
-            row: cellAnchor.startRow,
-            col: cellAnchor.startCol,
-            x: 60,
-            y: 60,
-            width: 120,
-            height: 80,
-            content: '',
-            color: '#7C3AED'
-          });
-          updateSheetSettings(activeSheetId, { overlays: newOverlays });
-          setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
-        };
-
-        // Resolve icon svg for a recently used shape type
-        const resolveRecentSvg = (shapeType) => {
-          for (const sec of SHAPE_SECTIONS) {
-            const found = sec.shapes.find(s => s.type === shapeType);
-            if (found) return found.svg;
-          }
-          return <rect x="2" y="4" width="12" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>;
-        };
-
-        const visibleSections = FULL_SHAPE_SECTIONS.filter(
-          (sec) => sec.label !== 'Recently Used' || sec.shapes.length > 0
-        );
-
-        return (
-          <div
-            ref={sheetShapeMenuRef}
-            className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden"
-            style={{
-              left: `${sheetShapeMenu.left}px`,
-              top: `${sheetShapeMenu.top}px`,
-              width: '280px',
-              maxHeight: '520px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-            onMouseDown={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
-              <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
-              <button
-                type="button"
-                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-                onClick={() => setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null })}
-              >
-                <X size={14} />
-              </button>
-            </div>
-
-            {/* Scrollable shape sections */}
-            <div className="overflow-y-auto flex-1 px-3 py-2" style={{ scrollbarWidth: 'thin' }}>
-              {visibleSections.map((section) => (
-                <div key={section.label} className="mb-3">
-                  <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-0.5">
-                    {section.label}
-                  </div>
-                  <div className="flex flex-wrap gap-0.5">
-                    {section.shapes.map((shape) => {
-                      const svgContent = section.label === 'Recently Used'
-                        ? resolveRecentSvg(shape.type)
-                        : shape.svg;
-                      return (
-                        <button
-                          key={shape.type}
-                          type="button"
-                          title={shape.label || shape.type}
-                          className="w-8 h-8 flex items-center justify-center rounded hover:bg-violet-50 hover:text-violet-700 text-gray-600 transition-colors group"
-                          onClick={() => insertShape(shape.type)}
-                        >
-                          <svg
-                            viewBox="0 0 16 16"
-                            width="18"
-                            height="18"
-                            className="group-hover:scale-110 transition-transform"
-                          >
-                            {svgContent}
-                          </svg>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
+      {productMode === 'sheets' && sheetShapeMenu.open && (
+        <div
+          ref={sheetShapeMenuRef}
+          className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden"
+          style={{
+            left: `${sheetShapeMenu.left}px`,
+            top: `${sheetShapeMenu.top}px`,
+            width: '280px',
+            maxHeight: '520px',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
+            <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
+            <button
+              type="button"
+              className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+              onClick={() => setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null })}
+            >
+              <X size={14} />
+            </button>
           </div>
-        );
-      })()}
+
+          {/* Scrollable shape sections */}
+          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50">
+            {[
+              { label: 'Recently Used', shapes: recentlyUsedShapes.slice(0, 8) },
+              ...SHAPE_SECTIONS
+            ]
+            .filter(sec => sec.label !== 'Recently Used' || sec.shapes.length > 0)
+            .map((section) => (
+              <div key={section.label} className="mb-3">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-0.5">
+                  {section.label}
+                </div>
+                <div className="flex flex-wrap gap-0.5">
+                  {section.shapes.map((shape) => {
+                    let svgContent = shape.svg;
+                    if (section.label === 'Recently Used') {
+                      svgContent = <rect x="2" y="4" width="12" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>;
+                      for (const sec of SHAPE_SECTIONS) {
+                        const found = sec.shapes.find(s => s.type === shape.type);
+                        if (found) { svgContent = found.svg; break; }
+                      }
+                    }
+                    
+                    return (
+                      <button
+                        key={shape.type}
+                        type="button"
+                        title={shape.label || shape.type}
+                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-violet-50 hover:text-violet-700 text-gray-600 transition-colors group"
+                        onClick={() => {
+                          setRecentlyUsedShapes(prev => [{ type: shape.type }, ...prev.filter(s => s.type !== shape.type)].slice(0, 8));
+                          const newOverlays = [...(activeSheetGridRaw.overlays || [])];
+                          const cellAnchor = sheetShapeMenu.anchorCell || { startRow: 1, startCol: 1 };
+                          newOverlays.push({
+                            id: 'overlay-' + Date.now(),
+                            type: 'rectangle',
+                            shapeType: shape.type,
+                            row: cellAnchor.startRow,
+                            col: cellAnchor.startCol,
+                            x: 60, y: 60, width: 120, height: 80,
+                            content: '', color: '#7C3AED'
+                          });
+                          updateSheetSettings(activeSheetId, { overlays: newOverlays });
+                          setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
+                        }}
+                      >
+                        <svg
+                          viewBox="0 0 16 16"
+                          width="18"
+                          height="18"
+                          className="group-hover:scale-110 transition-transform"
+                        >
+                          {svgContent}
+                        </svg>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {brandKitModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
