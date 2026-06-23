@@ -26057,7 +26057,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   onClick={() => openShareModal(activeDocId || documents[0]?.id)}
-                  className="bg-violet-50 text-violet-600 hover:bg-violet-100 text-[13px] font-medium px-4 py-1.5 rounded-lg flex items-center gap-1.5 transition-all"
+                  className="bg-violet-600 hover:bg-violet-700 text-white text-[13px] font-semibold px-4 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all hover:-translate-y-0.5"
                 >
                   <Users size={14} /> Share
                 </button>
@@ -26295,100 +26295,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ) : (
                         <>
                      <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
-                      {sheetToolbarTab === 'Insert' && (
-                        <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
-                          <button 
-                            type="button" 
-                            onClick={() => executeSheetSlashCommand('insert_table')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <Table size={14} /> Table
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              console.log('[DEBUG Shape Button] clicked. productMode=', productMode, 'current sheetShapeMenu=', sheetShapeMenu);
-                              setSheetShapeMenu({
-                                open: true,
-                                left: Math.max(20, (window.innerWidth / 2) - 140),
-                                top: Math.max(20, (window.innerHeight / 2) - 260),
-                                anchorCell: selectedSheetRange || { startRow: 1, startCol: 1 }
-                              });
-                              console.log('[DEBUG Shape Button] setSheetShapeMenu called with open: true');
-                            }} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <Shapes size={14} /> Shape
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => executeSheetSlashCommand('insert_textbox')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <Type size={14} /> Text Box
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => executeSheetSlashCommand('insert_comment')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <MessageSquare size={14} /> Comment
-                          </button>
-                        </div>
-                      )}
-                      
-                      {sheetToolbarTab === 'Analyze' && (
-                        <div className="flex items-center gap-1.5 border-r border-gray-200 pr-3 mr-1">
-                          <button 
-                            type="button" 
-                            onClick={() => executeSheetSlashCommand('remove_dupes')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <ShieldAlert size={14} /> Clean Data
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => executeSheetSlashCommand('filter')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <List size={14} /> Filter
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => executeSheetSlashCommand('sort_asc')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <ListOrdered size={14} /> Sort A-Z
-                          </button>
-                        </div>
-                      )}
-                      
-                      {sheetToolbarTab === 'Visualize' && (
-                        <div className="flex items-center gap-1.5 border-r border-gray-200 pr-3 mr-1">
-                          <button 
-                            type="button" 
-                            onClick={() => showToast('Bar Chart inserted')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <BarChart2 size={14} /> Bar Chart
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => showToast('Line Chart inserted')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <LineChart size={14} /> Line Chart
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => showToast('Pie Chart inserted')} 
-                            className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
-                          >
-                            <PieChart size={14} /> Pie Chart
-                          </button>
-                        </div>
-                      )}
+                      {/* Insert, Analyze, Visualize tabs buttons removed as per request to only show in dropdown */}
 
                       <div className="flex items-center gap-1 border-r border-gray-200 pr-3 mr-1">
                         <button type="button" onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Undo"><Undo2 size={15} /></button>
@@ -26772,9 +26679,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  left, top, 
                                  width: overlay.width, 
                                  height: overlay.height, 
-                                 backgroundColor: overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? overlay.color : 'transparent',
-                                 border: overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? 'none' : `2px solid transparent`,
-                                 borderRadius: overlay.shapeType === 'circle' ? '50%' : (overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? '8px' : '0px'),
+                                 backgroundColor: (overlay.type === 'text' || overlay.type === 'comment') ? 'white' : (overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? overlay.color : 'transparent'),
+                                 border: (overlay.type === 'text' || overlay.type === 'comment') ? '1px solid #e2e8f0' : (overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? 'none' : `2px solid transparent`),
+                                 borderRadius: overlay.shapeType === 'circle' ? '50%' : (overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? '8px' : ((overlay.type === 'text' || overlay.type === 'comment') ? '4px' : '0px')),
                                  cursor: 'move',
                                  color: overlay.type === 'rectangle' ? 'transparent' : 'black'
                                }}
