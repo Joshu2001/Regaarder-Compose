@@ -4004,6 +4004,7 @@ export default function App() {
   const sheetShapeMenuRef = useRef(null);
   const sheetTablePresetMenuRef = useRef(null);
   const findWidgetRef = useRef(null);
+  const documentCardRef = useRef(null);
   const isSyncingFootersRef = useRef(false);
   const blankBodyRef = useRef(null);
   const pageOptionsMenuRef = useRef(null);
