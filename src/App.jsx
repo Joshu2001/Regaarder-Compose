@@ -490,13 +490,79 @@ const TABLE_PRESETS = {
   green: { headerBg: '#16A34A', headerColor: 'white', oddBg: 'white', evenBg: '#DCFCE7', border: '#16A34A' }
 };
 
+export const SHAPE_SECTIONS = [
+  {
+    label: 'Lines',
+    shapes: [
+      { type: 'line',          label: 'Line',           svg: <line x1="2" y1="14" x2="14" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/> },
+      { type: 'line_arrow',    label: 'Line Arrow',     svg: <><line x1="2" y1="14" x2="14" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><polygon points="14,2 9,2 14,7" fill="currentColor"/></> },
+      { type: 'double_arrow',  label: 'Double Arrow',   svg: <><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><polygon points="14,8 11,5 11,11" fill="currentColor"/><polygon points="2,8 5,5 5,11" fill="currentColor"/></> },
+      { type: 'elbow',         label: 'Elbow',          svg: <polyline points="2,14 2,2 14,2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/> },
+      { type: 'curve',         label: 'Curve',          svg: <path d="M2 14 Q8 2 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/> },
+    ],
+  },
+  {
+    label: 'Rectangles',
+    shapes: [
+      { type: 'rectangle',      label: 'Rectangle',       svg: <rect x="1" y="3" width="14" height="10" rx="0" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
+      { type: 'rounded_rect',   label: 'Rounded Rect',    svg: <rect x="1" y="3" width="14" height="10" rx="3" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
+      { type: 'parallelogram',  label: 'Parallelogram',   svg: <polygon points="4,13 16,13 12,3 0,3" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'trapezoid',      label: 'Trapezoid',       svg: <polygon points="3,13 13,13 11,3 5,3" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+    ],
+  },
+  {
+    label: 'Basic Shapes',
+    shapes: [
+      { type: 'circle',         label: 'Circle',          svg: <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
+      { type: 'oval',           label: 'Oval',            svg: <ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
+      { type: 'triangle',       label: 'Triangle',        svg: <polygon points="8,1 15,15 1,15" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'right_triangle', label: 'Right Triangle',  svg: <polygon points="1,15 15,15 1,1" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'diamond',        label: 'Diamond',         svg: <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'pentagon',       label: 'Pentagon',        svg: <polygon points="8,1 15,6 12,15 4,15 1,6" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'hexagon',        label: 'Hexagon',         svg: <polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'octagon',        label: 'Octagon',         svg: <polygon points="5,1 11,1 15,5 15,11 11,15 5,15 1,11 1,5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'star4',          label: '4-pt Star',       svg: <polygon points="8,1 9.5,6.5 15,8 9.5,9.5 8,15 6.5,9.5 1,8 6.5,6.5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'star5',          label: '5-pt Star',       svg: <polygon points="8,1 9.8,6.2 15,6.2 10.6,9.5 12.4,15 8,11.8 3.6,15 5.4,9.5 1,6.2 6.2,6.2" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'heart',          label: 'Heart',           svg: <path d="M8 13 C8 13 2 9 2 5 C2 2.5 4 1 5.5 1 C6.8 1 7.6 1.8 8 2.5 C8.4 1.8 9.2 1 10.5 1 C12 1 14 2.5 14 5 C14 9 8 13 8 13Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'cloud',          label: 'Cloud',           svg: <path d="M3 11 C1.5 11 1 9.5 1 8.5 C1 7 2 6 3.5 6 C3.5 4 5 3 6.5 3 C7.5 3 8.5 3.5 9 4.5 C9.5 3.5 10.5 3 11.5 3 C13 3 14 4 14 5.5 C14.8 5.7 15 6.5 15 7 C15 9 13.5 11 12 11 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'cross',          label: 'Cross',           svg: <path d="M5 1 H11 V5 H15 V11 H11 V15 H5 V11 H1 V5 H5 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'crescent',       label: 'Crescent',        svg: <path d="M10 2 C6 2 3 5 3 8 C3 11 6 14 10 14 C7 13 6 10.5 6 8 C6 5.5 7 3 10 2 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+    ],
+  },
+  {
+    label: 'Block Arrows',
+    shapes: [
+      { type: 'arrow_right',    label: 'Right Arrow',     svg: <path d="M1 6 H11 V4 L15 8 L11 12 V10 H1 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'arrow_left',     label: 'Left Arrow',      svg: <path d="M15 6 H5 V4 L1 8 L5 12 V10 H15 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'arrow_up',       label: 'Up Arrow',        svg: <path d="M10 15 V5 H12 L8 1 L4 5 H6 V15 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'arrow_down',     label: 'Down Arrow',      svg: <path d="M10 1 V11 H12 L8 15 L4 11 H6 V1 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'arrow_lr',       label: 'Left-Right Arrow',svg: <path d="M1 8 L5 4 V6 H11 V4 L15 8 L11 12 V10 H5 V12 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'arrow_ud',       label: 'Up-Down Arrow',   svg: <path d="M8 1 L12 5 H10 V11 H12 L8 15 L4 11 H6 V5 H4 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+    ],
+  },
+  {
+    label: 'Flowchart',
+    shapes: [
+      { type: 'fc_process',     label: 'Process',         svg: <rect x="1" y="4" width="14" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
+      { type: 'fc_decision',    label: 'Decision',        svg: <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'fc_terminator',  label: 'Terminator',      svg: <rect x="1" y="4" width="14" height="8" rx="4" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
+      { type: 'fc_document',    label: 'Document',        svg: <path d="M1 3 H15 V11 C13 14 11 11 8 13 C5 11 3 14 1 11 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'fc_cylinder',    label: 'Cylinder',        svg: <><ellipse cx="8" cy="4" rx="6" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/><line x1="2" y1="4" x2="2" y2="12" stroke="currentColor" strokeWidth="1.5"/><line x1="14" y1="4" x2="14" y2="12" stroke="currentColor" strokeWidth="1.5"/><path d="M2 12 C2 13 5 14 8 14 C11 14 14 13 14 12" fill="none" stroke="currentColor" strokeWidth="1.5"/></> },
+      { type: 'fc_parallelogram',label:'Parallelogram',  svg: <polygon points="4,13 16,13 12,3 0,3" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+    ],
+  },
+  {
+    label: 'Stars & Banners',
+    shapes: [
+      { type: 'star6',          label: '6-pt Star',       svg: <polygon points="8,1 9.5,5.5 14,5.5 10.5,8.5 12,13 8,10.5 4,13 5.5,8.5 2,5.5 6.5,5.5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'star8',          label: '8-pt Star',       svg: <polygon points="8,1 9.1,5.5 13,3.5 11,7.4 15,8 11,8.6 13,12.5 9.1,10.5 8,15 6.9,10.5 3,12.5 5,8.6 1,8 5,7.4 3,3.5 6.9,5.5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+      { type: 'banner',         label: 'Banner',          svg: <><path d="M1 3 H15 V11 H1 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/><polyline points="4,11 2,15 8,12 14,15 12,11" fill="none" stroke="currentColor" strokeWidth="1.5"/></> },
+      { type: 'ribbon',         label: 'Ribbon',          svg: <path d="M1 5 Q4 4 8 5 Q12 6 15 5 L14 8 L15 11 Q12 10 8 11 Q4 12 1 11 L2 8 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
+    ],
+  },
+];
+
 const SHEET_SLASH_OPTIONS = [
-  // --- AI Actions ---
-  { key: 'ai_formula', label: 'Generate Formula', desc: 'Use AI to create a formula' },
-  { key: 'ai_extract', label: 'Extract Data', desc: 'Pull structured data from text' },
-  { key: 'ai_analyze', label: 'Analyze Trends', desc: 'AI analysis of data trends' },
-  { key: 'ai_summarize', label: 'Summarize Data', desc: 'AI summary of selected cells' },
-  { key: 'ai_insights', label: 'Suggest Insights', desc: 'Get AI suggestions on data' },
   // --- Native Actions ---
   { key: 'insert_table', label: 'Insert Table', desc: 'Format selection as table' },
   { key: 'insert_shape', label: 'Insert Shape', desc: 'Add a floating shape' },
@@ -26294,12 +26360,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             type="button" 
                             onClick={(e) => {
                               e.stopPropagation();
+                              console.log('[DEBUG Shape Button] clicked. productMode=', productMode, 'current sheetShapeMenu=', sheetShapeMenu);
                               setSheetShapeMenu({
                                 open: true,
                                 left: Math.max(20, (window.innerWidth / 2) - 140),
                                 top: Math.max(20, (window.innerHeight / 2) - 260),
                                 anchorCell: selectedSheetRange || { startRow: 1, startCol: 1 }
                               });
+                              console.log('[DEBUG Shape Button] setSheetShapeMenu called with open: true');
                             }} 
                             className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors hover:text-violet-700 flex items-center gap-1.5 font-semibold"
                           >
@@ -26756,11 +26824,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  left, top, 
                                  width: overlay.width, 
                                  height: overlay.height, 
-                                 backgroundColor: overlay.type === 'rectangle' && overlay.shapeType !== 'triangle' && overlay.shapeType !== 'diamond' ? overlay.color : 'transparent',
-                                 border: overlay.type === 'rectangle' ? 'none' : `2px solid ${overlay.color}`,
-                                 borderRadius: overlay.shapeType === 'circle' ? '50%' : (overlay.type === 'rectangle' ? '8px' : '4px'),
+                                 backgroundColor: overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? overlay.color : 'transparent',
+                                 border: overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? 'none' : `2px solid transparent`,
+                                 borderRadius: overlay.shapeType === 'circle' ? '50%' : (overlay.type === 'rectangle' && (!overlay.shapeType || overlay.shapeType === 'rectangle') ? '8px' : '0px'),
                                  cursor: 'move',
-                                 color: overlay.type === 'rectangle' ? 'white' : 'black'
+                                 color: overlay.type === 'rectangle' ? 'transparent' : 'black'
                                }}
                                onMouseDown={(e) => {
                                   e.preventDefault();
@@ -26787,31 +26855,51 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   window.addEventListener('mouseup', onMouseUp);
                                }}
                              >
-                               {overlay.shapeType === 'triangle' && (
-                                 <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                   <polygon points="50,0 100,100 0,100" fill={overlay.color} />
-                                 </svg>
-                               )}
-                               {overlay.shapeType === 'diamond' && (
-                                 <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-                                   <polygon points="50,0 100,50 50,100 0,50" fill={overlay.color} />
-                                 </svg>
-                               )}
-                               {overlay.type === 'text' || overlay.type === 'comment' ? (
-                                  <textarea 
-                                    className="w-full h-full p-2 bg-transparent resize-none focus:outline-none"
-                                    value={overlay.content}
-                                    onChange={(e) => {
-                                       const newOverlays = (activeSheetGridRaw.overlays || []).map(o => o.id === overlay.id ? { ...o, content: e.target.value } : o);
-                                       updateSheetSettings(activeSheetId, { overlays: newOverlays });
-                                    }}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedSheetOverlayId(overlay.id);
-                                    }}
-                                    onMouseDown={e => e.stopPropagation()}
-                                  />
-                               ) : overlay.content}
+                               {(() => {
+                                 if (overlay.type === 'text' || overlay.type === 'comment') {
+                                   return (
+                                     <textarea 
+                                       className="w-full h-full p-2 bg-transparent resize-none focus:outline-none"
+                                       value={overlay.content}
+                                       onChange={(e) => {
+                                          const newOverlays = (activeSheetGridRaw.overlays || []).map(o => o.id === overlay.id ? { ...o, content: e.target.value } : o);
+                                          updateSheetSettings(activeSheetId, { overlays: newOverlays });
+                                       }}
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         setSelectedSheetOverlayId(overlay.id);
+                                       }}
+                                       onMouseDown={e => e.stopPropagation()}
+                                     />
+                                   );
+                                 } else if (overlay.type === 'rectangle' && overlay.shapeType) {
+                                   let shapeSvg = null;
+                                   for (const sec of SHAPE_SECTIONS) {
+                                     const found = sec.shapes.find(s => s.type === overlay.shapeType);
+                                     if (found) { shapeSvg = found.svg; break; }
+                                   }
+                                   if (shapeSvg) {
+                                     return (
+                                       <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" viewBox="0 0 16 16" preserveAspectRatio="none" style={{ color: overlay.color }}>
+                                         {shapeSvg}
+                                       </svg>
+                                     );
+                                   } else if (overlay.shapeType === 'triangle') {
+                                     return (
+                                       <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                         <polygon points="50,0 100,100 0,100" fill={overlay.color} />
+                                       </svg>
+                                     );
+                                   } else if (overlay.shapeType === 'diamond') {
+                                     return (
+                                       <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                         <polygon points="50,0 100,50 50,100 0,50" fill={overlay.color} />
+                                       </svg>
+                                     );
+                                   }
+                                 }
+                                 return overlay.content;
+                               })()}
                                
                                {selectedSheetOverlayId === overlay.id && (
                                  <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-gray-200 p-2 z-[110] flex gap-2" onMouseDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
@@ -33810,81 +33898,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {productMode === 'sheets' && sheetShapeMenu.open && (() => {
+        console.log('[DEBUG Shape Render IIFE] RENDERING. sheetShapeMenu=', sheetShapeMenu);
         // ─── Shape catalogue ─────────────────────────────────────────────────
-        const SHAPE_SECTIONS = [
+        const FULL_SHAPE_SECTIONS = [
           {
             label: 'Recently Used',
             shapes: recentlyUsedShapes.slice(0, 8),
           },
-          {
-            label: 'Lines',
-            shapes: [
-              { type: 'line',          label: 'Line',           svg: <line x1="2" y1="14" x2="14" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/> },
-              { type: 'line_arrow',    label: 'Line Arrow',     svg: <><line x1="2" y1="14" x2="14" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><polygon points="14,2 9,2 14,7" fill="currentColor"/></> },
-              { type: 'double_arrow',  label: 'Double Arrow',   svg: <><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><polygon points="14,8 11,5 11,11" fill="currentColor"/><polygon points="2,8 5,5 5,11" fill="currentColor"/></> },
-              { type: 'elbow',         label: 'Elbow',          svg: <polyline points="2,14 2,2 14,2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/> },
-              { type: 'curve',         label: 'Curve',          svg: <path d="M2 14 Q8 2 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/> },
-            ],
-          },
-          {
-            label: 'Rectangles',
-            shapes: [
-              { type: 'rectangle',      label: 'Rectangle',       svg: <rect x="1" y="3" width="14" height="10" rx="0" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
-              { type: 'rounded_rect',   label: 'Rounded Rect',    svg: <rect x="1" y="3" width="14" height="10" rx="3" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
-              { type: 'parallelogram',  label: 'Parallelogram',   svg: <polygon points="4,13 16,13 12,3 0,3" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'trapezoid',      label: 'Trapezoid',       svg: <polygon points="3,13 13,13 11,3 5,3" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-            ],
-          },
-          {
-            label: 'Basic Shapes',
-            shapes: [
-              { type: 'circle',         label: 'Circle',          svg: <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
-              { type: 'oval',           label: 'Oval',            svg: <ellipse cx="8" cy="8" rx="7" ry="4.5" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
-              { type: 'triangle',       label: 'Triangle',        svg: <polygon points="8,1 15,15 1,15" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'right_triangle', label: 'Right Triangle',  svg: <polygon points="1,15 15,15 1,1" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'diamond',        label: 'Diamond',         svg: <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'pentagon',       label: 'Pentagon',        svg: <polygon points="8,1 15,6 12,15 4,15 1,6" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'hexagon',        label: 'Hexagon',         svg: <polygon points="8,1 14,4.5 14,11.5 8,15 2,11.5 2,4.5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'octagon',        label: 'Octagon',         svg: <polygon points="5,1 11,1 15,5 15,11 11,15 5,15 1,11 1,5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'star4',          label: '4-pt Star',       svg: <polygon points="8,1 9.5,6.5 15,8 9.5,9.5 8,15 6.5,9.5 1,8 6.5,6.5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'star5',          label: '5-pt Star',       svg: <polygon points="8,1 9.8,6.2 15,6.2 10.6,9.5 12.4,15 8,11.8 3.6,15 5.4,9.5 1,6.2 6.2,6.2" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'heart',          label: 'Heart',           svg: <path d="M8 13 C8 13 2 9 2 5 C2 2.5 4 1 5.5 1 C6.8 1 7.6 1.8 8 2.5 C8.4 1.8 9.2 1 10.5 1 C12 1 14 2.5 14 5 C14 9 8 13 8 13Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'cloud',          label: 'Cloud',           svg: <path d="M3 11 C1.5 11 1 9.5 1 8.5 C1 7 2 6 3.5 6 C3.5 4 5 3 6.5 3 C7.5 3 8.5 3.5 9 4.5 C9.5 3.5 10.5 3 11.5 3 C13 3 14 4 14 5.5 C14.8 5.7 15 6.5 15 7 C15 9 13.5 11 12 11 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'cross',          label: 'Cross',           svg: <path d="M5 1 H11 V5 H15 V11 H11 V15 H5 V11 H1 V5 H5 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'crescent',       label: 'Crescent',        svg: <path d="M10 2 C6 2 3 5 3 8 C3 11 6 14 10 14 C7 13 6 10.5 6 8 C6 5.5 7 3 10 2 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-            ],
-          },
-          {
-            label: 'Block Arrows',
-            shapes: [
-              { type: 'arrow_right',    label: 'Right Arrow',     svg: <path d="M1 6 H11 V4 L15 8 L11 12 V10 H1 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'arrow_left',     label: 'Left Arrow',      svg: <path d="M15 6 H5 V4 L1 8 L5 12 V10 H15 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'arrow_up',       label: 'Up Arrow',        svg: <path d="M10 15 V5 H12 L8 1 L4 5 H6 V15 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'arrow_down',     label: 'Down Arrow',      svg: <path d="M10 1 V11 H12 L8 15 L4 11 H6 V1 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'arrow_lr',       label: 'Left-Right Arrow',svg: <path d="M1 8 L5 4 V6 H11 V4 L15 8 L11 12 V10 H5 V12 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'arrow_ud',       label: 'Up-Down Arrow',   svg: <path d="M8 1 L12 5 H10 V11 H12 L8 15 L4 11 H6 V5 H4 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-            ],
-          },
-          {
-            label: 'Flowchart',
-            shapes: [
-              { type: 'fc_process',     label: 'Process',         svg: <rect x="1" y="4" width="14" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
-              { type: 'fc_decision',    label: 'Decision',        svg: <polygon points="8,1 15,8 8,15 1,8" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'fc_terminator',  label: 'Terminator',      svg: <rect x="1" y="4" width="14" height="8" rx="4" stroke="currentColor" strokeWidth="1.5" fill="none"/> },
-              { type: 'fc_document',    label: 'Document',        svg: <path d="M1 3 H15 V11 C13 14 11 11 8 13 C5 11 3 14 1 11 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'fc_cylinder',    label: 'Cylinder',        svg: <><ellipse cx="8" cy="4" rx="6" ry="2" fill="none" stroke="currentColor" strokeWidth="1.5"/><line x1="2" y1="4" x2="2" y2="12" stroke="currentColor" strokeWidth="1.5"/><line x1="14" y1="4" x2="14" y2="12" stroke="currentColor" strokeWidth="1.5"/><path d="M2 12 C2 13 5 14 8 14 C11 14 14 13 14 12" fill="none" stroke="currentColor" strokeWidth="1.5"/></> },
-              { type: 'fc_parallelogram',label:'Parallelogram',  svg: <polygon points="4,13 16,13 12,3 0,3" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-            ],
-          },
-          {
-            label: 'Stars & Banners',
-            shapes: [
-              { type: 'star6',          label: '6-pt Star',       svg: <polygon points="8,1 9.5,5.5 14,5.5 10.5,8.5 12,13 8,10.5 4,13 5.5,8.5 2,5.5 6.5,5.5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'star8',          label: '8-pt Star',       svg: <polygon points="8,1 9.1,5.5 13,3.5 11,7.4 15,8 11,8.6 13,12.5 9.1,10.5 8,15 6.9,10.5 3,12.5 5,8.6 1,8 5,7.4 3,3.5 6.9,5.5" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-              { type: 'banner',         label: 'Banner',          svg: <><path d="M1 3 H15 V11 H1 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/><polyline points="4,11 2,15 8,12 14,15 12,11" fill="none" stroke="currentColor" strokeWidth="1.5"/></> },
-              { type: 'ribbon',         label: 'Ribbon',          svg: <path d="M1 5 Q4 4 8 5 Q12 6 15 5 L14 8 L15 11 Q12 10 8 11 Q4 12 1 11 L2 8 Z" fill="none" stroke="currentColor" strokeWidth="1.5"/> },
-            ],
-          },
+          ...SHAPE_SECTIONS
         ];
 
         const insertShape = (shapeType) => {
@@ -33913,14 +33934,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         // Resolve icon svg for a recently used shape type
         const resolveRecentSvg = (shapeType) => {
-          for (const sec of SHAPE_SECTIONS.slice(1)) {
+          for (const sec of SHAPE_SECTIONS) {
             const found = sec.shapes.find(s => s.type === shapeType);
             if (found) return found.svg;
           }
           return <rect x="2" y="4" width="12" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>;
         };
 
-        const visibleSections = SHAPE_SECTIONS.filter(
+        const visibleSections = FULL_SHAPE_SECTIONS.filter(
           (sec) => sec.label !== 'Recently Used' || sec.shapes.length > 0
         );
 
