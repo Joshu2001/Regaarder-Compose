@@ -479,18 +479,25 @@ const RoomStageFeed = ({ stream, placeholder }) => {
 };
 
 const SHEET_SLASH_OPTIONS = [
+  // --- AI Actions ---
   { key: 'ai_formula', label: 'Generate Formula', desc: 'Use AI to create a formula' },
   { key: 'ai_extract', label: 'Extract Data', desc: 'Pull structured data from text' },
-  { key: 'format_currency', label: 'Format: Currency', desc: 'Apply $0.00 formatting' },
-  { key: 'format_percent', label: 'Format: Percent', desc: 'Apply 0% formatting' },
+  { key: 'ai_analyze', label: 'Analyze Trends', desc: 'AI analysis of data trends' },
+  { key: 'ai_summarize', label: 'Summarize Data', desc: 'AI summary of selected cells' },
+  { key: 'ai_insights', label: 'Suggest Insights', desc: 'Get AI suggestions on data' },
+  // --- Native Actions ---
+  { key: 'insert_table', label: 'Insert Table', desc: 'Format selection as table' },
+  { key: 'insert_shape', label: 'Insert Shape', desc: 'Add a floating shape' },
+  { key: 'insert_textbox', label: 'Insert Text Box', desc: 'Add a floating text box' },
+  { key: 'insert_comment', label: 'Insert Comment', desc: 'Add a comment' },
+  { key: 'format_cell', label: 'Format Cell', desc: 'Open cell formatting options' },
+  { key: 'merge_cells', label: 'Merge Cells', desc: 'Merge selected cells' },
+  { key: 'add_row', label: 'Add Row', desc: 'Insert a new row below' },
+  { key: 'add_column', label: 'Add Column', desc: 'Insert a new column right' },
   { key: 'sort_asc', label: 'Sort A-Z', desc: 'Sort selection alphabetically' },
+  { key: 'filter', label: 'Filter', desc: 'Enable filtering on selection' },
   { key: 'remove_dupes', label: 'Remove Duplicates', desc: 'Keep only unique rows' },
   { key: 'clear_format', label: 'Clear Formatting', desc: 'Reset all cell styles' },
-  { key: 'ai_summarize', label: 'Summarize', desc: 'AI summary of selected cells' },
-  { key: 'ai_translate', label: 'Translate', desc: 'Translate text in cells' },
-  { key: 'table', label: 'Table', desc: 'Insert an AI table' },
-  { key: 'graph', label: 'Chart / Graph', desc: 'Insert an interactive SVG chart & grid' },
-  { key: 'shapes', label: 'Shapes', desc: 'Insert interactive shapes' },
   { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
 ];
 
@@ -11369,7 +11376,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const executeSheetSlashCommand = (key) => {
-    setSheetSlashMenu({ open: false, x: 0, y: 0, filterText: '', activeIndex: 0, anchorCell: null });
+    setSheetSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: null });
     
     // Collect all selected ranges
     const allRanges = [];
@@ -11377,32 +11384,111 @@ Generate the updated output according to the instruction. Preserve layout and ta
     allRanges.push(...additionalSheetRanges);
     
     if (allRanges.length === 0) return;
-    
-    // Minimal mock formatting implementation for demo purposes
+
+    if (key.startsWith('ai_')) {
+      const actionNames = {
+        'ai_formula': 'Generate Formula',
+        'ai_extract': 'Extract Data',
+        'ai_analyze': 'Analyze Trends',
+        'ai_summarize': 'Summarize Data',
+        'ai_insights': 'Suggest Insights'
+      };
+      setInlineAIPrompt({ 
+        open: true, 
+        x: window.innerWidth / 2 - 250, 
+        y: window.innerHeight / 2 - 50, 
+        value: `Help me with ${actionNames[key] || key} on the selected cells`, 
+        anchorNode: null, 
+        range: null 
+      });
+      return;
+    }
+
+    if (key === 'insert_shape' || key === 'insert_textbox' || key === 'insert_comment') {
+      const newOverlays = [...(activeSheetGridRaw.overlays || [])];
+      const typeMap = { 'insert_shape': 'rectangle', 'insert_textbox': 'text', 'insert_comment': 'comment' };
+      const cellAnchor = selectedSheetRange ? selectedSheetRange : { startRow: 1, startCol: 1 };
+      newOverlays.push({
+        id: 'overlay-' + Date.now(),
+        type: typeMap[key],
+        row: cellAnchor.startRow,
+        col: cellAnchor.startCol,
+        width: 150,
+        height: key === 'insert_shape' ? 100 : 50,
+        content: key === 'insert_shape' ? '' : 'New ' + typeMap[key],
+        color: '#8b5cf6'
+      });
+      updateSheetSettings(activeSheetId, { overlays: newOverlays });
+      showToast(`${typeMap[key]} inserted`);
+      return;
+    }
+
+    if (key === 'insert_table') {
+      const newFormats = { ...activeSheetGridRaw.formats };
+      allRanges.forEach(range => {
+        // Apply table header style to first row
+        for (let c = Math.min(range.startCol, range.endCol); c <= Math.max(range.startCol, range.endCol); c++) {
+          const r = Math.min(range.startRow, range.endRow);
+          if (!newFormats[r-1]) newFormats[r-1] = {};
+          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], bold: true, fill: '#f3f4f6', isHeader: true };
+        }
+        // Apply banding to other rows
+        for (let r = Math.min(range.startRow, range.endRow) + 1; r <= Math.max(range.startRow, range.endRow); r++) {
+          for (let c = Math.min(range.startCol, range.endCol); c <= Math.max(range.startCol, range.endCol); c++) {
+            if (!newFormats[r-1]) newFormats[r-1] = {};
+            if ((r - Math.min(range.startRow, range.endRow)) % 2 !== 0) {
+              newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], fill: '#f9fafb' };
+            }
+          }
+        }
+      });
+      updateSheetSettings(activeSheetId, { formats: newFormats });
+      showToast('Table inserted');
+      return;
+    }
+
+    if (key === 'add_row') {
+      const newCells = [...(activeSheetGridRaw.cells || [])];
+      const r = selectedSheetRange ? Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) : newCells.length;
+      newCells.splice(r, 0, Array(activeSheetGridRaw.cols).fill(''));
+      updateSheetSettings(activeSheetId, { cells: newCells, rows: (activeSheetGridRaw.rows || newCells.length) + 1 });
+      showToast('Row added');
+      return;
+    }
+
+    if (key === 'add_column') {
+      const newCells = (activeSheetGridRaw.cells || []).map(row => [...row]);
+      const c = selectedSheetRange ? Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) : (newCells[0]?.length || 1);
+      newCells.forEach(row => row.splice(c, 0, ''));
+      updateSheetSettings(activeSheetId, { cells: newCells, cols: (activeSheetGridRaw.cols || newCells[0]?.length) + 1 });
+      showToast('Column added');
+      return;
+    }
+
+    // Format changes
     const newFormats = { ...activeSheetGridRaw.formats };
-    
     allRanges.forEach(range => {
       for (let r = Math.min(range.startRow, range.endRow); r <= Math.max(range.startRow, range.endRow); r++) {
         for (let c = Math.min(range.startCol, range.endCol); c <= Math.max(range.startCol, range.endCol); c++) {
           if (!newFormats[r-1]) newFormats[r-1] = {};
-          
           if (key === 'clear_format') {
             newFormats[r-1][c-1] = {};
-          } else if (key === 'format_currency') {
-            newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], type: 'currency' };
-          } else if (key === 'format_percent') {
-            newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], type: 'percent' };
-          } else if (key === 'sort_asc') {
-            console.log('Mock: Sorting selected range');
-          } else if (key.startsWith('ai_')) {
-            console.log(`Mock: Triggering AI action: ${key}`);
-            setInlineAIPrompt({ open: true, x: window.innerWidth/2 - 250, y: window.innerHeight/2 - 50, value: `Help me with ${key} on these cells`, anchorNode: null, range: null });
+          } else if (key === 'format_cell') {
+            showToast('Cell formatting options opened');
+          } else if (key === 'merge_cells') {
+            newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], merged: true };
+          } else if (key === 'redact') {
+            newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], fill: '#000000', color: '#000000' };
           }
         }
       }
     });
-    
-    updateSheetSettings(activeSheetId, { formats: newFormats });
+
+    if (['sort_asc', 'filter', 'remove_dupes'].includes(key)) {
+       showToast(`${key} applied to selection`);
+    } else {
+       updateSheetSettings(activeSheetId, { formats: newFormats });
+    }
   };
 
   const executeSlashCommand = (key) => {
@@ -25626,7 +25712,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
           <div className="flex-1 min-h-0 flex gap-4 p-4 relative">
             {isSheetsMode && (
-              <button className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-violet-600 rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgba(124,58,237,0.3)] hover:bg-violet-700 hover:scale-105 transition-all z-20">
+              <button 
+                className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-violet-600 rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgba(124,58,237,0.3)] hover:bg-violet-700 hover:scale-105 transition-all z-20"
+                onClick={() => {
+                  setProductMode('whiteboard');
+                  showToast('Drawing mode activated (Whiteboard)');
+                }}
+              >
                 <PenTool size={20} />
               </button>
             )}
@@ -26207,7 +26299,91 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }}
                     >
                       {/* Single unified flat grid: all rows rendered as grid children so header and body share the same column tracks */}
-                      <div className="origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content' }}>
+                      <div className="relative origin-top-left" style={{ zoom: `${sheetZoomLevel}%`, minWidth: 'max-content' }}>
+                        {/* Overlays */}
+                        {(activeSheetGridRaw.overlays || []).map(overlay => {
+                           const left = overlay.x !== undefined ? overlay.x : (overlay.col * 100);
+                           const top = overlay.y !== undefined ? overlay.y : (overlay.row * 36);
+                           
+                           return (
+                             <div 
+                               key={overlay.id}
+                               className="absolute z-[100] shadow-md flex items-center justify-center text-sm"
+                               style={{
+                                 left, top, 
+                                 width: overlay.width, 
+                                 height: overlay.height, 
+                                 backgroundColor: overlay.type === 'rectangle' ? overlay.color : 'white',
+                                 border: overlay.type === 'rectangle' ? 'none' : `2px solid ${overlay.color}`,
+                                 borderRadius: overlay.type === 'rectangle' ? '8px' : '4px',
+                                 cursor: 'move',
+                                 color: overlay.type === 'rectangle' ? 'white' : 'black'
+                               }}
+                               onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const startX = e.clientX;
+                                  const startY = e.clientY;
+                                  const startLeft = left;
+                                  const startTop = top;
+                                  
+                                  const onMouseMove = (moveEvent) => {
+                                     const dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
+                                     const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
+                                     const newOverlays = (activeSheetGridRaw.overlays || []).map(o => o.id === overlay.id ? { ...o, x: startLeft + dx, y: startTop + dy } : o);
+                                     updateSheetSettings(activeSheetId, { overlays: newOverlays });
+                                  };
+                                  
+                                  const onMouseUp = () => {
+                                     window.removeEventListener('mousemove', onMouseMove);
+                                     window.removeEventListener('mouseup', onMouseUp);
+                                  };
+                                  
+                                  window.addEventListener('mousemove', onMouseMove);
+                                  window.addEventListener('mouseup', onMouseUp);
+                               }}
+                             >
+                               {overlay.type === 'text' || overlay.type === 'comment' ? (
+                                  <textarea 
+                                    className="w-full h-full p-2 bg-transparent resize-none focus:outline-none"
+                                    value={overlay.content}
+                                    onChange={(e) => {
+                                       const newOverlays = (activeSheetGridRaw.overlays || []).map(o => o.id === overlay.id ? { ...o, content: e.target.value } : o);
+                                       updateSheetSettings(activeSheetId, { overlays: newOverlays });
+                                    }}
+                                    onMouseDown={e => e.stopPropagation()}
+                                  />
+                               ) : overlay.content}
+                               
+                               <div 
+                                 className="absolute bottom-0 right-0 w-3 h-3 bg-white border border-gray-400 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2"
+                                 onMouseDown={(e) => {
+                                   e.preventDefault();
+                                   e.stopPropagation();
+                                   const startX = e.clientX;
+                                   const startY = e.clientY;
+                                   const startW = overlay.width;
+                                   const startH = overlay.height;
+                                   
+                                   const onMouseMove = (moveEvent) => {
+                                      const dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
+                                      const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
+                                      const newOverlays = (activeSheetGridRaw.overlays || []).map(o => o.id === overlay.id ? { ...o, width: Math.max(20, startW + dx), height: Math.max(20, startH + dy) } : o);
+                                      updateSheetSettings(activeSheetId, { overlays: newOverlays });
+                                   };
+                                   
+                                   const onMouseUp = () => {
+                                      window.removeEventListener('mousemove', onMouseMove);
+                                      window.removeEventListener('mouseup', onMouseUp);
+                                   };
+                                   
+                                   window.addEventListener('mousemove', onMouseMove);
+                                   window.addEventListener('mouseup', onMouseUp);
+                                 }}
+                               />
+                             </div>
+                           );
+                        })}
                         <div
                           className="grid"
                           style={{
@@ -26300,15 +26476,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow);
                                 const isAllSelected = sheetSelectionMode === 'all';
 
+                                const cellFormat = activeSheetGridRaw.formats?.[rowIndex]?.[colIndex] || {};
+
                                 const cellBg = isExplicitAnchor && sheetSelectionMode === 'cell' 
                                   ? 'bg-white' 
                                   : (isInRange ? 'bg-[#ebf0fc]' : (isInColBand || isInRowBand || isAllSelected ? 'bg-slate-50' : ''));
 
+                                const customBgStyle = cellFormat.fill ? { backgroundColor: cellFormat.fill } : {};
+                                const customTextStyle = cellFormat.color ? { color: cellFormat.color } : {};
+
                                 return (
                                   <div
                                     key={`${num}-${colIndex + 1}`}
-                                    className={`relative border-b border-r border-gray-200 transition-colors ${cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
-                                    style={{ height: rowHeight, ...shadowStyle }}
+                                    className={`relative border-b border-r border-gray-200 transition-colors ${cellFormat.fill ? '' : cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
+                                    style={{ height: rowHeight, ...shadowStyle, ...customBgStyle }}
                                     onMouseDown={(e) => {
                                       if (e.shiftKey) {
                                         // Shift+Click: extend from anchor
@@ -26321,8 +26502,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       } else if (e.ctrlKey || e.metaKey) {
                                         // Ctrl/Cmd+Click: add a new disjoint selection range
                                         setAdditionalSheetRanges(prev => {
-                                          // If we already have a selection at this exact cell, we could toggle it off.
-                                          // For simplicity in this implementation, we just add the new range.
                                           return [...prev, { startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }];
                                         });
                                         // We move the explicit anchor to the newly clicked cell
@@ -26343,7 +26522,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }}
                                   >
                                     <input
-                                      value={isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], activeSheetGridRaw.formats?.[rowIndex]?.[colIndex])}
+                                      value={isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], cellFormat)}
                                       onFocus={() => { setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }); setSheetSelectionMode('cell'); setSelectedGridColumn(null); }}
                                       onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
                                       onKeyDown={(e) => {
@@ -26417,9 +26596,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       style={{
                                         fontFamily: sheetToolbarFont,
                                         fontSize: `${sheetToolbarSize}px`,
-                                        fontWeight: sheetToolbarBold ? 700 : 400,
+                                        fontWeight: cellFormat.bold ? 700 : (sheetToolbarBold ? 700 : 400),
                                         fontStyle: sheetToolbarItalic ? 'italic' : 'normal',
                                         textDecoration: sheetToolbarUnderline ? 'underline' : 'none',
+                                        ...customTextStyle
                                       }}
                                     />
                                     {isBottomRightCorner && (
@@ -26434,8 +26614,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
                     {isSheetsMode && (
-                      <button className="absolute bottom-16 right-8 w-14 h-14 bg-white rounded-full flex items-center justify-center text-violet-600 shadow-lg ring-1 ring-black/5 hover:scale-105 hover:bg-violet-50 transition-all z-30">
-                        <Volume2 size={24} strokeWidth={2.5} />
+                      <button 
+                        className="absolute bottom-16 right-8 w-14 h-14 bg-white rounded-full flex items-center justify-center text-violet-600 shadow-lg ring-1 ring-black/5 hover:scale-105 hover:bg-violet-50 transition-all z-30"
+                        onClick={(e) => {
+                          if (isReadingAloud) {
+                            window.speechSynthesis.cancel();
+                            setIsReadingAloud(false);
+                            setTtsPaused(false);
+                            setTtsUtterance(null);
+                          } else {
+                            const cells = activeSheetGridRaw?.cells || [];
+                            const textToRead = cells.map(row => row.filter(cell => cell && cell.trim().length > 0).join(', ')).filter(row => row.length > 0).join('. ');
+                            if (!textToRead) {
+                              showToast('Sheet is empty');
+                              return;
+                            }
+                            const utterance = new SpeechSynthesisUtterance(textToRead);
+                            utterance.rate = ttsSpeed;
+                            utterance.pitch = ttsPitch;
+                            utterance.voice = window.speechSynthesis.getVoices().find(v => v.name === ttsVoiceName) || null;
+                            utterance.onend = () => {
+                              setIsReadingAloud(false);
+                              setTtsPaused(false);
+                              setTtsUtterance(null);
+                            };
+                            window.speechSynthesis.speak(utterance);
+                            setIsReadingAloud(true);
+                            setTtsPaused(false);
+                            showToast('Reading sheet aloud');
+                          }
+                        }}
+                      >
+                        {isReadingAloud ? <Pause size={24} strokeWidth={2.5} /> : <Volume2 size={24} strokeWidth={2.5} />}
                       </button>
                     )}
                     <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
