@@ -27021,27 +27021,62 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }
 
                                     return (
-                                      <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm rounded-lg" style={{ opacity: opacity, backgroundColor: bg, border: `1px solid ${gridLine}` }} viewBox="0 0 100 100" preserveAspectRatio="none">
-                                        {showAxes && chartType !== 'pie' && (
-                                          <g stroke={gridLine} strokeWidth="1">
-                                            <line x1="10" y1="20" x2="100" y2="20" />
-                                            <line x1="10" y1="40" x2="100" y2="40" />
-                                            <line x1="10" y1="60" x2="100" y2="60" />
-                                            <line x1="10" y1="80" x2="100" y2="80" />
-                                            <line x1="10" y1="100" x2="100" y2="100" />
-                                            <line x1="10" y1="0" x2="10" y2="100" />
-                                          </g>
-                                        )}
-                                        {chartContent}
+                                      <>
+                                        <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm rounded-lg" style={{ opacity: opacity, backgroundColor: bg, border: `1px solid ${gridLine}` }} viewBox="0 -15 100 115" preserveAspectRatio="none">
+                                          {showAxes && chartType !== 'pie' && chartType !== 'donut' && chartType !== 'radar' && chartType !== 'treemap' && chartType !== 'map' && (
+                                            <g stroke={gridLine} strokeWidth="1">
+                                              <line x1="10" y1="20" x2="100" y2="20" />
+                                              <line x1="10" y1="40" x2="100" y2="40" />
+                                              <line x1="10" y1="60" x2="100" y2="60" />
+                                              <line x1="10" y1="80" x2="100" y2="80" />
+                                              <line x1="10" y1="100" x2="100" y2="100" />
+                                              <line x1="10" y1="0" x2="10" y2="100" />
+                                            </g>
+                                          )}
+                                          {chartContent}
+                                        </svg>
+                                        
+                                        <div className="absolute top-2 left-0 w-full flex justify-center pointer-events-auto">
+                                          <input 
+                                            type="text" 
+                                            placeholder="Chart Title"
+                                            value={overlay.chartTitle !== undefined ? overlay.chartTitle : ''} 
+                                            onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
+                                            onMouseDown={e => e.stopPropagation()}
+                                            className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"
+                                            style={{ color: textClr }}
+                                          />
+                                        </div>
+
                                         {showLegend && (
-                                           <g transform="translate(10, 8)">
-                                             <rect x="0" y="0" width="4" height="4" fill={fillColor} />
-                                             <text x="6" y="4" fontSize="4" fill={textClr}>Series 1</text>
-                                             <rect x="25" y="0" width="4" height="4" fill={strokeColor} />
-                                             <text x="31" y="4" fontSize="4" fill={textClr}>Series 2</text>
-                                           </g>
+                                          <div className="absolute top-8 left-0 w-full flex justify-center gap-4 pointer-events-auto">
+                                            <div className="flex items-center gap-1.5">
+                                              <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: fillColor }} />
+                                              <input 
+                                                type="text" 
+                                                placeholder="Series 1"
+                                                value={overlay.series1Name !== undefined ? overlay.series1Name : 'Series 1'} 
+                                                onChange={(e) => updateOverlay({ series1Name: e.target.value })}
+                                                onMouseDown={e => e.stopPropagation()}
+                                                className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none w-16"
+                                                style={{ color: textClr }}
+                                              />
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                              <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: strokeColor }} />
+                                              <input 
+                                                type="text" 
+                                                placeholder="Series 2"
+                                                value={overlay.series2Name !== undefined ? overlay.series2Name : 'Series 2'} 
+                                                onChange={(e) => updateOverlay({ series2Name: e.target.value })}
+                                                onMouseDown={e => e.stopPropagation()}
+                                                className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none w-16"
+                                                style={{ color: textClr }}
+                                              />
+                                            </div>
+                                          </div>
                                         )}
-                                      </svg>
+                                      </>
                                     );
                                  } else if (overlay.type === 'rectangle' && overlay.shapeType) {
                                    const isLine = overlay.shapeType === 'line' || overlay.shapeType === 'arrow';
