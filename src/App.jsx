@@ -3899,50 +3899,70 @@ export default function App() {
     let isRowHeaders = false;
     let isColHeaders = false;
     
-    // Check if first col is mostly text
+    let firstRowHasText = false;
     let firstColHasText = false;
-    for (let r = startR; r <= endR; r++) {
-      if (isNaN(parseFloat(grid.cells[r]?.[startC]))) firstColHasText = true;
+
+    // Check if the intersection cell is text
+    const intersectionIsText = isNaN(parseFloat(grid.cells[startR]?.[startC]));
+
+    // Check the rest of the first row
+    if (cols > 1) {
+      for (let c = startC + 1; c <= endC; c++) {
+        if (isNaN(parseFloat(grid.cells[startR]?.[c]))) firstRowHasText = true;
+      }
+    }
+    
+    // Check the rest of the first column
+    if (rows > 1) {
+      for (let r = startR + 1; r <= endR; r++) {
+        if (isNaN(parseFloat(grid.cells[r]?.[startC]))) firstColHasText = true;
+      }
     }
 
-    // Check if first row is mostly text (headers), skipping the intersection cell if it's already a col header
-    let firstRowHasText = false;
-    for (let c = startC + (firstColHasText ? 1 : 0); c <= endC; c++) {
-      if (isNaN(parseFloat(grid.cells[startR]?.[c]))) firstRowHasText = true;
+    // Resolve ambiguous intersection
+    if (intersectionIsText) {
+       if (!firstRowHasText && !firstColHasText) {
+          if (cols > rows) firstRowHasText = true;
+          else firstColHasText = true;
+       }
     }
     
     let dataStartR = startR;
     let dataStartC = startC;
     
-    if (firstColHasText && cols > 1) {
+    // Map Row Labels (from First Column)
+    if (firstColHasText || (intersectionIsText && !firstRowHasText)) {
       isColHeaders = true;
       dataStartC++;
       for(let r = startR + (firstRowHasText?1:0); r <= endR; r++) {
-        labels.push(grid.cells[r]?.[startC] || `Row ${r+1}`);
+        labels.push(grid.cells[r]?.[startC] || 'Row ' + (r+1));
       }
     }
     
-    if (firstRowHasText) {
+    // Map Column Labels (from First Row)
+    if (firstRowHasText || (intersectionIsText && !firstColHasText)) {
       isRowHeaders = true;
       dataStartR++;
       if (!isColHeaders) {
-        for(let c = startC; c <= endC; c++) {
-           labels.push(grid.cells[startR]?.[c] || `Col ${c+1}`);
+        for(let c = startC + (isColHeaders?1:0); c <= endC; c++) {
+           labels.push(grid.cells[startR]?.[c] || 'Col ' + (c+1));
         }
       }
     }
-    
-    if (!firstColHasText && !firstRowHasText) {
+
+    // Fallback if no text headers detected
+    if (!isColHeaders && !isRowHeaders) {
       if (rows >= cols) {
-         for(let r = startR; r <= endR; r++) labels.push(`Item ${r+1-startR}`);
+         for(let r = startR; r <= endR; r++) labels.push('Item ' + (r+1-startR));
       } else {
-         for(let c = startC; c <= endC; c++) labels.push(`Item ${c+1-startC}`);
+         for(let c = startC; c <= endC; c++) labels.push('Item ' + (c+1-startC));
       }
     }
-    
+
+    // Extract Series
     if (isColHeaders) {
        for (let c = dataStartC; c <= endC; c++) {
-          let sName = (isRowHeaders ? grid.cells[startR]?.[c] : `Series ${c-dataStartC+1}`) || `Series ${c-dataStartC+1}`;
+          let sName = (isRowHeaders ? grid.cells[startR]?.[c] : 'Series ' + (c-dataStartC+1)) || 'Series ' + (c-dataStartC+1);
           let values = [];
           for (let r = dataStartR; r <= endR; r++) {
             values.push(parseFloat(grid.cells[r]?.[c]) || 0);
@@ -3951,7 +3971,7 @@ export default function App() {
        }
     } else {
        for (let r = dataStartR; r <= endR; r++) {
-          let sName = `Series ${r-dataStartR+1}`;
+          let sName = (isColHeaders ? grid.cells[r]?.[startC] : 'Series ' + (r-dataStartR+1)) || 'Series ' + (r-dataStartR+1);
           let values = [];
           for (let c = dataStartC; c <= endC; c++) {
              values.push(parseFloat(grid.cells[r]?.[c]) || 0);
