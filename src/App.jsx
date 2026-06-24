@@ -20,6 +20,7 @@ import {
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
+  , RotateCw, Unlock
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -26786,7 +26787,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            return (
                              <div 
                                key={overlay.id}
-                               className={`absolute z-[100] flex items-center justify-center text-sm`}
+                               className={`absolute z-[100] flex items-center justify-center text-sm group hover:outline hover:outline-2 hover:outline-blue-400/50 transition-all ${isLocked ? 'cursor-not-allowed' : 'cursor-move'}`}
                                style={{
                                  left: left,
                                  top: top,
