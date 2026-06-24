@@ -4106,7 +4106,6 @@ export default function App() {
             paths.push(
                <g key={i}>
                  <circle cx={cx} cy={cy} r={r} fill={sliceColor} />
-                 {showLabels && chartType === 'pie' && <text x={cx} y={cy} fontSize="5" fill="#fff" textAnchor="middle" alignmentBaseline="middle" fontWeight="bold">{v}</text>}
                </g>
             );
             return;
@@ -4118,15 +4117,9 @@ export default function App() {
          const y2 = cy + r * Math.sin(Math.PI * endAngle / 180);
          const largeArc = sliceAngle > 180 ? 1 : 0;
          
-         const midAngle = startAngle + (sliceAngle / 2);
-         const textR = chartType === 'donut' ? r * 0.82 : r * 0.65;
-         const tx = cx + textR * Math.cos(Math.PI * midAngle / 180);
-         const ty = cy + textR * Math.sin(Math.PI * midAngle / 180);
-         
          paths.push(
            <g key={i}>
              <path d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`} fill={sliceColor}/>
-             {showLabels && sliceAngle > 10 && <text x={tx} y={ty} fontSize="5" fill="#fff" textAnchor="middle" alignmentBaseline="middle" fontWeight="bold" style={{textShadow: '0px 0px 3px rgba(0,0,0,0.6)'}}>{v}</text>}
            </g>
          );
          startAngle = endAngle;
@@ -27404,6 +27397,34 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           {chartContent}
                                         </svg>
                                         
+                                        {overlay.labelDisplay !== 'none' && overlay.labelDisplay !== 'legend' && (() => {
+                                          if (overlay.chartType === 'pie' || overlay.chartType === 'donut') {
+                                            const s1 = currentChartData?.series?.[0]?.data || [];
+                                            const total = s1.reduce((a,b)=>a+b, 0) || 1;
+                                            let startAngle = 0;
+                                            return (
+                                              <div className="absolute inset-0 pointer-events-none">
+                                                {s1.map((v, i) => {
+                                                   const sliceAngle = (v / total) * 360;
+                                                   if (sliceAngle === 360) {
+                                                      return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent text-center font-bold text-white text-[12px] w-16 outline-none pointer-events-auto" style={{textShadow: '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                   }
+                                                   const midAngle = startAngle + (sliceAngle / 2);
+                                                   const r = 32;
+                                                   const textR = overlay.chartType === 'donut' ? r * 0.82 : r * 0.65;
+                                                   const cx = 50, cy = 46;
+                                                   const tx = cx + textR * Math.cos(Math.PI * midAngle / 180);
+                                                   const ty = cy + textR * Math.sin(Math.PI * midAngle / 180);
+                                                   startAngle += sliceAngle;
+                                                   if (sliceAngle <= 10) return null;
+                                                   return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className="absolute bg-transparent text-center font-bold text-white text-[12px] w-16 outline-none pointer-events-auto" style={{left: tx+'%', top: ty+'%', transform: 'translate(-50%, -50%)', textShadow: '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                })}
+                                              </div>
+                                            );
+                                          }
+                                          return null;
+                                        })()}
+
                                         <div 
                                           className="absolute pointer-events-auto z-10 cursor-move flex items-center justify-center w-full"
                                           style={{ 
@@ -27433,7 +27454,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           <input 
                                             type="text" 
                                             placeholder="Chart Title"
-                                            value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series?.length === 1 && currentChartData.series[0].name !== 'Series 1' ? currentChartData.series[0].name : ''))} 
+                                            value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series?.length === 1 && !currentChartData.series[0].name?.toLowerCase().startsWith('series') ? currentChartData.series[0].name : ''))} 
                                             onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
                                             onMouseDown={e => e.stopPropagation()}
                                             className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"
@@ -27441,14 +27462,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           />
                                         </div>
 
-                                        {showLegend && (
+                                        {showLegend && (() => {
+                                          const align = overlay.legendAlign || (chartType === 'pie' || chartType === 'donut' ? 'bottom' : 'top');
+                                          let legendStyle = { top: overlay.legendPos ? overlay.legendPos.y : 'auto', left: overlay.legendPos ? overlay.legendPos.x : 'auto', transform: 'none' };
+                                          let flexDir = 'flex-row';
+                                          if (!overlay.legendPos) {
+                                            if (align === 'bottom') { legendStyle = { bottom: '0px', left: '0', width: '100%', justifyContent: 'center' }; }
+                                            else if (align === 'top') { legendStyle = { top: '28px', left: '0', width: '100%', justifyContent: 'center' }; }
+                                            else if (align === 'left') { legendStyle = { left: '8px', top: '50%', transform: 'translateY(-50%)', justifyContent: 'center' }; flexDir = 'flex-col'; }
+                                            else if (align === 'right') { legendStyle = { right: '8px', top: '50%', transform: 'translateY(-50%)', justifyContent: 'center' }; flexDir = 'flex-col'; }
+                                          }
+                                          return (
                                           <div 
-                                            className="absolute flex gap-4 pointer-events-auto z-10 cursor-move flex-wrap justify-center w-full px-4"
-                                            style={{ 
-                                              top: overlay.legendPos ? overlay.legendPos.y : (overlay.chartType === 'pie' || overlay.chartType === 'donut' ? '82%' : '32px'), 
-                                              left: overlay.legendPos ? overlay.legendPos.x : '0%',
-                                              transform: overlay.legendPos ? 'none' : 'translateX(0%)'
-                                            }}
+                                            className={`absolute flex gap-3 pointer-events-auto z-10 cursor-move flex-wrap px-2 ${flexDir}`}
+                                            style={legendStyle}
                                             onPointerDown={(e) => {
                                               e.stopPropagation();
                                               const startX = e.clientX;
@@ -27472,7 +27499,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               if (overlay.chartType === 'pie' || overlay.chartType === 'donut') {
                                                 const CHART_COLORS = [fillColor, strokeColor, '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
                                                 const labels = currentChartData?.labels || ['Category 1', 'Category 2'];
-                                                return labels.map((label, idx) => (
+                                                const s1 = currentChartData?.series?.[0]?.data || [];
+                                                const total = s1.reduce((a,b)=>a+b, 0) || 1;
+                                                return labels.map((label, idx) => {
+                                                  const val = s1[idx] || 0;
+                                                  const pct = Math.round((val / total) * 100);
+                                                  return (
                                                   <div key={idx} className="flex items-center gap-1.5 shrink-0">
                                                     <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }} />
                                                     <input 
@@ -27484,8 +27516,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                       style={{ color: textClr }}
                                                     />
+                                                    {overlay.labelDisplay === 'legend' && (
+                                                      <span className="text-[11px] font-medium opacity-60" style={{ color: textClr }}>
+                                                        {val} ({pct}%)
+                                                      </span>
+                                                    )}
                                                   </div>
-                                                ));
+                                                )});
                                               } else {
                                                 const seriesNames = [
                                                   { prop: 'series1Name', def: currentChartData?.series?.[0]?.name || 'Series 1', color: fillColor },
@@ -27512,7 +27549,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               }
                                             })()}
                                           </div>
-                                        )}
+                                        )})}
                                       </>
                                     );
                                  } else if (overlay.type === 'rectangle' && overlay.shapeType) {
@@ -27728,20 +27765,30 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               <input type="checkbox" className="hidden" checked={overlay.showAxes !== false} onChange={(e) => updateOverlay({ showAxes: e.target.checked })} />
                                             </div>
                                           </label>
-                                          <label className="flex items-center justify-between cursor-pointer group">
-                                            <span className="text-[12px] text-slate-600 group-hover:text-slate-800 transition-colors">Show Legend</span>
-                                            <div className={`w-8 h-4 rounded-full transition-colors relative ${overlay.showLegend !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
-                                              <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${overlay.showLegend !== false ? 'translate-x-4' : 'translate-x-0'}`} />
-                                              <input type="checkbox" className="hidden" checked={overlay.showLegend !== false} onChange={(e) => updateOverlay({ showLegend: e.target.checked })} />
+                                          
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[12px] text-slate-600">Legend</span>
+                                            <div className="flex bg-gray-100 rounded p-0.5">
+                                              {['top', 'bottom', 'left', 'right', 'none'].map(pos => {
+                                                const isActive = overlay.legendAlign === pos || (pos === 'none' && overlay.showLegend === false) || (pos === 'bottom' && overlay.legendAlign === undefined && overlay.showLegend !== false);
+                                                return (
+                                                  <button key={pos} onClick={() => updateOverlay({ legendAlign: pos, legendPos: null, showLegend: pos !== 'none' })} className={`px-2 py-1 text-[10px] font-medium rounded transition-colors capitalize ${isActive ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>{pos}</button>
+                                                );
+                                              })}
                                             </div>
-                                          </label>
-                                          <label className="flex items-center justify-between cursor-pointer group">
-                                            <span className="text-[12px] text-slate-600 group-hover:text-slate-800 transition-colors">Show Data Labels</span>
-                                            <div className={`w-8 h-4 rounded-full transition-colors relative ${overlay.showLabels !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
-                                              <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${overlay.showLabels !== false ? 'translate-x-4' : 'translate-x-0'}`} />
-                                              <input type="checkbox" className="hidden" checked={overlay.showLabels !== false} onChange={(e) => updateOverlay({ showLabels: e.target.checked })} />
+                                          </div>
+                                          
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[12px] text-slate-600">Data Labels</span>
+                                            <div className="flex bg-gray-100 rounded p-0.5">
+                                              {[ {val: 'inside', label: 'Chart'}, {val: 'legend', label: 'Legend'}, {val: 'none', label: 'Hidden'} ].map(opt => {
+                                                 const isActive = overlay.labelDisplay === opt.val || (opt.val === 'inside' && overlay.labelDisplay === undefined && overlay.showLabels !== false) || (opt.val === 'none' && overlay.showLabels === false);
+                                                 return (
+                                                   <button key={opt.val} onClick={() => updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' })} className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${isActive ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>{opt.label}</button>
+                                                 );
+                                              })}
                                             </div>
-                                          </label>
+                                          </div>
                                         </div>
 
                                         <div className="flex flex-col gap-2 mt-1">
