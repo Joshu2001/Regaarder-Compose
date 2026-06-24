@@ -3895,30 +3895,29 @@ export default function App() {
     
     let labels = [];
     let series = [];
-    let title = 'Chart Title';
     let isRowHeaders = false;
     let isColHeaders = false;
     
     // Check if first row is mostly text (headers)
     let firstRowHasText = false;
     for (let c = startC; c <= endC; c++) {
-      if (isNaN(parseFloat(grid.cells[startR][c]))) firstRowHasText = true;
+      if (isNaN(parseFloat(grid.cells[startR]?.[c]))) firstRowHasText = true;
     }
     
     // Check if first col is mostly text
     let firstColHasText = false;
     for (let r = startR; r <= endR; r++) {
-      if (isNaN(parseFloat(grid.cells[r][startC]))) firstColHasText = true;
+      if (isNaN(parseFloat(grid.cells[r]?.[startC]))) firstColHasText = true;
     }
     
     let dataStartR = startR;
     let dataStartC = startC;
     
-    if (firstColHasText) {
+    if (firstColHasText && cols > 1) {
       isColHeaders = true;
       dataStartC++;
       for(let r = startR + (firstRowHasText?1:0); r <= endR; r++) {
-        labels.push(grid.cells[r][startC] || `Row ${r+1}`);
+        labels.push(grid.cells[r]?.[startC] || `Row ${r+1}`);
       }
     }
     
@@ -3927,7 +3926,7 @@ export default function App() {
       dataStartR++;
       if (!isColHeaders) {
         for(let c = startC; c <= endC; c++) {
-           labels.push(grid.cells[startR][c] || `Col ${c+1}`);
+           labels.push(grid.cells[startR]?.[c] || `Col ${c+1}`);
         }
       }
     }
@@ -3942,21 +3941,21 @@ export default function App() {
     
     if (isColHeaders) {
        for (let c = dataStartC; c <= endC; c++) {
-          let sName = (isRowHeaders ? grid.cells[startR][c] : `Series ${c-dataStartC+1}`) || `Series ${c-dataStartC+1}`;
+          let sName = (isRowHeaders ? grid.cells[startR]?.[c] : `Series ${c-dataStartC+1}`) || `Series ${c-dataStartC+1}`;
           let values = [];
           for (let r = dataStartR; r <= endR; r++) {
-            values.push(parseFloat(grid.cells[r][c]) || 0);
+            values.push(parseFloat(grid.cells[r]?.[c]) || 0);
           }
-          series.push({ name: sName, data: values });
+          series.push({ name: String(sName), data: values });
        }
     } else {
        for (let r = dataStartR; r <= endR; r++) {
           let sName = `Series ${r-dataStartR+1}`;
           let values = [];
           for (let c = dataStartC; c <= endC; c++) {
-             values.push(parseFloat(grid.cells[r][c]) || 0);
+             values.push(parseFloat(grid.cells[r]?.[c]) || 0);
           }
-          series.push({ name: sName, data: values });
+          series.push({ name: String(sName), data: values });
        }
     }
     
@@ -3967,8 +3966,8 @@ export default function App() {
     if (series.length === 1 && labels.length < 8) recommendedType = 'donut';
     else if (series.length >= 2) recommendedType = 'bar';
     
-    // If labels look like dates or years, recommend line
-    if (labels.some(l => l && (l.includes('20') || l.includes('/')))) {
+    // If labels look like dates or years, recommend line. CAST to String first!
+    if (labels.some(l => l !== undefined && l !== null && (String(l).includes('20') || String(l).includes('/')))) {
       recommendedType = 'line';
     }
     
