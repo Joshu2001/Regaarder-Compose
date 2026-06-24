@@ -27081,7 +27081,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     const opacity = overlay.opacity !== undefined ? overlay.opacity / 100 : 1;
 
                                     let chartContent = null;
-                                    if (chartType === 'column') {
+                                    let currentChartData = overlay.chartData;
+                                    
+                                    if (overlay.dataRange) {
+                                      currentChartData = detectChartStructure(overlay.dataRange, activeSheetGridRaw) || currentChartData;
+                                    }
+                                    
+                                    if (currentChartData) {
+                                      chartContent = renderDynamicChart(chartType, currentChartData, fillColor, strokeColor);
+                                    }
+                                    
+                                    if (!chartContent) {
+                                      if (chartType === 'column') {
                                         chartContent = (
                                           <g>
                                             <rect x="20" y="40" width="15" height="60" fill={fillColor} rx="2" />
@@ -27313,6 +27324,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <rect x="62" y="57" width="28" height="33" fill={fillColor} opacity="0.5" rx="2" />
                                           </g>
                                         );
+                                    }
                                     }
 
                                     return (
