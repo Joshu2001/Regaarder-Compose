@@ -3991,13 +3991,19 @@ export default function App() {
     let allVals = [...s1, ...s2];
     let maxVal = Math.max(...allVals, 0.1);
     let minVal = Math.min(...allVals, 0);
-    let range = maxVal - minVal;
+    let range = (maxVal - minVal) || 1;
     
     const w = 100;
     const h = 100;
     
-    const getNormalized = (v) => ((v - minVal) / range) * h;
-    const getNormY = (v) => h - getNormalized(v);
+    const getNormalized = (v) => {
+      const val = ((v - minVal) / range) * h;
+      return isNaN(val) ? 0 : val;
+    };
+    const getNormY = (v) => {
+      const val = h - getNormalized(v);
+      return isNaN(val) ? h : val;
+    };
     
     const colW = labels.length > 0 ? (w / labels.length) * 0.6 : 10;
     const gap = labels.length > 0 ? (w / labels.length) : 20;
