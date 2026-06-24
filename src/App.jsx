@@ -20,7 +20,7 @@ import {
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
-  , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map, Network, LayoutDashboard, Radar, Waypoints, TrendingDown
+  , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -28299,7 +28299,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 label: 'Geographic & Hierarchical',
                 accentColor: '#ef4444',
                 charts: [
-                  { type: 'map',             label: 'Map Chart',      icon: <Map size={24} /> },
+                  { type: 'map',             label: 'Map Chart',      icon: <MapIcon size={24} /> },
                   { type: 'treemap',         label: 'Treemap',        icon: <LayoutDashboard size={24} /> },
                 ],
               },
