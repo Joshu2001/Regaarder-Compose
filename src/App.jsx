@@ -26536,10 +26536,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <div className={`w-3 h-3 rounded-sm border-2 transition-colors ${sheetSelectionMode === 'all' ? 'border-violet-600 bg-violet-200' : 'border-slate-300'}`} />
                         </div>
                       {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => {
-                          const isColSelected = selectedSheetRange && sheetSelectionMode === 'col'
+                          const isColSelected = !isShapeInteracting && selectedSheetRange && sheetSelectionMode === 'col'
                             ? colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol)
                             : sheetSelectionMode === 'all';
-                          const isColActive = sheetSelectionMode === 'cell' && selectedSheetCell && selectedSheetCell.col === colIndex + 1;
+                          const isColActive = !isShapeInteracting && sheetSelectionMode === 'cell' && selectedSheetCell && selectedSheetCell.col === colIndex + 1;
                           return (
                             <div
                               key={col}
@@ -26928,7 +26928,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                })()}
                                
                                {/* Smart Selection Frame & Resize Handles */}
-                               {isSelected && !isLocked && !isShapeInteracting && (
+                               {isSelected && !isLocked && (
                                  <>
                                    {/* Bounding box outline */}
                                    <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />
@@ -26952,12 +26952,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    <div className="resize-handle absolute bottom-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 1, 1)} />
 
                                    {/* Floating Style Panel */}
-                                   <div className="style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar" style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
                                      <div className="flex gap-1.5 justify-center mb-1">
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000', '#ffffff'].map(c => (
                                           <button key={c} className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c, color: c })} />
                                        ))}
+                                     </div>
+
+                                     <label className="w-6 h-6 rounded-full border border-gray-200 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                         <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={fillColor} onChange={(e) => updateOverlay({ fillColor: e.target.value, color: e.target.value })} />
+                                         <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+                                       </label>
                                      </div>
 
                                      <hr className="border-gray-100" />
@@ -27047,7 +27053,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {Array.from({ length: activeSheetGrid.rows }, (_, rowIndex) => {
                             const num = rowIndex + 1;
                             const rowHeight = `var(--row-${rowIndex}-height, 36px)`;
-                            const isRowSelected = selectedSheetRange && sheetSelectionMode === 'row'
+                            const isRowSelected = !isShapeInteracting && selectedSheetRange && sheetSelectionMode === 'row'
                               ? num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)
                               : sheetSelectionMode === 'all';
                             const isRowActive = sheetSelectionMode === 'cell' && selectedSheetCell && selectedSheetCell.row === num;
@@ -27113,22 +27119,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 }
 
                                 const isExplicitAnchor = selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1;
-                                const isSelected = isExplicitAnchor || isInRange;
+                                const isSelected = !isShapeInteracting && (isExplicitAnchor || isInRange);
 
                                 let shadows = [];
                                 if (isTopEdge) shadows.push('inset 0 2px 0 0 #7c3aed');
                                 if (isBottomEdge) shadows.push('inset 0 -2px 0 0 #7c3aed');
                                 if (isLeftEdge) shadows.push('inset 2px 0 0 0 #7c3aed');
                                 if (isRightEdge) shadows.push('inset -2px 0 0 0 #7c3aed');
-                                const shadowStyle = shadows.length > 0 ? { boxShadow: shadows.join(', '), zIndex: 11 } : {};
+                                const shadowStyle = shadows.length > 0 && !isShapeInteracting ? { boxShadow: shadows.join(', '), zIndex: 11 } : {};
 
-                                const isInColBand = sheetSelectionMode === 'col' && selectedSheetRange &&
+                                const isInColBand = !isShapeInteracting && sheetSelectionMode === 'col' && selectedSheetRange &&
                                   colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) &&
                                   colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
-                                const isInRowBand = sheetSelectionMode === 'row' && selectedSheetRange &&
+                                const isInRowBand = !isShapeInteracting && sheetSelectionMode === 'row' && selectedSheetRange &&
                                   num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) &&
                                   num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow);
-                                const isAllSelected = sheetSelectionMode === 'all';
+                                const isAllSelected = !isShapeInteracting && sheetSelectionMode === 'all';
 
                                 const cellFormat = activeSheetGridRaw.formats?.[rowIndex]?.[colIndex] || {};
                                 let computedFormat = { ...cellFormat };
