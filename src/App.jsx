@@ -578,6 +578,10 @@ const SHEET_SLASH_OPTIONS = [
   { key: 'filter', label: 'Filter', desc: 'Enable filtering on selection' },
   { key: 'remove_dupes', label: 'Remove Duplicates', desc: 'Keep only unique rows' },
   { key: 'clear_format', label: 'Clear Formatting', desc: 'Reset all cell styles' },
+  { key: 'schedule', label: 'Schedule', desc: 'Add a scheduled event' },
+  { key: 'translate', label: 'Translate', desc: 'Translate selected content' },
+  { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark' },
+  // hyperlink is already there
   { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
 ];
 
@@ -26863,17 +26867,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     if (chartType === 'column') {
                                         chartContent = (
                                           <g>
-                                            <rect x="20" y="40" width="15" height="60" fill={fillColor} rx="2" /><text x="27.5" y="35" fontSize="6" fill={textClr} textAnchor="middle" fontWeight="bold">65</text>
-                                            <rect x="45" y="20" width="15" height="80" fill={strokeColor} rx="2" /><text x="52.5" y="15" fontSize="6" fill={textClr} textAnchor="middle" fontWeight="bold">85</text>
-                                            <rect x="70" y="60" width="15" height="40" fill={fillColor} rx="2" /><text x="77.5" y="55" fontSize="6" fill={textClr} textAnchor="middle" fontWeight="bold">40</text>
+                                            <rect x="20" y="40" width="15" height="60" fill={fillColor} rx="2" />
+                                            <rect x="45" y="20" width="15" height="80" fill={strokeColor} rx="2" />
+                                            <rect x="70" y="60" width="15" height="40" fill={fillColor} rx="2" />
                                           </g>
                                         );
                                     } else if (chartType === 'bar') {
                                         chartContent = (
                                           <g>
-                                            <rect x="10" y="20" width="60" height="15" fill={fillColor} rx="2" /><text x="75" y="30" fontSize="6" fill={textClr} fontWeight="bold">60%</text>
-                                            <rect x="10" y="45" width="80" height="15" fill={strokeColor} rx="2" /><text x="95" y="55" fontSize="6" fill={textClr} fontWeight="bold">80%</text>
-                                            <rect x="10" y="70" width="40" height="15" fill={fillColor} rx="2" /><text x="55" y="80" fontSize="6" fill={textClr} fontWeight="bold">40%</text>
+                                            <rect x="10" y="20" width="60" height="15" fill={fillColor} rx="2" />
+                                            <rect x="10" y="45" width="80" height="15" fill={strokeColor} rx="2" />
+                                            <rect x="10" y="70" width="40" height="15" fill={fillColor} rx="2" />
                                           </g>
                                         );
                                     } else if (chartType === 'line') {
@@ -26883,15 +26887,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     } else if (chartType === 'pie') {
                                         chartContent = (
                                           <g transform="translate(50, 50)">
-                                            <path d="M0 0 L 0 -35 A 35 35 0 0 1 35 0 Z" fill={fillColor} /><text x="15" y="-15" fontSize="8" fill={bg} textAnchor="middle" fontWeight="bold">25%</text>
-                                            <path d="M0 0 L 35 0 A 35 35 0 1 1 0 -35 Z" fill={strokeColor} /><text x="-10" y="15" fontSize="8" fill={bg} textAnchor="middle" fontWeight="bold">75%</text>
+                                            <path d="M0 0 L 0 -35 A 35 35 0 0 1 35 0 Z" fill={fillColor} />
+                                            <path d="M0 0 L 35 0 A 35 35 0 1 1 0 -35 Z" fill={strokeColor} />
                                           </g>
                                         );
                                     } else if (chartType === 'donut') {
                                         chartContent = (
                                           <g transform="translate(50, 50)">
-                                            <path d="M0 -35 A 35 35 0 0 1 35 0" fill="none" stroke={fillColor} strokeWidth="15" /><text x="25" y="-25" fontSize="6" fill={bg} textAnchor="middle" fontWeight="bold">25%</text>
-                                            <path d="M35 0 A 35 35 0 1 1 0 -35" fill="none" stroke={strokeColor} strokeWidth="15" /><text x="-25" y="25" fontSize="6" fill={bg} textAnchor="middle" fontWeight="bold">75%</text>
+                                            <path d="M0 -35 A 35 35 0 0 1 35 0" fill="none" stroke={fillColor} strokeWidth="15" />
+                                            <path d="M35 0 A 35 35 0 1 1 0 -35" fill="none" stroke={strokeColor} strokeWidth="15" />
                                           </g>
                                         );
                                     } else if (chartType === 'area') {
@@ -27010,6 +27014,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <circle cx="65" cy="45" r="2" fill="#ffffff" />
                                           </g>
                                         );
+                                    } else if (chartType === 'hlc') {
+                                        chartContent = (
+                                          <g stroke={fillColor} strokeWidth="2">
+                                            <line x1="20" y1="20" x2="20" y2="80" />
+                                            <line x1="20" y1="70" x2="30" y2="70" />
+                                            
+                                            <line x1="50" y1="40" x2="50" y2="90" />
+                                            <line x1="50" y1="80" x2="60" y2="80" />
+                                            
+                                            <line x1="80" y1="10" x2="80" y2="60" stroke={strokeColor} />
+                                            <line x1="80" y1="20" x2="90" y2="20" stroke={strokeColor} />
+                                          </g>
+                                        );
                                     } else if (chartType === 'ohlc') {
                                         chartContent = (
                                           <g stroke={fillColor} strokeWidth="2">
@@ -27046,13 +27063,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <rect x="35" y="40" width="10" height="60" fill={strokeColor} opacity="0.8" />
                                             <rect x="55" y="75" width="10" height="25" fill={fillColor} opacity="0.8" />
                                             <rect x="75" y="20" width="10" height="80" fill={strokeColor} opacity="0.8" />
-                                          </g>
+                                          {chartType === 'radar_markers' && (
+                                              <>
+                                                <circle cx="50" cy="15" r="2" fill={fillColor} />
+                                                <circle cx="85" cy="35" r="2" fill={fillColor} />
+                                                <circle cx="85" cy="70" r="2" fill={fillColor} />
+                                                <circle cx="50" cy="85" r="2" fill={fillColor} />
+                                                <circle cx="15" cy="70" r="2" fill={fillColor} />
+                                                <circle cx="15" cy="35" r="2" fill={fillColor} />
+                                                
+                                                <circle cx="50" cy="35" r="2" fill={strokeColor} />
+                                                <circle cx="65" cy="45" r="2" fill={strokeColor} />
+                                                <circle cx="65" cy="60" r="2" fill={strokeColor} />
+                                                <circle cx="50" cy="70" r="2" fill={strokeColor} />
+                                                <circle cx="35" cy="60" r="2" fill={strokeColor} />
+                                                <circle cx="35" cy="45" r="2" fill={strokeColor} />
+                                              </>
+                                            )}
+                                            {chartType === 'radar_filled' && (
+                                              <>
+                                                <polygon points="50,15 85,35 85,70 50,85 15,70 15,35" fill={fillColor} opacity="0.3" />
+                                                <polygon points="50,35 65,45 65,60 50,70 35,60 35,45" fill={strokeColor} opacity="0.4" />
+                                              </>
+                                            )}
+                                            </g>
                                         );
                                     } else if (chartType === 'treemap') {
                                         chartContent = (
                                           <g>
-                                            <rect x="10" y="10" width="50" height="80" fill={strokeColor} opacity="0.8" rx="2" /><text x="35" y="50" fontSize="8" fill={bg} textAnchor="middle" fontWeight="bold">55%</text>
-                                            <rect x="62" y="10" width="28" height="45" fill={fillColor} opacity="0.8" rx="2" /><text x="76" y="35" fontSize="6" fill={bg} textAnchor="middle" fontWeight="bold">30%</text>
+                                            <rect x="10" y="10" width="50" height="80" fill={strokeColor} opacity="0.8" rx="2" />
+                                            <rect x="62" y="10" width="28" height="45" fill={fillColor} opacity="0.8" rx="2" />
                                             <rect x="62" y="57" width="28" height="33" fill={fillColor} opacity="0.5" rx="2" />
                                           </g>
                                         );
@@ -28470,7 +28510,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 charts: [
                   { type: 'waterfall',       label: 'Waterfall',      icon: <TrendingDown size={24} /> },
                   { type: 'gantt',           label: 'Gantt',          icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="11" height="3"/><rect x="8" y="11" width="9" height="3"/><rect x="5" y="17" width="13" height="3"/></svg> },
-                  { type: 'radar',           label: 'Radar / Spider', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="8.5" x2="21" y2="15.5"/><line x1="21" y1="8.5" x2="3" y2="15.5"/></svg> },
+                  { type: 'radar',           label: 'Radar', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="8.5" x2="21" y2="15.5"/><line x1="21" y1="8.5" x2="3" y2="15.5"/></svg> },
+                    { type: 'radar_markers',   label: 'With Markers', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="8.5" r="2" fill="currentColor"/><circle cx="21" cy="15.5" r="2" fill="currentColor"/><circle cx="12" cy="21" r="2" fill="currentColor"/><circle cx="3" cy="15.5" r="2" fill="currentColor"/><circle cx="3" cy="8.5" r="2" fill="currentColor"/></svg> },
+                    { type: 'radar_filled',    label: 'Filled', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8" fill="currentColor" fillOpacity="0.5"/></svg> },
                 ],
               },
               {
