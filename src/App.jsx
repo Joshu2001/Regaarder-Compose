@@ -26868,6 +26868,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <rect x="70" y="60" width="15" height="40" fill={fillColor} rx="2" />
                                           </g>
                                         );
+                                    } else if (chartType === 'bar') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="10" y="20" width="60" height="15" fill={fillColor} rx="2" />
+                                            <rect x="10" y="45" width="80" height="15" fill={strokeColor} rx="2" />
+                                            <rect x="10" y="70" width="40" height="15" fill={fillColor} rx="2" />
+                                          </g>
+                                        );
                                     } else if (chartType === 'line') {
                                         chartContent = (
                                           <path d="M10 80 L30 40 L50 60 L70 20 L90 50" fill="none" stroke={fillColor} strokeWidth="3" />
@@ -26877,6 +26885,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           <g transform="translate(50, 50)">
                                             <path d="M0 0 L 0 -35 A 35 35 0 0 1 35 0 Z" fill={fillColor} />
                                             <path d="M0 0 L 35 0 A 35 35 0 1 1 0 -35 Z" fill={strokeColor} />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'donut') {
+                                        chartContent = (
+                                          <g transform="translate(50, 50)">
+                                            <path d="M0 -35 A 35 35 0 0 1 35 0" fill="none" stroke={fillColor} strokeWidth="15" />
+                                            <path d="M35 0 A 35 35 0 1 1 0 -35" fill="none" stroke={strokeColor} strokeWidth="15" />
                                           </g>
                                         );
                                     } else if (chartType === 'area') {
@@ -26902,6 +26917,105 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <rect x="25" y="40" width="10" height="60" fill={strokeColor} opacity="0.5" />
                                             <rect x="65" y="30" width="10" height="70" fill={strokeColor} opacity="0.5" />
                                             <path d="M10 80 L30 30 L50 70 L70 20 L90 60" fill="none" stroke={fillColor} strokeWidth="3" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'stacked_column') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="20" y="60" width="15" height="40" fill={fillColor} rx="1" />
+                                            <rect x="20" y="30" width="15" height="30" fill={strokeColor} rx="1" />
+                                            <rect x="45" y="50" width="15" height="50" fill={fillColor} rx="1" />
+                                            <rect x="45" y="20" width="15" height="30" fill={strokeColor} rx="1" />
+                                            <rect x="70" y="70" width="15" height="30" fill={fillColor} rx="1" />
+                                            <rect x="70" y="40" width="15" height="30" fill={strokeColor} rx="1" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'stacked_bar') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="10" y="20" width="40" height="15" fill={fillColor} rx="1" />
+                                            <rect x="50" y="20" width="30" height="15" fill={strokeColor} rx="1" />
+                                            <rect x="10" y="45" width="50" height="15" fill={fillColor} rx="1" />
+                                            <rect x="60" y="45" width="20" height="15" fill={strokeColor} rx="1" />
+                                            <rect x="10" y="70" width="30" height="15" fill={fillColor} rx="1" />
+                                            <rect x="40" y="70" width="40" height="15" fill={strokeColor} rx="1" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'stacked_area') {
+                                        chartContent = (
+                                          <g>
+                                            <path d="M10 60 L30 30 L50 40 L70 10 L90 30 L90 100 L10 100 Z" fill={strokeColor} opacity="0.6" />
+                                            <path d="M10 80 L30 50 L50 70 L70 30 L90 50 L90 100 L10 100 Z" fill={fillColor} opacity="0.8" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'waterfall') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="15" y="60" width="10" height="40" fill={strokeColor} />
+                                            <rect x="30" y="30" width="10" height="30" fill={fillColor} />
+                                            <rect x="45" y="20" width="10" height="10" fill={fillColor} />
+                                            <rect x="60" y="20" width="10" height="25" fill="#ef4444" />
+                                            <rect x="75" y="45" width="10" height="55" fill={strokeColor} />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'gantt') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="20" y="20" width="30" height="10" fill={fillColor} rx="2" />
+                                            <rect x="40" y="40" width="40" height="10" fill={strokeColor} rx="2" />
+                                            <rect x="60" y="60" width="25" height="10" fill={fillColor} rx="2" />
+                                            <rect x="30" y="80" width="50" height="10" fill={strokeColor} rx="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'radar') {
+                                        chartContent = (
+                                          <g transform="translate(50, 50)">
+                                            <polygon points="0,-40 38,-12 24,32 -24,32 -38,-12" fill="none" stroke={gridLine} strokeWidth="1" />
+                                            <polygon points="0,-20 19,-6 12,16 -12,16 -19,-6" fill="none" stroke={gridLine} strokeWidth="1" />
+                                            <polygon points="0,-30 25,-5 15,25 -20,10 -30,-20" fill={fillColor} opacity="0.4" stroke={fillColor} strokeWidth="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'bubble') {
+                                        chartContent = (
+                                          <g>
+                                            <circle cx="30" cy="70" r="15" fill={fillColor} opacity="0.6" />
+                                            <circle cx="60" cy="40" r="25" fill={strokeColor} opacity="0.6" />
+                                            <circle cx="80" cy="80" r="10" fill={fillColor} opacity="0.6" />
+                                            <circle cx="40" cy="30" r="8" fill={strokeColor} opacity="0.6" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'funnel') {
+                                        chartContent = (
+                                          <g>
+                                            <polygon points="10,10 90,10 75,40 25,40" fill={strokeColor} opacity="0.9" />
+                                            <polygon points="25,42 75,42 60,70 40,70" fill={fillColor} opacity="0.9" />
+                                            <polygon points="40,72 60,72 55,90 45,90" fill={strokeColor} opacity="0.6" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'sankey') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="10" y="20" width="5" height="60" fill={strokeColor} />
+                                            <rect x="85" y="10" width="5" height="30" fill={fillColor} />
+                                            <rect x="85" y="50" width="5" height="40" fill={fillColor} />
+                                            <path d="M15 35 C 50 35, 50 25, 85 25" fill="none" stroke={fillColor} strokeWidth="15" opacity="0.4" />
+                                            <path d="M15 65 C 50 65, 50 70, 85 70" fill="none" stroke={fillColor} strokeWidth="20" opacity="0.4" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'map') {
+                                        chartContent = (
+                                          <g>
+                                            <path d="M20 50 Q 40 20 60 40 T 90 50 Q 70 80 40 70 T 20 50" fill={fillColor} opacity="0.6" stroke={strokeColor} strokeWidth="2" />
+                                            <circle cx="45" cy="55" r="3" fill="#ffffff" />
+                                            <circle cx="65" cy="45" r="2" fill="#ffffff" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'treemap') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="10" y="10" width="50" height="80" fill={strokeColor} opacity="0.8" rx="2" />
+                                            <rect x="62" y="10" width="28" height="45" fill={fillColor} opacity="0.8" rx="2" />
+                                            <rect x="62" y="57" width="28" height="33" fill={fillColor} opacity="0.5" rx="2" />
                                           </g>
                                         );
                                     }
