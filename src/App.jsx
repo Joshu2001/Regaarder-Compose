@@ -26858,24 +26858,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       </defs>
                                    );
 
-                                   let shapeContent = null;
-                                   if (overlay.shapeType === 'rectangle' || overlay.shapeType === 'square') {
-                                     shapeContent = <rect x="0" y="0" width="100%" height="100%" rx={rx} fill={fillDef} stroke={strokeType !== 'none' ? strokeColor : 'none'} strokeWidth={strokeWidth} strokeDasharray={strokeDasharray} filter={filterDef !== '' ? filterDef : undefined} />;
-                                   } else if (overlay.shapeType === 'ellipse' || overlay.shapeType === 'circle') {
-                                     shapeContent = <ellipse cx="50%" cy="50%" rx="50%" ry="50%" fill={fillDef} stroke={strokeType !== 'none' ? strokeColor : 'none'} strokeWidth={strokeWidth} strokeDasharray={strokeDasharray} filter={filterDef !== '' ? filterDef : undefined} />;
-                                   } else if (overlay.shapeType === 'triangle') {
-                                     shapeContent = <polygon points={`${overlay.width/2},0 ${overlay.width},${overlay.height} 0,${overlay.height}`} fill={fillDef} stroke={strokeType !== 'none' ? strokeColor : 'none'} strokeWidth={strokeWidth} strokeDasharray={strokeDasharray} filter={filterDef !== '' ? filterDef : undefined} />;
-                                   } else if (overlay.shapeType === 'diamond') {
-                                     shapeContent = <polygon points={`${overlay.width/2},0 ${overlay.width},${overlay.height/2} ${overlay.width/2},${overlay.height} 0,${overlay.height/2}`} fill={fillDef} stroke={strokeType !== 'none' ? strokeColor : 'none'} strokeWidth={strokeWidth} strokeDasharray={strokeDasharray} filter={filterDef !== '' ? filterDef : undefined} />;
-                                   } else if (isLine) {
-                                     shapeContent = <line x1="0" y1="50%" x2="100%" y2="50%" stroke={strokeType !== 'none' ? strokeColor : fillColor} strokeWidth={strokeWidth || 4} strokeDasharray={strokeDasharray} filter={filterDef !== '' ? filterDef : undefined} />;
-                                   } else {
-                                     // Fallback
-                                     shapeContent = <rect x="0" y="0" width="100%" height="100%" fill={fillDef} />;
+                                   // Fetch base SVG template from SHAPE_SECTIONS
+                                   let shapeSvgTemplate = null;
+                                   for (const sec of SHAPE_SECTIONS) {
+                                     const found = sec.shapes.find(s => s.type === overlay.shapeType);
+                                     if (found) { shapeSvgTemplate = found.svg; break; }
                                    }
 
+                                   // Deep clone and customize the template's properties
+                                   const customizeShapeSvg = (node) => {
+                                     if (!React.isValidElement(node)) return node;
+                                     if (node.type === React.Fragment) {
+                                       return React.cloneElement(node, {}, React.Children.map(node.props.children, customizeShapeSvg));
+                                     }
+                                     
+                                     const overrides = {};
+                                     // Override Stroke
+                                     if (node.props.stroke === 'currentColor' || node.props.stroke !== 'none') {
+                                       overrides.stroke = strokeType !== 'none' ? strokeColor : 'none';
+                                       // scale down stroke width because viewBox is 16x16 but width is 100+
+                                       const strokeScale = 16 / Math.max(overlay.width, overlay.height);
+                                       overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (node.props.strokeWidth || 1.5);
+                                       
+                                       if (strokeDasharray !== 'none') {
+                                         // scale dash array for viewBox
+                                         const scaledDash = strokeDasharray.split(',').map(v => (parseFloat(v.trim()) * strokeScale).toFixed(2)).join(',');
+                                         overrides.strokeDasharray = scaledDash;
+                                       }
+                                     }
+                                     
+                                     // Override Fill
+                                     if (node.type !== 'line' && node.type !== 'polyline') {
+                                       // It's a shape that can be filled
+                                       overrides.fill = fillDef;
+                                     } else if (node.props.fill === 'currentColor') {
+                                       // Arrow heads etc.
+                                       overrides.fill = strokeType !== 'none' ? strokeColor : fillColor;
+                                     }
+
+                                     // Apply filter
+                                     if (filterDef !== '') {
+                                       overrides.filter = filterDef;
+                                     }
+                                     
+                                     // Special case: Corner radius for rectangles
+                                     if (node.type === 'rect' && overlay.cornerRadius > 0) {
+                                        overrides.rx = (overlay.cornerRadius / 100) * 8; // 8 is half of viewBox 16
+                                     }
+
+                                     return React.cloneElement(node, overrides, React.Children.map(node.props.children, customizeShapeSvg));
+                                   };
+
+                                   let shapeContent = shapeSvgTemplate ? customizeShapeSvg(shapeSvgTemplate) : <rect x="0" y="0" width="16" height="16" fill={fillDef} />;
+
                                    return (
-                                     <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" preserveAspectRatio="none">
+                                     <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" viewBox="0 0 16 16" preserveAspectRatio="none">
                                        {renderDefs()}
                                        {shapeContent}
                                      </svg>
