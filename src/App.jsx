@@ -26955,12 +26955,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
                                      <div className="flex gap-1.5 justify-center mb-1">
-                                       {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000', '#ffffff'].map(c => (
+                                       {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
                                           <button key={c} className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c, color: c })} />
                                        ))}
-                                     </div>
-
-                                     <label className="w-6 h-6 rounded-full border border-gray-200 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                       <label className="w-6 h-6 rounded-full border border-gray-200 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
                                          <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={fillColor} onChange={(e) => updateOverlay({ fillColor: e.target.value, color: e.target.value })} />
                                          <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
                                        </label>
@@ -26990,9 +26988,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          <div className="flex items-center justify-between px-1 mt-1">
                                            <span className="text-[10px] text-gray-400">Color</span>
                                            <div className="flex gap-1">
-                                             {['#000000', '#3b82f6', '#ef4444', '#22c55e'].map(c => (
+                                             {['#000000', '#3b82f6', '#ef4444'].map(c => (
                                                 <button key={c} className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: c }} onClick={() => updateOverlay({ strokeColor: c })} />
                                              ))}
+                                             <label className="w-4 h-4 rounded-full border border-gray-200 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                               <input type="color" className="absolute opacity-0 w-6 h-6 cursor-pointer" value={strokeColor} onChange={(e) => updateOverlay({ strokeColor: e.target.value })} />
+                                               <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+                                             </label>
                                            </div>
                                          </div>
                                        )}
