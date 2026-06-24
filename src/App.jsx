@@ -3878,6 +3878,217 @@ export default function App() {
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
+
+  const [quickChartPreview, setQuickChartPreview] = useState(null);
+  
+  // Data detection heuristic
+  const detectChartStructure = (range, grid) => {
+    if (!range || !grid || !grid.cells) return null;
+    const startR = Math.min(range.startRow, range.endRow) - 1;
+    const endR = Math.max(range.startRow, range.endRow) - 1;
+    const startC = Math.min(range.startCol, range.endCol) - 1;
+    const endC = Math.max(range.startCol, range.endCol) - 1;
+    
+    const rows = endR - startR + 1;
+    const cols = endC - startC + 1;
+    if (rows <= 1 && cols <= 1) return null; // Needs at least 2 cells
+    
+    let labels = [];
+    let series = [];
+    let title = 'Chart Title';
+    let isRowHeaders = false;
+    let isColHeaders = false;
+    
+    // Check if first row is mostly text (headers)
+    let firstRowHasText = false;
+    for (let c = startC; c <= endC; c++) {
+      if (isNaN(parseFloat(grid.cells[startR][c]))) firstRowHasText = true;
+    }
+    
+    // Check if first col is mostly text
+    let firstColHasText = false;
+    for (let r = startR; r <= endR; r++) {
+      if (isNaN(parseFloat(grid.cells[r][startC]))) firstColHasText = true;
+    }
+    
+    let dataStartR = startR;
+    let dataStartC = startC;
+    
+    if (firstColHasText) {
+      isColHeaders = true;
+      dataStartC++;
+      for(let r = startR + (firstRowHasText?1:0); r <= endR; r++) {
+        labels.push(grid.cells[r][startC] || `Row ${r+1}`);
+      }
+    }
+    
+    if (firstRowHasText) {
+      isRowHeaders = true;
+      dataStartR++;
+      if (!isColHeaders) {
+        for(let c = startC; c <= endC; c++) {
+           labels.push(grid.cells[startR][c] || `Col ${c+1}`);
+        }
+      }
+    }
+    
+    if (!firstColHasText && !firstRowHasText) {
+      if (rows >= cols) {
+         for(let r = startR; r <= endR; r++) labels.push(`Item ${r+1-startR}`);
+      } else {
+         for(let c = startC; c <= endC; c++) labels.push(`Item ${c+1-startC}`);
+      }
+    }
+    
+    if (isColHeaders) {
+       for (let c = dataStartC; c <= endC; c++) {
+          let sName = (isRowHeaders ? grid.cells[startR][c] : `Series ${c-dataStartC+1}`) || `Series ${c-dataStartC+1}`;
+          let values = [];
+          for (let r = dataStartR; r <= endR; r++) {
+            values.push(parseFloat(grid.cells[r][c]) || 0);
+          }
+          series.push({ name: sName, data: values });
+       }
+    } else {
+       for (let r = dataStartR; r <= endR; r++) {
+          let sName = `Series ${r-dataStartR+1}`;
+          let values = [];
+          for (let c = dataStartC; c <= endC; c++) {
+             values.push(parseFloat(grid.cells[r][c]) || 0);
+          }
+          series.push({ name: sName, data: values });
+       }
+    }
+    
+    if (series.length === 0) return null;
+    
+    // Auto-recommendation logic
+    let recommendedType = 'column';
+    if (series.length === 1 && labels.length < 8) recommendedType = 'donut';
+    else if (series.length >= 2) recommendedType = 'bar';
+    
+    // If labels look like dates or years, recommend line
+    if (labels.some(l => l && (l.includes('20') || l.includes('/')))) {
+      recommendedType = 'line';
+    }
+    
+    return {
+      labels,
+      series,
+      recommendedType
+    };
+  };
+
+  // Helper to dynamically render SVG chart paths based on data
+  const renderDynamicChart = (chartType, chartData, fill, stroke) => {
+    if (!chartData || !chartData.series || chartData.series.length === 0) return null;
+    
+    const labels = chartData.labels || [];
+    const s1 = chartData.series[0]?.data || [];
+    const s2 = chartData.series[1]?.data || [];
+    
+    // Normalize data
+    let allVals = [...s1, ...s2];
+    let maxVal = Math.max(...allVals, 0.1);
+    let minVal = Math.min(...allVals, 0);
+    let range = maxVal - minVal;
+    
+    const w = 100;
+    const h = 100;
+    
+    const getNormalized = (v) => ((v - minVal) / range) * h;
+    const getNormY = (v) => h - getNormalized(v);
+    
+    const colW = labels.length > 0 ? (w / labels.length) * 0.6 : 10;
+    const gap = labels.length > 0 ? (w / labels.length) : 20;
+    
+    if (chartType === 'column') {
+      return (
+        <g>
+          {s1.map((v, i) => {
+             const cx = (i * gap) + (gap/2);
+             const bw = s2.length > 0 ? colW/2 : colW;
+             return <rect key={`s1-${i}`} x={cx - bw} y={getNormY(v)} width={bw} height={getNormalized(v)} fill={fill} rx="2"/>;
+          })}
+          {s2.map((v, i) => {
+             const cx = (i * gap) + (gap/2);
+             const bw = colW/2;
+             return <rect key={`s2-${i}`} x={cx} y={getNormY(v)} width={bw} height={getNormalized(v)} fill={stroke} rx="2"/>;
+          })}
+        </g>
+      );
+    } else if (chartType === 'bar') {
+      return (
+        <g>
+          {s1.map((v, i) => {
+             const cy = (i * gap) + (gap/2);
+             const bh = s2.length > 0 ? colW/2 : colW;
+             return <rect key={`s1-${i}`} x={0} y={cy - bh} width={getNormalized(v)} height={bh} fill={fill} rx="2"/>;
+          })}
+          {s2.map((v, i) => {
+             const cy = (i * gap) + (gap/2);
+             const bh = colW/2;
+             return <rect key={`s2-${i}`} x={0} y={cy} width={getNormalized(v)} height={bh} fill={stroke} rx="2"/>;
+          })}
+        </g>
+      );
+    } else if (chartType === 'line' || chartType === 'area') {
+      const getPoints = (s) => s.map((v, i) => `${(i * gap) + (gap/2)},${getNormY(v)}`).join(' ');
+      const p1 = getPoints(s1);
+      const p2 = getPoints(s2);
+      return (
+        <g>
+          {chartType === 'area' && s1.length > 0 && <polygon points={`${gap/2},100 ${p1} ${((s1.length-1)*gap)+gap/2},100`} fill={fill} opacity="0.3"/>}
+          {chartType === 'area' && s2.length > 0 && <polygon points={`${gap/2},100 ${p2} ${((s2.length-1)*gap)+gap/2},100`} fill={stroke} opacity="0.3"/>}
+          {s1.length > 0 && <polyline points={p1} fill="none" stroke={fill} strokeWidth="3"/>}
+          {s2.length > 0 && <polyline points={p2} fill="none" stroke={stroke} strokeWidth="3"/>}
+          {s1.map((v, i) => <circle key={`c1-${i}`} cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="3" fill={fill}/>)}
+          {s2.map((v, i) => <circle key={`c2-${i}`} cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="3" fill={stroke}/>)}
+        </g>
+      );
+    } else if (chartType === 'pie' || chartType === 'donut') {
+      const total = s1.reduce((a,b)=>a+b, 0) || 1;
+      let startAngle = 0;
+      let paths = [];
+      const cx = 50, cy = 50, r = 40;
+      s1.forEach((v, i) => {
+         const sliceAngle = (v / total) * 360;
+         if (sliceAngle === 360) {
+            paths.push(<circle key={i} cx={cx} cy={cy} r={r} fill={i%2===0?fill:stroke} />);
+            return;
+         }
+         const endAngle = startAngle + sliceAngle;
+         const x1 = cx + r * Math.cos(Math.PI * startAngle / 180);
+         const y1 = cy + r * Math.sin(Math.PI * startAngle / 180);
+         const x2 = cx + r * Math.cos(Math.PI * endAngle / 180);
+         const y2 = cy + r * Math.sin(Math.PI * endAngle / 180);
+         const largeArc = sliceAngle > 180 ? 1 : 0;
+         paths.push(<path key={i} d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`} fill={i%2===0?fill:stroke}/>);
+         startAngle = endAngle;
+      });
+      return (
+        <g transform="translate(0, 10)">
+           {paths}
+           {chartType === 'donut' && <circle cx={cx} cy={cy} r={r*0.6} fill="#ffffff" />}
+        </g>
+      );
+    } else if (chartType === 'scatter') {
+      return (
+        <g>
+          {s1.map((v, i) => {
+             return <circle key={`s1-${i}`} cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="4" fill={fill} opacity="0.8"/>;
+          })}
+          {s2.map((v, i) => {
+             return <circle key={`s2-${i}`} cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="4" fill={stroke} opacity="0.8"/>;
+          })}
+        </g>
+      );
+    }
+    
+    // Return null if dynamic render not supported for this type, will fallback to structural svg
+    return null;
+  };
+
   const [selectedSheetOverlayId, setSelectedSheetOverlayId] = useState(null);
   const [additionalSheetRanges, setAdditionalSheetRanges] = useState([]);
   
