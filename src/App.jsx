@@ -1540,6 +1540,10 @@ export default function App() {
     };
 
     const handleOutsideClick = (e) => {
+      if (replayPanelRef.current && !replayPanelRef.current.contains(e.target)) {
+        setReplayPanelOpen(false);
+        setIsReplayPlaying(false);
+      }
       if (emojiControlsRef.current && !emojiControlsRef.current.contains(e.target)) {
         setActiveEmojiEl(null);
       }
@@ -5877,6 +5881,7 @@ export default function App() {
   const historyFutureRef = useRef([]);
   const lastSnapshotHashRef = useRef('');
   const replayTimerRef = useRef(null);
+  const replayPanelRef = useRef(null);
   const historyCommitTimerRef = useRef(null);
   const pendingHistoryRecordRef = useRef(null);
 
@@ -5884,37 +5889,57 @@ export default function App() {
     setReplayTimeline([...historyPastRef.current]);
   };
 
-  const commitPendingHistoryRecord = () => {
-    if (!pendingHistoryRecordRef.current) {
-      return;
+  const getFullSnapshotAtIndex = (targetIndex) => {
+    let full = {};
+    for (let i = 0; i <= targetIndex; i++) {
+      if (historyPastRef.current[i]?.snapshot) {
+        full = { ...full, ...historyPastRef.current[i].snapshot };
+      }
+    }
+    return full;
+  };
+
+  const recordHistoryAction = useCallback((actionName = 'State changed', snapshotOverrides = {}) => {
+    if (historyMuteRef.current) return;
+    
+    const baseSnapshot = buildSnapshot();
+    const snapshot = { ...baseSnapshot, ...snapshotOverrides };
+    
+    const lastSnapshot = lastSnapshotHashRef.current;
+    const diff = {};
+    let hasChanged = false;
+
+    if (!lastSnapshot) {
+      hasChanged = true;
+      Object.assign(diff, snapshot);
+    } else {
+      for (const key in snapshot) {
+        if (snapshot[key] !== lastSnapshot[key]) {
+          diff[key] = snapshot[key];
+          hasChanged = true;
+        }
+      }
     }
 
-    const { snapshot, nextHash } = pendingHistoryRecordRef.current;
-    pendingHistoryRecordRef.current = null;
-    if (nextHash === lastSnapshotHashRef.current) {
-      return;
-    }
+    if (!hasChanged) return;
 
-    lastSnapshotHashRef.current = nextHash;
+    lastSnapshotHashRef.current = snapshot;
+
     const record = {
-      snapshot,
+      actionName,
+      snapshot: diff,
       timestamp: Date.now(),
     };
-    historyPastRef.current = [...historyPastRef.current.slice(-79), record];
+
+    historyPastRef.current = [...historyPastRef.current.slice(-399), record];
     historyFutureRef.current = [];
     syncReplayTimeline();
     if (replayIndex === null) {
       setReplayIndex(historyPastRef.current.length - 1);
     }
-  };
-
-  const flushPendingHistoryRecord = () => {
-    if (historyCommitTimerRef.current) {
-      clearTimeout(historyCommitTimerRef.current);
-      historyCommitTimerRef.current = null;
-    }
-    commitPendingHistoryRecord();
-  };
+  }, [buildSnapshot, syncReplayTimeline, replayIndex]);
+  
+  const flushPendingHistoryRecord = () => {};
 
   const formatReplayDuration = (durationMs) => {
     const safeDuration = Math.max(0, Math.floor(durationMs || 0));
@@ -6404,33 +6429,28 @@ export default function App() {
     }, 0);
   };
 
+  const historyEventNameRef = useRef('State updated');
+
+  const setNextHistoryEvent = (name) => {
+    historyEventNameRef.current = name;
+  };
+
   useEffect(() => {
-    if (historyMuteRef.current) {
-      return;
-    }
-
-    const snapshot = buildSnapshot();
-    const nextHash = JSON.stringify(snapshot);
-    if (nextHash === lastSnapshotHashRef.current) {
-      return;
-    }
-
-    pendingHistoryRecordRef.current = { snapshot, nextHash };
-
-    if (historyCommitTimerRef.current) {
-      clearTimeout(historyCommitTimerRef.current);
-    }
-
+    if (historyMuteRef.current) return;
+    
+    // Instead of debouncing for 120ms and missing micro-actions, 
+    // we use a micro-task or just execute immediately since React already batches state updates.
+    // We add a tiny 5ms debounce to catch batched updates that React splits across ticks.
+    if (historyCommitTimerRef.current) clearTimeout(historyCommitTimerRef.current);
+    
     historyCommitTimerRef.current = setTimeout(() => {
       historyCommitTimerRef.current = null;
-      commitPendingHistoryRecord();
-    }, 120);
-
+      recordHistoryAction(historyEventNameRef.current);
+      historyEventNameRef.current = 'State updated';
+    }, 5);
+    
     return () => {
-      if (historyCommitTimerRef.current) {
-        clearTimeout(historyCommitTimerRef.current);
-        historyCommitTimerRef.current = null;
-      }
+      if (historyCommitTimerRef.current) clearTimeout(historyCommitTimerRef.current);
     };
   }, [
     docTitle,
@@ -6446,30 +6466,26 @@ export default function App() {
     whiteboardShapes,
     whiteboardWidgets,
     whiteboardComments,
+    sheetsTitle,
+    activeSheetId,
+    sheetsData,
+    sheetGrids,
+    deckSlidesData,
+    activeDeckSlideId
   ]);
 
   useEffect(() => {
-    if (!isReplayPlaying || replayIndex === null || !replayTimeline.length) {
-      return undefined;
-    }
+    if (!isReplayPlaying || replayTimeline.length === 0) return;
 
     replayTimerRef.current = setTimeout(() => {
-      setReplayIndex((currentIndex) => {
-        if (currentIndex === null) {
-          return currentIndex;
-        }
-
-        const nextIndex = currentIndex + replayDirection;
+      setReplayIndex((prevIndex) => {
+        const nextIndex = prevIndex === null ? 0 : prevIndex + replayDirection;
         if (nextIndex < 0 || nextIndex >= replayTimeline.length) {
           setIsReplayPlaying(false);
-          return currentIndex;
+          return prevIndex;
         }
-
-        const nextEntry = replayTimeline[nextIndex];
-        if (nextEntry?.snapshot) {
-          applySnapshot(nextEntry.snapshot);
-        }
-
+        const fullSnapshot = getFullSnapshotAtIndex(nextIndex);
+        applySnapshot(fullSnapshot);
         return nextIndex;
       });
     }, Math.max(160, Math.round(650 / Math.max(0.25, replaySpeed))));
@@ -6517,25 +6533,24 @@ export default function App() {
   }, [activeDocId]);
 
   const undoDocumentChange = () => {
-    flushPendingHistoryRecord();
     if (historyPastRef.current.length < 2) {
       showToast('Nothing to undo');
       return;
     }
 
     const current = historyPastRef.current[historyPastRef.current.length - 1];
-    const previous = historyPastRef.current[historyPastRef.current.length - 2];
     historyPastRef.current = historyPastRef.current.slice(0, -1);
     historyFutureRef.current = [current, ...historyFutureRef.current].slice(0, 80);
     syncReplayTimeline();
-    setReplayIndex(historyPastRef.current.length - 1);
-    applySnapshot(previous.snapshot);
+    const targetIndex = historyPastRef.current.length - 1;
+    setReplayIndex(targetIndex);
+    const fullSnapshot = getFullSnapshotAtIndex(targetIndex);
+    applySnapshot(fullSnapshot);
     trackMemoryAction('document', 'Undo document change');
     showToast('Undid last change');
   };
 
   const redoDocumentChange = () => {
-    flushPendingHistoryRecord();
     if (!historyFutureRef.current.length) {
       showToast('Nothing to redo');
       return;
@@ -6545,8 +6560,10 @@ export default function App() {
     historyFutureRef.current = historyFutureRef.current.slice(1);
     historyPastRef.current = [...historyPastRef.current, next].slice(-80);
     syncReplayTimeline();
-    setReplayIndex(historyPastRef.current.length - 1);
-    applySnapshot(next.snapshot);
+    const targetIndex = historyPastRef.current.length - 1;
+    setReplayIndex(targetIndex);
+    const fullSnapshot = getFullSnapshotAtIndex(targetIndex);
+    applySnapshot(fullSnapshot);
     trackMemoryAction('document', 'Redo document change');
     showToast('Redid change');
   };
@@ -6560,19 +6577,16 @@ export default function App() {
   };
 
   const applyReplayIndex = (nextIndex) => {
-    flushPendingHistoryRecord();
     if (!replayTimeline.length) {
       showToast('No edit history yet');
       return;
     }
 
     const clampedIndex = Math.max(0, Math.min(nextIndex, replayTimeline.length - 1));
-    const entry = replayTimeline[clampedIndex];
     setIsReplayPlaying(false);
     setReplayIndex(clampedIndex);
-    if (entry?.snapshot) {
-      applySnapshot(entry.snapshot);
-    }
+    const fullSnapshot = getFullSnapshotAtIndex(clampedIndex);
+    applySnapshot(fullSnapshot);
   };
 
   const startReplayPlayback = (direction) => {
@@ -22839,7 +22853,7 @@ Respond with a JSON array of slide objects matching the schema.`;
   const sharedReplayPanel = (
     <React.Fragment>
         {replayPanelOpen && (
-          <div className="absolute right-6 top-16 z-[260] w-[430px] overflow-visible rounded-[22px] border border-[#e8e6f2] bg-white shadow-[0_30px_70px_-34px_rgba(15,23,42,0.42)]">
+          <div ref={replayPanelRef} className="absolute right-6 top-16 z-[260] w-[430px] overflow-visible rounded-[22px] border border-[#e8e6f2] bg-white shadow-[0_30px_70px_-34px_rgba(15,23,42,0.42)]">
             <div className="flex items-start justify-between gap-3 border-b border-[#efedf6] px-5 py-4">
               <div>
                 <div className="text-[13px] font-semibold text-slate-900">Edit replay</div>
