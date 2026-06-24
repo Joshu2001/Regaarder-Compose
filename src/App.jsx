@@ -20,7 +20,7 @@ import {
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
-  , RotateCw, Unlock
+  , RotateCw, Unlock, BarChartHorizontal, Activity
 } from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -566,6 +566,7 @@ export const SHAPE_SECTIONS = [
 const SHEET_SLASH_OPTIONS = [
   // --- Native Actions ---
   { key: 'insert_table', label: 'Insert Table', desc: 'Format selection as table' },
+  { key: 'insert_chart', label: 'Insert Chart', desc: 'Add a beautiful chart or graph' },
   { key: 'insert_shape', label: 'Insert Shape', desc: 'Add a floating shape' },
   { key: 'insert_textbox', label: 'Insert Text Box', desc: 'Add a floating text box' },
   { key: 'insert_comment', label: 'Insert Comment', desc: 'Add a comment' },
@@ -1544,6 +1545,10 @@ export default function App() {
       }
       setSelectedSheetOverlayId(null);
       
+      if (sheetChartMenuRef.current && !sheetChartMenuRef.current.contains(e.target)) {
+        setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
+      }
+
       if (sheetShapeMenuRef.current && !sheetShapeMenuRef.current.contains(e.target)) {
         setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
       }
@@ -3874,6 +3879,7 @@ export default function App() {
   
   const [sheetSlashMenu, setSheetSlashMenu] = useState({ open: false, x: 0, y: 0, filterText: '', activeIndex: 0, anchorCell: null });
   const [sheetShapeMenu, setSheetShapeMenu] = useState({ open: false, left: 0, top: 0, anchorCell: null });
+  const [sheetChartMenu, setSheetChartMenu] = useState({ open: false, left: 0, top: 0, anchorCell: null });
   const [recentlyUsedShapes, setRecentlyUsedShapes] = useState([]);
   
   const [sheetTablePresetMenu, setSheetTablePresetMenu] = useState({ open: false, left: 0, top: 0, tableId: null });
@@ -4077,6 +4083,7 @@ export default function App() {
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
   const sheetShapeMenuRef = useRef(null);
+  const sheetChartMenuRef = useRef(null);
   const sheetTablePresetMenuRef = useRef(null);
   const tableHoverTimeoutRef = useRef(null);
   const findWidgetRef = useRef(null);
@@ -11610,6 +11617,16 @@ Generate the updated output according to the instruction. Preserve layout and ta
         value: `Help me with ${actionNames[key] || key} on the selected cells`, 
         anchorNode: null, 
         range: null 
+      });
+      return;
+    }
+
+    if (key === 'insert_chart') {
+      setSheetChartMenu({
+        open: true,
+        left: Math.max(20, (window.innerWidth / 2) - 140),
+        top: Math.max(20, (window.innerHeight / 2) - 280),
+        anchorCell: selectedSheetRange ? selectedSheetRange : { startRow: 1, startCol: 1 }
       });
       return;
     }
@@ -26834,6 +26851,84 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        onMouseDown={e => e.stopPropagation()}
                                      />
                                    );
+                                 } else if (overlay.type === 'chart') {
+                                    const { chartType, showAxes, showLegend, fillColor, strokeColor } = overlay;
+                                    const isDark = overlay.chartTheme === 'dark';
+                                    const bg = isDark ? '#1e293b' : '#ffffff';
+                                    const gridLine = isDark ? '#334155' : '#f1f5f9';
+                                    const textClr = isDark ? '#94a3b8' : '#64748b';
+                                    const opacity = overlay.opacity !== undefined ? overlay.opacity / 100 : 1;
+
+                                    let chartContent = null;
+                                    if (chartType === 'column') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="20" y="40" width="15" height="60" fill={fillColor} rx="2" />
+                                            <rect x="45" y="20" width="15" height="80" fill={strokeColor} rx="2" />
+                                            <rect x="70" y="60" width="15" height="40" fill={fillColor} rx="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'line') {
+                                        chartContent = (
+                                          <path d="M10 80 L30 40 L50 60 L70 20 L90 50" fill="none" stroke={fillColor} strokeWidth="3" />
+                                        );
+                                    } else if (chartType === 'pie') {
+                                        chartContent = (
+                                          <g transform="translate(50, 50)">
+                                            <path d="M0 0 L 0 -35 A 35 35 0 0 1 35 0 Z" fill={fillColor} />
+                                            <path d="M0 0 L 35 0 A 35 35 0 1 1 0 -35 Z" fill={strokeColor} />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'area') {
+                                        chartContent = (
+                                          <g>
+                                            <path d="M10 80 L30 40 L50 60 L70 20 L90 50 L90 100 L10 100 Z" fill={fillColor} opacity="0.3" />
+                                            <path d="M10 80 L30 40 L50 60 L70 20 L90 50" fill="none" stroke={fillColor} strokeWidth="3" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'scatter') {
+                                        chartContent = (
+                                          <g fill={fillColor}>
+                                            <circle cx="20" cy="40" r="3" />
+                                            <circle cx="35" cy="25" r="4" fill={strokeColor}/>
+                                            <circle cx="50" cy="60" r="3" />
+                                            <circle cx="70" cy="20" r="5" />
+                                            <circle cx="85" cy="45" r="3" fill={strokeColor}/>
+                                          </g>
+                                        );
+                                    } else if (chartType === 'combo') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="25" y="40" width="10" height="60" fill={strokeColor} opacity="0.5" />
+                                            <rect x="65" y="30" width="10" height="70" fill={strokeColor} opacity="0.5" />
+                                            <path d="M10 80 L30 30 L50 70 L70 20 L90 60" fill="none" stroke={fillColor} strokeWidth="3" />
+                                          </g>
+                                        );
+                                    }
+
+                                    return (
+                                      <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm rounded-lg" style={{ opacity: opacity, backgroundColor: bg, border: `1px solid ${gridLine}` }} viewBox="0 0 100 100" preserveAspectRatio="none">
+                                        {showAxes && chartType !== 'pie' && (
+                                          <g stroke={gridLine} strokeWidth="1">
+                                            <line x1="10" y1="20" x2="100" y2="20" />
+                                            <line x1="10" y1="40" x2="100" y2="40" />
+                                            <line x1="10" y1="60" x2="100" y2="60" />
+                                            <line x1="10" y1="80" x2="100" y2="80" />
+                                            <line x1="10" y1="100" x2="100" y2="100" />
+                                            <line x1="10" y1="0" x2="10" y2="100" />
+                                          </g>
+                                        )}
+                                        {chartContent}
+                                        {showLegend && (
+                                           <g transform="translate(10, 8)">
+                                             <rect x="0" y="0" width="4" height="4" fill={fillColor} />
+                                             <text x="6" y="4" fontSize="4" fill={textClr}>Series 1</text>
+                                             <rect x="25" y="0" width="4" height="4" fill={strokeColor} />
+                                             <text x="31" y="4" fontSize="4" fill={textClr}>Series 2</text>
+                                           </g>
+                                        )}
+                                      </svg>
+                                    );
                                  } else if (overlay.type === 'rectangle' && overlay.shapeType) {
                                    const isLine = overlay.shapeType === 'line' || overlay.shapeType === 'arrow';
                                    const cr = overlay.cornerRadius || 0; // 0 to 50
@@ -26955,6 +27050,79 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    <div className="resize-handle absolute bottom-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 1, 1)} />
 
                                    {/* Floating Style Panel */}
+                                   {overlay.type === 'chart' ? (
+                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default max-h-[360px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-[12px] font-semibold text-slate-800">Chart Styles</span>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2">
+                                          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Theme</p>
+                                          <div className="flex bg-gray-100/50 p-1 rounded-lg">
+                                            <button type="button" onClick={() => updateOverlay({ chartTheme: 'light' })} className={`flex-1 py-1.5 text-[11px] font-medium rounded-md transition-colors ${overlay.chartTheme !== 'dark' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Light</button>
+                                            <button type="button" onClick={() => updateOverlay({ chartTheme: 'dark' })} className={`flex-1 py-1.5 text-[11px] font-medium rounded-md transition-colors ${overlay.chartTheme === 'dark' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Dark</button>
+                                          </div>
+                                        </div>
+
+                                        <hr className="border-gray-100" />
+
+                                        <div className="flex flex-col gap-2">
+                                          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Colors</p>
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[12px] text-slate-600">Primary Series</span>
+                                            <div className="flex gap-1.5">
+                                              {['#ef4444', '#3b82f6', '#22c55e', '#8b5cf6'].map(c => (
+                                                <button key={c} className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 transition-transform shadow-sm" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c })} />
+                                              ))}
+                                              <label className="w-5 h-5 rounded-full border border-gray-200 shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                                <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={overlay.fillColor || '#3b82f6'} onChange={(e) => updateOverlay({ fillColor: e.target.value })} />
+                                                <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+                                              </label>
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center justify-between mt-1">
+                                            <span className="text-[12px] text-slate-600">Secondary Series</span>
+                                            <div className="flex gap-1.5">
+                                              {['#f87171', '#60a5fa', '#4ade80', '#e2e8f0'].map(c => (
+                                                <button key={c} className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 transition-transform shadow-sm" style={{ backgroundColor: c }} onClick={() => updateOverlay({ strokeColor: c })} />
+                                              ))}
+                                              <label className="w-5 h-5 rounded-full border border-gray-200 shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                                <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={overlay.strokeColor || '#e2e8f0'} onChange={(e) => updateOverlay({ strokeColor: e.target.value })} />
+                                                <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+                                              </label>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <hr className="border-gray-100" />
+
+                                        <div className="flex flex-col gap-3">
+                                          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Elements</p>
+                                          <label className="flex items-center justify-between cursor-pointer group">
+                                            <span className="text-[12px] text-slate-600 group-hover:text-slate-800 transition-colors">Show Axes & Grid</span>
+                                            <div className={`w-8 h-4 rounded-full transition-colors relative ${overlay.showAxes !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                                              <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${overlay.showAxes !== false ? 'translate-x-4' : 'translate-x-0'}`} />
+                                              <input type="checkbox" className="hidden" checked={overlay.showAxes !== false} onChange={(e) => updateOverlay({ showAxes: e.target.checked })} />
+                                            </div>
+                                          </label>
+                                          <label className="flex items-center justify-between cursor-pointer group">
+                                            <span className="text-[12px] text-slate-600 group-hover:text-slate-800 transition-colors">Show Legend</span>
+                                            <div className={`w-8 h-4 rounded-full transition-colors relative ${overlay.showLegend !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                                              <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${overlay.showLegend !== false ? 'translate-x-4' : 'translate-x-0'}`} />
+                                              <input type="checkbox" className="hidden" checked={overlay.showLegend !== false} onChange={(e) => updateOverlay({ showLegend: e.target.checked })} />
+                                            </div>
+                                          </label>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2 mt-1">
+                                          <div className="flex items-center justify-between">
+                                            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Opacity</p>
+                                            <span className="text-[10px] text-slate-400">{opacity}%</span>
+                                          </div>
+                                          <input type="range" min="0" max="100" value={opacity} onChange={(e) => updateOverlay({ opacity: parseInt(e.target.value) })} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-500" />
+                                        </div>
+                                      </div>
+                                   ) : (
                                    <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
                                      <div className="flex gap-1.5 justify-center mb-1">
@@ -27044,6 +27212,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        </button>
                                      </div>
                                    </div>
+                                   )}
                                  </>
                                )}
                              </div>
