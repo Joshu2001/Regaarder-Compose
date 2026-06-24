@@ -28807,10 +28807,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
             const insertChart = (type, accentColor) => {
               const newOverlays = [...(activeSheetGridRaw.overlays || [])];
               const cellAnchor = sheetChartMenu.anchorCell || { startRow: 1, startCol: 1 };
+              
+              let dataRange = undefined;
+              let chartData = undefined;
+              if (selectedSheetRange && Math.abs(selectedSheetRange.endRow - selectedSheetRange.startRow) + Math.abs(selectedSheetRange.endCol - selectedSheetRange.startCol) > 0) {
+                 dataRange = selectedSheetRange;
+                 const detected = detectChartStructure(dataRange, activeSheetGridRaw);
+                 if (detected) chartData = { labels: detected.labels, series: detected.series };
+              }
+
               newOverlays.push({
                 id: 'overlay-' + Date.now(),
                 type: 'chart',
                 chartType: type,
+                dataRange,
+                chartData,
                 row: cellAnchor.startRow,
                 col: cellAnchor.startCol,
                 x: 60, y: 60, width: 320, height: 200,
