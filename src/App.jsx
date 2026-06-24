@@ -3220,6 +3220,7 @@ export default function App() {
     y: 0
   });
   const [watermarkDragging, setWatermarkDragging] = useState(false);
+  const [isShapeInteracting, setIsShapeInteracting] = useState(false);
   const [watermarkDragStart, setWatermarkDragStart] = useState({ mx: 0, my: 0, ox: 0, oy: 0 });
   const [watermarkRotating, setWatermarkRotating] = useState(false);
   const [watermarkRotateStart, setWatermarkRotateStart] = useState({ angle: 0, startAngle: 0 });
@@ -7927,7 +7928,8 @@ export default function App() {
       const startY = e.clientY;
       const startScale = state.scale || 1.0;
       
-      const onMouseMove = (moveEvent) => {
+      setIsShapeInteracting(true);
+                             const onMouseMove = (moveEvent) => {
         const deltaX = moveEvent.clientX - startX;
         const deltaY = moveEvent.clientY - startY;
         
@@ -26738,7 +26740,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                
                                updateOverlay({ width: newW, height: newH, x: newL, y: newT });
                              };
-                             const onMouseUp = () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+                             const onMouseUp = () => { setIsShapeInteracting(false); window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
                              window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
                            };
 
@@ -26923,7 +26925,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                })()}
                                
                                {/* Smart Selection Frame & Resize Handles */}
-                               {isSelected && !isLocked && (
+                               {isSelected && !isLocked && !isShapeInteracting && (
                                  <>
                                    {/* Bounding box outline */}
                                    <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />
@@ -26947,7 +26949,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    <div className="resize-handle absolute bottom-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 1, 1)} />
 
                                    {/* Floating Style Panel */}
-                                   <div className="style-panel absolute top-full left-0 mt-4 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default" onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                                   <div className="style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar" style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
                                      <div className="flex gap-1.5 justify-center mb-1">
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000', '#ffffff'].map(c => (
@@ -28083,13 +28085,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
             <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
-            <button
-              type="button"
-              className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
-              onClick={() => setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null })}
-            >
-              <X size={14} />
-            </button>
+            
           </div>
 
           {/* Scrollable shape sections */}
