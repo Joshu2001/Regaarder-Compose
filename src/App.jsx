@@ -26723,6 +26723,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            const handleResize = (e, dirX, dirY) => {
                              if (isLocked) return;
                              e.preventDefault(); e.stopPropagation();
+                             setIsShapeInteracting(true);
                              const startX = e.clientX; const startY = e.clientY;
                              const startW = overlay.width; const startH = overlay.height;
                              const startL = left; const startT = top;
@@ -26748,6 +26749,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            const handleRotate = (e) => {
                              if (isLocked) return;
                              e.preventDefault(); e.stopPropagation();
+                             setIsShapeInteracting(true);
                              const cx = left + overlay.width / 2;
                              const cy = top + overlay.height / 2;
                              const sheetEl = document.querySelector('.sheets-container') || document.body;
@@ -26762,7 +26764,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                if (moveEvent.shiftKey) newRot = Math.round(newRot / 15) * 15;
                                updateOverlay({ rotation: newRot });
                              };
-                             const onMouseUp = () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+                             const onMouseUp = () => { setIsShapeInteracting(false); window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
                              window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
                            };
 
@@ -26776,6 +26778,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                              if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
                              
                              e.preventDefault(); e.stopPropagation();
+                             setIsShapeInteracting(true);
                              const startX = e.clientX; const startY = e.clientY;
                              const startL = left; const startT = top;
                              const onMouseMove = (moveEvent) => {
@@ -26783,7 +26786,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
                                updateOverlay({ x: startL + dx, y: startT + dy });
                              };
-                             const onMouseUp = () => { window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+                             const onMouseUp = () => { setIsShapeInteracting(false); window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
                              window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
                            };
 
@@ -26799,7 +26802,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  width: overlay.width,
                                  height: overlay.height,
                                  transform: `rotate(${rotation}deg)`,
-                                 opacity: opacity / 100,
                                  zIndex: isSelected ? 105 : 100,
                                  cursor: isLocked ? 'not-allowed' : 'move'
                                }}
@@ -26811,7 +26813,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    setSheetShapeMenu({
                                      open: true,
                                      left: rect.left,
-                                     top: rect.bottom,
+                                     top: rect.bottom + 12,
                                      editingOverlayId: overlay.id,
                                      anchorCell: null
                                    });
@@ -26825,6 +26827,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    return (
                                      <textarea
                                        className="w-full h-full bg-yellow-200 p-2 text-xs shadow-md resize-none border-none outline-none"
+                                       style={{ opacity: opacity / 100 }}
                                        value={overlay.content || ''}
                                        onChange={(e) => updateOverlay({ content: e.target.value })}
                                        onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
@@ -26918,7 +26921,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    let shapeContent = shapeSvgTemplate ? customizeShapeSvg(shapeSvgTemplate) : <rect x="0" y="0" width="16" height="16" fill={fillDef} />;
 
                                    return (
-                                     <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" viewBox="0 0 16 16" preserveAspectRatio="none">
+                                     <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
                                        {renderDefs()}
                                        {shapeContent}
                                      </svg>
@@ -26958,7 +26961,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
                                           <button key={c} className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c, color: c })} />
                                        ))}
-                                       <label className="w-6 h-6 rounded-full border border-gray-200 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                       <label className="w-6 h-6 rounded-full border border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
                                          <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={fillColor} onChange={(e) => updateOverlay({ fillColor: e.target.value, color: e.target.value })} />
                                          <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
                                        </label>
@@ -26991,7 +26994,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              {['#000000', '#3b82f6', '#ef4444'].map(c => (
                                                 <button key={c} className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: c }} onClick={() => updateOverlay({ strokeColor: c })} />
                                              ))}
-                                             <label className="w-4 h-4 rounded-full border border-gray-200 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                             <label className="w-4 h-4 rounded-full border border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
                                                <input type="color" className="absolute opacity-0 w-6 h-6 cursor-pointer" value={strokeColor} onChange={(e) => updateOverlay({ strokeColor: e.target.value })} />
                                                <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
                                              </label>
