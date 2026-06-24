@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+// Trigger Vercel Build Safely
 import { io } from 'socket.io-client';
 import ShareModal from './ShareModal';
 import html2canvas from 'html2canvas';
