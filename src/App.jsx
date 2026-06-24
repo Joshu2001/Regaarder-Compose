@@ -6347,9 +6347,12 @@ export default function App() {
     whiteboardShapes,
     whiteboardWidgets,
     whiteboardComments,
-    sheetGrids,
+    sheetsTitle,
+    activeSheetId,
     sheetsData,
+    sheetGrids,
     deckSlidesData,
+    activeDeckSlideId,
   });
 
   const applySnapshot = (snapshot) => {
@@ -6377,15 +6380,14 @@ export default function App() {
     setWhiteboardShapes(Array.isArray(snapshot.whiteboardShapes) ? snapshot.whiteboardShapes : []);
     setWhiteboardWidgets(Array.isArray(snapshot.whiteboardWidgets) ? snapshot.whiteboardWidgets : []);
     setWhiteboardComments(Array.isArray(snapshot.whiteboardComments) ? snapshot.whiteboardComments : []);
-    if (snapshot.sheetGrids) {
-      setSheetGrids(snapshot.sheetGrids);
-    }
-    if (snapshot.sheetsData) {
-      setSheetsData(snapshot.sheetsData);
-    }
-    if (snapshot.deckSlidesData) {
-      setDeckSlidesData(snapshot.deckSlidesData);
-    }
+    
+    if (snapshot.sheetsTitle !== undefined) setSheetsTitle(snapshot.sheetsTitle);
+    if (snapshot.activeSheetId !== undefined) setActiveSheetId(snapshot.activeSheetId);
+    if (snapshot.sheetsData) setSheetsData(snapshot.sheetsData);
+    if (snapshot.sheetGrids) setSheetGrids(snapshot.sheetGrids);
+    if (snapshot.deckSlidesData) setDeckSlidesData(snapshot.deckSlidesData);
+    if (snapshot.activeDeckSlideId !== undefined) setActiveDeckSlideId(snapshot.activeDeckSlideId);
+
     setSelectedWidgetId(null);
     setSelectedShapeIndex(null);
     setWhiteboardEditingWidgetId(null);
@@ -6444,9 +6446,6 @@ export default function App() {
     whiteboardShapes,
     whiteboardWidgets,
     whiteboardComments,
-    sheetGrids,
-    sheetsData,
-    deckSlidesData,
   ]);
 
   useEffect(() => {
@@ -27412,33 +27411,51 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           {chartContent}
                                         </svg>
                                         
-                                        {overlay.labelDisplay !== 'none' && overlay.labelDisplay !== 'legend' && (() => {
-                                          if (overlay.chartType === 'pie' || overlay.chartType === 'donut') {
-                                            const s1 = currentChartData?.series?.[0]?.data || [];
-                                            const total = s1.reduce((a,b)=>a+b, 0) || 1;
-                                            let startAngle = 0;
-                                            return (
-                                              <div className="absolute inset-0 pointer-events-none">
-                                                {s1.map((v, i) => {
-                                                   const sliceAngle = (v / total) * 360;
-                                                   if (sliceAngle === 360) {
-                                                      return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent text-center font-bold text-white text-[12px] w-16 outline-none pointer-events-auto" style={{textShadow: '0 0 4px rgba(0,0,0,0.8)'}} />;
-                                                   }
-                                                   const midAngle = startAngle + (sliceAngle / 2);
-                                                   const r = 32;
-                                                   const textR = overlay.chartType === 'donut' ? r * 0.82 : r * 0.65;
-                                                   const cx = 50, cy = 46;
-                                                   const tx = cx + textR * Math.cos(Math.PI * midAngle / 180);
-                                                   const ty = cy + textR * Math.sin(Math.PI * midAngle / 180);
-                                                   startAngle += sliceAngle;
-                                                   if (sliceAngle <= 10) return null;
-                                                   return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className="absolute bg-transparent text-center font-bold text-white text-[12px] w-16 outline-none pointer-events-auto" style={{left: tx+'%', top: ty+'%', transform: 'translate(-50%, -50%)', textShadow: '0 0 4px rgba(0,0,0,0.8)'}} />;
-                                                })}
-                                              </div>
-                                            );
-                                          }
-                                          return null;
-                                        })()}
+                                        {overlay.labelDisplay !== 'none' && overlay.labelDisplay !== 'hidden' && overlay.labelDisplay !== 'legend' && (() => {
+                                            if (overlay.chartType === 'pie' || overlay.chartType === 'donut') {
+                                              const s1 = currentChartData?.series?.[0]?.data || [];
+                                              const total = s1.reduce((a,b)=>a+b, 0) || 1;
+                                              let startAngle = 0;
+                                              let lastPositions = [];
+                                              return (
+                                                <div className="absolute inset-0 pointer-events-none">
+                                                  {s1.map((v, i) => {
+                                                     const sliceAngle = (v / total) * 360;
+                                                     if (sliceAngle === 360) {
+                                                        return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                     }
+                                                     const midAngle = startAngle + (sliceAngle / 2);
+                                                     const r = 32;
+                                                     let baseRMultiplier = overlay.labelDisplay === 'outside' ? 1.25 : (overlay.chartType === 'donut' ? 0.82 : 0.65);
+                                                     let textR = r * baseRMultiplier;
+                                                     const cx = 50, cy = 46;
+                                                     
+                                                     let tx = cx + textR * Math.cos(Math.PI * midAngle / 180);
+                                                     let ty = cy + textR * Math.sin(Math.PI * midAngle / 180);
+                                                     
+                                                     let collision = true;
+                                                     let maxAttempts = 6;
+                                                     while (collision && maxAttempts > 0) {
+                                                       collision = lastPositions.some(pos => Math.abs(pos.ty - ty) < 8 && Math.abs(pos.tx - tx) < 8);
+                                                       if (collision) {
+                                                         textR += r * 0.18;
+                                                         tx = cx + textR * Math.cos(Math.PI * midAngle / 180);
+                                                         ty = cy + textR * Math.sin(Math.PI * midAngle / 180);
+                                                       }
+                                                       maxAttempts--;
+                                                     }
+                                                     lastPositions.push({ tx, ty });
+                                                     
+                                                     startAngle += sliceAngle;
+                                                     if (sliceAngle <= 2 && overlay.labelDisplay !== 'outside') return null;
+                                                     
+                                                     return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className={`absolute bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{left: tx+'%', top: ty+'%', transform: 'translate(-50%, -50%)', color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                  })}
+                                                </div>
+                                              );
+                                            }
+                                            return null;
+                                          })()}
 
                                         <div 
                                           className="absolute pointer-events-auto z-10 cursor-move flex items-center justify-center w-full"
@@ -27469,7 +27486,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           <input 
                                             type="text" 
                                             placeholder="Chart Title"
-                                            value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series?.length === 1 && !currentChartData.series[0].name?.toLowerCase().startsWith('series') ? currentChartData.series[0].name : ''))} 
+                                              value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series ? currentChartData.series.map(s => s.name).filter(n => n && !n.toLowerCase().startsWith('series')).join(' vs ') : '') || 'Chart Title')} 
                                             onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
                                             onMouseDown={e => e.stopPropagation()}
                                             className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"

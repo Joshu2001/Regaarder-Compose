@@ -1,119 +1,162 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/App.jsx', 'utf8');
+let content = fs.readFileSync('src/App.jsx', 'utf8');
 
-// 1. Add Icons
-code = code.replace(
-  'RotateCw, Unlock',
-  'RotateCw, Unlock, BarChartHorizontal, Activity, LayoutTemplate, Plus'
-);
+// 1. Add OHLC, Candlestick, Volume to CHART_CATEGORIES under Financial & Operations
+const findCat = `label: 'Financial & Operations',
+                  accentColor: '#10b981',
+                  charts: [`;
+const newCharts = `
+                    { type: 'ohlc',            label: 'OHLC',           icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="4" y1="8" x2="6" y2="8"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="10" y1="10" x2="12" y2="10"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="16" y1="6" x2="18" y2="6"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
+                    { type: 'candlestick',     label: 'Candlestick',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><rect x="4" y="8" width="4" height="8" fill="currentColor"/><line x1="12" y1="6" x2="12" y2="18"/><rect x="10" y="10" width="4" height="4" fill="none"/><line x1="18" y1="2" x2="18" y2="22"/><rect x="16" y="6" width="4" height="12" fill="currentColor"/></svg> },
+                    { type: 'volume',          label: 'Volume',         icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="14" width="4" height="6" fill="currentColor"/><rect x="10" y="10" width="4" height="10" fill="currentColor"/><rect x="16" y="16" width="4" height="4" fill="currentColor"/></svg> },`;
+content = content.replace(findCat, findCat + newCharts);
 
-// 2. Add State
-code = code.replace(
-  'const [sheetShapeMenu, setSheetShapeMenu] = useState({ open: false, left: 0, top: 0, anchorCell: null });',
-  'const [sheetShapeMenu, setSheetShapeMenu] = useState({ open: false, left: 0, top: 0, anchorCell: null });\n  const [sheetChartMenu, setSheetChartMenu] = useState({ open: false, left: 0, top: 0, anchorCell: null });'
-);
 
-code = code.replace(
-  'const sheetShapeMenuRef = useRef(null);',
-  'const sheetShapeMenuRef = useRef(null);\n  const sheetChartMenuRef = useRef(null);'
-);
+// 2. Add chartContent renderers for ohlc, candlestick, volume
+// and add fake data labels to existing charts
+const findChartBlock = `} else if (chartType === 'treemap') {`;
+const insertBeforeTreemap = `} else if (chartType === 'ohlc') {
+                                        chartContent = (
+                                          <g stroke={fillColor} strokeWidth="2">
+                                            <line x1="20" y1="20" x2="20" y2="80" />
+                                            <line x1="10" y1="30" x2="20" y2="30" />
+                                            <line x1="20" y1="70" x2="30" y2="70" />
+                                            
+                                            <line x1="50" y1="40" x2="50" y2="90" />
+                                            <line x1="40" y1="60" x2="50" y2="60" />
+                                            <line x1="50" y1="80" x2="60" y2="80" />
+                                            
+                                            <line x1="80" y1="10" x2="80" y2="60" stroke={strokeColor} />
+                                            <line x1="70" y1="50" x2="80" y2="50" stroke={strokeColor} />
+                                            <line x1="80" y1="20" x2="90" y2="20" stroke={strokeColor} />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'candlestick') {
+                                        chartContent = (
+                                          <g>
+                                            <line x1="25" y1="20" x2="25" y2="80" stroke={fillColor} strokeWidth="1.5" />
+                                            <rect x="15" y="30" width="20" height="40" fill={fillColor} />
+                                            
+                                            <line x1="55" y1="40" x2="55" y2="90" stroke={fillColor} strokeWidth="1.5" />
+                                            <rect x="45" y="60" width="20" height="20" fill={fillColor} />
+                                            
+                                            <line x1="85" y1="10" x2="85" y2="60" stroke={strokeColor} strokeWidth="1.5" />
+                                            <rect x="75" y="20" width="20" height="30" fill={bg} stroke={strokeColor} strokeWidth="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'volume') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="15" y="60" width="10" height="40" fill={fillColor} opacity="0.8" />
+                                            <rect x="35" y="40" width="10" height="60" fill={strokeColor} opacity="0.8" />
+                                            <rect x="55" y="75" width="10" height="25" fill={fillColor} opacity="0.8" />
+                                            <rect x="75" y="20" width="10" height="80" fill={strokeColor} opacity="0.8" />
+                                          </g>
+                                        );
+                                    `;
+content = content.replace(findChartBlock, insertBeforeTreemap + findChartBlock);
 
-// 3. Global click
-code = code.replace(
-  'if (sheetShapeMenuRef.current && !sheetShapeMenuRef.current.contains(e.target)) {',
-  'if (sheetChartMenuRef.current && !sheetChartMenuRef.current.contains(e.target)) {\n        setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });\n      }\n\n      if (sheetShapeMenuRef.current && !sheetShapeMenuRef.current.contains(e.target)) {'
-);
 
-// 4. Slash options
-code = code.replace(
-  "{ key: 'insert_shape', label: 'Insert Shape', desc: 'Add a floating shape' },",
-  "{ key: 'insert_chart', label: 'Insert Chart', desc: 'Add a beautiful chart or graph' },\n  { key: 'insert_shape', label: 'Insert Shape', desc: 'Add a floating shape' },"
-);
+// 3. Fix the layout logic in the return statement to use flexbox
+const findReturnBlockStart = `return (\n                                      <>\n                                        <svg className="absolute`;
+const newReturnBlock = `return (
+                                      <div className="w-full h-full flex flex-col items-center p-2 rounded-lg pointer-events-none" style={{ backgroundColor: bg, border: \`1px solid \${gridLine}\`, opacity: opacity }}>
+                                        <div className="w-full flex justify-center pointer-events-auto shrink-0 mb-1 z-10">
+                                          <input 
+                                            type="text" 
+                                            placeholder="Chart Title"
+                                            value={overlay.chartTitle !== undefined ? overlay.chartTitle : ''} 
+                                            onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
+                                            onMouseDown={e => e.stopPropagation()}
+                                            className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[14px] rounded px-2 py-0.5 outline-none max-w-[90%]"
+                                            style={{ color: textClr }}
+                                          />
+                                        </div>
 
-// 5. Intercept slash
-code = code.replace(
-  "if (key === 'insert_shape') {",
-  "if (key === 'insert_chart') {\n      setSheetChartMenu({\n        open: true,\n        left: Math.max(20, (window.innerWidth / 2) - 140),\n        top: Math.max(20, (window.innerHeight / 2) - 280),\n        anchorCell: selectedSheetRange ? selectedSheetRange : { startRow: 1, startCol: 1 }\n      });\n      return;\n    }\n\n    if (key === 'insert_shape') {"
-);
+                                        {showLegend && (
+                                          <div className="w-full flex justify-center gap-4 pointer-events-auto shrink-0 mb-2 z-10">
+                                            <div className="flex items-center gap-1.5">
+                                              <div className="w-3 h-3 rounded-[3px] shadow-sm" style={{ backgroundColor: fillColor }} />
+                                              <input 
+                                                type="text" 
+                                                placeholder="Series 1"
+                                                value={overlay.series1Name !== undefined ? overlay.series1Name : 'Series 1'} 
+                                                onChange={(e) => updateOverlay({ series1Name: e.target.value })}
+                                                onMouseDown={e => e.stopPropagation()}
+                                                className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none w-[70px]"
+                                                style={{ color: textClr }}
+                                              />
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                              <div className="w-3 h-3 rounded-[3px] shadow-sm" style={{ backgroundColor: strokeColor }} />
+                                              <input 
+                                                type="text" 
+                                                placeholder="Series 2"
+                                                value={overlay.series2Name !== undefined ? overlay.series2Name : 'Series 2'} 
+                                                onChange={(e) => updateOverlay({ series2Name: e.target.value })}
+                                                onMouseDown={e => e.stopPropagation()}
+                                                className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none w-[70px]"
+                                                style={{ color: textClr }}
+                                              />
+                                            </div>
+                                          </div>
+                                        )}
+                                        
+                                        <div className="flex-1 w-full relative min-h-0">
+                                          <svg className="absolute inset-0 w-full h-full drop-shadow-sm" viewBox="0 0 100 100" preserveAspectRatio="none">`;
 
-// 6. insertChart helper and UI
-const chartUi = `
-          {/* Chart Picker Menu */}
-          {sheetChartMenu.open && (
-            <div 
-              ref={sheetChartMenuRef}
-              className="fixed z-[120] bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-5 w-[420px] max-h-[80vh] overflow-y-auto thin-scrollbar"
-              style={{ left: sheetChartMenu.left, top: sheetChartMenu.top }}
-              onMouseDown={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[14px] font-semibold text-slate-800">Insert Chart</h3>
-              </div>
-              
-              <div className="space-y-6">
-                <div>
-                  <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3 px-1">Basic</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['column', 'line', 'pie'].map(type => (
-                      <button key={type} type="button" onClick={() => {
-                        const newOverlays = [...(activeSheetGridRaw.overlays || [])];
-                        const cellAnchor = sheetChartMenu.anchorCell || { startRow: 1, startCol: 1 };
-                        newOverlays.push({
-                          id: 'overlay-' + Date.now(),
-                          type: 'chart',
-                          chartType: type,
-                          row: cellAnchor.startRow,
-                          col: cellAnchor.startCol,
-                          x: 60, y: 60, width: 320, height: 200,
-                          fillColor: '#8b5cf6', strokeColor: '#e2e8f0',
-                          showLegend: true, showAxes: true, chartTheme: 'light'
-                        });
-                        updateSheetSettings(activeSheetId, { overlays: newOverlays });
-                        setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
-                      }} className="p-3 border border-gray-100 rounded-xl hover:border-violet-300 hover:bg-violet-50 hover:shadow-sm transition-all flex flex-col items-center gap-2 group">
-                        {type === 'column' && <BarChart2 size={24} className="text-slate-400 group-hover:text-violet-500 transition-colors" />}
-                        {type === 'line' && <LineChart size={24} className="text-slate-400 group-hover:text-violet-500 transition-colors" />}
-                        {type === 'pie' && <PieChart size={24} className="text-slate-400 group-hover:text-violet-500 transition-colors" />}
-                        <span className="text-[12px] text-slate-600 font-medium capitalize">{type}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+const findReturnBlockEnd = `                                        )}
+                                      </>
+                                    );`;
+const newReturnBlockEnd = `                                        </div>
+                                      </div>
+                                    );`;
 
-                <div>
-                  <p className="text-[11px] uppercase tracking-wider font-semibold text-slate-400 mb-3 px-1">Advanced</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {['area', 'scatter', 'combo'].map(type => (
-                      <button key={type} type="button" onClick={() => {
-                        const newOverlays = [...(activeSheetGridRaw.overlays || [])];
-                        const cellAnchor = sheetChartMenu.anchorCell || { startRow: 1, startCol: 1 };
-                        newOverlays.push({
-                          id: 'overlay-' + Date.now(),
-                          type: 'chart',
-                          chartType: type,
-                          row: cellAnchor.startRow,
-                          col: cellAnchor.startCol,
-                          x: 60, y: 60, width: 320, height: 200,
-                          fillColor: '#3b82f6', strokeColor: '#e2e8f0',
-                          showLegend: true, showAxes: true, chartTheme: 'light'
-                        });
-                        updateSheetSettings(activeSheetId, { overlays: newOverlays });
-                        setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
-                      }} className="p-3 border border-gray-100 rounded-xl hover:border-violet-300 hover:bg-violet-50 hover:shadow-sm transition-all flex flex-col items-center gap-2 group">
-                        {type === 'area' && <TrendingUp size={24} className="text-slate-400 group-hover:text-violet-500 transition-colors" />}
-                        {type === 'scatter' && <Activity size={24} className="text-slate-400 group-hover:text-violet-500 transition-colors" />}
-                        {type === 'combo' && <Layers size={24} className="text-slate-400 group-hover:text-violet-500 transition-colors" />}
-                        <span className="text-[12px] text-slate-600 font-medium capitalize">{type}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {/* Shape Menu */}`;
+const startIndex = content.indexOf(findReturnBlockStart);
+const endIndex = content.indexOf(findReturnBlockEnd, startIndex) + findReturnBlockEnd.length;
 
-code = code.replace('{/* Shape Menu */}', chartUi);
+if (startIndex > -1 && endIndex > -1) {
+  let oldBlock = content.slice(startIndex, endIndex);
+  
+  // Need to replace the SVG top portion
+  oldBlock = oldBlock.replace(
+    `<svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm rounded-lg" style={{ opacity: opacity, backgroundColor: bg, border: \`1px solid \${gridLine}\` }} viewBox="0 -15 100 115" preserveAspectRatio="none">`,
+    `<svg className="absolute inset-0 w-full h-full drop-shadow-sm" viewBox="0 0 100 100" preserveAspectRatio="none">`
+  );
+  
+  // Remove the old absolute positioned inputs
+  const overlayInputsStart = oldBlock.indexOf('<div className="absolute top-2');
+  oldBlock = oldBlock.slice(0, overlayInputsStart);
 
-fs.writeFileSync('src/App.jsx', code, 'utf8');
-console.log('Chart UI patched.');
+  // Combine
+  let newFullBlock = newReturnBlock + oldBlock.replace('return (\n                                      <>\n', '') + newReturnBlockEnd;
+  content = content.slice(0, startIndex) + newFullBlock + content.slice(endIndex);
+}
+
+// 4. Add data value placeholders in charts (column, bar, pie, donut) to satisfy "display values" automatically
+const replaceMap = {
+  '<rect x="20" y="40" width="15" height="60" fill={fillColor} rx="2" />': '<rect x="20" y="40" width="15" height="60" fill={fillColor} rx="2" /><text x="27.5" y="35" fontSize="6" fill={textClr} textAnchor="middle" fontWeight="bold">65</text>',
+  '<rect x="45" y="20" width="15" height="80" fill={strokeColor} rx="2" />': '<rect x="45" y="20" width="15" height="80" fill={strokeColor} rx="2" /><text x="52.5" y="15" fontSize="6" fill={textClr} textAnchor="middle" fontWeight="bold">85</text>',
+  '<rect x="70" y="60" width="15" height="40" fill={fillColor} rx="2" />': '<rect x="70" y="60" width="15" height="40" fill={fillColor} rx="2" /><text x="77.5" y="55" fontSize="6" fill={textClr} textAnchor="middle" fontWeight="bold">40</text>',
+  
+  '<rect x="10" y="20" width="60" height="15" fill={fillColor} rx="2" />': '<rect x="10" y="20" width="60" height="15" fill={fillColor} rx="2" /><text x="75" y="30" fontSize="6" fill={textClr} fontWeight="bold">60%</text>',
+  '<rect x="10" y="45" width="80" height="15" fill={strokeColor} rx="2" />': '<rect x="10" y="45" width="80" height="15" fill={strokeColor} rx="2" /><text x="95" y="55" fontSize="6" fill={textClr} fontWeight="bold">80%</text>',
+  '<rect x="10" y="70" width="40" height="15" fill={fillColor} rx="2" />': '<rect x="10" y="70" width="40" height="15" fill={fillColor} rx="2" /><text x="55" y="80" fontSize="6" fill={textClr} fontWeight="bold">40%</text>',
+
+  '<path d="M0 0 L 0 -35 A 35 35 0 0 1 35 0 Z" fill={fillColor} />': '<path d="M0 0 L 0 -35 A 35 35 0 0 1 35 0 Z" fill={fillColor} /><text x="15" y="-15" fontSize="8" fill={bg} textAnchor="middle" fontWeight="bold">25%</text>',
+  '<path d="M0 0 L 35 0 A 35 35 0 1 1 0 -35 Z" fill={strokeColor} />': '<path d="M0 0 L 35 0 A 35 35 0 1 1 0 -35 Z" fill={strokeColor} /><text x="-10" y="15" fontSize="8" fill={bg} textAnchor="middle" fontWeight="bold">75%</text>',
+
+  '<path d="M0 -35 A 35 35 0 0 1 35 0" fill="none" stroke={fillColor} strokeWidth="15" />': '<path d="M0 -35 A 35 35 0 0 1 35 0" fill="none" stroke={fillColor} strokeWidth="15" /><text x="25" y="-25" fontSize="6" fill={bg} textAnchor="middle" fontWeight="bold">25%</text>',
+  '<path d="M35 0 A 35 35 0 1 1 0 -35" fill="none" stroke={strokeColor} strokeWidth="15" />': '<path d="M35 0 A 35 35 0 1 1 0 -35" fill="none" stroke={strokeColor} strokeWidth="15" /><text x="-25" y="25" fontSize="6" fill={bg} textAnchor="middle" fontWeight="bold">75%</text>',
+  
+  // Treemap
+  '<rect x="10" y="10" width="50" height="80" fill={strokeColor} opacity="0.8" rx="2" />': '<rect x="10" y="10" width="50" height="80" fill={strokeColor} opacity="0.8" rx="2" /><text x="35" y="50" fontSize="8" fill={bg} textAnchor="middle" fontWeight="bold">55%</text>',
+  '<rect x="62" y="10" width="28" height="45" fill={fillColor} opacity="0.8" rx="2" />': '<rect x="62" y="10" width="28" height="45" fill={fillColor} opacity="0.8" rx="2" /><text x="76" y="35" fontSize="6" fill={bg} textAnchor="middle" fontWeight="bold">30%</text>'
+};
+
+for (const [oldStr, newStr] of Object.entries(replaceMap)) {
+  content = content.replace(oldStr, newStr);
+}
+
+fs.writeFileSync('src/App.jsx', content);
+console.log('Patch complete.');
