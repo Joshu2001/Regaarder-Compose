@@ -26863,17 +26863,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     if (chartType === 'column') {
                                         chartContent = (
                                           <g>
-                                            <rect x="20" y="40" width="15" height="60" fill={fillColor} rx="2" />
-                                            <rect x="45" y="20" width="15" height="80" fill={strokeColor} rx="2" />
-                                            <rect x="70" y="60" width="15" height="40" fill={fillColor} rx="2" />
+                                            <rect x="20" y="40" width="15" height="60" fill={fillColor} rx="2" /><text x="27.5" y="35" fontSize="6" fill={textClr} textAnchor="middle" fontWeight="bold">65</text>
+                                            <rect x="45" y="20" width="15" height="80" fill={strokeColor} rx="2" /><text x="52.5" y="15" fontSize="6" fill={textClr} textAnchor="middle" fontWeight="bold">85</text>
+                                            <rect x="70" y="60" width="15" height="40" fill={fillColor} rx="2" /><text x="77.5" y="55" fontSize="6" fill={textClr} textAnchor="middle" fontWeight="bold">40</text>
                                           </g>
                                         );
                                     } else if (chartType === 'bar') {
                                         chartContent = (
                                           <g>
-                                            <rect x="10" y="20" width="60" height="15" fill={fillColor} rx="2" />
-                                            <rect x="10" y="45" width="80" height="15" fill={strokeColor} rx="2" />
-                                            <rect x="10" y="70" width="40" height="15" fill={fillColor} rx="2" />
+                                            <rect x="10" y="20" width="60" height="15" fill={fillColor} rx="2" /><text x="75" y="30" fontSize="6" fill={textClr} fontWeight="bold">60%</text>
+                                            <rect x="10" y="45" width="80" height="15" fill={strokeColor} rx="2" /><text x="95" y="55" fontSize="6" fill={textClr} fontWeight="bold">80%</text>
+                                            <rect x="10" y="70" width="40" height="15" fill={fillColor} rx="2" /><text x="55" y="80" fontSize="6" fill={textClr} fontWeight="bold">40%</text>
                                           </g>
                                         );
                                     } else if (chartType === 'line') {
@@ -26883,15 +26883,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     } else if (chartType === 'pie') {
                                         chartContent = (
                                           <g transform="translate(50, 50)">
-                                            <path d="M0 0 L 0 -35 A 35 35 0 0 1 35 0 Z" fill={fillColor} />
-                                            <path d="M0 0 L 35 0 A 35 35 0 1 1 0 -35 Z" fill={strokeColor} />
+                                            <path d="M0 0 L 0 -35 A 35 35 0 0 1 35 0 Z" fill={fillColor} /><text x="15" y="-15" fontSize="8" fill={bg} textAnchor="middle" fontWeight="bold">25%</text>
+                                            <path d="M0 0 L 35 0 A 35 35 0 1 1 0 -35 Z" fill={strokeColor} /><text x="-10" y="15" fontSize="8" fill={bg} textAnchor="middle" fontWeight="bold">75%</text>
                                           </g>
                                         );
                                     } else if (chartType === 'donut') {
                                         chartContent = (
                                           <g transform="translate(50, 50)">
-                                            <path d="M0 -35 A 35 35 0 0 1 35 0" fill="none" stroke={fillColor} strokeWidth="15" />
-                                            <path d="M35 0 A 35 35 0 1 1 0 -35" fill="none" stroke={strokeColor} strokeWidth="15" />
+                                            <path d="M0 -35 A 35 35 0 0 1 35 0" fill="none" stroke={fillColor} strokeWidth="15" /><text x="25" y="-25" fontSize="6" fill={bg} textAnchor="middle" fontWeight="bold">25%</text>
+                                            <path d="M35 0 A 35 35 0 1 1 0 -35" fill="none" stroke={strokeColor} strokeWidth="15" /><text x="-25" y="25" fontSize="6" fill={bg} textAnchor="middle" fontWeight="bold">75%</text>
                                           </g>
                                         );
                                     } else if (chartType === 'area') {
@@ -27010,11 +27010,49 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <circle cx="65" cy="45" r="2" fill="#ffffff" />
                                           </g>
                                         );
+                                    } else if (chartType === 'ohlc') {
+                                        chartContent = (
+                                          <g stroke={fillColor} strokeWidth="2">
+                                            <line x1="20" y1="20" x2="20" y2="80" />
+                                            <line x1="10" y1="30" x2="20" y2="30" />
+                                            <line x1="20" y1="70" x2="30" y2="70" />
+                                            
+                                            <line x1="50" y1="40" x2="50" y2="90" />
+                                            <line x1="40" y1="60" x2="50" y2="60" />
+                                            <line x1="50" y1="80" x2="60" y2="80" />
+                                            
+                                            <line x1="80" y1="10" x2="80" y2="60" stroke={strokeColor} />
+                                            <line x1="70" y1="50" x2="80" y2="50" stroke={strokeColor} />
+                                            <line x1="80" y1="20" x2="90" y2="20" stroke={strokeColor} />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'candlestick') {
+                                        chartContent = (
+                                          <g>
+                                            <line x1="25" y1="20" x2="25" y2="80" stroke={fillColor} strokeWidth="1.5" />
+                                            <rect x="15" y="30" width="20" height="40" fill={fillColor} />
+                                            
+                                            <line x1="55" y1="40" x2="55" y2="90" stroke={fillColor} strokeWidth="1.5" />
+                                            <rect x="45" y="60" width="20" height="20" fill={fillColor} />
+                                            
+                                            <line x1="85" y1="10" x2="85" y2="60" stroke={strokeColor} strokeWidth="1.5" />
+                                            <rect x="75" y="20" width="20" height="30" fill={bg} stroke={strokeColor} strokeWidth="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'volume') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="15" y="60" width="10" height="40" fill={fillColor} opacity="0.8" />
+                                            <rect x="35" y="40" width="10" height="60" fill={strokeColor} opacity="0.8" />
+                                            <rect x="55" y="75" width="10" height="25" fill={fillColor} opacity="0.8" />
+                                            <rect x="75" y="20" width="10" height="80" fill={strokeColor} opacity="0.8" />
+                                          </g>
+                                        );
                                     } else if (chartType === 'treemap') {
                                         chartContent = (
                                           <g>
-                                            <rect x="10" y="10" width="50" height="80" fill={strokeColor} opacity="0.8" rx="2" />
-                                            <rect x="62" y="10" width="28" height="45" fill={fillColor} opacity="0.8" rx="2" />
+                                            <rect x="10" y="10" width="50" height="80" fill={strokeColor} opacity="0.8" rx="2" /><text x="35" y="50" fontSize="8" fill={bg} textAnchor="middle" fontWeight="bold">55%</text>
+                                            <rect x="62" y="10" width="28" height="45" fill={fillColor} opacity="0.8" rx="2" /><text x="76" y="35" fontSize="6" fill={bg} textAnchor="middle" fontWeight="bold">30%</text>
                                             <rect x="62" y="57" width="28" height="33" fill={fillColor} opacity="0.5" rx="2" />
                                           </g>
                                         );
