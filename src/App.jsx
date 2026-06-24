@@ -6347,6 +6347,9 @@ export default function App() {
     whiteboardShapes,
     whiteboardWidgets,
     whiteboardComments,
+    sheetGrids,
+    sheetsData,
+    deckSlidesData,
   });
 
   const applySnapshot = (snapshot) => {
@@ -6374,6 +6377,15 @@ export default function App() {
     setWhiteboardShapes(Array.isArray(snapshot.whiteboardShapes) ? snapshot.whiteboardShapes : []);
     setWhiteboardWidgets(Array.isArray(snapshot.whiteboardWidgets) ? snapshot.whiteboardWidgets : []);
     setWhiteboardComments(Array.isArray(snapshot.whiteboardComments) ? snapshot.whiteboardComments : []);
+    if (snapshot.sheetGrids) {
+      setSheetGrids(snapshot.sheetGrids);
+    }
+    if (snapshot.sheetsData) {
+      setSheetsData(snapshot.sheetsData);
+    }
+    if (snapshot.deckSlidesData) {
+      setDeckSlidesData(snapshot.deckSlidesData);
+    }
     setSelectedWidgetId(null);
     setSelectedShapeIndex(null);
     setWhiteboardEditingWidgetId(null);
@@ -6432,6 +6444,9 @@ export default function App() {
     whiteboardShapes,
     whiteboardWidgets,
     whiteboardComments,
+    sheetGrids,
+    sheetsData,
+    deckSlidesData,
   ]);
 
   useEffect(() => {
