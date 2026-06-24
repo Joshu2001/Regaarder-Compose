@@ -27444,7 +27444,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           <div 
                                             className="absolute flex gap-4 pointer-events-auto z-10 cursor-move flex-wrap justify-center w-full px-4"
                                             style={{ 
-                                              top: overlay.legendPos ? overlay.legendPos.y : (chartType === 'pie' || chartType === 'donut' ? '82%' : '32px'), 
+                                              top: overlay.legendPos ? overlay.legendPos.y : (overlay.chartType === 'pie' || overlay.chartType === 'donut' ? '82%' : '32px'), 
                                               left: overlay.legendPos ? overlay.legendPos.x : '0%',
                                               transform: overlay.legendPos ? 'none' : 'translateX(0%)'
                                             }}
@@ -27468,7 +27468,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             }}
                                           >
                                             {(() => {
-                                              if (chartType === 'pie' || chartType === 'donut') {
+                                              if (overlay.chartType === 'pie' || overlay.chartType === 'donut') {
                                                 const CHART_COLORS = [fillColor, strokeColor, '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
                                                 const labels = currentChartData?.labels || ['Category 1', 'Category 2'];
                                                 return labels.map((label, idx) => (
@@ -27653,7 +27653,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                         <div className="flex flex-col gap-2">
                                           <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Colors</p>
-                                          {chartType === 'pie' || chartType === 'donut' ? (
+                                          {overlay.chartType === 'pie' || overlay.chartType === 'donut' ? (
                                             <div className="flex flex-col gap-2">
                                               <div className="flex items-center justify-between">
                                                 <span className="text-[12px] text-slate-600">Categories</span>
