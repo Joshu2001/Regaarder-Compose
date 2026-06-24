@@ -3221,6 +3221,7 @@ export default function App() {
   });
   const [watermarkDragging, setWatermarkDragging] = useState(false);
   const [isShapeInteracting, setIsShapeInteracting] = useState(false);
+  const [hoveringOverlayId, setHoveringOverlayId] = useState(null);
   const [watermarkDragStart, setWatermarkDragStart] = useState({ mx: 0, my: 0, ox: 0, oy: 0 });
   const [watermarkRotating, setWatermarkRotating] = useState(false);
   const [watermarkRotateStart, setWatermarkRotateStart] = useState({ angle: 0, startAngle: 0 });
@@ -26790,6 +26791,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                              <div 
                                key={overlay.id}
                                className={`absolute z-[100] flex items-center justify-center text-sm group hover:outline hover:outline-2 hover:outline-blue-400/50 transition-all ${isLocked ? 'cursor-not-allowed' : 'cursor-move'}`}
+                                   onMouseEnter={() => setHoveringOverlayId(overlay.id)}
+                                   onMouseLeave={() => setHoveringOverlayId(null)}
                                style={{
                                  left: left,
                                  top: top,
@@ -28071,7 +28074,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {productMode === 'sheets' && sheetShapeMenu.open && (
         <div
           ref={sheetShapeMenuRef}
-          className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden"
+          className={`fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden transition-opacity duration-200 ${isShapeInteracting || (hoveringOverlayId && hoveringOverlayId === sheetShapeMenu.editingOverlayId) ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           style={{
             left: `${sheetShapeMenu.left}px`,
             top: `${sheetShapeMenu.top}px`,
@@ -28089,7 +28092,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
 
           {/* Scrollable shape sections */}
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50">
+          <div className="flex-1 overflow-y-auto p-4 thin-scrollbar bg-slate-50">
             {[
               { label: 'Recently Used', shapes: recentlyUsedShapes.slice(0, 8) },
               ...SHAPE_SECTIONS
@@ -28134,8 +28137,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               row: cellAnchor.startRow,
                               col: cellAnchor.startCol,
                               x: 60, y: 60, width: 120, height: 80,
-                              content: '', color: '#7C3AED'
-                            });
+                              content: '', color: '#8b5cf6', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid' });
                             updateSheetSettings(activeSheetId, { overlays: newOverlays });
                           }
                           setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
