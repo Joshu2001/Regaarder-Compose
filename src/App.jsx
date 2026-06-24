@@ -4000,12 +4000,15 @@ export default function App() {
   };
 
   // Helper to dynamically render SVG chart paths based on data
-  const renderDynamicChart = (chartType, chartData, fill, stroke) => {
+  const renderDynamicChart = (chartType, chartData, fill, stroke, showLabels = false) => {
     if (!chartData || !chartData.series || chartData.series.length === 0) return null;
     
     const labels = chartData.labels || [];
     const s1 = chartData.series[0]?.data || [];
     const s2 = chartData.series[1]?.data || [];
+    
+    // Categorical colors array ensuring distinct colors for pie/donut
+    const CHART_COLORS = [fill, stroke, '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
     
     // Normalize data
     let allVals = [...s1, ...s2];
@@ -4034,12 +4037,22 @@ export default function App() {
           {s1.map((v, i) => {
              const cx = (i * gap) + (gap/2);
              const bw = s2.length > 0 ? colW/2 : colW;
-             return <rect key={`s1-${i}`} x={cx - bw} y={getNormY(v)} width={bw} height={getNormalized(v)} fill={fill} rx="2"/>;
+             return (
+               <g key={`s1-${i}`}>
+                 <rect x={cx - bw} y={getNormY(v)} width={bw} height={getNormalized(v)} fill={fill} rx="2"/>
+                 {showLabels && <text x={cx - bw/2} y={getNormY(v) - 2} fontSize="3.5" fill={fill} textAnchor="middle" fontWeight="bold">{v}</text>}
+               </g>
+             );
           })}
           {s2.map((v, i) => {
              const cx = (i * gap) + (gap/2);
              const bw = colW/2;
-             return <rect key={`s2-${i}`} x={cx} y={getNormY(v)} width={bw} height={getNormalized(v)} fill={stroke} rx="2"/>;
+             return (
+               <g key={`s2-${i}`}>
+                 <rect x={cx} y={getNormY(v)} width={bw} height={getNormalized(v)} fill={stroke} rx="2"/>
+                 {showLabels && <text x={cx + bw/2} y={getNormY(v) - 2} fontSize="3.5" fill={stroke} textAnchor="middle" fontWeight="bold">{v}</text>}
+               </g>
+             );
           })}
         </g>
       );
@@ -4049,12 +4062,24 @@ export default function App() {
           {s1.map((v, i) => {
              const cy = (i * gap) + (gap/2);
              const bh = s2.length > 0 ? colW/2 : colW;
-             return <rect key={`s1-${i}`} x={0} y={cy - bh} width={getNormalized(v)} height={bh} fill={fill} rx="2"/>;
+             const wNorm = getNormalized(v);
+             return (
+               <g key={`s1-${i}`}>
+                 <rect x={0} y={cy - bh} width={wNorm} height={bh} fill={fill} rx="2"/>
+                 {showLabels && <text x={wNorm + 1} y={cy - bh/2} fontSize="3.5" fill={fill} alignmentBaseline="middle" fontWeight="bold">{v}</text>}
+               </g>
+             );
           })}
           {s2.map((v, i) => {
              const cy = (i * gap) + (gap/2);
              const bh = colW/2;
-             return <rect key={`s2-${i}`} x={0} y={cy} width={getNormalized(v)} height={bh} fill={stroke} rx="2"/>;
+             const wNorm = getNormalized(v);
+             return (
+               <g key={`s2-${i}`}>
+                 <rect x={0} y={cy} width={wNorm} height={bh} fill={stroke} rx="2"/>
+                 {showLabels && <text x={wNorm + 1} y={cy + bh/2} fontSize="3.5" fill={stroke} alignmentBaseline="middle" fontWeight="bold">{v}</text>}
+               </g>
+             );
           })}
         </g>
       );
@@ -4068,8 +4093,18 @@ export default function App() {
           {chartType === 'area' && s2.length > 0 && <polygon points={`${gap/2},100 ${p2} ${((s2.length-1)*gap)+gap/2},100`} fill={stroke} opacity="0.3"/>}
           {s1.length > 0 && <polyline points={p1} fill="none" stroke={fill} strokeWidth="3"/>}
           {s2.length > 0 && <polyline points={p2} fill="none" stroke={stroke} strokeWidth="3"/>}
-          {s1.map((v, i) => <circle key={`c1-${i}`} cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="3" fill={fill}/>)}
-          {s2.map((v, i) => <circle key={`c2-${i}`} cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="3" fill={stroke}/>)}
+          {s1.map((v, i) => (
+             <g key={`c1-${i}`}>
+               <circle cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="3" fill={fill}/>
+               {showLabels && <text x={(i * gap) + (gap/2)} y={getNormY(v) - 5} fontSize="3.5" fill={fill} textAnchor="middle" fontWeight="bold">{v}</text>}
+             </g>
+          ))}
+          {s2.map((v, i) => (
+             <g key={`c2-${i}`}>
+               <circle cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="3" fill={stroke}/>
+               {showLabels && <text x={(i * gap) + (gap/2)} y={getNormY(v) + 8} fontSize="3.5" fill={stroke} textAnchor="middle" fontWeight="bold">{v}</text>}
+             </g>
+          ))}
         </g>
       );
     } else if (chartType === 'pie' || chartType === 'donut') {
@@ -4079,8 +4114,14 @@ export default function App() {
       const cx = 50, cy = 50, r = 40;
       s1.forEach((v, i) => {
          const sliceAngle = (v / total) * 360;
+         const sliceColor = CHART_COLORS[i % CHART_COLORS.length];
          if (sliceAngle === 360) {
-            paths.push(<circle key={i} cx={cx} cy={cy} r={r} fill={i%2===0?fill:stroke} />);
+            paths.push(
+               <g key={i}>
+                 <circle cx={cx} cy={cy} r={r} fill={sliceColor} />
+                 {showLabels && chartType === 'pie' && <text x={cx} y={cy} fontSize="4" fill="#fff" textAnchor="middle" alignmentBaseline="middle" fontWeight="bold">{v}</text>}
+               </g>
+            );
             return;
          }
          const endAngle = startAngle + sliceAngle;
@@ -4089,7 +4130,18 @@ export default function App() {
          const x2 = cx + r * Math.cos(Math.PI * endAngle / 180);
          const y2 = cy + r * Math.sin(Math.PI * endAngle / 180);
          const largeArc = sliceAngle > 180 ? 1 : 0;
-         paths.push(<path key={i} d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`} fill={i%2===0?fill:stroke}/>);
+         
+         const midAngle = startAngle + (sliceAngle / 2);
+         const textR = chartType === 'donut' ? r * 0.8 : r * 0.65;
+         const tx = cx + textR * Math.cos(Math.PI * midAngle / 180);
+         const ty = cy + textR * Math.sin(Math.PI * midAngle / 180);
+         
+         paths.push(
+           <g key={i}>
+             <path d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`} fill={sliceColor}/>
+             {showLabels && sliceAngle > 10 && <text x={tx} y={ty} fontSize="3.5" fill="#fff" textAnchor="middle" alignmentBaseline="middle" fontWeight="bold" style={{textShadow: '0px 0px 2px rgba(0,0,0,0.5)'}}>{v}</text>}
+           </g>
+         );
          startAngle = endAngle;
       });
       return (
@@ -27108,7 +27160,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }
                                     
                                     if (currentChartData) {
-                                      chartContent = renderDynamicChart(chartType, currentChartData, fillColor, strokeColor);
+                                      const defaultShowLabels = chartType === 'pie' || chartType === 'donut' || chartType === 'column' || chartType === 'bar';
+                                      const showLabels = overlay.showLabels !== undefined ? overlay.showLabels : defaultShowLabels;
+                                      chartContent = renderDynamicChart(chartType, currentChartData, fillColor, strokeColor, showLabels);
                                     }
                                     
                                     if (!chartContent) {
@@ -27364,11 +27418,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </svg>
                                         
                                         <div 
-                                          className="absolute pointer-events-auto z-10 cursor-move"
+                                          className="absolute pointer-events-auto z-10 cursor-move flex items-center justify-center w-full"
                                           style={{ 
                                             top: overlay.titlePos ? overlay.titlePos.y : '8px', 
-                                            left: overlay.titlePos ? overlay.titlePos.x : '50%',
-                                            transform: overlay.titlePos ? 'none' : 'translateX(-50%)'
+                                            left: overlay.titlePos ? overlay.titlePos.x : '0%',
+                                            transform: overlay.titlePos ? 'none' : 'translateX(0%)'
                                           }}
                                           onPointerDown={(e) => {
                                             e.stopPropagation();
@@ -27392,7 +27446,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           <input 
                                             type="text" 
                                             placeholder="Chart Title"
-                                            value={overlay.chartTitle !== undefined ? overlay.chartTitle : ''} 
+                                            value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series?.length === 1 ? currentChartData.series[0].name : 'Chart Title'))} 
                                             onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
                                             onMouseDown={e => e.stopPropagation()}
                                             className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"
@@ -27402,11 +27456,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                         {showLegend && (
                                           <div 
-                                            className="absolute flex gap-4 pointer-events-auto z-10 cursor-move"
+                                            className="absolute flex gap-4 pointer-events-auto z-10 cursor-move flex-wrap justify-center w-full px-4"
                                             style={{ 
                                               top: overlay.legendPos ? overlay.legendPos.y : '32px', 
-                                              left: overlay.legendPos ? overlay.legendPos.x : '50%',
-                                              transform: overlay.legendPos ? 'none' : 'translateX(-50%)'
+                                              left: overlay.legendPos ? overlay.legendPos.x : '0%',
+                                              transform: overlay.legendPos ? 'none' : 'translateX(0%)'
                                             }}
                                             onPointerDown={(e) => {
                                               e.stopPropagation();
@@ -27427,30 +27481,49 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               document.addEventListener('pointerup', onUp);
                                             }}
                                           >
-                                            <div className="flex items-center gap-1.5">
-                                              <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: fillColor }} />
-                                              <input 
-                                                type="text" 
-                                                placeholder="Series 1"
-                                                value={overlay.series1Name !== undefined ? overlay.series1Name : (currentChartData?.series?.[0]?.name || 'Series 1')} 
-                                                onChange={(e) => updateOverlay({ series1Name: e.target.value })}
-                                                onMouseDown={e => e.stopPropagation()}
-                                                className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none w-16"
-                                                style={{ color: textClr }}
-                                              />
-                                            </div>
-                                            <div className="flex items-center gap-1.5">
-                                              <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: strokeColor }} />
-                                              <input 
-                                                type="text" 
-                                                placeholder="Series 2"
-                                                value={overlay.series2Name !== undefined ? overlay.series2Name : 'Series 2'} 
-                                                onChange={(e) => updateOverlay({ series2Name: e.target.value })}
-                                                onMouseDown={e => e.stopPropagation()}
-                                                className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none w-16"
-                                                style={{ color: textClr }}
-                                              />
-                                            </div>
+                                            {(() => {
+                                              if (chartType === 'pie' || chartType === 'donut') {
+                                                const CHART_COLORS = [fillColor, strokeColor, '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
+                                                const labels = currentChartData?.labels || ['Category 1', 'Category 2'];
+                                                return labels.map((label, idx) => (
+                                                  <div key={idx} className="flex items-center gap-1.5 shrink-0">
+                                                    <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }} />
+                                                    <input 
+                                                      type="text" 
+                                                      placeholder={`Category ${idx + 1}`}
+                                                      value={overlay[`category${idx}Name`] !== undefined ? overlay[`category${idx}Name`] : label} 
+                                                      onChange={(e) => updateOverlay({ [`category${idx}Name`]: e.target.value })}
+                                                      onMouseDown={e => e.stopPropagation()}
+                                                      className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
+                                                      style={{ color: textClr }}
+                                                    />
+                                                  </div>
+                                                ));
+                                              } else {
+                                                const seriesNames = [
+                                                  { prop: 'series1Name', def: currentChartData?.series?.[0]?.name || 'Series 1', color: fillColor },
+                                                  { prop: 'series2Name', def: currentChartData?.series?.[1]?.name || 'Series 2', color: strokeColor }
+                                                ];
+                                                const visibleSeries = currentChartData?.series ? currentChartData.series.slice(0, 2) : seriesNames;
+                                                return visibleSeries.map((s, idx) => {
+                                                  const sn = seriesNames[idx];
+                                                  return (
+                                                    <div key={idx} className="flex items-center gap-1.5 shrink-0">
+                                                      <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: sn.color }} />
+                                                      <input 
+                                                        type="text" 
+                                                        placeholder={`Series ${idx + 1}`}
+                                                        value={overlay[sn.prop] !== undefined ? overlay[sn.prop] : sn.def} 
+                                                        onChange={(e) => updateOverlay({ [sn.prop]: e.target.value })}
+                                                        onMouseDown={e => e.stopPropagation()}
+                                                        className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
+                                                        style={{ color: textClr }}
+                                                      />
+                                                    </div>
+                                                  );
+                                                });
+                                              }
+                                            })()}
                                           </div>
                                         )}
                                       </>
@@ -27636,6 +27709,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             <div className={`w-8 h-4 rounded-full transition-colors relative ${overlay.showLegend !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
                                               <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${overlay.showLegend !== false ? 'translate-x-4' : 'translate-x-0'}`} />
                                               <input type="checkbox" className="hidden" checked={overlay.showLegend !== false} onChange={(e) => updateOverlay({ showLegend: e.target.checked })} />
+                                            </div>
+                                          </label>
+                                          <label className="flex items-center justify-between cursor-pointer group">
+                                            <span className="text-[12px] text-slate-600 group-hover:text-slate-800 transition-colors">Show Data Labels</span>
+                                            <div className={`w-8 h-4 rounded-full transition-colors relative ${overlay.showLabels !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                                              <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${overlay.showLabels !== false ? 'translate-x-4' : 'translate-x-0'}`} />
+                                              <input type="checkbox" className="hidden" checked={overlay.showLabels !== false} onChange={(e) => updateOverlay({ showLabels: e.target.checked })} />
                                             </div>
                                           </label>
                                         </div>
