@@ -581,7 +581,8 @@ const SHEET_SLASH_OPTIONS = [
   { key: 'schedule', label: 'Schedule', desc: 'Add a scheduled event' },
   { key: 'translate', label: 'Translate', desc: 'Translate selected content' },
   { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark' },
-  // hyperlink is already there
+  { key: 'image', label: 'Image', desc: 'Insert an image' },
+  { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text' },
   { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
 ];
 
@@ -3898,16 +3899,16 @@ export default function App() {
     let isRowHeaders = false;
     let isColHeaders = false;
     
-    // Check if first row is mostly text (headers)
-    let firstRowHasText = false;
-    for (let c = startC; c <= endC; c++) {
-      if (isNaN(parseFloat(grid.cells[startR]?.[c]))) firstRowHasText = true;
-    }
-    
     // Check if first col is mostly text
     let firstColHasText = false;
     for (let r = startR; r <= endR; r++) {
       if (isNaN(parseFloat(grid.cells[r]?.[startC]))) firstColHasText = true;
+    }
+
+    // Check if first row is mostly text (headers), skipping the intersection cell if it's already a col header
+    let firstRowHasText = false;
+    for (let c = startC + (firstColHasText ? 1 : 0); c <= endC; c++) {
+      if (isNaN(parseFloat(grid.cells[startR]?.[c]))) firstRowHasText = true;
     }
     
     let dataStartR = startR;
