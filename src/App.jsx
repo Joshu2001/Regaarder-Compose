@@ -27114,7 +27114,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           {chartContent}
                                         </svg>
                                         
-                                        <div className="absolute top-2 left-0 w-full flex justify-center pointer-events-auto">
+                                        <div 
+                                          className="absolute pointer-events-auto z-10 cursor-move"
+                                          style={{ 
+                                            top: overlay.titlePos ? overlay.titlePos.y : '8px', 
+                                            left: overlay.titlePos ? overlay.titlePos.x : '50%',
+                                            transform: overlay.titlePos ? 'none' : 'translateX(-50%)'
+                                          }}
+                                          onPointerDown={(e) => {
+                                            e.stopPropagation();
+                                            const startX = e.clientX;
+                                            const startY = e.clientY;
+                                            const el = e.currentTarget;
+                                            const currentX = overlay.titlePos ? parseInt(overlay.titlePos.x) : el.offsetLeft;
+                                            const currentY = overlay.titlePos ? parseInt(overlay.titlePos.y) : el.offsetTop;
+                                            
+                                            const onMove = (moveEvent) => {
+                                              updateOverlay({ titlePos: { x: (currentX + (moveEvent.clientX - startX)) + 'px', y: (currentY + (moveEvent.clientY - startY)) + 'px' } });
+                                            };
+                                            const onUp = () => {
+                                              document.removeEventListener('pointermove', onMove);
+                                              document.removeEventListener('pointerup', onUp);
+                                            };
+                                            document.addEventListener('pointermove', onMove);
+                                            document.addEventListener('pointerup', onUp);
+                                          }}
+                                        >
                                           <input 
                                             type="text" 
                                             placeholder="Chart Title"
@@ -27127,7 +27152,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
 
                                         {showLegend && (
-                                          <div className="absolute top-8 left-0 w-full flex justify-center gap-4 pointer-events-auto">
+                                          <div 
+                                            className="absolute flex gap-4 pointer-events-auto z-10 cursor-move"
+                                            style={{ 
+                                              top: overlay.legendPos ? overlay.legendPos.y : '32px', 
+                                              left: overlay.legendPos ? overlay.legendPos.x : '50%',
+                                              transform: overlay.legendPos ? 'none' : 'translateX(-50%)'
+                                            }}
+                                            onPointerDown={(e) => {
+                                              e.stopPropagation();
+                                              const startX = e.clientX;
+                                              const startY = e.clientY;
+                                              const el = e.currentTarget;
+                                              const currentX = overlay.legendPos ? parseInt(overlay.legendPos.x) : el.offsetLeft;
+                                              const currentY = overlay.legendPos ? parseInt(overlay.legendPos.y) : el.offsetTop;
+                                              
+                                              const onMove = (moveEvent) => {
+                                                updateOverlay({ legendPos: { x: (currentX + (moveEvent.clientX - startX)) + 'px', y: (currentY + (moveEvent.clientY - startY)) + 'px' } });
+                                              };
+                                              const onUp = () => {
+                                                document.removeEventListener('pointermove', onMove);
+                                                document.removeEventListener('pointerup', onUp);
+                                              };
+                                              document.addEventListener('pointermove', onMove);
+                                              document.addEventListener('pointerup', onUp);
+                                            }}
+                                          >
                                             <div className="flex items-center gap-1.5">
                                               <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: fillColor }} />
                                               <input 
@@ -28502,6 +28552,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   { type: 'stacked_column',  label: 'Stacked Col',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="12" width="5" height="9"/><rect x="3" y="6" width="5" height="6"/><rect x="10" y="8" width="5" height="13"/><rect x="10" y="3" width="5" height="5"/><rect x="17" y="10" width="5" height="11"/><rect x="17" y="5" width="5" height="5"/></svg> },
                   { type: 'stacked_bar',     label: 'Stacked Bar',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="9" height="4"/><rect x="12" y="4" width="6" height="4"/><rect x="3" y="10" width="13" height="4"/><rect x="16" y="10" width="4" height="4"/><rect x="3" y="16" width="7" height="4"/><rect x="10" y="16" width="9" height="4"/></svg> },
                   { type: 'stacked_area',    label: 'Stacked Area',   icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,18 8,10 13,14 21,6"/><polyline points="3,21 8,16 13,18 21,12"/></svg> },
+                ],
+              },
+              {
+                label: 'Stock',
+                accentColor: '#eab308',
+                charts: [
+                  { type: 'hlc',             label: 'High-Low-Close', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
+                  { type: 'ohlc',            label: 'OHLC',           icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="4" y1="8" x2="6" y2="8"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="10" y1="10" x2="12" y2="10"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="16" y1="6" x2="18" y2="6"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
+                  { type: 'candlestick',     label: 'Candlestick',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><rect x="4" y="8" width="4" height="8" fill="currentColor"/><line x1="12" y1="6" x2="12" y2="18"/><rect x="10" y="10" width="4" height="4" fill="none"/><line x1="18" y1="2" x2="18" y2="22"/><rect x="16" y="6" width="4" height="12" fill="currentColor"/></svg> },
+                  { type: 'volume',          label: 'Volume + OHLC',  icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="14" width="4" height="6" fill="currentColor"/><rect x="10" y="10" width="4" height="10" fill="currentColor"/><rect x="16" y="16" width="4" height="4" fill="currentColor"/></svg> },
                 ],
               },
               {
