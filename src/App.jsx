@@ -27394,7 +27394,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               <input 
                                                 type="text" 
                                                 placeholder="Series 1"
-                                                value={overlay.series1Name !== undefined ? overlay.series1Name : 'Series 1'} 
+                                                value={overlay.series1Name !== undefined ? overlay.series1Name : (currentChartData?.series?.[0]?.name || 'Series 1')} 
                                                 onChange={(e) => updateOverlay({ series1Name: e.target.value })}
                                                 onMouseDown={e => e.stopPropagation()}
                                                 className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none w-16"
