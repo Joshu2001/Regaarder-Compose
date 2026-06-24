@@ -26972,6 +26972,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       >
                         {/* Overlays */}
                         {(activeSheetGridRaw.overlays || []).map(overlay => {
+                           let currentChartData = overlay.chartData;
+                           if (overlay.type === 'chart' && overlay.dataRange) {
+                             currentChartData = detectChartStructure(overlay.dataRange, activeSheetGridRaw) || currentChartData;
+                           }
+
                            const left = overlay.x !== undefined ? overlay.x : (overlay.col * 100);
                            const top = overlay.y !== undefined ? overlay.y : (overlay.row * 36);
                            
@@ -27139,11 +27144,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     const opacity = overlay.opacity !== undefined ? overlay.opacity / 100 : 1;
 
                                     let chartContent = null;
-                                    let currentChartData = overlay.chartData;
-                                    
-                                    if (overlay.dataRange) {
-                                      currentChartData = detectChartStructure(overlay.dataRange, activeSheetGridRaw) || currentChartData;
-                                    }
                                     
                                     if (currentChartData) {
                                       const defaultShowLabels = chartType === 'pie' || chartType === 'donut' || chartType === 'column' || chartType === 'bar';
