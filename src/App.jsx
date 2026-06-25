@@ -26535,7 +26535,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
       </div>
     </div>
-  ) : {sheetToolbarTab === 'Data' ? (
+  ) : sheetToolbarTab === 'Data' ? (
                         /* ── DATA TAB: OMNI-IMPORT PORTAL ─────────────────────── */
                         <div className="flex-1 overflow-y-auto thin-scrollbar bg-[#FAFAFC]">
                           <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col gap-10">
