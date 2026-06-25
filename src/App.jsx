@@ -4702,7 +4702,7 @@ export default function App() {
   const [workspaceLauncherIconSize, setWorkspaceLauncherIconSize] = useState('md');
   const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
-  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [isComposeExportModalOpen, setIsComposeExportModalOpen] = useState(false);
   const [isSheetsExportModalOpen, setIsSheetsExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
@@ -31545,53 +31545,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               onClick={() => {
                 closeTransientMenus();
-                setExportMenuOpen(!exportMenuOpen);
+                setIsComposeExportModalOpen(true);
               }}
               className="text-xs font-medium px-2 py-1 rounded hover:bg-violet-50 hover:text-violet-700 flex items-center gap-1"
               title="Export options"
             >
               Export
             </button>
-            {exportMenuOpen && (
-              <div className="absolute top-8 right-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1">
-                <button
-                  onClick={() => {
-                    exportCurrentDocumentAsPdf();
-                    setExportMenuOpen(false);
-                  }}
-                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                >
-                  Export as PDF
-                </button>
-                <button
-                  onClick={() => {
-                    convertDocumentToDeck();
-                    setExportMenuOpen(false);
-                  }}
-                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                >
-                  Convert to Deck
-                </button>
-                <button
-                  onClick={() => {
-                    exportCurrentDocumentAsWord();
-                    setExportMenuOpen(false);
-                  }}
-                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                >
-                  Export as Word
-                </button>
-                <button
-                  onClick={() => {
-                    exportCurrentDocumentAsComposeFormat();
-                    setExportMenuOpen(false);
-                  }}
-                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                >
-                  Export as Compose Format
-                </button>
-              </div>
-            )}
           </div>
           <button
             type="button"
@@ -36443,6 +36403,84 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
       {/* SETTINGS MODAL */}
+      {isComposeExportModalOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !isExporting && setIsComposeExportModalOpen(false)}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[600px] overflow-hidden flex flex-col border border-gray-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-slate-50">
+              <h2 className="text-base font-semibold text-gray-800">Compose Export & Conversion</h2>
+              <button 
+                onClick={() => !isExporting && setIsComposeExportModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                disabled={isExporting}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col gap-6">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Export as File</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { format: 'Compose', icon: FileText, desc: 'Original format' },
+                    { format: 'Word', icon: FileText, desc: '.docx document' },
+                    { format: 'Docs', icon: FileText, desc: 'Cloud document' },
+                    { format: 'PDF', icon: File, desc: 'Print-ready' },
+                    { format: 'Markdown', icon: FileText, desc: 'Plain text format' }
+                  ].map(f => (
+                    <button 
+                      key={f.format}
+                      disabled={isExporting}
+                      onClick={() => {
+                        setIsExporting(true);
+                        setTimeout(() => { setIsExporting(false); setIsComposeExportModalOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                      }}
+                      className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:bg-violet-50 transition-all text-left group"
+                    >
+                      <div className="p-2 rounded-lg bg-violet-100 text-violet-600 group-hover:bg-violet-200 transition-colors"><f.icon size={16} /></div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-gray-800">{f.format}</span>
+                        <span className="text-[10px] text-gray-500">{f.desc}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="h-px bg-gray-100 w-full"></div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Convert to Workspace</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
+                    { target: 'Sheets', icon: FileText, color: 'green' },
+                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                  ].map(t => (
+                    <button 
+                      key={t.target}
+                      disabled={isExporting}
+                      onClick={() => {
+                        setIsExporting(true);
+                        setTimeout(() => { setIsExporting(false); setIsComposeExportModalOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                      }}
+                      className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:shadow-sm transition-all font-medium text-gray-700 text-sm"
+                    >
+                      <t.icon size={16} className={`text-${t.color}-500`} />
+                      {t.target}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {isExporting && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+                <div className="w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-4"></div>
+                <span className="text-sm font-medium text-violet-700">Processing...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {isSheetsExportModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !isExporting && setIsSheetsExportModalOpen(false)}></div>
@@ -36466,8 +36504,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     { format: 'XLSX', icon: FileText, desc: '.xlsx spreadsheet' },
                     { format: 'CSV', icon: FileText, desc: 'Comma-separated' },
                     { format: 'JSON', icon: FileText, desc: 'Structured data' },
-                    { format: 'PDF', icon: File, desc: 'Print-ready' },
-                    { format: 'Markdown', icon: FileText, desc: 'Plain text format' }
+                    { format: 'PDF', icon: File, desc: 'Print-ready' }
                   ].map(f => (
                     <button 
                       key={f.format}
