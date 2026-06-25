@@ -26516,8 +26516,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button
                           key={tab}
                           type="button"
-                          onClick={() => {
+                          onClick={(e) => {
                             if (tab === 'Export') {
+                              e.preventDefault();
+                              e.stopPropagation();
                               setSheetToolbarTab(null);
                               setIsUnifiedExportModalOpen(true);
                             } else if (tab === 'Data') {
@@ -28138,18 +28140,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }
                                   }
                                 }
-                                let isTopEdge = false;
-                                let isBottomEdge = false;
-                                let isLeftEdge = false;
-                                let isRightEdge = false;
-                                let isBottomRightCorner = false;
-
-                                for (const range of allRanges) {
-                                  const rMinRow = Math.min(range.startRow, range.endRow);
-                                  const rMaxRow = Math.max(range.startRow, range.endRow);
-                                  const rMinCol = Math.min(range.startCol, range.endCol);
-                                  const rMaxCol = Math.max(range.startCol, range.endCol);
-                                  
+                                let isTopEdge = false, isBottomEdge = false, isLeftEdge = false, isRightEdge = false, isBottomRightCorner = false;
+                                const isExplicitAnchor = (selectedSheetCell && selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1) || (multiSelectedCells && multiSelectedCells.some(c => c.row === num && c.col === colIndex + 1));
+                                if ((selectedSheetCell && selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1 && !selectedSheetRange) || (multiSelectedCells && multiSelectedCells.some(c => c.row === num && c.col === colIndex + 1))) {
+                                  isTopEdge = true; isBottomEdge = true; isLeftEdge = true; isRightEdge = true; isBottomRightCorner = true;
+                                } else if (selectedSheetRange) {
+                                  const rMinRow = Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow);
+                                  const rMaxRow = Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow);
+                                  const rMinCol = Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol);
+                                  const rMaxCol = Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol);
                                   if (num >= rMinRow && num <= rMaxRow && colIndex + 1 >= rMinCol && colIndex + 1 <= rMaxCol) {
                                     isInRange = true;
                                     if (num === rMinRow) isTopEdge = true;
@@ -28160,7 +28159,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   }
                                 }
 
-                                const isExplicitAnchor = (selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1) || (multiSelectedCells && multiSelectedCells.some(c => c.row === num && c.col === colIndex + 1));
                                 const isSelected = !isShapeInteracting && (isExplicitAnchor || isInRange);
 
                                 let shadows = [];
@@ -36464,8 +36462,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Export as File</h3>
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { format: 'Native', icon: FileText, desc: 'Original format' },
-                    { format: 'Excel', icon: FileText, desc: '.xlsx spreadsheet' },
+                    { format: 'Sheets', icon: FileText, desc: 'Original format' },
+                    { format: 'XLSX', icon: FileText, desc: '.xlsx spreadsheet' },
                     { format: 'CSV', icon: FileText, desc: 'Comma-separated' },
                     { format: 'JSON', icon: FileText, desc: 'Structured data' },
                     { format: 'PDF', icon: File, desc: 'Print-ready' },
