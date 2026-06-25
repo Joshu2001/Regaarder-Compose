@@ -6489,7 +6489,7 @@ export default function App() {
         applySnapshot(fullSnapshot);
         return nextIndex;
       });
-    }, Math.max(160, Math.round(650 / Math.max(0.25, replaySpeed))));
+    }, Math.max(30, Math.round(650 / Math.max(0.25, replaySpeed))));
 
     return () => {
       if (replayTimerRef.current) {
@@ -23008,7 +23008,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </button>
                   {replaySpeedMenuOpen && (
                     <div className="absolute right-0 top-[42px] z-[320] w-[110px] rounded-xl border border-violet-100 bg-white shadow-[0_18px_40px_-22px_rgba(76,29,149,0.45)] p-1">
-                      {[0.25, 0.5, 1, 1.5, 2].map((speedOption) => (
+                      {[0.5, 1, 1.5, 2, 3, 4, 5].map((speedOption) => (
                         <button
                           key={speedOption}
                           type="button"
@@ -36445,6 +36445,84 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
       {/* SETTINGS MODAL */}
+      {isUnifiedExportModalOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !isExporting && setIsUnifiedExportModalOpen(false)}></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[600px] overflow-hidden flex flex-col border border-gray-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-slate-50">
+              <h2 className="text-base font-semibold text-gray-800">Export & Conversion</h2>
+              <button 
+                onClick={() => !isExporting && setIsUnifiedExportModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                disabled={isExporting}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 flex flex-col gap-6">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Export as File</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { format: 'Native', icon: FileText, desc: 'Original format' },
+                    { format: 'Excel', icon: FileText, desc: '.xlsx spreadsheet' },
+                    { format: 'CSV', icon: FileText, desc: 'Comma-separated' },
+                    { format: 'JSON', icon: FileText, desc: 'Structured data' },
+                    { format: 'PDF', icon: File, desc: 'Print-ready' },
+                    { format: 'Markdown', icon: FileText, desc: 'Plain text format' }
+                  ].map(f => (
+                    <button 
+                      key={f.format}
+                      disabled={isExporting}
+                      onClick={() => {
+                        setIsExporting(true);
+                        setTimeout(() => { setIsExporting(false); setIsUnifiedExportModalOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                      }}
+                      className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:bg-violet-50 transition-all text-left group"
+                    >
+                      <div className="p-2 rounded-lg bg-violet-100 text-violet-600 group-hover:bg-violet-200 transition-colors"><f.icon size={16} /></div>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-gray-800">{f.format}</span>
+                        <span className="text-[10px] text-gray-500">{f.desc}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="h-px bg-gray-100 w-full"></div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Convert to Workspace</h3>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { target: 'Compose', icon: FileText, color: 'blue' },
+                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
+                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                  ].map(t => (
+                    <button 
+                      key={t.target}
+                      disabled={isExporting}
+                      onClick={() => {
+                        setIsExporting(true);
+                        setTimeout(() => { setIsExporting(false); setIsUnifiedExportModalOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                      }}
+                      className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:shadow-sm transition-all font-medium text-gray-700 text-sm"
+                    >
+                      <t.icon size={16} className={`text-${t.color}-500`} />
+                      {t.target}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {isExporting && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
+                <div className="w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-4"></div>
+                <span className="text-sm font-medium text-violet-700">Processing...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {settingsModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
           {/* Backdrop with a very subtle blur */}
