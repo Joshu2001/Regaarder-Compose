@@ -4702,8 +4702,7 @@ export default function App() {
   const [workspaceLauncherIconSize, setWorkspaceLauncherIconSize] = useState('md');
   const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
-  const [isComposeExportModalOpen, setIsComposeExportModalOpen] = useState(false);
-  const [isSheetsExportModalOpen, setIsSheetsExportModalOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
@@ -26512,17 +26511,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
                     <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
-                      {['Data', 'Templates', 'Analyze', 'Visualize', 'Export'].map((tab) => (
+                      {['Data', 'Templates', 'Analyze', 'Visualize'].map((tab) => (
                         <button
                           key={tab}
                           type="button"
                           onClick={(e) => {
-                            if (tab === 'Export') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setSheetToolbarTab(null);
-                              setIsSheetsExportModalOpen(true);
-                            } else if (tab === 'Data') {
+                            if (tab === 'Data') {
                               setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
                             } else {
                               setSheetToolbarTab(sheetToolbarTab === tab ? null : tab);
@@ -26536,15 +26530,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ))}
                     </div>
 
-                      {sheetToolbarTab === 'Export' ? (
-    <div className="flex items-center gap-6 px-2 py-1">
-      <div className="flex items-center gap-1">
-        <button type="button" onClick={() => showToast('Exporting to XLSX...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded flex items-center gap-2"><Download size={14} /> XLSX</button>
-        <button type="button" onClick={() => showToast('Exporting to CSV...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded flex items-center gap-2"><FileText size={14} /> CSV</button>
-        <button type="button" onClick={() => showToast('Exporting to PDF...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded flex items-center gap-2"><File size={14} /> PDF</button>
-      </div>
-    </div>
-  ) : sheetToolbarTab === 'Templates' ? (
+                      {sheetToolbarTab === 'Templates' ? (
     <div className="flex items-center gap-6 px-2 py-1">
       <div className="flex items-center gap-1">
         <button type="button" onClick={() => showToast('Loading Financial Models...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Financial</button>
@@ -31545,13 +31531,89 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               onClick={() => {
                 closeTransientMenus();
-                setIsComposeExportModalOpen(true);
+                setExportMenuOpen(!exportMenuOpen);
               }}
-              className="text-xs font-medium px-2 py-1 rounded hover:bg-violet-50 hover:text-violet-700 flex items-center gap-1"
+              className={`text-xs font-medium px-2 py-1 rounded flex items-center gap-1 transition-colors ${exportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-violet-50 hover:text-violet-700'}`}
               title="Export options"
             >
-              Export
+              Export <ChevronDown size={12} className={`transition-transform duration-200 ${exportMenuOpen ? 'rotate-180' : ''}`} />
             </button>
+            {exportMenuOpen && (
+              <div className="absolute top-8 right-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
+                  {(productMode === 'sheets' ? [
+                    { format: 'Sheets', icon: FileText, desc: 'Original' },
+                    { format: 'XLSX', icon: FileText, desc: '.xlsx' },
+                    { format: 'CSV', icon: FileText, desc: '.csv' },
+                    { format: 'JSON', icon: FileText, desc: '.json' },
+                    { format: 'PDF', icon: File, desc: '.pdf' }
+                  ] : productMode === 'deck' ? [
+                    { format: 'Deck', icon: LayoutGrid, desc: 'Original' },
+                    { format: 'PPTX', icon: LayoutGrid, desc: '.pptx' },
+                    { format: 'PDF', icon: File, desc: '.pdf' }
+                  ] : productMode === 'whiteboard' ? [
+                    { format: 'Whiteboard', icon: PenTool, desc: 'Original' },
+                    { format: 'PNG', icon: File, desc: '.png' },
+                    { format: 'SVG', icon: File, desc: '.svg' },
+                    { format: 'PDF', icon: File, desc: '.pdf' }
+                  ] : [
+                    { format: 'Compose', icon: FileText, desc: 'Original' },
+                    { format: 'Word', icon: FileText, desc: '.docx' },
+                    { format: 'Docs', icon: FileText, desc: 'Cloud' },
+                    { format: 'PDF', icon: File, desc: '.pdf' },
+                    { format: 'Markdown', icon: FileText, desc: '.md' }
+                  ]).map(f => (
+                    <button 
+                      key={f.format}
+                      disabled={isExporting}
+                      onClick={() => {
+                        setIsExporting(true);
+                        setTimeout(() => { setIsExporting(false); setExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                      }}
+                      className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
+                    >
+                      <span className="font-medium">{f.format}</span>
+                      <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="h-px bg-gray-100 w-full my-2"></div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
+                  {(productMode === 'sheets' ? [
+                    { target: 'Compose', icon: FileText, color: 'blue' },
+                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
+                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                  ] : productMode === 'deck' ? [
+                    { target: 'Compose', icon: FileText, color: 'blue' },
+                    { target: 'Sheets', icon: FileText, color: 'green' },
+                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                  ] : productMode === 'whiteboard' ? [
+                    { target: 'Compose', icon: FileText, color: 'blue' },
+                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
+                    { target: 'Sheets', icon: FileText, color: 'green' }
+                  ] : [
+                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
+                    { target: 'Sheets', icon: FileText, color: 'green' },
+                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                  ]).map(t => (
+                    <button 
+                      key={t.target}
+                      disabled={isExporting}
+                      onClick={() => {
+                        setIsExporting(true);
+                        setTimeout(() => { setIsExporting(false); setExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                      }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
+                    >
+                      <t.icon size={14} className={`text-${t.color}-500`} />
+                      {t.target}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <button
             type="button"
@@ -36402,125 +36464,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </div>
         )}
-      {/* SETTINGS MODAL */}
-      {isComposeExportModalOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !isExporting && setIsComposeExportModalOpen(false)}></div>
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[600px] overflow-hidden flex flex-col border border-gray-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-slate-50">
-              <h2 className="text-base font-semibold text-gray-800">Compose Export & Conversion</h2>
-              <button 
-                onClick={() => !isExporting && setIsComposeExportModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-                disabled={isExporting}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-6 flex flex-col gap-6">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Export as File</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { format: 'Compose', icon: FileText, desc: 'Original format' },
-                    { format: 'Word', icon: FileText, desc: '.docx document' },
-                    { format: 'Docs', icon: FileText, desc: 'Cloud document' },
-                    { format: 'PDF', icon: File, desc: 'Print-ready' },
-                    { format: 'Markdown', icon: FileText, desc: 'Plain text format' }
-                  ].map(f => (
-                    <button 
-                      key={f.format}
-                      disabled={isExporting}
-                      onClick={() => {
-                        setIsExporting(true);
-                        setTimeout(() => { setIsExporting(false); setIsComposeExportModalOpen(false); showToast('Exported as ' + f.format); }, 1500);
-                      }}
-                      className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:bg-violet-50 transition-all text-left group"
-                    >
-                      <div className="p-2 rounded-lg bg-violet-100 text-violet-600 group-hover:bg-violet-200 transition-colors"><f.icon size={16} /></div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-gray-800">{f.format}</span>
-                        <span className="text-[10px] text-gray-500">{f.desc}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="h-px bg-gray-100 w-full"></div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Convert to Workspace</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
-                    { target: 'Sheets', icon: FileText, color: 'green' },
-                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
-                  ].map(t => (
-                    <button 
-                      key={t.target}
-                      disabled={isExporting}
-                      onClick={() => {
-                        setIsExporting(true);
-                        setTimeout(() => { setIsExporting(false); setIsComposeExportModalOpen(false); showToast('Converted to ' + t.target); }, 2000);
-                      }}
-                      className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:shadow-sm transition-all font-medium text-gray-700 text-sm"
-                    >
-                      <t.icon size={16} className={`text-${t.color}-500`} />
-                      {t.target}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {isExporting && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                <div className="w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-4"></div>
-                <span className="text-sm font-medium text-violet-700">Processing...</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {isSheetsExportModalOpen && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !isExporting && setIsSheetsExportModalOpen(false)}></div>
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[600px] overflow-hidden flex flex-col border border-gray-200">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-slate-50">
-              <h2 className="text-base font-semibold text-gray-800">Sheets Export & Conversion</h2>
-              <button 
-                onClick={() => !isExporting && setIsSheetsExportModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
-                disabled={isExporting}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-6 flex flex-col gap-6">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Export as File</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { format: 'Sheets', icon: FileText, desc: 'Original format' },
-                    { format: 'XLSX', icon: FileText, desc: '.xlsx spreadsheet' },
-                    { format: 'CSV', icon: FileText, desc: 'Comma-separated' },
-                    { format: 'JSON', icon: FileText, desc: 'Structured data' },
-                    { format: 'PDF', icon: File, desc: 'Print-ready' }
-                  ].map(f => (
-                    <button 
-                      key={f.format}
-                      disabled={isExporting}
-                      onClick={() => {
-                        setIsExporting(true);
-                        setTimeout(() => { setIsExporting(false); setIsSheetsExportModalOpen(false); showToast('Exported as ' + f.format); }, 1500);
-                      }}
-                      className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:bg-violet-50 transition-all text-left group"
-                    >
-                      <div className="p-2 rounded-lg bg-violet-100 text-violet-600 group-hover:bg-violet-200 transition-colors"><f.icon size={16} /></div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-gray-800">{f.format}</span>
-                        <span className="text-[10px] text-gray-500">{f.desc}</span>
-                      </div>
-                    </button>
                   ))}
                 </div>
               </div>
