@@ -3861,9 +3861,7 @@ export default function App() {
   const [sheetToolbarFont, setSheetToolbarFont] = useState('Manrope');
   const [sheetToolbarSize, setSheetToolbarSize] = useState(14);
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
-  const [sheetToolbarBold, setSheetToolbarBold] = useState(false);
-  const [sheetToolbarItalic, setSheetToolbarItalic] = useState(false);
-  const [sheetToolbarUnderline, setSheetToolbarUnderline] = useState(false);
+
   const [sheetToolbarTab, setSheetToolbarTab] = useState('AI');
   const [replayPanelOpen, setReplayPanelOpen] = useState(false);
   const [isReplayPlaying, setIsReplayPlaying] = useState(false);
@@ -18883,7 +18881,15 @@ Respond with a JSON array of slide objects matching the schema.`;
     return val;
   };
 
-  const updateSheetCellFormat = (sheetId, formatType) => {
+  const getSelectedCellFormat = () => {
+    if (!activeSheetGridRaw || !selectedSheetCell) return {};
+    const r = selectedSheetCell.row - 1;
+    const c = selectedSheetCell.col - 1;
+    const raw = activeSheetGridRaw.formats?.[r]?.[c];
+    return typeof raw === 'object' && raw !== null ? raw : { type: raw };
+  };
+
+  const updateSheetCellFormat = (sheetId, formatType, formatValue = undefined) => {
     if (!selectedSheetRange && !selectedSheetCell) return;
     setSheetGrids((prev) => {
       const target = prev[sheetId];
@@ -18893,10 +18899,76 @@ Respond with a JSON array of slide objects matching the schema.`;
       const endRow = selectedSheetRange ? Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow) - 1 : selectedSheetCell.row - 1;
       const startCol = selectedSheetRange ? Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
       const endCol = selectedSheetRange ? Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
-      for (let r = startRow; r <= endRow; r++) {
-        if (!nextFormats[r]) nextFormats[r] = [];
-        for (let c = startCol; c <= endCol; c++) {
-          nextFormats[r][c] = nextFormats[r][c] === formatType ? null : formatType;
+
+      const isStylingFormat = ['bold', 'italic', 'underline', 'strikeThrough', 'color', 'highlight'].includes(formatType);
+
+      if (isStylingFormat) {
+        let allHaveFormat = true;
+        if (formatValue === undefined) {
+          for (let r = startRow; r <= endRow; r++) {
+            const rowFormats = nextFormats[r] || [];
+            for (let c = startCol; c <= endCol; c++) {
+              const cellFmtRaw = rowFormats[c];
+              const cellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : {};
+              if (!cellFmt[formatType]) {
+                allHaveFormat = false;
+                break;
+              }
+            }
+            if (!allHaveFormat) break;
+          }
+        }
+        const newValue = formatValue !== undefined ? formatValue : !allHaveFormat;
+
+        for (let r = startRow; r <= endRow; r++) {
+          if (!nextFormats[r]) nextFormats[r] = [];
+          for (let c = startCol; c <= endCol; c++) {
+            const cellFmtRaw = nextFormats[r][c];
+            const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
+            if (currentCellFmt.type === null || currentCellFmt.type === undefined) delete currentCellFmt.type;
+            
+            if (formatValue === null || newValue === false) {
+               const newFmt = { ...currentCellFmt };
+               delete newFmt[formatType];
+               nextFormats[r][c] = Object.keys(newFmt).length === 0 ? null : newFmt;
+            } else {
+               nextFormats[r][c] = { ...currentCellFmt, [formatType]: newValue };
+            }
+          }
+        }
+      } else {
+        let allHaveFormat = true;
+        for (let r = startRow; r <= endRow; r++) {
+          const rowFormats = nextFormats[r] || [];
+          for (let c = startCol; c <= endCol; c++) {
+            const cellFmtRaw = rowFormats[c];
+            const cellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : {};
+            if (!cellFmt[formatType]) {
+              allHaveFormat = false;
+              break;
+            }
+          }
+          if (!allHaveFormat) break;
+        }
+        const newValue = !allHaveFormat;
+
+        for (let r = startRow; r <= endRow; r++) {
+          if (!nextFormats[r]) nextFormats[r] = [];
+          for (let c = startCol; c <= endCol; c++) {
+            const cellFmtRaw = nextFormats[r][c];
+            const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
+            if (currentCellFmt.type === null || currentCellFmt.type === undefined) delete currentCellFmt.type;
+            nextFormats[r][c] = { ...currentCellFmt, [formatType]: newValue };
+          }
+        }
+      } else {
+        for (let r = startRow; r <= endRow; r++) {
+          if (!nextFormats[r]) nextFormats[r] = [];
+          for (let c = startCol; c <= endCol; c++) {
+             const cellFmtRaw = nextFormats[r][c];
+             const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
+             nextFormats[r][c] = { ...currentCellFmt, type: currentCellFmt.type === formatType ? null : formatType };
+          }
         }
       }
       return { ...prev, [sheetId]: { ...target, formats: nextFormats } };
@@ -22859,9 +22931,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                 <div className="text-[13px] font-semibold text-slate-900">Edit replay</div>
                 <div className="mt-1 text-[12px] text-slate-500">
                   {replayTimeline.length
-                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps 繚 ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
+                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps • ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
                     : 'Start typing or editing to build a replay history'}
                 </div>
+                {replayTimeline.length > 0 && (
+                  <div className="mt-2 flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-100">
+                    <span className="font-semibold text-slate-500 uppercase tracking-wider">Version:</span>
+                    <span>{new Date(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp || Date.now()).toISOString().replace('T', ' ').substring(0, 19)}</span>
+                    <span className="ml-auto text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded-md font-semibold tracking-tight">ID: {replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.id?.slice(0,8) || 'genesis'}</span>
+                  </div>
+                )}
               </div>
               <button
                 type="button"
@@ -26788,16 +26867,51 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           )}
                         </div>
                       </div>
-                      <button type="button" onClick={() => setSheetToolbarBold((prev) => !prev)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sheetToolbarBold ? 'bg-violet-50 text-violet-700 font-bold' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
-                      <button type="button" onClick={() => setSheetToolbarItalic((prev) => !prev)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sheetToolbarItalic ? 'bg-violet-50 text-violet-700 italic' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
-                      <button type="button" onClick={() => setSheetToolbarUnderline((prev) => !prev)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${sheetToolbarUnderline ? 'bg-violet-50 text-violet-700 underline' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
-                      <span className="mx-1 text-gray-200">|</span>
-                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">-</button>
-                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">=</button>
-                      <button type="button" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">...</button>
-                      <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'currency')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">$</button>
-                      <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'percent')} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">%</button>
-                      <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'decimal')} className="w-9 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">.0</button>
+                      {(() => {
+                        const fmt = getSelectedCellFormat();
+                        return (
+                          <>
+                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'bold')} className={`font-bold hover:text-gray-900 ${fmt.bold ? 'text-violet-600' : 'text-[#374151]'}`}>B</button>
+                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'italic')} className={`italic font-serif hover:text-gray-900 ${fmt.italic ? 'text-violet-600' : 'text-[#374151]'}`}>I</button>
+                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'underline')} className={`underline hover:text-gray-900 ${fmt.underline ? 'text-violet-600' : 'text-[#374151]'}`}>U</button>
+                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'strikeThrough')} className={`line-through hover:text-gray-900 ${fmt.strikeThrough ? 'text-violet-600' : 'text-[#374151]'}`}>S</button>
+                            <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="hover:text-violet-600 text-gray-500" title="Insert Link">
+                              <LinkIcon size={14} />
+                            </button>
+                            <div className="relative text-style-menu-container">
+                              <button
+                                type="button"
+                                onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle')}
+                                className="flex items-center gap-1.5 hover:text-gray-900 cursor-pointer pl-0.5 text-[#374151]"
+                                title="Format options (Style & Colors)"
+                              >
+                                <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
+                              </button>
+                              {sheetToolbarMenuOpen === 'textStyle' && (
+                                <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
+                                  <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
+                                    <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                                      {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
+                                        <button key={c} type="button" onClick={() => { updateSheetCellFormat(activeSheetId, 'color', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-1">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
+                                    <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                                      <button type="button" onClick={() => { updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
+                                      {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
+                                        <button key={c} type="button" onClick={() => { updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
                       <span className="mx-1 text-gray-200">|</span>
                       <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Row</button>
                       <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
@@ -28217,9 +28331,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       style={{
                                         fontFamily: sheetToolbarFont,
                                         fontSize: `${sheetToolbarSize}px`,
-                                        fontWeight: cellFormat.bold ? 700 : (sheetToolbarBold ? 700 : 400),
-                                        fontStyle: sheetToolbarItalic ? 'italic' : 'normal',
-                                        textDecoration: sheetToolbarUnderline ? 'underline' : 'none',
+                                        fontWeight: cellFormat.bold ? 700 : 400,
+                                        fontStyle: cellFormat.italic ? 'italic' : 'normal',
+                                        textDecoration: cellFormat.underline ? 'underline' : (cellFormat.strikeThrough ? 'line-through' : 'none'),
+                                        color: cellFormat.color || undefined,
+                                        backgroundColor: cellFormat.highlight || undefined,
                                         ...customTextStyle
                                       }}
                                       value={cellValue}
