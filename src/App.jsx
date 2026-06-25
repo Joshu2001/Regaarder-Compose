@@ -31,6 +31,7 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { diff_match_patch as DiffMatchPatch } from 'diff-match-patch';
 import randomColor from 'randomcolor';// Inline attachment chip — avoids module-order TDZ in the production bundle
+import { exportCompose, exportSheets, exportDeck, exportWhiteboard } from './utils/exportUtils';
 function AIChatAttachmentChip({ file, onRemove }) {
   return (
     <span style={{
@@ -26561,9 +26562,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <button 
                                   key={f.format}
                                   disabled={isExporting}
-                                  onClick={() => {
+                                  onClick={async () => {
                                     setIsExporting(true);
-                                    setTimeout(() => { setIsExporting(false); setSheetsExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                                    try {
+                                      await exportSheets(f.format, sheetGrids[activeSheetId]?.cells || [], sheetsTitle || 'Sheets_Document');
+                                      showToast('Exported as ' + f.format);
+                                    } catch (e) {
+                                      showToast('Export failed: ' + e.message);
+                                    } finally {
+                                      setIsExporting(false);
+                                      setSheetsExportMenuOpen(false);
+                                    }
                                   }}
                                   className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
                                 >
@@ -28850,9 +28859,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     <button 
                                       key={f.format}
                                       disabled={isExporting}
-                                      onClick={() => {
+                                      onClick={async () => {
                                         setIsExporting(true);
-                                        setTimeout(() => { setIsExporting(false); setDeckExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                                        try {
+                                          await exportDeck(f.format, deckSlidesData, deckTitle || 'Deck_Presentation');
+                                          showToast('Exported as ' + f.format);
+                                        } catch (e) {
+                                          showToast('Export failed: ' + e.message);
+                                        } finally {
+                                          setIsExporting(false);
+                                          setDeckExportMenuOpen(false);
+                                        }
                                       }}
                                       className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
                                     >
@@ -31683,9 +31700,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button 
                           key={f.format}
                           disabled={isExporting}
-                          onClick={() => {
+                          onClick={async () => {
                             setIsExporting(true);
-                            setTimeout(() => { setIsExporting(false); setComposeExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                            try {
+                              await exportCompose(f.format, editorRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+                              showToast('Exported as ' + f.format);
+                            } catch (e) {
+                              showToast('Export failed: ' + e.message);
+                            } finally {
+                              setIsExporting(false);
+                              setComposeExportMenuOpen(false);
+                            }
                           }}
                           className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
                         >
@@ -33848,9 +33873,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <button 
                                 key={f.format}
                                 disabled={isExporting}
-                                onClick={() => {
+                                onClick={async () => {
                                   setIsExporting(true);
-                                  setTimeout(() => { setIsExporting(false); setWhiteboardExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                                  try {
+                                    await exportWhiteboard(f.format, [...whiteboardShapes, ...whiteboardStrokes, ...whiteboardWidgets], whiteboardCanvasRef.current, 'Whiteboard_Export');
+                                    showToast('Exported as ' + f.format);
+                                  } catch (e) {
+                                    showToast('Export failed: ' + e.message);
+                                  } finally {
+                                    setIsExporting(false);
+                                    setWhiteboardExportMenuOpen(false);
+                                  }
                                 }}
                                 className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
                               >
