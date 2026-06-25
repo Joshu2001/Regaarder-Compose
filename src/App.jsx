@@ -4703,7 +4703,7 @@ export default function App() {
   const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
-  const [isUnifiedExportModalOpen, setIsUnifiedExportModalOpen] = useState(false);
+  const [isSheetsExportModalOpen, setIsSheetsExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
@@ -26521,7 +26521,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               e.preventDefault();
                               e.stopPropagation();
                               setSheetToolbarTab(null);
-                              setIsUnifiedExportModalOpen(true);
+                              setIsSheetsExportModalOpen(true);
                             } else if (tab === 'Data') {
                               setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
                             } else {
@@ -31545,14 +31545,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               onClick={() => {
                 closeTransientMenus();
-                setIsUnifiedExportModalOpen(true);
+                setExportMenuOpen(!exportMenuOpen);
               }}
               className="text-xs font-medium px-2 py-1 rounded hover:bg-violet-50 hover:text-violet-700 flex items-center gap-1"
               title="Export options"
             >
               Export
             </button>
-            {false && (
+            {exportMenuOpen && (
               <div className="absolute top-8 right-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1">
                 <button
                   onClick={() => {
@@ -36443,14 +36443,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
       {/* SETTINGS MODAL */}
-      {isUnifiedExportModalOpen && (
+      {isSheetsExportModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !isExporting && setIsUnifiedExportModalOpen(false)}></div>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !isExporting && setIsSheetsExportModalOpen(false)}></div>
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[600px] overflow-hidden flex flex-col border border-gray-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-slate-50">
-              <h2 className="text-base font-semibold text-gray-800">Export & Conversion</h2>
+              <h2 className="text-base font-semibold text-gray-800">Sheets Export & Conversion</h2>
               <button 
-                onClick={() => !isExporting && setIsUnifiedExportModalOpen(false)}
+                onClick={() => !isExporting && setIsSheetsExportModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
                 disabled={isExporting}
               >
@@ -36474,7 +36474,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       disabled={isExporting}
                       onClick={() => {
                         setIsExporting(true);
-                        setTimeout(() => { setIsExporting(false); setIsUnifiedExportModalOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                        setTimeout(() => { setIsExporting(false); setIsSheetsExportModalOpen(false); showToast('Exported as ' + f.format); }, 1500);
                       }}
                       className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:bg-violet-50 transition-all text-left group"
                     >
@@ -36501,7 +36501,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       disabled={isExporting}
                       onClick={() => {
                         setIsExporting(true);
-                        setTimeout(() => { setIsExporting(false); setIsUnifiedExportModalOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                        setTimeout(() => { setIsExporting(false); setIsSheetsExportModalOpen(false); showToast('Converted to ' + t.target); }, 2000);
                       }}
                       className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:shadow-sm transition-all font-medium text-gray-700 text-sm"
                     >
