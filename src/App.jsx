@@ -1,248 +1,4 @@
-\n`
-      {/* ── Cell Format Popover ────────────────────────────────────── */}
-      {cellFormatPopover.open && (
-        <div 
-          className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-200 font-sans p-3 flex flex-col gap-3"
-          style={{ top: cellFormatPopover.top, left: cellFormatPopover.left, width: '280px' }}
-          onMouseDown={e => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between">
-             <span className="text-xs font-bold text-slate-700">Format Cell</span>
-             <button onClick={() => setCellFormatPopover({ open: false })} className="text-slate-400 hover:text-slate-600"><X size={14}/></button>
-          </div>
-          <hr className="border-slate-100" />
-          
-          {/* Data Type */}
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Type</span>
-            <select 
-              className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-violet-500"
-              onChange={(e) => {
-                const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                ranges.forEach(range => {
-                  const rMin = Math.min(range.startRow, range.endRow);
-                  const rMax = Math.max(range.startRow, range.endRow);
-                  const cMin = Math.min(range.startCol, range.endCol);
-                  const cMax = Math.max(range.startCol, range.endCol);
-                  for (let r = rMin; r <= rMax; r++) {
-                    for (let c = cMin; c <= cMax; c++) {
-                      if (!newFormats[r-1]) newFormats[r-1] = {};
-                      newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], type: e.target.value };
-                    }
-                  }
-                });
-                updateSheetSettings(activeSheetId, { formats: newFormats });
-              }}
-            >
-              <option value="text">Standard Text</option>
-              <option value="button">Action Button</option>
-              <option value="dropdown">Dropdown Selection</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Number Format</span>
-            <select 
-              className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-violet-500"
-              onChange={(e) => {
-                const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                ranges.forEach(range => {
-                  const rMin = Math.min(range.startRow, range.endRow);
-                  const rMax = Math.max(range.startRow, range.endRow);
-                  const cMin = Math.min(range.startCol, range.endCol);
-                  const cMax = Math.max(range.startCol, range.endCol);
-                  for (let r = rMin; r <= rMax; r++) {
-                    for (let c = cMin; c <= cMax; c++) {
-                      if (!newFormats[r-1]) newFormats[r-1] = {};
-                      newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], format: e.target.value };
-                    }
-                  }
-                });
-                updateSheetSettings(activeSheetId, { formats: newFormats });
-              }}
-            >
-              <option value="general">General</option>
-              <option value="number">Number</option>
-              <option value="currency">Currency ($)</option>
-              <option value="percent">Percentage (%)</option>
-              <option value="date">Date</option>
-            </select>
-          </div>
-
-          {/* Alignment */}
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Alignment</span>
-            <div className="flex border border-slate-200 rounded overflow-hidden">
-              {['left', 'center', 'right'].map(align => (
-                <button 
-                  key={align} type="button"
-                  className="flex-1 py-1 text-xs font-medium flex justify-center items-center bg-white text-slate-600 hover:bg-slate-50"
-                  onClick={() => {
-                    const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                    const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                    ranges.forEach(range => {
-                      const rMin = Math.min(range.startRow, range.endRow);
-                      const rMax = Math.max(range.startRow, range.endRow);
-                      const cMin = Math.min(range.startCol, range.endCol);
-                      const cMax = Math.max(range.startCol, range.endCol);
-                      for (let r = rMin; r <= rMax; r++) {
-                        for (let c = cMin; c <= cMax; c++) {
-                          if (!newFormats[r-1]) newFormats[r-1] = {};
-                          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], align };
-                        }
-                      }
-                    });
-                    updateSheetSettings(activeSheetId, { formats: newFormats });
-                  }}
-                >
-                  {align === 'left' ? <AlignLeft size={12}/> : align === 'center' ? <AlignCenter size={12}/> : <AlignRight size={12}/>}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Colors */}
-          <div className="flex gap-2">
-             <div className="flex-1 flex flex-col gap-1">
-                <span className="text-[9px] text-slate-400">Fill</span>
-                <input type="color" className="w-full h-6 cursor-pointer border-0 p-0" onChange={(e) => {
-                    const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                    const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                    ranges.forEach(range => {
-                      const rMin = Math.min(range.startRow, range.endRow);
-                      const rMax = Math.max(range.startRow, range.endRow);
-                      const cMin = Math.min(range.startCol, range.endCol);
-                      const cMax = Math.max(range.startCol, range.endCol);
-                      for (let r = rMin; r <= rMax; r++) {
-                        for (let c = cMin; c <= cMax; c++) {
-                          if (!newFormats[r-1]) newFormats[r-1] = {};
-                          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], fill: e.target.value };
-                        }
-                      }
-                    });
-                    updateSheetSettings(activeSheetId, { formats: newFormats });
-                }} />
-             </div>
-             <div className="flex-1 flex flex-col gap-1">
-                <span className="text-[9px] text-slate-400">Text</span>
-                <input type="color" className="w-full h-6 cursor-pointer border-0 p-0" onChange={(e) => {
-                    const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                    const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                    ranges.forEach(range => {
-                      const rMin = Math.min(range.startRow, range.endRow);
-                      const rMax = Math.max(range.startRow, range.endRow);
-                      const cMin = Math.min(range.startCol, range.endCol);
-                      const cMax = Math.max(range.startCol, range.endCol);
-                      for (let r = rMin; r <= rMax; r++) {
-                        for (let c = cMin; c <= cMax; c++) {
-                          if (!newFormats[r-1]) newFormats[r-1] = {};
-                          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], color: e.target.value };
-                        }
-                      }
-                    });
-                    updateSheetSettings(activeSheetId, { formats: newFormats });
-                }} />
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Filter Popover ────────────────────────────────────── */}
-      {sheetFilterPopover.open && (
-        <div 
-          className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-200 font-sans w-64 overflow-hidden"
-          style={{ top: sheetFilterPopover.top, left: sheetFilterPopover.left }}
-        >
-          <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5"><Filter size={12}/> Column Filter</span>
-            <button onClick={() => setSheetFilterPopover({ open: false, x: 0, y: 0, colIndex: -1, rowIndex: -1 })} className="text-slate-400 hover:text-slate-600"><X size={12}/></button>
-          </div>
-          <div className="p-3 flex flex-col gap-2">
-            <input 
-              autoFocus
-              type="text" 
-              className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-400"
-              placeholder="e.g. > 100, or exact match..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const val = e.target.value;
-                  const newFilters = { ...(activeSheetGridRaw.filters || {}) };
-                  if (!val.trim()) {
-                    delete newFilters[sheetFilterPopover.colIndex];
-                  } else {
-                    newFilters[sheetFilterPopover.colIndex] = { active: true, row: sheetFilterPopover.rowIndex, value: val };
-                  }
-                  updateSheetSettings(activeSheetId, { filters: newFilters });
-                  setSheetFilterPopover({ open: false, x: 0, y: 0, colIndex: -1, rowIndex: -1 });
-                  showToast('Filter applied');
-                }
-              }}
-            />
-            <span className="text-[9px] text-slate-400">Press Enter to apply. Supports natural language matching.</span>
-          </div>
-        </div>
-      )}
-
-      {/* ── Media Insertion Modal ────────────────────────────────────── */}
-      {mediaInsertionModal.open && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center font-sans" onMouseDown={e => e.stopPropagation()}>
-          <div className="bg-white w-[500px] rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
-            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <span className="font-bold text-slate-800 text-sm flex items-center gap-2"><Image size={16} className="text-violet-600"/> Insert Media</span>
-              <button onClick={() => setMediaInsertionModal({ open: false })} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
-            </div>
-            <div className="p-4 grid grid-cols-2 gap-3">
-               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
-                  showToast('Opening native file picker...');
-                  setMediaInsertionModal({ open: false });
-               }}>
-                  <UploadCloud size={24} className="text-violet-500" />
-                  <span className="text-xs font-semibold text-slate-700">Upload File</span>
-               </button>
-               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
-                  showToast('Generating AI Image...');
-                  setMediaInsertionModal({ open: false });
-               }}>
-                  <Sparkles size={24} className="text-violet-500" />
-                  <span className="text-xs font-semibold text-slate-700">Generate AI</span>
-               </button>
-               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
-                  showToast('Opening stock library...');
-                  setMediaInsertionModal({ open: false });
-               }}>
-                  <Image size={24} className="text-violet-500" />
-                  <span className="text-xs font-semibold text-slate-700">Stock Media</span>
-               </button>
-               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
-                  const range = mediaInsertionModal.range || { startRow: 1, startCol: 1 };
-                  const newOverlay = {
-                    id: 'overlay-' + Date.now(),
-                    type: 'image',
-                    row: range.startRow,
-                    col: range.startCol,
-                    x: 10, y: 10, width: 250, height: 180,
-                    content: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80',
-                  };
-                  updateSheetSettings(activeSheetId, {
-                    overlays: [...(activeSheetGridRaw.overlays || []), newOverlay]
-                  });
-                  setMediaInsertionModal({ open: false });
-                  showToast('Inserted placeholder');
-               }}>
-                  <Link size={24} className="text-violet-500" />
-                  <span className="text-xs font-semibold text-slate-700">Link Externally</span>
-               </button>
-            </div>
-            <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
-               <button className="px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700" onClick={() => setMediaInsertionModal({ open: false })}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-`
-\nimport React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 // Trigger Vercel Build Safely
 import { io } from 'socket.io-client';
 import ShareModal from './ShareModal';
@@ -266,7 +22,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon} from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus} from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -34932,13 +34688,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {docStateDropdownOpen && (
                     <>
                       <div className="fixed inset-0 z-[290]" onClick={() => setDocStateDropdownOpen(false)} />
-                      <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
-                        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Document State</div>
+                      <div className="absolute right-0 top-full mt-2 z-[300] bg-white border border-slate-200/60 rounded-xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-60 text-left normal-case tracking-normal font-[system-ui] backdrop-blur-xl">
+                        <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-slate-500 font-[system-ui]">Document State</div>
                       {[
-                        { key: 'draft', label: 'Draft', desc: 'Actively being written', color: 'hover:bg-slate-100 text-slate-800 font-medium', icon: <FileEdit size={12} className="stroke-[2]" /> },
-                        { key: 'ready', label: 'Ready', desc: 'Completed and ready for use', color: 'hover:bg-slate-100 text-slate-800 font-medium', icon: <CheckCircle2 size={12} className="stroke-[2]" /> },
-                        { key: 'review', label: 'In Review', desc: 'Awaiting feedback', color: 'hover:bg-slate-100 text-slate-800 font-medium', icon: <Users2 size={12} className="stroke-[2]" /> },
-                        { key: 'archived', label: 'Archived', desc: 'Stored and inactive', color: 'hover:bg-slate-100 text-slate-500', icon: <Archive size={12} className="stroke-[2]" /> }
+                        { key: 'draft', label: 'Draft', desc: 'Actively being written', color: 'hover:bg-slate-100/80 text-slate-900 font-semibold tracking-tight', icon: <FileEdit size={12} className="stroke-[2]" /> },
+                        { key: 'ready', label: 'Ready', desc: 'Completed and ready for use', color: 'hover:bg-slate-100/80 text-slate-900 font-semibold tracking-tight', icon: <CheckCircle2 size={12} className="stroke-[2]" /> },
+                        { key: 'review', label: 'In Review', desc: 'Awaiting feedback', color: 'hover:bg-slate-100/80 text-slate-900 font-semibold tracking-tight', icon: <Users2 size={12} className="stroke-[2]" /> },
+                        { key: 'archived', label: 'Archived', desc: 'Stored and inactive', color: 'hover:bg-slate-100/80 text-slate-500 font-medium tracking-tight', icon: <Archive size={12} className="stroke-[2]" /> }
                       ].map((item) => (
                         <button
                           key={item.key}
@@ -37680,7 +37436,252 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
-    </div>
+    
+      {/* ── Cell Format Popover ────────────────────────────────────── */}
+      {cellFormatPopover.open && (
+        <div 
+          className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-200 font-sans p-3 flex flex-col gap-3"
+          style={{ top: cellFormatPopover.top, left: cellFormatPopover.left, width: '280px' }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between">
+             <span className="text-xs font-bold text-slate-700">Format Cell</span>
+             <button onClick={() => setCellFormatPopover({ open: false })} className="text-slate-400 hover:text-slate-600"><X size={14}/></button>
+          </div>
+          <hr className="border-slate-100" />
+          
+          {/* Data Type */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold text-slate-500 uppercase">Type</span>
+            <select 
+              className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-violet-500"
+              onChange={(e) => {
+                const newFormats = { ...(activeSheetGridRaw.formats || {}) };
+                const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
+                ranges.forEach(range => {
+                  const rMin = Math.min(range.startRow, range.endRow);
+                  const rMax = Math.max(range.startRow, range.endRow);
+                  const cMin = Math.min(range.startCol, range.endCol);
+                  const cMax = Math.max(range.startCol, range.endCol);
+                  for (let r = rMin; r <= rMax; r++) {
+                    for (let c = cMin; c <= cMax; c++) {
+                      if (!newFormats[r-1]) newFormats[r-1] = {};
+                      newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], type: e.target.value };
+                    }
+                  }
+                });
+                updateSheetSettings(activeSheetId, { formats: newFormats });
+              }}
+            >
+              <option value="text">Standard Text</option>
+              <option value="button">Action Button</option>
+              <option value="dropdown">Dropdown Selection</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold text-slate-500 uppercase">Number Format</span>
+            <select 
+              className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-violet-500"
+              onChange={(e) => {
+                const newFormats = { ...(activeSheetGridRaw.formats || {}) };
+                const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
+                ranges.forEach(range => {
+                  const rMin = Math.min(range.startRow, range.endRow);
+                  const rMax = Math.max(range.startRow, range.endRow);
+                  const cMin = Math.min(range.startCol, range.endCol);
+                  const cMax = Math.max(range.startCol, range.endCol);
+                  for (let r = rMin; r <= rMax; r++) {
+                    for (let c = cMin; c <= cMax; c++) {
+                      if (!newFormats[r-1]) newFormats[r-1] = {};
+                      newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], format: e.target.value };
+                    }
+                  }
+                });
+                updateSheetSettings(activeSheetId, { formats: newFormats });
+              }}
+            >
+              <option value="general">General</option>
+              <option value="number">Number</option>
+              <option value="currency">Currency ($)</option>
+              <option value="percent">Percentage (%)</option>
+              <option value="date">Date</option>
+            </select>
+          </div>
+
+          {/* Alignment */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-bold text-slate-500 uppercase">Alignment</span>
+            <div className="flex border border-slate-200 rounded overflow-hidden">
+              {['left', 'center', 'right'].map(align => (
+                <button 
+                  key={align} type="button"
+                  className="flex-1 py-1 text-xs font-medium flex justify-center items-center bg-white text-slate-600 hover:bg-slate-50"
+                  onClick={() => {
+                    const newFormats = { ...(activeSheetGridRaw.formats || {}) };
+                    const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
+                    ranges.forEach(range => {
+                      const rMin = Math.min(range.startRow, range.endRow);
+                      const rMax = Math.max(range.startRow, range.endRow);
+                      const cMin = Math.min(range.startCol, range.endCol);
+                      const cMax = Math.max(range.startCol, range.endCol);
+                      for (let r = rMin; r <= rMax; r++) {
+                        for (let c = cMin; c <= cMax; c++) {
+                          if (!newFormats[r-1]) newFormats[r-1] = {};
+                          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], align };
+                        }
+                      }
+                    });
+                    updateSheetSettings(activeSheetId, { formats: newFormats });
+                  }}
+                >
+                  {align === 'left' ? <AlignLeft size={12}/> : align === 'center' ? <AlignCenter size={12}/> : <AlignRight size={12}/>}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Colors */}
+          <div className="flex gap-2">
+             <div className="flex-1 flex flex-col gap-1">
+                <span className="text-[9px] text-slate-400">Fill</span>
+                <input type="color" className="w-full h-6 cursor-pointer border-0 p-0" onChange={(e) => {
+                    const newFormats = { ...(activeSheetGridRaw.formats || {}) };
+                    const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
+                    ranges.forEach(range => {
+                      const rMin = Math.min(range.startRow, range.endRow);
+                      const rMax = Math.max(range.startRow, range.endRow);
+                      const cMin = Math.min(range.startCol, range.endCol);
+                      const cMax = Math.max(range.startCol, range.endCol);
+                      for (let r = rMin; r <= rMax; r++) {
+                        for (let c = cMin; c <= cMax; c++) {
+                          if (!newFormats[r-1]) newFormats[r-1] = {};
+                          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], fill: e.target.value };
+                        }
+                      }
+                    });
+                    updateSheetSettings(activeSheetId, { formats: newFormats });
+                }} />
+             </div>
+             <div className="flex-1 flex flex-col gap-1">
+                <span className="text-[9px] text-slate-400">Text</span>
+                <input type="color" className="w-full h-6 cursor-pointer border-0 p-0" onChange={(e) => {
+                    const newFormats = { ...(activeSheetGridRaw.formats || {}) };
+                    const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
+                    ranges.forEach(range => {
+                      const rMin = Math.min(range.startRow, range.endRow);
+                      const rMax = Math.max(range.startRow, range.endRow);
+                      const cMin = Math.min(range.startCol, range.endCol);
+                      const cMax = Math.max(range.startCol, range.endCol);
+                      for (let r = rMin; r <= rMax; r++) {
+                        for (let c = cMin; c <= cMax; c++) {
+                          if (!newFormats[r-1]) newFormats[r-1] = {};
+                          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], color: e.target.value };
+                        }
+                      }
+                    });
+                    updateSheetSettings(activeSheetId, { formats: newFormats });
+                }} />
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Filter Popover ────────────────────────────────────── */}
+      {sheetFilterPopover.open && (
+        <div 
+          className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-200 font-sans w-64 overflow-hidden"
+          style={{ top: sheetFilterPopover.top, left: sheetFilterPopover.left }}
+        >
+          <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5"><Filter size={12}/> Column Filter</span>
+            <button onClick={() => setSheetFilterPopover({ open: false, x: 0, y: 0, colIndex: -1, rowIndex: -1 })} className="text-slate-400 hover:text-slate-600"><X size={12}/></button>
+          </div>
+          <div className="p-3 flex flex-col gap-2">
+            <input 
+              autoFocus
+              type="text" 
+              className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-400"
+              placeholder="e.g. > 100, or exact match..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = e.target.value;
+                  const newFilters = { ...(activeSheetGridRaw.filters || {}) };
+                  if (!val.trim()) {
+                    delete newFilters[sheetFilterPopover.colIndex];
+                  } else {
+                    newFilters[sheetFilterPopover.colIndex] = { active: true, row: sheetFilterPopover.rowIndex, value: val };
+                  }
+                  updateSheetSettings(activeSheetId, { filters: newFilters });
+                  setSheetFilterPopover({ open: false, x: 0, y: 0, colIndex: -1, rowIndex: -1 });
+                  showToast('Filter applied');
+                }
+              }}
+            />
+            <span className="text-[9px] text-slate-400">Press Enter to apply. Supports natural language matching.</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Media Insertion Modal ────────────────────────────────────── */}
+      {mediaInsertionModal.open && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center font-sans" onMouseDown={e => e.stopPropagation()}>
+          <div className="bg-white w-[500px] rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
+            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <span className="font-bold text-slate-800 text-sm flex items-center gap-2"><Image size={16} className="text-violet-600"/> Insert Media</span>
+              <button onClick={() => setMediaInsertionModal({ open: false })} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
+            </div>
+            <div className="p-4 grid grid-cols-2 gap-3">
+               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
+                  showToast('Opening native file picker...');
+                  setMediaInsertionModal({ open: false });
+               }}>
+                  <UploadCloud size={24} className="text-violet-500" />
+                  <span className="text-xs font-semibold text-slate-700">Upload File</span>
+               </button>
+               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
+                  showToast('Generating AI Image...');
+                  setMediaInsertionModal({ open: false });
+               }}>
+                  <Sparkles size={24} className="text-violet-500" />
+                  <span className="text-xs font-semibold text-slate-700">Generate AI</span>
+               </button>
+               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
+                  showToast('Opening stock library...');
+                  setMediaInsertionModal({ open: false });
+               }}>
+                  <Image size={24} className="text-violet-500" />
+                  <span className="text-xs font-semibold text-slate-700">Stock Media</span>
+               </button>
+               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
+                  const range = mediaInsertionModal.range || { startRow: 1, startCol: 1 };
+                  const newOverlay = {
+                    id: 'overlay-' + Date.now(),
+                    type: 'image',
+                    row: range.startRow,
+                    col: range.startCol,
+                    x: 10, y: 10, width: 250, height: 180,
+                    content: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80',
+                  };
+                  updateSheetSettings(activeSheetId, {
+                    overlays: [...(activeSheetGridRaw.overlays || []), newOverlay]
+                  });
+                  setMediaInsertionModal({ open: false });
+                  showToast('Inserted placeholder');
+               }}>
+                  <Link size={24} className="text-violet-500" />
+                  <span className="text-xs font-semibold text-slate-700">Link Externally</span>
+               </button>
+            </div>
+            <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+               <button className="px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700" onClick={() => setMediaInsertionModal({ open: false })}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+`
+\nimport React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+</div>
   );
 }
 
