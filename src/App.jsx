@@ -5889,58 +5889,6 @@ export default function App() {
     setReplayTimeline([...historyPastRef.current]);
   };
 
-  const getFullSnapshotAtIndex = (targetIndex) => {
-    let full = {};
-    for (let i = 0; i <= targetIndex; i++) {
-      if (historyPastRef.current[i]?.snapshot) {
-        full = { ...full, ...historyPastRef.current[i].snapshot };
-      }
-    }
-    return full;
-  };
-
-  const recordHistoryAction = useCallback((actionName = 'State changed', snapshotOverrides = {}) => {
-    if (historyMuteRef.current) return;
-    
-    const baseSnapshot = buildSnapshot();
-    const snapshot = { ...baseSnapshot, ...snapshotOverrides };
-    
-    const lastSnapshot = lastSnapshotHashRef.current;
-    const diff = {};
-    let hasChanged = false;
-
-    if (!lastSnapshot) {
-      hasChanged = true;
-      Object.assign(diff, snapshot);
-    } else {
-      for (const key in snapshot) {
-        if (snapshot[key] !== lastSnapshot[key]) {
-          diff[key] = snapshot[key];
-          hasChanged = true;
-        }
-      }
-    }
-
-    if (!hasChanged) return;
-
-    lastSnapshotHashRef.current = snapshot;
-
-    const record = {
-      actionName,
-      snapshot: diff,
-      timestamp: Date.now(),
-    };
-
-    historyPastRef.current = [...historyPastRef.current.slice(-399), record];
-    historyFutureRef.current = [];
-    syncReplayTimeline();
-    if (replayIndex === null) {
-      setReplayIndex(historyPastRef.current.length - 1);
-    }
-  }, [buildSnapshot, syncReplayTimeline, replayIndex]);
-  
-  const flushPendingHistoryRecord = () => {};
-
   const formatReplayDuration = (durationMs) => {
     const safeDuration = Math.max(0, Math.floor(durationMs || 0));
     const totalSeconds = Math.floor(safeDuration / 1000);
@@ -6428,6 +6376,58 @@ export default function App() {
       historyMuteRef.current = false;
     }, 0);
   };
+
+  const getFullSnapshotAtIndex = (targetIndex) => {
+    let full = {};
+    for (let i = 0; i <= targetIndex; i++) {
+      if (historyPastRef.current[i]?.snapshot) {
+        full = { ...full, ...historyPastRef.current[i].snapshot };
+      }
+    }
+    return full;
+  };
+
+  const recordHistoryAction = (actionName = 'State changed', snapshotOverrides = {}) => {
+    if (historyMuteRef.current) return;
+    
+    const baseSnapshot = buildSnapshot();
+    const snapshot = { ...baseSnapshot, ...snapshotOverrides };
+    
+    const lastSnapshot = lastSnapshotHashRef.current;
+    const diff = {};
+    let hasChanged = false;
+
+    if (!lastSnapshot) {
+      hasChanged = true;
+      Object.assign(diff, snapshot);
+    } else {
+      for (const key in snapshot) {
+        if (snapshot[key] !== lastSnapshot[key]) {
+          diff[key] = snapshot[key];
+          hasChanged = true;
+        }
+      }
+    }
+
+    if (!hasChanged) return;
+
+    lastSnapshotHashRef.current = snapshot;
+
+    const record = {
+      actionName,
+      snapshot: diff,
+      timestamp: Date.now(),
+    };
+
+    historyPastRef.current = [...historyPastRef.current.slice(-399), record];
+    historyFutureRef.current = [];
+    syncReplayTimeline();
+    if (replayIndex === null) {
+      setReplayIndex(historyPastRef.current.length - 1);
+    }
+  };
+  
+  const flushPendingHistoryRecord = () => {};
 
   const historyEventNameRef = useRef('State updated');
 
