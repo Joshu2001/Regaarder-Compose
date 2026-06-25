@@ -4703,6 +4703,8 @@ export default function App() {
   const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [isUnifiedExportModalOpen, setIsUnifiedExportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
   const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
@@ -26515,8 +26517,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           key={tab}
                           type="button"
                           onClick={() => {
-                            setSheetToolbarTab(tab);
-                            showToast(`${tab} tools ready`);
+                            if (tab === 'Export') {
+                              setSheetToolbarTab(null);
+                              setIsUnifiedExportModalOpen(true);
+                            } else if (tab === 'Data') {
+                              setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
+                            } else {
+                              setSheetToolbarTab(sheetToolbarTab === tab ? null : tab);
+                              showToast(`${tab} tools ready`);
+                            }
                           }}
                           className={`px-3 py-1.5 rounded-lg transition-colors ${sheetToolbarTab === tab ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
                         >
@@ -28151,7 +28160,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   }
                                 }
 
-                                const isExplicitAnchor = selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1;
+                                const isExplicitAnchor = (selectedSheetCell.row === num && selectedSheetCell.col === colIndex + 1) || (multiSelectedCells && multiSelectedCells.some(c => c.row === num && c.col === colIndex + 1));
                                 const isSelected = !isShapeInteracting && (isExplicitAnchor || isInRange);
 
                                 let shadows = [];
@@ -31538,14 +31547,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               onClick={() => {
                 closeTransientMenus();
-                setExportMenuOpen((prev) => !prev);
+                setIsUnifiedExportModalOpen(true);
               }}
               className="text-xs font-medium px-2 py-1 rounded hover:bg-violet-50 hover:text-violet-700 flex items-center gap-1"
               title="Export options"
             >
-              Export <ChevronDown size={10} className="text-gray-400" />
+              Export
             </button>
-            {exportMenuOpen && (
+            {false && (
               <div className="absolute top-8 right-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1">
                 <button
                   onClick={() => {
