@@ -26505,7 +26505,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
                     <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
-                      {['Data', 'Insert', 'Analyze', 'Visualize'].map((tab) => (
+                      {['Data', 'Templates', 'Analyze', 'Visualize', 'Export'].map((tab) => (
                         <button
                           key={tab}
                           type="button"
@@ -26520,7 +26520,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ))}
                     </div>
 
-                      {sheetToolbarTab === 'Data' ? (
+                      {sheetToolbarTab === 'Export' ? (
+    <div className="flex items-center gap-6 px-2 py-1">
+      <div className="flex items-center gap-1">
+        <button type="button" onClick={() => showToast('Exporting to XLSX...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded flex items-center gap-2"><Download size={14} /> XLSX</button>
+        <button type="button" onClick={() => showToast('Exporting to CSV...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded flex items-center gap-2"><FileText size={14} /> CSV</button>
+        <button type="button" onClick={() => showToast('Exporting to PDF...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded flex items-center gap-2"><File size={14} /> PDF</button>
+      </div>
+    </div>
+  ) : sheetToolbarTab === 'Templates' ? (
+    <div className="flex items-center gap-6 px-2 py-1">
+      <div className="flex items-center gap-1">
+        <button type="button" onClick={() => showToast('Loading Financial Models...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Financial</button>
+        <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
+      </div>
+    </div>
+  ) : {sheetToolbarTab === 'Data' ? (
                         /* ── DATA TAB: OMNI-IMPORT PORTAL ─────────────────────── */
                         <div className="flex-1 overflow-y-auto thin-scrollbar bg-[#FAFAFC]">
                           <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col gap-10">
