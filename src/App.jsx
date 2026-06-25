@@ -18937,31 +18937,6 @@ Respond with a JSON array of slide objects matching the schema.`;
           }
         }
       } else {
-        let allHaveFormat = true;
-        for (let r = startRow; r <= endRow; r++) {
-          const rowFormats = nextFormats[r] || [];
-          for (let c = startCol; c <= endCol; c++) {
-            const cellFmtRaw = rowFormats[c];
-            const cellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : {};
-            if (!cellFmt[formatType]) {
-              allHaveFormat = false;
-              break;
-            }
-          }
-          if (!allHaveFormat) break;
-        }
-        const newValue = !allHaveFormat;
-
-        for (let r = startRow; r <= endRow; r++) {
-          if (!nextFormats[r]) nextFormats[r] = [];
-          for (let c = startCol; c <= endCol; c++) {
-            const cellFmtRaw = nextFormats[r][c];
-            const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
-            if (currentCellFmt.type === null || currentCellFmt.type === undefined) delete currentCellFmt.type;
-            nextFormats[r][c] = { ...currentCellFmt, [formatType]: newValue };
-          }
-        }
-      } else {
         for (let r = startRow; r <= endRow; r++) {
           if (!nextFormats[r]) nextFormats[r] = [];
           for (let c = startCol; c <= endCol; c++) {
