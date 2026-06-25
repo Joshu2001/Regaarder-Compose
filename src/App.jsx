@@ -26792,7 +26792,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font')}
                             className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
                           >
-                            <span>{sheetToolbarFont}</span>
+                            <span>{getSelectedCellFormat().fontFamily || sheetToolbarFont}</span>
                             <ChevronDown size={13} />
                           </button>
                           {sheetToolbarMenuOpen === 'font' && (
@@ -26802,7 +26802,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   key={font}
                                   type="button"
                                   onClick={() => {
-                                    setSheetToolbarFont(font);
+                                    if (selectedSheetRange || selectedSheetCell) {
+                                      updateSheetCellFormat(activeSheetId, 'fontFamily', font);
+                                    } else {
+                                      setSheetToolbarFont(font);
+                                    }
                                     setSheetToolbarMenuOpen(null);
                                   }}
                                   className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarFont === font ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
@@ -26820,7 +26824,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size')}
                             className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
                           >
-                            <span>{sheetToolbarSize}</span>
+                            <span>{getSelectedCellFormat().fontSize || sheetToolbarSize}</span>
                             <ChevronDown size={13} />
                           </button>
                           {sheetToolbarMenuOpen === 'size' && (
@@ -26830,7 +26834,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   key={size}
                                   type="button"
                                   onClick={() => {
-                                    setSheetToolbarSize(size);
+                                    if (selectedSheetRange || selectedSheetCell) {
+                                      updateSheetCellFormat(activeSheetId, 'fontSize', size);
+                                    } else {
+                                      setSheetToolbarSize(size);
+                                    }
                                     setSheetToolbarMenuOpen(null);
                                   }}
                                   className={`w-full text-left px-2 py-1 rounded text-xs ${sheetToolbarSize === size ? 'bg-violet-50 text-violet-700' : 'text-gray-600 hover:bg-gray-50'}`}
@@ -26845,19 +26853,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {(() => {
                         const fmt = getSelectedCellFormat();
                         return (
-                          <>
-                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'bold')} className={`font-bold hover:text-gray-900 ${fmt.bold ? 'text-violet-600' : 'text-[#374151]'}`}>B</button>
-                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'italic')} className={`italic font-serif hover:text-gray-900 ${fmt.italic ? 'text-violet-600' : 'text-[#374151]'}`}>I</button>
-                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'underline')} className={`underline hover:text-gray-900 ${fmt.underline ? 'text-violet-600' : 'text-[#374151]'}`}>U</button>
-                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'strikeThrough')} className={`line-through hover:text-gray-900 ${fmt.strikeThrough ? 'text-violet-600' : 'text-[#374151]'}`}>S</button>
-                            <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="hover:text-violet-600 text-gray-500" title="Insert Link">
+                          <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
+                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'bold')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
+                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'italic')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
+                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'underline')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
+                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'strikeThrough')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
+                            <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-100 text-gray-500" title="Insert Link">
                               <LinkIcon size={14} />
                             </button>
-                            <div className="relative text-style-menu-container">
+                            <div className="relative text-style-menu-container flex items-center">
                               <button
                                 type="button"
                                 onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle')}
-                                className="flex items-center gap-1.5 hover:text-gray-900 cursor-pointer pl-0.5 text-[#374151]"
+                                className="h-8 px-2 flex items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-gray-100 cursor-pointer text-[#374151]"
                                 title="Format options (Style & Colors)"
                               >
                                 <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
@@ -26884,15 +26892,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 </div>
                               )}
                             </div>
-                          </>
+                          </div>
                         );
                       })()}
-                      <span className="mx-1 text-gray-200">|</span>
                       <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Row</button>
                       <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
                       <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
                       <button type="button" onClick={removeSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Col</button>
-                      <button className="ml-auto text-[11px] text-[#374151] px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 font-medium">More</button>
+                      <div className="ml-auto flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                          <Cloud size={14} /> {savedStatusLabel}
+                        </div>
+                        <button className="text-[11px] text-[#374151] px-2 py-1 rounded border border-gray-200 hover:bg-gray-50 font-medium">More</button>
+                      </div>
                     </div>
                     <div className="px-4 py-2 border-b border-gray-100 bg-white flex items-center gap-3 text-[13px] font-medium text-[#374151]">
                       <div className="min-w-[72px] text-center border border-gray-200 rounded-lg bg-gray-50 py-1.5 px-2 text-[11px] font-mono font-semibold tracking-tight">
