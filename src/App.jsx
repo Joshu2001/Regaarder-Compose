@@ -1693,16 +1693,7 @@ export default function App() {
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
   const [deckSlidesData, setDeckSlidesData] = useState([
-    { ...createBlankDeckSlide(1), section: 'Opening', title: 'Slide 1', headline: 'Slide 1 that earns attention', blurb: 'Built for modern teams and crafted to be edited live.', presetKey: 'aurora-split', footer: 'Regaarder Deck · Opening' },
-    { ...createBlankDeckSlide(2), section: 'Problem', title: 'Problem', headline: 'Problem', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Problem' },
-    { ...createBlankDeckSlide(3), section: 'Solution', title: 'Solution', headline: 'Solution', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Solution' },
-    { ...createBlankDeckSlide(4), section: 'Market', title: 'Market', headline: 'Market', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Market' },
-    { ...createBlankDeckSlide(5), section: 'Product', title: 'Product', headline: 'Product', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Product' },
-    { ...createBlankDeckSlide(6), section: 'Business Model', title: 'Business Model', headline: 'Business Model', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Business Model' },
-    { ...createBlankDeckSlide(7), section: 'Traction', title: 'Traction', headline: 'Traction', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Traction' },
-    { ...createBlankDeckSlide(8), section: 'Team', title: 'Team', headline: 'Team', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Team' },
-    { ...createBlankDeckSlide(9), section: 'Financials', title: 'Financials', headline: 'Financials', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Financials' },
-    { ...createBlankDeckSlide(10), section: 'Ask', title: 'Ask', headline: 'Ask', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Ask' },
+    { ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Presentation Title', blurb: 'Subtitle goes here', presetKey: 'blank', footer: '' }
   ]);
   const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
@@ -3542,6 +3533,7 @@ export default function App() {
   const [workspaceNameInput, setWorkspaceNameInput] = useState('');
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [openWorkspaceMenuId, setOpenWorkspaceMenuId] = useState(null);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(true);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTargetDocId, setShareTargetDocId] = useState(null);
   const [shareTargetDocTitle, setShareTargetDocTitle] = useState('');
@@ -29052,6 +29044,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <Plus size={14} />
                             <span>Add Slide</span>
                           </button>
+                          <button type="button" onClick={() => setIsTemplateModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
+                            <Layout size={14} />
+                            <span>Templates</span>
+                          </button>
                           <button type="button" onClick={handlePresentDeck} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
                             <MonitorPlay size={14} />
                             <span>Present</span>
@@ -30564,7 +30560,98 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-{shareModalOpen && (
+{isTemplateModalOpen && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#10162f]/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[80vh] max-h-[800px] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0 bg-white z-10">
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900">Presentation Templates</h2>
+          <p className="text-sm text-gray-500 mt-1">Choose a starting point for your presentation</p>
+        </div>
+        <button onClick={() => setIsTemplateModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+          <X size={20} />
+        </button>
+      </div>
+      
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <div className="w-64 border-r border-gray-100 bg-[#FAFAFC] flex flex-col py-4 shrink-0">
+          <div className="px-4 mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input 
+                type="text" 
+                placeholder="Search templates..." 
+                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                value={templateSearchQuery}
+                onChange={(e) => setTemplateSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto px-3 space-y-1">
+            {['All', 'Favorites', 'Pitch Deck', 'Status Report', 'Blank'].map(cat => (
+              <button 
+                key={cat}
+                onClick={() => setActiveTemplateCategory(cat)}
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTemplateCategory === cat ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900'}`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Grid */}
+        <div className="flex-1 bg-white overflow-y-auto p-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Blank Canvas Option */}
+            {(activeTemplateCategory === 'All' || activeTemplateCategory === 'Blank') && (!templateSearchQuery || 'blank'.includes(templateSearchQuery.toLowerCase())) && (
+              <div 
+                onClick={() => {
+                  setDeckSlidesData([{ ...createBlankDeckSlide(1), title: 'Slide 1', headline: 'Click to add title', blurb: 'Click to add subtitle', presetKey: 'blank-white', section: 'Slide 1', footer: '' }]);
+                  setIsTemplateModalOpen(false);
+                }}
+                className="group cursor-pointer relative flex flex-col"
+              >
+                <div className="aspect-[16/9] rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center mb-3 group-hover:border-indigo-400 group-hover:bg-indigo-50/30 transition-all">
+                  <Plus className="text-gray-400 group-hover:text-indigo-500 mb-2 transition-colors" size={24} />
+                  <span className="text-sm font-medium text-gray-500 group-hover:text-indigo-600 transition-colors">Blank Canvas</span>
+                </div>
+                <h3 className="font-medium text-gray-900">Blank Presentation</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Start from scratch</p>
+              </div>
+            )}
+            
+            {/* Template Options */}
+            {DECK_DESIGN_PRESETS.filter(p => p.key !== 'blank-white').filter(p => !templateSearchQuery || p.badge.toLowerCase().includes(templateSearchQuery.toLowerCase())).map(preset => (
+               <div 
+               key={preset.key}
+               onClick={() => {
+                 setDeckSlidesData([
+                    { ...createBlankDeckSlide(1), title: preset.badge, headline: preset.badge, blurb: 'Subtitle goes here', presetKey: preset.key, section: 'Slide 1', footer: '' },
+                    { ...createBlankDeckSlide(2), title: 'Problem', headline: 'Problem', blurb: 'Explain the problem', presetKey: preset.key, section: 'Problem', footer: '' }
+                 ]);
+                 setIsTemplateModalOpen(false);
+               }}
+               className="group cursor-pointer relative flex flex-col"
+             >
+               <div className={`aspect-[16/9] rounded-xl overflow-hidden mb-3 ${preset.background} shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 group-hover:shadow-lg group-hover:ring-2 group-hover:ring-indigo-500 group-hover:ring-offset-2 transition-all`}>
+                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
+                    <span className="text-white font-serif text-lg md:text-xl font-medium opacity-90 text-center">{preset.badge}</span>
+                 </div>
+               </div>
+               <h3 className="font-medium text-gray-900 capitalize">{preset.badge}</h3>
+               <p className="text-xs text-gray-500 mt-0.5">Professional layout</p>
+             </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+\n      {shareModalOpen && (
   <ShareModal
     isOpen={shareModalOpen}
     onClose={() => setShareModalOpen(false)}
