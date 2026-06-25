@@ -4183,6 +4183,7 @@ export default function App() {
   }, []);
   const [pageContextMenu, setPageContextMenu] = useState({ open: false, x: 0, y: 0, itemId: null, isSheets: false });
   const [headerContextMenu, setHeaderContextMenu] = useState({ open: false, x: 0, y: 0, type: '', index: -1 });
+  const [cellFormatModal, setCellFormatModal] = useState({ open: false, x: 0, y: 0 });
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
@@ -11987,7 +11988,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           col: cellAnchor.startCol,
           x: 20, y: 20,
           width: 200, height: 60,
-          content: 'New text box',
+          content: 'New Text',
           color: '#4c1d95',
           fillColor: '#ede9fe',
           strokeColor: '#ddd6fe',
@@ -12085,13 +12086,156 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
 
     if (key === 'filter') {
-      // Toggle a global filter flag on the sheet for simplicity, or just a toast if not supported fully
-      showToast('Filtering enabled on selection');
+      const range = allRanges[0];
+      if (range) {
+        const cMin = Math.min(range.startCol, range.endCol);
+        const cMax = Math.max(range.startCol, range.endCol);
+        const rMin = Math.min(range.startRow, range.endRow);
+        const newFilters = { ...(activeSheetGridRaw.filters || {}) };
+        for (let c = cMin; c <= cMax; c++) {
+          newFilters[c - 1] = { active: true, row: rMin - 1 };
+        }
+        updateSheetSettings(activeSheetId, { filters: newFilters });
+        showToast('Filter dropdown added to header');
+      }
       return;
     }
 
     if (key === 'remove_dupes') {
-      showToast('Remove duplicates not fully implemented');
+      const range = allRanges[0];
+      if (!range) return;
+      const rMin = Math.min(range.startRow, range.endRow) - 1;
+      const rMax = Math.max(range.startRow, range.endRow) - 1;
+      const cMin = Math.min(range.startCol, range.endCol) - 1;
+      const cMax = Math.max(range.startCol, range.endCol) - 1;
+      
+      const newCells = [...(activeSheetGridRaw.cells || [])];
+      const newFormats = [...(activeSheetGridRaw.formats || [])];
+      const seen = new Set();
+      const rowsToKeep = [];
+      const formatsToKeep = [];
+      let removedCount = 0;
+      
+      for (let i = rMin; i <= rMax; i++) {
+        const row = newCells[i] || [];
+        const rowKey = row.slice(cMin, cMax + 1).join('|||');
+        if (!seen.has(rowKey)) {
+          seen.add(rowKey);
+          rowsToKeep.push(row);
+          formatsToKeep.push(newFormats[i] || null);
+        } else {
+          removedCount++;
+        }
+      }
+      
+      if (removedCount > 0) {
+        newCells.splice(rMin, rMax - rMin + 1, ...rowsToKeep);
+        newFormats.splice(rMin, rMax - rMin + 1, ...formatsToKeep);
+        while (newCells.length < activeSheetGridRaw.rows) {
+          newCells.push(Array(activeSheetGridRaw.cols).fill(''));
+          newFormats.push(null);
+        }
+        updateSheetSettings(activeSheetId, { cells: newCells, formats: newFormats });
+      }
+      showToast(`Removed ${removedCount} duplicate rows`);
+      return;
+    }
+
+    if (key === 'translate') {
+      const newCells = [...(activeSheetGridRaw.cells || [])];
+      let translated = 0;
+      allRanges.forEach(range => {
+        const rMin = Math.min(range.startRow, range.endRow) - 1;
+        const rMax = Math.max(range.startRow, range.endRow) - 1;
+        const cMin = Math.min(range.startCol, range.endCol) - 1;
+        const cMax = Math.max(range.startCol, range.endCol) - 1;
+        for (let r = rMin; r <= rMax; r++) {
+          for (let c = cMin; c <= cMax; c++) {
+            if (newCells[r] && newCells[r][c] && typeof newCells[r][c] === 'string') {
+              newCells[r][c] = '[Translated] ' + newCells[r][c];
+              translated++;
+            }
+          }
+        }
+      });
+      if (translated > 0) {
+        updateSheetSettings(activeSheetId, { cells: newCells });
+        showToast(`Translated ${translated} cells`);
+      }
+      return;
+    }
+
+    if (key === 'schedule') {
+      const newCells = [...(activeSheetGridRaw.cells || [])];
+      const newFormats = { ...(activeSheetGridRaw.formats || {}) };
+      const range = allRanges[0];
+      if (range) {
+        const r = range.startRow - 1;
+        const c = range.startCol - 1;
+        if (!newCells[r]) newCells[r] = [];
+        newCells[r][c] = new Date().toISOString().split('T')[0];
+        if (!newFormats[r]) newFormats[r] = {};
+        newFormats[r][c] = { ...newFormats[r][c], format: 'date' };
+        updateSheetSettings(activeSheetId, { cells: newCells, formats: newFormats });
+        showToast('Inserted date schedule');
+      }
+      return;
+    }
+
+    if (key === 'image') {
+      const range = allRanges[0] || { startRow: 1, startCol: 1 };
+      const newOverlay = {
+        id: 'overlay-' + Date.now(),
+        type: 'image',
+        row: range.startRow,
+        col: range.startCol,
+        x: 10, y: 10, width: 300, height: 200,
+        content: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80',
+      };
+      updateSheetSettings(activeSheetId, {
+        overlays: [...(activeSheetGridRaw.overlays || []), newOverlay]
+      });
+      showToast('Inserted image overlay');
+      return;
+    }
+
+    if (key === 'bookmark' || key === 'hyperlink') {
+      const newFormats = { ...(activeSheetGridRaw.formats || {}) };
+      const range = allRanges[0];
+      if (range) {
+        const r = range.startRow - 1;
+        const c = range.startCol - 1;
+        if (!newFormats[r]) newFormats[r] = {};
+        newFormats[r][c] = { ...newFormats[r][c], link: 'https://example.com' };
+        updateSheetSettings(activeSheetId, { formats: newFormats });
+        showToast('Inserted mock hyperlink');
+      }
+      return;
+    }
+
+    if (key === 'merge_cells') {
+      const globalRMin = Math.min(...allRanges.map(r => Math.min(r.startRow, r.endRow)));
+      const globalRMax = Math.max(...allRanges.map(r => Math.max(r.startRow, r.endRow)));
+      const globalCMin = Math.min(...allRanges.map(r => Math.min(r.startCol, r.endCol)));
+      const globalCMax = Math.max(...allRanges.map(r => Math.max(r.startCol, r.endCol)));
+      
+      if (globalRMax > globalRMin || globalCMax > globalCMin) {
+        if (!newFormats[globalRMin - 1]) newFormats[globalRMin - 1] = {};
+        newFormats[globalRMin - 1][globalCMin - 1] = {
+          ...newFormats[globalRMin - 1][globalCMin - 1],
+          rowSpan: globalRMax - globalRMin + 1,
+          colSpan: globalCMax - globalCMin + 1
+        };
+        for (let r = globalRMin; r <= globalRMax; r++) {
+          for (let c = globalCMin; c <= globalCMax; c++) {
+            if (r === globalRMin && c === globalCMin) continue; // Keep top-left
+            if (!newFormats[r - 1]) newFormats[r - 1] = {};
+            newFormats[r - 1][c - 1] = { ...newFormats[r - 1][c - 1], hidden: true };
+          }
+        }
+        updateSheetSettings(activeSheetId, { formats: newFormats });
+        showToast('Cells merged');
+      }
       return;
     }
 
@@ -12100,22 +12244,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const rMax = Math.max(range.startRow, range.endRow);
       const cMin = Math.min(range.startCol, range.endCol);
       const cMax = Math.max(range.startCol, range.endCol);
-
-      if (key === 'merge_cells' && (rMax > rMin || cMax > cMin)) {
-        if (!newFormats[rMin - 1]) newFormats[rMin - 1] = {};
-        newFormats[rMin - 1][cMin - 1] = {
-          ...newFormats[rMin - 1][cMin - 1],
-          rowSpan: rMax - rMin + 1,
-          colSpan: cMax - cMin + 1
-        };
-        for (let r = rMin; r <= rMax; r++) {
-          for (let c = cMin; c <= cMax; c++) {
-            if (r === rMin && c === cMin) continue; // Keep top-left
-            if (!newFormats[r - 1]) newFormats[r - 1] = {};
-            newFormats[r - 1][c - 1] = { ...newFormats[r - 1][c - 1], hidden: true };
-          }
-        }
-      } else {
         for (let r = rMin; r <= rMax; r++) {
           for (let c = cMin; c <= cMax; c++) {
             if (!newFormats[r-1]) newFormats[r-1] = {};
@@ -12126,11 +12254,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
             }
           }
         }
-      }
     });
 
     updateSheetSettings(activeSheetId, { formats: newFormats });
-    if (key === 'merge_cells') showToast('Cells merged');
   };
 
   const executeSlashCommand = (key) => {
@@ -27973,10 +28099,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    let shapeContent = shapeSvgTemplate ? customizeShapeSvg(shapeSvgTemplate) : <rect x="0" y="0" width="16" height="16" fill={fillDef} />;
 
                                    return (
-                                     <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
-                                       {renderDefs()}
-                                       {shapeContent}
-                                     </svg>
+                                     <>
+                                       <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
+                                         {renderDefs()}
+                                         {shapeContent}
+                                       </svg>
+                                       {(overlay.content !== undefined || overlay.shapeType === 'rectangle') && (
+                                         <textarea
+                                           className="absolute inset-0 w-full h-full bg-transparent p-3 text-sm resize-none border-none outline-none z-10 font-medium"
+                                           style={{ color: overlay.color || '#333', textAlign: 'center' }}
+                                           value={overlay.content || ''}
+                                           placeholder="New Text"
+                                           onChange={(e) => updateOverlay({ content: e.target.value })}
+                                           onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
+                                           onMouseDown={e => e.stopPropagation()}
+                                         />
+                                       )}
+                                     </>
                                    );
                                  }
                                  return overlay.content;
@@ -28237,6 +28376,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           {Array.from({ length: activeSheetGrid.rows }, (_, rowIndex) => {
                             const num = rowIndex + 1;
+                            const isFilteredOut = activeSheetGrid.filters && Object.keys(activeSheetGrid.filters).some(colIdx => {
+                              const filter = activeSheetGrid.filters[colIdx];
+                              if (!filter || !filter.active) return false;
+                              if (rowIndex > filter.row) {
+                                const val = activeSheetGrid.cells[rowIndex]?.[colIdx];
+                                if (filter.text && !String(val).toLowerCase().includes(filter.text.toLowerCase())) return true;
+                              }
+                              return false;
+                            });
+                            if (isFilteredOut) return [];
+
                             const rowHeight = `var(--row-${rowIndex}-height, 36px)`;
                             const isRowSelected = !isShapeInteracting && selectedSheetRange && sheetSelectionMode === 'row'
                               ? num >= Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow) && num <= Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)
@@ -28562,6 +28712,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           }
                                         }}
                                       />
+                                    )}
+                                    
+                                    {activeSheetGrid.filters?.[colIndex]?.active && activeSheetGrid.filters[colIndex].row === rowIndex && (
+                                      <div 
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-200 rounded cursor-pointer z-10"
+                                        title="Filter column"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const text = prompt('Enter filter text (leave empty to clear):');
+                                          updateSheetSettings(activeSheetId, {
+                                            filters: { ...activeSheetGrid.filters, [colIndex]: { ...activeSheetGrid.filters[colIndex], text: text || '' } }
+                                          });
+                                        }}
+                                      >
+                                        <Filter size={12} className={activeSheetGrid.filters[colIndex].text ? 'text-violet-600' : 'text-slate-400'} />
+                                      </div>
+                                    )}
+
+                                    {computedFormat.link && (
+                                      <a 
+                                        href={computedFormat.link} 
+                                        target="_blank" 
+                                        rel="noreferrer" 
+                                        className="absolute right-1 bottom-1 p-0.5 bg-white rounded shadow hover:bg-slate-50 z-10" 
+                                        onClick={e => e.stopPropagation()}
+                                        title={computedFormat.link}
+                                      >
+                                        <LinkIcon size={10} className="text-blue-500" />
+                                      </a>
                                     )}
                                     <input
                                       type="text"
@@ -35697,7 +35876,152 @@ if (productMode === 'deck' || productMode === 'sheets') {
         );
       })()}
 
+      {/* ── Cell Format Modal ────────────────────────────────────── */}
+      {cellFormatModal.open && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => e.stopPropagation()}>
+          <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-5 text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Settings2 className="text-violet-600" size={18} />
+                Format Cells
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCellFormatModal({ open: false })}
+                className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-6">
+              {/* Number Formatting */}
+              <div className="space-y-3">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Number Format</label>
+                <div className="flex flex-col gap-2">
+                  <select 
+                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, numberFormat: e.target.value }))}
+                    value={cellFormatModal.numberFormat || 'general'}
+                  >
+                    <option value="general">General</option>
+                    <option value="number">Number</option>
+                    <option value="currency">Currency ($)</option>
+                    <option value="percent">Percentage (%)</option>
+                    <option value="date">Date</option>
+                    <option value="time">Time</option>
+                  </select>
+                  <div className="flex items-center justify-between border border-slate-200 rounded-lg p-1 px-2">
+                    <span className="text-xs text-slate-600">Decimal Places</span>
+                    <div className="flex items-center gap-1">
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setCellFormatModal(prev => ({ ...prev, decimals: Math.max(0, (prev.decimals || 0) - 1) }))}>-</button>
+                      <span className="text-xs font-mono w-4 text-center">{cellFormatModal.decimals || 0}</span>
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setCellFormatModal(prev => ({ ...prev, decimals: (prev.decimals || 0) + 1 }))}>+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
+              {/* Alignment */}
+              <div className="space-y-3">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Alignment</label>
+                <div className="flex flex-col gap-2">
+                  <div className="flex border border-slate-200 rounded-lg overflow-hidden">
+                    {['left', 'center', 'right'].map(align => (
+                      <button 
+                        key={align} type="button"
+                        className={`flex-1 py-1.5 text-xs font-medium flex justify-center items-center ${cellFormatModal.align === align ? 'bg-violet-50 text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                        onClick={() => setCellFormatModal(prev => ({ ...prev, align }))}
+                      >
+                        {align === 'left' ? <AlignLeft size={14}/> : align === 'center' ? <AlignCenter size={14}/> : <AlignRight size={14}/>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex border border-slate-200 rounded-lg overflow-hidden">
+                    {['top', 'middle', 'bottom'].map(valign => (
+                      <button 
+                        key={valign} type="button"
+                        className={`flex-1 py-1.5 text-xs font-medium flex justify-center items-center ${cellFormatModal.valign === valign ? 'bg-violet-50 text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                        onClick={() => setCellFormatModal(prev => ({ ...prev, valign }))}
+                      >
+                        {valign}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Colors */}
+              <div className="space-y-3 col-span-2 border-t border-slate-100 pt-3">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Colors</label>
+                <div className="flex gap-4">
+                  <div className="flex flex-col gap-1 w-1/2">
+                    <span className="text-[10px] text-slate-500">Fill Color</span>
+                    <input 
+                      type="color" 
+                      className="w-full h-8 cursor-pointer rounded border border-slate-200 p-0.5 bg-white"
+                      value={cellFormatModal.fill || '#ffffff'}
+                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, fill: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 w-1/2">
+                    <span className="text-[10px] text-slate-500">Text Color</span>
+                    <input 
+                      type="color" 
+                      className="w-full h-8 cursor-pointer rounded border border-slate-200 p-0.5 bg-white"
+                      value={cellFormatModal.color || '#000000'}
+                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, color: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+              <button 
+                type="button"
+                className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={() => setCellFormatModal({ open: false })}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                className="px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
+                onClick={() => {
+                  const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+                  const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }];
+                  ranges.forEach(range => {
+                    const rMin = Math.min(range.startRow, range.endRow);
+                    const rMax = Math.max(range.startRow, range.endRow);
+                    const cMin = Math.min(range.startCol, range.endCol);
+                    const cMax = Math.max(range.startCol, range.endCol);
+                    for (let r = rMin; r <= rMax; r++) {
+                      for (let c = cMin; c <= cMax; c++) {
+                        if (!newFormats[r-1]) newFormats[r-1] = {};
+                        newFormats[r-1][c-1] = {
+                          ...newFormats[r-1][c-1],
+                          format: cellFormatModal.numberFormat || 'general',
+                          decimals: cellFormatModal.decimals || 0,
+                          align: cellFormatModal.align,
+                          valign: cellFormatModal.valign,
+                          fill: cellFormatModal.fill,
+                          color: cellFormatModal.color
+                        };
+                      }
+                    }
+                  });
+                  updateSheetSettings(activeSheetId, { formats: newFormats });
+                  setCellFormatModal({ open: false });
+                  showToast('Cell format applied');
+                }}
+              >
+                Apply Formatting
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {brandKitModalOpen && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
