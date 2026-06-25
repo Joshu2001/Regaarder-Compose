@@ -36464,43 +36464,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </div>
         )}
-                  ))}
-                </div>
-              </div>
-              <div className="h-px bg-gray-100 w-full"></div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wider">Convert to Workspace</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { target: 'Compose', icon: FileText, color: 'blue' },
-                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
-                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
-                  ].map(t => (
-                    <button 
-                      key={t.target}
-                      disabled={isExporting}
-                      onClick={() => {
-                        setIsExporting(true);
-                        setTimeout(() => { setIsExporting(false); setIsSheetsExportModalOpen(false); showToast('Converted to ' + t.target); }, 2000);
-                      }}
-                      className="flex items-center gap-2 p-3 rounded-xl border border-gray-100 bg-white hover:border-violet-200 hover:shadow-sm transition-all font-medium text-gray-700 text-sm"
-                    >
-                      <t.icon size={16} className={`text-${t.color}-500`} />
-                      {t.target}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {isExporting && (
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-                <div className="w-8 h-8 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-4"></div>
-                <span className="text-sm font-medium text-violet-700">Processing...</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+
       {settingsModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
           {/* Backdrop with a very subtle blur */}
