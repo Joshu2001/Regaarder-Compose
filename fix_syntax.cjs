@@ -1,35 +1,12 @@
 const fs = require('fs');
-const file = 'c:\\Users\\user\\Downloads\\Project MOAT\\Regaarder Compose\\src\\App.jsx';
-let content = fs.readFileSync(file, 'utf8');
+const path = require('path');
 
-// Replace:
-//      const renderRoomStage = () => {
-//      return (
-//        {roomState === 'active' && roomPanelMode === 'expanded' && mainView === 'room' && (
+const appPath = path.join(__dirname, 'src', 'App.jsx');
+let content = fs.readFileSync(appPath, 'utf8');
 
-// With:
-//      const renderRoomStage = () => {
-//      return roomState === 'active' && roomPanelMode === 'expanded' && mainView === 'room' && (
+// Fix the syntax errors caused by previous patch
+content = content.replace(/\) : \{sheetToolbarTab === 'Data' \? \(/g, ") : sheetToolbarTab === 'Data' ? (");
+content = content.replace(/\) : \{sheetToolbarTab === 'Analyze' \? \(/g, ") : sheetToolbarTab === 'Analyze' ? (");
 
-content = content.replace(
-  "      const renderRoomStage = () => {\n      return (\n        {roomState === 'active' && roomPanelMode === 'expanded' && mainView === 'room' && (",
-  "      const renderRoomStage = () => {\n      return roomState === 'active' && roomPanelMode === 'expanded' && mainView === 'room' && ("
-);
-
-// We also need to remove the closing `)}` from the end of renderRoomStage!
-// The end looks like:
-//              title="Resize meeting panel"
-//            />
-//          )}
-//        </div>
-//      )}
-//          );
-//        };
-
-content = content.replace(
-  "          )}\n        </div>\n      )}\n    );\n  };",
-  "          )}\n        </div>\n      );\n  };"
-);
-
-fs.writeFileSync(file, content, 'utf8');
-console.log('Fixed syntax in renderRoomStage');
+fs.writeFileSync(appPath, content, 'utf8');
+console.log('Syntax errors fixed');

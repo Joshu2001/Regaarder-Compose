@@ -18900,7 +18900,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       const startCol = selectedSheetRange ? Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
       const endCol = selectedSheetRange ? Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1 : selectedSheetCell.col - 1;
 
-      const isStylingFormat = ['bold', 'italic', 'underline', 'strikeThrough', 'color', 'highlight'].includes(formatType);
+      const isStylingFormat = ['bold', 'italic', 'underline', 'strikeThrough', 'color', 'highlight', 'fontSize', 'fontFamily', 'capitalization'].includes(formatType);
 
       if (isStylingFormat) {
         let allHaveFormat = true;
@@ -18927,7 +18927,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
             if (currentCellFmt.type === null || currentCellFmt.type === undefined) delete currentCellFmt.type;
             
-            if (formatValue === null || newValue === false) {
+            if (formatValue === null || (newValue === false && typeof formatValue === 'boolean')) {
                const newFmt = { ...currentCellFmt };
                delete newFmt[formatType];
                nextFormats[r][c] = Object.keys(newFmt).length === 0 ? null : newFmt;
@@ -26869,10 +26869,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         const fmt = getSelectedCellFormat();
                         return (
                           <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
-                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'bold')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
-                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'italic')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
-                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'underline')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
-                            <button type="button" onClick={() => updateSheetCellFormat(activeSheetId, 'strikeThrough')} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
+                            <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
+                            <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
+                            <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
+                            <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
                             <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-100 text-gray-500" title="Insert Link">
                               <LinkIcon size={14} />
                             </button>
@@ -26891,16 +26891,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
                                     <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
                                       {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
-                                        <button key={c} type="button" onClick={() => { updateSheetCellFormat(activeSheetId, 'color', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                        <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
                                       ))}
                                     </div>
                                   </div>
                                   <div className="flex flex-col gap-1">
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
                                     <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                                      <button type="button" onClick={() => { updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
+                                      <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
                                       {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
-                                        <button key={c} type="button" onClick={() => { updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                        <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
                                       ))}
                                     </div>
                                   </div>
