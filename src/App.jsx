@@ -3882,6 +3882,7 @@ export default function App() {
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
+  const [multiSelectedCells, setMultiSelectedCells] = useState([]);
 
   const [quickChartPreview, setQuickChartPreview] = useState(null);
   
@@ -18902,48 +18903,52 @@ Respond with a JSON array of slide objects matching the schema.`;
 
       const isStylingFormat = ['bold', 'italic', 'underline', 'strikeThrough', 'color', 'highlight', 'fontSize', 'fontFamily', 'capitalization'].includes(formatType);
 
+      let cellsToFormat = [];
+      if (multiSelectedCells && multiSelectedCells.length > 0) {
+        cellsToFormat = multiSelectedCells.map(c => ({ r: c.row - 1, c: c.col - 1 }));
+      } else {
+        for (let r = startRow; r <= endRow; r++) {
+          for (let c = startCol; c <= endCol; c++) {
+            cellsToFormat.push({ r, c });
+          }
+        }
+      }
+
       if (isStylingFormat) {
         let allHaveFormat = true;
         if (formatValue === undefined) {
-          for (let r = startRow; r <= endRow; r++) {
+          for (const { r, c } of cellsToFormat) {
             const rowFormats = nextFormats[r] || [];
-            for (let c = startCol; c <= endCol; c++) {
-              const cellFmtRaw = rowFormats[c];
-              const cellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : {};
-              if (!cellFmt[formatType]) {
-                allHaveFormat = false;
-                break;
-              }
+            const cellFmtRaw = rowFormats[c];
+            const cellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : {};
+            if (!cellFmt[formatType]) {
+              allHaveFormat = false;
+              break;
             }
-            if (!allHaveFormat) break;
           }
         }
         const newValue = formatValue !== undefined ? formatValue : !allHaveFormat;
 
-        for (let r = startRow; r <= endRow; r++) {
+        for (const { r, c } of cellsToFormat) {
           if (!nextFormats[r]) nextFormats[r] = [];
-          for (let c = startCol; c <= endCol; c++) {
-            const cellFmtRaw = nextFormats[r][c];
-            const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
-            if (currentCellFmt.type === null || currentCellFmt.type === undefined) delete currentCellFmt.type;
-            
-            if (formatValue === null || (newValue === false && typeof formatValue === 'boolean')) {
-               const newFmt = { ...currentCellFmt };
-               delete newFmt[formatType];
-               nextFormats[r][c] = Object.keys(newFmt).length === 0 ? null : newFmt;
-            } else {
-               nextFormats[r][c] = { ...currentCellFmt, [formatType]: newValue };
-            }
+          const cellFmtRaw = nextFormats[r][c];
+          const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
+          if (currentCellFmt.type === null || currentCellFmt.type === undefined) delete currentCellFmt.type;
+          
+          if (formatValue === null || (newValue === false && typeof formatValue === 'boolean')) {
+             const newFmt = { ...currentCellFmt };
+             delete newFmt[formatType];
+             nextFormats[r][c] = Object.keys(newFmt).length === 0 ? null : newFmt;
+          } else {
+             nextFormats[r][c] = { ...currentCellFmt, [formatType]: newValue };
           }
         }
       } else {
-        for (let r = startRow; r <= endRow; r++) {
+        for (const { r, c } of cellsToFormat) {
           if (!nextFormats[r]) nextFormats[r] = [];
-          for (let c = startCol; c <= endCol; c++) {
-             const cellFmtRaw = nextFormats[r][c];
-             const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
-             nextFormats[r][c] = { ...currentCellFmt, type: currentCellFmt.type === formatType ? null : formatType };
-          }
+          const cellFmtRaw = nextFormats[r][c];
+          const currentCellFmt = typeof cellFmtRaw === 'object' && cellFmtRaw !== null ? cellFmtRaw : { type: cellFmtRaw };
+          nextFormats[r][c] = { ...currentCellFmt, type: currentCellFmt.type === formatType ? null : formatType };
         }
       }
       return { ...prev, [sheetId]: { ...target, formats: nextFormats } };
@@ -28109,6 +28114,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 allRanges.push(...additionalSheetRanges);
 
                                 let isInRange = false;
+                                if (multiSelectedCells && multiSelectedCells.length > 0) {
+                                  isInRange = multiSelectedCells.some(c => c.row === num && c.col === colIndex + 1);
+                                } else {
+                                  for (const range of allRanges) {
+                                    if (
+                                      num >= Math.min(range.startRow, range.endRow) && 
+                                      num <= Math.max(range.startRow, range.endRow) && 
+                                      colIndex + 1 >= Math.min(range.startCol, range.endCol) && 
+                                      colIndex + 1 <= Math.max(range.startCol, range.endCol)
+                                    ) {
+                                      isInRange = true;
+                                      break;
+                                    }
+                                  }
+                                }
                                 let isTopEdge = false;
                                 let isBottomEdge = false;
                                 let isLeftEdge = false;
@@ -28202,6 +28222,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     }}
                                     onMouseDown={(e) => {
                                       setSelectedSheetOverlayId(null);
+                                      if (e.ctrlKey || e.metaKey) {
+                                        e.preventDefault();
+                                        setMultiSelectedCells(prev => {
+                                          const exists = prev.find(c => c.row === num && c.col === colIndex + 1);
+                                          if (exists) return prev.filter(c => c.row !== num || c.col !== colIndex + 1);
+                                          return [...prev, { row: num, col: colIndex + 1 }];
+                                        });
+                                        setSelectedSheetCell({ row: num, col: colIndex + 1 });
+                                        setSheetSelectionMode('cell');
+                                        return;
+                                      } else if (!e.shiftKey) {
+                                        setMultiSelectedCells([]);
+                                      }
                                       if (e.shiftKey) {
                                         // Shift+Click: extend from anchor
                                         if (selectedSheetCell) {
@@ -28331,17 +28364,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       type="text"
                                       className={`w-full h-full px-1.5 focus:outline-none bg-transparent cursor-cell text-[#374151] placeholder-gray-300 ${cellFormat.bold ? 'font-bold' : ''}`}
                                       style={{
-                                        fontFamily: sheetToolbarFont,
-                                        fontSize: `${sheetToolbarSize}px`,
+                                        fontFamily: cellFormat.fontFamily || sheetToolbarFont,
+                                        fontSize: cellFormat.fontSize ? `${cellFormat.fontSize}px` : `${sheetToolbarSize}px`,
                                         fontWeight: cellFormat.bold ? 700 : 400,
                                         fontStyle: cellFormat.italic ? 'italic' : 'normal',
                                         textDecoration: cellFormat.underline ? 'underline' : (cellFormat.strikeThrough ? 'line-through' : 'none'),
+                                        textTransform: cellFormat.capitalization === 'UPPERCASE' ? 'uppercase' : cellFormat.capitalization === 'lowercase' ? 'lowercase' : cellFormat.capitalization === 'Title Case' ? 'capitalize' : undefined,
                                         color: cellFormat.color || undefined,
                                         backgroundColor: cellFormat.highlight || undefined,
                                         ...customTextStyle
                                       }}
                                       value={cellValue}
-                                      onFocus={() => { setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }); setSheetSelectionMode('cell'); setSelectedGridColumn(null); }}
+                                      onFocus={() => { 
+                                        if (multiSelectedCells && multiSelectedCells.length > 0) return;
+                                        setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }); setSheetSelectionMode('cell'); setSelectedGridColumn(null); 
+                                      }}
                                       onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
                                       onKeyDown={(e) => {
                                         // Intercept '/' to open the sheet slash menu positioned at this cell.
