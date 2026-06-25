@@ -4702,7 +4702,10 @@ export default function App() {
   const [workspaceLauncherIconSize, setWorkspaceLauncherIconSize] = useState('md');
   const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
   const [textStyleMenuOpen, setTextStyleMenuOpen] = useState(false);
-  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [composeExportMenuOpen, setComposeExportMenuOpen] = useState(false);
+  const [sheetsExportMenuOpen, setSheetsExportMenuOpen] = useState(false);
+  const [deckExportMenuOpen, setDeckExportMenuOpen] = useState(false);
+  const [whiteboardExportMenuOpen, setWhiteboardExportMenuOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
@@ -9126,7 +9129,10 @@ export default function App() {
   const closeTransientMenus = () => {
     setOpenDropdown(null);
     setTextStyleMenuOpen(false);
-    setExportMenuOpen(false);
+    setComposeExportMenuOpen(false);
+    setSheetsExportMenuOpen(false);
+    setDeckExportMenuOpen(false);
+    setWhiteboardExportMenuOpen(false);
     setOpenDocMenuId(null);
     setIsPromptMenuOpen(false);
     setPromptTuneMenuOpen(false);
@@ -26510,24 +26516,87 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'w-full flex-1'}`}>
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
-                    <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
-                      {['Data', 'Templates', 'Analyze', 'Visualize'].map((tab) => (
+                    <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
+                      <div className="flex items-center gap-4">
+                        {['Data', 'Templates', 'Analyze', 'Visualize'].map((tab) => (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={(e) => {
+                              if (tab === 'Data') {
+                                setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
+                              } else {
+                                setSheetToolbarTab(sheetToolbarTab === tab ? null : tab);
+                                showToast(`${tab} tools ready`);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-lg transition-colors ${sheetToolbarTab === tab ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
+                          >
+                            {tab}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="relative">
                         <button
-                          key={tab}
-                          type="button"
-                          onClick={(e) => {
-                            if (tab === 'Data') {
-                              setSheetToolbarTab(sheetToolbarTab === 'Data' ? null : 'Data');
-                            } else {
-                              setSheetToolbarTab(sheetToolbarTab === tab ? null : tab);
-                              showToast(`${tab} tools ready`);
-                            }
+                          onClick={() => {
+                            closeTransientMenus();
+                            setSheetsExportMenuOpen(!sheetsExportMenuOpen);
                           }}
-                          className={`px-3 py-1.5 rounded-lg transition-colors ${sheetToolbarTab === tab ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
+                          className={`text-xs font-medium px-2 py-1.5 rounded-lg flex items-center gap-1 transition-colors ${sheetsExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-gray-700'}`}
+                          title="Export options"
                         >
-                          {tab}
+                          Export <ChevronDown size={12} className={`transition-transform duration-200 ${sheetsExportMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
-                      ))}
+                        {sheetsExportMenuOpen && (
+                          <div className="absolute top-9 right-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
+                              {[
+                                { format: 'Sheets', icon: FileText, desc: 'Original' },
+                                { format: 'XLSX', icon: FileText, desc: '.xlsx' },
+                                { format: 'CSV', icon: FileText, desc: '.csv' },
+                                { format: 'JSON', icon: FileText, desc: '.json' },
+                                { format: 'PDF', icon: File, desc: '.pdf' }
+                              ].map(f => (
+                                <button 
+                                  key={f.format}
+                                  disabled={isExporting}
+                                  onClick={() => {
+                                    setIsExporting(true);
+                                    setTimeout(() => { setIsExporting(false); setSheetsExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                                  }}
+                                  className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
+                                >
+                                  <span className="font-medium">{f.format}</span>
+                                  <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
+                                </button>
+                              ))}
+                            </div>
+                            <div className="h-px bg-gray-100 w-full my-2"></div>
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
+                              {[
+                                { target: 'Compose', icon: FileText, color: 'blue' },
+                                { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
+                                { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                              ].map(t => (
+                                <button 
+                                  key={t.target}
+                                  disabled={isExporting}
+                                  onClick={() => {
+                                    setIsExporting(true);
+                                    setTimeout(() => { setIsExporting(false); setSheetsExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
+                                >
+                                  <t.icon size={14} className={`text-${t.color}-500`} />
+                                  {t.target}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                       {sheetToolbarTab === 'Templates' ? (
@@ -28756,6 +28825,66 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <button className="px-3 py-2 hover:bg-violet-800">
                               <ChevronDown size={14} />
                             </button>
+                          </div>
+                          <div className="w-px h-5 bg-gray-200 ml-1 mr-1"></div>
+                          <div className="relative">
+                            <button
+                              onClick={() => {
+                                closeTransientMenus();
+                                setDeckExportMenuOpen(!deckExportMenuOpen);
+                              }}
+                              className={`text-xs font-medium px-2 py-1.5 rounded flex items-center gap-1 transition-colors ${deckExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-gray-700'}`}
+                              title="Export options"
+                            >
+                              Export <ChevronDown size={12} className={`transition-transform duration-200 ${deckExportMenuOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {deckExportMenuOpen && (
+                              <div className="absolute top-9 left-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
+                                  {[
+                                    { format: 'Deck', icon: LayoutGrid, desc: 'Original' },
+                                    { format: 'PPTX', icon: LayoutGrid, desc: '.pptx' },
+                                    { format: 'PDF', icon: File, desc: '.pdf' }
+                                  ].map(f => (
+                                    <button 
+                                      key={f.format}
+                                      disabled={isExporting}
+                                      onClick={() => {
+                                        setIsExporting(true);
+                                        setTimeout(() => { setIsExporting(false); setDeckExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                                      }}
+                                      className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
+                                    >
+                                      <span className="font-medium">{f.format}</span>
+                                      <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                                <div className="h-px bg-gray-100 w-full my-2"></div>
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
+                                  {[
+                                    { target: 'Compose', icon: FileText, color: 'blue' },
+                                    { target: 'Sheets', icon: FileText, color: 'green' },
+                                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                                  ].map(t => (
+                                    <button 
+                                      key={t.target}
+                                      disabled={isExporting}
+                                      onClick={() => {
+                                        setIsExporting(true);
+                                        setTimeout(() => { setIsExporting(false); setDeckExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
+                                    >
+                                      <t.icon size={14} className={`text-${t.color}-500`} />
+                                      {t.target}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -31526,95 +31655,72 @@ if (productMode === 'deck' || productMode === 'sheets') {
               )}
             </div>
           </div>
-          <div className="w-px h-4 bg-gray-200"></div>
-          <div className="relative export-menu-container">
-            <button
-              onClick={() => {
-                closeTransientMenus();
-                setExportMenuOpen(!exportMenuOpen);
-              }}
-              className={`text-xs font-medium px-2 py-1 rounded flex items-center gap-1 transition-colors ${exportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-violet-50 hover:text-violet-700'}`}
-              title="Export options"
-            >
-              Export <ChevronDown size={12} className={`transition-transform duration-200 ${exportMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {exportMenuOpen && (
-              <div className="absolute top-8 right-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
-                  {(productMode === 'sheets' ? [
-                    { format: 'Sheets', icon: FileText, desc: 'Original' },
-                    { format: 'XLSX', icon: FileText, desc: '.xlsx' },
-                    { format: 'CSV', icon: FileText, desc: '.csv' },
-                    { format: 'JSON', icon: FileText, desc: '.json' },
-                    { format: 'PDF', icon: File, desc: '.pdf' }
-                  ] : productMode === 'deck' ? [
-                    { format: 'Deck', icon: LayoutGrid, desc: 'Original' },
-                    { format: 'PPTX', icon: LayoutGrid, desc: '.pptx' },
-                    { format: 'PDF', icon: File, desc: '.pdf' }
-                  ] : productMode === 'whiteboard' ? [
-                    { format: 'Whiteboard', icon: PenTool, desc: 'Original' },
-                    { format: 'PNG', icon: File, desc: '.png' },
-                    { format: 'SVG', icon: File, desc: '.svg' },
-                    { format: 'PDF', icon: File, desc: '.pdf' }
-                  ] : [
-                    { format: 'Compose', icon: FileText, desc: 'Original' },
-                    { format: 'Word', icon: FileText, desc: '.docx' },
-                    { format: 'Docs', icon: FileText, desc: 'Cloud' },
-                    { format: 'PDF', icon: File, desc: '.pdf' },
-                    { format: 'Markdown', icon: FileText, desc: '.md' }
-                  ]).map(f => (
-                    <button 
-                      key={f.format}
-                      disabled={isExporting}
-                      onClick={() => {
-                        setIsExporting(true);
-                        setTimeout(() => { setIsExporting(false); setExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
-                      }}
-                      className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
-                    >
-                      <span className="font-medium">{f.format}</span>
-                      <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="h-px bg-gray-100 w-full my-2"></div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
-                  {(productMode === 'sheets' ? [
-                    { target: 'Compose', icon: FileText, color: 'blue' },
-                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
-                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
-                  ] : productMode === 'deck' ? [
-                    { target: 'Compose', icon: FileText, color: 'blue' },
-                    { target: 'Sheets', icon: FileText, color: 'green' },
-                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
-                  ] : productMode === 'whiteboard' ? [
-                    { target: 'Compose', icon: FileText, color: 'blue' },
-                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
-                    { target: 'Sheets', icon: FileText, color: 'green' }
-                  ] : [
-                    { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
-                    { target: 'Sheets', icon: FileText, color: 'green' },
-                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
-                  ]).map(t => (
-                    <button 
-                      key={t.target}
-                      disabled={isExporting}
-                      onClick={() => {
-                        setIsExporting(true);
-                        setTimeout(() => { setIsExporting(false); setExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
-                      }}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
-                    >
-                      <t.icon size={14} className={`text-${t.color}-500`} />
-                      {t.target}
-                    </button>
-                  ))}
-                </div>
+          {productMode === 'compose' && (
+            <>
+              <div className="w-px h-4 bg-gray-200"></div>
+              <div className="relative export-menu-container">
+                <button
+                  onClick={() => {
+                    closeTransientMenus();
+                    setComposeExportMenuOpen(!composeExportMenuOpen);
+                  }}
+                  className={`text-xs font-medium px-2 py-1 rounded flex items-center gap-1 transition-colors ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-violet-50 hover:text-violet-700'}`}
+                  title="Export Compose options"
+                >
+                  Export <ChevronDown size={12} className={`transition-transform duration-200 ${composeExportMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {composeExportMenuOpen && (
+                  <div className="absolute top-8 right-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
+                      {[
+                        { format: 'Compose', icon: FileText, desc: 'Original' },
+                        { format: 'Word', icon: FileText, desc: '.docx' },
+                        { format: 'Docs', icon: FileText, desc: 'Cloud' },
+                        { format: 'PDF', icon: File, desc: '.pdf' },
+                        { format: 'Markdown', icon: FileText, desc: '.md' }
+                      ].map(f => (
+                        <button 
+                          key={f.format}
+                          disabled={isExporting}
+                          onClick={() => {
+                            setIsExporting(true);
+                            setTimeout(() => { setIsExporting(false); setComposeExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                          }}
+                          className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
+                        >
+                          <span className="font-medium">{f.format}</span>
+                          <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="h-px bg-gray-100 w-full my-2"></div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
+                      {[
+                        { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
+                        { target: 'Sheets', icon: FileText, color: 'green' },
+                        { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                      ].map(t => (
+                        <button 
+                          key={t.target}
+                          disabled={isExporting}
+                          onClick={() => {
+                            setIsExporting(true);
+                            setTimeout(() => { setIsExporting(false); setComposeExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                          }}
+                          className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
+                        >
+                          <t.icon size={14} className={`text-${t.color}-500`} />
+                          {t.target}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
           <button
             type="button"
             onClick={toggleDocumentImmersiveMode}
@@ -33716,6 +33822,68 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     >
                       <MoreHorizontal size={15} />
                     </button>
+                    <div className="w-px h-6 bg-gray-200 mx-1"></div>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeTransientMenus();
+                          setWhiteboardExportMenuOpen((prev) => !prev);
+                        }}
+                        className={`h-9 px-2.5 rounded-lg flex items-center justify-center gap-1 text-[11px] font-medium ${whiteboardExportMenuOpen ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                        title="Export options"
+                      >
+                        Export <ChevronDown size={12} className={`transition-transform duration-200 ${whiteboardExportMenuOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {whiteboardExportMenuOpen && (
+                        <div className="absolute bottom-12 left-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
+                            {[
+                              { format: 'Whiteboard', icon: PenTool, desc: 'Original' },
+                              { format: 'PNG', icon: File, desc: '.png' },
+                              { format: 'SVG', icon: File, desc: '.svg' },
+                              { format: 'PDF', icon: File, desc: '.pdf' }
+                            ].map(f => (
+                              <button 
+                                key={f.format}
+                                disabled={isExporting}
+                                onClick={() => {
+                                  setIsExporting(true);
+                                  setTimeout(() => { setIsExporting(false); setWhiteboardExportMenuOpen(false); showToast('Exported as ' + f.format); }, 1500);
+                                }}
+                                className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
+                              >
+                                <span className="font-medium">{f.format}</span>
+                                <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <div className="h-px bg-gray-100 w-full my-2"></div>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
+                            {[
+                              { target: 'Compose', icon: FileText, color: 'blue' },
+                              { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
+                              { target: 'Sheets', icon: FileText, color: 'green' }
+                            ].map(t => (
+                              <button 
+                                key={t.target}
+                                disabled={isExporting}
+                                onClick={() => {
+                                  setIsExporting(true);
+                                  setTimeout(() => { setIsExporting(false); setWhiteboardExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                                }}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
+                              >
+                                <t.icon size={14} className={`text-${t.color}-500`} />
+                                {t.target}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {whiteboardTaskPreviewOpen && (
