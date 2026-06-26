@@ -1335,13 +1335,19 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
 export default function App() {
   useEffect(() => {
     const handleBlockHover = (e) => {
-      const targetBlock = e.target.closest?.('[data-block-type]');
+      let targetBlock = e.target.closest?.('.callout-block, .code-block, .divider-block, .table-block');
       const menu = e.target.closest?.('#block-hover-menu');
       
       if (targetBlock) {
+        let type = 'unknown';
+        if (targetBlock.classList.contains('callout-block')) type = 'callout';
+        else if (targetBlock.classList.contains('code-block')) type = 'code_block';
+        else if (targetBlock.classList.contains('divider-block')) type = 'divider';
+        else if (targetBlock.classList.contains('table-block')) type = 'table';
+        
         setHoveredBlockMenu({
           element: targetBlock,
-          type: targetBlock.getAttribute('data-block-type'),
+          type: type,
           rect: targetBlock.getBoundingClientRect()
         });
       } else if (!menu) {
@@ -13001,9 +13007,13 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const executeSlashCommand = (key) => {
-    const savedRange = slashMenuRef.current?.range;
+    const savedRange = slashMenuRef.current?.range || savedSelectionRef.current;
     
     setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
+    
+    if (key === 'emoji') { setComposeEmojiPickerOpen(true); return; }
+    if (key === 'symbol') { setSymbolsPickerOpen(true); return; }
+    if (key === 'equation') { setEquationsPickerOpen(true); return; }
     
     // CRITICAL: Focus the editor FIRST so all DOM commands work
     blankBodyRef.current?.focus();
@@ -32945,21 +32955,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </button>
                   <div className="h-px bg-slate-100 my-1" />
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Special Characters</div>
-                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('emoji'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <SmilePlus size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Emoji</div>
                       <div className="text-[11px] text-slate-400 leading-tight">Browse emoji categories</div>
                     </div>
                   </button>
-                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('symbol'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <Pi size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Symbols</div>
                       <div className="text-[11px] text-slate-400 leading-tight">Math, currency, arrows…</div>
                     </div>
                   </button>
-                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('equation'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <SigmaIcon size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Equations</div>
