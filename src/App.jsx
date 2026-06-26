@@ -694,6 +694,245 @@ const toColumnLabel = (index) => {
   return label;
 };
 
+
+// --- COMPOSE PICKERS & GALLERIES ---
+const MediaPicker = ({ isOpen, setOpen, anchorEl }) => {
+  if (!isOpen || !anchorEl) return null;
+  const rect = anchorEl.getBoundingClientRect();
+  return (
+    <>
+      <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-1.5 w-64 text-sm font-[system-ui] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: rect.left }}>
+        <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Insert Media</div>
+        {[
+          { icon: <ImageIcon size={15} strokeWidth={1.5}/>, label: 'Device Uploads', desc: 'Photos & Videos from computer' },
+          { icon: <Sparkles size={15} strokeWidth={1.5}/>, label: 'AI Generation', desc: 'Generate visual assets' },
+          { icon: <Search size={15} strokeWidth={1.5}/>, label: 'Stock Media', desc: 'Search Unsplash & Pexels' },
+          { icon: <Link size={15} strokeWidth={1.5}/>, label: 'External URL', desc: 'Embed from web' },
+          { icon: <ImageIcon size={15} strokeWidth={1.5} className="opacity-50"/>, label: 'Placeholder', desc: 'Add image placeholder box' },
+        ].map((item, idx) => (
+          <button key={idx} onPointerDown={(e) => { e.preventDefault(); window.showToast('Selected ' + item.label); setOpen(false); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left text-slate-800">
+            <div className="text-slate-500">{item.icon}</div>
+            <div className="flex-1">
+              <div className="font-medium text-[13px] tracking-tight">{item.label}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{item.desc}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </>
+  );
+};
+
+const EmojiGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('Smileys');
+  if (!isOpen || !anchorEl) return null;
+  const rect = anchorEl.getBoundingClientRect();
+  
+  const categories = ['Recent', 'Smileys', 'Animals', 'Food', 'Activity', 'Travel', 'Objects', 'Symbols'];
+  const emojis = {
+    'Smileys': ['😀', '😂', '🥰', '😎', '🤔', '🙌', '🎉', '🔥', '✨', '💡', '🚀', '⭐', '❤️', '✅', '❌', '👀', '🥺', '😭', '😊', '😅'],
+    'Animals': ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵'],
+    'Food': ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥'],
+    'Recent': ['🎉', '🚀', '✨', '🔥', '✅']
+  };
+
+  const displayEmojis = search ? Object.values(emojis).flat().filter(e => true) : (emojis[activeTab] || emojis['Smileys']);
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: rect.left, width: '380px', height: '320px' }}>
+        
+        {/* Search Bar */}
+        <div className="p-2 border-b border-slate-100">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
+            <input type="text" placeholder="Search emojis..." value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-slate-100 rounded-lg pl-8 pr-3 py-1.5 text-[13px] outline-none text-slate-800 placeholder-slate-400 font-medium" autoFocus />
+          </div>
+        </div>
+
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <div className="w-28 bg-slate-50/50 border-r border-slate-100 overflow-y-auto p-1.5 space-y-0.5">
+            {categories.map(cat => (
+              <button key={cat} onClick={() => setActiveTab(cat)} className={`w-full text-left px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors ${activeTab === cat ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}>
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Emoji Grid */}
+          <div className="flex-1 overflow-y-auto p-2">
+            <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-2 px-1">{search ? 'Search Results' : activeTab}</div>
+            <div className="grid grid-cols-6 gap-1">
+              {displayEmojis.map((emoji, idx) => (
+                <button key={idx} onPointerDown={(e) => { e.preventDefault(); document.execCommand('insertText', false, emoji); setOpen(false); }} className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-200 text-xl transition-colors">
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+const SymbolGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
+  const [activeTab, setActiveTab] = useState('Math');
+  if (!isOpen || !anchorEl) return null;
+  const rect = anchorEl.getBoundingClientRect();
+  
+  const categories = ['Math', 'Currency', 'Arrows', 'Greek', 'Technical'];
+  const symbolsMap = {
+    'Math': ['±', '×', '÷', '∞', '≈', '≠', '≤', '≥', '∑', '∏', '∫', '∆', '∇', '√', '∝'],
+    'Currency': ['€', '£', '¥', '¢', '₹', '₽', '₩', '₪', '₫', '฿'],
+    'Arrows': ['←', '↑', '→', '↓', '↔', '↕', '⇐', '⇑', '⇒', '⇓', '⇔', '⇕'],
+    'Greek': ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω'],
+    'Technical': ['©', '®', '™', 'µ', '¶', '§', '°', '†', '‡', '•']
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: rect.left, width: '360px', height: '280px' }}>
+        
+        <div className="flex flex-1 overflow-hidden">
+          <div className="w-24 bg-slate-50/50 border-r border-slate-100 overflow-y-auto p-1.5 space-y-0.5">
+            {categories.map(cat => (
+              <button key={cat} onClick={() => setActiveTab(cat)} className={`w-full text-left px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors ${activeTab === cat ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}>
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-3">
+            <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-3 px-1">{activeTab} Symbols</div>
+            <div className="grid grid-cols-5 gap-1.5">
+              {(symbolsMap[activeTab] || []).map((sym, idx) => (
+                <button key={idx} onPointerDown={(e) => { e.preventDefault(); document.execCommand('insertText', false, sym); setOpen(false); }} className="h-9 w-9 flex items-center justify-center rounded-md border border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-[15px] font-medium transition-all text-slate-800 shadow-sm">
+                  {sym}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+const EquationGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
+  if (!isOpen || !anchorEl) return null;
+  const rect = anchorEl.getBoundingClientRect();
+  const equations = [
+    { label: 'Area of Circle', eq: 'A = πr²' },
+    { label: 'Pythagorean Theorem', eq: 'a² + b² = c²' },
+    { label: 'Quadratic Formula', eq: 'x = (-b ± √(b² - 4ac)) / 2a' },
+    { label: 'Standard Deviation', eq: 'σ = √(Σ(x - μ)² / N)' },
+    { label: 'Einstein Energy', eq: 'E = mc²' },
+    { label: 'Euler Identity', eq: 'e^(iπ) + 1 = 0' }
+  ];
+  return (
+    <>
+      <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] p-2 w-72 text-sm font-[system-ui] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: rect.left }}>
+        <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Common Equations</div>
+        <div className="space-y-1">
+          {equations.map((item, idx) => (
+            <button key={idx} onPointerDown={(e) => { e.preventDefault(); document.execCommand('insertText', false, item.eq); setOpen(false); }} className="w-full flex flex-col px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left text-slate-800">
+              <span className="text-[11px] text-slate-500 font-medium tracking-tight uppercase mb-0.5">{item.label}</span>
+              <span className="font-mono text-[14px] font-medium tracking-tight text-slate-900">{item.eq}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+};
+
+const ListGalleryPicker = ({ isOpen, setOpen, anchorEl, type }) => {
+  if (!isOpen || !anchorEl) return null;
+  const rect = anchorEl.getBoundingClientRect();
+  let items = [];
+  let title = '';
+  if (type === 'bullet') {
+    title = 'Bullet Library';
+    items = [
+      { id: 'none', label: 'None', preview: 'None' },
+      { id: 'disc', label: 'Solid Circle', preview: '●\n●\n●' },
+      { id: 'circle', label: 'Hollow Circle', preview: '○\n○\n○' },
+      { id: 'square', label: 'Solid Square', preview: '■\n■\n■' },
+      { id: 'arrow', label: 'Arrow', preview: '➤\n➤\n➤' },
+      { id: 'check', label: 'Checkmark', preview: '✓\n✓\n✓' },
+      { id: 'diamond', label: 'Diamond', preview: '◆\n◆\n◆' },
+      { id: 'star', label: 'Star', preview: '★\n★\n★' }
+    ];
+  } else if (type === 'numbered') {
+    title = 'Numbering Library';
+    items = [
+      { id: 'none', label: 'None', preview: 'None' },
+      { id: 'decimal', label: 'Decimal', preview: '1.\n2.\n3.' },
+      { id: 'decimal-paren', label: 'Decimal Paren', preview: '1)\n2)\n3)' },
+      { id: 'lower-alpha', label: 'Lower Alpha', preview: 'a.\nb.\nc.' },
+      { id: 'upper-alpha', label: 'Upper Alpha', preview: 'A.\nB.\nC.' },
+      { id: 'lower-roman', label: 'Lower Roman', preview: 'i.\nii.\niii.' },
+      { id: 'upper-roman', label: 'Upper Roman', preview: 'I.\nII.\nIII.' },
+      { id: 'padded', label: 'Padded', preview: '01.\n02.\n03.' }
+    ];
+  } else if (type === 'multilevel') {
+    title = 'Multilevel Lists';
+    items = [
+      { id: 'none', label: 'None', preview: 'None' },
+      { id: 'multi-1', label: '1. a. i.', preview: '1.\n  a.\n    i.' },
+      { id: 'multi-2', label: '1. 1.1. 1.1.1.', preview: '1.\n  1.1.\n    1.1.1.' },
+      { id: 'multi-3', label: 'Article', preview: 'Article I.\n  Section 1.01\n    (a)' },
+      { id: 'multi-4', label: 'Bullets', preview: '●\n  ○\n    ■' },
+      { id: 'multi-5', label: 'Chapters', preview: 'Chapter 1\n  Heading 1\n    Sub 1' }
+    ];
+  }
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(null); }} />
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] p-4 font-[system-ui] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: rect.left, width: '480px' }}>
+        <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-3 ml-1">
+          {title}
+        </div>
+        <div className="grid grid-cols-4 gap-3">
+          {items.map((item, idx) => (
+            <button key={idx} onPointerDown={(e) => { 
+              e.preventDefault(); 
+              window.showToast('Applied ' + item.label);
+              setOpen(null); 
+              document.execCommand(type === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
+            }} className="group relative flex flex-col items-center gap-2">
+              <div className="h-20 w-full bg-white border border-slate-200 rounded-lg shadow-sm flex items-center justify-center p-3 group-hover:border-blue-500 group-hover:ring-1 group-hover:ring-blue-500 transition-all overflow-hidden">
+                {item.id === 'none' ? (
+                  <span className="font-semibold text-slate-800 tracking-tight text-[13px]">None</span>
+                ) : (
+                  <div className="w-full h-full flex flex-col justify-between text-[11px] font-mono text-slate-600 leading-none">
+                    {item.preview.split('\\n').map((line, i) => (
+                      <div key={i} className="flex gap-2 items-center">
+                        <span className="text-right inline-block whitespace-pre">{line}</span>
+                        <div className="h-0.5 bg-slate-200 flex-1 rounded-full"></div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+};
+// --- END COMPOSE PICKERS ---
+
+
 export default function App() {
   useEffect(() => {
     const handleSheetResizeMouseDown = (e) => {
@@ -1693,7 +1932,16 @@ export default function App() {
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
   const [deckSlidesData, setDeckSlidesData] = useState([
-    { ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Presentation Title', blurb: 'Subtitle goes here', presetKey: 'blank', footer: '' }
+    { ...createBlankDeckSlide(1), section: 'Opening', title: 'Slide 1', headline: 'Slide 1 that earns attention', blurb: 'Built for modern teams and crafted to be edited live.', presetKey: 'aurora-split', footer: 'Regaarder Deck · Opening' },
+    { ...createBlankDeckSlide(2), section: 'Problem', title: 'Problem', headline: 'Problem', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Problem' },
+    { ...createBlankDeckSlide(3), section: 'Solution', title: 'Solution', headline: 'Solution', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Solution' },
+    { ...createBlankDeckSlide(4), section: 'Market', title: 'Market', headline: 'Market', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Market' },
+    { ...createBlankDeckSlide(5), section: 'Product', title: 'Product', headline: 'Product', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Product' },
+    { ...createBlankDeckSlide(6), section: 'Business Model', title: 'Business Model', headline: 'Business Model', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Business Model' },
+    { ...createBlankDeckSlide(7), section: 'Traction', title: 'Traction', headline: 'Traction', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Traction' },
+    { ...createBlankDeckSlide(8), section: 'Team', title: 'Team', headline: 'Team', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Team' },
+    { ...createBlankDeckSlide(9), section: 'Financials', title: 'Financials', headline: 'Financials', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Financials' },
+    { ...createBlankDeckSlide(10), section: 'Ask', title: 'Ask', headline: 'Ask', blurb: '', presetKey: 'aurora-split', footer: 'Regaarder Deck · Ask' },
   ]);
   const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
@@ -3533,7 +3781,6 @@ export default function App() {
   const [workspaceNameInput, setWorkspaceNameInput] = useState('');
   const [editingWorkspaceId, setEditingWorkspaceId] = useState(null);
   const [openWorkspaceMenuId, setOpenWorkspaceMenuId] = useState(null);
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(true);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTargetDocId, setShareTargetDocId] = useState(null);
   const [shareTargetDocTitle, setShareTargetDocTitle] = useState('');
@@ -29044,10 +29291,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <Plus size={14} />
                             <span>Add Slide</span>
                           </button>
-                          <button type="button" onClick={() => setIsTemplateModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
-                            <Layout size={14} />
-                            <span>Templates</span>
-                          </button>
                           <button type="button" onClick={handlePresentDeck} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
                             <MonitorPlay size={14} />
                             <span>Present</span>
@@ -30560,98 +30803,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-{isTemplateModalOpen && (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#10162f]/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[80vh] max-h-[800px] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0 bg-white z-10">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Presentation Templates</h2>
-          <p className="text-sm text-gray-500 mt-1">Choose a starting point for your presentation</p>
-        </div>
-        <button onClick={() => setIsTemplateModalOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-          <X size={20} />
-        </button>
-      </div>
-      
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-64 border-r border-gray-100 bg-[#FAFAFC] flex flex-col py-4 shrink-0">
-          <div className="px-4 mb-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search templates..." 
-                className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                value={templateSearchQuery}
-                onChange={(e) => setTemplateSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto px-3 space-y-1">
-            {['All', 'Favorites', 'Pitch Deck', 'Status Report', 'Blank'].map(cat => (
-              <button 
-                key={cat}
-                onClick={() => setActiveTemplateCategory(cat)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTemplateCategory === cat ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900'}`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Grid */}
-        <div className="flex-1 bg-white overflow-y-auto p-6">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Blank Canvas Option */}
-            {(activeTemplateCategory === 'All' || activeTemplateCategory === 'Blank') && (!templateSearchQuery || 'blank'.includes(templateSearchQuery.toLowerCase())) && (
-              <div 
-                onClick={() => {
-                  setDeckSlidesData([{ ...createBlankDeckSlide(1), title: 'Slide 1', headline: 'Click to add title', blurb: 'Click to add subtitle', presetKey: 'blank-white', section: 'Slide 1', footer: '' }]);
-                  setIsTemplateModalOpen(false);
-                }}
-                className="group cursor-pointer relative flex flex-col"
-              >
-                <div className="aspect-[16/9] rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center mb-3 group-hover:border-indigo-400 group-hover:bg-indigo-50/30 transition-all">
-                  <Plus className="text-gray-400 group-hover:text-indigo-500 mb-2 transition-colors" size={24} />
-                  <span className="text-sm font-medium text-gray-500 group-hover:text-indigo-600 transition-colors">Blank Canvas</span>
-                </div>
-                <h3 className="font-medium text-gray-900">Blank Presentation</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Start from scratch</p>
-              </div>
-            )}
-            
-            {/* Template Options */}
-            {DECK_DESIGN_PRESETS.filter(p => p.key !== 'blank-white').filter(p => !templateSearchQuery || p.badge.toLowerCase().includes(templateSearchQuery.toLowerCase())).map(preset => (
-               <div 
-               key={preset.key}
-               onClick={() => {
-                 setDeckSlidesData([
-                    { ...createBlankDeckSlide(1), title: preset.badge, headline: preset.badge, blurb: 'Subtitle goes here', presetKey: preset.key, section: 'Slide 1', footer: '' },
-                    { ...createBlankDeckSlide(2), title: 'Problem', headline: 'Problem', blurb: 'Explain the problem', presetKey: preset.key, section: 'Problem', footer: '' }
-                 ]);
-                 setIsTemplateModalOpen(false);
-               }}
-               className="group cursor-pointer relative flex flex-col"
-             >
-               <div className={`aspect-[16/9] rounded-xl overflow-hidden mb-3 ${preset.background} shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 group-hover:shadow-lg group-hover:ring-2 group-hover:ring-indigo-500 group-hover:ring-offset-2 transition-all`}>
-                 <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                    <span className="text-white font-serif text-lg md:text-xl font-medium opacity-90 text-center">{preset.badge}</span>
-                 </div>
-               </div>
-               <h3 className="font-medium text-gray-900 capitalize">{preset.badge}</h3>
-               <p className="text-xs text-gray-500 mt-0.5">Professional layout</p>
-             </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-\n      {shareModalOpen && (
+{shareModalOpen && (
   <ShareModal
     isOpen={shareModalOpen}
     onClose={() => setShareModalOpen(false)}
@@ -34775,7 +34927,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {docStateDropdownOpen && (
                     <>
                       <div className="fixed inset-0 z-[290]" onClick={() => setDocStateDropdownOpen(false)} />
-                      <div className="absolute right-0 top-full mt-2 z-[300] bg-white border border-slate-200/60 rounded-xl p-1.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-60 text-left normal-case tracking-normal font-[system-ui] backdrop-blur-xl">
+                      <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
                         <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-slate-500 font-[system-ui]">Document State</div>
                       {[
                         { key: 'draft', label: 'Draft', desc: 'Actively being written', color: 'hover:bg-slate-100/80 text-slate-900 font-semibold tracking-tight', icon: <FileEdit size={12} className="stroke-[2]" /> },
@@ -37523,252 +37675,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
-    
-      {/* ── Cell Format Popover ────────────────────────────────────── */}
-      {cellFormatPopover.open && (
-        <div 
-          className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-200 font-sans p-3 flex flex-col gap-3"
-          style={{ top: cellFormatPopover.top, left: cellFormatPopover.left, width: '280px' }}
-          onMouseDown={e => e.stopPropagation()}
-        >
-          <div className="flex items-center justify-between">
-             <span className="text-xs font-bold text-slate-700">Format Cell</span>
-             <button onClick={() => setCellFormatPopover({ open: false })} className="text-slate-400 hover:text-slate-600"><X size={14}/></button>
-          </div>
-          <hr className="border-slate-100" />
-          
-          {/* Data Type */}
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Type</span>
-            <select 
-              className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-violet-500"
-              onChange={(e) => {
-                const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                ranges.forEach(range => {
-                  const rMin = Math.min(range.startRow, range.endRow);
-                  const rMax = Math.max(range.startRow, range.endRow);
-                  const cMin = Math.min(range.startCol, range.endCol);
-                  const cMax = Math.max(range.startCol, range.endCol);
-                  for (let r = rMin; r <= rMax; r++) {
-                    for (let c = cMin; c <= cMax; c++) {
-                      if (!newFormats[r-1]) newFormats[r-1] = {};
-                      newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], type: e.target.value };
-                    }
-                  }
-                });
-                updateSheetSettings(activeSheetId, { formats: newFormats });
-              }}
-            >
-              <option value="text">Standard Text</option>
-              <option value="button">Action Button</option>
-              <option value="dropdown">Dropdown Selection</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Number Format</span>
-            <select 
-              className="w-full text-xs border border-slate-200 rounded px-2 py-1.5 outline-none focus:border-violet-500"
-              onChange={(e) => {
-                const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                ranges.forEach(range => {
-                  const rMin = Math.min(range.startRow, range.endRow);
-                  const rMax = Math.max(range.startRow, range.endRow);
-                  const cMin = Math.min(range.startCol, range.endCol);
-                  const cMax = Math.max(range.startCol, range.endCol);
-                  for (let r = rMin; r <= rMax; r++) {
-                    for (let c = cMin; c <= cMax; c++) {
-                      if (!newFormats[r-1]) newFormats[r-1] = {};
-                      newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], format: e.target.value };
-                    }
-                  }
-                });
-                updateSheetSettings(activeSheetId, { formats: newFormats });
-              }}
-            >
-              <option value="general">General</option>
-              <option value="number">Number</option>
-              <option value="currency">Currency ($)</option>
-              <option value="percent">Percentage (%)</option>
-              <option value="date">Date</option>
-            </select>
-          </div>
-
-          {/* Alignment */}
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-bold text-slate-500 uppercase">Alignment</span>
-            <div className="flex border border-slate-200 rounded overflow-hidden">
-              {['left', 'center', 'right'].map(align => (
-                <button 
-                  key={align} type="button"
-                  className="flex-1 py-1 text-xs font-medium flex justify-center items-center bg-white text-slate-600 hover:bg-slate-50"
-                  onClick={() => {
-                    const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                    const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                    ranges.forEach(range => {
-                      const rMin = Math.min(range.startRow, range.endRow);
-                      const rMax = Math.max(range.startRow, range.endRow);
-                      const cMin = Math.min(range.startCol, range.endCol);
-                      const cMax = Math.max(range.startCol, range.endCol);
-                      for (let r = rMin; r <= rMax; r++) {
-                        for (let c = cMin; c <= cMax; c++) {
-                          if (!newFormats[r-1]) newFormats[r-1] = {};
-                          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], align };
-                        }
-                      }
-                    });
-                    updateSheetSettings(activeSheetId, { formats: newFormats });
-                  }}
-                >
-                  {align === 'left' ? <AlignLeft size={12}/> : align === 'center' ? <AlignCenter size={12}/> : <AlignRight size={12}/>}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Colors */}
-          <div className="flex gap-2">
-             <div className="flex-1 flex flex-col gap-1">
-                <span className="text-[9px] text-slate-400">Fill</span>
-                <input type="color" className="w-full h-6 cursor-pointer border-0 p-0" onChange={(e) => {
-                    const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                    const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                    ranges.forEach(range => {
-                      const rMin = Math.min(range.startRow, range.endRow);
-                      const rMax = Math.max(range.startRow, range.endRow);
-                      const cMin = Math.min(range.startCol, range.endCol);
-                      const cMax = Math.max(range.startCol, range.endCol);
-                      for (let r = rMin; r <= rMax; r++) {
-                        for (let c = cMin; c <= cMax; c++) {
-                          if (!newFormats[r-1]) newFormats[r-1] = {};
-                          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], fill: e.target.value };
-                        }
-                      }
-                    });
-                    updateSheetSettings(activeSheetId, { formats: newFormats });
-                }} />
-             </div>
-             <div className="flex-1 flex flex-col gap-1">
-                <span className="text-[9px] text-slate-400">Text</span>
-                <input type="color" className="w-full h-6 cursor-pointer border-0 p-0" onChange={(e) => {
-                    const newFormats = { ...(activeSheetGridRaw.formats || {}) };
-                    const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : (selectedSheetCell ? [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }] : []);
-                    ranges.forEach(range => {
-                      const rMin = Math.min(range.startRow, range.endRow);
-                      const rMax = Math.max(range.startRow, range.endRow);
-                      const cMin = Math.min(range.startCol, range.endCol);
-                      const cMax = Math.max(range.startCol, range.endCol);
-                      for (let r = rMin; r <= rMax; r++) {
-                        for (let c = cMin; c <= cMax; c++) {
-                          if (!newFormats[r-1]) newFormats[r-1] = {};
-                          newFormats[r-1][c-1] = { ...newFormats[r-1][c-1], color: e.target.value };
-                        }
-                      }
-                    });
-                    updateSheetSettings(activeSheetId, { formats: newFormats });
-                }} />
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Filter Popover ────────────────────────────────────── */}
-      {sheetFilterPopover.open && (
-        <div 
-          className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-200 font-sans w-64 overflow-hidden"
-          style={{ top: sheetFilterPopover.top, left: sheetFilterPopover.left }}
-        >
-          <div className="px-3 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5"><Filter size={12}/> Column Filter</span>
-            <button onClick={() => setSheetFilterPopover({ open: false, x: 0, y: 0, colIndex: -1, rowIndex: -1 })} className="text-slate-400 hover:text-slate-600"><X size={12}/></button>
-          </div>
-          <div className="p-3 flex flex-col gap-2">
-            <input 
-              autoFocus
-              type="text" 
-              className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-400"
-              placeholder="e.g. > 100, or exact match..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const val = e.target.value;
-                  const newFilters = { ...(activeSheetGridRaw.filters || {}) };
-                  if (!val.trim()) {
-                    delete newFilters[sheetFilterPopover.colIndex];
-                  } else {
-                    newFilters[sheetFilterPopover.colIndex] = { active: true, row: sheetFilterPopover.rowIndex, value: val };
-                  }
-                  updateSheetSettings(activeSheetId, { filters: newFilters });
-                  setSheetFilterPopover({ open: false, x: 0, y: 0, colIndex: -1, rowIndex: -1 });
-                  showToast('Filter applied');
-                }
-              }}
-            />
-            <span className="text-[9px] text-slate-400">Press Enter to apply. Supports natural language matching.</span>
-          </div>
-        </div>
-      )}
-
-      {/* ── Media Insertion Modal ────────────────────────────────────── */}
-      {mediaInsertionModal.open && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[10000] flex items-center justify-center font-sans" onMouseDown={e => e.stopPropagation()}>
-          <div className="bg-white w-[500px] rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
-            <div className="px-4 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <span className="font-bold text-slate-800 text-sm flex items-center gap-2"><Image size={16} className="text-violet-600"/> Insert Media</span>
-              <button onClick={() => setMediaInsertionModal({ open: false })} className="text-slate-400 hover:text-slate-600"><X size={16}/></button>
-            </div>
-            <div className="p-4 grid grid-cols-2 gap-3">
-               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
-                  showToast('Opening native file picker...');
-                  setMediaInsertionModal({ open: false });
-               }}>
-                  <UploadCloud size={24} className="text-violet-500" />
-                  <span className="text-xs font-semibold text-slate-700">Upload File</span>
-               </button>
-               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
-                  showToast('Generating AI Image...');
-                  setMediaInsertionModal({ open: false });
-               }}>
-                  <Sparkles size={24} className="text-violet-500" />
-                  <span className="text-xs font-semibold text-slate-700">Generate AI</span>
-               </button>
-               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
-                  showToast('Opening stock library...');
-                  setMediaInsertionModal({ open: false });
-               }}>
-                  <Image size={24} className="text-violet-500" />
-                  <span className="text-xs font-semibold text-slate-700">Stock Media</span>
-               </button>
-               <button className="flex flex-col items-center justify-center gap-2 p-4 border border-slate-200 rounded-xl hover:border-violet-400 hover:bg-violet-50 transition-colors" onClick={() => {
-                  const range = mediaInsertionModal.range || { startRow: 1, startCol: 1 };
-                  const newOverlay = {
-                    id: 'overlay-' + Date.now(),
-                    type: 'image',
-                    row: range.startRow,
-                    col: range.startCol,
-                    x: 10, y: 10, width: 250, height: 180,
-                    content: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=400&q=80',
-                  };
-                  updateSheetSettings(activeSheetId, {
-                    overlays: [...(activeSheetGridRaw.overlays || []), newOverlay]
-                  });
-                  setMediaInsertionModal({ open: false });
-                  showToast('Inserted placeholder');
-               }}>
-                  <Link size={24} className="text-violet-500" />
-                  <span className="text-xs font-semibold text-slate-700">Link Externally</span>
-               </button>
-            </div>
-            <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex justify-end">
-               <button className="px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700" onClick={() => setMediaInsertionModal({ open: false })}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
-`
-\nimport React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-</div>
+    </div>
   );
 }
 
