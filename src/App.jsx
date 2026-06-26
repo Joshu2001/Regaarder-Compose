@@ -982,7 +982,7 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
       `<td contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;outline:none;">&nbsp;</td>`
     ).join('');
     const bodyRows = Array.from({ length: rows - 1 }, () => `<tr>${tds}</tr>`).join('');
-    return `<div contenteditable="false" style="margin:12px 0;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${ths}</tr></thead><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
+    return `<div class="table-block" data-block-type="table" contenteditable="false" style="margin:12px 0; position:relative; border-radius:8px;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${ths}</tr></thead><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
   };
   return (
     <div className="px-2.5 py-2">
@@ -3838,6 +3838,7 @@ export default function App() {
   
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
+  const [hoveredBlockMenu, setHoveredBlockMenu] = useState(null);
   const [composingText, setComposingText] = useState('AI is composing...');
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isVoiceCommandMode, setIsVoiceCommandMode] = useState(false);
@@ -13066,6 +13067,18 @@ Generate the updated output according to the instruction. Preserve layout and ta
       applyFormatCommand('insertUnorderedList');
     } else if (key === 'icon') {
       insertInlineIconSelector();
+    } else if (key === 'callout') {
+      const calloutHtml = '<div class="callout-block" data-block-type="callout" style="border-left:3px solid #8b5cf6;padding:12px 16px;background:#faf5ff;border-radius:0 8px 8px 0;margin:12px 0;color:#4c1d95;font-style:italic; transition:background 0.3s ease;">&nbsp;</div><p><br></p>';
+      if (window.__composeInsertHTML) window.__composeInsertHTML(calloutHtml);
+      else document.execCommand('insertHTML', false, calloutHtml);
+    } else if (key === 'code_block') {
+      const codeHtml = '<div class="code-block" data-block-type="code_block" style="background:#1e293b;border-radius:8px;padding:16px;margin:12px 0;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre; transition:background 0.3s ease;"><span style="color:#94a3b8">// Code block</span>\n</div><p><br></p>';
+      if (window.__composeInsertHTML) window.__composeInsertHTML(codeHtml);
+      else document.execCommand('insertHTML', false, codeHtml);
+    } else if (key === 'divider') {
+      const divHtml = '<div class="divider-block" data-block-type="divider" style="padding:10px 0; margin:10px 0; border-radius:6px; transition:background 0.3s ease;"><hr style="border:none;border-top:2px solid #e2e8f0;margin:0" /></div><p><br></p>';
+      if (window.__composeInsertHTML) window.__composeInsertHTML(divHtml);
+      else document.execCommand('insertHTML', false, divHtml);
     } else if (key === 'watermark') {
       let left = 100, top = 200;
       if (slashMenu.left || slashMenu.top) {
@@ -32938,21 +32951,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="h-px bg-slate-100 my-1" />
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
                   <TableGridPicker setInsertDropdownOpen={setInsertDropdownOpen} />
-                  <button onPointerDown={(e) => { e.preventDefault(); const calloutHtml = '<div style="border-left:3px solid #8b5cf6;padding:12px 16px;background:#faf5ff;border-radius:0 8px 8px 0;margin:12px 0;color:#4c1d95;font-style:italic">&nbsp;</div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(calloutHtml); else document.execCommand('insertHTML', false, calloutHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button onPointerDown={(e) => { e.preventDefault(); const calloutHtml = '<div class="callout-block" data-block-type="callout" style="border-left:3px solid #8b5cf6;padding:12px 16px;background:#faf5ff;border-radius:0 8px 8px 0;margin:12px 0;color:#4c1d95;font-style:italic; transition:background 0.3s ease;">&nbsp;</div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(calloutHtml); else document.execCommand('insertHTML', false, calloutHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <span className="text-slate-500 text-base leading-none font-bold">❝</span>
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
                       <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
                     </div>
                   </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); const codeHtml = '<div style="background:#1e293b;border-radius:8px;padding:16px;margin:12px 0;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre"><span style="color:#94a3b8">// Code block</span>\n</div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(codeHtml); else document.execCommand('insertHTML', false, codeHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button onPointerDown={(e) => { e.preventDefault(); const codeHtml = '<div class="code-block" data-block-type="code_block" style="background:#1e293b;border-radius:8px;padding:16px;margin:12px 0;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre; transition:background 0.3s ease;"><span style="color:#94a3b8">// Code block</span>\n</div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(codeHtml); else document.execCommand('insertHTML', false, codeHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <FileText size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Code Block</div>
                       <div className="text-[11px] text-slate-400 leading-tight">Monospaced code area</div>
                     </div>
                   </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); const divHtml = '<hr style="border:none;border-top:2px solid #e2e8f0;margin:20px 0" /><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(divHtml); else document.execCommand('insertHTML', false, divHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button onPointerDown={(e) => { e.preventDefault(); const divHtml = '<div class="divider-block" data-block-type="divider" style="padding:10px 0; margin:10px 0; border-radius:6px; transition:background 0.3s ease;"><hr style="border:none;border-top:2px solid #e2e8f0;margin:0" /></div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(divHtml); else document.execCommand('insertHTML', false, divHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <Minus size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Divider</div>
