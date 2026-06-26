@@ -443,7 +443,14 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
         <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-xl font-bold">
           You
         </div>
-      </div>
+      
+      <MediaPicker isOpen={mediaPickerOpen} setOpen={setMediaPickerOpen} anchorEl={document.getElementById('compose-media-btn')} />
+      <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-emoji-btn')} />
+      <SymbolGalleryPicker isOpen={symbolsPickerOpen} setOpen={setSymbolsPickerOpen} anchorEl={document.getElementById('compose-symbols-btn')} />
+      <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-equations-btn')} />
+      <ListGalleryPicker isOpen={!!listGalleryOpen} initialTab={typeof listGalleryOpen === 'string' ? listGalleryOpen : 'bullet'} setOpen={setListGalleryOpen} anchorEl={document.getElementById('compose-list-btn')} />
+    
+</div>
     );
   }
 
@@ -695,6 +702,10 @@ const toColumnLabel = (index) => {
 };
 
 
+
+
+
+
 // --- COMPOSE PICKERS & GALLERIES ---
 const MediaPicker = ({ isOpen, setOpen, anchorEl }) => {
   if (!isOpen || !anchorEl) return null;
@@ -743,32 +754,33 @@ const EmojiGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   return (
     <>
       <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
-      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: rect.left, width: '380px', height: '320px' }}>
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: rect.left, width: '420px', height: '360px' }}>
         
-        {/* Search Bar */}
-        <div className="p-2 border-b border-slate-100">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2 text-slate-400" size={14} />
-            <input type="text" placeholder="Search emojis..." value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-slate-100 rounded-lg pl-8 pr-3 py-1.5 text-[13px] outline-none text-slate-800 placeholder-slate-400 font-medium" autoFocus />
+        {/* Top Header & Search (Sheets style) */}
+        <div className="px-3 pt-3 pb-2 border-b border-slate-100 flex items-center gap-3">
+          <div className="text-[14px] font-semibold text-slate-800">Emojis</div>
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1.5 text-slate-400" size={14} />
+            <input type="text" placeholder="Search emojis..." value={search} onChange={e => setSearch(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-md pl-8 pr-3 py-1 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-slate-800 placeholder-slate-400 transition-all" autoFocus />
           </div>
         </div>
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <div className="w-28 bg-slate-50/50 border-r border-slate-100 overflow-y-auto p-1.5 space-y-0.5">
+          <div className="w-32 bg-slate-50/80 border-r border-slate-100 overflow-y-auto py-2 px-1.5 space-y-0.5">
             {categories.map(cat => (
-              <button key={cat} onClick={() => setActiveTab(cat)} className={`w-full text-left px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors ${activeTab === cat ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}>
+              <button key={cat} onClick={() => setActiveTab(cat)} className={`w-full text-left px-2.5 py-1.5 rounded text-[12px] font-medium transition-colors ${activeTab === cat ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}>
                 {cat}
               </button>
             ))}
           </div>
 
           {/* Emoji Grid */}
-          <div className="flex-1 overflow-y-auto p-2">
-            <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-2 px-1">{search ? 'Search Results' : activeTab}</div>
-            <div className="grid grid-cols-6 gap-1">
+          <div className="flex-1 overflow-y-auto p-3 bg-white">
+            <div className="text-[12px] font-semibold text-slate-500 mb-2">{search ? 'Search Results' : activeTab}</div>
+            <div className="grid grid-cols-7 gap-1">
               {displayEmojis.map((emoji, idx) => (
-                <button key={idx} onPointerDown={(e) => { e.preventDefault(); document.execCommand('insertText', false, emoji); setOpen(false); }} className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-200 text-xl transition-colors">
+                <button key={idx} onPointerDown={(e) => { e.preventDefault(); document.execCommand('insertText', false, emoji); setOpen(false); }} className="h-9 w-9 flex items-center justify-center rounded hover:bg-slate-100 text-[20px] transition-colors">
                   {emoji}
                 </button>
               ))}
@@ -797,22 +809,26 @@ const SymbolGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   return (
     <>
       <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
-      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: rect.left, width: '360px', height: '280px' }}>
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: rect.left, width: '380px', height: '300px' }}>
         
+        <div className="px-3 pt-3 pb-2 border-b border-slate-100">
+          <div className="text-[14px] font-semibold text-slate-800">Special Characters</div>
+        </div>
+
         <div className="flex flex-1 overflow-hidden">
-          <div className="w-24 bg-slate-50/50 border-r border-slate-100 overflow-y-auto p-1.5 space-y-0.5">
+          <div className="w-28 bg-slate-50/80 border-r border-slate-100 overflow-y-auto py-2 px-1.5 space-y-0.5">
             {categories.map(cat => (
-              <button key={cat} onClick={() => setActiveTab(cat)} className={`w-full text-left px-2.5 py-1.5 rounded-md text-[12px] font-medium transition-colors ${activeTab === cat ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}>
+              <button key={cat} onClick={() => setActiveTab(cat)} className={`w-full text-left px-2.5 py-1.5 rounded text-[12px] font-medium transition-colors ${activeTab === cat ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}>
                 {cat}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-3">
-            <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-3 px-1">{activeTab} Symbols</div>
-            <div className="grid grid-cols-5 gap-1.5">
+          <div className="flex-1 overflow-y-auto p-3 bg-white">
+            <div className="text-[12px] font-semibold text-slate-500 mb-2">{activeTab} Symbols</div>
+            <div className="grid grid-cols-6 gap-1.5">
               {(symbolsMap[activeTab] || []).map((sym, idx) => (
-                <button key={idx} onPointerDown={(e) => { e.preventDefault(); document.execCommand('insertText', false, sym); setOpen(false); }} className="h-9 w-9 flex items-center justify-center rounded-md border border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-[15px] font-medium transition-all text-slate-800 shadow-sm">
+                <button key={idx} onPointerDown={(e) => { e.preventDefault(); document.execCommand('insertText', false, sym); setOpen(false); }} className="h-9 w-9 flex items-center justify-center rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-[16px] font-medium transition-all text-slate-800">
                   {sym}
                 </button>
               ))}
@@ -838,12 +854,12 @@ const EquationGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   return (
     <>
       <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
-      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] p-2 w-72 text-sm font-[system-ui] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: rect.left }}>
-        <div className="px-2 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-1">Common Equations</div>
-        <div className="space-y-1">
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] p-2 w-80 text-sm font-[system-ui] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: rect.left }}>
+        <div className="px-3 pt-2 pb-1.5 text-[14px] font-semibold text-slate-800 border-b border-slate-100 mb-2">Equations</div>
+        <div className="space-y-0.5 px-1 pb-1">
           {equations.map((item, idx) => (
-            <button key={idx} onPointerDown={(e) => { e.preventDefault(); document.execCommand('insertText', false, item.eq); setOpen(false); }} className="w-full flex flex-col px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left text-slate-800">
-              <span className="text-[11px] text-slate-500 font-medium tracking-tight uppercase mb-0.5">{item.label}</span>
+            <button key={idx} onPointerDown={(e) => { e.preventDefault(); document.execCommand('insertText', false, item.eq); setOpen(false); }} className="w-full flex flex-col px-3 py-2 rounded hover:bg-slate-50 transition-colors text-left text-slate-800 border border-transparent hover:border-slate-200">
+              <span className="text-[11px] text-slate-500 font-medium tracking-tight mb-0.5">{item.label}</span>
               <span className="font-mono text-[14px] font-medium tracking-tight text-slate-900">{item.eq}</span>
             </button>
           ))}
@@ -853,79 +869,103 @@ const EquationGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   );
 };
 
-const ListGalleryPicker = ({ isOpen, setOpen, anchorEl, type }) => {
+const ListGalleryPicker = ({ isOpen, initialTab, setOpen, anchorEl }) => {
+  const [activeTab, setActiveTab] = useState(initialTab || 'bullet');
+  
+  useEffect(() => {
+    if (isOpen && initialTab) setActiveTab(initialTab);
+  }, [isOpen, initialTab]);
+
   if (!isOpen || !anchorEl) return null;
   const rect = anchorEl.getBoundingClientRect();
+  
+  const tabs = [
+    { id: 'bullet', label: 'Bullet Library' },
+    { id: 'numbered', label: 'Numbering Library' },
+    { id: 'multilevel', label: 'Multilevel List' },
+    { id: 'custom', label: 'Custom List' }
+  ];
+
   let items = [];
-  let title = '';
-  if (type === 'bullet') {
-    title = 'Bullet Library';
+  if (activeTab === 'bullet') {
     items = [
       { id: 'none', label: 'None', preview: 'None' },
-      { id: 'disc', label: 'Solid Circle', preview: '●\n●\n●' },
-      { id: 'circle', label: 'Hollow Circle', preview: '○\n○\n○' },
-      { id: 'square', label: 'Solid Square', preview: '■\n■\n■' },
-      { id: 'arrow', label: 'Arrow', preview: '➤\n➤\n➤' },
-      { id: 'check', label: 'Checkmark', preview: '✓\n✓\n✓' },
-      { id: 'diamond', label: 'Diamond', preview: '◆\n◆\n◆' },
-      { id: 'star', label: 'Star', preview: '★\n★\n★' }
+      { id: 'disc', label: 'Solid Circle', preview: '●\\n●\\n●' },
+      { id: 'circle', label: 'Hollow Circle', preview: '○\\n○\\n○' },
+      { id: 'square', label: 'Solid Square', preview: '■\\n■\\n■' },
+      { id: 'arrow', label: 'Arrow', preview: '➤\\n➤\\n➤' },
+      { id: 'check', label: 'Checkmark', preview: '✓\\n✓\\n✓' },
+      { id: 'diamond', label: 'Diamond', preview: '◆\\n◆\\n◆' },
+      { id: 'star', label: 'Star', preview: '★\\n★\\n★' }
     ];
-  } else if (type === 'numbered') {
-    title = 'Numbering Library';
+  } else if (activeTab === 'numbered') {
     items = [
       { id: 'none', label: 'None', preview: 'None' },
-      { id: 'decimal', label: 'Decimal', preview: '1.\n2.\n3.' },
-      { id: 'decimal-paren', label: 'Decimal Paren', preview: '1)\n2)\n3)' },
-      { id: 'lower-alpha', label: 'Lower Alpha', preview: 'a.\nb.\nc.' },
-      { id: 'upper-alpha', label: 'Upper Alpha', preview: 'A.\nB.\nC.' },
-      { id: 'lower-roman', label: 'Lower Roman', preview: 'i.\nii.\niii.' },
-      { id: 'upper-roman', label: 'Upper Roman', preview: 'I.\nII.\nIII.' },
-      { id: 'padded', label: 'Padded', preview: '01.\n02.\n03.' }
+      { id: 'decimal', label: 'Decimal', preview: '1.\\n2.\\n3.' },
+      { id: 'decimal-paren', label: 'Decimal Paren', preview: '1)\\n2)\\n3)' },
+      { id: 'lower-alpha', label: 'Lower Alpha', preview: 'a.\\nb.\\nc.' },
+      { id: 'upper-alpha', label: 'Upper Alpha', preview: 'A.\\nB.\\nC.' },
+      { id: 'lower-roman', label: 'Lower Roman', preview: 'i.\\nii.\\niii.' },
+      { id: 'upper-roman', label: 'Upper Roman', preview: 'I.\\nII.\\nIII.' },
+      { id: 'padded', label: 'Padded', preview: '01.\\n02.\\n03.' }
     ];
-  } else if (type === 'multilevel') {
-    title = 'Multilevel Lists';
+  } else if (activeTab === 'multilevel') {
     items = [
       { id: 'none', label: 'None', preview: 'None' },
-      { id: 'multi-1', label: '1. a. i.', preview: '1.\n  a.\n    i.' },
-      { id: 'multi-2', label: '1. 1.1. 1.1.1.', preview: '1.\n  1.1.\n    1.1.1.' },
-      { id: 'multi-3', label: 'Article', preview: 'Article I.\n  Section 1.01\n    (a)' },
-      { id: 'multi-4', label: 'Bullets', preview: '●\n  ○\n    ■' },
-      { id: 'multi-5', label: 'Chapters', preview: 'Chapter 1\n  Heading 1\n    Sub 1' }
+      { id: 'multi-1', label: '1. a. i.', preview: '1.\\n  a.\\n    i.' },
+      { id: 'multi-2', label: '1. 1.1. 1.1.1.', preview: '1.\\n  1.1.\\n    1.1.1.' },
+      { id: 'multi-3', label: 'Article', preview: 'Article I.\\n  Section 1.01\\n    (a)' },
+      { id: 'multi-4', label: 'Bullets', preview: '●\\n  ○\\n    ■' },
+      { id: 'multi-5', label: 'Chapters', preview: 'Chapter 1\\n  Heading 1\\n    Sub 1' }
     ];
+  } else {
+    items = [];
   }
 
   return (
     <>
-      <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(null); }} />
-      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] p-4 font-[system-ui] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: rect.left, width: '480px' }}>
-        <div className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-3 ml-1">
-          {title}
+      <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
+      <div className="fixed z-[201] bg-slate-50 border border-slate-200 shadow-[0_16px_48px_rgb(0,0,0,0.12)] rounded-lg flex flex-col font-[system-ui]" style={{ top: rect.bottom + 8, left: rect.left, width: '520px', minHeight: '340px' }}>
+        
+        {/* Top Navigation Tabs */}
+        <div className="flex items-center px-4 pt-3 gap-6 border-b border-slate-200">
+          {tabs.map(tab => (
+            <button key={tab.id} onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); }} className={`pb-2 text-[13px] transition-colors relative ${activeTab === tab.id ? 'text-blue-600 font-semibold' : 'text-slate-600 hover:text-slate-900 font-medium'}`}>
+              {tab.label}
+              {activeTab === tab.id && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-t-sm" />}
+            </button>
+          ))}
         </div>
-        <div className="grid grid-cols-4 gap-3">
-          {items.map((item, idx) => (
-            <button key={idx} onPointerDown={(e) => { 
-              e.preventDefault(); 
-              window.showToast('Applied ' + item.label);
-              setOpen(null); 
-              document.execCommand(type === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
-            }} className="group relative flex flex-col items-center gap-2">
-              <div className="h-20 w-full bg-white border border-slate-200 rounded-lg shadow-sm flex items-center justify-center p-3 group-hover:border-blue-500 group-hover:ring-1 group-hover:ring-blue-500 transition-all overflow-hidden">
+
+        {/* Gallery Grid */}
+        <div className="flex-1 p-4 bg-slate-50">
+          <div className="grid grid-cols-4 gap-3">
+            {items.map((item, idx) => (
+              <button key={idx} onPointerDown={(e) => { 
+                e.preventDefault(); 
+                window.showToast('Applied ' + item.label);
+                setOpen(false); 
+                document.execCommand(activeTab === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
+              }} className="group bg-white border border-slate-200 rounded outline-none focus:outline-none hover:border-blue-500 transition-all flex flex-col h-24 overflow-hidden shadow-sm relative">
+                {/* Active Outline Effect (no pills) */}
+                <div className="absolute inset-0 group-hover:ring-1 group-hover:ring-blue-500 rounded pointer-events-none transition-all"></div>
                 {item.id === 'none' ? (
-                  <span className="font-semibold text-slate-800 tracking-tight text-[13px]">None</span>
+                  <div className="flex-1 flex items-center justify-center font-semibold text-slate-800 text-[14px]">None</div>
                 ) : (
-                  <div className="w-full h-full flex flex-col justify-between text-[11px] font-mono text-slate-600 leading-none">
+                  <div className="flex-1 p-3 flex flex-col justify-center gap-1.5 text-[11px] font-mono text-slate-700 leading-none">
                     {item.preview.split('\\n').map((line, i) => (
                       <div key={i} className="flex gap-2 items-center">
-                        <span className="text-right inline-block whitespace-pre">{line}</span>
-                        <div className="h-0.5 bg-slate-200 flex-1 rounded-full"></div>
+                        <span className="text-right inline-block whitespace-pre opacity-80">{line}</span>
+                        <div className="h-[3px] bg-slate-200/80 flex-1 rounded-sm"></div>
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
+
       </div>
     </>
   );
@@ -34928,12 +34968,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <>
                       <div className="fixed inset-0 z-[290]" onClick={() => setDocStateDropdownOpen(false)} />
                       <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
-                        <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-slate-500 font-[system-ui]">Document State</div>
+                        <div className="px-3 py-2 text-[12px] font-semibold uppercase tracking-widest text-slate-500 font-[system-ui]">Document State</div>
                       {[
-                        { key: 'draft', label: 'Draft', desc: 'Actively being written', color: 'hover:bg-slate-100/80 text-slate-900 font-semibold tracking-tight', icon: <FileEdit size={12} className="stroke-[2]" /> },
-                        { key: 'ready', label: 'Ready', desc: 'Completed and ready for use', color: 'hover:bg-slate-100/80 text-slate-900 font-semibold tracking-tight', icon: <CheckCircle2 size={12} className="stroke-[2]" /> },
-                        { key: 'review', label: 'In Review', desc: 'Awaiting feedback', color: 'hover:bg-slate-100/80 text-slate-900 font-semibold tracking-tight', icon: <Users2 size={12} className="stroke-[2]" /> },
-                        { key: 'archived', label: 'Archived', desc: 'Stored and inactive', color: 'hover:bg-slate-100/80 text-slate-500 font-medium tracking-tight', icon: <Archive size={12} className="stroke-[2]" /> }
+                        { key: 'draft', label: 'Draft', desc: 'Actively being written', color: 'hover:bg-slate-100/80 text-slate-900 font-medium text-sm tracking-tight', icon: <FileEdit size={12} className="stroke-[2]" /> },
+                        { key: 'ready', label: 'Ready', desc: 'Completed and ready for use', color: 'hover:bg-slate-100/80 text-slate-900 font-medium text-sm tracking-tight', icon: <CheckCircle2 size={12} className="stroke-[2]" /> },
+                        { key: 'review', label: 'In Review', desc: 'Awaiting feedback', color: 'hover:bg-slate-100/80 text-slate-900 font-medium text-sm tracking-tight', icon: <Users2 size={12} className="stroke-[2]" /> },
+                        { key: 'archived', label: 'Archived', desc: 'Stored and inactive', color: 'hover:bg-slate-100/80 text-slate-500 font-medium text-sm tracking-tight', icon: <Archive size={12} className="stroke-[2]" /> }
                       ].map((item) => (
                         <button
                           key={item.key}
