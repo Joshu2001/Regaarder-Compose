@@ -12,7 +12,7 @@ import {
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
   List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown, ChevronUp,
-  LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
+  Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
@@ -408,6 +408,19 @@ const inferDeckStorySection = (slide, index, totalSlides) => {
   const normalized = index / Math.max(1, totalSlides - 1);
   const bucket = Math.min(DECK_STORY_SECTIONS.length - 1, Math.floor(normalized * DECK_STORY_SECTIONS.length));
   return DECK_STORY_SECTIONS[bucket];
+};
+
+const createTitleSlide = (id, theme = 'light') => {
+  const isDark = theme === 'dark';
+  return {
+    id: `slide-${id}`,
+    layout: 'title',
+    background: isDark ? '#111827' : '#ffffff',
+    elements: [
+      { id: `title-${id}`, type: 'text', content: 'Presentation Title', x: 100, y: 300, w: 800, h: 100, style: { fontSize: 64, fontWeight: 700, color: isDark ? '#ffffff' : '#111827', textAlign: 'center' } },
+      { id: `subtitle-${id}`, type: 'text', content: 'Subtitle goes here', x: 200, y: 420, w: 600, h: 60, style: { fontSize: 32, fontWeight: 400, color: isDark ? '#9CA3AF' : '#4B5563', textAlign: 'center' } }
+    ]
+  };
 };
 
 const createBlankDeckSlide = (id = 1) => ({
