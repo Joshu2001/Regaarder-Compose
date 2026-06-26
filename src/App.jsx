@@ -1334,6 +1334,24 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
 
 export default function App() {
   useEffect(() => {
+    const handleBlockHover = (e) => {
+      const targetBlock = e.target.closest?.('[data-block-type]');
+      const menu = e.target.closest?.('#block-hover-menu');
+      
+      if (targetBlock) {
+        setHoveredBlockMenu({
+          element: targetBlock,
+          type: targetBlock.getAttribute('data-block-type'),
+          rect: targetBlock.getBoundingClientRect()
+        });
+      } else if (!menu) {
+        setHoveredBlockMenu(null);
+      }
+    };
+    document.addEventListener('mousemove', handleBlockHover);
+    return () => document.removeEventListener('mousemove', handleBlockHover);
+  }, []);
+  useEffect(() => {
     const handleSheetResizeMouseDown = (e) => {
       const resizer = e.target.closest('.sheet-grid-resizer');
       if (!resizer) return;
@@ -8180,13 +8198,13 @@ export default function App() {
     window.__composeInsertHTML = (html) => {
       const ed = blankBodyRef.current;
       if (!ed) return;
-      ed.focus();
       const sel = window.getSelection();
-      // Restore saved selection if current selection is not inside editor
-      if (savedSelectionRef.current && (!sel || !sel.rangeCount || !ed.contains(sel.anchorNode))) {
+      // Unconditionally restore saved selection to avoid focus race conditions
+      if (savedSelectionRef.current) {
         sel.removeAllRanges();
         sel.addRange(savedSelectionRef.current);
       }
+      ed.focus();
       // If still no selection in editor, collapse to end
       if (!sel || !sel.rangeCount || !ed.contains(sel.anchorNode)) {
         const range = document.createRange();
@@ -32918,7 +32936,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
                 <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 'min(480px, calc(100vh - 120px))', scrollbarWidth: 'thin', scrollbarColor: '#c7d2fe transparent' }}>
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
-                  <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('image'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <ImageIcon size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Images / Videos / Files</div>
@@ -32951,21 +32969,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="h-px bg-slate-100 my-1" />
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
                   <TableGridPicker setInsertDropdownOpen={setInsertDropdownOpen} />
-                  <button onPointerDown={(e) => { e.preventDefault(); const calloutHtml = '<div class="callout-block" data-block-type="callout" style="border-left:3px solid #8b5cf6;padding:12px 16px;background:#faf5ff;border-radius:0 8px 8px 0;margin:12px 0;color:#4c1d95;font-style:italic; transition:background 0.3s ease;">&nbsp;</div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(calloutHtml); else document.execCommand('insertHTML', false, calloutHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('callout'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <span className="text-slate-500 text-base leading-none font-bold">❝</span>
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
                       <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
                     </div>
                   </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); const codeHtml = '<div class="code-block" data-block-type="code_block" style="background:#1e293b;border-radius:8px;padding:16px;margin:12px 0;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre; transition:background 0.3s ease;"><span style="color:#94a3b8">// Code block</span>\n</div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(codeHtml); else document.execCommand('insertHTML', false, codeHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('code_block'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <FileText size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Code Block</div>
                       <div className="text-[11px] text-slate-400 leading-tight">Monospaced code area</div>
                     </div>
                   </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); const divHtml = '<div class="divider-block" data-block-type="divider" style="padding:10px 0; margin:10px 0; border-radius:6px; transition:background 0.3s ease;"><hr style="border:none;border-top:2px solid #e2e8f0;margin:0" /></div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(divHtml); else document.execCommand('insertHTML', false, divHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('divider'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <Minus size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Divider</div>
