@@ -17315,7 +17315,7 @@ Rules:
     setCreationPickerOpen(false);
     setProductMode('deck');
     setDeckTitle('Untitled deck');
-    setDeckSlidesData([createBlankDeckSlide(1)]);
+    setDeckSlidesData([{ ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Presentation Title', blurb: 'Subtitle goes here', presetKey: 'blank', footer: '' }]);
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
@@ -29395,10 +29395,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <Plus size={14} />
                             <span>Add Slide</span>
                           </button>
-                          <button type="button" onClick={() => setIsTemplateModalOpen(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
-                    <Layout size={14} />
-                    <span>Templates</span>
-                    </button>
+                          
                     <button type="button" onClick={handlePresentDeck} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
                             <MonitorPlay size={14} />
                             <span>Present</span>
