@@ -443,14 +443,7 @@ const LocalVideoFeed = ({ stream, isCameraOn }) => {
         <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 text-xl font-bold">
           You
         </div>
-      
-      <MediaPicker isOpen={mediaPickerOpen} setOpen={setMediaPickerOpen} anchorEl={document.getElementById('compose-media-btn')} />
-      <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-emoji-btn')} />
-      <SymbolGalleryPicker isOpen={symbolsPickerOpen} setOpen={setSymbolsPickerOpen} anchorEl={document.getElementById('compose-symbols-btn')} />
-      <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-equations-btn')} />
-      <ListGalleryPicker isOpen={!!listGalleryOpen} initialTab={typeof listGalleryOpen === 'string' ? listGalleryOpen : 'bullet'} setOpen={setListGalleryOpen} anchorEl={document.getElementById('compose-list-btn')} />
-    
-</div>
+      </div>
     );
   }
 
@@ -13490,7 +13483,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     const handleDocumentClick = (e) => {
       if (!e.target.closest('.export-menu-container')) {
-        setExportMenuOpen(false);
+        setComposeExportMenuOpen(false);
+        setSheetsExportMenuOpen(false);
+        setDeckExportMenuOpen(false);
+        setWhiteboardExportMenuOpen(false);
       }
       if (!e.target.closest('.text-style-menu-container')) {
         setTextStyleMenuOpen(false);
@@ -32497,7 +32493,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`${alignMode === 'left' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
             <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} className={`${alignMode === 'center' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
             <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} className={`${alignMode === 'right' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
-            <List onClick={() => applyFormatCommand('insertUnorderedList')} size={16} className={`${isListActive ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
+<button id="compose-list-btn" onPointerDown={(e) => { e.preventDefault(); setListGalleryOpen('bullet'); }} className="p-1 hover:bg-slate-100 rounded flex items-center gap-0.5 transition-colors" title="Bullet Lists"><List size={16} className={isListActive ? 'text-violet-600' : 'text-slate-500'} /><ChevronDown size={10} className="text-slate-400"/></button>
+            <button onPointerDown={(e) => { e.preventDefault(); setListGalleryOpen('numbered'); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Numbered Lists"><ListOrdered size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
+            <button onPointerDown={(e) => { e.preventDefault(); setListGalleryOpen('multilevel'); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Multilevel Lists"><ListTree size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
+          </div>
+          <div className="w-px h-4 bg-gray-200"></div>
+          <div className="flex items-center gap-1">
+            <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(!mediaPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Insert Media"><ImageIcon size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
+            <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(!composeEmojiPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Emoji"><SmilePlus size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
+            <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(!symbolsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Symbols"><Pi size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
+            <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(!equationsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Equations"><SigmaIcon size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="relative flex items-center gap-3" ref={docSearchPanelRef}>
@@ -35024,18 +35029,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocStateDropdownOpen(!docStateDropdownOpen);
                       }
                     }}
-                    className={`text-[9px] font-bold border rounded-lg px-2 py-1.5 cursor-pointer select-none transition-all duration-200 uppercase flex items-center gap-1.5 hover:shadow-sm ${
+                    className={`text-sm font-medium border rounded-lg px-2.5 py-1 cursor-pointer select-none transition-all duration-200 capitalize flex items-center gap-1.5 hover:shadow-sm ${
                       docState === 'draft' ? 'bg-violet-50 hover:bg-violet-100/80 text-violet-700 border-violet-250' :
                       docState === 'ready' ? 'bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border-emerald-250' :
                       docState === 'review' ? 'bg-blue-50 hover:bg-blue-100/80 text-blue-700 border-blue-250' :
                       'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-250'
                     } ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
                   >
-                    {docState === 'draft' && <FileEdit size={10} className="stroke-[2.5]" />}
-                    {docState === 'ready' && <CheckCircle2 size={10} className="stroke-[2.5]" />}
-                    {docState === 'review' && <Users2 size={10} className="stroke-[2.5]" />}
-                    {docState === 'archived' && <Archive size={10} className="stroke-[2.5]" />}
-                    <span>{docState}</span>
+                    {docState === 'draft' && <FileEdit size={14} className="stroke-[2]" />}
+                    {docState === 'ready' && <CheckCircle2 size={14} className="stroke-[2]" />}
+                    {docState === 'review' && <Users2 size={14} className="stroke-[2]" />}
+                    {docState === 'archived' && <Archive size={14} className="stroke-[2]" />}
+                    <span>{docState.charAt(0).toUpperCase() + docState.slice(1)}</span>
                   </button>
 
                   {docStateDropdownOpen && (
@@ -37789,6 +37794,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
+      
+      {/* Compose Pickers */}
+      <MediaPicker isOpen={mediaPickerOpen} setOpen={setMediaPickerOpen} anchorEl={document.getElementById('compose-media-btn')} />
+      <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-emoji-btn')} />
+      <SymbolGalleryPicker isOpen={symbolsPickerOpen} setOpen={setSymbolsPickerOpen} anchorEl={document.getElementById('compose-symbols-btn')} />
+      <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-equations-btn')} />
+      <ListGalleryPicker isOpen={!!listGalleryOpen} initialTab={typeof listGalleryOpen === 'string' ? listGalleryOpen : 'bullet'} setOpen={setListGalleryOpen} anchorEl={document.getElementById('compose-list-btn')} />
     </div>
   );
 }
