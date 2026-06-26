@@ -1,0 +1,10 @@
+const fs = require('fs');
+const s = fs.readFileSync('src/App.jsx', 'utf8');
+console.log('Global helpers mounted:', s.includes('window.__composeInsertHTML'));
+console.log('Emoji uses helper:', s.includes('window.__composeInsertText(emoji)'));
+console.log('Symbol uses helper:', s.includes('window.__composeInsertText(sym)'));
+console.log('Table uses helper:', s.includes('window.__composeInsertHTML(buildTable'));
+console.log('SLASH_OPTIONS has emoji:', s.includes("key: 'emoji'"));
+console.log('SLASH_OPTIONS has symbols:', s.includes("key: 'symbols'"));
+console.log('Insert dropdown scrollbar:', s.includes('scrollbarWidth'));
+console.log('Selection saved on Insert click:', s.includes('savedSelectionRef.current = r.cloneRange()'));

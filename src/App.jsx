@@ -623,7 +623,14 @@ const SLASH_OPTIONS = [
   { key: 'icon', label: 'Icon', desc: 'Insert an emoji or icon' },
   { key: 'watermark', label: 'Watermark', desc: 'Add text or image watermark' },
   { key: 'comment', label: 'Comment', desc: 'Insert inline comment box' },
-  { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' }
+  { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
+  { key: 'emoji', label: 'Emoji', desc: 'Browse and insert emoji' },
+  { key: 'symbols', label: 'Symbols', desc: 'Insert special characters & symbols' },
+  { key: 'equations', label: 'Equation', desc: 'Insert a math equation' },
+  { key: 'insert_table', label: 'Table (manual)', desc: 'Pick table size and insert' },
+  { key: 'divider', label: 'Divider', desc: 'Insert a horizontal rule' },
+  { key: 'callout', label: 'Callout', desc: 'Insert a styled quote block' },
+  { key: 'code_block', label: 'Code Block', desc: 'Insert a code container' }
 ];
 const getAbsoluteOffset = (container, node, offset) => {
   if (!container || !node) return 0;
@@ -988,7 +995,7 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
       </div>
       <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: `repeat(${COLS}, 18px)` }} onPointerLeave={() => setHovered({ r: 0, c: 0 })}>
         {Array.from({ length: ROWS }, (_, r) => Array.from({ length: COLS }, (_, c) => (
-          <div key={`${r}-${c}`} onPointerEnter={() => setHovered({ r: r + 1, c: c + 1 })} onPointerDown={(e) => { e.preventDefault(); const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertHTML', false, buildTable(r + 1, c + 1)); setInsertDropdownOpen(false); }} className={`w-[18px] h-[18px] rounded-sm border cursor-pointer transition-colors ${r < hovered.r && c < hovered.c ? 'bg-violet-200 border-violet-400' : 'bg-slate-100 border-slate-200 hover:border-slate-300'}`} />
+          <div key={`${r}-${c}`} onPointerEnter={() => setHovered({ r: r + 1, c: c + 1 })} onPointerDown={(e) => { e.preventDefault(); if (window.__composeInsertHTML) window.__composeInsertHTML(buildTable(r + 1, c + 1)); else { const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertHTML', false, buildTable(r + 1, c + 1)); } setInsertDropdownOpen(false); }} className={`w-[18px] h-[18px] rounded-sm border cursor-pointer transition-colors ${r < hovered.r && c < hovered.c ? 'bg-violet-200 border-violet-400' : 'bg-slate-100 border-slate-200 hover:border-slate-300'}`} />
         )))}
       </div>
     </div>
@@ -1041,10 +1048,8 @@ const EmojiGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
               {displayEmojis.map((emoji, idx) => (
                 <button key={idx} onPointerDown={(e) => {
                   e.preventDefault();
-                  // Restore editor focus before inserting
-                  const editor = document.querySelector('[contenteditable="true"]');
-                  if (editor) editor.focus();
-                  document.execCommand('insertText', false, emoji);
+                  if (window.__composeInsertText) window.__composeInsertText(emoji);
+                  else { const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertText', false, emoji); }
                   setOpen(false);
                 }} className="h-9 w-9 flex items-center justify-center rounded hover:bg-slate-100 text-[20px] transition-colors">
                   {emoji}
@@ -1096,9 +1101,8 @@ const SymbolGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
               {(symbolsMap[activeTab] || []).map((sym, idx) => (
                 <button key={idx} onPointerDown={(e) => {
                   e.preventDefault();
-                  const editor = document.querySelector('[contenteditable="true"]');
-                  if (editor) editor.focus();
-                  document.execCommand('insertText', false, sym);
+                  if (window.__composeInsertText) window.__composeInsertText(sym);
+                  else { const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertText', false, sym); }
                   setOpen(false);
                 }} className="h-9 w-9 flex items-center justify-center rounded border border-slate-200 hover:border-blue-500 hover:bg-blue-50 text-[16px] font-medium transition-all text-slate-800">
                   {sym}
@@ -1132,9 +1136,8 @@ const EquationGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
           {equations.map((item, idx) => (
             <button key={idx} onPointerDown={(e) => {
             e.preventDefault();
-            const editor = document.querySelector('[contenteditable="true"]');
-            if (editor) editor.focus();
-            document.execCommand('insertText', false, item.eq);
+            if (window.__composeInsertText) window.__composeInsertText(item.eq);
+            else { const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertText', false, item.eq); }
             setOpen(false);
           }} className="w-full flex flex-col px-3 py-2 rounded hover:bg-slate-50 transition-colors text-left text-slate-800 border border-transparent hover:border-slate-200">
               <span className="text-[11px] text-slate-500 font-medium tracking-tight mb-0.5">{item.label}</span>
@@ -8164,6 +8167,54 @@ export default function App() {
     selection.addRange(savedSelectionRef.current);
     return true;
   };
+
+  // Expose global helpers so picker components outside App can use them
+  React.useEffect(() => {
+    window.__composeInsertHTML = (html) => {
+      const ed = blankBodyRef.current;
+      if (!ed) return;
+      ed.focus();
+      const sel = window.getSelection();
+      // Restore saved selection if current selection is not inside editor
+      if (savedSelectionRef.current && (!sel || !sel.rangeCount || !ed.contains(sel.anchorNode))) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRef.current);
+      }
+      // If still no selection in editor, collapse to end
+      if (!sel || !sel.rangeCount || !ed.contains(sel.anchorNode)) {
+        const range = document.createRange();
+        range.selectNodeContents(ed);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      document.execCommand('insertHTML', false, html);
+      setDocBodyHtml(ed.innerHTML);
+    };
+    window.__composeInsertText = (text) => {
+      const ed = blankBodyRef.current;
+      if (!ed) return;
+      ed.focus();
+      const sel = window.getSelection();
+      if (savedSelectionRef.current && (!sel || !sel.rangeCount || !ed.contains(sel.anchorNode))) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRef.current);
+      }
+      if (!sel || !sel.rangeCount || !ed.contains(sel.anchorNode)) {
+        const range = document.createRange();
+        range.selectNodeContents(ed);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      document.execCommand('insertText', false, text);
+      setDocBodyHtml(ed.innerHTML);
+    };
+    return () => {
+      delete window.__composeInsertHTML;
+      delete window.__composeInsertText;
+    };
+  }, []);
 
   const injectIntoSavedSelection = (text, options = {}) => {
     const nextText = stripMarkdownArtifacts(String(text || '')).trim();
@@ -32790,7 +32841,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="relative">
             <button
               id="compose-list-btn"
-              onPointerDown={(e) => { e.preventDefault(); setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
+              onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
               className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-colors ${listDropdownOpen ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
               title="Lists"
             >
@@ -32807,7 +32858,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Choose bullet style', action: () => { setListGalleryOpen('bullet'); setListDropdownOpen(false); } },
                     { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Choose numbering style', action: () => { setListGalleryOpen('numbered'); setListDropdownOpen(false); } },
                     { id: 'multilevel', icon: <ListTree size={14} />, label: 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
-                    { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); const html = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
+                    { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
                   ].map(item => (
                     <button key={item.id} onPointerDown={(e) => { e.preventDefault(); item.action(); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                       <div className="text-slate-500 w-5 flex items-center justify-center">{item.icon}</div>
@@ -32825,7 +32876,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="relative">
             <button
               id="compose-insert-btn"
-              onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
+              onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
               className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-colors ${insertDropdownOpen ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
               title="Insert"
             >
@@ -32836,7 +32887,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {insertDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
-                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5">
+                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 'min(480px, calc(100vh - 120px))', scrollbarWidth: 'thin', scrollbarColor: '#c7d2fe transparent' }}>
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
                   <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <ImageIcon size={14} className="text-slate-500" />
@@ -32871,21 +32922,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="h-px bg-slate-100 my-1" />
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
                   <TableGridPicker setInsertDropdownOpen={setInsertDropdownOpen} />
-                  <button onPointerDown={(e) => { e.preventDefault(); const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertHTML', false, '<div style="border-left:3px solid #8b5cf6;padding:12px 16px;background:#faf5ff;border-radius:0 8px 8px 0;margin:12px 0;color:#4c1d95;font-style:italic">&nbsp;</div><p><br></p>'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button onPointerDown={(e) => { e.preventDefault(); const calloutHtml = '<div style="border-left:3px solid #8b5cf6;padding:12px 16px;background:#faf5ff;border-radius:0 8px 8px 0;margin:12px 0;color:#4c1d95;font-style:italic">&nbsp;</div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(calloutHtml); else document.execCommand('insertHTML', false, calloutHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <span className="text-slate-500 text-base leading-none font-bold">❝</span>
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
                       <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
                     </div>
                   </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertHTML', false, '<div style="background:#1e293b;border-radius:8px;padding:16px;margin:12px 0;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre"><span style="color:#94a3b8">// Code block</span>\n</div><p><br></p>'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button onPointerDown={(e) => { e.preventDefault(); const codeHtml = '<div style="background:#1e293b;border-radius:8px;padding:16px;margin:12px 0;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre"><span style="color:#94a3b8">// Code block</span>\n</div><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(codeHtml); else document.execCommand('insertHTML', false, codeHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <FileText size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Code Block</div>
                       <div className="text-[11px] text-slate-400 leading-tight">Monospaced code area</div>
                     </div>
                   </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); const ed = document.querySelector('[contenteditable="true"]'); if (ed) ed.focus(); document.execCommand('insertHTML', false, '<hr style="border:none;border-top:2px solid #e2e8f0;margin:20px 0" /><p><br></p>'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button onPointerDown={(e) => { e.preventDefault(); const divHtml = '<hr style="border:none;border-top:2px solid #e2e8f0;margin:20px 0" /><p><br></p>'; if (window.__composeInsertHTML) window.__composeInsertHTML(divHtml); else document.execCommand('insertHTML', false, divHtml); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <Minus size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Divider</div>
