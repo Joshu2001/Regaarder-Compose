@@ -189,6 +189,11 @@ const WHITEBOARD_PEN_CURSORS = {
 };
 const DECK_DESIGN_PRESETS = [
   {
+    key: 'blank',
+    background: 'bg-white',
+    badge: 'Blank Slide',
+  },
+  {
     key: 'aurora-split',
     background: 'bg-[radial-gradient(circle_at_85%_80%,rgba(56,189,248,0.34)_0%,rgba(17,24,39,0)_38%),radial-gradient(circle_at_15%_20%,rgba(139,92,246,0.42)_0%,rgba(30,41,59,0)_42%),linear-gradient(140deg,#090d2f_0%,#101a45_52%,#1f245f_100%)]',
     badge: 'Aurora Storyline',
@@ -2050,7 +2055,7 @@ export default function App() {
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
   const [deckSlidesData, setDeckSlidesData] = useState([
-    { ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Presentation Title', blurb: 'Subtitle goes here', presetKey: 'blank', footer: '' }
+    { ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', presetKey: 'blank', footer: '' }
   ]);
   const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
@@ -17324,7 +17329,7 @@ Rules:
     setCreationPickerOpen(false);
     setProductMode('deck');
     setDeckTitle('Untitled deck');
-    setDeckSlidesData([{ ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Presentation Title', blurb: 'Subtitle goes here', presetKey: 'blank', footer: '' }]);
+    setDeckSlidesData([{ ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', presetKey: 'blank', footer: '' }]);
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
@@ -19458,9 +19463,9 @@ Respond with a JSON array of slide objects matching the schema.`;
       title: `Slide ${nextId}`,
       subtitle: 'New talking point',
       accent: 'from-violet-500 to-indigo-600',
-      designPresetKey: preset.key,
-      headline: `Original concept for Slide ${nextId}`,
-      blurb: 'Click and edit this text to shape your message.',
+      designPresetKey: 'blank',
+      headline: 'Click to add title',
+      blurb: 'Click to add subtitle',
       visualType: 'hero statement',
       layoutStyle: 'cinematic split',
       motionCue: 'Soft fade and stagger reveal',
@@ -29409,6 +29414,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <MonitorPlay size={14} />
                             <span>Present</span>
                           </button>
+                          <button type="button" onClick={() => { setActiveRightTab('properties'); setDeckContextRailTab('Template'); setRightSidebarOpen(true); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
+                            <LayoutTemplate size={14} />
+                            <span>Template</span>
+                          </button>
                         </div>
                         <div className="flex items-center gap-3">
                           <button type="button" onClick={() => { setActiveRightTab('properties'); setRightSidebarOpen(true); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
@@ -29479,7 +29488,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 suppressContentEditableWarning
                                 onKeyDown={handleDeckKeyDown}
                                 onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
-                                className="text-[100px] leading-[1.1] font-medium text-white w-[1040px] max-w-full outline-none rounded-xl focus:ring-4 focus:ring-white/40 font-serif"
+                                className={resolvedDeckSlideDesign.preset.key === 'blank' ? "text-[100px] leading-[1.1] font-medium text-black w-[1040px] max-w-full outline-none rounded-xl font-serif text-center border-2 border-dashed border-gray-300 hover:border-gray-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 px-8 py-4 bg-transparent" : "text-[100px] leading-[1.1] font-medium text-white w-[1040px] max-w-full outline-none rounded-xl focus:ring-4 focus:ring-white/40 font-serif"}
                               >
                                 {resolvedDeckSlideDesign.headline}
                               </h1>
@@ -29488,7 +29497,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 suppressContentEditableWarning
                                 onKeyDown={handleDeckKeyDown}
                                 onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
-                                className="mt-[40px] text-indigo-100/85 text-[48px] leading-tight w-[1040px] max-w-full outline-none rounded-xl focus:ring-4 focus:ring-white/30 font-serif"
+                                className={resolvedDeckSlideDesign.preset.key === 'blank' ? "mt-[40px] text-gray-800 text-[48px] leading-tight w-[1040px] max-w-full outline-none rounded-xl font-serif text-center border-2 border-dashed border-gray-300 hover:border-gray-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 px-8 py-4 bg-transparent" : "mt-[40px] text-indigo-100/85 text-[48px] leading-tight w-[1040px] max-w-full outline-none rounded-xl focus:ring-4 focus:ring-white/30 font-serif"}
                               >
                                 {resolvedDeckSlideDesign.blurb}
                               </p>
@@ -29499,7 +29508,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               suppressContentEditableWarning
                               onKeyDown={handleDeckKeyDown}
                               onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
-                              className="text-[28px] text-indigo-100/80 outline-none rounded-lg focus:ring-4 focus:ring-white/20"
+                              className={resolvedDeckSlideDesign.preset.key === 'blank' ? "text-[28px] text-gray-400 outline-none rounded-lg focus:ring-4 focus:ring-violet-500/20" : "text-[28px] text-indigo-100/80 outline-none rounded-lg focus:ring-4 focus:ring-white/20"}
                             >
                               {resolvedDeckSlideDesign.footer}
                             </div>
