@@ -610,7 +610,8 @@ const SHEET_SLASH_OPTIONS = [
 ];
 
 const SLASH_OPTIONS = [
-  { key: 'table', label: 'Table', desc: 'Insert an AI table' },
+  { key: 'table', label: 'Table (AI)', desc: 'Generate an AI table' },
+  { key: 'insert_table', label: 'Table (Manual)', desc: 'Pick table size and insert' },
   { key: 'bullets', label: 'Bullet points', desc: 'Insert bullet list' },
   { key: 'graph', label: 'Chart / Graph', desc: 'Insert an interactive SVG chart & grid' },
   { key: 'media', label: 'Media', desc: 'Insert media, files, or AI generation' },
@@ -627,7 +628,6 @@ const SLASH_OPTIONS = [
   { key: 'emoji', label: 'Emoji', desc: 'Browse and insert emoji' },
   { key: 'symbols', label: 'Symbols', desc: 'Insert special characters & symbols' },
   { key: 'equations', label: 'Equation', desc: 'Insert a math equation' },
-  { key: 'insert_table', label: 'Table (manual)', desc: 'Pick table size and insert' },
   { key: 'divider', label: 'Divider', desc: 'Insert a horizontal rule' },
   { key: 'callout', label: 'Callout', desc: 'Insert a styled quote block' },
   { key: 'code_block', label: 'Code Block', desc: 'Insert a code container' }
@@ -1002,6 +1002,18 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
   );
 };
 
+const TableGridPickerModal = ({ isOpen, setOpen, rect }) => {
+  if (!isOpen || !rect) return null;
+  return (
+    <>
+      <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: Math.max(8, Math.min(rect.left, window.innerWidth - 300)) }}>
+        <TableGridPicker setInsertDropdownOpen={setOpen} />
+      </div>
+    </>
+  );
+};
+
 const EmojiGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('Smileys');
@@ -1335,7 +1347,9 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
 export default function App() {
   useEffect(() => {
     const handleBlockHover = (e) => {
-      let targetBlock = e.target.closest?.('.callout-block, .code-block, .divider-block, .table-block');
+      let targetNode = e.target;
+      if (targetNode.nodeType === 3) targetNode = targetNode.parentNode;
+      let targetBlock = targetNode?.closest?.('.callout-block, .code-block, .divider-block, .table-block');
       const menu = e.target.closest?.('#block-hover-menu');
       
       if (targetBlock) {
@@ -13057,7 +13071,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       insertInlineShapeBox();
     } else if (key === 'hyperlink') {
       handleOpenLinkPopover(targetRange);
-    } else if (['table', 'graph', 'image', 'translate', 'proofread', 'schedule', 'bookmark'].includes(key)) {
+    } else if (['table', 'graph', 'image', 'media', 'translate', 'proofread', 'schedule', 'bookmark'].includes(key)) {
       const selectedText = targetRange && !targetRange.collapsed ? targetRange.toString().trim() : '';
       if (selectedText) {
         if (key === 'proofread') {
@@ -18740,6 +18754,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       return;
     }
 
+    blankBodyRef.current?.focus();
     document.execCommand(command, false, value);
 
     const selection = window.getSelection();
@@ -37564,7 +37579,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Opacity</label>
                 <div className="flex items-center gap-1">
-                  <input type="range" min="0.05" max="1" step="0.05" value={docWatermark?.opacity || 0.15} onChange={(e) => setDocWatermark(prev => ({ ...prev, opacity: parseFloat(e.target.value) }))} className="w-20 accent-violet-500" />
+                  <input type="range" min="0.05" max="1" step="0.05" value={docWatermark?.opacity || 0.15} onChange={(e) => setDocWatermark(prev => ({ ...prev, opacity: parseFloat(e.target.value) }))} className="w-24 h-1 bg-violet-100 rounded-lg appearance-none cursor-pointer accent-violet-500 hover:bg-violet-200 transition-colors" style={{ outline: 'none' }} />
                   <span className="text-[9px] text-gray-400 w-6">{Math.round((docWatermark?.opacity || 0.15) * 100)}%</span>
                 </div>
               </div>
@@ -38303,6 +38318,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
       <SymbolGalleryPicker isOpen={symbolsPickerOpen} setOpen={setSymbolsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
       <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
+      <TableGridPickerModal isOpen={tableGridModalOpen} setOpen={setTableGridModalOpen} rect={tableGridAnchor} />
       <ListGalleryPicker isOpen={!!listGalleryOpen} initialTab={typeof listGalleryOpen === 'string' ? listGalleryOpen : 'bullet'} setOpen={setListGalleryOpen} anchorEl={document.getElementById('compose-list-btn')} />
     </div>
   );
