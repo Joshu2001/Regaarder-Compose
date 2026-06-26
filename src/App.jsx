@@ -13012,8 +13012,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
     setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
     
     if (key === 'emoji') { setComposeEmojiPickerOpen(true); return; }
-    if (key === 'symbol') { setSymbolsPickerOpen(true); return; }
-    if (key === 'equation') { setEquationsPickerOpen(true); return; }
+    if (key === 'symbols' || key === 'symbol') { setSymbolsPickerOpen(true); return; }
+    if (key === 'equations' || key === 'equation') { setEquationsPickerOpen(true); return; }
     
     // CRITICAL: Focus the editor FIRST so all DOM commands work
     blankBodyRef.current?.focus();
@@ -13092,7 +13092,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
         }
       }
     } else if (key === 'bullets') {
-      applyFormatCommand('insertUnorderedList');
+      setListGalleryOpen('bullet');
+      return;
+    } else if (key === 'numbered') {
+      setListGalleryOpen('numbered');
+      return;
     } else if (key === 'icon') {
       insertInlineIconSelector();
     } else if (key === 'callout') {
@@ -32946,7 +32950,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
                 <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 'min(480px, calc(100vh - 120px))', scrollbarWidth: 'thin', scrollbarColor: '#c7d2fe transparent' }}>
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
-                  <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('image'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                  <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <ImageIcon size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Images / Videos / Files</div>
