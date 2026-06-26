@@ -720,6 +720,7 @@ const toColumnLabel = (index) => {
 // --- COMPOSE PICKERS & GALLERIES ---
 
 
+
 // --- COMPOSE MEDIA WORKFLOW MODALS ---
 
 const AIGenerationModal = ({ isOpen, setOpen }) => {
@@ -742,8 +743,8 @@ const AIGenerationModal = ({ isOpen, setOpen }) => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[300]" onPointerDown={() => setOpen(false)} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-[301] w-[480px] overflow-hidden flex flex-col font-[system-ui]">
+      <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[99999]" onPointerDown={() => setOpen(false)} />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-[99999] w-[480px] overflow-hidden flex flex-col font-[system-ui]">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-800 font-semibold">
             <Sparkles size={18} className="text-purple-500" />
@@ -804,8 +805,8 @@ const StockMediaModal = ({ isOpen, setOpen }) => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[300]" onPointerDown={() => setOpen(false)} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-[301] w-[640px] h-[480px] overflow-hidden flex flex-col font-[system-ui]">
+      <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[99999]" onPointerDown={() => setOpen(false)} />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-[99999] w-[640px] h-[480px] overflow-hidden flex flex-col font-[system-ui]">
         <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-3">
           <Search size={18} className="text-slate-400" />
           <input 
@@ -863,8 +864,8 @@ const ExternalMediaModal = ({ isOpen, setOpen }) => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[300]" onPointerDown={() => setOpen(false)} />
-      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-[301] w-[400px] overflow-hidden flex flex-col font-[system-ui]">
+      <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[99999]" onPointerDown={() => setOpen(false)} />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-[99999] w-[400px] overflow-hidden flex flex-col font-[system-ui]">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-800 font-semibold">
             <Link size={18} className="text-blue-500" />
@@ -919,6 +920,8 @@ const MediaPicker = ({ isOpen, setOpen, anchorEl, mediaInsertionModal, setMediaI
       };
       reader.readAsDataURL(file);
     }
+    // Reset file input
+    e.target.value = '';
   };
 
   const handlePlaceholder = () => {
@@ -948,8 +951,8 @@ const MediaPicker = ({ isOpen, setOpen, anchorEl, mediaInsertionModal, setMediaI
     
     dropdownHtml = (
       <>
-        <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); if(setMediaInsertionModal) setMediaInsertionModal({ open: false }); }} />
-        <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-1.5 w-64 text-sm font-[system-ui] backdrop-blur-xl" style={{ top, left }}>
+        <div className="fixed inset-0 z-[99998]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); if(setMediaInsertionModal) setMediaInsertionModal({ open: false }); }} />
+        <div className="fixed z-[99999] bg-white border border-slate-200/60 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-1.5 w-64 text-sm font-[system-ui] backdrop-blur-xl" style={{ top, left }}>
           <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Insert Media</div>
           {[
             { id: 'device', icon: <ImageIcon size={15} strokeWidth={1.5}/>, label: 'Device Uploads', desc: 'Photos, Videos, Files' },
@@ -957,32 +960,51 @@ const MediaPicker = ({ isOpen, setOpen, anchorEl, mediaInsertionModal, setMediaI
             { id: 'stock', icon: <Search size={15} strokeWidth={1.5}/>, label: 'Stock Media', desc: 'Search Unsplash & Pexels' },
             { id: 'url', icon: <Link size={15} strokeWidth={1.5}/>, label: 'External URL', desc: 'Embed from web' },
             { id: 'placeholder', icon: <ImageIcon size={15} strokeWidth={1.5} className="opacity-50"/>, label: 'Placeholder', desc: 'Add media placeholder box' },
-          ].map((item, idx) => (
-            <button 
-              key={idx} 
-              onPointerDown={(e) => { 
-                e.preventDefault(); 
-                if (item.id === 'placeholder') {
-                  handlePlaceholder();
-                } else if (item.id === 'device') {
-                  document.getElementById('hidden-media-upload').click();
-                  setOpen(false);
-                  if(setMediaInsertionModal) setMediaInsertionModal({ open: false });
-                } else {
-                  setActivePipeline(item.id);
-                  setOpen(false); 
-                  if(setMediaInsertionModal) setMediaInsertionModal({ open: false });
-                }
-              }} 
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left text-slate-800"
-            >
-              <div className="text-slate-500">{item.icon}</div>
-              <div className="flex-1">
-                <div className="font-medium text-[13px] tracking-tight">{item.label}</div>
-                <div className="text-[11px] text-slate-500 mt-0.5 leading-tight">{item.desc}</div>
-              </div>
-            </button>
-          ))}
+          ].map((item, idx) => {
+            if (item.id === 'device') {
+              // Use a true label wrapper to natively trigger file input without e.preventDefault() interference
+              return (
+                <label 
+                  key={idx} 
+                  htmlFor="hidden-media-upload"
+                  onClick={() => {
+                    setOpen(false);
+                    if(setMediaInsertionModal) setMediaInsertionModal({ open: false });
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left text-slate-800 cursor-pointer"
+                >
+                  <div className="text-slate-500">{item.icon}</div>
+                  <div className="flex-1">
+                    <div className="font-medium text-[13px] tracking-tight">{item.label}</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5 leading-tight">{item.desc}</div>
+                  </div>
+                </label>
+              );
+            }
+            
+            return (
+              <button 
+                key={idx} 
+                onPointerDown={(e) => { 
+                  e.preventDefault(); 
+                  if (item.id === 'placeholder') {
+                    handlePlaceholder();
+                  } else {
+                    setActivePipeline(item.id);
+                    setOpen(false); 
+                    if(setMediaInsertionModal) setMediaInsertionModal({ open: false });
+                  }
+                }} 
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left text-slate-800"
+              >
+                <div className="text-slate-500">{item.icon}</div>
+                <div className="flex-1">
+                  <div className="font-medium text-[13px] tracking-tight">{item.label}</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5 leading-tight">{item.desc}</div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </>
     );
