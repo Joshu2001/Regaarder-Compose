@@ -1002,6 +1002,54 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
   );
 };
 
+const BlockHoverMenu = ({ menu, setMenu }) => {
+  if (!menu) return null;
+  const { element, type, rect } = menu;
+  
+  const handleDelete = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (element && element.parentNode) {
+      element.parentNode.removeChild(element);
+    }
+    setMenu(null);
+  };
+
+  const handleColor = (e, color) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (element) {
+      if (type === 'callout') {
+        element.style.backgroundColor = color + '15'; // light background
+        element.style.borderColor = color + '40';
+      } else {
+        element.style.borderColor = color;
+      }
+    }
+  };
+
+  const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#64748b', '#0f172a'];
+
+  return (
+    <div className="fixed z-[150] flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-200/60 rounded-lg shadow-[0_4px_12px_rgb(0,0,0,0.08)]" 
+         style={{ top: Math.max(10, rect.top - 45), left: rect.left + (rect.width / 2) - 100 }}
+         onMouseLeave={() => setMenu(null)}
+         onPointerDown={(e) => e.preventDefault()}>
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">{type.replace('_', ' ')}</span>
+      <div className="w-[1px] h-4 bg-slate-200 mx-1" />
+      <div className="flex gap-1">
+        {colors.map(c => (
+          <button key={c} onClick={(e) => handleColor(e, c)} className="w-4 h-4 rounded-full border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
+        ))}
+      </div>
+      <div className="w-[1px] h-4 bg-slate-200 mx-1" />
+      <button onClick={handleDelete} className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+      </button>
+    </div>
+  );
+};
+
 const TableGridPickerModal = ({ isOpen, setOpen, rect }) => {
   if (!isOpen || !rect) return null;
   return (
@@ -1243,7 +1291,11 @@ const ListGalleryPicker = ({ isOpen, initialTab, setOpen, anchorEl }) => {
                 } else {
                   const ed = document.querySelector('[contenteditable="true"]');
                   if (ed) ed.focus();
-                  document.execCommand(activeTab === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
+                  if (window.__composeInsertHTML) {
+                    window.__composeInsertHTML(activeTab === 'bullet' ? `<ul style="list-style-type: ${item.id !== 'none' ? item.id : 'disc'}"><li><br></li></ul>` : `<ol style="list-style-type: ${item.id !== 'none' ? item.id : 'decimal'}"><li><br></li></ol>`);
+                  } else {
+                    document.execCommand(activeTab === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
+                  }
                 }
               }} className="group bg-white border border-slate-200 rounded outline-none focus:outline-none hover:border-blue-500 transition-all flex flex-col h-24 overflow-hidden shadow-sm relative">
                 {/* Active Outline Effect (no pills) */}
@@ -12261,7 +12313,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       cursor: 'move',
       transform: `translate(${wX}px, ${wY}px) rotate(${docWatermark.rotation}deg)`,
       transformOrigin: 'center center',
-      fontSize: `${(docWatermark.size || 100) / 4}vw`,
+      fontSize: `${(docWatermark.scale || 1.5) * 50}%`,
       color: wColor,
       fontWeight: 'bold',
       textTransform: 'uppercase',
@@ -13027,6 +13079,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     setSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, range: null });
     
+    if (key === 'insert_table') { setTableGridModalOpen(true); setTableGridAnchor(slashMenuRef.current?.range?.getBoundingClientRect() || {top:200, left:200, bottom:200}); return; }
     if (key === 'emoji') { setComposeEmojiPickerOpen(true); return; }
     if (key === 'symbols' || key === 'symbol') { setSymbolsPickerOpen(true); return; }
     if (key === 'equations' || key === 'equation') { setEquationsPickerOpen(true); return; }
@@ -13073,7 +13126,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
       insertInlineShapeBox();
     } else if (key === 'hyperlink') {
       handleOpenLinkPopover(targetRange);
-    } else if (['table', 'graph', 'image', 'media', 'translate', 'proofread', 'schedule', 'bookmark'].includes(key)) {
+    } else if (key === 'media' || key === 'image') {
+      setMediaPickerOpen(true);
+      return;
+    } else if (['table', 'graph', 'translate', 'proofread', 'schedule', 'bookmark'].includes(key)) {
       const selectedText = targetRange && !targetRange.collapsed ? targetRange.toString().trim() : '';
       if (selectedText) {
         if (key === 'proofread') {
@@ -38320,6 +38376,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
       <SymbolGalleryPicker isOpen={symbolsPickerOpen} setOpen={setSymbolsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
       <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
+      <BlockHoverMenu menu={hoveredBlockMenu} setMenu={setHoveredBlockMenu} />
       <TableGridPickerModal isOpen={tableGridModalOpen} setOpen={setTableGridModalOpen} rect={tableGridAnchor} />
       <ListGalleryPicker isOpen={!!listGalleryOpen} initialTab={typeof listGalleryOpen === 'string' ? listGalleryOpen : 'bullet'} setOpen={setListGalleryOpen} anchorEl={document.getElementById('compose-list-btn')} />
     </div>
