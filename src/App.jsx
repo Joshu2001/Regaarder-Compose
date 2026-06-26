@@ -3922,6 +3922,8 @@ export default function App() {
   const watermarkElRef = useRef(null);
   const [showWatermarkMenu, setShowWatermarkMenu] = useState(false);
   const [watermarkMenuPos, setWatermarkMenuPos] = useState({ left: 0, top: 0 });
+  const [tableGridModalOpen, setTableGridModalOpen] = useState(false);
+  const [tableGridAnchor, setTableGridAnchor] = useState(null);
   const watermarkMenuRef = useRef(null);
 
   // Link Popover State
