@@ -976,13 +976,13 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
   const [hovered, setHovered] = React.useState({ r: 0, c: 0 });
   const buildTable = (rows, cols) => {
     const ths = Array.from({ length: cols }, (_, i) =>
-      `<th style="border:1px solid #e2e8f0;padding:8px 12px;background:#f8fafc;font-weight:600;text-align:left;color:#334155">Col ${i + 1}</th>`
+      `<th contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;background:#f8fafc;font-weight:600;text-align:left;color:#334155;outline:none;">Col ${i + 1}</th>`
     ).join('');
     const tds = Array.from({ length: cols }, () =>
-      '<td style="border:1px solid #e2e8f0;padding:8px 12px">&nbsp;</td>'
+      `<td contenteditable="true" style="border:1px solid #e2e8f0;padding:8px 12px;outline:none;">&nbsp;</td>`
     ).join('');
     const bodyRows = Array.from({ length: rows - 1 }, () => `<tr>${tds}</tr>`).join('');
-    return `<table style="border-collapse:collapse;width:100%;margin:12px 0"><thead><tr>${ths}</tr></thead><tbody>${bodyRows}</tbody></table><p><br></p>`;
+    return `<div contenteditable="false" style="margin:12px 0;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${ths}</tr></thead><tbody>${bodyRows}</tbody></table></div><p><br></p>`;
   };
   return (
     <div className="px-2.5 py-2">
@@ -1020,7 +1020,7 @@ const EmojiGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   return (
     <>
       <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
-      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: rect.left, width: '420px', height: '360px' }}>
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: Math.max(8, Math.min(rect.left, window.innerWidth - 780)), width: '420px', height: '360px' }}>
         
         {/* Top Header & Search (Sheets style) */}
         <div className="px-3 pt-3 pb-2 border-b border-slate-100 flex items-center gap-3">
@@ -1080,7 +1080,7 @@ const SymbolGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   return (
     <>
       <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
-      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: rect.left, width: '380px', height: '300px' }}>
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] flex flex-col font-[system-ui] backdrop-blur-xl overflow-hidden" style={{ top: rect.bottom + 8, left: Math.max(8, Math.min(rect.left, window.innerWidth - 740)), width: '380px', height: '300px' }}>
         
         <div className="px-3 pt-3 pb-2 border-b border-slate-100">
           <div className="text-[14px] font-semibold text-slate-800">Special Characters</div>
@@ -1130,7 +1130,7 @@ const EquationGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   return (
     <>
       <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
-      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] p-2 w-80 text-sm font-[system-ui] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: rect.left }}>
+      <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] p-2 w-80 text-sm font-[system-ui] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: Math.max(8, Math.min(rect.left, window.innerWidth - 680)) }}>
         <div className="px-3 pt-2 pb-1.5 text-[14px] font-semibold text-slate-800 border-b border-slate-100 mb-2">Equations</div>
         <div className="space-y-0.5 px-1 pb-1">
           {equations.map((item, idx) => (
@@ -1206,7 +1206,7 @@ const ListGalleryPicker = ({ isOpen, initialTab, setOpen, anchorEl }) => {
   return (
     <>
       <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
-      <div className="fixed z-[201] bg-slate-50 border border-slate-200 shadow-[0_16px_48px_rgb(0,0,0,0.12)] rounded-lg flex flex-col font-[system-ui]" style={{ top: rect.bottom + 8, left: rect.left, width: '520px', minHeight: '340px' }}>
+      <div className="fixed z-[201] bg-slate-50 border border-slate-200 shadow-[0_16px_48px_rgb(0,0,0,0.12)] rounded-lg flex flex-col font-[system-ui]" style={{ top: rect.bottom + 8, left: Math.max(8, Math.min(rect.left, window.innerWidth - 880)), width: '520px', minHeight: '340px' }}>
         
         {/* Top Navigation Tabs */}
         <div className="flex items-center px-4 pt-3 gap-6 border-b border-slate-200">
@@ -1226,7 +1226,13 @@ const ListGalleryPicker = ({ isOpen, initialTab, setOpen, anchorEl }) => {
                 e.preventDefault(); 
                 window.showToast('Applied ' + item.label);
                 setOpen(false); 
-                document.execCommand(activeTab === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
+                if (window.__composeApplyFormatCommand) {
+                  window.__composeApplyFormatCommand(activeTab === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
+                } else {
+                  const ed = document.querySelector('[contenteditable="true"]');
+                  if (ed) ed.focus();
+                  document.execCommand(activeTab === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
+                }
               }} className="group bg-white border border-slate-200 rounded outline-none focus:outline-none hover:border-blue-500 transition-all flex flex-col h-24 overflow-hidden shadow-sm relative">
                 {/* Active Outline Effect (no pills) */}
                 <div className="absolute inset-0 group-hover:ring-1 group-hover:ring-blue-500 rounded pointer-events-none transition-all"></div>
@@ -8210,9 +8216,11 @@ export default function App() {
       document.execCommand('insertText', false, text);
       setDocBodyHtml(ed.innerHTML);
     };
+    window.__composeApplyFormatCommand = applyFormatCommand;
     return () => {
       delete window.__composeInsertHTML;
       delete window.__composeInsertText;
+      delete window.__composeApplyFormatCommand;
     };
   }, []);
 
@@ -20256,6 +20264,14 @@ Respond with a JSON array of slide objects matching the schema.`;
     || notificationsOpen
     || replayPanelOpen
     || replaySpeedMenuOpen
+    || insertDropdownOpen
+    || listDropdownOpen
+    || composeEmojiPickerOpen
+    || symbolsPickerOpen
+    || equationsPickerOpen
+    || !!listGalleryOpen
+    || slashMenu.open
+    || deckSlashMenu.open
     || (selectionActionMenuEnabled && selectionActionMenu.open)
     || pageContextMenu.open
     || docSearchPanelOpen
