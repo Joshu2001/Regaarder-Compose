@@ -1898,6 +1898,8 @@ export default function App() {
   const [docState, setDocState] = useState('draft');
   const [docStateDropdownOpen, setDocStateDropdownOpen] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [insertDropdownOpen, setInsertDropdownOpen] = useState(false);
+  const [listDropdownOpen, setListDropdownOpen] = useState(false);
   const [composeEmojiPickerOpen, setComposeEmojiPickerOpen] = useState(false);
   const [symbolsPickerOpen, setSymbolsPickerOpen] = useState(false);
   const [equationsPickerOpen, setEquationsPickerOpen] = useState(false);
@@ -32733,20 +32735,126 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`${alignMode === 'left' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
             <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} className={`${alignMode === 'center' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
             <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} className={`${alignMode === 'right' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
-<button id="compose-list-btn" onPointerDown={(e) => { e.preventDefault(); setListGalleryOpen('bullet'); }} className="p-1 hover:bg-slate-100 rounded flex items-center gap-0.5 transition-colors" title="Bullet Lists"><List size={16} className={isListActive ? 'text-violet-600' : 'text-slate-500'} /><ChevronDown size={10} className="text-slate-400"/></button>
-            <button onPointerDown={(e) => { e.preventDefault(); setListGalleryOpen('numbered'); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Numbered Lists"><ListOrdered size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
-            <button onPointerDown={(e) => { e.preventDefault(); setListGalleryOpen('multilevel'); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Multilevel Lists"><ListTree size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
-          <div className="flex items-center gap-1">
-            <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(!mediaPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Insert Media"><ImageIcon size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
-            <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(!composeEmojiPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Emoji"><SmilePlus size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
-            <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(!symbolsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Symbols"><Pi size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
-            <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(!equationsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-0.5 transition-colors" title="Equations"><SigmaIcon size={16} /><ChevronDown size={10} className="text-slate-400"/></button>
+          {/* Consolidated Lists Dropdown */}
+          <div className="relative">
+            <button
+              id="compose-list-btn"
+              onPointerDown={(e) => { e.preventDefault(); setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-colors ${listDropdownOpen ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+              title="Lists"
+            >
+              <List size={15} className={isListActive ? 'text-violet-600' : ''} />
+              <span className="text-[12px]">Lists</span>
+              <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {listDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setListDropdownOpen(false); }} />
+                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-52 flex flex-col gap-0.5">
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">List Styles</div>
+                  {[
+                    { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Unordered items', action: () => { document.execCommand('insertUnorderedList', false, null); setListDropdownOpen(false); } },
+                    { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Sequential order', action: () => { document.execCommand('insertOrderedList', false, null); setListDropdownOpen(false); } },
+                    { id: 'multilevel', icon: <ListTree size={14} />, label: 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
+                    { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const html = '<ul style="list-style:none;padding-left:0"><li><input type="checkbox" style="margin-right:6px" />&nbsp;</li></ul><p><br></p>'; document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
+                  ].map(item => (
+                    <button key={item.id} onPointerDown={(e) => { e.preventDefault(); item.action(); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                      <div className="text-slate-500 w-5 flex items-center justify-center">{item.icon}</div>
+                      <div>
+                        <div className="text-[13px] font-medium text-slate-800 leading-tight">{item.label}</div>
+                        <div className="text-[11px] text-slate-400 leading-tight">{item.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          {/* Consolidated Insert Dropdown */}
+          <div className="relative">
+            <button
+              id="compose-insert-btn"
+              onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-colors ${insertDropdownOpen ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+              title="Insert"
+            >
+              <Plus size={15} />
+              <span className="text-[12px]">Insert</span>
+              <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {insertDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
+                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-56 flex flex-col gap-0.5">
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
+                  <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <ImageIcon size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Images / Videos / Files</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Upload, AI, Stock, URL</div>
+                    </div>
+                  </button>
+                  <div className="h-px bg-slate-100 my-1" />
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Special Characters</div>
+                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <SmilePlus size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Emoji</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Browse emoji categories</div>
+                    </div>
+                  </button>
+                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <Pi size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Symbols</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Math, currency, arrows…</div>
+                    </div>
+                  </button>
+                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <SigmaIcon size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Equations</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Common math formulas</div>
+                    </div>
+                  </button>
+                  <div className="h-px bg-slate-100 my-1" />
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
+                  <button onPointerDown={(e) => { e.preventDefault(); const html = '<table style="border-collapse:collapse;width:100%;margin:12px 0"><thead><tr><th style="border:1px solid #e2e8f0;padding:8px 12px;background:#f8fafc;font-weight:600;text-align:left">Column 1</th><th style="border:1px solid #e2e8f0;padding:8px 12px;background:#f8fafc;font-weight:600;text-align:left">Column 2</th><th style="border:1px solid #e2e8f0;padding:8px 12px;background:#f8fafc;font-weight:600;text-align:left">Column 3</th></tr></thead><tbody><tr><td style="border:1px solid #e2e8f0;padding:8px 12px">Data</td><td style="border:1px solid #e2e8f0;padding:8px 12px">Data</td><td style="border:1px solid #e2e8f0;padding:8px 12px">Data</td></tr></tbody></table><p><br></p>'; document.execCommand('insertHTML', false, html); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <LayoutGrid size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Table</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Insert 3-column table</div>
+                    </div>
+                  </button>
+                  <button onPointerDown={(e) => { e.preventDefault(); const html = '<div style="border-left:3px solid #8b5cf6;padding:12px 16px;background:#faf5ff;border-radius:0 8px 8px 0;margin:12px 0;color:#4c1d95;font-style:italic">&nbsp;</div><p><br></p>'; document.execCommand('insertHTML', false, html); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <span className="text-slate-500 text-base leading-none font-bold">❝</span>
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
+                    </div>
+                  </button>
+                  <button onPointerDown={(e) => { e.preventDefault(); const html = '<div style="background:#1e293b;border-radius:8px;padding:16px;margin:12px 0;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre"><span style="color:#94a3b8">// Code block</span>\n</div><p><br></p>'; document.execCommand('insertHTML', false, html); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <FileText size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Code Block</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Monospaced code area</div>
+                    </div>
+                  </button>
+                  <button onPointerDown={(e) => { e.preventDefault(); const html = '<hr style="border:none;border-top:2px solid #e2e8f0;margin:20px 0" /><p><br></p>'; document.execCommand('insertHTML', false, html); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <Minus size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Divider</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Horizontal rule</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="relative flex items-center gap-3" ref={docSearchPanelRef}>
-            <span className="font-serif italic font-bold hover:text-gray-900 cursor-pointer">I</span>
             <button
               type="button"
               onClick={() => {
