@@ -719,46 +719,8 @@ const toColumnLabel = (index) => {
 
 // --- COMPOSE PICKERS & GALLERIES ---
 
+
 // --- COMPOSE MEDIA WORKFLOW MODALS ---
-
-const DeviceUploadModal = ({ isOpen, setOpen }) => {
-  const fileInputRef = React.useRef(null);
-  
-  React.useEffect(() => {
-    if (isOpen && fileInputRef.current) {
-      fileInputRef.current.click();
-      setOpen(false); // Close immediately since native dialog handles the rest
-    }
-  }, [isOpen]);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Simulate file upload and insertion
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        // Insert as an image or file node depending on type
-        if (file.type.startsWith('image/')) {
-          const imgHtml = `<img src="${event.target.result}" style="max-width: 100%; border-radius: 8px; margin: 12px 0;" alt="${file.name}" />`;
-          document.execCommand('insertHTML', false, imgHtml);
-        } else if (file.type.startsWith('video/')) {
-          const videoHtml = `<video src="${event.target.result}" controls style="max-width: 100%; border-radius: 8px; margin: 12px 0;"></video><p><br></p>`;
-          document.execCommand('insertHTML', false, videoHtml);
-        } else {
-          // File node
-          const fileHtml = `<div class="file-attachment" contenteditable="false" style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; margin: 12px 0; user-select: none;">
-            <div style="width: 32px; height: 32px; border-radius: 6px; background: #3b82f6; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">${file.name.split('.').pop().toUpperCase()}</div>
-            <div style="flex: 1;"><div style="font-size: 14px; font-weight: 500; color: #0f172a;">${file.name}</div><div style="font-size: 12px; color: #64748b;">${(file.size / 1024).toFixed(1)} KB</div></div>
-          </div><p><br></p>`;
-          document.execCommand('insertHTML', false, fileHtml);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  return <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{ display: 'none' }} accept="image/*,video/*,.pdf,.doc,.docx,.txt" />;
-};
 
 const AIGenerationModal = ({ isOpen, setOpen }) => {
   const [prompt, setPrompt] = React.useState('');
@@ -769,7 +731,6 @@ const AIGenerationModal = ({ isOpen, setOpen }) => {
   const handleGenerate = () => {
     if (!prompt.trim()) return;
     setGenerating(true);
-    // Simulate generation delay
     setTimeout(() => {
       setGenerating(false);
       setOpen(false);
@@ -826,7 +787,6 @@ const StockMediaModal = ({ isOpen, setOpen }) => {
   
   if (!isOpen) return null;
 
-  // Mock stock images
   const stockImages = [
     'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=400&q=80',
     'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=400&q=80',
@@ -888,11 +848,9 @@ const ExternalMediaModal = ({ isOpen, setOpen }) => {
     if (url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
       embedHtml = `<img src="${url}" style="max-width: 100%; border-radius: 8px; margin: 12px 0;" alt="External Image" /><p><br></p>`;
     } else if (url.includes('youtube.com') || url.includes('youtu.be')) {
-      // Basic youtube embed extraction
       const videoId = url.includes('v=') ? url.split('v=')[1].split('&')[0] : url.split('youtu.be/')[1];
       embedHtml = `<iframe width="100%" height="400" src="https://www.youtube.com/embed/${videoId}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius: 8px; margin: 12px 0;"></iframe><p><br></p>`;
     } else {
-      // Generic link card
       embedHtml = `<a href="${url}" target="_blank" contenteditable="false" style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; margin: 12px 0; text-decoration: none; user-select: none;">
         <div style="width: 40px; height: 40px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #64748b;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></div>
         <div style="flex: 1; overflow: hidden;"><div style="font-size: 14px; font-weight: 500; color: #0f172a; white-space: nowrap; text-overflow: ellipsis;">${url}</div><div style="font-size: 12px; color: #64748b;">External Link</div></div>
@@ -937,11 +895,31 @@ const ExternalMediaModal = ({ isOpen, setOpen }) => {
   );
 };
 
-const MediaPicker = ({ isOpen, setOpen, anchorEl }) => {
-  const [activePipeline, setActivePipeline] = React.useState(null); // 'device', 'ai', 'stock', 'url'
+const MediaPicker = ({ isOpen, setOpen, anchorEl, mediaInsertionModal, setMediaInsertionModal }) => {
+  const [activePipeline, setActivePipeline] = React.useState(null); 
 
-  if (!anchorEl) return null;
-  const rect = anchorEl.getBoundingClientRect();
+  const handleDeviceUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (file.type.startsWith('image/')) {
+          const imgHtml = `<img src="${event.target.result}" style="max-width: 100%; border-radius: 8px; margin: 12px 0;" alt="${file.name}" />`;
+          document.execCommand('insertHTML', false, imgHtml);
+        } else if (file.type.startsWith('video/')) {
+          const videoHtml = `<video src="${event.target.result}" controls style="max-width: 100%; border-radius: 8px; margin: 12px 0;"></video><p><br></p>`;
+          document.execCommand('insertHTML', false, videoHtml);
+        } else {
+          const fileHtml = `<div class="file-attachment" contenteditable="false" style="display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; margin: 12px 0; user-select: none;">
+            <div style="width: 32px; height: 32px; border-radius: 6px; background: #3b82f6; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;">${file.name.split('.').pop().toUpperCase()}</div>
+            <div style="flex: 1;"><div style="font-size: 14px; font-weight: 500; color: #0f172a;">${file.name}</div><div style="font-size: 12px; color: #64748b;">${(file.size / 1024).toFixed(1)} KB</div></div>
+          </div><p><br></p>`;
+          document.execCommand('insertHTML', false, fileHtml);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handlePlaceholder = () => {
     const placeholderHtml = `<div class="media-placeholder" contenteditable="false" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px; border: 2px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; margin: 16px 0; user-select: none; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.borderColor='#94a3b8'; this.style.background='#f1f5f9'; this.style.boxShadow='0 0 0 2px rgba(59, 130, 246, 0.5)';" onmouseout="this.style.borderColor='#cbd5e1'; this.style.background='#f8fafc'; this.style.boxShadow='none';">
@@ -951,54 +929,77 @@ const MediaPicker = ({ isOpen, setOpen, anchorEl }) => {
     </div><p><br></p>`;
     document.execCommand('insertHTML', false, placeholderHtml);
     setOpen(false);
+    if(setMediaInsertionModal) setMediaInsertionModal({ open: false });
   };
+
+  const isActuallyOpen = isOpen || (mediaInsertionModal && mediaInsertionModal.open);
+  
+  let dropdownHtml = null;
+  if (isActuallyOpen && anchorEl) {
+    const rect = anchorEl.getBoundingClientRect();
+    const slashRange = mediaInsertionModal?.range;
+    let top = rect.bottom + 8;
+    let left = rect.left;
+    if (mediaInsertionModal?.open && slashRange) {
+        const slashRect = slashRange.getBoundingClientRect();
+        top = slashRect.bottom + 8;
+        left = slashRect.left;
+    }
+    
+    dropdownHtml = (
+      <>
+        <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); if(setMediaInsertionModal) setMediaInsertionModal({ open: false }); }} />
+        <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-1.5 w-64 text-sm font-[system-ui] backdrop-blur-xl" style={{ top, left }}>
+          <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Insert Media</div>
+          {[
+            { id: 'device', icon: <ImageIcon size={15} strokeWidth={1.5}/>, label: 'Device Uploads', desc: 'Photos, Videos, Files' },
+            { id: 'ai', icon: <Sparkles size={15} strokeWidth={1.5} className="text-purple-500" />, label: 'AI Generation', desc: 'Generate visual assets' },
+            { id: 'stock', icon: <Search size={15} strokeWidth={1.5}/>, label: 'Stock Media', desc: 'Search Unsplash & Pexels' },
+            { id: 'url', icon: <Link size={15} strokeWidth={1.5}/>, label: 'External URL', desc: 'Embed from web' },
+            { id: 'placeholder', icon: <ImageIcon size={15} strokeWidth={1.5} className="opacity-50"/>, label: 'Placeholder', desc: 'Add media placeholder box' },
+          ].map((item, idx) => (
+            <button 
+              key={idx} 
+              onPointerDown={(e) => { 
+                e.preventDefault(); 
+                if (item.id === 'placeholder') {
+                  handlePlaceholder();
+                } else if (item.id === 'device') {
+                  document.getElementById('hidden-media-upload').click();
+                  setOpen(false);
+                  if(setMediaInsertionModal) setMediaInsertionModal({ open: false });
+                } else {
+                  setActivePipeline(item.id);
+                  setOpen(false); 
+                  if(setMediaInsertionModal) setMediaInsertionModal({ open: false });
+                }
+              }} 
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left text-slate-800"
+            >
+              <div className="text-slate-500">{item.icon}</div>
+              <div className="flex-1">
+                <div className="font-medium text-[13px] tracking-tight">{item.label}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5 leading-tight">{item.desc}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
-      {isOpen && (
-        <>
-          <div className="fixed inset-0 z-[200]" onPointerDown={(e) => { e.preventDefault(); setOpen(false); }} />
-          <div className="fixed z-[201] bg-white border border-slate-200/60 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-1.5 w-64 text-sm font-[system-ui] backdrop-blur-xl" style={{ top: rect.bottom + 8, left: rect.left }}>
-            <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-widest text-slate-400">Insert Media</div>
-            {[
-              { id: 'device', icon: <ImageIcon size={15} strokeWidth={1.5}/>, label: 'Device Uploads', desc: 'Photos, Videos, Files' },
-              { id: 'ai', icon: <Sparkles size={15} strokeWidth={1.5} className="text-purple-500" />, label: 'AI Generation', desc: 'Generate visual assets' },
-              { id: 'stock', icon: <Search size={15} strokeWidth={1.5}/>, label: 'Stock Media', desc: 'Search Unsplash & Pexels' },
-              { id: 'url', icon: <Link size={15} strokeWidth={1.5}/>, label: 'External URL', desc: 'Embed from web' },
-              { id: 'placeholder', icon: <ImageIcon size={15} strokeWidth={1.5} className="opacity-50"/>, label: 'Placeholder', desc: 'Add media placeholder box' },
-            ].map((item, idx) => (
-              <button 
-                key={idx} 
-                onPointerDown={(e) => { 
-                  e.preventDefault(); 
-                  if (item.id === 'placeholder') {
-                    handlePlaceholder();
-                  } else {
-                    setActivePipeline(item.id);
-                    setOpen(false); // Close dropdown, keep modal state via parent tracking or render it conditionally
-                  }
-                }} 
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 transition-colors text-left text-slate-800"
-              >
-                <div className="text-slate-500">{item.icon}</div>
-                <div className="flex-1">
-                  <div className="font-medium text-[13px] tracking-tight">{item.label}</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5 leading-tight">{item.desc}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* Render the Modals outside the dropdown so they persist when dropdown closes */}
-      <DeviceUploadModal isOpen={activePipeline === 'device'} setOpen={(val) => !val && setActivePipeline(null)} />
+      {dropdownHtml}
+      {/* Hidden input rendered outside conditional so it is always present to receive click */}
+      <input type="file" id="hidden-media-upload" onChange={handleDeviceUpload} style={{ display: 'none' }} accept="image/*,video/*,.pdf,.doc,.docx,.txt" />
       <AIGenerationModal isOpen={activePipeline === 'ai'} setOpen={(val) => !val && setActivePipeline(null)} />
       <StockMediaModal isOpen={activePipeline === 'stock'} setOpen={(val) => !val && setActivePipeline(null)} />
       <ExternalMediaModal isOpen={activePipeline === 'url'} setOpen={(val) => !val && setActivePipeline(null)} />
     </>
   );
 };
+
 const EmojiGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('Smileys');
@@ -38071,7 +38072,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
       
       {/* Compose Pickers */}
-      <MediaPicker isOpen={mediaPickerOpen} setOpen={setMediaPickerOpen} anchorEl={document.getElementById('compose-media-btn')} />
+      <MediaPicker isOpen={mediaPickerOpen} setOpen={setMediaPickerOpen} anchorEl={document.getElementById('compose-media-btn')} mediaInsertionModal={mediaInsertionModal} setMediaInsertionModal={setMediaInsertionModal} />
       <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-emoji-btn')} />
       <SymbolGalleryPicker isOpen={symbolsPickerOpen} setOpen={setSymbolsPickerOpen} anchorEl={document.getElementById('compose-symbols-btn')} />
       <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-equations-btn')} />
