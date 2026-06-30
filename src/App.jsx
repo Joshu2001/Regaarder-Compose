@@ -4903,6 +4903,12 @@ export default function App() {
     sheetSlashMenuRef.current = sheetSlashMenu;
   }, [sheetSlashMenu]);
 
+  // editingCellKey tracks which cell the user is actively typing in (format: "row-col")
+  // editingCellValue buffers keystrokes locally so that React re-renders between keystrokes
+  // do NOT overwrite the input mid-composition — eliminating the 2-char truncation bug.
+  const [editingCellKey, setEditingCellKey] = useState(null);
+  const [editingCellValue, setEditingCellValue] = useState('');
+
   // selectionMode tracks what kind of selection is active: 'cell' | 'col' | 'row' | 'all'
   const [sheetSelectionMode, setSheetSelectionMode] = useState('cell');
   const [sheetDrawTableMode, setSheetDrawTableMode] = useState(false);
@@ -29368,7 +29374,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                 const customBgStyle = computedFormat.fill ? { backgroundColor: computedFormat.fill } : {};
                                 const customTextStyle = computedFormat.color ? { color: computedFormat.color } : {};
-                                const cellValue = isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], computedFormat);
+                                const cellKey = `${rowIndex}-${colIndex}`;
+                                const isEditingThisCell = editingCellKey === cellKey;
+                                // Use local buffer while user is actively typing to avoid mid-keystroke re-render truncation.
+                                // Fall back to grid data when not editing.
+                                const cellValue = isEditingThisCell
+                                  ? editingCellValue
+                                  : (isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], computedFormat));
 
                                 const hasComment = comments.some(c => c.targetId === activeSheetId && c.metadata?.row === num && c.metadata?.col === colIndex + 1);
 
@@ -29647,10 +29659,56 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         value={cellValue}
                                         onFocus={() => { 
                                           if (multiSelectedCells && multiSelectedCells.length > 0) return;
-                                          setSelectedSheetCell({ row: num, col: colIndex + 1 }); setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 }); setSheetSelectionMode('cell'); setSelectedGridColumn(null); 
+                                          setSelectedSheetCell({ row: num, col: colIndex + 1 });
+                                          setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 });
+                                          setSheetSelectionMode('cell');
+                                          setSelectedGridColumn(null);
+                                          // Seed the local edit buffer from the persisted grid value
+                                          const persistedVal = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '';
+                                          setEditingCellKey(cellKey);
+                                          setEditingCellValue(persistedVal);
                                         }}
-                                        onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
+                                        onBlur={() => {
+                                          // Commit buffered value to grid state on blur
+                                          if (editingCellKey === cellKey) {
+                                            updateSheetCell(activeSheetId, rowIndex, colIndex, editingCellValue);
+                                            setEditingCellKey(null);
+                                            setEditingCellValue('');
+                                          }
+                                        }}
+                                        onChange={(event) => {
+                                          // Update only the local buffer — no global state write mid-keystroke
+                                          setEditingCellValue(event.target.value);
+                                        }}
                                         onKeyDown={(e) => {
+                                          // Commit & blur on Enter or Tab
+                                          if ((e.key === 'Enter' || e.key === 'Tab') && !sheetSlashMenuRef.current?.open) {
+                                            e.preventDefault();
+                                            if (editingCellKey === cellKey) {
+                                              updateSheetCell(activeSheetId, rowIndex, colIndex, editingCellValue);
+                                              setEditingCellKey(null);
+                                              setEditingCellValue('');
+                                            }
+                                            // Move selection
+                                            setSelectedSheetCell(prev => {
+                                              if (!prev) return prev;
+                                              const { row, col } = prev;
+                                              if (e.key === 'Tab') {
+                                                return { row, col: Math.min(activeSheetGridRaw.cells?.[0]?.length || 26, col + (e.shiftKey ? -1 : 1)) };
+                                              }
+                                              return { row: Math.min((activeSheetGridRaw.cells?.length || 100), row + 1), col };
+                                            });
+                                            return;
+                                          }
+                                          // Escape: discard edit
+                                          if (e.key === 'Escape' && !sheetSlashMenuRef.current?.open) {
+                                            const persistedVal = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '';
+                                            setEditingCellValue(persistedVal);
+                                            setEditingCellKey(null);
+                                            e.target.blur();
+                                            return;
+                                          }
+                                          // Slash: open slash menu
                                           if (e.key === '/' && !sheetSlashMenuRef.current?.open) {
                                             e.preventDefault();
                                             const rect = e.target.getBoundingClientRect();
@@ -29674,6 +29732,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             });
                                             return;
                                           }
+                                          // When slash menu is open: route all keypresses to menu, not the cell
                                           if (sheetSlashMenuRef.current?.open) {
                                             const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
                                               opt.label.toLowerCase().includes(sheetSlashMenuRef.current.filterText.toLowerCase())
