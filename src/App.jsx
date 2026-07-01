@@ -30917,6 +30917,432 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
+      {/* ── Injected Sheets Modals & Overlays ── */}
+      {cellFormatModal.open && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => e.stopPropagation()}>
+          <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-5 text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Settings2 className="text-violet-600" size={18} />
+                Format Cells
+              </h3>
+              <button
+                type="button"
+                onClick={() => setCellFormatModal({ open: false })}
+                className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Number Format</label>
+                <div className="flex flex-col gap-2">
+                  <select 
+                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, numberFormat: e.target.value }))}
+                    value={cellFormatModal.numberFormat || 'general'}
+                  >
+                    <option value="general">General</option>
+                    <option value="number">Number</option>
+                    <option value="currency">Currency ($)</option>
+                    <option value="percent">Percentage (%)</option>
+                    <option value="date">Date</option>
+                    <option value="time">Time</option>
+                  </select>
+                  <div className="flex items-center justify-between border border-slate-200 rounded-lg p-1 px-2">
+                    <span className="text-xs text-slate-600">Decimal Places</span>
+                    <div className="flex items-center gap-1">
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setCellFormatModal(prev => ({ ...prev, decimals: Math.max(0, (prev.decimals || 0) - 1) }))}>-</button>
+                      <span className="text-xs font-mono w-4 text-center">{cellFormatModal.decimals || 0}</span>
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setCellFormatModal(prev => ({ ...prev, decimals: (prev.decimals || 0) + 1 }))}>+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Alignment</label>
+                <div className="flex flex-col gap-2">
+                  <div className="flex border border-slate-200 rounded-lg overflow-hidden">
+                    {['left', 'center', 'right'].map(align => (
+                      <button 
+                        key={align} type="button"
+                        className={`flex-1 py-1.5 text-xs font-medium flex justify-center items-center ${cellFormatModal.align === align ? 'bg-violet-50 text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                        onClick={() => setCellFormatModal(prev => ({ ...prev, align }))}
+                      >
+                        {align === 'left' ? <AlignLeft size={14}/> : align === 'center' ? <AlignCenter size={14}/> : <AlignRight size={14}/>}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex border border-slate-200 rounded-lg overflow-hidden">
+                    {['top', 'middle', 'bottom'].map(valign => (
+                      <button 
+                        key={valign} type="button"
+                        className={`flex-1 py-1.5 text-xs font-medium flex justify-center items-center ${cellFormatModal.valign === valign ? 'bg-violet-50 text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                        onClick={() => setCellFormatModal(prev => ({ ...prev, valign }))}
+                      >
+                        {valign}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 col-span-2 border-t border-slate-100 pt-3">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Colors</label>
+                <div className="flex gap-4">
+                  <div className="flex flex-col gap-1 w-1/2">
+                    <span className="text-[10px] text-slate-500">Fill Color</span>
+                    <input 
+                      type="color" 
+                      className="w-full h-8 cursor-pointer rounded border border-slate-200 p-0.5 bg-white"
+                      value={cellFormatModal.fill || '#ffffff'}
+                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, fill: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 w-1/2">
+                    <span className="text-[10px] text-slate-500">Text Color</span>
+                    <input 
+                      type="color" 
+                      className="w-full h-8 cursor-pointer rounded border border-slate-200 p-0.5 bg-white"
+                      value={cellFormatModal.color || '#000000'}
+                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, color: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+              <button 
+                type="button"
+                className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={() => setCellFormatModal({ open: false })}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                className="px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
+                onClick={() => {
+                  const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+                  const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }];
+                  ranges.forEach(range => {
+                    const rMin = Math.min(range.startRow, range.endRow);
+                    const rMax = Math.max(range.startRow, range.endRow);
+                    const cMin = Math.min(range.startCol, range.endCol);
+                    const cMax = Math.max(range.startCol, range.endCol);
+                    for (let r = rMin; r <= rMax; r++) {
+                      for (let c = cMin; c <= cMax; c++) {
+                        if (!newFormats[r-1]) newFormats[r-1] = {};
+                        newFormats[r-1][c-1] = {
+                          ...newFormats[r-1][c-1],
+                          format: cellFormatModal.numberFormat || 'general',
+                          decimals: cellFormatModal.decimals || 0,
+                          align: cellFormatModal.align,
+                          valign: cellFormatModal.valign,
+                          fill: cellFormatModal.fill,
+                          color: cellFormatModal.color
+                        };
+                      }
+                    }
+                  });
+                  updateSheetSettings(activeSheetId, { formats: newFormats });
+                  setCellFormatModal({ open: false });
+                  showToast('Cell format applied');
+                }}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mediaInsertionModal.open && (
+        <UnifiedMediaModal
+          isOpen={mediaInsertionModal.open}
+          setOpen={(val) => setMediaInsertionModal(prev => ({ ...prev, open: val }))}
+          mediaInsertionModal={mediaInsertionModal}
+          setMediaInsertionModal={setMediaInsertionModal}
+        />
+      )}
+
+      {linkPopover.open && (
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans">
+          <div className="bg-white rounded-xl shadow-2xl w-80 overflow-hidden flex flex-col border border-slate-200">
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5"><Link size={13} className="text-violet-500" /> Insert Link</span>
+              <button onClick={() => setLinkPopover(prev => ({ ...prev, open: false }))} className="text-slate-400 hover:text-slate-600 rounded p-0.5"><X size={14} /></button>
+            </div>
+            <div className="p-4 flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Text to display</label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400" 
+                  placeholder="e.g. Reference Document"
+                  value={linkPopover.label || ''}
+                  onChange={(e) => setLinkPopover(p => ({ ...p, label: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">URL or Search</label>
+                <div className="relative flex items-center">
+                  <Search size={12} className="absolute left-2.5 text-slate-400" />
+                  <input 
+                    type="text" 
+                    className="w-full text-xs py-2 pl-7 pr-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400" 
+                    placeholder="https:// or search workspace..."
+                    value={linkPopover.url}
+                    onChange={(e) => setLinkPopover(p => ({ ...p, url: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleApplyLink();
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+              <button onClick={() => setLinkPopover(prev => ({ ...prev, open: false }))} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700">Cancel</button>
+              <button 
+                onClick={() => handleApplyLink()}
+                className="px-4 py-1.5 text-xs font-bold bg-violet-600 text-white rounded-lg hover:bg-violet-700 shadow-sm"
+              >Insert</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {commentPopover.open && (() => {
+        const comment = comments.find(c => c.id === commentPopover.commentId);
+        const replies = comment?.replies || [];
+        return (
+          <div
+            ref={commentPopoverRef}
+            className="fixed z-[9999] flex flex-col font-sans"
+            style={{
+              top: `${commentPopover.top}px`,
+              left: `${commentPopover.left}px`,
+              width: '380px',
+              maxHeight: '500px',
+              filter: 'drop-shadow(0 12px 50px rgba(0,0,0,0.3))',
+            }}
+          >
+            <div className="bg-gradient-to-b from-[#1c1917] to-[#0c0a09] text-slate-100 rounded-2xl border border-violet-500/20 overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(76,29,149,0.25)]" style={{ maxHeight: '500px' }}>
+              <div 
+                className="flex items-center justify-between px-4 py-2.5 border-b border-violet-900/20 bg-gradient-to-r from-violet-950/40 to-transparent cursor-move select-none"
+                onPointerDown={handleCommentDrag}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">U</div>
+                  <div>
+                    <span className="text-[11px] font-bold text-slate-200">You</span>
+                    <span className="text-[10px] text-slate-400 ml-1.5">· Just now</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  {comment && !comment.resolved && (
+                    <button
+                      onClick={() => {
+                        setComments(prev => prev.map(c => c.id === commentPopover.commentId ? { ...c, resolved: true } : c));
+                        setCommentPopover(p => ({ ...p, open: false }));
+                        showToast('Comment resolved ✓');
+                      }}
+                      className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/30 border border-emerald-500/30 transition-colors"
+                      title="Resolve"
+                    >Resolve</button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setCommentPopover(p => ({ ...p, open: false }));
+                      setComments(cs => {
+                        const c = cs.find(x => x.id === commentPopover.commentId);
+                        if (c && c.isDraft) {
+                          const span = document.querySelector(`.comment-highlight[data-comment-id="${commentPopover.commentId}"]`);
+                          if (span) {
+                            const text = document.createTextNode(span.textContent);
+                            span.parentNode.replaceChild(text, span);
+                          }
+                          return cs.filter(x => x.id !== commentPopover.commentId);
+                        }
+                        return cs;
+                      });
+                    }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-violet-900/20 transition-colors"
+                  ><X size={13} /></button>
+                </div>
+              </div>
+
+              {replies.length > 0 && !comment.isDraft && (
+                <div className="px-4 py-2 space-y-3 border-b border-violet-900/10 bg-black/20 overflow-y-auto" style={{ maxHeight: '140px' }}>
+                  {replies.map((r, i) => (
+                    <div key={i} className="flex gap-2">
+                      <div className="w-5 h-5 rounded-full bg-violet-900/60 text-violet-200 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">{r.author?.[0] || 'U'}</div>
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="text-[10px] font-bold text-slate-300">{r.author || 'You'}</span>
+                          <span className="text-[9px] text-slate-400">{r.time || 'Just now'}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-200 leading-relaxed" dangerouslySetInnerHTML={{ __html: r.html || r.text || '' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="p-3 flex flex-col gap-2">
+                <div className="flex items-center gap-1 mb-1 px-1 text-slate-400">
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 font-bold text-[11px] font-serif">B</button>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 italic text-[11px] font-serif">I</button>
+                  <div className="w-px h-3 bg-violet-950/40 mx-1"></div>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><LinkIcon size={12} /></button>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><FileText size={12} /></button>
+                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(!composeEmojiPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Emoji"><SmilePlus size={12} /><ChevronDown size={10}/></button>
+                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(!symbolsPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Symbols"><Pi size={12} /><ChevronDown size={10}/></button>
+                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(!equationsPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Equations"><SigmaIcon size={12} /><ChevronDown size={10}/></button>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><AtSign size={12} /></button>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><Paperclip size={12} /></button>
+                </div>
+                <textarea
+                  ref={commentTextareaRef}
+                  autoFocus
+                  placeholder="Add a comment, @mention, or [[reference]]..."
+                  rows={3}
+                  className="w-full text-xs p-2.5 rounded-xl border border-violet-900/40 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-900/40 resize-none placeholder-slate-500 text-slate-100 bg-[#090d16]/80 leading-relaxed transition-all"
+                  value={commentDraftText}
+                  onChange={(e) => setCommentDraftText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      document.getElementById('post-comment-btn')?.click();
+                    }
+                  }}
+                />
+
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] text-slate-450">Ctrl+Enter to post</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setCommentPopover(p => ({ ...p, open: false }));
+                        setComments(cs => {
+                          const c = cs.find(x => x.id === commentPopover.commentId);
+                          if (c && c.isDraft) {
+                            const span = document.querySelector(`.comment-highlight[data-comment-id="${commentPopover.commentId}"]`);
+                            if (span) {
+                              const text = document.createTextNode(span.textContent);
+                              span.parentNode.replaceChild(text, span);
+                            }
+                            return cs.filter(x => x.id !== commentPopover.commentId);
+                          }
+                          return cs;
+                        });
+                      }}
+                      className="text-[11px] font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                    >Cancel</button>
+                    <button
+                      id="post-comment-btn"
+                      onClick={() => {
+                        if (!commentDraftText.trim()) {
+                          showToast('Write something first');
+                          return;
+                        }
+                        const htmlContent = commentDraftText.replace(/\n/g, '<br>');
+                        setComments(prev => prev.map(c => c.id === commentPopover.commentId
+                          ? { 
+                              ...c, 
+                              text: c.isDraft ? commentDraftText : c.text,
+                              isDraft: false, 
+                              replies: [...(c.replies || []), { author: 'You', time: 'Just now', text: commentDraftText, html: htmlContent }] 
+                            }
+                          : c
+                        ));
+                        
+                        const span = document.querySelector(`.comment-highlight[data-comment-id="${commentPopover.commentId}"]`);
+                        if (span) {
+                           span.classList.remove('comment-draft');
+                           span.style.backgroundColor = 'rgba(250, 204, 21, 0.35)';
+                           span.style.borderBottom = '2px solid #eab308';
+                           span.style.cursor = 'pointer';
+                           span.style.borderRadius = '2px';
+                           if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+                        }
+
+                        setCommentDraftText('');
+                        setCommentPopover(p => ({ ...p, open: false }));
+                        showToast('Comment posted ✓');
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-[11px] font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-sm"
+                    >
+                      <Send size={11} />
+                      Post
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="absolute -top-1.5 left-10 w-3 h-3 bg-[#1c1917] border-l border-t border-violet-500/20 rotate-45" />
+          </div>
+        );
+      })()}
+
+      {commentLinkModal.open && (
+        <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans">
+          <div className="bg-white rounded-xl shadow-2xl w-80 overflow-hidden flex flex-col border border-slate-200">
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5"><Link size={13} className="text-violet-500" /> Insert Link</span>
+              <button onClick={() => setCommentLinkModal(prev => ({ ...prev, open: false }))} className="text-slate-400 hover:text-slate-600 rounded p-0.5"><X size={14} /></button>
+            </div>
+            <div className="p-4 flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Text to display</label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  className="w-full text-xs p-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400" 
+                  placeholder="e.g. Reference Document"
+                  value={commentLinkModal.label}
+                  onChange={(e) => setCommentLinkModal(p => ({ ...p, label: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">URL or Search</label>
+                <div className="relative flex items-center">
+                  <Search size={12} className="absolute left-2.5 text-slate-400" />
+                  <input 
+                    type="text" 
+                    className="w-full text-xs py-2 pl-7 pr-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400" 
+                    placeholder="https:// or search workspace..."
+                    value={commentLinkModal.url || ''}
+                    onChange={(e) => setCommentLinkModal(p => ({ ...p, url: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        setCommentLinkModal({ open: false });
+                        showToast('Link inserted');
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
+              <button onClick={() => setCommentLinkModal(prev => ({ ...prev, open: false }))} className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700">Cancel</button>
+              <button 
+                onClick={() => {
+                  setCommentLinkModal({ open: false });
+                  showToast('Link inserted');
+                }}
+                className="px-4 py-1.5 text-xs font-bold bg-violet-600 text-white rounded-lg hover:bg-violet-700 shadow-sm"
+              >Insert</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
     );
   }
