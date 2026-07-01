@@ -4024,7 +4024,52 @@ export default function App() {
 
     document.addEventListener('pointermove', onPointerMove);
     document.addEventListener('pointerup', onPointerUp);
-  };
+  }
+
+  const handleTableDragStart = (e, tableId) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const table = (sheetGrids[activeSheetId]?.tables || []).find(t => t.id === tableId);
+    if (!table) return;
+
+    const startRow = table.startRow;
+    const startCol = table.startCol;
+    const height = table.endRow - table.startRow;
+    const width = table.endCol - table.startCol;
+
+    const onPointerMove = (moveEvent) => {
+      const target = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+      const cellEl = target?.closest('[data-row]');
+      if (cellEl) {
+        const targetRow = parseInt(cellEl.getAttribute('data-row'), 10);
+        const targetCol = parseInt(cellEl.getAttribute('data-col'), 10);
+        if (targetRow && targetCol) {
+          setSheetGrids(prev => {
+            const grid = prev[activeSheetId];
+            if (!grid || !grid.tables) return prev;
+            const newTables = grid.tables.map(t => t.id === tableId ? {
+              ...t,
+              startRow: targetRow,
+              startCol: targetCol,
+              endRow: targetRow + height,
+              endCol: targetCol + width
+            } : t);
+            return { ...prev, [activeSheetId]: { ...grid, tables: newTables } };
+          });
+        }
+      }
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };;
   
   const commentTextareaRef = useRef(null);
   const commentPopoverRef = useRef(null);
