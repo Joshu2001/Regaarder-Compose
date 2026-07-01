@@ -4031,6 +4031,11 @@ export default function App() {
     e.preventDefault();
     e.stopPropagation();
     
+    const badge = e.currentTarget;
+    if (badge) {
+      badge.style.pointerEvents = 'none';
+    }
+    
     const table = (sheetGrids[activeSheetId]?.tables || []).find(t => t.id === tableId);
     if (!table) return;
 
@@ -4063,6 +4068,9 @@ export default function App() {
     };
 
     const onPointerUp = () => {
+      if (badge) {
+        badge.style.pointerEvents = 'auto';
+      }
       document.removeEventListener('pointermove', onPointerMove);
       document.removeEventListener('pointerup', onPointerUp);
     };
