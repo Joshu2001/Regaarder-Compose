@@ -3999,6 +3999,33 @@ export default function App() {
   const [commentWorkspaceRefOpen, setCommentWorkspaceRefOpen] = useState(false);
   const [commentPopover, setCommentPopover] = useState({ open: false, top: 0, left: 0, text: '', commentId: null });
   
+  const handleCommentDrag = (e) => {
+    if (e.button !== 0 || e.target.closest('button') || e.target.closest('textarea') || e.target.closest('input')) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startLeft = commentPopover.left;
+    const startTop = commentPopover.top;
+
+    const onPointerMove = (moveEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+      setCommentPopover(prev => ({
+        ...prev,
+        left: startLeft + dx,
+        top: startTop + dy
+      }));
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };
+  
   const commentTextareaRef = useRef(null);
   const commentPopoverRef = useRef(null);
   const COMMENT_EMOJIS = ['👍','👎','❤️','😂','😮','😢','😡','🎉','🔥','✅','❌','💡','📌','⚠️','🙏','💬','📎','🔗'];
@@ -4596,7 +4623,9 @@ export default function App() {
   const [sheetToolbarSize, setSheetToolbarSize] = useState(14);
   const [sheetZoomLevel, setSheetZoomLevel] = useState(100);
 
-  const [sheetToolbarTab, setSheetToolbarTab] = useState('AI');
+  const [sheetToolbarTab, setSheetToolbarTab] = useState('Data');
+  const [hasImportedData, setHasImportedData] = useState(false);
+  const [selectedDatasets, setSelectedDatasets] = useState([]);
   const [replayPanelOpen, setReplayPanelOpen] = useState(false);
   const [isReplayPlaying, setIsReplayPlaying] = useState(false);
   const [replayIndex, setReplayIndex] = useState(null);
@@ -4620,6 +4649,36 @@ export default function App() {
 
   const [quickChartPreview, setQuickChartPreview] = useState(null);
   
+  const getSheetsSidebarActions = () => {
+    if (selectedDatasets && selectedDatasets.length > 1) {
+      return [
+        { label: 'Connect Sources', subtitle: 'Join datasets together', icon: GitMerge },
+        { label: 'Match Records', subtitle: 'Align rows across sheets', icon: CheckSquare },
+        { label: 'Merge Tables', subtitle: 'Combine into a single view', icon: Table },
+        { label: 'Find Relationships', subtitle: 'Analyze foreign keys', icon: Network },
+        { label: 'Build Database', subtitle: 'Create structured schema', icon: Database }
+      ];
+    }
+    if (sheetSelectionMode === 'col' && selectedGridColumn !== null) {
+      return [
+        { label: 'Analyze Data', subtitle: 'Get statistical summary', icon: BarChart2 },
+        { label: 'Create Formula', subtitle: 'Add computed column', icon: Calculator },
+        { label: 'Detect Trends', subtitle: 'Run pattern analysis', icon: TrendingUp },
+        { label: 'Forecast', subtitle: 'Project column future values', icon: LineChart },
+        { label: 'Clean Data', subtitle: 'Fix nulls and formats', icon: Eraser },
+        { label: 'Find Duplicates', subtitle: 'Identify duplicate values', icon: Layers },
+        { label: 'Visualize', subtitle: 'Plot this column', icon: PieChart }
+      ];
+    }
+    return [
+      { label: 'Import Data', subtitle: 'Upload structured/unstructured files', icon: Upload },
+      { label: 'Generate Sheet', subtitle: 'Build spreadsheet from prompt', icon: FileSpreadsheet },
+      { label: 'Build Dashboard', subtitle: 'Add visual metrics and charts', icon: LayoutGrid },
+      { label: 'Ask Questions', subtitle: 'Query assistant about data', icon: MessageSquare },
+      { label: 'Find Insights', subtitle: 'Discover automated highlights', icon: Sparkles }
+    ];
+  };
+
   // Data detection heuristic
   const detectChartStructure = (range, grid) => {
     if (!range || !grid || !grid.cells) return null;
@@ -5282,6 +5341,7 @@ export default function App() {
     },
   ]);
   const [activeDocId, setActiveDocId] = useState(null);
+  const activeDoc = documents.find((doc) => doc.id === activeDocId);
 
   useEffect(() => {
     window.setActiveDocIdGlobal = setActiveDocId;
@@ -17809,6 +17869,9 @@ Rules:
     setDeckCustomChip('');
     setDeckSlidesPanelOpen(false);
     setRightSidebarOpen(false);
+    setSheetToolbarTab('Data');
+    setHasImportedData(false);
+    setSelectedDatasets([]);
     showToast('Sheets workspace ready');
   };
 
@@ -21734,14 +21797,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       { label: 'Summarize this document into key takeaways', subtitle: 'Extract main themes and core insights', icon: FileText },
                       { label: 'Extract action items from this meeting recording', subtitle: 'Action items and tasks checklist', icon: ListTodo },
                       { label: 'Build a report using data from these files', subtitle: 'Synthesize structured reports from inputs', icon: Database }
-                    ] : productMode === 'sheets' ? [
-                      { label: 'Analyze this data', subtitle: 'Find trends and insights', icon: TrendingUp },
-                      { label: 'Create pivot table', subtitle: 'Summarize your raw data', icon: Table },
-                      { label: 'Forecast next quarter', subtitle: 'Project future numbers', icon: LineChart },
-                      { label: 'Find anomalies', subtitle: 'Highlight outliers in data', icon: AlertCircle },
-                      { label: 'Compare to last year', subtitle: 'Year-over-year analysis', icon: BarChart2 },
-                      { label: 'Generate chart', subtitle: 'Visualize selected data', icon: PieChart }
-                    ] : [
+                    ] : productMode === 'sheets' ? getSheetsSidebarActions() : [
                       { label: 'Improve slide clarity', subtitle: 'Make your message stronger and easier to understand', icon: Sparkles },
                       { label: 'Rewrite content', subtitle: 'Improve wording, tone, and flow', icon: PenTool },
                       { label: 'Generate visuals', subtitle: 'Add images, charts, or illustrations', icon: ImageIcon },
@@ -27612,27 +27668,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </button>
                         ))}
                       </div>
-                      <div className="relative">
+                      <div className="relative export-menu-container">
                         <button
                           onClick={() => {
                             closeTransientMenus();
                             setSheetsExportMenuOpen(!sheetsExportMenuOpen);
                           }}
-                          className={`text-xs font-medium px-2 py-1.5 rounded-lg flex items-center gap-1 transition-colors ${sheetsExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-gray-700'}`}
+                          className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors ${sheetsExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
                           title="Export options"
                         >
-                          Export <ChevronDown size={12} className={`transition-transform duration-200 ${sheetsExportMenuOpen ? 'rotate-180' : ''}`} />
+                          Export {sheetsExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                         </button>
                         {sheetsExportMenuOpen && (
-                          <div className="absolute top-9 right-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
+                          <div className="absolute top-9 right-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
+                            <div className="flex flex-col gap-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
                               {[
-                                { format: 'Sheets', icon: FileText, desc: 'Original' },
-                                { format: 'XLSX', icon: FileText, desc: '.xlsx' },
-                                { format: 'CSV', icon: FileText, desc: '.csv' },
-                                { format: 'JSON', icon: FileText, desc: '.json' },
-                                { format: 'PDF', icon: File, desc: '.pdf' }
+                                { format: 'Sheets', label: 'Sheets', desc: 'Original' },
+                                { format: 'XLSX', label: 'XLSX', desc: '.xlsx' },
+                                { format: 'CSV', label: 'CSV', desc: '.csv' },
+                                { format: 'JSON', label: 'JSON', desc: '.json' },
+                                { format: 'PDF', label: 'PDF', desc: '.pdf' }
                               ].map(f => (
                                 <button 
                                   key={f.format}
@@ -27649,31 +27705,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       setSheetsExportMenuOpen(false);
                                     }
                                   }}
-                                  className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
+                                  className="w-full flex items-center justify-between text-xs py-1 rounded-lg text-slate-700 hover:text-violet-700 transition-colors text-left font-medium"
                                 >
-                                  <span className="font-medium">{f.format}</span>
-                                  <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
+                                  <span>{f.label}</span>
+                                  <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
                                 </button>
                               ))}
                             </div>
-                            <div className="h-px bg-gray-100 w-full my-2"></div>
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
+                            <div className="h-px bg-slate-100 w-full"></div>
+                            <div className="flex flex-col gap-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Convert to</span>
                               {[
-                                { target: 'Compose', icon: FileText, color: 'blue' },
-                                { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
-                                { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                                { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80' },
+                                { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50' },
+                                { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50' }
                               ].map(t => (
                                 <button 
                                   key={t.target}
                                   disabled={isExporting}
                                   onClick={() => {
                                     setIsExporting(true);
-                                    setTimeout(() => { setIsExporting(false); setSheetsExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                                    setTimeout(() => { 
+                                      setIsExporting(false); 
+                                      setSheetsExportMenuOpen(false); 
+                                      setProductMode(t.target.toLowerCase());
+                                      showToast('Converted to ' + t.target); 
+                                    }, 1500);
                                   }}
-                                  className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
+                                  className="w-full flex items-center gap-2.5 p-1 text-xs rounded-lg hover:bg-slate-50 transition-colors font-semibold text-slate-700"
                                 >
-                                  <t.icon size={14} className={`text-${t.color}-500`} />
+                                  <div className={`p-1.5 rounded ${t.color}`}>
+                                    <t.icon size={13} />
+                                  </div>
                                   {t.target}
                                 </button>
                               ))}
@@ -27690,14 +27753,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
       </div>
     </div>
-  ) : sheetToolbarTab === 'Data' ? (
+  ) : (sheetToolbarTab === 'Data' && !hasImportedData) ? (
                         /* ── DATA TAB: OMNI-IMPORT PORTAL ─────────────────────── */
                         <div className="flex-1 overflow-y-auto thin-scrollbar bg-[#FAFAFC]">
                           <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col gap-10">
 
                             {/* Relationship Detection Banner */}
                             {dataPortalRelationshipPrompt && (
-                              <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 shadow-sm">
+                              <div className="flex items-start gap-3 bg-violet-50 border border-violet-200 rounded-2xl px-5 py-4 shadow-sm animate-in fade-in slide-in-from-top-3 duration-250">
                                 <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
                                   <GitMerge size={15} className="text-violet-600" />
                                 </div>
@@ -27705,7 +27768,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <p className="text-[13px] font-semibold text-violet-900">Relationships detected</p>
                                   <p className="text-[12px] text-violet-700 mt-0.5">Matching customer IDs found across your uploaded files. Would you like to connect these datasets automatically?</p>
                                   <div className="flex items-center gap-2 mt-3">
-                                    <button type="button" onClick={() => { setDataPortalRelationshipPrompt(false); showToast('Datasets connected — no VLOOKUP required!'); }} className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors">Connect Datasets</button>
+                                    <button type="button" onClick={() => { setDataPortalRelationshipPrompt(false); setHasImportedData(true); showToast('Datasets connected — no VLOOKUP required!'); }} className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors">Connect Datasets</button>
                                     <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors">Dismiss</button>
                                   </div>
                                 </div>
@@ -27722,7 +27785,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 e.preventDefault();
                                 setDataPortalDragOver(false);
                                 const files = Array.from(e.dataTransfer.files);
-                                if (files.length > 1) setDataPortalRelationshipPrompt(true);
+                                const fileNames = files.map(f => f.name);
+                                if (files.length > 1) {
+                                  setDataPortalRelationshipPrompt(true);
+                                  setSelectedDatasets(fileNames);
+                                } else if (files.length === 1) {
+                                  setSelectedDatasets([files[0].name]);
+                                  setHasImportedData(true);
+                                }
                                 files.forEach(f => {
                                   setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
                                 });
@@ -27741,6 +27811,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <div>
                                   <h2 className="text-[24px] font-semibold text-slate-800 tracking-tight">What would you like to analyze?</h2>
                                   <p className="text-[14px] text-slate-500 mt-2 max-w-sm mx-auto">Drop any file or paste content — Regaarder converts it into structured, intelligent data.</p>
+                                  <div className="flex flex-col gap-1.5 mt-4 text-[13px] text-slate-500">
+                                    <span className="font-semibold text-slate-600">Try asking:</span>
+                                    <div className="flex flex-wrap items-center justify-center gap-2">
+                                      <button type="button" onClick={() => { setSheetsTitle('SOP Tracker'); setHasImportedData(true); showToast('AI generating tracker from SOP...'); }} className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors font-medium">"Turn this SOP into a tracker"</button>
+                                      <button type="button" onClick={() => { setSheetsTitle('PDF CRM'); setHasImportedData(true); showToast('AI generating CRM from PDF...'); }} className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors font-medium">"Create a CRM from this PDF"</button>
+                                    </div>
+                                  </div>
                                 </div>
 
                                 {/* Upload Area Dropzone */}
@@ -27754,7 +27831,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     Browse for file
                                     <input type="file" multiple className="hidden" onChange={(e) => {
                                       const files = Array.from(e.target.files || []);
-                                      if (files.length > 1) setDataPortalRelationshipPrompt(true);
+                                      const fileNames = files.map(f => f.name);
+                                      if (files.length > 1) {
+                                        setDataPortalRelationshipPrompt(true);
+                                        setSelectedDatasets(fileNames);
+                                      } else if (files.length === 1) {
+                                        setSelectedDatasets([files[0].name]);
+                                        setHasImportedData(true);
+                                      }
                                       files.forEach(f => {
                                         setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
                                       });
@@ -27765,8 +27849,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                 {/* Secondary actions */}
                                 <div className="flex items-center gap-6 mt-2">
-                                  <button type="button" className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Paste Content</button>
-                                  <button type="button" onClick={() => showToast('AI generation ready — describe your sheet')} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Ask AI</button>
+                                  <button type="button" onClick={() => { setHasImportedData(true); showToast('Paste content view loaded'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Paste Content</button>
+                                  <button type="button" onClick={() => { setHasImportedData(true); showToast('AI generation ready — describe your sheet'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Ask AI</button>
                                 </div>
 
                                 {dataPortalDragOver && (
@@ -27797,7 +27881,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <button
                                     key={label}
                                     type="button"
-                                    onClick={() => { setSheetToolbarTab('AI'); showToast(`AI-generating "${label}" template...`); }}
+                                    onClick={() => {
+                                      if (label === 'Blank Sheet') {
+                                        setSheetsTitle('Blank Sheet');
+                                        setHasImportedData(true);
+                                        showToast('Blank sheet created');
+                                      } else {
+                                        setSheetsTitle(label + ' Template');
+                                        setHasImportedData(true);
+                                        showToast(`AI-generating "${label}" template...`);
+                                      }
+                                    }}
                                     className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-gray-100 hover:border-violet-200 hover:shadow-md transition-all text-left group shadow-sm"
                                   >
                                     <div className={`w-8 h-8 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
@@ -27819,19 +27913,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                                   {dataPortalImports.slice(0, 5).map((item) => {
                                     const Icon = item.icon;
+                                    const isSelected = selectedDatasets.includes(item.name);
                                     return (
                                       <button
                                         key={item.id}
                                         type="button"
-                                        onClick={() => { setSheetToolbarTab('AI'); showToast(`Opening "${item.name}"...`); }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 transition-colors text-left first:rounded-t-2xl last:rounded-b-2xl"
+                                        onClick={() => {
+                                          setSelectedDatasets(prev => {
+                                            const next = prev.includes(item.name) ? prev.filter(n => n !== item.name) : [...prev, item.name];
+                                            if (next.length > 1) {
+                                              setDataPortalRelationshipPrompt(true);
+                                            } else {
+                                              setDataPortalRelationshipPrompt(false);
+                                            }
+                                            return next;
+                                          });
+                                          showToast(`${item.name} ${isSelected ? 'deselected' : 'selected'}`);
+                                        }}
+                                        onDoubleClick={() => {
+                                          setSheetsTitle(item.name);
+                                          setHasImportedData(true);
+                                          showToast(`Opening "${item.name}"...`);
+                                        }}
+                                        className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50/60 transition-all text-left first:rounded-t-2xl last:rounded-b-2xl ${isSelected ? 'bg-violet-50/30 outline outline-2 outline-violet-500/30' : ''}`}
                                       >
                                         <div className={`w-9 h-9 rounded-xl ${item.color} flex items-center justify-center shrink-0`}>
                                           <Icon size={16} />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <p className="text-[13px] font-medium text-slate-800 truncate">{item.name}</p>
-                                          <p className="text-[11px] text-slate-400 mt-0.5">Imported {item.date}</p>
+                                          <p className="text-[11px] text-slate-400 mt-0.5">Imported {item.date} (Double-click to open)</p>
                                         </div>
                                         <ArrowRight size={14} className="text-slate-300 group-hover:text-violet-400 shrink-0" />
                                       </button>
@@ -28961,12 +29072,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                          {renderDefs()}
                                          {shapeContent}
                                        </svg>
-                                       {(overlay.content !== undefined || overlay.shapeType === 'rectangle') && (
+                                       {overlay.type === 'rectangle' && (
                                          <textarea
                                            className="absolute inset-0 w-full h-full bg-transparent p-3 text-sm resize-none border-none outline-none z-10 font-medium"
                                            style={{ color: overlay.color || '#333', textAlign: 'center' }}
                                            value={overlay.content || ''}
-                                           placeholder="New Text"
+                                           placeholder={isSelected ? "New Text" : ""}
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
                                            onMouseDown={e => e.stopPropagation()}
@@ -30096,25 +30207,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </button>
                           </div>
                           <div className="w-px h-5 bg-gray-200 ml-1 mr-1"></div>
-                          <div className="relative">
+                          <div className="relative export-menu-container">
                             <button
                               onClick={() => {
                                 closeTransientMenus();
                                 setDeckExportMenuOpen(!deckExportMenuOpen);
                               }}
-                              className={`text-xs font-medium px-2 py-1.5 rounded flex items-center gap-1 transition-colors ${deckExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-gray-700'}`}
+                              className={`text-xs font-semibold px-2.5 py-1.5 rounded flex items-center gap-1 transition-colors ${deckExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
                               title="Export options"
                             >
-                              Export <ChevronDown size={12} className={`transition-transform duration-200 ${deckExportMenuOpen ? 'rotate-180' : ''}`} />
+                              Export {deckExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                             </button>
                             {deckExportMenuOpen && (
-                              <div className="absolute top-9 left-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
+                              <div className="absolute top-9 left-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
+                                <div className="flex flex-col gap-1.5">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
                                   {[
-                                    { format: 'Deck', icon: LayoutGrid, desc: 'Original' },
-                                    { format: 'PPTX', icon: LayoutGrid, desc: '.pptx' },
-                                    { format: 'PDF', icon: File, desc: '.pdf' }
+                                    { format: 'Deck', label: 'Deck', desc: 'Original' },
+                                    { format: 'PPTX', label: 'PPTX', desc: '.pptx' },
+                                    { format: 'PDF', label: 'PDF', desc: '.pdf' }
                                   ].map(f => (
                                     <button 
                                       key={f.format}
@@ -30131,31 +30242,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           setDeckExportMenuOpen(false);
                                         }
                                       }}
-                                      className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
+                                      className="w-full flex items-center justify-between text-xs py-1 rounded-lg text-slate-700 hover:text-violet-700 transition-colors text-left font-medium"
                                     >
-                                      <span className="font-medium">{f.format}</span>
-                                      <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
+                                      <span>{f.label}</span>
+                                      <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
                                     </button>
                                   ))}
                                 </div>
-                                <div className="h-px bg-gray-100 w-full my-2"></div>
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
+                                <div className="h-px bg-slate-100 w-full"></div>
+                                <div className="flex flex-col gap-2">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Convert to</span>
                                   {[
-                                    { target: 'Compose', icon: FileText, color: 'blue' },
-                                    { target: 'Sheets', icon: FileText, color: 'green' },
-                                    { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                                    { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80' },
+                                    { target: 'Sheets', icon: FileSpreadsheet, color: 'text-emerald-500 bg-emerald-50' },
+                                    { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50' }
                                   ].map(t => (
                                     <button 
                                       key={t.target}
                                       disabled={isExporting}
                                       onClick={() => {
                                         setIsExporting(true);
-                                        setTimeout(() => { setIsExporting(false); setDeckExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                                        setTimeout(() => { 
+                                          setIsExporting(false); 
+                                          setDeckExportMenuOpen(false); 
+                                          setProductMode(t.target.toLowerCase());
+                                          showToast('Converted to ' + t.target); 
+                                        }, 1500);
                                       }}
-                                      className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
+                                      className="w-full flex items-center gap-2.5 p-1 text-xs rounded-lg hover:bg-slate-50 transition-colors font-semibold text-slate-700"
                                     >
-                                      <t.icon size={14} className={`text-${t.color}-500`} />
+                                      <div className={`p-1.5 rounded ${t.color}`}>
+                                        <t.icon size={13} />
+                                      </div>
                                       {t.target}
                                     </button>
                                   ))}
@@ -32950,21 +33068,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     closeTransientMenus();
                     setComposeExportMenuOpen(!composeExportMenuOpen);
                   }}
-                  className={`text-xs font-medium px-2 py-1 rounded flex items-center gap-1 transition-colors ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-violet-50 hover:text-violet-700'}`}
+                  className={`text-xs font-semibold px-2.5 py-1.5 rounded flex items-center gap-1 transition-colors ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-violet-50 hover:text-violet-700'}`}
                   title="Export Compose options"
                 >
-                  Export <ChevronDown size={12} className={`transition-transform duration-200 ${composeExportMenuOpen ? 'rotate-180' : ''}`} />
+                  Export {composeExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 </button>
                 {composeExportMenuOpen && (
-                  <div className="absolute top-8 right-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
+                  <div className="absolute top-9 right-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
                       {[
-                        { format: 'Compose', icon: FileText, desc: 'Original' },
-                        { format: 'Word', icon: FileText, desc: '.docx' },
-                        { format: 'Docs', icon: FileText, desc: 'Cloud' },
-                        { format: 'PDF', icon: File, desc: '.pdf' },
-                        { format: 'Markdown', icon: FileText, desc: '.md' }
+                        { format: 'Compose', label: 'Compose', desc: 'Original' },
+                        { format: 'Word', label: 'Word', desc: '.docx' },
+                        { format: 'Docs', label: 'Docs', desc: 'Cloud' },
+                        { format: 'PDF', label: 'PDF', desc: '.pdf' },
+                        { format: 'Markdown', label: 'Markdown', desc: '.md' }
                       ].map(f => (
                         <button 
                           key={f.format}
@@ -32972,7 +33090,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={async () => {
                             setIsExporting(true);
                             try {
-                              await exportCompose(f.format, editorRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+                              await exportCompose(f.format, blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
                               showToast('Exported as ' + f.format);
                             } catch (e) {
                               showToast('Export failed: ' + e.message);
@@ -32981,31 +33099,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setComposeExportMenuOpen(false);
                             }
                           }}
-                          className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
+                          className="w-full flex items-center justify-between text-xs py-1 rounded-lg text-slate-700 hover:text-violet-700 transition-colors text-left font-medium"
                         >
-                          <span className="font-medium">{f.format}</span>
-                          <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
+                          <span>{f.label}</span>
+                          <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
                         </button>
                       ))}
                     </div>
-                    <div className="h-px bg-gray-100 w-full my-2"></div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
+                    <div className="h-px bg-slate-100 w-full"></div>
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Convert to</span>
                       {[
-                        { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
-                        { target: 'Sheets', icon: FileText, color: 'green' },
-                        { target: 'Whiteboard', icon: PenTool, color: 'orange' }
+                        { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50' },
+                        { target: 'Sheets', icon: FileSpreadsheet, color: 'text-emerald-500 bg-emerald-50' },
+                        { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50' }
                       ].map(t => (
                         <button 
                           key={t.target}
                           disabled={isExporting}
                           onClick={() => {
                             setIsExporting(true);
-                            setTimeout(() => { setIsExporting(false); setComposeExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                            setTimeout(() => { 
+                              setIsExporting(false); 
+                              setComposeExportMenuOpen(false); 
+                              setProductMode(t.target.toLowerCase());
+                              showToast('Converted to ' + t.target); 
+                            }, 1500);
                           }}
-                          className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
+                          className="w-full flex items-center gap-2.5 p-1 text-xs rounded-lg hover:bg-slate-50 transition-colors font-semibold text-slate-700"
                         >
-                          <t.icon size={14} className={`text-${t.color}-500`} />
+                          <div className={`p-1.5 rounded ${t.color}`}>
+                            <t.icon size={13} />
+                          </div>
                           {t.target}
                         </button>
                       ))}
@@ -35226,27 +35351,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <MoreHorizontal size={15} />
                     </button>
                     <div className="w-px h-6 bg-gray-200 mx-1"></div>
-                    <div className="relative">
+                    <div className="relative export-menu-container">
                       <button
                         type="button"
                         onClick={() => {
                           closeTransientMenus();
-                          setWhiteboardExportMenuOpen((prev) => !prev);
+                          setWhiteboardExportMenuOpen(!whiteboardExportMenuOpen);
                         }}
-                        className={`h-9 px-2.5 rounded-lg flex items-center justify-center gap-1 text-[11px] font-medium ${whiteboardExportMenuOpen ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                        className={`h-9 px-2.5 rounded-lg flex items-center justify-center gap-1 text-[11px] font-semibold transition-colors ${whiteboardExportMenuOpen ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                         title="Export options"
                       >
-                        Export <ChevronDown size={12} className={`transition-transform duration-200 ${whiteboardExportMenuOpen ? 'rotate-180' : ''}`} />
+                        Export {whiteboardExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       </button>
                       {whiteboardExportMenuOpen && (
-                        <div className="absolute bottom-12 left-0 z-[230] w-56 bg-white isolate border border-gray-200 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 flex flex-col">
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Export as File</span>
+                        <div className="absolute bottom-12 left-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
                             {[
-                              { format: 'Whiteboard', icon: PenTool, desc: 'Original' },
-                              { format: 'PNG', icon: File, desc: '.png' },
-                              { format: 'SVG', icon: File, desc: '.svg' },
-                              { format: 'PDF', icon: File, desc: '.pdf' }
+                              { format: 'Whiteboard', label: 'Whiteboard', desc: 'Original' },
+                              { format: 'PNG', label: 'PNG Image', desc: '.png' },
+                              { format: 'SVG', label: 'SVG Vector', desc: '.svg' },
+                              { format: 'PDF', label: 'PDF', desc: '.pdf' }
                             ].map(f => (
                               <button 
                                 key={f.format}
@@ -35263,31 +35388,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     setWhiteboardExportMenuOpen(false);
                                   }
                                 }}
-                                className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-left group"
+                                className="w-full flex items-center justify-between text-xs py-1 rounded-lg text-slate-700 hover:text-violet-700 transition-colors text-left font-medium"
                               >
-                                <span className="font-medium">{f.format}</span>
-                                <span className="text-[10px] text-gray-400 group-hover:text-violet-400">{f.desc}</span>
+                                <span>{f.label}</span>
+                                <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
                               </button>
                             ))}
                           </div>
-                          <div className="h-px bg-gray-100 w-full my-2"></div>
-                          <div className="flex flex-col">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 mb-1">Convert to</span>
+                          <div className="h-px bg-slate-100 w-full"></div>
+                          <div className="flex flex-col gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Convert to</span>
                             {[
-                              { target: 'Compose', icon: FileText, color: 'blue' },
-                              { target: 'Deck', icon: LayoutGrid, color: 'emerald' },
-                              { target: 'Sheets', icon: FileText, color: 'green' }
+                              { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80' },
+                              { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50' },
+                              { target: 'Sheets', icon: FileSpreadsheet, color: 'text-emerald-500 bg-emerald-50' }
                             ].map(t => (
                               <button 
                                 key={t.target}
                                 disabled={isExporting}
                                 onClick={() => {
                                   setIsExporting(true);
-                                  setTimeout(() => { setIsExporting(false); setWhiteboardExportMenuOpen(false); showToast('Converted to ' + t.target); }, 2000);
+                                  setTimeout(() => { 
+                                    setIsExporting(false); 
+                                    setWhiteboardExportMenuOpen(false); 
+                                    setProductMode(t.target.toLowerCase());
+                                    showToast('Converted to ' + t.target); 
+                                  }, 1500);
                                 }}
-                                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs rounded-lg hover:bg-slate-50 transition-colors font-medium text-gray-700"
+                                className="w-full flex items-center gap-2.5 p-1 text-xs rounded-lg hover:bg-slate-50 transition-colors font-semibold text-slate-700"
                               >
-                                <t.icon size={14} className={`text-${t.color}-500`} />
+                                <div className={`p-1.5 rounded ${t.color}`}>
+                                  <t.icon size={13} />
+                                </div>
                                 {t.target}
                               </button>
                             ))}
@@ -37260,16 +37392,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
               left: `${commentPopover.left}px`,
               width: '380px',
               maxHeight: '500px',
-              filter: 'drop-shadow(0 8px 40px rgba(0,0,0,0.18))',
+              filter: 'drop-shadow(0 12px 50px rgba(0,0,0,0.3))',
             }}
           >
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col" style={{ maxHeight: '500px' }}>
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gradient-to-r from-violet-50/80 to-white">
+            <div className="bg-gradient-to-b from-[#1c1917] to-[#0c0a09] text-slate-100 rounded-2xl border border-violet-500/20 overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(76,29,149,0.25)]" style={{ maxHeight: '500px' }}>
+              <div 
+                className="flex items-center justify-between px-4 py-2.5 border-b border-violet-900/20 bg-gradient-to-r from-violet-950/40 to-transparent cursor-move select-none"
+                onPointerDown={handleCommentDrag}
+              >
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">U</div>
                   <div>
-                    <span className="text-[11px] font-bold text-gray-800">You</span>
-                    <span className="text-[10px] text-gray-400 ml-1.5">· Just now</span>
+                    <span className="text-[11px] font-bold text-slate-200">You</span>
+                    <span className="text-[10px] text-slate-400 ml-1.5">· Just now</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -37280,7 +37415,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setCommentPopover(p => ({ ...p, open: false }));
                         showToast('Comment resolved ✓');
                       }}
-                      className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200"
+                      className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/30 border border-emerald-500/30 transition-colors"
                       title="Resolve"
                     >Resolve</button>
                   )}
@@ -37300,22 +37435,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         return cs;
                       });
                     }}
-                    className="p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-violet-900/20 transition-colors"
                   ><X size={13} /></button>
                 </div>
               </div>
 
               {replies.length > 0 && !comment.isDraft && (
-                <div className="px-4 py-2 space-y-3 border-b border-gray-50 overflow-y-auto" style={{ maxHeight: '140px' }}>
+                <div className="px-4 py-2 space-y-3 border-b border-violet-900/10 bg-black/20 overflow-y-auto" style={{ maxHeight: '140px' }}>
                   {replies.map((r, i) => (
                     <div key={i} className="flex gap-2">
-                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">{r.author?.[0] || 'U'}</div>
+                      <div className="w-5 h-5 rounded-full bg-violet-900/60 text-violet-200 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">{r.author?.[0] || 'U'}</div>
                       <div>
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[10px] font-bold text-gray-700">{r.author || 'You'}</span>
-                          <span className="text-[9px] text-gray-400">{r.time || 'Just now'}</span>
+                          <span className="text-[10px] font-bold text-slate-300">{r.author || 'You'}</span>
+                          <span className="text-[9px] text-slate-400">{r.time || 'Just now'}</span>
                         </div>
-                        <div className="text-[11px] text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: r.html || r.text || '' }} />
+                        <div className="text-[11px] text-slate-200 leading-relaxed" dangerouslySetInnerHTML={{ __html: r.html || r.text || '' }} />
                       </div>
                     </div>
                   ))}
@@ -37324,23 +37459,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               <div className="p-3 flex flex-col gap-2">
                 <div className="flex items-center gap-1 mb-1 px-1 text-slate-400">
-                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500 font-bold text-[11px] font-serif">B</button>
-                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500 italic text-[11px] font-serif">I</button>
-                  <div className="w-px h-3 bg-slate-200 mx-1"></div>
-                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><LinkIcon size={12} /></button>
-                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><FileText size={12} /></button>
-                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(!composeEmojiPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-1" title="Emoji"><SmilePlus size={12} /><ChevronDown size={10}/></button>
-   <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(!symbolsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-1" title="Symbols"><Pi size={12} /><ChevronDown size={10}/></button>
-   <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(!equationsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-1" title="Equations"><SigmaIcon size={12} /><ChevronDown size={10}/></button>
-                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><AtSign size={12} /></button>
-                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><Paperclip size={12} /></button>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 font-bold text-[11px] font-serif">B</button>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 italic text-[11px] font-serif">I</button>
+                  <div className="w-px h-3 bg-violet-950/40 mx-1"></div>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><LinkIcon size={12} /></button>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><FileText size={12} /></button>
+                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(!composeEmojiPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Emoji"><SmilePlus size={12} /><ChevronDown size={10}/></button>
+                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(!symbolsPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Symbols"><Pi size={12} /><ChevronDown size={10}/></button>
+                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(!equationsPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Equations"><SigmaIcon size={12} /><ChevronDown size={10}/></button>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><AtSign size={12} /></button>
+                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><Paperclip size={12} /></button>
                 </div>
                 <textarea
                   ref={commentTextareaRef}
                   autoFocus
                   placeholder="Add a comment, @mention, or [[reference]]..."
                   rows={3}
-                  className="w-full text-xs p-2.5 rounded-xl border border-gray-200 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 resize-none placeholder-gray-300 text-gray-700 bg-white leading-relaxed transition-all"
+                  className="w-full text-xs p-2.5 rounded-xl border border-violet-900/40 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-900/40 resize-none placeholder-slate-500 text-slate-100 bg-[#090d16]/80 leading-relaxed transition-all"
                   value={commentDraftText}
                   onChange={(e) => setCommentDraftText(e.target.value)}
                   onKeyDown={(e) => {
@@ -37352,7 +37487,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 />
 
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-gray-300">Ctrl+Enter to post</span>
+                  <span className="text-[9px] text-slate-450">Ctrl+Enter to post</span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
@@ -37370,7 +37505,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           return cs;
                         });
                       }}
-                      className="text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors"
+                      className="text-[11px] font-medium text-slate-400 hover:text-slate-200 transition-colors"
                     >Cancel</button>
                     <button
                       id="post-comment-btn"
@@ -37413,7 +37548,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               </div>
             </div>
-            <div className="absolute -top-1.5 left-10 w-3 h-3 bg-white border-l border-t border-gray-100 rotate-45" />
+            <div className="absolute -top-1.5 left-10 w-3 h-3 bg-[#1c1917] border-l border-t border-violet-500/20 rotate-45" />
           </div>
         );
       })()}
