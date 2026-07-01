@@ -28527,26 +28527,47 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            };
 
                            // Handle dragging
-                           const handleDrag = (e) => {
-                             if (isLocked) return;
-                             if (!isSelected) {
-                               setSelectedSheetOverlayId(overlay.id);
-                             }
-                             // if clicked on panel or handles, dont drag
-                             if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
-                             
-                             e.preventDefault(); e.stopPropagation();
-                             setIsShapeInteracting(true);
-                             const startX = e.clientX; const startY = e.clientY;
-                             const startL = left; const startT = top;
-                             const onMouseMove = (moveEvent) => {
-                               const dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
-                               const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
-                               updateOverlay({ x: startL + dx, y: startT + dy });
-                             };
-                             const onMouseUp = () => { setIsShapeInteracting(false); window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
-                             window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
-                           };
+                            const handleDrag = (e) => {
+                              if (isLocked) return;
+                              if (!isSelected) {
+                                setSelectedSheetOverlayId(overlay.id);
+                              }
+                              // if clicked on panel or handles, dont drag
+                              if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
+                              
+                              const isTextarea = e.target.tagName === 'TEXTAREA';
+                              const isFocused = document.activeElement === e.target;
+                              if (isTextarea && isFocused) {
+                                return;
+                              }
+                              
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setIsShapeInteracting(true);
+                              const startX = e.clientX; const startY = e.clientY;
+                              const startL = left; const startT = top;
+                              
+                              let hasMoved = false;
+                              const onMouseMove = (moveEvent) => {
+                                const dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
+                                const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
+                                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                  hasMoved = true;
+                                  updateOverlay({ x: startL + dx, y: startT + dy });
+                                }
+                              };
+                              const onMouseUp = () => {
+                                setIsShapeInteracting(false);
+                                window.removeEventListener('mousemove', onMouseMove);
+                                window.removeEventListener('mouseup', onMouseUp);
+                                
+                                if (!hasMoved && isTextarea) {
+                                  e.target.focus();
+                                }
+                              };
+                              window.addEventListener('mousemove', onMouseMove);
+                              window.addEventListener('mouseup', onMouseUp);
+                            };;
 
                            return (
                              <div 
