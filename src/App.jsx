@@ -12799,8 +12799,8 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const executeSheetSlashCommand = (key) => {
-    const sMenuLeft = sheetSlashMenu.x || window.innerWidth / 2;
-    const sMenuTop = sheetSlashMenu.y || (window.innerHeight / 2);
+    const sMenuLeft = sheetSlashMenu.left || window.innerWidth / 2;
+    const sMenuTop = sheetSlashMenu.top || (window.innerHeight / 2);
     const sMenuBottom = 'auto';
     
     setSheetSlashMenu({ open: false, left: 0, top: 0, bottom: 'auto', filterText: '', activeIndex: 0, anchorCell: null });
@@ -12838,27 +12838,37 @@ Generate the updated output according to the instruction. Preserve layout and ta
     if (key === 'insert_chart') {
       setSheetChartMenu({
         open: true,
-        left: Math.max(20, (window.innerWidth / 2) - 140),
-        top: Math.max(20, (window.innerHeight / 2) - 280),
-        anchorCell: selectedSheetRange ? selectedSheetRange : { startRow: 1, startCol: 1 }
+        left: sMenuLeft,
+        top: sMenuTop,
+        anchorCell: sheetSlashMenu.anchorCell || selectedSheetRange || { startRow: 1, startCol: 1 }
       });
       return;
     }
 
     if (key === 'format' || key === 'format_cell') {
-      setCellFormatPopover({ open: true, left: sMenuLeft, top: sMenuTop });
+      setCellFormatModal({ open: true, x: sMenuLeft, y: sMenuTop });
       return;
     }
 
     if (key === 'filter') {
-      const range = selectedSheetRange || { startRow: selectedSheetCell?.row || 1, startCol: selectedSheetCell?.col || 1 };
-      setSheetFilterPopover({ 
-        open: true, 
-        left: sMenuLeft, 
-        top: sMenuTop, 
-        colIndex: range.startCol - 1, 
-        rowIndex: range.startRow - 1 
+      const range = sheetSlashMenu.anchorCell || selectedSheetRange || { startRow: selectedSheetCell?.row || 1, startCol: selectedSheetCell?.col || 1 };
+      const colIndex = (range.startCol || range.col) - 1;
+      const rowIndex = (range.startRow || range.row) - 1;
+      
+      const currentFilters = activeSheetGridRaw.filters || {};
+      const isAlreadyActive = currentFilters[colIndex]?.active;
+      
+      updateSheetSettings(activeSheetId, {
+        filters: {
+          ...currentFilters,
+          [colIndex]: {
+            active: !isAlreadyActive,
+            row: rowIndex,
+            text: ''
+          }
+        }
       });
+      showToast(isAlreadyActive ? 'Filter disabled' : 'Filter enabled on column');
       return;
     }
 
@@ -12878,18 +12888,33 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
 
     if (key === 'insert_shape') {
-      // Centre the modal on screen since it's a large picker
       setSheetShapeMenu({
         open: true,
-        left: Math.max(20, (window.innerWidth / 2) - 140),
-        top: Math.max(20, (window.innerHeight / 2) - 280),
-        anchorCell: selectedSheetRange ? selectedSheetRange : { startRow: 1, startCol: 1 }
+        left: sMenuLeft,
+        top: sMenuTop,
+        anchorCell: sheetSlashMenu.anchorCell || selectedSheetRange || { startRow: 1, startCol: 1 },
+        clickX: sMenuLeft,
+        clickY: sMenuTop
       });
       return;
     }
 
     if (key === 'insert_textbox' || key === 'insert_comment') {
-      const cellAnchor = selectedSheetRange ? selectedSheetRange : (selectedSheetCell ? { startRow: selectedSheetCell.row, startCol: selectedSheetCell.col } : { startRow: 1, startCol: 1 });
+      const cellAnchor = sheetSlashMenu.anchorCell || selectedSheetRange || (selectedSheetCell ? { startRow: selectedSheetCell.row, startCol: selectedSheetCell.col } : { startRow: 1, startCol: 1 });
+      
+      let overlayX = 20;
+      let overlayY = 20;
+      const cellRow = cellAnchor.startRow || cellAnchor.row || 1;
+      const cellCol = cellAnchor.startCol || cellAnchor.col || 1;
+      const cellElement = document.querySelector(`[data-row="${cellRow}"][data-col="${cellCol}"]`);
+      const gridViewport = document.querySelector('.sheets-grid-viewport') || document.querySelector('.sheets-container');
+      if (cellElement && gridViewport) {
+        const vRect = gridViewport.getBoundingClientRect();
+        const cRect = cellElement.getBoundingClientRect();
+        overlayX = cRect.left - vRect.left + gridViewport.scrollLeft + 10;
+        overlayY = cRect.top - vRect.top + gridViewport.scrollTop + 10;
+      }
+
       if (key === 'insert_comment') {
         const newCommentId = 'comment-' + Date.now();
         setComments(prev => [
@@ -12902,13 +12927,13 @@ Generate the updated output according to the instruction. Preserve layout and ta
             resolved: false,
             replies: [],
             targetId: activeSheetId,
-            metadata: { row: cellAnchor.startRow, col: cellAnchor.startCol }
+            metadata: { row: cellRow, col: cellCol }
           }
         ]);
         setCommentPopover({
           open: true,
-          top: Math.max(100, (window.innerHeight / 2) - 100),
-          left: Math.max(100, (window.innerWidth / 2) - 150),
+          top: sMenuTop,
+          left: sMenuLeft,
           commentId: newCommentId
         });
         showToast('Comment inserted');
@@ -12918,9 +12943,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
           id: 'overlay-' + Date.now(),
           type: 'rectangle',
           shapeType: 'rectangle',
-          row: cellAnchor.startRow,
-          col: cellAnchor.startCol,
-          x: 20, y: 20,
+          row: cellRow,
+          col: cellCol,
+          x: overlayX, y: overlayY,
           width: 200, height: 60,
           content: 'New Text',
           color: '#4c1d95',
@@ -12936,8 +12961,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       return;
     }
-
-    if (allRanges.length === 0) return;
+        if (allRanges.length === 0) return;
 
     // Below this point, commands require an active selection range
 
