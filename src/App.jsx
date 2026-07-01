@@ -31132,15 +31132,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
               filter: 'drop-shadow(0 12px 50px rgba(0,0,0,0.3))',
             }}
           >
-            <div className="bg-gradient-to-b from-[#1c1917] to-[#0c0a09] text-slate-100 rounded-2xl border border-violet-500/20 overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(76,29,149,0.25)]" style={{ maxHeight: '500px' }}>
+            <div className="bg-white/95 backdrop-blur-md text-slate-800 rounded-2xl border border-slate-200/80 overflow-hidden flex flex-col shadow-[0_15px_40px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.02)]" style={{ maxHeight: '500px' }}>
               <div 
-                className="flex items-center justify-between px-4 py-2.5 border-b border-violet-900/20 bg-gradient-to-r from-violet-950/40 to-transparent cursor-move select-none"
+                className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-transparent cursor-move select-none"
                 onPointerDown={handleCommentDrag}
               >
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">U</div>
                   <div>
-                    <span className="text-[11px] font-bold text-slate-200">You</span>
+                    <span className="text-[11px] font-bold text-slate-700">You</span>
                     <span className="text-[10px] text-slate-400 ml-1.5">· Just now</span>
                   </div>
                 </div>
@@ -31152,7 +31152,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setCommentPopover(p => ({ ...p, open: false }));
                         showToast('Comment resolved ✓');
                       }}
-                      className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/30 border border-emerald-500/30 transition-colors"
+                      className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200"
                       title="Resolve"
                     >Resolve</button>
                   )}
@@ -31172,22 +31172,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         return cs;
                       });
                     }}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-violet-900/20 transition-colors"
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                   ><X size={13} /></button>
                 </div>
               </div>
 
               {replies.length > 0 && !comment.isDraft && (
-                <div className="px-4 py-2 space-y-3 border-b border-violet-900/10 bg-black/20 overflow-y-auto" style={{ maxHeight: '140px' }}>
+                <div className="px-4 py-2 space-y-3 border-b border-slate-100 bg-slate-50/50 overflow-y-auto" style={{ maxHeight: '140px' }}>
                   {replies.map((r, i) => (
                     <div key={i} className="flex gap-2">
-                      <div className="w-5 h-5 rounded-full bg-violet-900/60 text-violet-200 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">{r.author?.[0] || 'U'}</div>
+                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">{r.author?.[0] || 'U'}</div>
                       <div>
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[10px] font-bold text-slate-300">{r.author || 'You'}</span>
+                          <span className="text-[10px] font-bold text-slate-700">{r.author || 'You'}</span>
                           <span className="text-[9px] text-slate-400">{r.time || 'Just now'}</span>
                         </div>
-                        <div className="text-[11px] text-slate-200 leading-relaxed" dangerouslySetInnerHTML={{ __html: r.html || r.text || '' }} />
+                        <div className="text-[11px] text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: r.html || r.text || '' }} />
                       </div>
                     </div>
                   ))}
@@ -31196,23 +31196,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               <div className="p-3 flex flex-col gap-2">
                 <div className="flex items-center gap-1 mb-1 px-1 text-slate-400">
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 font-bold text-[11px] font-serif">B</button>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 italic text-[11px] font-serif">I</button>
-                  <div className="w-px h-3 bg-violet-950/40 mx-1"></div>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><LinkIcon size={12} /></button>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><FileText size={12} /></button>
-                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(!composeEmojiPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Emoji"><SmilePlus size={12} /><ChevronDown size={10}/></button>
-                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(!symbolsPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Symbols"><Pi size={12} /><ChevronDown size={10}/></button>
-                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(!equationsPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Equations"><SigmaIcon size={12} /><ChevronDown size={10}/></button>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><AtSign size={12} /></button>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><Paperclip size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500 font-bold text-[11px] font-serif">B</button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500 italic text-[11px] font-serif">I</button>
+                  <div className="w-px h-3 bg-slate-200 mx-1"></div>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><LinkIcon size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><FileText size={12} /></button>
+                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(!composeEmojiPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-1" title="Emoji"><SmilePlus size={12} /><ChevronDown size={10}/></button>
+                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(!symbolsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-1" title="Symbols"><Pi size={12} /><ChevronDown size={10}/></button>
+                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(!equationsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-1" title="Equations"><SigmaIcon size={12} /><ChevronDown size={10}/></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><AtSign size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><Paperclip size={12} /></button>
                 </div>
                 <textarea
                   ref={commentTextareaRef}
                   autoFocus
                   placeholder="Add a comment, @mention, or [[reference]]..."
                   rows={3}
-                  className="w-full text-xs p-2.5 rounded-xl border border-violet-900/40 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-900/40 resize-none placeholder-slate-500 text-slate-100 bg-[#090d16]/80 leading-relaxed transition-all"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 resize-none placeholder-slate-400 text-slate-800 bg-white leading-relaxed transition-all"
                   value={commentDraftText}
                   onChange={(e) => setCommentDraftText(e.target.value)}
                   onKeyDown={(e) => {
@@ -31224,7 +31224,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 />
 
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-slate-450">Ctrl+Enter to post</span>
+                  <span className="text-[9px] text-slate-400">Ctrl+Enter to post</span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
@@ -31242,7 +31242,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           return cs;
                         });
                       }}
-                      className="text-[11px] font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                      className="text-[11px] font-medium text-slate-500 hover:text-slate-700 transition-colors"
                     >Cancel</button>
                     <button
                       id="post-comment-btn"
@@ -31285,7 +31285,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               </div>
             </div>
-            <div className="absolute -top-1.5 left-10 w-3 h-3 bg-[#1c1917] border-l border-t border-violet-500/20 rotate-45" />
+            <div className="absolute -top-1.5 left-10 w-3 h-3 bg-white border-l border-t border-slate-200/80 rotate-45" />
           </div>
         );
       })()}
@@ -37866,15 +37866,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
               filter: 'drop-shadow(0 12px 50px rgba(0,0,0,0.3))',
             }}
           >
-            <div className="bg-gradient-to-b from-[#1c1917] to-[#0c0a09] text-slate-100 rounded-2xl border border-violet-500/20 overflow-hidden flex flex-col shadow-[0_20px_50px_rgba(76,29,149,0.25)]" style={{ maxHeight: '500px' }}>
+            <div className="bg-white/95 backdrop-blur-md text-slate-800 rounded-2xl border border-slate-200/80 overflow-hidden flex flex-col shadow-[0_15px_40px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.02)]" style={{ maxHeight: '500px' }}>
               <div 
-                className="flex items-center justify-between px-4 py-2.5 border-b border-violet-900/20 bg-gradient-to-r from-violet-950/40 to-transparent cursor-move select-none"
+                className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-transparent cursor-move select-none"
                 onPointerDown={handleCommentDrag}
               >
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">U</div>
                   <div>
-                    <span className="text-[11px] font-bold text-slate-200">You</span>
+                    <span className="text-[11px] font-bold text-slate-700">You</span>
                     <span className="text-[10px] text-slate-400 ml-1.5">· Just now</span>
                   </div>
                 </div>
@@ -37886,7 +37886,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setCommentPopover(p => ({ ...p, open: false }));
                         showToast('Comment resolved ✓');
                       }}
-                      className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/30 border border-emerald-500/30 transition-colors"
+                      className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200"
                       title="Resolve"
                     >Resolve</button>
                   )}
@@ -37906,22 +37906,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         return cs;
                       });
                     }}
-                    className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-violet-900/20 transition-colors"
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
                   ><X size={13} /></button>
                 </div>
               </div>
 
               {replies.length > 0 && !comment.isDraft && (
-                <div className="px-4 py-2 space-y-3 border-b border-violet-900/10 bg-black/20 overflow-y-auto" style={{ maxHeight: '140px' }}>
+                <div className="px-4 py-2 space-y-3 border-b border-slate-100 bg-slate-50/50 overflow-y-auto" style={{ maxHeight: '140px' }}>
                   {replies.map((r, i) => (
                     <div key={i} className="flex gap-2">
-                      <div className="w-5 h-5 rounded-full bg-violet-900/60 text-violet-200 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">{r.author?.[0] || 'U'}</div>
+                      <div className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">{r.author?.[0] || 'U'}</div>
                       <div>
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-[10px] font-bold text-slate-300">{r.author || 'You'}</span>
+                          <span className="text-[10px] font-bold text-slate-700">{r.author || 'You'}</span>
                           <span className="text-[9px] text-slate-400">{r.time || 'Just now'}</span>
                         </div>
-                        <div className="text-[11px] text-slate-200 leading-relaxed" dangerouslySetInnerHTML={{ __html: r.html || r.text || '' }} />
+                        <div className="text-[11px] text-slate-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: r.html || r.text || '' }} />
                       </div>
                     </div>
                   ))}
@@ -37930,23 +37930,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
               <div className="p-3 flex flex-col gap-2">
                 <div className="flex items-center gap-1 mb-1 px-1 text-slate-400">
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 font-bold text-[11px] font-serif">B</button>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 italic text-[11px] font-serif">I</button>
-                  <div className="w-px h-3 bg-violet-950/40 mx-1"></div>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><LinkIcon size={12} /></button>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><FileText size={12} /></button>
-                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(!composeEmojiPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Emoji"><SmilePlus size={12} /><ChevronDown size={10}/></button>
-                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(!symbolsPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Symbols"><Pi size={12} /><ChevronDown size={10}/></button>
-                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(!equationsPickerOpen); }} className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400 flex items-center gap-1" title="Equations"><SigmaIcon size={12} /><ChevronDown size={10}/></button>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><AtSign size={12} /></button>
-                  <button className="p-1 hover:bg-violet-900/20 hover:text-slate-200 rounded text-slate-400"><Paperclip size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500 font-bold text-[11px] font-serif">B</button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500 italic text-[11px] font-serif">I</button>
+                  <div className="w-px h-3 bg-slate-200 mx-1"></div>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><LinkIcon size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><FileText size={12} /></button>
+                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); setComposeEmojiPickerOpen(!composeEmojiPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-1" title="Emoji"><SmilePlus size={12} /><ChevronDown size={10}/></button>
+                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); setSymbolsPickerOpen(!symbolsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-1" title="Symbols"><Pi size={12} /><ChevronDown size={10}/></button>
+                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); setEquationsPickerOpen(!equationsPickerOpen); }} className="p-1 hover:bg-slate-100 rounded text-slate-500 flex items-center gap-1" title="Equations"><SigmaIcon size={12} /><ChevronDown size={10}/></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><AtSign size={12} /></button>
+                  <button className="p-1 hover:bg-slate-100 rounded text-slate-500"><Paperclip size={12} /></button>
                 </div>
                 <textarea
                   ref={commentTextareaRef}
                   autoFocus
                   placeholder="Add a comment, @mention, or [[reference]]..."
                   rows={3}
-                  className="w-full text-xs p-2.5 rounded-xl border border-violet-900/40 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-900/40 resize-none placeholder-slate-500 text-slate-100 bg-[#090d16]/80 leading-relaxed transition-all"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-100 resize-none placeholder-slate-400 text-slate-800 bg-white leading-relaxed transition-all"
                   value={commentDraftText}
                   onChange={(e) => setCommentDraftText(e.target.value)}
                   onKeyDown={(e) => {
@@ -37958,7 +37958,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 />
 
                 <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-slate-450">Ctrl+Enter to post</span>
+                  <span className="text-[9px] text-slate-400">Ctrl+Enter to post</span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => {
@@ -37976,7 +37976,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           return cs;
                         });
                       }}
-                      className="text-[11px] font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                      className="text-[11px] font-medium text-slate-500 hover:text-slate-700 transition-colors"
                     >Cancel</button>
                     <button
                       id="post-comment-btn"
@@ -38019,7 +38019,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               </div>
             </div>
-            <div className="absolute -top-1.5 left-10 w-3 h-3 bg-[#1c1917] border-l border-t border-violet-500/20 rotate-45" />
+            <div className="absolute -top-1.5 left-10 w-3 h-3 bg-white border-l border-t border-slate-200/80 rotate-45" />
           </div>
         );
       })()}
