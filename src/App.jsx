@@ -5038,6 +5038,8 @@ export default function App() {
   const [specialCharactersModal, setSpecialCharactersModal] = useState({ open: false, x: 0, y: 0, numberFormat: 'general', currencySymbol: '$', decimals: 0, prefix: '', suffix: '' });
   const [cellFormatModal, setCellFormatModal] = useState({ open: false, x: 0, y: 0 });
   const [sheetDatePicker, setSheetDatePicker] = useState({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
+  const [hoveredCellCoord, setHoveredCellCoord] = useState(null);
+  const cellHoverTimeoutRef = useRef(null);
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
@@ -29818,6 +29820,41 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         });
                                         setSheetSelectionMode('cell');
                                       }
+                                      
+                                      const hasFormat = computedFormat.fill || computedFormat.color || computedFormat.borders || computedFormat.dataType || (computedFormat.type && computedFormat.type !== 'default');
+                                      if (hasFormat) {
+                                        if (cellHoverTimeoutRef.current) {
+                                          clearTimeout(cellHoverTimeoutRef.current);
+                                          cellHoverTimeoutRef.current = null;
+                                        }
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        setHoveredCellCoord({
+                                          row: rowIndex,
+                                          col: colIndex,
+                                          rect: {
+                                            left: rect.left,
+                                            top: rect.top,
+                                            width: rect.width,
+                                            height: rect.height
+                                          },
+                                          format: computedFormat
+                                        });
+                                      } else {
+                                        if (!cellHoverTimeoutRef.current) {
+                                          cellHoverTimeoutRef.current = setTimeout(() => {
+                                            setHoveredCellCoord(null);
+                                            cellHoverTimeoutRef.current = null;
+                                          }, 200);
+                                        }
+                                      }
+                                    }}
+                                    onMouseLeave={() => {
+                                      if (!cellHoverTimeoutRef.current) {
+                                        cellHoverTimeoutRef.current = setTimeout(() => {
+                                          setHoveredCellCoord(null);
+                                          cellHoverTimeoutRef.current = null;
+                                        }, 200);
+                                      }
                                     }}
                                   >
                                     {tableIntersections.length > 0 && tableIntersections[tableIntersections.length - 1].id === hoveredTableId && 
@@ -32133,7 +32170,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {/* Data & Interactive Formats */}
             <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Data & Interactive Settings</label>
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Data & Interactive Settings</label>
+                <div className="flex items-center gap-1">
+                  <input 
+                    type="checkbox" 
+                    id="lock-format-chk" 
+                    className="rounded text-violet-600 focus:ring-violet-400 w-3 h-3" 
+                    checked={cellFormatModal.isLocked || false} 
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, isLocked: e.target.checked }))} 
+                  />
+                  <label htmlFor="lock-format-chk" className="text-[9px] text-slate-500 font-semibold cursor-pointer">Lock</label>
+                </div>
+              </div>
               
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1">
@@ -32250,7 +32299,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         options: parsedOptions,
                         optionsText: cellFormatModal.optionsText,
                         buttonLabel: cellFormatModal.buttonLabel || 'Calculate',
-                        buttonAction: cellFormatModal.buttonAction || 'Calculate'
+                        buttonAction: cellFormatModal.buttonAction || 'Calculate',
+                        isLocked: cellFormatModal.isLocked || false
                       };
                     }
                   }
@@ -32263,6 +32313,101 @@ if (productMode === 'deck' || productMode === 'sheets') {
               Apply
             </button>
           </div>
+        </div>
+      )}
+
+      {hoveredCellCoord && !hoveredCellCoord.format.isLocked && (
+        <div 
+          className="absolute z-[120] bg-slate-900 text-white rounded-lg shadow-xl px-2 py-1 flex items-center gap-1.5 border border-slate-800 text-xs cell-hover-toolbar animate-in fade-in zoom-in-95 duration-150"
+          style={{
+            left: `${hoveredCellCoord.rect.left + hoveredCellCoord.rect.width / 2 - 55}px`,
+            top: `${hoveredCellCoord.rect.top - 36 + window.scrollY}px`
+          }}
+          onMouseDown={e => e.stopPropagation()}
+          onMouseEnter={() => {
+            if (cellHoverTimeoutRef.current) {
+              clearTimeout(cellHoverTimeoutRef.current);
+              cellHoverTimeoutRef.current = null;
+            }
+          }}
+          onMouseLeave={() => {
+            setHoveredCellCoord(null);
+          }}
+        >
+          <button 
+            type="button" 
+            className="p-1 hover:bg-slate-800 rounded transition-colors text-slate-350 hover:text-white"
+            title="Edit Formatting"
+            onClick={() => {
+              const rect = hoveredCellCoord.rect;
+              setCellFormatModal({
+                open: true,
+                x: rect.left,
+                y: rect.bottom + window.scrollY + 4,
+                align: hoveredCellCoord.format.align || 'left',
+                valign: hoveredCellCoord.format.valign || 'middle',
+                fill: hoveredCellCoord.format.fill || '#ffffff',
+                color: hoveredCellCoord.format.color || '#000000',
+                borderStyle: hoveredCellCoord.format.borderStyle || 'solid',
+                borderColor: hoveredCellCoord.format.borderColor || '#e5e7eb',
+                borders: hoveredCellCoord.format.borders || { top: false, bottom: false, left: false, right: false },
+                dataType: hoveredCellCoord.format.dataType || 'text',
+                type: hoveredCellCoord.format.type || 'default',
+                optionsText: hoveredCellCoord.format.optionsText || '',
+                buttonLabel: hoveredCellCoord.format.buttonLabel || 'Calculate',
+                buttonAction: hoveredCellCoord.format.buttonAction || 'Calculate',
+                isLocked: false
+              });
+              setHoveredCellCoord(null);
+            }}
+          >
+            <Settings size={13} />
+          </button>
+          
+          <button 
+            type="button" 
+            className="p-1 hover:bg-slate-800 rounded transition-colors text-slate-350 hover:text-white"
+            title="Lock Format"
+            onClick={() => {
+              const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+              const r = hoveredCellCoord.row;
+              const c = hoveredCellCoord.col;
+              if (!newFormats[r]) newFormats[r] = {};
+              newFormats[r][c] = {
+                ...newFormats[r][c],
+                isLocked: true
+              };
+              updateSheetSettings(activeSheetId, { formats: newFormats });
+              setHoveredCellCoord(null);
+              showToast('Formatting locked. Hover helper disabled.');
+            }}
+          >
+            <Lock size={13} />
+          </button>
+          
+          <div className="w-[1px] h-3.5 bg-slate-800 mx-0.5" />
+          
+          <button 
+            type="button" 
+            className="p-1 hover:bg-red-950 rounded transition-colors text-red-400 hover:text-red-300"
+            title="Clear Formatting"
+            onClick={() => {
+              const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+              const r = hoveredCellCoord.row;
+              const c = hoveredCellCoord.col;
+              if (newFormats[r]) {
+                delete newFormats[r][c];
+                if (Object.keys(newFormats[r]).length === 0) {
+                  delete newFormats[r];
+                }
+              }
+              updateSheetSettings(activeSheetId, { formats: newFormats });
+              setHoveredCellCoord(null);
+              showToast('Cell formatting cleared');
+            }}
+          >
+            <Trash2 size={13} />
+          </button>
         </div>
       )}
 
@@ -39779,7 +39924,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             {/* Data & Interactive Formats */}
             <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Data & Interactive Settings</label>
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Data & Interactive Settings</label>
+                <div className="flex items-center gap-1">
+                  <input 
+                    type="checkbox" 
+                    id="lock-format-chk" 
+                    className="rounded text-violet-600 focus:ring-violet-400 w-3 h-3" 
+                    checked={cellFormatModal.isLocked || false} 
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, isLocked: e.target.checked }))} 
+                  />
+                  <label htmlFor="lock-format-chk" className="text-[9px] text-slate-500 font-semibold cursor-pointer">Lock</label>
+                </div>
+              </div>
               
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex flex-col gap-1">
@@ -39896,7 +40053,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         options: parsedOptions,
                         optionsText: cellFormatModal.optionsText,
                         buttonLabel: cellFormatModal.buttonLabel || 'Calculate',
-                        buttonAction: cellFormatModal.buttonAction || 'Calculate'
+                        buttonAction: cellFormatModal.buttonAction || 'Calculate',
+                        isLocked: cellFormatModal.isLocked || false
                       };
                     }
                   }
