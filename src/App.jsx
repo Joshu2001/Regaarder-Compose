@@ -41604,7 +41604,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       style={{ background: c }}
                     />
                   ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider w-14">Opacity</label>
+                <input type="range" min="0.05" max="1" step="0.05" value={docWatermark?.opacity || 0.15} onChange={(e) => setDocWatermark(prev => ({ ...prev, opacity: parseFloat(e.target.value) }))} className="flex-1 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900" />
+                <span className="text-[10px] font-medium text-gray-500 w-8 text-right">{Math.round((docWatermark?.opacity || 0.15) * 100)}%</span>
+              </div>
+            </div>
 
+            {/* Placement */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Placement</label>
+              <select
+                value={docWatermark?.placement || 'center'}
+                onChange={(e) => setDocWatermark(prev => ({ ...prev, placement: e.target.value }))}
+                className="w-full text-xs font-medium text-gray-700 px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-gray-400 bg-white shadow-sm appearance-none"
+              >
+                <option value="center">Center</option>
+                <option value="header">Header</option>
+                <option value="footer">Footer</option>
+                <option value="tiled">Tiled</option>
+              </select>
+            </div>
+
+            {/* Size & Rotation */}
+            <div className="space-y-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider w-12">Size</label>
+                <input type="range" min="20" max="100" step="5" value={docWatermark?.size || 100} onChange={(e) => setDocWatermark(prev => ({ ...prev, size: parseInt(e.target.value) }))} className="flex-1 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900" />
+                <span className="text-[10px] font-medium text-gray-500 w-8 text-right">{docWatermark?.size || 100}%</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider w-12">Angle</label>
+                <input type="range" min="-90" max="90" step="5" value={docWatermark?.rotation ?? -45} onChange={(e) => setDocWatermark(prev => ({ ...prev, rotation: parseInt(e.target.value) }))} className="flex-1 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900" />
+                <span className="text-[10px] font-medium text-gray-500 w-8 text-right">{docWatermark?.rotation ?? -45}°</span>
+              </div>
+            </div>
             {/* Tip */}
             <p className="text-[9px] text-gray-400 italic">💡 Tip: After applying, hover over the watermark to drag or use the rotate handle above it.</p>
 

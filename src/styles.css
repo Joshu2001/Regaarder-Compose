@@ -659,6 +659,49 @@ body { margin: 0; background: #ffffff; }
 .prose ol, [contenteditable='true'] ol { list-style-type: decimal; margin-left: 1.5rem; padding-left: 0.5rem; }
 .prose li, [contenteditable='true'] li { margin-bottom: 0.25rem; }
 
+/* Custom bullet variants — driven by data-list-style on the <ul> element */
+[contenteditable='true'] ul[data-list-style='arrow'],
+[contenteditable='true'] ol[data-list-style='arrow'] {
+  list-style: none;
+  padding-left: 1.75rem;
+}
+[contenteditable='true'] ul[data-list-style='arrow'] li::before {
+  content: '➤';
+  display: inline-block;
+  width: 1.25rem;
+  margin-left: -1.25rem;
+}
+[contenteditable='true'] ul[data-list-style='check'] {
+  list-style: none;
+  padding-left: 1.75rem;
+}
+[contenteditable='true'] ul[data-list-style='check'] li::before {
+  content: '✓';
+  display: inline-block;
+  width: 1.25rem;
+  margin-left: -1.25rem;
+}
+[contenteditable='true'] ul[data-list-style='diamond'] {
+  list-style: none;
+  padding-left: 1.75rem;
+}
+[contenteditable='true'] ul[data-list-style='diamond'] li::before {
+  content: '◆';
+  display: inline-block;
+  width: 1.25rem;
+  margin-left: -1.25rem;
+}
+[contenteditable='true'] ul[data-list-style='star'] {
+  list-style: none;
+  padding-left: 1.75rem;
+}
+[contenteditable='true'] ul[data-list-style='star'] li::before {
+  content: '★';
+  display: inline-block;
+  width: 1.25rem;
+  margin-left: -1.25rem;
+}
+
 /* Interactive Chart and Shape Blending & Edit Modes */
 .interactive-chart-block:not(.editing) .chart-block-header,
 .interactive-chart-block:not(.editing) .chart-grid-container {

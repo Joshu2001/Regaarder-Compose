@@ -8,8 +8,8 @@ const puppeteer = require('puppeteer');
   page.on('console', msg => console.log('PAGE LOG:', msg.text()));
   page.on('pageerror', err => console.log('PAGE ERROR:', err.toString()));
   
-  console.log("Navigating to 127.0.0.1:5175...");
-  await page.goto('http://127.0.0.1:5175', { waitUntil: 'networkidle2' });
+  console.log("Navigating to 127.0.0.1:5173...");
+  await page.goto('http://127.0.0.1:5173', { waitUntil: 'networkidle2' });
   
   console.log("Waiting for Room button...");
   await new Promise(r => setTimeout(r, 2000));
