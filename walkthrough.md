@@ -80,3 +80,13 @@ This walkthrough details the visual improvements, event-handler corrections, and
 - **Typing Retention & React Syncing**: 
   - Added `oninput="this.setAttribute('value', this.value)"` to the text input elements. This ensures that whatever the user types is synced to the DOM attribute, preventing it from being lost during React re-renders.
   - Added real-time DOM-to-React updates (`setDocBodyHtml(blankBodyRef.current.innerHTML)`) to the dropdown select handlers (`selectPromptChartType`, `selectPromptLanguage`, `togglePromptChartMenu`, and `togglePromptLanguageMenu`). This synchronizes the chosen values and toggle status back into React state instantly.
+
+---
+
+## 9. Spreadsheet Column Header & Cell Alignment Fixes
+- **Scroll Synchronization**:
+  - Wrapped the spreadsheet column headers grid in a scroll-synchronized `div` (`ref={sheetHeaderWrapperRef}`) with `overflow-hidden w-full`.
+  - Added an `onScroll` handler on the main scrollable sheet body to align `sheetHeaderWrapperRef.current.scrollLeft` with the body's horizontal scroll position.
+- **Identical Column Dimensions**:
+  - Added `minWidth: 'max-content'` to both the header grid and the body cell grid container. This guarantees both grids compute column dimensions identically using the CSS custom properties width variables, correcting layout shifts regardless of horizontal viewport scale.
+

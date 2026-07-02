@@ -2,12 +2,13 @@
 
 - `[x]` Update `src/styles.css` with fixed position for `.slash-menu-container` and placeholder rules for `.title-editable` / `.subtitle-editable`.
 - `[x]` Update `src/App.jsx` title/subtitle editors to use `dangerouslySetInnerHTML` for rendering.
-- `[x]` Update `src/App.jsx` with `isSelectionInHeader` guardrail checks.
-- `[x]` Update `src/App.jsx` prompt bar modal z-indices (z-[1200] and z-[1210]).
-- `[x]` Update `src/App.jsx` inline chart dropdown menus to have `pointer-events: auto !important` and dual mouse handlers.
-- `[x]` Build the bundle and verify compilation.
-- `[x]` Define slash menu popover state and UI in `src/App.jsx`
-- `[x]` Implement editor event listener for keydown `/` and popover rendering coordinates
+- `[x]` Update coordinate parsing in `executeSheetSlashCommand` in `App.jsx`
+- `[x]` Map trigger coords for `insert_textbox` (Text Box appearance) in `executeSheetSlashCommand` in `App.jsx`
+- `[x]` Map trigger coords for `insertChart` (Chart appearance) in `App.jsx`
+- `[x]` Map trigger coords for `insertShape` (Shape appearance) in `App.jsx`
+- `[x]` Update `onMouseDown` behavior for `type === 'rectangle'` textarea in `App.jsx`
+- `[x]` Update `onMouseDown` behavior for `type === 'note'` textarea in `App.jsx`
+- `[x]` Verify builds and run dev tests listener for keydown `/` and popover rendering coordinates
 - `[x]` Implement popover list navigation (Up/Down arrow keys, Enter to select, Escape to close)
 - `[x]` Implement in-line prompt input box rendering (`inline-ai-prompt-box`) at text cursor
 - `[x]` Implement AI generation router (`handleAIBlockSubmit`) for Table, Bullet points, SVG Graphs, Images, Translate, and Proofread

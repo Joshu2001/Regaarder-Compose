@@ -1000,10 +1000,34 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
   );
 };
 
-const BlockHoverMenu = ({ menu, setMenu }) => {
+const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, isTableLocked, setIsTableLocked }) => {
   if (!menu) return null;
   const { element, type, rect } = menu;
   
+  if (isTableLocked) {
+    return (
+      <div 
+        id="block-hover-menu" 
+        className="fixed z-[150] flex items-center justify-center p-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-[0_8px_20px_rgba(245,158,11,0.25)] cursor-pointer transition-all select-none gap-2 text-xs font-semibold transform hover:scale-105 duration-200"
+        style={{ top: Math.max(10, rect.top - 45), left: rect.left + 24 }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          setIsTableLocked(false);
+        }}
+        title="All inserted items are Locked. Click to Unlock editing modals, popups and controls."
+      >
+        <Lock size={13} className="animate-pulse" />
+        <span>Locked (Click to Edit)</span>
+      </div>
+    );
+  }
+  
+  const [showDropdownChoicesInput, setShowDropdownChoicesInput] = useState(false);
+  const [dropdownChoicesText, setDropdownChoicesText] = useState('Option 1, Option 2, Option 3');
+  const [showButtonLabelInput, setShowButtonLabelInput] = useState(false);
+  const [buttonLabelText, setButtonLabelText] = useState('Action');
+
   const handleDelete = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -1011,6 +1035,7 @@ const BlockHoverMenu = ({ menu, setMenu }) => {
       element.parentNode.removeChild(element);
     }
     setMenu(null);
+    if (setFocusedTableCell) setFocusedTableCell(null);
   };
 
   const handleColor = (e, color) => {
@@ -1020,6 +1045,33 @@ const BlockHoverMenu = ({ menu, setMenu }) => {
       if (type === 'callout') {
         element.style.backgroundColor = color + '15'; // light background
         element.style.borderColor = color + '40';
+      } else if (type === 'table') {
+        element.style.borderColor = color;
+        const table = element.querySelector('table');
+        if (table) {
+          table.style.borderColor = color;
+          table.style.border = `2px solid ${color}`;
+        }
+        
+        // Find all rows inside the table block
+        const rows = element.querySelectorAll('tr');
+        rows.forEach((row, rowIndex) => {
+          const cells = row.querySelectorAll('td, th');
+          cells.forEach(cell => {
+            if (rowIndex === 0) {
+              // Header row: solid theme color background, white text
+              cell.style.backgroundColor = color;
+              cell.style.color = '#ffffff';
+            } else {
+              // Body rows: very light tint theme color background (using hex opacity 10), dark text
+              cell.style.backgroundColor = color + '10';
+              cell.style.color = '#334155';
+            }
+            cell.style.borderColor = color;
+            cell.style.borderWidth = '1px';
+            cell.style.borderStyle = 'solid';
+          });
+        });
       } else {
         element.style.borderColor = color;
       }
@@ -1028,21 +1080,296 @@ const BlockHoverMenu = ({ menu, setMenu }) => {
 
   const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#64748b', '#0f172a'];
 
+  const insertRow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const tbody = element.querySelector('tbody') || element.querySelector('table');
+    if (!tbody) return;
+    const lastRow = tbody.querySelector('tr:last-child') || tbody.querySelector('tr');
+    const numCols = lastRow ? lastRow.querySelectorAll('td, th').length : 3;
+    const tr = document.createElement('tr');
+    const themeColor = element.style.borderColor || '#e2e8f0';
+    for (let i = 0; i < numCols; i++) {
+      const td = document.createElement('td');
+      td.contentEditable = 'true';
+      td.style.border = `1px solid ${themeColor}`;
+      td.style.padding = '8px 12px';
+      td.style.outline = 'none';
+      td.innerHTML = '&nbsp;';
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  };
+
+  const insertColumn = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const table = element.querySelector('table');
+    if (!table) return;
+    const themeColor = element.style.borderColor || '#e2e8f0';
+    const theadRow = table.querySelector('thead tr');
+    if (theadRow) {
+      const th = document.createElement('th');
+      th.contentEditable = 'true';
+      th.style.border = `1px solid ${themeColor}`;
+      th.style.padding = '8px 12px';
+      th.style.background = '#f8fafc';
+      th.style.fontWeight = '600';
+      th.style.textAlign = 'left';
+      th.style.color = '#334155';
+      th.style.outline = 'none';
+      th.innerHTML = `Col ${theadRow.children.length + 1}`;
+      theadRow.appendChild(th);
+    }
+    const tbodyRows = table.querySelectorAll('tbody tr');
+    tbodyRows.forEach(row => {
+      const td = document.createElement('td');
+      td.contentEditable = 'true';
+      td.style.border = `1px solid ${themeColor}`;
+      td.style.padding = '8px 12px';
+      td.style.outline = 'none';
+      td.innerHTML = '&nbsp;';
+      row.appendChild(td);
+    });
+  };
+
+  const handleCellBgColor = (e, color) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (focusedTableCell) {
+      focusedTableCell.style.backgroundColor = color;
+    }
+  };
+
+  const handleCellTextColor = (e, color) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (focusedTableCell) {
+      focusedTableCell.style.color = color;
+    }
+  };
+
+  const triggerDropdownInput = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDropdownChoicesInput(true);
+    setShowButtonLabelInput(false);
+  };
+
+  const triggerButtonInput = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowButtonLabelInput(true);
+    setShowDropdownChoicesInput(false);
+  };
+
+  const resetCellToInput = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!focusedTableCell) return;
+    const text = focusedTableCell.textContent || '';
+    focusedTableCell.innerHTML = text.trim() || '&nbsp;';
+    focusedTableCell.contentEditable = 'true';
+  };
+
   return (
-    <div className="fixed z-[150] flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-200/60 rounded-lg shadow-[0_4px_12px_rgb(0,0,0,0.08)]" 
-         style={{ top: Math.max(10, rect.top - 45), left: rect.left + (rect.width / 2) - 100 }}
-         onMouseLeave={() => setMenu(null)}
-         onPointerDown={(e) => e.preventDefault()}>
-      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">{type.replace('_', ' ')}</span>
-      <div className="w-[1px] h-4 bg-slate-200 mx-1" />
-      <div className="flex gap-1">
-        {colors.map(c => (
-          <button key={c} onClick={(e) => handleColor(e, c)} className="w-4 h-4 rounded-full border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
-        ))}
+    <div id="block-hover-menu" className="fixed z-[150] flex flex-col gap-2.5 p-3 bg-white border border-slate-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] text-left font-sans" 
+         style={{ top: Math.max(10, rect.top - 65), left: rect.left + 24 }}
+         onPointerDown={(e) => e.stopPropagation()}>
+      
+      <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">{type.replace('_', ' ')} Options</span>
+        <button onClick={handleDelete} className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors" title="Delete Block">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+        </button>
       </div>
-      <div className="w-[1px] h-4 bg-slate-200 mx-1" />
-      <button onClick={handleDelete} className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1 rounded transition-colors">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider px-1">Theme Border Color</span>
+        <div className="flex gap-1 px-1">
+          {colors.map(c => (
+            <button key={c} onClick={(e) => handleColor(e, c)} className="w-3.5 h-3.5 rounded-full border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
+          ))}
+        </div>
+      </div>
+
+      {type === 'table' && (
+        <>
+          <div className="h-[1px] bg-slate-100 my-0.5" />
+          <div className="flex flex-col gap-1">
+            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider px-1">Table Controls</span>
+            <div className="flex gap-1.5 px-1">
+              <button onClick={insertRow} className="px-2 py-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition-colors">
+                + Row
+              </button>
+              <button onClick={insertColumn} className="px-2 py-1 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded border border-slate-200 transition-colors">
+                + Column
+              </button>
+            </div>
+          </div>
+
+          <div className="h-[1px] bg-slate-100 my-0.5" />
+          <div className="flex flex-col gap-1.5 w-64">
+            <div className="flex justify-between items-center px-1">
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Active Cell</span>
+              {focusedTableCell && (
+                <span className="text-[8px] font-bold text-violet-600 bg-violet-50 border border-violet-100 px-1 rounded uppercase tracking-wider">Outline State</span>
+              )}
+            </div>
+            {focusedTableCell ? (
+              <div className="flex flex-col gap-1.5 px-1">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-[8px] text-slate-400 uppercase font-semibold block mb-0.5">Cell Fill</span>
+                    <div className="flex flex-wrap gap-1">
+                      {['#ffffff', '#f8fafc', '#fee2e2', '#fef3c7', '#dcfce7', '#dbeafe', '#f3e8ff'].map(c => (
+                        <button key={c} onClick={(e) => handleCellBgColor(e, c)} className="w-3.5 h-3.5 rounded border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-[8px] text-slate-400 uppercase font-semibold block mb-0.5">Text Color</span>
+                    <div className="flex flex-wrap gap-1">
+                      {['#0f172a', '#64748b', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6'].map(c => (
+                        <button key={c} onClick={(e) => handleCellTextColor(e, c)} className="w-3.5 h-3.5 rounded border border-slate-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1 mt-1 border-t border-slate-50 pt-1.5">
+                  <button onClick={triggerDropdownInput} className="flex-1 py-1 px-1.5 text-[10px] font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 rounded border border-violet-150 transition-colors text-center">
+                    To Dropdown
+                  </button>
+                  <button onClick={triggerButtonInput} className="flex-1 py-1 px-1.5 text-[10px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded border border-blue-150 transition-colors text-center">
+                    To Button
+                  </button>
+                  <button onClick={resetCellToInput} className="py-1 px-1.5 text-[10px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded border border-slate-200 transition-colors text-center">
+                    Reset
+                  </button>
+                </div>
+
+                {/* Inline Dropdown Options Editor */}
+                {showDropdownChoicesInput && (
+                  <div className="flex flex-col gap-1.5 mt-2 border-t border-slate-100 pt-2">
+                    <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Dropdown Choices (comma-separated)</span>
+                    <input 
+                      type="text"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-[11px] outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 text-slate-800"
+                      value={dropdownChoicesText}
+                      onChange={(e) => setDropdownChoicesText(e.target.value)}
+                      onKeyDown={(evt) => evt.stopPropagation()}
+                      autoFocus
+                    />
+                    <div className="flex gap-1.5 justify-end">
+                      <button onClick={(e) => { e.preventDefault(); setShowDropdownChoicesInput(false); }} className="px-2 py-0.5 text-[9px] font-semibold text-slate-500 hover:bg-slate-100 rounded transition-colors">
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const choices = dropdownChoicesText.split(',').map(s => s.trim()).filter(Boolean);
+                          if (choices.length > 0) {
+                            const optionItems = choices.map(opt => `
+                              <div onclick="
+                                const menu = this.parentElement;
+                                const btn = menu.previousElementSibling;
+                                btn.querySelector('.selected-val').innerText = this.innerText;
+                                menu.style.display = 'none';
+                                btn.style.borderColor = '#e2e8f0';
+                                btn.style.boxShadow = 'none';
+                                event.stopPropagation();
+                              " onmouseover="this.style.background='#f5f3ff'; this.style.color='#7c3aed';" onmouseout="this.style.background='transparent'; this.style.color='#334155';" style="padding:6px 12px; font-size:11px; color:#334155; cursor:pointer; text-align:left; transition:background 0.15s, color 0.15s; font-weight: 500; font-family: inherit; border-radius: 4px;">${opt}</div>
+                            `).join('');
+                             
+                            focusedTableCell.innerHTML = `
+<div class="custom-doc-dropdown relative" contenteditable="false" style="position:relative; display:inline-block; user-select:none; font-family:inherit; vertical-align:middle; line-height:normal;">
+  <button onclick="
+    const menu = this.nextElementSibling;
+    const isOpen = menu.style.display === 'block';
+    document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { m.style.display = 'none'; });
+    menu.style.display = isOpen ? 'none' : 'block';
+    event.stopPropagation();
+  " onmouseover="this.style.borderColor='#7c3aed'; this.style.boxShadow='0 0 0 2px rgba(124,58,237,0.1)'" onmouseout="const menu = this.nextElementSibling; if(menu && menu.style.display !== 'block'){ this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'; }" style="appearance:none; -webkit-appearance:none; display:flex; align-items:center; justify-content:space-between; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:5px 12px; font-size:11px; font-weight:500; color:#334155; outline:none; cursor:pointer; min-width:120px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition:all 0.2s;">
+    <span class="selected-val" style="margin-right:8px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${choices[0]}</span>
+    <svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto;"><polyline points='6 9 12 15 18 9'></polyline></svg>
+  </button>
+  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.08), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:9999; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
+    ${optionItems}
+  </div>
+</div>`;
+                            setShowDropdownChoicesInput(false);
+                          }
+                        }}
+                        className="px-2 py-0.5 text-[9px] font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded shadow-sm transition-colors"
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Inline Button Label Editor */}
+                {showButtonLabelInput && (
+                  <div className="flex flex-col gap-1.5 mt-2 border-t border-slate-100 pt-2">
+                    <span className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Button Label</span>
+                    <input 
+                      type="text"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-[11px] outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 text-slate-800"
+                      value={buttonLabelText}
+                      onChange={(e) => setButtonLabelText(e.target.value)}
+                      onKeyDown={(evt) => evt.stopPropagation()}
+                      autoFocus
+                    />
+                    <div className="flex gap-1.5 justify-end">
+                      <button onClick={(e) => { e.preventDefault(); setShowButtonLabelInput(false); }} className="px-2 py-0.5 text-[9px] font-semibold text-slate-500 hover:bg-slate-100 rounded transition-colors">
+                        Cancel
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (buttonLabelText.trim()) {
+                            focusedTableCell.innerHTML = `<button contenteditable="false" onclick="alert('Action triggered: ' + this.innerText)" style="background:#7c3aed; color:white; border:none; border-radius:6px; padding:4px 12px; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; margin:1px 0; transition:all 0.15s; outline:none; box-shadow: 0 2px 4px rgba(124,58,237,0.15);">${buttonLabelText.trim()}</button>`;
+                            setShowButtonLabelInput(false);
+                          }
+                        }}
+                        className="px-2 py-0.5 text-[9px] font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded shadow-sm transition-colors"
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="text-[10px] text-slate-400 italic px-1">Click a cell inside the table to format & transform it.</span>
+            )}
+          </div>
+        </>
+      )}
+      <div className="h-[1px] bg-slate-100 mt-0.5" />
+      <button
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsTableLocked(prev => !prev);
+          setMenu(null);
+        }}
+        className={`w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[11px] font-semibold transition-all duration-150 border ${
+          isTableLocked
+            ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+            : 'text-slate-500 border-slate-100 hover:bg-slate-50 hover:text-slate-700'
+        }`}
+        title={isTableLocked
+          ? 'All inserted items are Locked — editing modals, naming popups, and cell toolbars are suppressed. Click to unlock.'
+          : 'Lock all inserted items — prevents editing modals, popups and toolbars from appearing on any block.'
+        }
+      >
+        <span className="flex items-center gap-1.5">
+          {isTableLocked ? <Lock size={11} /> : <Unlock size={11} />}
+          {isTableLocked ? 'Locked — Click to Unlock' : 'Lock All Items'}
+        </span>
+        {isTableLocked && <span className="text-[9px] font-bold tracking-wider uppercase text-amber-500">Active</span>}
       </button>
     </div>
   );
@@ -1396,13 +1723,18 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
 
 export default function App() {
   useEffect(() => {
+    let hideTimeout = null;
     const handleBlockHover = (e) => {
       let targetNode = e.target;
-      if (targetNode.nodeType === 3) targetNode = targetNode.parentNode;
-      let targetBlock = targetNode?.closest?.('.callout-block, .code-block, .divider-block, .table-block');
-      const menu = e.target.closest?.('#block-hover-menu');
+      if (targetNode?.nodeType === 3) targetNode = targetNode.parentNode;
+      const targetBlock = targetNode?.closest?.('.callout-block, .code-block, .divider-block, .table-block');
+      const menu = targetNode?.closest?.('#block-hover-menu');
       
       if (targetBlock) {
+        if (hideTimeout) {
+          clearTimeout(hideTimeout);
+          hideTimeout = null;
+        }
         let type = 'unknown';
         if (targetBlock.classList.contains('callout-block')) type = 'callout';
         else if (targetBlock.classList.contains('code-block')) type = 'code_block';
@@ -1414,12 +1746,39 @@ export default function App() {
           type: type,
           rect: targetBlock.getBoundingClientRect()
         });
-      } else if (!menu) {
-        setHoveredBlockMenu(null);
+      } else if (menu) {
+        if (hideTimeout) {
+          clearTimeout(hideTimeout);
+          hideTimeout = null;
+        }
+      } else {
+        if (!hideTimeout) {
+          hideTimeout = setTimeout(() => {
+            setHoveredBlockMenu(null);
+            hideTimeout = null;
+          }, 300);
+        }
       }
     };
+
+    const handleTableCellClick = (e) => {
+      const cell = e.target.closest?.('td, th');
+      const inTable = cell?.closest?.('.table-block');
+      if (inTable && cell) {
+        setFocusedTableCell(cell);
+        setTableToolbar({ open: false, left: 0, top: 0, tableEl: null, cellEl: null });
+      } else if (!e.target.closest?.('#block-hover-menu')) {
+        setFocusedTableCell(null);
+      }
+    };
+
     document.addEventListener('mousemove', handleBlockHover);
-    return () => document.removeEventListener('mousemove', handleBlockHover);
+    document.addEventListener('click', handleTableCellClick);
+    return () => {
+      document.removeEventListener('mousemove', handleBlockHover);
+      document.removeEventListener('click', handleTableCellClick);
+      if (hideTimeout) clearTimeout(hideTimeout);
+    };
   }, []);
   useEffect(() => {
     const handleSheetResizeMouseDown = (e) => {
@@ -1596,6 +1955,13 @@ export default function App() {
   };
 
   const updateTableToolbarPosition = () => {
+    if (isTableLocked) {
+      setTableToolbar(prev => {
+        if (prev.open) return { ...prev, open: false };
+        return prev;
+      });
+      return;
+    }
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) {
       setTableToolbar(prev => {
@@ -1615,13 +1981,25 @@ export default function App() {
     
     if (cell && table && insideEditor && !insideChartBlock) {
       const rect = cell.getBoundingClientRect();
-      setTableToolbar({
-        open: true,
-        left: rect.left + rect.width / 2,
-        top: rect.top,
-        tableEl: table,
-        cellEl: cell
-      });
+      const hoverMenuEl = document.getElementById('block-hover-menu');
+      if (hoverMenuEl) {
+        const hoverMenuRect = hoverMenuEl.getBoundingClientRect();
+        setTableToolbar({
+          open: true,
+          left: hoverMenuRect.left + hoverMenuRect.width / 2,
+          top: hoverMenuRect.top - 6,
+          tableEl: table,
+          cellEl: cell
+        });
+      } else {
+        setTableToolbar({
+          open: true,
+          left: rect.left + rect.width / 2,
+          top: rect.top,
+          tableEl: table,
+          cellEl: cell
+        });
+      }
     } else {
       setTableToolbar(prev => {
         if (prev.open) return { ...prev, open: false };
@@ -2003,6 +2381,7 @@ export default function App() {
   const [deckTitle, setDeckTitle] = useState('Untitled deck');
   const [sheetsTitle, setSheetsTitle] = useState('Untitled sheet');
   const [activeSheetId, setActiveSheetId] = useState(1);
+  const [activeDropdownCell, setActiveDropdownCell] = useState(null); // { row, col }
   const [selectedGridColumn, setSelectedGridColumn] = useState(null);
   const [sheetsData, setSheetsData] = useState([
     { id: 1, title: 'Sheet 1', subtitle: '' },
@@ -3927,6 +4306,8 @@ export default function App() {
   // AI State machine
   const [isComposing, setIsComposing] = useState(false);
   const [hoveredBlockMenu, setHoveredBlockMenu] = useState(null);
+  const [isTableLocked, setIsTableLocked] = useState(false);
+  const [focusedTableCell, setFocusedTableCell] = useState(null);
   const [composingText, setComposingText] = useState('AI is composing...');
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isVoiceCommandMode, setIsVoiceCommandMode] = useState(false);
@@ -5023,6 +5404,7 @@ export default function App() {
   const [sheetSelectionMode, setSheetSelectionMode] = useState('cell');
   const [sheetDrawTableMode, setSheetDrawTableMode] = useState(false);
   const sheetHeaderDragRef = useRef({ active: false, type: null, startIndex: null });
+  const sheetHeaderWrapperRef = useRef(null);
   // Expose ref globally so the document-level mouseup can clear it without closure issues
   useEffect(() => {
     window.__sheetHeaderDragRef = sheetHeaderDragRef.current;
@@ -14127,6 +14509,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
     
     
     const handleDocumentClick = (e) => {
+      if (!e.target.closest('.custom-doc-dropdown')) {
+        document.querySelectorAll('.custom-doc-dropdown-menu').forEach(m => { m.style.display = 'none'; });
+      }
       if (!e.target.closest('.export-menu-container')) {
         setComposeExportMenuOpen(false);
         setSheetsExportMenuOpen(false);
@@ -20189,6 +20574,21 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const getSelectedCellFormat = () => {
+    if (selectedSheetOverlayId && activeSheetGridRaw) {
+      const overlay = (activeSheetGridRaw.overlays || []).find(o => o.id === selectedSheetOverlayId);
+      if (overlay) {
+        return {
+          bold: overlay.bold || false,
+          italic: overlay.italic || false,
+          underline: overlay.underline || false,
+          strikeThrough: overlay.strikeThrough || false,
+          color: overlay.color || '#333333',
+          highlight: overlay.highlight || null,
+          fontFamily: overlay.fontFamily || 'Inter',
+          fontSize: overlay.fontSize || '14',
+        };
+      }
+    }
     if (!activeSheetGridRaw || !selectedSheetCell) return {};
     const r = selectedSheetCell.row - 1;
     const c = selectedSheetCell.col - 1;
@@ -20197,6 +20597,33 @@ Respond with a JSON array of slide objects matching the schema.`;
   };
 
   const updateSheetCellFormat = (sheetId, formatType, formatValue = undefined) => {
+    if (selectedSheetOverlayId && activeSheetGridRaw) {
+      const overlays = activeSheetGridRaw.overlays || [];
+      const overlay = overlays.find(o => o.id === selectedSheetOverlayId);
+      if (overlay) {
+        let newValue = formatValue;
+        if (formatValue === undefined) {
+          newValue = !overlay[formatType];
+        }
+        const updatedOverlays = overlays.map(o => {
+          if (o.id === selectedSheetOverlayId) {
+            const updated = { ...o };
+            if (newValue === null || newValue === false) {
+              delete updated[formatType];
+            } else {
+              updated[formatType] = newValue;
+            }
+            if (formatType === 'color') {
+              updated.color = newValue || '#333333';
+            }
+            return updated;
+          }
+          return o;
+        });
+        updateSheetSettings(sheetId, { overlays: updatedOverlays });
+        return;
+      }
+    }
     if (!selectedSheetRange && !selectedSheetCell) return;
     setSheetGrids((prev) => {
       const target = prev[sheetId];
@@ -20717,6 +21144,24 @@ Respond with a JSON array of slide objects matching the schema.`;
     showDocumentOutlineView,
     isPromptExpanded,
   ]);
+
+  useEffect(() => {
+    if (productMode !== 'compose') {
+      setFigureMenuTarget(null);
+    }
+  }, [productMode]);
+
+  useEffect(() => {
+    updateTableToolbarPosition();
+  }, [hoveredBlockMenu]);
+
+  useEffect(() => {
+    if (productMode === 'compose' && !document.fullscreenElement) {
+      if (cellFormatModal.open || figureMenuTarget || hoveredBlockMenu) {
+        setIsPromptMinimized(true);
+      }
+    }
+  }, [productMode, cellFormatModal.open, figureMenuTarget, hoveredBlockMenu]);
 
   const smartAssistMode = productMode === 'sheets' ? 'sheets' : productMode === 'deck' ? 'deck' : 'compose';
   const smartAssistIntro = smartAssistMode === 'sheets'
@@ -28238,7 +28683,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="relative">
                           <button
                             type="button"
-                            onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font')}
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              setSheetToolbarMenuOpen((prev) => prev === 'font' ? null : 'font');
+                            }}
                             className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
                           >
                             <span>{getSelectedCellFormat().fontFamily || sheetToolbarFont}</span>
@@ -28250,8 +28698,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <button
                                   key={font}
                                   type="button"
-                                  onClick={() => {
-                                    if (selectedSheetRange || selectedSheetCell) {
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
                                       updateSheetCellFormat(activeSheetId, 'fontFamily', font);
                                     } else {
                                       setSheetToolbarFont(font);
@@ -28270,7 +28719,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="relative">
                           <button
                             type="button"
-                            onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size')}
+                            onPointerDown={(e) => {
+                              e.preventDefault();
+                              setSheetToolbarMenuOpen((prev) => prev === 'size' ? null : 'size');
+                            }}
                             className="inline-flex items-center gap-1 hover:bg-gray-100 rounded-lg px-2 py-1.5 bg-white text-[13px] text-[#374151] transition-colors"
                           >
                             <span>{getSelectedCellFormat().fontSize || sheetToolbarSize}</span>
@@ -28282,8 +28734,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <button
                                   key={size}
                                   type="button"
-                                  onClick={() => {
-                                    if (selectedSheetRange || selectedSheetCell) {
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    if (selectedSheetRange || selectedSheetCell || selectedSheetOverlayId) {
                                       updateSheetCellFormat(activeSheetId, 'fontSize', size);
                                     } else {
                                       setSheetToolbarSize(size);
@@ -28298,52 +28751,55 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </div>
                           )}
                         </div>
-                      </div>
-                      {(() => {
-                        const fmt = getSelectedCellFormat();
-                        return (
-                          <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
-                            <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
-                            <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
-                            <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
-                            <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
-                            <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-100 text-gray-500" title="Insert Link">
-                              <LinkIcon size={14} />
-                            </button>
-                            <div className="relative text-style-menu-container flex items-center">
-                              <button
-                                type="button"
-                                onClick={() => setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle')}
-                                className="h-8 px-2 flex items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-gray-100 cursor-pointer text-[#374151]"
-                                title="Format options (Style & Colors)"
-                              >
-                                <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
+                        {(() => {
+                          const fmt = getSelectedCellFormat();
+                          return (
+                            <div className="flex items-center gap-1 mx-2 px-2 border-x border-gray-200">
+                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'bold'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors font-bold ${fmt.bold ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>B</button>
+                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'italic'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors italic font-serif ${fmt.italic ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>I</button>
+                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'underline'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors underline ${fmt.underline ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>U</button>
+                              <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'strikeThrough'); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors line-through ${fmt.strikeThrough ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}>S</button>
+                              <button type="button" onClick={() => showToast('Links not supported in this cell type')} className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors hover:bg-gray-100 text-gray-500" title="Insert Link">
+                                <LinkIcon size={14} />
                               </button>
-                              {sheetToolbarMenuOpen === 'textStyle' && (
-                                <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
-                                  <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
-                                    <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                                      {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
-                                        <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
-                                      ))}
+                              <div className="relative text-style-menu-container flex items-center">
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setSheetToolbarMenuOpen((prev) => prev === 'textStyle' ? null : 'textStyle');
+                                  }}
+                                  className="h-8 px-2 flex items-center justify-center gap-1.5 rounded-lg transition-colors hover:bg-gray-100 cursor-pointer text-[#374151]"
+                                  title="Format options (Style & Colors)"
+                                >
+                                  <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
+                                </button>
+                                {sheetToolbarMenuOpen === 'textStyle' && (
+                                  <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
+                                    <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
+                                      <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                                        {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
+                                          <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'color', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
+                                      <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                                        <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
+                                        {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
+                                          <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                                        ))}
+                                      </div>
                                     </div>
                                   </div>
-                                  <div className="flex flex-col gap-1">
-                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
-                                    <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                                      <button type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', null); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
-                                      {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
-                                        <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); updateSheetCellFormat(activeSheetId, 'highlight', c); setSheetToolbarMenuOpen(null); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })()}
+                          );
+                        })()}
+                      </div>
                       <button type="button" onClick={addSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Row</button>
                       <button type="button" onClick={removeSheetRow} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">- Row</button>
                       <button type="button" onClick={addSheetColumn} className="px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-[#374151] transition-colors">+ Col</button>
@@ -28387,68 +28843,81 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       />
                     </div>
                     <div
-                      className="grid border-b border-gray-200 bg-slate-50 text-[11px] font-semibold text-slate-700"
-                      style={{ gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`, minWidth: 'max-content' }}
+                      ref={sheetHeaderWrapperRef}
+                      className="overflow-hidden w-full bg-slate-50 border-b border-gray-200"
                     >
-                        {/* ── Corner Select-All Button ── */}
-                        <div
-                          className="h-8 border-r border-gray-200 relative group flex items-center justify-center cursor-pointer hover:bg-violet-50 transition-colors"
-                          onClick={() => {
-                            setSheetSelectionMode('all');
-                            setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
-                            setAdditionalSheetRanges([]);
-                            setSelectedGridColumn(null);
-                          }}
-                          title="Select all"
-                        >
-                          <div className={`w-3 h-3 rounded-sm border-2 transition-colors ${sheetSelectionMode === 'all' ? 'border-violet-600 bg-violet-200' : 'border-slate-300'}`} />
-                        </div>
-                      {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => {
-                          const isColSelected = !isShapeInteracting && selectedSheetRange && sheetSelectionMode === 'col'
-                            ? colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol)
-                            : sheetSelectionMode === 'all';
-                          const isColActive = !isShapeInteracting && sheetSelectionMode === 'cell' && selectedSheetCell && selectedSheetCell.col === colIndex + 1;
-                          return (
-                            <div
-                              key={col}
-                              className={`h-8 relative border-r border-gray-200 last:border-r-0 flex items-center justify-center select-none sheet-col-select-cursor text-[11px] font-semibold transition-colors
-                                ${isColSelected ? 'bg-violet-200 text-violet-900 font-bold' : isColActive ? 'bg-violet-100 text-violet-800' : 'hover:bg-slate-100 text-slate-700'}`}
-                              style={{ overflow: 'hidden', userSelect: 'none' }}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                if (e.shiftKey && sheetSelectionMode === 'col' && selectedSheetRange) {
-                                  // Shift+Click: extend col range
-                                  setSelectedSheetRange(prev => ({ ...prev, endCol: colIndex + 1 }));
-                                  setAdditionalSheetRanges([]);
-                                } else {
-                                  setSelectedSheetRange({ startRow: 1, endRow: activeSheetGrid.rows, startCol: colIndex + 1, endCol: colIndex + 1 });
-                                  setAdditionalSheetRanges([]);
-                                  setSheetSelectionMode('col');
-                                  setSelectedGridColumn(colIndex);
-                                }
-                                // Mutate in-place so window.__sheetHeaderDragRef stays in sync
-                                sheetHeaderDragRef.current.active = true;
-                                sheetHeaderDragRef.current.type = 'col';
-                                sheetHeaderDragRef.current.startIndex = colIndex;
-                              }}
-                              onMouseEnter={() => {
-                                if (sheetHeaderDragRef.current.active && sheetHeaderDragRef.current.type === 'col') {
-                                  setSelectedSheetRange(prev => prev ? { ...prev, endCol: colIndex + 1 } : { startRow: 1, endRow: activeSheetGrid.rows, startCol: sheetHeaderDragRef.current.startIndex + 1, endCol: colIndex + 1 });
-                                }
-                              }}
-                              onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }}
-                            >
-                              {col}
-                              <div data-col-index={colIndex} className="sheet-grid-resizer absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400 opacity-0 hover:opacity-100 z-10" />
-                            </div>
-                          );
-                        })}
+                      <div
+                        className="grid text-[11px] font-semibold text-slate-700"
+                        style={{ gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`, minWidth: 'max-content' }}
+                      >
+                          {/* ── Corner Select-All Button ── */}
+                          <div
+                            className="h-8 border-r border-gray-200 relative group flex items-center justify-center cursor-pointer hover:bg-violet-50 transition-colors"
+                            onClick={() => {
+                              setSheetSelectionMode('all');
+                              setSelectedSheetRange({ startRow: 1, startCol: 1, endRow: activeSheetGrid.rows, endCol: activeSheetGrid.cols });
+                              setAdditionalSheetRanges([]);
+                              setSelectedGridColumn(null);
+                            }}
+                            title="Select all"
+                          >
+                            <div className={`w-3 h-3 rounded-sm border-2 transition-colors ${sheetSelectionMode === 'all' ? 'border-violet-600 bg-violet-200' : 'border-slate-300'}`} />
+                          </div>
+                        {Array.from({ length: activeSheetGrid.cols }, (_, colIndex) => toColumnLabel(colIndex)).map((col, colIndex) => {
+                            const isColSelected = !isShapeInteracting && selectedSheetRange && sheetSelectionMode === 'col'
+                              ? colIndex + 1 >= Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) && colIndex + 1 <= Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol)
+                              : sheetSelectionMode === 'all';
+                            const isColActive = !isShapeInteracting && sheetSelectionMode === 'cell' && selectedSheetCell && selectedSheetCell.col === colIndex + 1;
+                            return (
+                              <div
+                                key={col}
+                                className={`h-8 relative border-r border-gray-200 last:border-r-0 flex items-center justify-center select-none sheet-col-select-cursor text-[11px] font-semibold transition-colors
+                                  ${isColSelected ? 'bg-violet-200 text-violet-900 font-bold' : isColActive ? 'bg-violet-100 text-violet-800' : 'hover:bg-slate-100 text-slate-700'}`}
+                                style={{ overflow: 'hidden', userSelect: 'none' }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  if (e.shiftKey && sheetSelectionMode === 'col' && selectedSheetRange) {
+                                    // Shift+Click: extend col range
+                                    setSelectedSheetRange(prev => ({ ...prev, endCol: colIndex + 1 }));
+                                    setAdditionalSheetRanges([]);
+                                  } else {
+                                    setSelectedSheetRange({ startRow: 1, endRow: activeSheetGrid.rows, startCol: colIndex + 1, endCol: colIndex + 1 });
+                                    setAdditionalSheetRanges([]);
+                                    setSheetSelectionMode('col');
+                                    setSelectedGridColumn(colIndex);
+                                  }
+                                  // Mutate in-place so window.__sheetHeaderDragRef stays in sync
+                                  sheetHeaderDragRef.current.active = true;
+                                  sheetHeaderDragRef.current.type = 'col';
+                                  sheetHeaderDragRef.current.startIndex = colIndex;
+                                }}
+                                onMouseEnter={() => {
+                                  if (sheetHeaderDragRef.current.active && sheetHeaderDragRef.current.type === 'col') {
+                                    setSelectedSheetRange(prev => prev ? { ...prev, endCol: colIndex + 1 } : { startRow: 1, endRow: activeSheetGrid.rows, startCol: sheetHeaderDragRef.current.startIndex + 1, endCol: colIndex + 1 });
+                                  }
+                                }}
+                                onContextMenu={(e) => { e.preventDefault(); setHeaderContextMenu({ open: true, x: e.clientX, y: e.clientY, type: 'col', index: colIndex }); }}
+                              >
+                                {col}
+                                <div data-col-index={colIndex} className="sheet-grid-resizer absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-violet-400 opacity-0 hover:opacity-100 z-10" />
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
                     <div
                       className="flex-1 overflow-auto thin-scrollbar relative bg-white"
                       tabIndex={0}
                       onMouseUp={() => { sheetHeaderDragRef.current = { active: false, type: null, startIndex: null }; }}
+                      onScroll={(e) => {
+                        if (sheetHeaderWrapperRef.current) {
+                          sheetHeaderWrapperRef.current.scrollLeft = e.currentTarget.scrollLeft;
+                        }
+                      }}
                       onKeyDown={(e) => {
+                        if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') {
+                          return;
+                        }
                         const totalRows = activeSheetGrid.rows;
                         const totalCols = activeSheetGrid.cols;
                         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
@@ -28678,6 +29147,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 
                                 if (!hasMoved && isTextarea) {
                                   e.target.focus();
+                                  const len = e.target.value.length;
+                                  e.target.setSelectionRange(len, len);
                                 }
                               };
                               window.addEventListener('mousemove', onMouseMove);
@@ -29280,7 +29751,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        {overlay.type === 'rectangle' && (
                                          <textarea
                                            className="absolute inset-0 w-full h-full bg-transparent p-3 text-sm resize-none border-none outline-none z-10 font-medium"
-                                           style={{ color: overlay.color || '#333', textAlign: 'center' }}
+                                           style={{
+                                             color: overlay.color || '#333333',
+                                             textAlign: overlay.textAlign || 'center',
+                                             fontFamily: overlay.fontFamily || 'inherit',
+                                             fontSize: overlay.fontSize ? `${overlay.fontSize}px` : 'inherit',
+                                             fontWeight: overlay.bold ? 'bold' : 'normal',
+                                             fontStyle: overlay.italic ? 'italic' : 'normal',
+                                             textDecoration: [
+                                               overlay.underline ? 'underline' : '',
+                                               overlay.strikeThrough ? 'line-through' : ''
+                                             ].filter(Boolean).join(' ') || 'none',
+                                             backgroundColor: overlay.highlight || 'transparent'
+                                           }}
                                            value={overlay.content || ''}
                                            placeholder={isSelected ? "New Text" : ""}
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
@@ -29553,10 +30036,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                              </div>
                            );
                         })}
-<div
+                        <div
                           className="grid"
                           style={{
                             gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`,
+                            minWidth: 'max-content',
                           }}
                         >
                           {Array.from({ length: activeSheetGrid.rows }, (_, rowIndex) => {
@@ -29977,7 +30461,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         <Filter size={12} className={(activeSheetGrid.filters[colIndex].text || activeSheetGrid.filters[colIndex].excludedValues?.length > 0) ? 'text-violet-600' : 'text-slate-400'} />
                                       </div>
                                     )}
-
                                     {computedFormat.link && (
                                       <a 
                                         href={computedFormat.link} 
@@ -29993,14 +30476,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     {computedFormat.type === 'button' ? (
                                       <div className="p-1 w-full h-full flex items-center justify-center">
                                         <button 
-                                          className="w-full h-full max-h-8 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded shadow-sm text-xs transition-colors flex items-center justify-center px-2"
+                                          className="w-full h-full max-h-8 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-[0_2px_8px_rgba(124,58,237,0.25)] hover:shadow-[0_4px_12px_rgba(124,58,237,0.35)] active:scale-[0.97] transition-all flex items-center justify-center gap-1.5 px-3 py-1 text-[11px] border border-violet-500/20"
                                           style={{
                                             color: computedFormat.color || undefined,
                                             textAlign: computedFormat.align || 'center'
                                           }}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            if (computedFormat.buttonAction === 'Calculate' || cellValue === 'Calculate' || computedFormat.buttonLabel === 'Calculate') {
+                                            const btnLabel = computedFormat.buttonLabel || cellValue || 'Action';
+                                            if (btnLabel.toLowerCase().includes('draft')) {
+                                              const colLabels = [];
+                                              const rowCells = activeSheetGridRaw.cells?.[rowIndex] || [];
+                                              for (let c = 0; c < activeSheetGridRaw.cols; c++) {
+                                                const colName = activeSheetGridRaw.cells?.[0]?.[c] || `Col ${c + 1}`;
+                                                colLabels.push(colName);
+                                              }
+                                              const rowDetails = colLabels.map((lbl, c) => `${lbl}: "${rowCells[c] || ''}"`).join(', ');
+                                              const prompt = `Based on this row details: [ ${rowDetails} ], draft a detailed, professional outline section for this topic.`;
+                                              
+                                              showToast('Drafting content using row data with Compose AI...');
+                                              handleAISubmit(prompt, { source: 'compose', forceDocBuild: true, suppressChatEcho: true });
+                                            } else if (computedFormat.buttonAction === 'Calculate' || cellValue === 'Calculate' || computedFormat.buttonLabel === 'Calculate') {
                                               const missing = [];
                                               for (let c = 0; c < colIndex; c++) {
                                                 const val = activeSheetGridRaw.cells?.[rowIndex]?.[c];
@@ -30026,38 +30522,62 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                 }
                                               }
                                             } else {
-                                              showToast(`Action "${computedFormat.buttonLabel || 'Action'}" executed successfully!`);
+                                              showToast(`Action "${btnLabel}" executed successfully!`);
                                             }
                                           }}
                                         >
+                                          {(computedFormat.buttonLabel === 'Draft' || cellValue === 'Draft') && <Sparkles size={11} className="animate-pulse" />}
                                           {computedFormat.buttonLabel || cellValue || 'Action'}
                                         </button>
                                       </div>
                                     ) : computedFormat.type === 'dropdown' ? (
-                                      <select 
-                                        className={`w-full h-full px-1.5 focus:outline-none bg-transparent cursor-pointer text-[#374151] ${cellFormat.bold ? 'font-bold' : ''}`}
-                                        style={{
-                                          fontFamily: cellFormat.fontFamily || sheetToolbarFont,
-                                          fontSize: cellFormat.fontSize ? `${cellFormat.fontSize}px` : `${sheetToolbarSize}px`,
-                                          fontWeight: cellFormat.bold ? 700 : 400,
-                                          fontStyle: cellFormat.italic ? 'italic' : 'normal',
-                                          color: computedFormat.color || cellFormat.color || undefined,
-                                          backgroundColor: computedFormat.fill || cellFormat.highlight || undefined,
-                                          textAlign: computedFormat.align || undefined,
-                                          ...customTextStyle
-                                        }}
-                                        value={cellValue}
-                                        onChange={(event) => updateSheetCell(activeSheetId, rowIndex, colIndex, event.target.value)}
-                                      >
-                                        <option value="" disabled hidden>{cellValue || 'Select...'}</option>
-                                        {computedFormat.options?.map(opt => <option key={opt} value={opt}>{opt}</option>) || (
+                                        <div className="relative w-full h-full p-1 flex items-center justify-center">
+                                          <div 
+                                            className={`w-full h-full min-h-[24px] max-h-8 px-2 py-1 flex items-center justify-between cursor-pointer select-none text-slate-700 bg-white hover:bg-slate-50 border border-slate-200/80 shadow-[0_1.5px_3px_rgba(0,0,0,0.03)] rounded-md transition-all hover:scale-[1.01] hover:border-violet-300 ${cellFormat.bold ? 'font-bold' : ''}`}
+                                            style={{
+                                              fontFamily: cellFormat.fontFamily || sheetToolbarFont,
+                                              fontSize: cellFormat.fontSize ? `${cellFormat.fontSize}px` : `${sheetToolbarSize}px`,
+                                              fontWeight: cellFormat.bold ? 700 : 400,
+                                              fontStyle: cellFormat.italic ? 'italic' : 'normal',
+                                              color: computedFormat.color || cellFormat.color || undefined,
+                                              backgroundColor: computedFormat.fill || cellFormat.highlight || undefined,
+                                              textAlign: computedFormat.align || undefined,
+                                              ...customTextStyle
+                                            }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (activeDropdownCell && activeDropdownCell.row === rowIndex && activeDropdownCell.col === colIndex) {
+                                                setActiveDropdownCell(null);
+                                              } else {
+                                                setActiveDropdownCell({ row: rowIndex, col: colIndex });
+                                              }
+                                            }}
+                                          >
+                                            <span className="truncate pr-1">{cellValue || 'Select...'}</span>
+                                            <ChevronDown size={11} className="text-slate-400 opacity-80 shrink-0 ml-1" />
+                                          </div>
+                                         {activeDropdownCell && activeDropdownCell.row === rowIndex && activeDropdownCell.col === colIndex && (
                                            <>
-                                             <option value="Option 1">Option 1</option>
-                                             <option value="Option 2">Option 2</option>
-                                             <option value="Option 3">Option 3</option>
+                                             <div className="fixed inset-0 z-[49]" onClick={(e) => { e.stopPropagation(); setActiveDropdownCell(null); }} />
+                                             <div className="absolute left-0 top-full mt-1 z-[50] min-w-[130px] bg-white border border-[#e6e3fb] shadow-[0_8px_24px_rgba(76,29,149,0.12)] rounded-lg py-1 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                                               {(computedFormat.options || ['Option 1', 'Option 2', 'Option 3']).map(opt => (
+                                                 <button
+                                                   key={opt}
+                                                   type="button"
+                                                   className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-violet-50 hover:text-violet-700 font-medium transition-colors"
+                                                   onClick={(e) => {
+                                                     e.stopPropagation();
+                                                     updateSheetCell(activeSheetId, rowIndex, colIndex, opt);
+                                                     setActiveDropdownCell(null);
+                                                   }}
+                                                 >
+                                                   {opt}
+                                                 </button>
+                                               ))}
+                                             </div>
                                            </>
                                         )}
-                                      </select>
+                                      </div>
                                     ) : (
                                       <input
                                         type="text"
@@ -31171,7 +31691,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               row: cellAnchor.startRow,
                               col: cellAnchor.startCol,
                               x: 60, y: 60, width: 120, height: 80,
-                              content: '', color: '#8b5cf6', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid' });
+                              content: 'New Text', color: '#ffffff', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid' });
                             updateSheetSettings(activeSheetId, { overlays: newOverlays });
                           }
                           setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
@@ -32996,7 +33516,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
     );
   }
             const renderDocumentOutlineContent = () => (
-        <div className="flex-1 overflow-y-auto px-3 py-3" style={{ fontFamily: editorFont }}>
+        <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-3" style={{ fontFamily: editorFont }}>
             <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
@@ -34528,7 +35048,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-visible no-scrollbar bg-[#FAFAFC] relative z-[140]">
+        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] relative z-[140] min-w-0">
           {orderedDocuments.map((doc, docIndex) => {
             const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
               ? UNTITLED_WHITEBOARD_LABEL
@@ -34617,7 +35137,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-x-auto no-scrollbar select-none relative z-[130] min-w-0 ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
@@ -35018,6 +35538,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           >
             {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
           </button>
+
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-3">
             <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`${alignMode === 'left' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
@@ -37890,10 +38411,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     const targetElement = e.target;
                     if (targetElement.tagName === 'IMG' || targetElement.closest('table')) {
                       const figureEl = targetElement.tagName === 'IMG' ? targetElement : targetElement.closest('table');
-                      const rect = figureEl.getBoundingClientRect();
-                      setFigureMenuTarget(figureEl);
-                      setFigureMenuCoords({ top: rect.bottom + window.scrollY, left: rect.left + window.scrollX + (rect.width / 2) });
-                      setFigureNameInput(figureEl.getAttribute('data-figure-name') || '');
+                      if (isTableLocked) {
+                        setFigureMenuTarget(null);
+                      } else {
+                        const rect = figureEl.getBoundingClientRect();
+                        setFigureMenuTarget(figureEl);
+                        setFigureMenuCoords({ 
+                          top: rect.top + window.scrollY, 
+                          left: rect.right + window.scrollX - 250 
+                        });
+                        setFigureNameInput(figureEl.getAttribute('data-figure-name') || '');
+                      }
                     } else {
                       setFigureMenuTarget(null);
                     }
@@ -40554,10 +41082,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {figureMenuTarget && (
+      {productMode === 'compose' && activeDocId && figureMenuTarget && (
         <div 
-          className="fixed z-[9999] bg-white border border-slate-200 shadow-lg rounded-xl p-2 flex items-center gap-2 transform -translate-x-1/2"
-          style={{ top: `${figureMenuCoords.top + 8}px`, left: `${figureMenuCoords.left}px`, fontFamily: editorFont }}
+          className="absolute z-[9999] bg-white border border-[#e6e3fb] shadow-[0_12px_30px_-6px_rgba(76,29,149,0.15)] rounded-xl p-2 flex items-center gap-2"
+          style={{ top: `${figureMenuCoords.top - 48}px`, left: `${figureMenuCoords.left}px`, fontFamily: editorFont }}
         >
           <input
             type="text"
@@ -41467,7 +41995,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
       <SymbolGalleryPicker isOpen={symbolsPickerOpen} setOpen={setSymbolsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
       <EquationGalleryPicker isOpen={equationsPickerOpen} setOpen={setEquationsPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />
-      <BlockHoverMenu menu={hoveredBlockMenu} setMenu={setHoveredBlockMenu} />
+      <BlockHoverMenu menu={hoveredBlockMenu} setMenu={setHoveredBlockMenu} focusedTableCell={focusedTableCell} setFocusedTableCell={setFocusedTableCell} isTableLocked={isTableLocked} setIsTableLocked={setIsTableLocked} />
       <TableGridPickerModal isOpen={tableGridModalOpen} setOpen={setTableGridModalOpen} rect={tableGridAnchor} />
       <ListGalleryPicker isOpen={!!listGalleryOpen} initialTab={typeof listGalleryOpen === 'string' ? listGalleryOpen : 'bullet'} setOpen={setListGalleryOpen} anchorEl={document.getElementById('compose-list-btn')} />
     </div>
