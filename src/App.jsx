@@ -584,23 +584,21 @@ export const SHAPE_SECTIONS = [
 ];
 
 const SHEET_SLASH_OPTIONS = [
-  { type: 'divider', label: 'Insert' },
+  { key: 'special_characters', label: 'Special Characters & Formatting', desc: 'Insert currencies, math symbols, prefixes/suffixes, and number formatting' },
+  { key: 'insert_date', label: 'Insert Date', desc: 'Insert today\'s date or select from calendar' },
   { key: 'insert_table', label: 'Insert Table', desc: 'Format selection as table' },
   { key: 'insert_chart', label: 'Insert Chart', desc: 'Add a beautiful chart or graph' },
   { key: 'insert_shape', label: 'Insert Shape', desc: 'Add a floating shape' },
   { key: 'insert_textbox', label: 'Insert Text Box', desc: 'Add a floating text box' },
   { key: 'insert_comment', label: 'Insert Comment', desc: 'Add a comment' },
-  { type: 'divider', label: 'Format' },
   { key: 'format_cell', label: 'Format Cell', desc: 'Open cell formatting options' },
   { key: 'merge_cells', label: 'Merge Cells', desc: 'Merge selected cells' },
   { key: 'clear_format', label: 'Clear Formatting', desc: 'Reset all cell styles' },
-  { type: 'divider', label: 'Organize' },
   { key: 'add_row', label: 'Add Row', desc: 'Insert a new row below' },
   { key: 'add_column', label: 'Add Column', desc: 'Insert a new column right' },
   { key: 'sort_asc', label: 'Sort A-Z', desc: 'Sort selection alphabetically' },
   { key: 'filter', label: 'Filter', desc: 'Enable filtering on selection' },
   { key: 'remove_dupes', label: 'Remove Duplicates', desc: 'Keep only unique rows' },
-  { type: 'divider', label: 'Advanced' },
   { key: 'schedule', label: 'Schedule', desc: 'Add a scheduled event' },
   { key: 'translate', label: 'Translate', desc: 'Translate selected content' },
   { key: 'bookmark', label: 'Bookmark', desc: 'Add a bookmark' },
@@ -5034,7 +5032,12 @@ export default function App() {
   const [cellFormatPopover, setCellFormatPopover] = useState({ open: false, x: 0, y: 0 });
   const [sheetFilterPopover, setSheetFilterPopover] = useState({ open: false, x: 0, y: 0, colIndex: -1, rowIndex: -1 });
   const [mediaInsertionModal, setMediaInsertionModal] = useState({ open: false });
+  const [sheetLinkModal, setSheetLinkModal] = useState({ open: false, type: 'hyperlink', x: 0, y: 0, label: '', url: '' });
+  const [sheetTranslateModal, setSheetTranslateModal] = useState({ open: false, x: 0, y: 0, text: '', language: 'French', loading: false });
+  const [sheetFilterMenu, setSheetFilterMenu] = useState({ open: false, x: 0, y: 0, colIndex: -1, search: '', tempExcluded: [] });
+  const [specialCharactersModal, setSpecialCharactersModal] = useState({ open: false, x: 0, y: 0, numberFormat: 'general', currencySymbol: '$', decimals: 0, prefix: '', suffix: '' });
   const [cellFormatModal, setCellFormatModal] = useState({ open: false, x: 0, y: 0 });
+  const [sheetDatePicker, setSheetDatePicker] = useState({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
   const [sheetGrids, setSheetGrids] = useState(() => {
     const makeCells = (rows, cols) => Array.from({ length: rows }, () => Array.from({ length: cols }, () => ''));
     const result = {};
@@ -12846,7 +12849,35 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
 
     if (key === 'format' || key === 'format_cell') {
-      setCellFormatModal({ open: true, x: sMenuLeft, y: sMenuTop });
+      const activeCellFormat = sheetGrids[activeSheetId]?.formats?.[(selectedSheetCell?.row || 1) - 1]?.[(selectedSheetCell?.col || 1) - 1] || {};
+      setCellFormatModal({ 
+        open: true, 
+        x: sMenuLeft, 
+        y: sMenuTop,
+        align: activeCellFormat.align || 'left',
+        valign: activeCellFormat.valign || 'middle',
+        fill: activeCellFormat.fill || '#ffffff',
+        color: activeCellFormat.color || '#000000',
+        borderStyle: activeCellFormat.borderStyle || 'solid',
+        borderColor: activeCellFormat.borderColor || '#e5e7eb',
+        borders: activeCellFormat.borders || { top: false, bottom: false, left: false, right: false },
+        dataType: activeCellFormat.dataType || 'text',
+        type: activeCellFormat.type || 'default',
+        optionsText: activeCellFormat.optionsText || '',
+        buttonLabel: activeCellFormat.buttonLabel || 'Calculate',
+        buttonAction: activeCellFormat.buttonAction || 'Calculate'
+      });
+      return;
+    }
+
+    if (key === 'insert_date') {
+      setSheetDatePicker({ 
+        open: true, 
+        x: sMenuLeft, 
+        y: sMenuTop, 
+        rowIndex: (selectedSheetCell?.row || 1) - 1, 
+        colIndex: (selectedSheetCell?.col || 1) - 1 
+      });
       return;
     }
 
@@ -12872,10 +12903,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       return;
     }
 
-    if (key === 'insert_date') {
-      updateSheetCell(activeSheetId, (selectedSheetCell?.row || 1) - 1, (selectedSheetCell?.col || 1) - 1, new Date().toLocaleDateString());
-      return;
-    }
+
 
     if (key === 'media' || key === 'image') {
       setMediaInsertionModal({ open: true, range: allRanges[0] });
@@ -13100,26 +13128,18 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
 
     if (key === 'translate') {
-      const newCells = [...(activeSheetGridRaw.cells || [])];
-      let translated = 0;
-      allRanges.forEach(range => {
-        const rMin = Math.min(range.startRow, range.endRow) - 1;
-        const rMax = Math.max(range.startRow, range.endRow) - 1;
-        const cMin = Math.min(range.startCol, range.endCol) - 1;
-        const cMax = Math.max(range.startCol, range.endCol) - 1;
-        for (let r = rMin; r <= rMax; r++) {
-          for (let c = cMin; c <= cMax; c++) {
-            if (newCells[r] && newCells[r][c] && typeof newCells[r][c] === 'string') {
-              newCells[r][c] = '[Translated] ' + newCells[r][c];
-              translated++;
-            }
-          }
-        }
+      const range = allRanges[0];
+      const r = range ? (range.startRow - 1) : 0;
+      const c = range ? (range.startCol - 1) : 0;
+      const textToTranslate = activeSheetGridRaw.cells?.[r]?.[c] || '';
+      setSheetTranslateModal({
+        open: true,
+        x: sMenuLeft,
+        y: sMenuTop,
+        text: textToTranslate,
+        language: 'French',
+        loading: false
       });
-      if (translated > 0) {
-        updateSheetSettings(activeSheetId, { cells: newCells });
-        showToast(`Translated ${translated} cells`);
-      }
       return;
     }
 
@@ -13157,17 +13177,34 @@ Generate the updated output according to the instruction. Preserve layout and ta
       return;
     }
 
+    if (key === 'special_characters') {
+      const currentFmt = getSelectedCellFormat() || {};
+      setSpecialCharactersModal({
+        open: true,
+        x: sMenuLeft,
+        y: sMenuTop,
+        numberFormat: currentFmt.format || 'general',
+        currencySymbol: currentFmt.currencySymbol || '$',
+        decimals: currentFmt.decimals ?? 0,
+        prefix: currentFmt.prefix || '',
+        suffix: currentFmt.suffix || ''
+      });
+      return;
+    }
+
     if (key === 'bookmark' || key === 'hyperlink') {
-      const newFormats = { ...(activeSheetGridRaw.formats || {}) };
       const range = allRanges[0];
-      if (range) {
-        const r = range.startRow - 1;
-        const c = range.startCol - 1;
-        if (!newFormats[r]) newFormats[r] = {};
-        newFormats[r][c] = { ...newFormats[r][c], link: 'https://example.com' };
-        updateSheetSettings(activeSheetId, { formats: newFormats });
-        showToast('Inserted mock hyperlink');
-      }
+      const r = range ? (range.startRow - 1) : 0;
+      const c = range ? (range.startCol - 1) : 0;
+      const label = activeSheetGridRaw.cells?.[r]?.[c] || '';
+      setSheetLinkModal({
+        open: true,
+        type: key,
+        x: sMenuLeft,
+        y: sMenuTop,
+        label: label,
+        url: ''
+      });
       return;
     }
 
@@ -14096,6 +14133,12 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       if (!e.target.closest('.text-style-menu-container')) {
         setTextStyleMenuOpen(false);
+      }
+      if (!e.target.closest('.cell-format-dropdown-container') && !e.target.closest('.sheets-grid-viewport') && !e.target.closest('.slash-menu-option')) {
+        setCellFormatModal({ open: false, x: 0, y: 0 });
+      }
+      if (!e.target.closest('.sheet-date-picker-container') && !e.target.closest('.sheets-grid-viewport') && !e.target.closest('.slash-menu-option')) {
+        setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
       }
       if (!e.target.closest('.table-color-picker-container')) {
         setTableColorPickerOpen(false);
@@ -20095,6 +20138,52 @@ Respond with a JSON array of slide objects matching the schema.`;
     if (formatType === 'percent') return new Intl.NumberFormat('en-US', { style: 'percent', minimumFractionDigits: 2 }).format(num);
     if (formatType === 'decimal') return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
     return val;
+  };
+
+  const handleApplySheetLink = () => {
+    if (!sheetLinkModal.url.trim()) {
+      showToast('Please enter a destination URL or ID');
+      return;
+    }
+    const label = sheetLinkModal.label.trim() || sheetLinkModal.url.trim();
+    const url = sheetLinkModal.url.trim();
+    
+    const newCells = [...(sheetGrids[activeSheetId]?.cells || [])];
+    const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+    
+    const range = selectedSheetRange || { startRow: selectedSheetCell?.row, endRow: selectedSheetCell?.row, startCol: selectedSheetCell?.col, endCol: selectedSheetCell?.col };
+    
+    if (range) {
+      const r = (range.startRow || range.row) - 1;
+      const c = (range.startCol || range.col) - 1;
+      
+      if (!newCells[r]) newCells[r] = [];
+      
+      if (sheetLinkModal.type === 'bookmark') {
+        newCells[r][c] = `📌 ${label}`;
+        if (!newFormats[r]) newFormats[r] = {};
+        newFormats[r][c] = {
+          ...newFormats[r][c],
+          link: url.startsWith('#') ? url : `#${url}`,
+          fill: '#f5f3ff',
+          color: '#6d28d9',
+          bold: true
+        };
+      } else {
+        newCells[r][c] = label;
+        if (!newFormats[r]) newFormats[r] = {};
+        newFormats[r][c] = {
+          ...newFormats[r][c],
+          link: url,
+          color: '#2563eb',
+          underline: true
+        };
+      }
+      
+      updateSheetSettings(activeSheetId, { cells: newCells, formats: newFormats });
+      showToast(sheetLinkModal.type === 'bookmark' ? 'Bookmark created' : 'Hyperlink added');
+    }
+    setSheetLinkModal(prev => ({ ...prev, open: false }));
   };
 
   const getSelectedCellFormat = () => {
@@ -28634,7 +28723,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        value={overlay.content || ''}
                                        onChange={(e) => updateOverlay({ content: e.target.value })}
                                        onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
-                                       onMouseDown={e => e.stopPropagation()}
+                                       onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
                                      />
                                    );
                                  } else if (overlay.type === 'chart') {
@@ -28982,7 +29075,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             placeholder="Chart Title"
                                               value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series ? currentChartData.series.map(s => s.name).filter(n => n && !n.toLowerCase().startsWith('series')).join(' vs ') : '') || 'Chart Title')} 
                                             onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
-                                            onMouseDown={e => e.stopPropagation()}
+                                            onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
                                             className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"
                                             style={{ color: textClr }}
                                           />
@@ -29038,7 +29135,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       placeholder={`Category ${idx + 1}`}
                                                       value={overlay[`category${idx}Name`] !== undefined ? overlay[`category${idx}Name`] : label} 
                                                       onChange={(e) => updateOverlay({ [`category${idx}Name`]: e.target.value })}
-                                                      onMouseDown={e => e.stopPropagation()}
+                                                      onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
                                                       className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                       style={{ color: textClr }}
                                                     />
@@ -29065,7 +29166,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         placeholder={`Series ${idx + 1}`}
                                                         value={overlay[sn.prop] !== undefined ? overlay[sn.prop] : sn.def} 
                                                         onChange={(e) => updateOverlay({ [sn.prop]: e.target.value })}
-                                                        onMouseDown={e => e.stopPropagation()}
+                                                        onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
                                                         className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                         style={{ color: textClr }}
                                                       />
@@ -29178,7 +29283,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            placeholder={isSelected ? "New Text" : ""}
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
-                                           onMouseDown={e => e.stopPropagation()}
+                                           onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
                                          />
                                        )}
                                      </>
@@ -29213,7 +29322,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                    {/* Floating Style Panel */}
                                    {overlay.type === 'chart' ? (
-                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default max-h-[360px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default max-h-[360px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }} onClick={e => e.stopPropagation()}>
                                         <div className="flex items-center justify-between mb-1">
                                           <span className="text-[12px] font-semibold text-slate-800">Chart Styles</span>
                                         </div>
@@ -29339,7 +29452,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       </div>
                                    ) : (
-                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => e.stopPropagation()} onClick={e => e.stopPropagation()}>
+                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
                                      <div className="flex gap-1.5 justify-center mb-1">
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
@@ -29447,7 +29564,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               if (!filter || !filter.active) return false;
                               if (rowIndex > filter.row) {
                                 const val = activeSheetGrid.cells[rowIndex]?.[colIdx];
-                                if (filter.text && !String(val).toLowerCase().includes(filter.text.toLowerCase())) return true;
+                                const strVal = String(val === null || val === undefined ? '' : val).trim();
+                                if (filter.text && !strVal.toLowerCase().includes(filter.text.toLowerCase())) return true;
+                                if (filter.excludedValues && filter.excludedValues.includes(strVal)) return true;
                               }
                               return false;
                             });
@@ -29550,6 +29669,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                 const cellFormat = activeSheetGridRaw.formats?.[rowIndex]?.[colIndex] || {};
                                 let computedFormat = { ...cellFormat };
+                                
+                                // Compute custom cell border style
+                                const customBorders = {};
+                                if (computedFormat.borders) {
+                                  const bStyle = computedFormat.borderStyle || 'solid';
+                                  const bColor = computedFormat.borderColor || '#e5e7eb';
+                                  if (computedFormat.borders.top) customBorders.borderTop = `1px ${bStyle} ${bColor}`;
+                                  if (computedFormat.borders.bottom) customBorders.borderBottom = `1px ${bStyle} ${bColor}`;
+                                  if (computedFormat.borders.left) customBorders.borderLeft = `1px ${bStyle} ${bColor}`;
+                                  if (computedFormat.borders.right) customBorders.borderRight = `1px ${bStyle} ${bColor}`;
+                                }
                                 let tableBorderStyles = {};
                                 let isTableBottomRight = false;
                                 const tableIntersections = (activeSheetGridRaw.tables || []).filter(t => 
@@ -29599,12 +29729,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     className={`relative transition-colors ${computedFormat.fill ? '' : cellBg} ${isExplicitAnchor && sheetSelectionMode === 'cell' && !selectedSheetRange ? 'z-10' : ''}`}
                                     style={{ 
                                       height: computedFormat.rowSpan ? '100%' : rowHeight, 
-                                      display: computedFormat.hidden ? 'none' : undefined,
+                                      display: computedFormat.hidden ? 'none' : 'flex',
                                       gridRow: computedFormat.rowSpan ? `span ${computedFormat.rowSpan}` : undefined,
                                       gridColumn: computedFormat.colSpan ? `span ${computedFormat.colSpan}` : undefined,
+                                      flexDirection: 'column',
+                                      justifyContent: computedFormat.valign === 'top' ? 'flex-start' : computedFormat.valign === 'bottom' ? 'flex-end' : 'center',
                                       ...shadowStyle, 
                                       ...customBgStyle,
                                       ...tableBorderStyles,
+                                      ...customBorders,
                                       borderRightWidth: tableBorderStyles.borderRight ? '' : (computedFormat.fill ? '0px' : '1px'),
                                       borderBottomWidth: tableBorderStyles.borderBottom ? '' : (computedFormat.fill ? '0px' : '1px'),
                                       borderColor: tableIntersections.length > 0 ? (TABLE_PRESETS[tableIntersections[tableIntersections.length - 1].presetStyle]?.border || TABLE_PRESETS.blue.border) : '#e5e7eb',
@@ -29792,13 +29925,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         title="Filter column"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          const text = prompt('Enter filter text (leave empty to clear):');
-                                          updateSheetSettings(activeSheetId, {
-                                            filters: { ...activeSheetGrid.filters, [colIndex]: { ...activeSheetGrid.filters[colIndex], text: text || '' } }
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          const currentFilter = activeSheetGrid.filters[colIndex] || {};
+                                          setSheetFilterMenu({
+                                            open: true,
+                                            x: rect.left,
+                                            y: rect.bottom + window.scrollY,
+                                            colIndex,
+                                            search: '',
+                                            tempExcluded: currentFilter.excludedValues || []
                                           });
                                         }}
                                       >
-                                        <Filter size={12} className={activeSheetGrid.filters[colIndex].text ? 'text-violet-600' : 'text-slate-400'} />
+                                        <Filter size={12} className={(activeSheetGrid.filters[colIndex].text || activeSheetGrid.filters[colIndex].excludedValues?.length > 0) ? 'text-violet-600' : 'text-slate-400'} />
                                       </div>
                                     )}
 
@@ -29817,13 +29956,44 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     {computedFormat.type === 'button' ? (
                                       <div className="p-1 w-full h-full flex items-center justify-center">
                                         <button 
-                                          className="w-full h-full max-h-8 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded shadow-sm text-xs transition-colors flex items-center justify-center"
+                                          className="w-full h-full max-h-8 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded shadow-sm text-xs transition-colors flex items-center justify-center px-2"
+                                          style={{
+                                            color: computedFormat.color || undefined,
+                                            textAlign: computedFormat.align || 'center'
+                                          }}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            showToast('Action triggered');
+                                            if (computedFormat.buttonAction === 'Calculate' || cellValue === 'Calculate' || computedFormat.buttonLabel === 'Calculate') {
+                                              const missing = [];
+                                              for (let c = 0; c < colIndex; c++) {
+                                                const val = activeSheetGridRaw.cells?.[rowIndex]?.[c];
+                                                if (val === null || val === undefined || val === '') {
+                                                  missing.push(toColumnLabel(c) + (rowIndex + 1));
+                                                }
+                                              }
+                                              if (missing.length > 0) {
+                                                showToast(`Calculation failed: Missing inputs in cell(s) ${missing.join(', ')}`, { type: 'error' });
+                                              } else {
+                                                let sum = 0;
+                                                let count = 0;
+                                                for (let c = 0; c < colIndex; c++) {
+                                                  const val = Number(activeSheetGridRaw.cells?.[rowIndex]?.[c]);
+                                                  if (!isNaN(val)) {
+                                                    sum += val;
+                                                    count++;
+                                                  }
+                                                }
+                                                showToast(`Success: Evaluated ${count} input cells. Sum = ${sum}`);
+                                                if (colIndex + 1 < activeSheetGridRaw.cols) {
+                                                  updateSheetCell(activeSheetId, rowIndex, colIndex + 1, sum.toString());
+                                                }
+                                              }
+                                            } else {
+                                              showToast(`Action "${computedFormat.buttonLabel || 'Action'}" executed successfully!`);
+                                            }
                                           }}
                                         >
-                                          {cellValue || 'Action'}
+                                          {computedFormat.buttonLabel || cellValue || 'Action'}
                                         </button>
                                       </div>
                                     ) : computedFormat.type === 'dropdown' ? (
@@ -29834,8 +30004,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           fontSize: cellFormat.fontSize ? `${cellFormat.fontSize}px` : `${sheetToolbarSize}px`,
                                           fontWeight: cellFormat.bold ? 700 : 400,
                                           fontStyle: cellFormat.italic ? 'italic' : 'normal',
-                                          color: cellFormat.color || undefined,
-                                          backgroundColor: cellFormat.highlight || undefined,
+                                          color: computedFormat.color || cellFormat.color || undefined,
+                                          backgroundColor: computedFormat.fill || cellFormat.highlight || undefined,
+                                          textAlign: computedFormat.align || undefined,
                                           ...customTextStyle
                                         }}
                                         value={cellValue}
@@ -29861,8 +30032,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           fontStyle: cellFormat.italic ? 'italic' : 'normal',
                                           textDecoration: cellFormat.underline ? 'underline' : (cellFormat.strikeThrough ? 'line-through' : 'none'),
                                           textTransform: cellFormat.capitalization === 'UPPERCASE' ? 'uppercase' : cellFormat.capitalization === 'lowercase' ? 'lowercase' : cellFormat.capitalization === 'Title Case' ? 'capitalize' : undefined,
-                                          color: cellFormat.color || undefined,
-                                          backgroundColor: cellFormat.highlight || undefined,
+                                          color: computedFormat.color || cellFormat.color || undefined,
+                                          backgroundColor: computedFormat.fill || cellFormat.highlight || undefined,
+                                          textAlign: computedFormat.align || undefined,
                                           ...customTextStyle
                                         }}
                                         value={cellValue}
@@ -30677,7 +30849,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
               maxHeight: '360px',
               overflowY: 'auto',
             }}
-            onMouseDown={e => e.stopPropagation()}
+            onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
           >
             {sheetSlashMenu.filterText && (
               <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
@@ -30718,7 +30894,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
           ref={sheetTablePresetMenuRef}
           className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
           style={{ left: `${sheetTablePresetMenu.left}px`, top: `${sheetTablePresetMenu.top}px` }}
-          onMouseDown={e => e.stopPropagation()}
+          onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
         >
           <div className="text-xs font-semibold text-gray-500 mb-2 px-1">Table Presets</div>
           <div className="grid grid-cols-2 gap-2">
@@ -30846,7 +31026,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 ref={sheetChartMenuRef}
                 className="fixed z-[120] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-100 overflow-hidden flex flex-col w-[440px] max-h-[82vh]"
                 style={{ left: sheetChartMenu.left, top: sheetChartMenu.top }}
-                onMouseDown={e => e.stopPropagation()}
+                onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0">
@@ -30892,7 +31076,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
             display: 'flex',
             flexDirection: 'column',
           }}
-          onMouseDown={e => e.stopPropagation()}
+          onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
@@ -30971,114 +31159,182 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* ── Injected Sheets Modals & Overlays ── */}
-      {cellFormatModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => e.stopPropagation()}>
-          <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-5 text-left">
+      {specialCharactersModal.open && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}>
+          <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Settings2 className="text-violet-600" size={18} />
-                Format Cells
+                <Sparkles className="text-violet-600" size={18} />
+                Special Characters & Formatting
               </h3>
               <button
                 type="button"
-                onClick={() => setCellFormatModal({ open: false })}
+                onClick={() => setSpecialCharactersModal({ open: false })}
                 className="text-slate-450 hover:text-slate-700 text-lg font-bold"
               >
                 &times;
               </button>
             </div>
             
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Number Format</label>
-                <div className="flex flex-col gap-2">
-                  <select 
-                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, numberFormat: e.target.value }))}
-                    value={cellFormatModal.numberFormat || 'general'}
-                  >
-                    <option value="general">General</option>
-                    <option value="number">Number</option>
-                    <option value="currency">Currency ($)</option>
-                    <option value="percent">Percentage (%)</option>
-                    <option value="date">Date</option>
-                    <option value="time">Time</option>
-                  </select>
-                  <div className="flex items-center justify-between border border-slate-200 rounded-lg p-1 px-2">
-                    <span className="text-xs text-slate-600">Decimal Places</span>
-                    <div className="flex items-center gap-1">
-                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setCellFormatModal(prev => ({ ...prev, decimals: Math.max(0, (prev.decimals || 0) - 1) }))}>-</button>
-                      <span className="text-xs font-mono w-4 text-center">{cellFormatModal.decimals || 0}</span>
-                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setCellFormatModal(prev => ({ ...prev, decimals: (prev.decimals || 0) + 1 }))}>+</button>
+            <div className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto thin-scrollbar pr-1">
+              {/* Number Formatting */}
+              <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Number Formatting</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Type</span>
+                    <select 
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, numberFormat: e.target.value }))}
+                      value={specialCharactersModal.numberFormat || 'general'}
+                    >
+                      <option value="general">General</option>
+                      <option value="number">Number</option>
+                      <option value="currency">Currency</option>
+                      <option value="percent">Percentage (%)</option>
+                      <option value="date">Date</option>
+                      <option value="time">Time</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Currency Symbol</span>
+                    <select
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, currencySymbol: e.target.value }))}
+                      value={specialCharactersModal.currencySymbol || '$$'}
+                    >
+                      <option value="$$">$$ USD (United States Dollar)</option>
+                      <option value="€">€ EUR (Euro)</option>
+                      <option value="£">£ GBP (British Pound)</option>
+                      <option value="¥">¥ JPY (Japanese Yen)</option>
+                      <option value="₹">₹ INR (Indian Rupee)</option>
+                      <option value="元">元 CNY (Chinese Yuan)</option>
+                      <option value="₽">₽ RUB (Russian Ruble)</option>
+                      <option value="₪">₪ ILS (Israeli New Shekel)</option>
+                      <option value="₩">₩ KRW (South Korean Won)</option>
+                      <option value="₺">₺ TRY (Turkish Lira)</option>
+                      <option value="₣">₣ CHF (Swiss Franc)</option>
+                      <option value="A$">A$ AUD (Australian Dollar)</option>
+                      <option value="C$">C$ CAD (Canadian Dollar)</option>
+                      <option value="NZ$">NZ$ NZD (New Zealand Dollar)</option>
+                      <option value="S$">S$ SGD (Singapore Dollar)</option>
+                      <option value="HK$">HK$ HKD (Hong Kong Dollar)</option>
+                      <option value="R$">R$ BRL (Brazilian Real)</option>
+                      <option value="₱">₱ PHP (Philippine Peso)</option>
+                      <option value="₫">₫ VND (Vietnamese Dong)</option>
+                      <option value="฿">฿ THB (Thai Baht)</option>
+                      <option value="KSh">KSh KES (Kenyan Shilling)</option>
+                      <option value="₦">₦ NGN (Nigerian Naira)</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Decimals</span>
+                    <div className="flex items-center justify-between border border-slate-200 rounded-lg p-1.5 px-2 bg-white">
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setSpecialCharactersModal(prev => ({ ...prev, decimals: Math.max(0, (prev.decimals || 0) - 1) }))}>-</button>
+                      <span className="text-xs font-mono w-4 text-center">{specialCharactersModal.decimals || 0}</span>
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setSpecialCharactersModal(prev => ({ ...prev, decimals: (prev.decimals || 0) + 1 }))}>+</button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Alignment</label>
-                <div className="flex flex-col gap-2">
-                  <div className="flex border border-slate-200 rounded-lg overflow-hidden">
-                    {['left', 'center', 'right'].map(align => (
-                      <button 
-                        key={align} type="button"
-                        className={`flex-1 py-1.5 text-xs font-medium flex justify-center items-center ${cellFormatModal.align === align ? 'bg-violet-50 text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
-                        onClick={() => setCellFormatModal(prev => ({ ...prev, align }))}
-                      >
-                        {align === 'left' ? <AlignLeft size={14}/> : align === 'center' ? <AlignCenter size={14}/> : <AlignRight size={14}/>}
-                      </button>
-                    ))}
+              {/* Prefix & Suffix */}
+              <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Custom Prefix & Suffix</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Prefix</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Total: "
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none focus:border-violet-500"
+                      value={specialCharactersModal.prefix || ''}
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, prefix: e.target.value }))}
+                    />
                   </div>
-                  <div className="flex border border-slate-200 rounded-lg overflow-hidden">
-                    {['top', 'middle', 'bottom'].map(valign => (
-                      <button 
-                        key={valign} type="button"
-                        className={`flex-1 py-1.5 text-xs font-medium flex justify-center items-center ${cellFormatModal.valign === valign ? 'bg-violet-50 text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
-                        onClick={() => setCellFormatModal(prev => ({ ...prev, valign }))}
-                      >
-                        {valign}
-                      </button>
-                    ))}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Suffix</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. / hour"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none focus:border-violet-500"
+                      value={specialCharactersModal.suffix || ''}
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, suffix: e.target.value }))}
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3 col-span-2 border-t border-slate-100 pt-3">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Colors</label>
-                <div className="flex gap-4">
-                  <div className="flex flex-col gap-1 w-1/2">
-                    <span className="text-[10px] text-slate-500">Fill Color</span>
-                    <input 
-                      type="color" 
-                      className="w-full h-8 cursor-pointer rounded border border-slate-200 p-0.5 bg-white"
-                      value={cellFormatModal.fill || '#ffffff'}
-                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, fill: e.target.value }))}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1 w-1/2">
-                    <span className="text-[10px] text-slate-500">Text Color</span>
-                    <input 
-                      type="color" 
-                      className="w-full h-8 cursor-pointer rounded border border-slate-200 p-0.5 bg-white"
-                      value={cellFormatModal.color || '#000000'}
-                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, color: e.target.value }))}
-                    />
-                  </div>
+              {/* Currencies Grid */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Global Currencies</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {['$$', '€', '£', '¥', '₹', '元', '₽', '₪', '₩', '₺', '₣', '₱', '₫', '฿', '₦'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, prefix: (prev.prefix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to prefix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Math symbols */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Math & Academics</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {['√', 'π', '∞', '±', '×', '÷', '≈', '≠', '≤', '≥', '∑', '∏', 'Δ', 'μ', '∫'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, suffix: (prev.suffix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to suffix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Indicators / General Symbols */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Financial, Academic & General Symbols</label>
+                <div className="grid grid-cols-10 gap-1.5">
+                  {['▲', '▼', '★', '✖', '✔', '°', '§', '¶', '†', '‡', '©', '®', '™', '‰', '✓', '✗', '♠', '♣', '♥', '♦'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, suffix: (prev.suffix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to suffix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button 
                 type="button"
-                className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
-                onClick={() => setCellFormatModal({ open: false })}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={() => setSpecialCharactersModal({ open: false })}
               >
                 Cancel
               </button>
               <button 
                 type="button"
-                className="px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
+                className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
                 onClick={() => {
                   const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
                   const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }];
@@ -31092,24 +31348,969 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         if (!newFormats[r-1]) newFormats[r-1] = {};
                         newFormats[r-1][c-1] = {
                           ...newFormats[r-1][c-1],
-                          format: cellFormatModal.numberFormat || 'general',
-                          decimals: cellFormatModal.decimals || 0,
-                          align: cellFormatModal.align,
-                          valign: cellFormatModal.valign,
-                          fill: cellFormatModal.fill,
-                          color: cellFormatModal.color
+                          format: specialCharactersModal.numberFormat || 'general',
+                          currencySymbol: specialCharactersModal.currencySymbol || '$$',
+                          decimals: specialCharactersModal.decimals || 0,
+                          prefix: specialCharactersModal.prefix,
+                          suffix: specialCharactersModal.suffix
                         };
                       }
                     }
                   });
                   updateSheetSettings(activeSheetId, { formats: newFormats });
-                  setCellFormatModal({ open: false });
-                  showToast('Cell format applied');
+                  setSpecialCharactersModal({ open: false });
+                  showToast('Number format & symbols applied');
                 }}
               >
                 Apply
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {sheetLinkModal.open && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-80 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                {sheetLinkModal.type === 'bookmark' ? (
+                  <>
+                    <span className="text-violet-600">📌</span>
+                    Insert Bookmark
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon size={14} className="text-violet-600" />
+                    Insert Hyperlink
+                  </>
+                )}
+              </span>
+              <button 
+                type="button"
+                onClick={() => setSheetLinkModal(prev => ({ ...prev, open: false }))} 
+                className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  {sheetLinkModal.type === 'bookmark' ? 'Bookmark Name' : 'Display Text'}
+                </label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500" 
+                  placeholder={sheetLinkModal.type === 'bookmark' ? 'e.g. Sales Section' : 'e.g. Reference Document'}
+                  value={sheetLinkModal.label || ''}
+                  onChange={(e) => setSheetLinkModal(p => ({ ...p, label: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  {sheetLinkModal.type === 'bookmark' ? 'Destination Cell / Anchor ID' : 'Link URL'}
+                </label>
+                <div className="relative flex items-center">
+                  {sheetLinkModal.type === 'bookmark' ? (
+                    <span className="absolute left-2.5 text-xs font-semibold text-slate-400">#</span>
+                  ) : (
+                    <Search size={12} className="absolute left-2.5 text-slate-400" />
+                  )}
+                  <input 
+                    type="text" 
+                    className={`w-full text-xs py-2 pr-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 ${sheetLinkModal.type === 'bookmark' ? 'pl-6' : 'pl-7'}`}
+                    placeholder={sheetLinkModal.type === 'bookmark' ? 'e.g. A10 or section-id' : 'https://example.com'}
+                    value={sheetLinkModal.url || ''}
+                    onChange={(e) => setSheetLinkModal(p => ({ ...p, url: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleApplySheetLink();
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button 
+                type="button"
+                onClick={() => setSheetLinkModal(prev => ({ ...prev, open: false }))} 
+                className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleApplySheetLink()}
+                className="px-4 py-1.5 text-xs font-bold bg-violet-600 text-white rounded-lg hover:bg-violet-700 shadow-sm transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sheetTranslateModal.open && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-96 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <Sparkles size={14} className="text-violet-600 animate-pulse" />
+                AI Translate Cells
+              </span>
+              <button 
+                type="button"
+                onClick={() => setSheetTranslateModal(prev => ({ ...prev, open: false }))} 
+                className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Target Language</label>
+                <select 
+                  className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                  value={sheetTranslateModal.language}
+                  onChange={(e) => setSheetTranslateModal(p => ({ ...p, language: e.target.value }))}
+                >
+                  <option value="Spanish">Spanish</option>
+                  <option value="French">French</option>
+                  <option value="German">German</option>
+                  <option value="Japanese">Japanese</option>
+                  <option value="Chinese">Chinese</option>
+                  <option value="Italian">Italian</option>
+                  <option value="Portuguese">Portuguese</option>
+                  <option value="Korean">Korean</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Arabic">Arabic</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Custom Target Language (Optional)</label>
+                <input 
+                  type="text" 
+                  className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500" 
+                  placeholder="e.g. Swahili, Latin, Esperanto..."
+                  value={sheetTranslateModal.customLanguage || ''}
+                  onChange={(e) => setSheetTranslateModal(p => ({ ...p, customLanguage: e.target.value }))}
+                />
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-600 flex flex-col gap-1">
+                <span className="font-semibold text-slate-700">Preview text to translate:</span>
+                <span className="italic truncate">"${sheetTranslateModal.text || '(empty cell)'}"</span>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button 
+                type="button"
+                disabled={sheetTranslateModal.loading}
+                onClick={() => setSheetTranslateModal(prev => ({ ...prev, open: false }))} 
+                className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                disabled={sheetTranslateModal.loading}
+                onClick={async () => {
+                  setSheetTranslateModal(prev => ({ ...prev, loading: true }));
+                  const targetLang = sheetTranslateModal.customLanguage?.trim() || sheetTranslateModal.language;
+                  const newCells = [...(sheetGrids[activeSheetId]?.cells || [])];
+                  let translatedCount = 0;
+                  const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell?.row, endRow: selectedSheetCell?.row, startCol: selectedSheetCell?.col, endCol: selectedSheetCell?.col }];
+                  try {
+                    for (const range of ranges) {
+                      const rMin = Math.min(range.startRow, range.endRow) - 1;
+                      const rMax = Math.max(range.startRow, range.endRow) - 1;
+                      const cMin = Math.min(range.startCol, range.endCol) - 1;
+                      const cMax = Math.max(range.startCol, range.endCol) - 1;
+                      for (let r = rMin; r <= rMax; r++) {
+                        for (let c = cMin; c <= cMax; c++) {
+                          const val = newCells[r]?.[c];
+                          if (val && typeof val === 'string' && val.trim()) {
+                            const res = await callGemini({
+                              userPrompt: `Translate the following text to ${targetLang}: "${val}". Return ONLY the translated text, preserving any numbers, punctuation and casing.`,
+                              systemPrompt: "You are an expert translator. Output ONLY the translated text without any explanations or extra characters."
+                            });
+                            if (res?.text) {
+                              newCells[r][c] = res.text.trim();
+                              translatedCount++;
+                            }
+                          }
+                        }
+                      }
+                    }
+                    if (translatedCount > 0) {
+                      updateSheetSettings(activeSheetId, { cells: newCells });
+                      showToast(`Successfully translated ${translatedCount} cells to ${targetLang}`);
+                    } else {
+                      showToast('No text cells found to translate');
+                    }
+                  } catch (err) {
+                    console.error('Translation failed:', err);
+                    showToast('AI Translation failed. Please try again.');
+                  } finally {
+                    setSheetTranslateModal({ open: false });
+                  }
+                }}
+                className="px-4 py-1.5 text-xs font-bold bg-violet-600 text-white rounded-lg hover:bg-violet-700 shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {sheetTranslateModal.loading ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    Translating...
+                  </>
+                ) : (
+                  'Translate'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sheetFilterMenu.open && (() => {
+        const colIndex = sheetFilterMenu.colIndex;
+        const filter = activeSheetGrid.filters?.[colIndex] || {};
+        const startRowIndex = (filter.row || 0) + 1;
+        const uniqueValues = [];
+        const seenVal = new Set();
+        for (let r = startRowIndex; r < activeSheetGrid.rows; r++) {
+          const val = activeSheetGrid.cells[r]?.[colIndex];
+          const strVal = String(val === null || val === undefined ? '' : val).trim();
+          if (!seenVal.has(strVal)) {
+            seenVal.add(strVal);
+            uniqueValues.push(strVal);
+          }
+        }
+        uniqueValues.sort();
+        const filteredVals = uniqueValues.filter(v => 
+          v.toLowerCase().includes((sheetFilterMenu.search || '').toLowerCase())
+        );
+        return (
+          <div 
+            className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-100 p-4 w-64 flex flex-col gap-3 text-left font-sans animate-in fade-in zoom-in-95 duration-150"
+            style={{ left: sheetFilterMenu.x, top: sheetFilterMenu.y }}
+            onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Filter size={13} className="text-violet-600" />
+                Filter Column
+              </span>
+              <button 
+                type="button"
+                className="text-slate-450 hover:text-slate-700 text-sm font-bold"
+                onClick={() => setSheetFilterMenu(p => ({ ...p, open: false }))}
+              >
+                &times;
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-50">
+              <button
+                type="button"
+                className="py-1 px-2 text-[10px] bg-slate-50 hover:bg-violet-50 text-slate-700 hover:text-violet-700 rounded border border-slate-200 hover:border-violet-200 transition-all font-semibold flex items-center justify-center gap-1"
+                onClick={() => {
+                  const newCells = [...(activeSheetGridRaw.cells || [])];
+                  const newFormats = [...(activeSheetGridRaw.formats || [])];
+                  const rowsToSort = [];
+                  for (let r = startRowIndex; r < activeSheetGrid.rows; r++) {
+                    rowsToSort.push({ cell: newCells[r], format: newFormats[r] || null });
+                  }
+                  rowsToSort.sort((a, b) => {
+                    const valA = String(a.cell[colIndex] || '').toLowerCase();
+                    const valB = String(b.cell[colIndex] || '').toLowerCase();
+                    return valA.localeCompare(valB);
+                  });
+                  for (let i = 0; i < rowsToSort.length; i++) {
+                    newCells[startRowIndex + i] = rowsToSort[i].cell;
+                    newFormats[startRowIndex + i] = rowsToSort[i].format;
+                  }
+                  updateSheetSettings(activeSheetId, { cells: newCells, formats: newFormats });
+                  showToast('Sorted column A-Z');
+                  setSheetFilterMenu(p => ({ ...p, open: false }));
+                }}
+              >
+                Sort A-Z
+              </button>
+              <button
+                type="button"
+                className="py-1 px-2 text-[10px] bg-slate-50 hover:bg-violet-50 text-slate-700 hover:text-violet-700 rounded border border-slate-200 hover:border-violet-200 transition-all font-semibold flex items-center justify-center gap-1"
+                onClick={() => {
+                  const newCells = [...(activeSheetGridRaw.cells || [])];
+                  const newFormats = [...(activeSheetGridRaw.formats || [])];
+                  const rowsToSort = [];
+                  for (let r = startRowIndex; r < activeSheetGrid.rows; r++) {
+                    rowsToSort.push({ cell: newCells[r], format: newFormats[r] || null });
+                  }
+                  rowsToSort.sort((a, b) => {
+                    const valA = String(a.cell[colIndex] || '').toLowerCase();
+                    const valB = String(b.cell[colIndex] || '').toLowerCase();
+                    return valB.localeCompare(valA);
+                  });
+                  for (let i = 0; i < rowsToSort.length; i++) {
+                    newCells[startRowIndex + i] = rowsToSort[i].cell;
+                    newFormats[startRowIndex + i] = rowsToSort[i].format;
+                  }
+                  updateSheetSettings(activeSheetId, { cells: newCells, formats: newFormats });
+                  showToast('Sorted column Z-A');
+                  setSheetFilterMenu(p => ({ ...p, open: false }));
+                }}
+              >
+                Sort Z-A
+              </button>
+            </div>
+            <div className="relative flex items-center">
+              <Search size={11} className="absolute left-2.5 text-slate-400" />
+              <input 
+                type="text" 
+                className="w-full text-xs py-1.5 pl-7 pr-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500" 
+                placeholder="Search values..."
+                value={sheetFilterMenu.search || ''}
+                onChange={e => setSheetFilterMenu(p => ({ ...p, search: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                className="text-[10px] font-bold text-violet-600 hover:text-violet-800"
+                onClick={() => setSheetFilterMenu(p => ({ ...p, tempExcluded: [] }))}
+              >
+                Select All
+              </button>
+              <span className="text-slate-300">|</span>
+              <button 
+                type="button" 
+                className="text-[10px] font-bold text-violet-600 hover:text-violet-800"
+                onClick={() => setSheetFilterMenu(p => ({ ...p, tempExcluded: [...uniqueValues] }))}
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="max-h-40 overflow-y-auto border border-slate-100 rounded-lg p-2 flex flex-col gap-1.5 thin-scrollbar bg-slate-50/50">
+              {filteredVals.length === 0 ? (
+                <span className="text-[10px] text-slate-400 italic">No values found</span>
+              ) : (
+                filteredVals.map(val => {
+                  const isChecked = !sheetFilterMenu.tempExcluded.includes(val);
+                  return (
+                    <label key={val} className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          setSheetFilterMenu(p => {
+                            const newExcluded = p.tempExcluded.includes(val)
+                              ? p.tempExcluded.filter(x => x !== val)
+                              : [...p.tempExcluded, val];
+                            return { ...p, tempExcluded: newExcluded };
+                          });
+                        }}
+                        className="rounded text-violet-600 focus:ring-violet-500 w-3 h-3 cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-700 truncate w-48" title={val || '(Blank)'}>
+                        {val === '' ? <span className="italic text-slate-400">(Blank)</span> : val}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100 mt-1">
+              <button
+                type="button"
+                className="text-[10px] font-bold text-red-500 hover:text-red-700"
+                onClick={() => {
+                  const newFilters = { ...activeSheetGrid.filters };
+                  delete newFilters[colIndex];
+                  updateSheetSettings(activeSheetId, { filters: newFilters });
+                  showToast('Filter cleared');
+                  setSheetFilterMenu(p => ({ ...p, open: false }));
+                }}
+              >
+                Clear Filter
+              </button>
+              <div className="flex gap-1">
+                <button 
+                  type="button" 
+                  className="px-2 py-1 text-[10px] bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
+                  onClick={() => setSheetFilterMenu(p => ({ ...p, open: false }))}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="px-2.5 py-1 text-[10px] bg-violet-600 hover:bg-violet-700 text-white font-bold rounded shadow-sm transition-colors"
+                  onClick={() => {
+                    const newFilters = { 
+                      ...activeSheetGrid.filters,
+                      [colIndex]: { 
+                        ...filter, 
+                        excludedValues: sheetFilterMenu.tempExcluded 
+                      } 
+                    };
+                    updateSheetSettings(activeSheetId, { filters: newFilters });
+                    showToast('Filter applied');
+                    setSheetFilterMenu(p => ({ ...p, open: false }));
+                  }}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {specialCharactersModal.open && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}>
+          <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Sparkles className="text-violet-600" size={18} />
+                Special Characters & Formatting
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSpecialCharactersModal({ open: false })}
+                className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto thin-scrollbar pr-1">
+              {/* Number Formatting */}
+              <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Number Formatting</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Type</span>
+                    <select 
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, numberFormat: e.target.value }))}
+                      value={specialCharactersModal.numberFormat || 'general'}
+                    >
+                      <option value="general">General</option>
+                      <option value="number">Number</option>
+                      <option value="currency">Currency</option>
+                      <option value="percent">Percentage (%)</option>
+                      <option value="date">Date</option>
+                      <option value="time">Time</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Currency Symbol</span>
+                    <select
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, currencySymbol: e.target.value }))}
+                      value={specialCharactersModal.currencySymbol || '$$'}
+                    >
+                      <option value="$$">$$ USD (United States Dollar)</option>
+                      <option value="€">€ EUR (Euro)</option>
+                      <option value="£">£ GBP (British Pound)</option>
+                      <option value="¥">¥ JPY (Japanese Yen)</option>
+                      <option value="₹">₹ INR (Indian Rupee)</option>
+                      <option value="元">元 CNY (Chinese Yuan)</option>
+                      <option value="₽">₽ RUB (Russian Ruble)</option>
+                      <option value="₪">₪ ILS (Israeli New Shekel)</option>
+                      <option value="₩">₩ KRW (South Korean Won)</option>
+                      <option value="₺">₺ TRY (Turkish Lira)</option>
+                      <option value="₣">₣ CHF (Swiss Franc)</option>
+                      <option value="A$">A$ AUD (Australian Dollar)</option>
+                      <option value="C$">C$ CAD (Canadian Dollar)</option>
+                      <option value="NZ$">NZ$ NZD (New Zealand Dollar)</option>
+                      <option value="S$">S$ SGD (Singapore Dollar)</option>
+                      <option value="HK$">HK$ HKD (Hong Kong Dollar)</option>
+                      <option value="R$">R$ BRL (Brazilian Real)</option>
+                      <option value="₱">₱ PHP (Philippine Peso)</option>
+                      <option value="₫">₫ VND (Vietnamese Dong)</option>
+                      <option value="฿">฿ THB (Thai Baht)</option>
+                      <option value="KSh">KSh KES (Kenyan Shilling)</option>
+                      <option value="₦">₦ NGN (Nigerian Naira)</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Decimals</span>
+                    <div className="flex items-center justify-between border border-slate-200 rounded-lg p-1.5 px-2 bg-white">
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setSpecialCharactersModal(prev => ({ ...prev, decimals: Math.max(0, (prev.decimals || 0) - 1) }))}>-</button>
+                      <span className="text-xs font-mono w-4 text-center">{specialCharactersModal.decimals || 0}</span>
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setSpecialCharactersModal(prev => ({ ...prev, decimals: (prev.decimals || 0) + 1 }))}>+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Prefix & Suffix */}
+              <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Custom Prefix & Suffix</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Prefix</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Total: "
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none focus:border-violet-500"
+                      value={specialCharactersModal.prefix || ''}
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, prefix: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Suffix</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. / hour"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none focus:border-violet-500"
+                      value={specialCharactersModal.suffix || ''}
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, suffix: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Currencies Grid */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Global Currencies</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {['$$', '€', '£', '¥', '₹', '元', '₽', '₪', '₩', '₺', '₣', '₱', '₫', '฿', '₦'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, prefix: (prev.prefix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to prefix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Math symbols */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Math & Academics</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {['√', 'π', '∞', '±', '×', '÷', '≈', '≠', '≤', '≥', '∑', '∏', 'Δ', 'μ', '∫'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, suffix: (prev.suffix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to suffix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Indicators / General Symbols */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Financial, Academic & General Symbols</label>
+                <div className="grid grid-cols-10 gap-1.5">
+                  {['▲', '▼', '★', '✖', '✔', '°', '§', '¶', '†', '‡', '©', '®', '™', '‰', '✓', '✗', '♠', '♣', '♥', '♦'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, suffix: (prev.suffix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to suffix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button 
+                type="button"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={() => setSpecialCharactersModal({ open: false })}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
+                onClick={() => {
+                  const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+                  const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }];
+                  ranges.forEach(range => {
+                    const rMin = Math.min(range.startRow, range.endRow);
+                    const rMax = Math.max(range.startRow, range.endRow);
+                    const cMin = Math.min(range.startCol, range.endCol);
+                    const cMax = Math.max(range.startCol, range.endCol);
+                    for (let r = rMin; r <= rMax; r++) {
+                      for (let c = cMin; c <= cMax; c++) {
+                        if (!newFormats[r-1]) newFormats[r-1] = {};
+                        newFormats[r-1][c-1] = {
+                          ...newFormats[r-1][c-1],
+                          format: specialCharactersModal.numberFormat || 'general',
+                          currencySymbol: specialCharactersModal.currencySymbol || '$$',
+                          decimals: specialCharactersModal.decimals || 0,
+                          prefix: specialCharactersModal.prefix,
+                          suffix: specialCharactersModal.suffix
+                        };
+                      }
+                    }
+                  });
+                  updateSheetSettings(activeSheetId, { formats: newFormats });
+                  setSpecialCharactersModal({ open: false });
+                  showToast('Number format & symbols applied');
+                }}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {cellFormatModal.open && (
+        <div 
+          className="absolute z-[300] bg-white rounded-xl p-4 shadow-[0_12px_32px_rgba(0,0,0,0.15)] border border-slate-200 flex flex-col gap-3 text-left w-[360px] font-sans cell-format-dropdown-container max-h-[80vh] overflow-y-auto thin-scrollbar" 
+          style={{ 
+            left: `${cellFormatModal.x}px`, 
+            top: `${cellFormatModal.y}px` 
+          }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <Settings className="text-violet-600" size={16} />
+              Cell Formatting
+            </h3>
+            <button
+              type="button"
+              onClick={() => setCellFormatModal({ open: false, x: 0, y: 0 })}
+              className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+            >
+              &times;
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3 text-xs">
+            {/* Alignment */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Alignment</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex border border-slate-200 rounded-lg overflow-hidden bg-white">
+                  {['left', 'center', 'right'].map(align => (
+                    <button 
+                      key={align} type="button"
+                      className={"flex-1 py-1 text-xs font-medium flex justify-center items-center " + (cellFormatModal.align === align ? "bg-violet-50 text-violet-700" : "bg-white text-slate-600 hover:bg-slate-50")}
+                      onClick={() => setCellFormatModal(prev => ({ ...prev, align }))}
+                    >
+                      {align === 'left' ? <AlignLeft size={13}/> : align === 'center' ? <AlignCenter size={13}/> : <AlignRight size={13}/>}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex border border-slate-200 rounded-lg overflow-hidden bg-white">
+                  {['top', 'middle', 'bottom'].map(valign => (
+                    <button 
+                      key={valign} type="button"
+                      className={"flex-1 py-1 text-xs font-medium flex justify-center items-center " + (cellFormatModal.valign === valign ? "bg-violet-50 text-violet-700" : "bg-white text-slate-600 hover:bg-slate-50")}
+                      onClick={() => setCellFormatModal(prev => ({ ...prev, valign }))}
+                    >
+                      <span className="capitalize text-[10px]">{valign}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Colors */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Colors</label>
+              <div className="flex gap-2">
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Fill</span>
+                  <input 
+                    type="color" 
+                    className="w-full h-8 cursor-pointer rounded-lg border border-slate-200 p-0.5 bg-white"
+                    value={cellFormatModal.fill || '#ffffff'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, fill: e.target.value }))}
+                  />
+                </div>
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Text</span>
+                  <input 
+                    type="color" 
+                    className="w-full h-8 cursor-pointer rounded-lg border border-slate-200 p-0.5 bg-white"
+                    value={cellFormatModal.color || '#000000'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, color: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Borders */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Borders</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Style</span>
+                  <select 
+                    className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                    value={cellFormatModal.borderStyle || 'solid'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, borderStyle: e.target.value }))}
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                    <option value="double">Double</option>
+                    <option value="none">None</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Color</span>
+                  <input 
+                    type="color" 
+                    className="w-full h-7 cursor-pointer rounded-lg border border-slate-200 p-0.5 bg-white"
+                    value={cellFormatModal.borderColor || '#e5e7eb'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, borderColor: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-slate-400 font-semibold uppercase">Sides</span>
+                <div className="grid grid-cols-4 gap-1">
+                  {['top', 'bottom', 'left', 'right'].map(side => (
+                    <button
+                      key={side} type="button"
+                      className={cellFormatModal.borders?.[side] ? "py-1 text-[10px] rounded border font-semibold capitalize bg-violet-600 text-white border-violet-600" : "py-1 text-[10px] rounded border font-semibold capitalize bg-white text-slate-605 border-slate-200"}
+                      onClick={() => setCellFormatModal(prev => ({
+                        ...prev,
+                        borders: { ...(prev.borders || { top: false, bottom: false, left: false, right: false }), [side]: !prev.borders?.[side] }
+                      }))}
+                    >
+                      {side}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-1.5 mt-1">
+                  <button
+                    type="button"
+                    className="flex-1 py-1 text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-200 font-semibold"
+                    onClick={() => setCellFormatModal(prev => ({ ...prev, borders: { top: true, bottom: true, left: true, right: true } }))}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 py-1 text-[10px] bg-white hover:bg-slate-50 text-slate-655 rounded border border-slate-200 font-semibold"
+                    onClick={() => setCellFormatModal(prev => ({ ...prev, borders: { top: false, bottom: false, left: false, right: false } }))}
+                  >
+                    None
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Data & Interactive Formats */}
+            <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Data & Interactive Settings</label>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Data Format</span>
+                  <select 
+                    className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                    value={cellFormatModal.dataType || 'text'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, dataType: e.target.value }))}
+                  >
+                    <option value="text">Text / General</option>
+                    <option value="number">Number</option>
+                    <option value="currency">Currency ($)</option>
+                    <option value="percent">Percent (%)</option>
+                    <option value="date">Date</option>
+                    <option value="decimal">Decimal (.00)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Interactive Type</span>
+                  <select 
+                    className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                    value={cellFormatModal.type || 'default'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, type: e.target.value }))}
+                  >
+                    <option value="default">Default Input</option>
+                    <option value="dropdown">Dropdown Options</option>
+                    <option value="button">Button / Action Cell</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Dynamic options based on interactive cell type */}
+              {cellFormatModal.type === 'dropdown' && (
+                <div className="flex flex-col gap-1 mt-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Dropdown Choices (comma-separated)</span>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Option 1, Option 2, Option 3"
+                    className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                    value={cellFormatModal.optionsText || ''}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, optionsText: e.target.value }))}
+                  />
+                </div>
+              )}
+
+              {cellFormatModal.type === 'button' && (
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] text-slate-400 font-semibold uppercase">Button Label</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Calculate"
+                      className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                      value={cellFormatModal.buttonLabel || ''}
+                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, buttonLabel: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] text-slate-400 font-semibold uppercase">Button Action</span>
+                    <select 
+                      className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                      value={cellFormatModal.buttonAction || 'Calculate'}
+                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, buttonAction: e.target.value }))}
+                    >
+                      <option value="Calculate">Calculate Row</option>
+                      <option value="Toast">Trigger Alert</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2.5 border-t border-slate-100 mt-1">
+            <button 
+              type="button"
+              className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+              onClick={() => setCellFormatModal({ open: false, x: 0, y: 0 })}
+            >
+              Cancel
+            </button>
+            <button 
+              type="button"
+              className="px-3 py-1.5 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
+              onClick={() => {
+                const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+                const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }];
+                
+                let parsedOptions = undefined;
+                if (cellFormatModal.type === 'dropdown' && cellFormatModal.optionsText) {
+                  parsedOptions = cellFormatModal.optionsText.split(',').map(s => s.trim()).filter(Boolean);
+                }
+
+                ranges.forEach(range => {
+                  const rMin = Math.min(range.startRow, range.endRow);
+                  const rMax = Math.max(range.startRow, range.endRow);
+                  const cMin = Math.min(range.startCol, range.endCol);
+                  const cMax = Math.max(range.startCol, range.endCol);
+                  for (let r = rMin; r <= rMax; r++) {
+                    for (let c = cMin; c <= cMax; c++) {
+                      if (!newFormats[r-1]) newFormats[r-1] = {};
+                      newFormats[r-1][c-1] = {
+                        ...newFormats[r-1][c-1],
+                        align: cellFormatModal.align,
+                        valign: cellFormatModal.valign,
+                        fill: cellFormatModal.fill,
+                        color: cellFormatModal.color,
+                        borderStyle: cellFormatModal.borderStyle,
+                        borderColor: cellFormatModal.borderColor,
+                        borders: cellFormatModal.borders,
+                        dataType: cellFormatModal.dataType || 'text',
+                        type: cellFormatModal.type || 'default',
+                        options: parsedOptions,
+                        optionsText: cellFormatModal.optionsText,
+                        buttonLabel: cellFormatModal.buttonLabel || 'Calculate',
+                        buttonAction: cellFormatModal.buttonAction || 'Calculate'
+                      };
+                    }
+                  }
+                });
+                updateSheetSettings(activeSheetId, { formats: newFormats });
+                setCellFormatModal({ open: false, x: 0, y: 0 });
+                showToast('Cell formatting applied');
+              }}
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      )}
+
+      {sheetDatePicker.open && (
+        <div 
+          className="absolute z-[310] bg-white rounded-xl p-4 shadow-[0_12px_32px_rgba(0,0,0,0.15)] border border-slate-200 flex flex-col gap-2 w-64 text-left font-sans sheet-date-picker-container"
+          style={{ left: `${sheetDatePicker.x}px`, top: `${sheetDatePicker.y}px` }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-1">
+            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              📅 Insert Date
+            </span>
+            <button 
+              type="button" 
+              className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              onClick={() => setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 })}
+            >
+              &times;
+            </button>
+          </div>
+          <button 
+            type="button"
+            className="w-full py-2 px-3 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors text-center"
+            onClick={() => {
+              updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, new Date().toLocaleDateString());
+              setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
+              showToast("Today's date inserted");
+            }}
+          >
+            Insert Today ({`${new Date().toLocaleDateString()}`})
+          </button>
+          <div className="h-px bg-slate-100 my-1" />
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-slate-500 font-medium">Or Choose from Calendar</span>
+            <input 
+              type="date"
+              className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
+              onChange={(e) => {
+                if (e.target.value) {
+                  const parts = e.target.value.split('-');
+                  const formattedDate = `${parts[1]}/${parts[2]}/${parts[0]}`;
+                  updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, formattedDate);
+                  setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
+                  showToast(`Selected date inserted`);
+                }
+              }}
+            />
           </div>
         </div>
       )}
@@ -33509,10 +34710,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
           <div className="w-px h-4 bg-gray-200"></div>
           <div className="flex items-center gap-4">
-            <button onClick={() => applyFormatCommand('bold')} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
-            <button onClick={() => applyFormatCommand('italic')} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
-            <button onClick={() => applyFormatCommand('underline')} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
-            <button onClick={() => applyFormatCommand('strikeThrough')} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
             <button onClick={() => handleOpenLinkPopover()} className="hover:text-violet-600 text-gray-500" title="Insert Link">
               <LinkIcon size={14} />
             </button>
@@ -33522,7 +34723,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               onMouseLeave={() => setIsTextStyleMenuHovered(false)}
             >
               <button
-                onClick={() => setTextStyleMenuOpen((prev) => !prev)}
+                onPointerDown={(e) => { e.preventDefault(); setTextStyleMenuOpen((prev) => !prev); }}
                 className="flex items-center gap-1.5 hover:text-gray-900 cursor-pointer pl-0.5"
                 title="Format options (Style & Colors)"
               >
@@ -33541,7 +34742,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
                     <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
                       {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
-                        <button key={c} onClick={() => { applyFormatCommand('foreColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                        <button key={c} onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('foreColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
                       ))}
                     </div>
                   </div>
@@ -33549,9 +34750,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="flex flex-col gap-1">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
                     <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                      <button onClick={() => { applyFormatCommand('hiliteColor', 'transparent'); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
+                      <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('hiliteColor', 'transparent'); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
                       {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
-                        <button key={c} onClick={() => { applyFormatCommand('hiliteColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                        <button key={c} onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('hiliteColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
                       ))}
                     </div>
                   </div>
@@ -37545,7 +38746,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 maxHeight: '360px',
                 overflowY: 'auto',
               }}
-              onMouseDown={e => e.stopPropagation()}
+              onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
             >
               {sheetSlashMenu.filterText && (
                 <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
@@ -37600,117 +38805,182 @@ if (productMode === 'deck' || productMode === 'sheets') {
       })()}
 
       {/* ── Cell Format Modal ────────────────────────────────────── */}
-      {cellFormatModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => e.stopPropagation()}>
-          <div className="w-full max-w-lg bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-5 text-left">
+      {specialCharactersModal.open && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}>
+          <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Settings2 className="text-violet-600" size={18} />
-                Format Cells
+                <Sparkles className="text-violet-600" size={18} />
+                Special Characters & Formatting
               </h3>
               <button
                 type="button"
-                onClick={() => setCellFormatModal({ open: false })}
+                onClick={() => setSpecialCharactersModal({ open: false })}
                 className="text-slate-450 hover:text-slate-700 text-lg font-bold"
               >
                 &times;
               </button>
             </div>
             
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto thin-scrollbar pr-1">
               {/* Number Formatting */}
-              <div className="space-y-3">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Number Format</label>
-                <div className="flex flex-col gap-2">
-                  <select 
-                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, numberFormat: e.target.value }))}
-                    value={cellFormatModal.numberFormat || 'general'}
-                  >
-                    <option value="general">General</option>
-                    <option value="number">Number</option>
-                    <option value="currency">Currency ($)</option>
-                    <option value="percent">Percentage (%)</option>
-                    <option value="date">Date</option>
-                    <option value="time">Time</option>
-                  </select>
-                  <div className="flex items-center justify-between border border-slate-200 rounded-lg p-1 px-2">
-                    <span className="text-xs text-slate-600">Decimal Places</span>
-                    <div className="flex items-center gap-1">
-                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setCellFormatModal(prev => ({ ...prev, decimals: Math.max(0, (prev.decimals || 0) - 1) }))}>-</button>
-                      <span className="text-xs font-mono w-4 text-center">{cellFormatModal.decimals || 0}</span>
-                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setCellFormatModal(prev => ({ ...prev, decimals: (prev.decimals || 0) + 1 }))}>+</button>
+              <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Number Formatting</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Type</span>
+                    <select 
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, numberFormat: e.target.value }))}
+                      value={specialCharactersModal.numberFormat || 'general'}
+                    >
+                      <option value="general">General</option>
+                      <option value="number">Number</option>
+                      <option value="currency">Currency</option>
+                      <option value="percent">Percentage (%)</option>
+                      <option value="date">Date</option>
+                      <option value="time">Time</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Currency Symbol</span>
+                    <select
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, currencySymbol: e.target.value }))}
+                      value={specialCharactersModal.currencySymbol || '$$'}
+                    >
+                      <option value="$$">$$ USD (United States Dollar)</option>
+                      <option value="€">€ EUR (Euro)</option>
+                      <option value="£">£ GBP (British Pound)</option>
+                      <option value="¥">¥ JPY (Japanese Yen)</option>
+                      <option value="₹">₹ INR (Indian Rupee)</option>
+                      <option value="元">元 CNY (Chinese Yuan)</option>
+                      <option value="₽">₽ RUB (Russian Ruble)</option>
+                      <option value="₪">₪ ILS (Israeli New Shekel)</option>
+                      <option value="₩">₩ KRW (South Korean Won)</option>
+                      <option value="₺">₺ TRY (Turkish Lira)</option>
+                      <option value="₣">₣ CHF (Swiss Franc)</option>
+                      <option value="A$">A$ AUD (Australian Dollar)</option>
+                      <option value="C$">C$ CAD (Canadian Dollar)</option>
+                      <option value="NZ$">NZ$ NZD (New Zealand Dollar)</option>
+                      <option value="S$">S$ SGD (Singapore Dollar)</option>
+                      <option value="HK$">HK$ HKD (Hong Kong Dollar)</option>
+                      <option value="R$">R$ BRL (Brazilian Real)</option>
+                      <option value="₱">₱ PHP (Philippine Peso)</option>
+                      <option value="₫">₫ VND (Vietnamese Dong)</option>
+                      <option value="฿">฿ THB (Thai Baht)</option>
+                      <option value="KSh">KSh KES (Kenyan Shilling)</option>
+                      <option value="₦">₦ NGN (Nigerian Naira)</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Decimals</span>
+                    <div className="flex items-center justify-between border border-slate-200 rounded-lg p-1.5 px-2 bg-white">
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setSpecialCharactersModal(prev => ({ ...prev, decimals: Math.max(0, (prev.decimals || 0) - 1) }))}>-</button>
+                      <span className="text-xs font-mono w-4 text-center">{specialCharactersModal.decimals || 0}</span>
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setSpecialCharactersModal(prev => ({ ...prev, decimals: (prev.decimals || 0) + 1 }))}>+</button>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Alignment */}
-              <div className="space-y-3">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Alignment</label>
-                <div className="flex flex-col gap-2">
-                  <div className="flex border border-slate-200 rounded-lg overflow-hidden">
-                    {['left', 'center', 'right'].map(align => (
-                      <button 
-                        key={align} type="button"
-                        className={`flex-1 py-1.5 text-xs font-medium flex justify-center items-center ${cellFormatModal.align === align ? 'bg-violet-50 text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
-                        onClick={() => setCellFormatModal(prev => ({ ...prev, align }))}
-                      >
-                        {align === 'left' ? <AlignLeft size={14}/> : align === 'center' ? <AlignCenter size={14}/> : <AlignRight size={14}/>}
-                      </button>
-                    ))}
+              {/* Prefix & Suffix */}
+              <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Custom Prefix & Suffix</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Prefix</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Total: "
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none focus:border-violet-500"
+                      value={specialCharactersModal.prefix || ''}
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, prefix: e.target.value }))}
+                    />
                   </div>
-                  <div className="flex border border-slate-200 rounded-lg overflow-hidden">
-                    {['top', 'middle', 'bottom'].map(valign => (
-                      <button 
-                        key={valign} type="button"
-                        className={`flex-1 py-1.5 text-xs font-medium flex justify-center items-center ${cellFormatModal.valign === valign ? 'bg-violet-50 text-violet-700' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
-                        onClick={() => setCellFormatModal(prev => ({ ...prev, valign }))}
-                      >
-                        {valign}
-                      </button>
-                    ))}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Suffix</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. / hour"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none focus:border-violet-500"
+                      value={specialCharactersModal.suffix || ''}
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, suffix: e.target.value }))}
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Colors */}
-              <div className="space-y-3 col-span-2 border-t border-slate-100 pt-3">
-                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Colors</label>
-                <div className="flex gap-4">
-                  <div className="flex flex-col gap-1 w-1/2">
-                    <span className="text-[10px] text-slate-500">Fill Color</span>
-                    <input 
-                      type="color" 
-                      className="w-full h-8 cursor-pointer rounded border border-slate-200 p-0.5 bg-white"
-                      value={cellFormatModal.fill || '#ffffff'}
-                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, fill: e.target.value }))}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1 w-1/2">
-                    <span className="text-[10px] text-slate-500">Text Color</span>
-                    <input 
-                      type="color" 
-                      className="w-full h-8 cursor-pointer rounded border border-slate-200 p-0.5 bg-white"
-                      value={cellFormatModal.color || '#000000'}
-                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, color: e.target.value }))}
-                    />
-                  </div>
+              {/* Currencies Grid */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Global Currencies</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {['$$', '€', '£', '¥', '₹', '元', '₽', '₪', '₩', '₺', '₣', '₱', '₫', '฿', '₦'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, prefix: (prev.prefix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to prefix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Math symbols */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Math & Academics</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {['√', 'π', '∞', '±', '×', '÷', '≈', '≠', '≤', '≥', '∑', '∏', 'Δ', 'μ', '∫'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, suffix: (prev.suffix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to suffix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Indicators / General Symbols */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Financial, Academic & General Symbols</label>
+                <div className="grid grid-cols-10 gap-1.5">
+                  {['▲', '▼', '★', '✖', '✔', '°', '§', '¶', '†', '‡', '©', '®', '™', '‰', '✓', '✗', '♠', '♣', '♥', '♦'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, suffix: (prev.suffix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to suffix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button 
                 type="button"
-                className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
-                onClick={() => setCellFormatModal({ open: false })}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={() => setSpecialCharactersModal({ open: false })}
               >
                 Cancel
               </button>
               <button 
                 type="button"
-                className="px-4 py-2 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
+                className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
                 onClick={() => {
                   const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
                   const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }];
@@ -37724,24 +38994,969 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         if (!newFormats[r-1]) newFormats[r-1] = {};
                         newFormats[r-1][c-1] = {
                           ...newFormats[r-1][c-1],
-                          format: cellFormatModal.numberFormat || 'general',
-                          decimals: cellFormatModal.decimals || 0,
-                          align: cellFormatModal.align,
-                          valign: cellFormatModal.valign,
-                          fill: cellFormatModal.fill,
-                          color: cellFormatModal.color
+                          format: specialCharactersModal.numberFormat || 'general',
+                          currencySymbol: specialCharactersModal.currencySymbol || '$$',
+                          decimals: specialCharactersModal.decimals || 0,
+                          prefix: specialCharactersModal.prefix,
+                          suffix: specialCharactersModal.suffix
                         };
                       }
                     }
                   });
                   updateSheetSettings(activeSheetId, { formats: newFormats });
-                  setCellFormatModal({ open: false });
-                  showToast('Cell format applied');
+                  setSpecialCharactersModal({ open: false });
+                  showToast('Number format & symbols applied');
                 }}
               >
-                Apply Formatting
+                Apply
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {sheetLinkModal.open && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-80 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                {sheetLinkModal.type === 'bookmark' ? (
+                  <>
+                    <span className="text-violet-600">📌</span>
+                    Insert Bookmark
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon size={14} className="text-violet-600" />
+                    Insert Hyperlink
+                  </>
+                )}
+              </span>
+              <button 
+                type="button"
+                onClick={() => setSheetLinkModal(prev => ({ ...prev, open: false }))} 
+                className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  {sheetLinkModal.type === 'bookmark' ? 'Bookmark Name' : 'Display Text'}
+                </label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500" 
+                  placeholder={sheetLinkModal.type === 'bookmark' ? 'e.g. Sales Section' : 'e.g. Reference Document'}
+                  value={sheetLinkModal.label || ''}
+                  onChange={(e) => setSheetLinkModal(p => ({ ...p, label: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  {sheetLinkModal.type === 'bookmark' ? 'Destination Cell / Anchor ID' : 'Link URL'}
+                </label>
+                <div className="relative flex items-center">
+                  {sheetLinkModal.type === 'bookmark' ? (
+                    <span className="absolute left-2.5 text-xs font-semibold text-slate-400">#</span>
+                  ) : (
+                    <Search size={12} className="absolute left-2.5 text-slate-400" />
+                  )}
+                  <input 
+                    type="text" 
+                    className={`w-full text-xs py-2 pr-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 ${sheetLinkModal.type === 'bookmark' ? 'pl-6' : 'pl-7'}`}
+                    placeholder={sheetLinkModal.type === 'bookmark' ? 'e.g. A10 or section-id' : 'https://example.com'}
+                    value={sheetLinkModal.url || ''}
+                    onChange={(e) => setSheetLinkModal(p => ({ ...p, url: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleApplySheetLink();
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button 
+                type="button"
+                onClick={() => setSheetLinkModal(prev => ({ ...prev, open: false }))} 
+                className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleApplySheetLink()}
+                className="px-4 py-1.5 text-xs font-bold bg-violet-600 text-white rounded-lg hover:bg-violet-700 shadow-sm transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sheetTranslateModal.open && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-96 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                <Sparkles size={14} className="text-violet-600 animate-pulse" />
+                AI Translate Cells
+              </span>
+              <button 
+                type="button"
+                onClick={() => setSheetTranslateModal(prev => ({ ...prev, open: false }))} 
+                className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Target Language</label>
+                <select 
+                  className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                  value={sheetTranslateModal.language}
+                  onChange={(e) => setSheetTranslateModal(p => ({ ...p, language: e.target.value }))}
+                >
+                  <option value="Spanish">Spanish</option>
+                  <option value="French">French</option>
+                  <option value="German">German</option>
+                  <option value="Japanese">Japanese</option>
+                  <option value="Chinese">Chinese</option>
+                  <option value="Italian">Italian</option>
+                  <option value="Portuguese">Portuguese</option>
+                  <option value="Korean">Korean</option>
+                  <option value="Hindi">Hindi</option>
+                  <option value="Arabic">Arabic</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Custom Target Language (Optional)</label>
+                <input 
+                  type="text" 
+                  className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500" 
+                  placeholder="e.g. Swahili, Latin, Esperanto..."
+                  value={sheetTranslateModal.customLanguage || ''}
+                  onChange={(e) => setSheetTranslateModal(p => ({ ...p, customLanguage: e.target.value }))}
+                />
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-600 flex flex-col gap-1">
+                <span className="font-semibold text-slate-700">Preview text to translate:</span>
+                <span className="italic truncate">"${sheetTranslateModal.text || '(empty cell)'}"</span>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button 
+                type="button"
+                disabled={sheetTranslateModal.loading}
+                onClick={() => setSheetTranslateModal(prev => ({ ...prev, open: false }))} 
+                className="px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                disabled={sheetTranslateModal.loading}
+                onClick={async () => {
+                  setSheetTranslateModal(prev => ({ ...prev, loading: true }));
+                  const targetLang = sheetTranslateModal.customLanguage?.trim() || sheetTranslateModal.language;
+                  const newCells = [...(sheetGrids[activeSheetId]?.cells || [])];
+                  let translatedCount = 0;
+                  const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell?.row, endRow: selectedSheetCell?.row, startCol: selectedSheetCell?.col, endCol: selectedSheetCell?.col }];
+                  try {
+                    for (const range of ranges) {
+                      const rMin = Math.min(range.startRow, range.endRow) - 1;
+                      const rMax = Math.max(range.startRow, range.endRow) - 1;
+                      const cMin = Math.min(range.startCol, range.endCol) - 1;
+                      const cMax = Math.max(range.startCol, range.endCol) - 1;
+                      for (let r = rMin; r <= rMax; r++) {
+                        for (let c = cMin; c <= cMax; c++) {
+                          const val = newCells[r]?.[c];
+                          if (val && typeof val === 'string' && val.trim()) {
+                            const res = await callGemini({
+                              userPrompt: `Translate the following text to ${targetLang}: "${val}". Return ONLY the translated text, preserving any numbers, punctuation and casing.`,
+                              systemPrompt: "You are an expert translator. Output ONLY the translated text without any explanations or extra characters."
+                            });
+                            if (res?.text) {
+                              newCells[r][c] = res.text.trim();
+                              translatedCount++;
+                            }
+                          }
+                        }
+                      }
+                    }
+                    if (translatedCount > 0) {
+                      updateSheetSettings(activeSheetId, { cells: newCells });
+                      showToast(`Successfully translated ${translatedCount} cells to ${targetLang}`);
+                    } else {
+                      showToast('No text cells found to translate');
+                    }
+                  } catch (err) {
+                    console.error('Translation failed:', err);
+                    showToast('AI Translation failed. Please try again.');
+                  } finally {
+                    setSheetTranslateModal({ open: false });
+                  }
+                }}
+                className="px-4 py-1.5 text-xs font-bold bg-violet-600 text-white rounded-lg hover:bg-violet-700 shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {sheetTranslateModal.loading ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    Translating...
+                  </>
+                ) : (
+                  'Translate'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sheetFilterMenu.open && (() => {
+        const colIndex = sheetFilterMenu.colIndex;
+        const filter = activeSheetGrid.filters?.[colIndex] || {};
+        const startRowIndex = (filter.row || 0) + 1;
+        const uniqueValues = [];
+        const seenVal = new Set();
+        for (let r = startRowIndex; r < activeSheetGrid.rows; r++) {
+          const val = activeSheetGrid.cells[r]?.[colIndex];
+          const strVal = String(val === null || val === undefined ? '' : val).trim();
+          if (!seenVal.has(strVal)) {
+            seenVal.add(strVal);
+            uniqueValues.push(strVal);
+          }
+        }
+        uniqueValues.sort();
+        const filteredVals = uniqueValues.filter(v => 
+          v.toLowerCase().includes((sheetFilterMenu.search || '').toLowerCase())
+        );
+        return (
+          <div 
+            className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-100 p-4 w-64 flex flex-col gap-3 text-left font-sans animate-in fade-in zoom-in-95 duration-150"
+            style={{ left: sheetFilterMenu.x, top: sheetFilterMenu.y }}
+            onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <Filter size={13} className="text-violet-600" />
+                Filter Column
+              </span>
+              <button 
+                type="button"
+                className="text-slate-450 hover:text-slate-700 text-sm font-bold"
+                onClick={() => setSheetFilterMenu(p => ({ ...p, open: false }))}
+              >
+                &times;
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 pb-2 border-b border-slate-50">
+              <button
+                type="button"
+                className="py-1 px-2 text-[10px] bg-slate-50 hover:bg-violet-50 text-slate-700 hover:text-violet-700 rounded border border-slate-200 hover:border-violet-200 transition-all font-semibold flex items-center justify-center gap-1"
+                onClick={() => {
+                  const newCells = [...(activeSheetGridRaw.cells || [])];
+                  const newFormats = [...(activeSheetGridRaw.formats || [])];
+                  const rowsToSort = [];
+                  for (let r = startRowIndex; r < activeSheetGrid.rows; r++) {
+                    rowsToSort.push({ cell: newCells[r], format: newFormats[r] || null });
+                  }
+                  rowsToSort.sort((a, b) => {
+                    const valA = String(a.cell[colIndex] || '').toLowerCase();
+                    const valB = String(b.cell[colIndex] || '').toLowerCase();
+                    return valA.localeCompare(valB);
+                  });
+                  for (let i = 0; i < rowsToSort.length; i++) {
+                    newCells[startRowIndex + i] = rowsToSort[i].cell;
+                    newFormats[startRowIndex + i] = rowsToSort[i].format;
+                  }
+                  updateSheetSettings(activeSheetId, { cells: newCells, formats: newFormats });
+                  showToast('Sorted column A-Z');
+                  setSheetFilterMenu(p => ({ ...p, open: false }));
+                }}
+              >
+                Sort A-Z
+              </button>
+              <button
+                type="button"
+                className="py-1 px-2 text-[10px] bg-slate-50 hover:bg-violet-50 text-slate-700 hover:text-violet-700 rounded border border-slate-200 hover:border-violet-200 transition-all font-semibold flex items-center justify-center gap-1"
+                onClick={() => {
+                  const newCells = [...(activeSheetGridRaw.cells || [])];
+                  const newFormats = [...(activeSheetGridRaw.formats || [])];
+                  const rowsToSort = [];
+                  for (let r = startRowIndex; r < activeSheetGrid.rows; r++) {
+                    rowsToSort.push({ cell: newCells[r], format: newFormats[r] || null });
+                  }
+                  rowsToSort.sort((a, b) => {
+                    const valA = String(a.cell[colIndex] || '').toLowerCase();
+                    const valB = String(b.cell[colIndex] || '').toLowerCase();
+                    return valB.localeCompare(valA);
+                  });
+                  for (let i = 0; i < rowsToSort.length; i++) {
+                    newCells[startRowIndex + i] = rowsToSort[i].cell;
+                    newFormats[startRowIndex + i] = rowsToSort[i].format;
+                  }
+                  updateSheetSettings(activeSheetId, { cells: newCells, formats: newFormats });
+                  showToast('Sorted column Z-A');
+                  setSheetFilterMenu(p => ({ ...p, open: false }));
+                }}
+              >
+                Sort Z-A
+              </button>
+            </div>
+            <div className="relative flex items-center">
+              <Search size={11} className="absolute left-2.5 text-slate-400" />
+              <input 
+                type="text" 
+                className="w-full text-xs py-1.5 pl-7 pr-2 rounded-lg border border-slate-200 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500" 
+                placeholder="Search values..."
+                value={sheetFilterMenu.search || ''}
+                onChange={e => setSheetFilterMenu(p => ({ ...p, search: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                className="text-[10px] font-bold text-violet-600 hover:text-violet-800"
+                onClick={() => setSheetFilterMenu(p => ({ ...p, tempExcluded: [] }))}
+              >
+                Select All
+              </button>
+              <span className="text-slate-300">|</span>
+              <button 
+                type="button" 
+                className="text-[10px] font-bold text-violet-600 hover:text-violet-800"
+                onClick={() => setSheetFilterMenu(p => ({ ...p, tempExcluded: [...uniqueValues] }))}
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="max-h-40 overflow-y-auto border border-slate-100 rounded-lg p-2 flex flex-col gap-1.5 thin-scrollbar bg-slate-50/50">
+              {filteredVals.length === 0 ? (
+                <span className="text-[10px] text-slate-400 italic">No values found</span>
+              ) : (
+                filteredVals.map(val => {
+                  const isChecked = !sheetFilterMenu.tempExcluded.includes(val);
+                  return (
+                    <label key={val} className="flex items-center gap-2 cursor-pointer select-none">
+                      <input 
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          setSheetFilterMenu(p => {
+                            const newExcluded = p.tempExcluded.includes(val)
+                              ? p.tempExcluded.filter(x => x !== val)
+                              : [...p.tempExcluded, val];
+                            return { ...p, tempExcluded: newExcluded };
+                          });
+                        }}
+                        className="rounded text-violet-600 focus:ring-violet-500 w-3 h-3 cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-700 truncate w-48" title={val || '(Blank)'}>
+                        {val === '' ? <span className="italic text-slate-400">(Blank)</span> : val}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100 mt-1">
+              <button
+                type="button"
+                className="text-[10px] font-bold text-red-500 hover:text-red-700"
+                onClick={() => {
+                  const newFilters = { ...activeSheetGrid.filters };
+                  delete newFilters[colIndex];
+                  updateSheetSettings(activeSheetId, { filters: newFilters });
+                  showToast('Filter cleared');
+                  setSheetFilterMenu(p => ({ ...p, open: false }));
+                }}
+              >
+                Clear Filter
+              </button>
+              <div className="flex gap-1">
+                <button 
+                  type="button" 
+                  className="px-2 py-1 text-[10px] bg-slate-50 hover:bg-slate-100 text-slate-600 rounded transition-colors"
+                  onClick={() => setSheetFilterMenu(p => ({ ...p, open: false }))}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="px-2.5 py-1 text-[10px] bg-violet-600 hover:bg-violet-700 text-white font-bold rounded shadow-sm transition-colors"
+                  onClick={() => {
+                    const newFilters = { 
+                      ...activeSheetGrid.filters,
+                      [colIndex]: { 
+                        ...filter, 
+                        excludedValues: sheetFilterMenu.tempExcluded 
+                      } 
+                    };
+                    updateSheetSettings(activeSheetId, { filters: newFilters });
+                    showToast('Filter applied');
+                    setSheetFilterMenu(p => ({ ...p, open: false }));
+                  }}
+                >
+                  Apply
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {specialCharactersModal.open && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}>
+          <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Sparkles className="text-violet-600" size={18} />
+                Special Characters & Formatting
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSpecialCharactersModal({ open: false })}
+                className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto thin-scrollbar pr-1">
+              {/* Number Formatting */}
+              <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Number Formatting</label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Type</span>
+                    <select 
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, numberFormat: e.target.value }))}
+                      value={specialCharactersModal.numberFormat || 'general'}
+                    >
+                      <option value="general">General</option>
+                      <option value="number">Number</option>
+                      <option value="currency">Currency</option>
+                      <option value="percent">Percentage (%)</option>
+                      <option value="date">Date</option>
+                      <option value="time">Time</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Currency Symbol</span>
+                    <select
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2 outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 bg-white"
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, currencySymbol: e.target.value }))}
+                      value={specialCharactersModal.currencySymbol || '$$'}
+                    >
+                      <option value="$$">$$ USD (United States Dollar)</option>
+                      <option value="€">€ EUR (Euro)</option>
+                      <option value="£">£ GBP (British Pound)</option>
+                      <option value="¥">¥ JPY (Japanese Yen)</option>
+                      <option value="₹">₹ INR (Indian Rupee)</option>
+                      <option value="元">元 CNY (Chinese Yuan)</option>
+                      <option value="₽">₽ RUB (Russian Ruble)</option>
+                      <option value="₪">₪ ILS (Israeli New Shekel)</option>
+                      <option value="₩">₩ KRW (South Korean Won)</option>
+                      <option value="₺">₺ TRY (Turkish Lira)</option>
+                      <option value="₣">₣ CHF (Swiss Franc)</option>
+                      <option value="A$">A$ AUD (Australian Dollar)</option>
+                      <option value="C$">C$ CAD (Canadian Dollar)</option>
+                      <option value="NZ$">NZ$ NZD (New Zealand Dollar)</option>
+                      <option value="S$">S$ SGD (Singapore Dollar)</option>
+                      <option value="HK$">HK$ HKD (Hong Kong Dollar)</option>
+                      <option value="R$">R$ BRL (Brazilian Real)</option>
+                      <option value="₱">₱ PHP (Philippine Peso)</option>
+                      <option value="₫">₫ VND (Vietnamese Dong)</option>
+                      <option value="฿">฿ THB (Thai Baht)</option>
+                      <option value="KSh">KSh KES (Kenyan Shilling)</option>
+                      <option value="₦">₦ NGN (Nigerian Naira)</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Decimals</span>
+                    <div className="flex items-center justify-between border border-slate-200 rounded-lg p-1.5 px-2 bg-white">
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setSpecialCharactersModal(prev => ({ ...prev, decimals: Math.max(0, (prev.decimals || 0) - 1) }))}>-</button>
+                      <span className="text-xs font-mono w-4 text-center">{specialCharactersModal.decimals || 0}</span>
+                      <button type="button" className="p-1 hover:bg-slate-100 rounded text-slate-600" onClick={() => setSpecialCharactersModal(prev => ({ ...prev, decimals: (prev.decimals || 0) + 1 }))}>+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Prefix & Suffix */}
+              <div className="space-y-3 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Custom Prefix & Suffix</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Prefix</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Total: "
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none focus:border-violet-500"
+                      value={specialCharactersModal.prefix || ''}
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, prefix: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-slate-500 font-medium">Suffix</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. / hour"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 outline-none focus:border-violet-500"
+                      value={specialCharactersModal.suffix || ''}
+                      onChange={(e) => setSpecialCharactersModal(prev => ({ ...prev, suffix: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Currencies Grid */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Global Currencies</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {['$$', '€', '£', '¥', '₹', '元', '₽', '₪', '₩', '₺', '₣', '₱', '₫', '฿', '₦'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, prefix: (prev.prefix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to prefix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Math symbols */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Math & Academics</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {['√', 'π', '∞', '±', '×', '÷', '≈', '≠', '≤', '≥', '∑', '∏', 'Δ', 'μ', '∫'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, suffix: (prev.suffix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to suffix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Indicators / General Symbols */}
+              <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
+                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Financial, Academic & General Symbols</label>
+                <div className="grid grid-cols-10 gap-1.5">
+                  {['▲', '▼', '★', '✖', '✔', '°', '§', '¶', '†', '‡', '©', '®', '™', '‰', '✓', '✗', '♠', '♣', '♥', '♦'].map(sym => (
+                    <button 
+                      key={sym} 
+                      type="button" 
+                      onClick={() => setSpecialCharactersModal(prev => ({ ...prev, suffix: (prev.suffix || '') + sym }))}
+                      className="h-8 rounded border border-slate-200 text-xs font-bold hover:bg-slate-100 flex items-center justify-center bg-white text-slate-700 transition-colors"
+                      title="Insert to suffix"
+                    >
+                      {sym}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button 
+                type="button"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+                onClick={() => setSpecialCharactersModal({ open: false })}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button"
+                className="px-4 py-2 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
+                onClick={() => {
+                  const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+                  const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }];
+                  ranges.forEach(range => {
+                    const rMin = Math.min(range.startRow, range.endRow);
+                    const rMax = Math.max(range.startRow, range.endRow);
+                    const cMin = Math.min(range.startCol, range.endCol);
+                    const cMax = Math.max(range.startCol, range.endCol);
+                    for (let r = rMin; r <= rMax; r++) {
+                      for (let c = cMin; c <= cMax; c++) {
+                        if (!newFormats[r-1]) newFormats[r-1] = {};
+                        newFormats[r-1][c-1] = {
+                          ...newFormats[r-1][c-1],
+                          format: specialCharactersModal.numberFormat || 'general',
+                          currencySymbol: specialCharactersModal.currencySymbol || '$$',
+                          decimals: specialCharactersModal.decimals || 0,
+                          prefix: specialCharactersModal.prefix,
+                          suffix: specialCharactersModal.suffix
+                        };
+                      }
+                    }
+                  });
+                  updateSheetSettings(activeSheetId, { formats: newFormats });
+                  setSpecialCharactersModal({ open: false });
+                  showToast('Number format & symbols applied');
+                }}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {cellFormatModal.open && (
+        <div 
+          className="absolute z-[300] bg-white rounded-xl p-4 shadow-[0_12px_32px_rgba(0,0,0,0.15)] border border-slate-200 flex flex-col gap-3 text-left w-[360px] font-sans cell-format-dropdown-container max-h-[80vh] overflow-y-auto thin-scrollbar" 
+          style={{ 
+            left: `${cellFormatModal.x}px`, 
+            top: `${cellFormatModal.y}px` 
+          }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <Settings className="text-violet-600" size={16} />
+              Cell Formatting
+            </h3>
+            <button
+              type="button"
+              onClick={() => setCellFormatModal({ open: false, x: 0, y: 0 })}
+              className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+            >
+              &times;
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-3 text-xs">
+            {/* Alignment */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Alignment</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex border border-slate-200 rounded-lg overflow-hidden bg-white">
+                  {['left', 'center', 'right'].map(align => (
+                    <button 
+                      key={align} type="button"
+                      className={"flex-1 py-1 text-xs font-medium flex justify-center items-center " + (cellFormatModal.align === align ? "bg-violet-50 text-violet-700" : "bg-white text-slate-600 hover:bg-slate-50")}
+                      onClick={() => setCellFormatModal(prev => ({ ...prev, align }))}
+                    >
+                      {align === 'left' ? <AlignLeft size={13}/> : align === 'center' ? <AlignCenter size={13}/> : <AlignRight size={13}/>}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex border border-slate-200 rounded-lg overflow-hidden bg-white">
+                  {['top', 'middle', 'bottom'].map(valign => (
+                    <button 
+                      key={valign} type="button"
+                      className={"flex-1 py-1 text-xs font-medium flex justify-center items-center " + (cellFormatModal.valign === valign ? "bg-violet-50 text-violet-700" : "bg-white text-slate-600 hover:bg-slate-50")}
+                      onClick={() => setCellFormatModal(prev => ({ ...prev, valign }))}
+                    >
+                      <span className="capitalize text-[10px]">{valign}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Colors */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Colors</label>
+              <div className="flex gap-2">
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Fill</span>
+                  <input 
+                    type="color" 
+                    className="w-full h-8 cursor-pointer rounded-lg border border-slate-200 p-0.5 bg-white"
+                    value={cellFormatModal.fill || '#ffffff'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, fill: e.target.value }))}
+                  />
+                </div>
+                <div className="flex-1 flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Text</span>
+                  <input 
+                    type="color" 
+                    className="w-full h-8 cursor-pointer rounded-lg border border-slate-200 p-0.5 bg-white"
+                    value={cellFormatModal.color || '#000000'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, color: e.target.value }))}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Borders */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Borders</label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Style</span>
+                  <select 
+                    className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                    value={cellFormatModal.borderStyle || 'solid'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, borderStyle: e.target.value }))}
+                  >
+                    <option value="solid">Solid</option>
+                    <option value="dashed">Dashed</option>
+                    <option value="dotted">Dotted</option>
+                    <option value="double">Double</option>
+                    <option value="none">None</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Color</span>
+                  <input 
+                    type="color" 
+                    className="w-full h-7 cursor-pointer rounded-lg border border-slate-200 p-0.5 bg-white"
+                    value={cellFormatModal.borderColor || '#e5e7eb'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, borderColor: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] text-slate-400 font-semibold uppercase">Sides</span>
+                <div className="grid grid-cols-4 gap-1">
+                  {['top', 'bottom', 'left', 'right'].map(side => (
+                    <button
+                      key={side} type="button"
+                      className={cellFormatModal.borders?.[side] ? "py-1 text-[10px] rounded border font-semibold capitalize bg-violet-600 text-white border-violet-600" : "py-1 text-[10px] rounded border font-semibold capitalize bg-white text-slate-605 border-slate-200"}
+                      onClick={() => setCellFormatModal(prev => ({
+                        ...prev,
+                        borders: { ...(prev.borders || { top: false, bottom: false, left: false, right: false }), [side]: !prev.borders?.[side] }
+                      }))}
+                    >
+                      {side}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-1.5 mt-1">
+                  <button
+                    type="button"
+                    className="flex-1 py-1 text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-200 font-semibold"
+                    onClick={() => setCellFormatModal(prev => ({ ...prev, borders: { top: true, bottom: true, left: true, right: true } }))}
+                  >
+                    All
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 py-1 text-[10px] bg-white hover:bg-slate-50 text-slate-655 rounded border border-slate-200 font-semibold"
+                    onClick={() => setCellFormatModal(prev => ({ ...prev, borders: { top: false, bottom: false, left: false, right: false } }))}
+                  >
+                    None
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Data & Interactive Formats */}
+            <div className="space-y-1.5 border-t border-slate-100 pt-2.5">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Data & Interactive Settings</label>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Data Format</span>
+                  <select 
+                    className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                    value={cellFormatModal.dataType || 'text'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, dataType: e.target.value }))}
+                  >
+                    <option value="text">Text / General</option>
+                    <option value="number">Number</option>
+                    <option value="currency">Currency ($)</option>
+                    <option value="percent">Percent (%)</option>
+                    <option value="date">Date</option>
+                    <option value="decimal">Decimal (.00)</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Interactive Type</span>
+                  <select 
+                    className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                    value={cellFormatModal.type || 'default'}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, type: e.target.value }))}
+                  >
+                    <option value="default">Default Input</option>
+                    <option value="dropdown">Dropdown Options</option>
+                    <option value="button">Button / Action Cell</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Dynamic options based on interactive cell type */}
+              {cellFormatModal.type === 'dropdown' && (
+                <div className="flex flex-col gap-1 mt-1">
+                  <span className="text-[9px] text-slate-400 font-semibold uppercase">Dropdown Choices (comma-separated)</span>
+                  <input 
+                    type="text"
+                    placeholder="e.g. Option 1, Option 2, Option 3"
+                    className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                    value={cellFormatModal.optionsText || ''}
+                    onChange={(e) => setCellFormatModal(prev => ({ ...prev, optionsText: e.target.value }))}
+                  />
+                </div>
+              )}
+
+              {cellFormatModal.type === 'button' && (
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] text-slate-400 font-semibold uppercase">Button Label</span>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Calculate"
+                      className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                      value={cellFormatModal.buttonLabel || ''}
+                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, buttonLabel: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] text-slate-400 font-semibold uppercase">Button Action</span>
+                    <select 
+                      className="w-full text-xs border border-slate-200 rounded-lg p-1.5 bg-white"
+                      value={cellFormatModal.buttonAction || 'Calculate'}
+                      onChange={(e) => setCellFormatModal(prev => ({ ...prev, buttonAction: e.target.value }))}
+                    >
+                      <option value="Calculate">Calculate Row</option>
+                      <option value="Toast">Trigger Alert</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2.5 border-t border-slate-100 mt-1">
+            <button 
+              type="button"
+              className="px-3 py-1.5 text-xs font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors"
+              onClick={() => setCellFormatModal({ open: false, x: 0, y: 0 })}
+            >
+              Cancel
+            </button>
+            <button 
+              type="button"
+              className="px-3 py-1.5 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors"
+              onClick={() => {
+                const newFormats = { ...(sheetGrids[activeSheetId]?.formats || {}) };
+                const ranges = selectedSheetRange ? [selectedSheetRange, ...additionalSheetRanges] : [{ startRow: selectedSheetCell.row, endRow: selectedSheetCell.row, startCol: selectedSheetCell.col, endCol: selectedSheetCell.col }];
+                
+                let parsedOptions = undefined;
+                if (cellFormatModal.type === 'dropdown' && cellFormatModal.optionsText) {
+                  parsedOptions = cellFormatModal.optionsText.split(',').map(s => s.trim()).filter(Boolean);
+                }
+
+                ranges.forEach(range => {
+                  const rMin = Math.min(range.startRow, range.endRow);
+                  const rMax = Math.max(range.startRow, range.endRow);
+                  const cMin = Math.min(range.startCol, range.endCol);
+                  const cMax = Math.max(range.startCol, range.endCol);
+                  for (let r = rMin; r <= rMax; r++) {
+                    for (let c = cMin; c <= cMax; c++) {
+                      if (!newFormats[r-1]) newFormats[r-1] = {};
+                      newFormats[r-1][c-1] = {
+                        ...newFormats[r-1][c-1],
+                        align: cellFormatModal.align,
+                        valign: cellFormatModal.valign,
+                        fill: cellFormatModal.fill,
+                        color: cellFormatModal.color,
+                        borderStyle: cellFormatModal.borderStyle,
+                        borderColor: cellFormatModal.borderColor,
+                        borders: cellFormatModal.borders,
+                        dataType: cellFormatModal.dataType || 'text',
+                        type: cellFormatModal.type || 'default',
+                        options: parsedOptions,
+                        optionsText: cellFormatModal.optionsText,
+                        buttonLabel: cellFormatModal.buttonLabel || 'Calculate',
+                        buttonAction: cellFormatModal.buttonAction || 'Calculate'
+                      };
+                    }
+                  }
+                });
+                updateSheetSettings(activeSheetId, { formats: newFormats });
+                setCellFormatModal({ open: false, x: 0, y: 0 });
+                showToast('Cell formatting applied');
+              }}
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+      )}
+
+      {sheetDatePicker.open && (
+        <div 
+          className="absolute z-[310] bg-white rounded-xl p-4 shadow-[0_12px_32px_rgba(0,0,0,0.15)] border border-slate-200 flex flex-col gap-2 w-64 text-left font-sans sheet-date-picker-container"
+          style={{ left: `${sheetDatePicker.x}px`, top: `${sheetDatePicker.y}px` }}
+          onMouseDown={e => e.stopPropagation()}
+        >
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-1">
+            <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+              📅 Insert Date
+            </span>
+            <button 
+              type="button" 
+              className="text-slate-450 hover:text-slate-700 text-lg font-bold"
+              onClick={() => setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 })}
+            >
+              &times;
+            </button>
+          </div>
+          <button 
+            type="button"
+            className="w-full py-2 px-3 text-xs font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-colors text-center"
+            onClick={() => {
+              updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, new Date().toLocaleDateString());
+              setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
+              showToast("Today's date inserted");
+            }}
+          >
+            Insert Today ({`${new Date().toLocaleDateString()}`})
+          </button>
+          <div className="h-px bg-slate-100 my-1" />
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] text-slate-500 font-medium">Or Choose from Calendar</span>
+            <input 
+              type="date"
+              className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white"
+              onChange={(e) => {
+                if (e.target.value) {
+                  const parts = e.target.value.split('-');
+                  const formattedDate = `${parts[1]}/${parts[2]}/${parts[0]}`;
+                  updateSheetCell(activeSheetId, sheetDatePicker.rowIndex, sheetDatePicker.colIndex, formattedDate);
+                  setSheetDatePicker({ open: false, x: 0, y: 0, rowIndex: 0, colIndex: 0 });
+                  showToast(`Selected date inserted`);
+                }
+              }}
+            />
           </div>
         </div>
       )}
