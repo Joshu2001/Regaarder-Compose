@@ -41560,9 +41560,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <span className="text-xs font-semibold text-gray-800 tracking-wide flex items-center gap-2">
               Watermark
             </span>
-            <button onClick={() => setShowWatermarkMenu(false)} className="text-gray-400 hover:text-gray-800 rounded-full p-1 transition-colors">
-              <X size={14} strokeWidth={2.5} />
-            </button>
           </div>
 
           <div className="p-4 space-y-5 max-h-[400px] overflow-y-auto thin-scrollbar">
@@ -41578,25 +41575,58 @@ if (productMode === 'deck' || productMode === 'sheets') {
               />
             </div>
 
-            {/* Presets (Minimal) */}
-            <div className="flex gap-2">
-              {['DRAFT', 'CONFIDENTIAL', 'APPROVED'].map(preset => (
-                <button
-                  key={preset}
-                  onClick={() => setDocWatermark(prev => ({ ...prev, active: true, type: 'custom', content: preset, x: 0, y: 0 }))}
-                  className="flex-1 py-1.5 text-[10px] font-semibold tracking-wide rounded-lg border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition-colors"
-                >
-                  {preset}
-                </button>
-              ))}
+            {/* Presets Grid */}
+            <div>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block mb-2">Presets</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { text: 'CONFIDENTIAL', color: '#ef4444', angle: -45 },
+                  { text: 'DO NOT COPY', color: '#f97316', angle: -45, short: 'DO..' },
+                  { text: 'ORIGINAL', color: '#3b82f6', angle: 0 },
+                  { text: 'SAMPLE', color: '#a855f7', angle: -45 },
+                  { text: 'TOP SECRET', color: '#ef4444', angle: -45, short: 'TOP..' },
+                  { text: 'URGENT', color: '#ef4444', angle: 0 },
+                  { text: 'DRAFT', color: '#94a3b8', angle: -45 },
+                  { text: 'APPROVED', color: '#22c55e', angle: 0 },
+                  { text: 'VOID', color: '#94a3b8', angle: -45 },
+                ].map(preset => {
+                  const isSelected = docWatermark.content === preset.text;
+                  return (
+                    <button
+                      key={preset.text}
+                      onClick={() => setDocWatermark(prev => ({ ...prev, active: true, type: 'custom', content: preset.text, color: preset.color, rotation: preset.angle, x: 0, y: 0 }))}
+                      className={`relative flex flex-col items-center justify-between h-24 p-2 rounded-xl border transition-all ${
+                        isSelected ? 'border-violet-500 bg-violet-50 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex-1 w-full flex items-center justify-center overflow-hidden">
+                        <span 
+                          className="font-bold opacity-60 pointer-events-none" 
+                          style={{ 
+                            color: preset.color, 
+                            transform: `rotate(${preset.angle}deg)`, 
+                            fontSize: preset.text.length > 8 ? '8px' : '10px',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          {preset.text}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-bold text-gray-500 mt-1 uppercase tracking-tight">
+                        {preset.short || preset.text}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Color & Opacity */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Color</label>
-                <div className="flex gap-2">
-                  {['#94a3b8','#ef4444','#3b82f6','#0f172a'].map(c => (
+                <div className="flex gap-2 items-center">
+                  {['#94a3b8','#ef4444','#3b82f6'].map(c => (
                     <button
                       key={c}
                       onClick={() => setDocWatermark(prev => ({ ...prev, color: c }))}
@@ -41604,6 +41634,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       style={{ background: c }}
                     />
                   ))}
+                  <div className={`relative w-4 h-4 rounded-full border overflow-hidden ${!['#94a3b8','#ef4444','#3b82f6'].includes(docWatermark?.color) ? 'scale-125 border-gray-400 shadow-sm' : 'border-transparent'}`}>
+                    <input 
+                      type="color" 
+                      value={docWatermark?.color || '#000000'} 
+                      onChange={(e) => setDocWatermark(prev => ({ ...prev, color: e.target.value }))}
+                      className="absolute -top-2 -left-2 w-8 h-8 cursor-pointer"
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex items-center justify-between gap-3">
