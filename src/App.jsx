@@ -24528,7 +24528,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar`}>
+      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} relative z-[300] w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar`}>
         <div className="relative">
           <div
             className="group flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-gray-600"
@@ -33913,7 +33913,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               )}
 
               {/* Add New Section Buttons */}
-              {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+              {outlineTreeData.length > 0 && currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
                 <div className="flex gap-2 w-full mt-2">
                   <button
                     type="button"
