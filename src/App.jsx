@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 // Trigger Vercel Build Safely
 import { io } from 'socket.io-client';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import ShareModal from './ShareModal';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -605,6 +607,7 @@ const SHEET_SLASH_OPTIONS = [
   { key: 'media', label: 'Media', desc: 'Insert an image, video or file' },
   { key: 'hyperlink', label: 'Hyperlink', desc: 'Add a link to selected text' },
   { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
+  { key: 'import_equation', label: 'Import Equation', desc: 'AI Generate or Upload Math' },
 ];
 
 const SLASH_OPTIONS = [
@@ -623,6 +626,7 @@ const SLASH_OPTIONS = [
   { key: 'watermark', label: 'Watermark', desc: 'Add text or image watermark' },
   { key: 'comment', label: 'Comment', desc: 'Insert inline comment box' },
   { key: 'redact', label: 'Redact / Protect', desc: 'Redact selection or current block' },
+  { key: 'import_equation', label: 'Import Equation', desc: 'AI Generate or Upload Math' },
   { key: 'emoji', label: 'Emoji', desc: 'Browse and insert emoji' },
   { key: 'symbols', label: 'Symbols', desc: 'Insert special characters & symbols' },
   { key: 'equations', label: 'Equation', desc: 'Insert a math equation' },
@@ -1607,20 +1611,14 @@ const ListGalleryPicker = ({ isOpen, initialTab, setOpen, anchorEl }) => {
         <div className="flex-1 p-4 bg-slate-50">
           <div className="grid grid-cols-4 gap-3">
             {items.map((item, idx) => (
-              <button key={idx} onPointerDown={(e) => { 
-                e.preventDefault(); 
-                window.showToast('Applied ' + item.label);
-                setOpen(false); 
-                if (window.__composeApplyFormatCommand) {
-                  window.__composeApplyFormatCommand(activeTab === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
-                } else {
-                  const ed = document.querySelector('[contenteditable="true"]');
-                  if (ed) ed.focus();
-                  if (window.__composeInsertHTML) {
-                    window.__composeInsertHTML(activeTab === 'bullet' ? `<ul style="list-style-type: ${item.id !== 'none' ? item.id : 'disc'}"><li><br></li></ul>` : `<ol style="list-style-type: ${item.id !== 'none' ? item.id : 'decimal'}"><li><br></li></ol>`);
-                  } else {
-                    document.execCommand(activeTab === 'bullet' ? 'insertUnorderedList' : 'insertOrderedList');
-                  }
+              <button key={idx} onPointerDown={(e) => {
+                e.preventDefault();
+                setOpen(false);
+                // Delegate entirely to the dedicated global helper which restores
+                // the saved editor selection before inserting, avoiding the
+                // focus-steal caused by e.preventDefault() on this pointerDown.
+                if (window.__composeApplyListStyle) {
+                  window.__composeApplyListStyle(activeTab, item.id);
                 }
               }} className="group bg-white border border-slate-200 rounded outline-none focus:outline-none hover:border-blue-500 transition-all flex flex-col h-24 overflow-hidden shadow-sm relative">
                 {/* Active Outline Effect (no pills) */}
@@ -5990,6 +5988,9 @@ export default function App() {
   const [shapesModalOpen, setShapesModalOpen] = useState(false);
   const [pageCoverModalOpen, setPageCoverModalOpen] = useState(false);
   const [chartsModalOpen, setChartsModalOpen] = useState(false);
+  const [equationModalOpen, setEquationModalOpen] = useState(false);
+  const [equationFile, setEquationFile] = useState(null);
+  const [equationFilePreview, setEquationFilePreview] = useState(null);
 
   const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
   const headingMeta = {
@@ -8816,10 +8817,75 @@ export default function App() {
       setDocBodyHtml(ed.innerHTML);
     };
     window.__composeApplyFormatCommand = applyFormatCommand;
+
+    // Dedicated list-style applicator used by ListGalleryPicker.
+    // Restores editor focus + saved selection before inserting so the
+    // onPointerDown e.preventDefault() focus-steal doesn't break insertion.
+    window.__composeApplyListStyle = (tab, styleId) => {
+      const ed = blankBodyRef.current;
+      if (!ed) return;
+
+      // Step 1: restore cursor position that was captured before the menu opened
+      const sel = window.getSelection();
+      if (savedSelectionRef.current) {
+        sel.removeAllRanges();
+        sel.addRange(savedSelectionRef.current);
+      }
+      ed.focus();
+      // Fallback: if still outside editor, collapse to end
+      if (!sel || !sel.rangeCount || !ed.contains(sel.anchorNode)) {
+        const r = document.createRange();
+        r.selectNodeContents(ed);
+        r.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      }
+
+      // Step 2: build the correct list HTML.
+      // Native CSS list-style-type values work directly on the element.
+      // Custom icon variants (arrow, check, diamond, star) are not valid
+      // CSS list-style-type values, so they use list-style:none +
+      // data-list-style attribute which ::before pseudo-elements pick up.
+      const CUSTOM_STYLES = new Set(['arrow', 'check', 'diamond', 'star']);
+      const isOrdered = tab === 'numbered' || tab === 'multilevel';
+      const tag = isOrdered ? 'ol' : 'ul';
+
+      let listAttr = '';
+      if (styleId && styleId !== 'none') {
+        if (CUSTOM_STYLES.has(styleId)) {
+          // Custom: suppress native marker, use CSS ::before driven by data attr
+          listAttr = `style="list-style:none;padding-left:1.75rem;" data-list-style="${styleId}"`;
+        } else {
+          listAttr = `style="list-style-type:${styleId};"`;
+        }
+      }
+
+      const listHtml = `<${tag} ${listAttr}><li><br></li></${tag}>`;
+
+      // Step 3: inject list at cursor position
+      document.execCommand('insertHTML', false, listHtml);
+
+      // Step 4: move cursor inside the freshly inserted <li>
+      // so the user can start typing immediately without an extra click
+      const allItems = ed.querySelectorAll(`${tag} li`);
+      if (allItems.length) {
+        const lastLi = allItems[allItems.length - 1];
+        const newRange = document.createRange();
+        newRange.setStart(lastLi, 0);
+        newRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+        savedSelectionRef.current = newRange.cloneRange();
+      }
+
+      setDocBodyHtml(ed.innerHTML);
+    };
+
     return () => {
       delete window.__composeInsertHTML;
       delete window.__composeInsertText;
       delete window.__composeApplyFormatCommand;
+      delete window.__composeApplyListStyle;
     };
   }, []);
 
@@ -12816,19 +12882,18 @@ Generate the updated output according to the instruction. Preserve layout and ta
     const placement = docWatermark.placement || 'center';
     const posStyle = {
       position: 'absolute',
-      cursor: 'move',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '100%',
       transform: `translate(${wX}px, ${wY}px) rotate(${docWatermark.rotation}deg)`,
       transformOrigin: 'center center',
-      fontSize: `${(docWatermark.scale || 1.5) * 50}%`,
       color: wColor,
-      fontWeight: 'bold',
-      textTransform: 'uppercase',
-      whiteSpace: 'nowrap',
       userSelect: 'none',
-      ...(placement === 'header' ? { top: '8%', left: '50%', translate: '-50%' } :
-          placement === 'footer' ? { bottom: '8%', left: '50%', translate: '-50%' } :
-          placement === 'tiled' ? { top: 0, left: 0, right: 0, bottom: 0 } :
-          { top: '50%', left: '50%', translate: '-50% -50%' })
+      ...(placement === 'header' ? { top: '8%', left: 0 } :
+          placement === 'footer' ? { bottom: '8%', left: 0 } :
+          placement === 'tiled' ? { top: 0, left: 0, right: 0, bottom: 0, display: 'block' } :
+          { top: '50%', left: 0, transform: `translate(${wX}px, calc(${wY}px - 50%)) rotate(${docWatermark.rotation}deg)` })
     };
 
     if (placement === 'tiled') {
@@ -12852,18 +12917,26 @@ Generate the updated output according to the instruction. Preserve layout and ta
       <div
         ref={watermarkElRef}
         className="absolute z-10 group"
-        style={{ ...posStyle, opacity: docWatermark.opacity }}
-        onPointerDown={handleWatermarkPointerDown}
+        style={{ ...posStyle, opacity: docWatermark.opacity, pointerEvents: 'none' }}
       >
-        <span style={{ fontSize: 'inherit', color: 'inherit' }}>{docWatermark.content}</span>
-        {/* Rotate handle */}
-        <div
-          data-wm-rotate="1"
-          title="Rotate"
-          className="absolute -top-6 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-violet-600 border-2 border-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity cursor-grab flex items-center justify-center"
-          style={{ pointerEvents: 'auto' }}
+        <div 
+          style={{ width: `${docWatermark.size || 100}%`, maxWidth: '100%', pointerEvents: 'auto', position: 'relative' }}
+          onPointerDown={handleWatermarkPointerDown}
         >
-          <svg data-wm-rotate="1" width="10" height="10" viewBox="0 0 10 10" fill="white"><path data-wm-rotate="1" d="M5 1.5A3.5 3.5 0 1 0 8.5 5" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/><polygon data-wm-rotate="1" points="8,2 10,5 6,5" fill="white"/></svg>
+          <svg viewBox="0 0 1000 200" style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+            <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="currentColor" fontSize="120" fontWeight="900" fontFamily="sans-serif" letterSpacing="0.05em">
+              {docWatermark.content}
+            </text>
+          </svg>
+          {/* Rotate handle */}
+          <div
+            data-wm-rotate="1"
+            title="Rotate"
+            className="absolute -top-6 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-md opacity-0 group-hover:opacity-100 transition-opacity cursor-grab flex items-center justify-center text-gray-500"
+            style={{ pointerEvents: 'auto' }}
+          >
+            <svg data-wm-rotate="1" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path data-wm-rotate="1" d="M21.5 2v6h-6M2.13 15.57a10 10 0 1 0 4.3-11.23L2.5 8"/></svg>
+          </div>
         </div>
       </div>
     );
@@ -13647,6 +13720,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     if (key === 'emoji') { setComposeEmojiPickerOpen(true); return; }
     if (key === 'symbols' || key === 'symbol') { setSymbolsPickerOpen(true); return; }
     if (key === 'equations' || key === 'equation') { setEquationsPickerOpen(true); return; }
+    if (key === 'import_equation') { setEquationModalOpen(true); return; }
     
     // CRITICAL: Focus the editor FIRST so all DOM commands work
     blankBodyRef.current?.focus();
@@ -31347,6 +31421,164 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
       {/* ── Share Modal (Deck & Sheets) ── */}
+      
+      
+            
+                        {/* Equation Import Modal */}
+      {equationModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[99999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden relative">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="font-semibold text-lg flex items-center gap-2"><SigmaIcon size={20} className="text-purple-600"/> Import Equation</h2>
+              <button 
+                onClick={() => {
+                  setEquationModalOpen(false);
+                  setEquationFile(null);
+                  setEquationFilePreview(null);
+                }} 
+                className="p-1 hover:bg-gray-100 rounded-lg text-gray-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4 flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Describe the equation</label>
+                <textarea 
+                  id="equation-prompt-input"
+                  placeholder="e.g. The quadratic formula, or integral of x squared..."
+                  className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-500 min-h-[80px]"
+                />
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-px bg-gray-200"></div>
+                <span className="text-xs text-gray-400 font-medium uppercase">OR</span>
+                <div className="flex-1 h-px bg-gray-200"></div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Upload Image (Math OCR)</label>
+                <div 
+                  className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 transition-colors relative cursor-pointer min-h-[120px]"
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      const file = e.dataTransfer.files[0];
+                      if (file.type.startsWith('image/')) {
+                        setEquationFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setEquationFilePreview(reader.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }
+                  }}
+                  onClick={() => document.getElementById('equation-file-input').click()}
+                >
+                  <input 
+                    type="file" 
+                    id="equation-file-input" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        setEquationFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setEquationFilePreview(reader.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  {equationFilePreview ? (
+                    <div className="flex flex-col items-center w-full">
+                      <img src={equationFilePreview} alt="Preview" className="max-h-32 object-contain rounded border border-gray-200 shadow-sm" />
+                      <span className="text-xs text-purple-600 mt-2 font-medium">Click or drag to replace image</span>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon size={24} className="text-gray-400" />
+                      <span className="text-sm text-gray-500 text-center">Click or Drag & drop formula image here</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border-t bg-gray-50 flex justify-end gap-2">
+              <button 
+                onClick={() => {
+                  setEquationModalOpen(false);
+                  setEquationFile(null);
+                  setEquationFilePreview(null);
+                }} 
+                className="px-4 py-2 text-sm font-medium hover:bg-gray-200 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button 
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-sm"
+                disabled={false}
+                onClick={async (e) => {
+                  const btn = e.currentTarget;
+                  const prompt = document.getElementById('equation-prompt-input').value;
+                  
+                  if (!prompt && !equationFilePreview) {
+                    alert('Please provide a description or an image.');
+                    return;
+                  }
+                  
+                  const originalText = btn.innerText;
+                  btn.innerText = 'Generating...';
+                  btn.disabled = true;
+                  
+                  try {
+                    let attachments = [];
+                    if (equationFilePreview && equationFile) {
+                       const base64Data = equationFilePreview.split(',')[1];
+                       attachments.push({ mimeType: equationFile.type, data: base64Data, name: equationFile.name });
+                    }
+                    
+                    const res = await fetch('/api/math', {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({ prompt, attachments })
+                    });
+                    const data = await res.json();
+                    
+                    if (data.ok && data.latex) {
+                      const rendered = katex.renderToString(data.latex, { throwOnError: false, displayMode: true });
+                      const htmlStr = `<span class="equation-node" contenteditable="false" style="display:inline-block; margin: 8px 0; padding: 8px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; cursor: pointer;" title="LaTeX: ${data.latex}">${rendered}</span>&nbsp;`;
+                      
+                      setEquationModalOpen(false);
+                      setEquationFile(null);
+                      setEquationFilePreview(null);
+                      
+                      setTimeout(() => {
+                         blankBodyRef.current?.focus();
+                         document.execCommand('insertHTML', false, htmlStr);
+                      }, 100);
+                    } else {
+                      alert('Failed to generate math: ' + (data.error || 'Unknown'));
+                    }
+                  } catch (err) {
+                    alert('Network error');
+                  } finally {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                  }
+                }}
+              >
+                <Sparkles size={16} /> Generate Math
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {shareModalOpen && (
         <ShareModal
           isOpen={shareModalOpen}
@@ -33956,6 +34188,163 @@ if (productMode === 'deck' || productMode === 'sheets') {
         }} 
       />
 
+      
+      
+                        {/* Equation Import Modal */}
+      {equationModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[99999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden relative">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="font-semibold text-lg flex items-center gap-2"><SigmaIcon size={20} className="text-purple-600"/> Import Equation</h2>
+              <button 
+                onClick={() => {
+                  setEquationModalOpen(false);
+                  setEquationFile(null);
+                  setEquationFilePreview(null);
+                }} 
+                className="p-1 hover:bg-gray-100 rounded-lg text-gray-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="p-4 flex flex-col gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Describe the equation</label>
+                <textarea 
+                  id="equation-prompt-input"
+                  placeholder="e.g. The quadratic formula, or integral of x squared..."
+                  className="w-full border rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-500 min-h-[80px]"
+                />
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-px bg-gray-200"></div>
+                <span className="text-xs text-gray-400 font-medium uppercase">OR</span>
+                <div className="flex-1 h-px bg-gray-200"></div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Upload Image (Math OCR)</label>
+                <div 
+                  className="border-2 border-dashed rounded-lg p-4 flex flex-col items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 transition-colors relative cursor-pointer min-h-[120px]"
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      const file = e.dataTransfer.files[0];
+                      if (file.type.startsWith('image/')) {
+                        setEquationFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setEquationFilePreview(reader.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }
+                  }}
+                  onClick={() => document.getElementById('equation-file-input').click()}
+                >
+                  <input 
+                    type="file" 
+                    id="equation-file-input" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        setEquationFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => setEquationFilePreview(reader.result);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  {equationFilePreview ? (
+                    <div className="flex flex-col items-center w-full">
+                      <img src={equationFilePreview} alt="Preview" className="max-h-32 object-contain rounded border border-gray-200 shadow-sm" />
+                      <span className="text-xs text-purple-600 mt-2 font-medium">Click or drag to replace image</span>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageIcon size={24} className="text-gray-400" />
+                      <span className="text-sm text-gray-500 text-center">Click or Drag & drop formula image here</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 border-t bg-gray-50 flex justify-end gap-2">
+              <button 
+                onClick={() => {
+                  setEquationModalOpen(false);
+                  setEquationFile(null);
+                  setEquationFilePreview(null);
+                }} 
+                className="px-4 py-2 text-sm font-medium hover:bg-gray-200 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button 
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg flex items-center gap-2 shadow-sm"
+                disabled={false}
+                onClick={async (e) => {
+                  const btn = e.currentTarget;
+                  const prompt = document.getElementById('equation-prompt-input').value;
+                  
+                  if (!prompt && !equationFilePreview) {
+                    alert('Please provide a description or an image.');
+                    return;
+                  }
+                  
+                  const originalText = btn.innerText;
+                  btn.innerText = 'Generating...';
+                  btn.disabled = true;
+                  
+                  try {
+                    let attachments = [];
+                    if (equationFilePreview && equationFile) {
+                       const base64Data = equationFilePreview.split(',')[1];
+                       attachments.push({ mimeType: equationFile.type, data: base64Data, name: equationFile.name });
+                    }
+                    
+                    const res = await fetch('/api/math', {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({ prompt, attachments })
+                    });
+                    const data = await res.json();
+                    
+                    if (data.ok && data.latex) {
+                      const rendered = katex.renderToString(data.latex, { throwOnError: false, displayMode: true });
+                      const htmlStr = `<span class="equation-node" contenteditable="false" style="display:inline-block; margin: 8px 0; padding: 8px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; cursor: pointer;" title="LaTeX: ${data.latex}">${rendered}</span>&nbsp;`;
+                      
+                      setEquationModalOpen(false);
+                      setEquationFile(null);
+                      setEquationFilePreview(null);
+                      
+                      setTimeout(() => {
+                         blankBodyRef.current?.focus();
+                         document.execCommand('insertHTML', false, htmlStr);
+                      }, 100);
+                    } else {
+                      alert('Failed to generate math: ' + (data.error || 'Unknown'));
+                    }
+                  } catch (err) {
+                    alert('Network error');
+                  } finally {
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                  }
+                }}
+              >
+                <Sparkles size={16} /> Generate Math
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {shareModalOpen && (
   <ShareModal
     isOpen={shareModalOpen}
@@ -35137,7 +35526,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-x-auto no-scrollbar select-none relative z-[130] min-w-0 ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
@@ -41159,169 +41548,62 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {showWatermarkMenu && (
         <div
           ref={watermarkMenuRef}
-          className="fixed bg-white border border-gray-100 rounded-2xl shadow-2xl z-[9999] text-left font-sans overflow-hidden"
+          className="fixed bg-white/95 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-xl z-[9999] text-left font-sans overflow-hidden"
           style={{
-            top: `${Math.min(watermarkMenuPos.top, window.innerHeight - 580)}px`,
-            left: `${Math.min(watermarkMenuPos.left, window.innerWidth - 320)}px`,
-            width: '310px',
+            top: `${Math.min(watermarkMenuPos.top, window.innerHeight - 440)}px`,
+            left: `${Math.min(watermarkMenuPos.left, window.innerWidth - 300)}px`,
+            width: '280px',
           }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-violet-50 to-indigo-50">
-            <span className="text-[11px] font-bold text-violet-700 uppercase tracking-wider flex items-center gap-1.5">
-              <ImageIcon size={13} className="text-violet-500" />
-              Watermark Settings
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100/80">
+            <span className="text-xs font-semibold text-gray-800 tracking-wide flex items-center gap-2">
+              Watermark
             </span>
-            <button onClick={() => setShowWatermarkMenu(false)} className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded p-0.5 transition-colors">
-              <X size={13} />
+            <button onClick={() => setShowWatermarkMenu(false)} className="text-gray-400 hover:text-gray-800 rounded-full p-1 transition-colors">
+              <X size={14} strokeWidth={2.5} />
             </button>
           </div>
 
-          <div className="p-4 space-y-4 max-h-[520px] overflow-y-auto">
-            {/* Presets Grid */}
-            <div>
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Presets</label>
-              <div className="grid grid-cols-3 gap-1.5">
-                {[
-                  { label: 'CONFIDENTIAL', rotation: -45, color: '#ef4444' },
-                  { label: 'DO NOT COPY', rotation: -45, color: '#f97316' },
-                  { label: 'ORIGINAL', rotation: 0, color: '#3b82f6' },
-                  { label: 'SAMPLE', rotation: -45, color: '#8b5cf6' },
-                  { label: 'TOP SECRET', rotation: -45, color: '#dc2626' },
-                  { label: 'URGENT', rotation: 0, color: '#ef4444' },
-                  { label: 'DRAFT', rotation: -45, color: '#94a3b8' },
-                  { label: 'APPROVED', rotation: 0, color: '#16a34a' },
-                  { label: 'VOID', rotation: -45, color: '#64748b' },
-                ].map(preset => (
-                  <button
-                    key={preset.label}
-                    onClick={() => setDocWatermark(prev => ({ ...prev, active: true, type: 'custom', content: preset.label, rotation: preset.rotation, color: preset.color, x: 0, y: 0 }))}
-                    className={`relative border rounded-lg overflow-hidden aspect-[3/4] flex flex-col items-center justify-center transition-all hover:border-violet-400 hover:shadow-md ${
-                      docWatermark?.content === preset.label ? 'border-violet-500 shadow-md bg-violet-50' : 'border-gray-200 bg-white'
-                    }`}
-                    title={preset.label}
-                  >
-                    <span
-                      className="text-[7px] font-extrabold text-center leading-tight px-1 break-words"
-                      style={{
-                        color: preset.color,
-                        opacity: 0.55,
-                        transform: `rotate(${preset.rotation}deg)`,
-                        display: 'block',
-                        maxWidth: '100%',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >{preset.label}</span>
-                    <span className="absolute bottom-1 left-0 right-0 text-[7px] text-gray-500 font-semibold text-center truncate px-1">{preset.label.split(' ')[0]}{preset.label.split(' ').length > 1 ? '...' : ''}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
+          <div className="p-4 space-y-5 max-h-[400px] overflow-y-auto thin-scrollbar">
             {/* Custom Text */}
             <div>
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Custom Text</label>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block mb-1.5">Text</label>
               <input
                 type="text"
                 value={docWatermark.content}
-                placeholder="Enter watermark text..."
+                placeholder="Enter text..."
                 onChange={(e) => setDocWatermark(prev => ({ ...prev, content: e.target.value, active: true, type: 'custom' }))}
-                className="w-full text-xs p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 bg-gray-50"
+                className="w-full text-sm px-3 py-2 rounded-xl border border-gray-200 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400 bg-white transition-all shadow-sm"
               />
             </div>
 
-            {/* Color + Opacity row */}
-            <div className="flex gap-3 items-start">
-              <div className="flex-1">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Color</label>
-                <div className="flex gap-1 flex-wrap">
-                  {['#94a3b8','#ef4444','#f97316','#eab308','#16a34a','#3b82f6','#8b5cf6','#ec4899','#000000'].map(c => (
+            {/* Presets (Minimal) */}
+            <div className="flex gap-2">
+              {['DRAFT', 'CONFIDENTIAL', 'APPROVED'].map(preset => (
+                <button
+                  key={preset}
+                  onClick={() => setDocWatermark(prev => ({ ...prev, active: true, type: 'custom', content: preset, x: 0, y: 0 }))}
+                  className="flex-1 py-1.5 text-[10px] font-semibold tracking-wide rounded-lg border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
+
+            {/* Color & Opacity */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Color</label>
+                <div className="flex gap-2">
+                  {['#94a3b8','#ef4444','#3b82f6','#0f172a'].map(c => (
                     <button
                       key={c}
                       onClick={() => setDocWatermark(prev => ({ ...prev, color: c }))}
-                      className={`w-5 h-5 rounded-full border-2 transition-all ${docWatermark.color === c ? 'border-violet-600 scale-110' : 'border-white shadow-sm'}`}
+                      className={`w-4 h-4 rounded-full border transition-transform ${docWatermark.color === c ? 'scale-125 border-gray-400 shadow-sm' : 'border-transparent'}`}
                       style={{ background: c }}
-                      title={c}
                     />
                   ))}
-                  <input
-                    type="color"
-                    value={docWatermark.color || '#94a3b8'}
-                    onChange={(e) => setDocWatermark(prev => ({ ...prev, color: e.target.value }))}
-                    className="w-5 h-5 rounded-full border border-gray-200 cursor-pointer"
-                    title="Custom color"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Opacity</label>
-                <div className="flex items-center gap-1">
-                  <input type="range" min="0.05" max="1" step="0.05" value={docWatermark?.opacity || 0.15} onChange={(e) => setDocWatermark(prev => ({ ...prev, opacity: parseFloat(e.target.value) }))} className="w-24 h-1 bg-violet-100 rounded-lg appearance-none cursor-pointer accent-violet-500 hover:bg-violet-200 transition-colors" style={{ outline: 'none' }} />
-                  <span className="text-[9px] text-gray-400 w-6">{Math.round((docWatermark?.opacity || 0.15) * 100)}%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Placement + Pages */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Placement</label>
-                <select
-                  value={docWatermark?.placement || 'center'}
-                  onChange={(e) => setDocWatermark(prev => ({ ...prev, placement: e.target.value }))}
-                  className="w-full text-xs p-1.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 bg-gray-50"
-                >
-                  <option value="center">Center</option>
-                  <option value="diagonal">Diagonal</option>
-                  <option value="header">Header</option>
-                  <option value="footer">Footer</option>
-                  <option value="tiled">Tiled</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Pages</label>
-                <select
-                  value={docWatermark?.pages || 'all'}
-                  onChange={(e) => setDocWatermark(prev => ({ ...prev, pages: e.target.value }))}
-                  className="w-full text-xs p-1.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 bg-gray-50"
-                >
-                  <option value="all">All Pages</option>
-                  <option value="first">First Page Only</option>
-                  <option value="specific">Specific Pages</option>
-                </select>
-              </div>
-            </div>
-
-            {docWatermark?.pages === 'specific' && (
-              <div>
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Page Numbers (comma separated)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 1, 3, 5"
-                  value={docWatermark.specificPages || ''}
-                  onChange={(e) => setDocWatermark(prev => ({ ...prev, specificPages: e.target.value }))}
-                  className="w-full text-xs p-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-violet-500 bg-gray-50"
-                />
-              </div>
-            )}
-
-            {/* Size + Rotation */}
-            <div className="space-y-2 pt-1 border-t border-gray-100">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Size</label>
-                <div className="flex items-center gap-1">
-                  <input type="range" min="20" max="300" step="10" value={docWatermark?.size || 100} onChange={(e) => setDocWatermark(prev => ({ ...prev, size: parseInt(e.target.value) }))} className="w-24 accent-violet-500" />
-                  <span className="text-[9px] text-gray-400 w-7">{docWatermark?.size || 100}%</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Rotation</label>
-                <div className="flex items-center gap-1">
-                  <input type="range" min="-180" max="180" step="5" value={docWatermark?.rotation ?? -45} onChange={(e) => setDocWatermark(prev => ({ ...prev, rotation: parseInt(e.target.value) }))} className="w-24 accent-violet-500" />
-                  <span className="text-[9px] text-gray-400 w-7">{docWatermark?.rotation ?? -45}°</span>
-                </div>
-              </div>
-            </div>
 
             {/* Tip */}
             <p className="text-[9px] text-gray-400 italic">💡 Tip: After applying, hover over the watermark to drag or use the rotate handle above it.</p>
