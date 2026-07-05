@@ -41729,7 +41729,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       className={`h-8 rounded-lg text-xs flex items-center justify-center border transition-all ${
                         isActive 
                           ? "bg-slate-50/50 border-slate-200/70 text-slate-900 font-bold" 
-                          : "bg-white/40 border-slate-200/50 hover:bg-slate-50/50 hover:border-slate-300/40 text-slate-500 font-semibold"
+                          : "bg-white/40 border-slate-200/50 hover:bg-slate-50/50 hover:border-slate-300/40 text-slate-700 font-semibold"
                       }`}
                     >
                       {item.label}
@@ -41755,7 +41755,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       className={`h-8 rounded-lg flex items-center justify-center border transition-all ${
                         isActive 
                           ? "bg-slate-50/50 border-slate-200/70 text-slate-900 font-bold" 
-                          : "bg-white/40 border-slate-200/50 hover:bg-slate-50/50 hover:border-slate-300/40 text-slate-500 font-semibold"
+                          : "bg-white/40 border-slate-200/50 hover:bg-slate-50/50 hover:border-slate-300/40 text-slate-700 font-semibold"
                       }`}
                     >
                       {item.icon}
@@ -41770,13 +41770,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   setListDropdownOpen(true);
                   setDragHandleMenu({ open: false, top: 0, left: 0, node: null });
                 }}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-50/50 text-slate-655 text-xs font-semibold transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-50/50 text-slate-700 text-xs font-semibold transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <LayoutGrid size={13} className="text-slate-400" />
+                  <LayoutGrid size={13} className="text-slate-500" />
                   <span>Paragraph Layout</span>
                 </div>
-                <ChevronRight size={13} className="text-slate-400" />
+                <ChevronRight size={13} className="text-slate-500" />
               </button>
 
               <button
