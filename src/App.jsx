@@ -7923,7 +7923,24 @@ export default function App() {
       const activeElement = document.activeElement;
       const insideEditor = Boolean(activeElement && documentCardRef.current?.contains(activeElement));
 
-      if (!(event.ctrlKey || event.metaKey) && wholeDocSelectionRef.current && insideEditor && (event.key === 'Backspace' || event.key === 'Delete')) {
+      const isCrossFieldSelection = (() => {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+          const range = selection.getRangeAt(0);
+          if (!range.collapsed) {
+            const title = titleEditableRef.current;
+            const subtitle = subtitleEditableRef.current;
+            const body = blankBodyRef.current;
+            const hasTitleOrSub = (title && (title.contains(range.startContainer) || title.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(title)))) ||
+                                  (subtitle && (subtitle.contains(range.startContainer) || subtitle.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(subtitle))));
+            const hasBody = body && (body.contains(range.startContainer) || body.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(body)));
+            return hasTitleOrSub && hasBody;
+          }
+        }
+        return false;
+      })();
+
+      if (!(event.ctrlKey || event.metaKey) && (wholeDocSelectionRef.current || isCrossFieldSelection) && insideEditor && (event.key === 'Backspace' || event.key === 'Delete')) {
         event.preventDefault();
         clearEntireCompositionText();
         wholeDocSelectionRef.current = false;
@@ -9143,6 +9160,8 @@ export default function App() {
       // Strip Word/Office/WPS conditional comments and XML namespaces
       cleanHtml = cleanHtml.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/g, '');
       cleanHtml = cleanHtml.replace(/<[\/]?([oxwm]:|xml)[^>]*?>/gi, '');
+      // Strip HTML comments (like StartFragment/EndFragment)
+      cleanHtml = cleanHtml.replace(/<!--[\s\S]*?-->/g, '');
       
       // Parse HTML to strip compose-generated-page containers
       const parser = new DOMParser();
@@ -14172,7 +14191,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (offset > 0) {
         for (let i = 0; i < offset; i++) {
           const child = current.childNodes[i];
-          if (child && (child.textContent?.length > 0 || child.nodeName === 'BR' || child.nodeType === Node.ELEMENT_NODE)) {
+          if (child && child.nodeType !== Node.COMMENT_NODE && (child.textContent?.length > 0 || child.nodeName === 'BR' || child.nodeType === Node.ELEMENT_NODE)) {
             return false;
           }
         }
@@ -14182,7 +14201,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     while (current && current !== node) {
       let sibling = current.previousSibling;
       while (sibling) {
-        if (sibling.textContent?.length > 0 || sibling.nodeType === Node.ELEMENT_NODE) {
+        if (sibling.nodeType !== Node.COMMENT_NODE && (sibling.textContent?.length > 0 || sibling.nodeType === Node.ELEMENT_NODE)) {
           return false;
         }
         sibling = sibling.previousSibling;
@@ -14224,6 +14243,27 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const handleEditorKeyDown = (event) => {
+    if (event.key === 'Backspace' || event.key === 'Delete') {
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        if (!range.collapsed) {
+          const title = titleEditableRef.current;
+          const subtitle = subtitleEditableRef.current;
+          const body = blankBodyRef.current;
+          const hasTitleOrSub = (title && (title.contains(range.startContainer) || title.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(title)))) ||
+                                (subtitle && (subtitle.contains(range.startContainer) || subtitle.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(subtitle))));
+          const hasBody = body && (body.contains(range.startContainer) || body.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(body)));
+          if (hasTitleOrSub && hasBody) {
+            event.preventDefault();
+            clearEntireCompositionText();
+            wholeDocSelectionRef.current = false;
+            return;
+          }
+        }
+      }
+    }
+
     // Use nativeEvent for dedup flag ??React 18 creates separate SyntheticEvent
     // objects for capture vs bubble handlers, so we must tag the native event.
     if (event.nativeEvent._editorHandled) return;
@@ -14277,6 +14317,10 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
     if (event.key === 'Backspace' && isSelectionAtStartOfNode(blankBodyRef.current)) {
       event.preventDefault();
+      // Remove any leading comment nodes first to avoid merging comment strings like "StartFragment"
+      while (blankBodyRef.current?.firstChild && blankBodyRef.current.firstChild.nodeType === Node.COMMENT_NODE) {
+        blankBodyRef.current.firstChild.remove();
+      }
       const firstChild = blankBodyRef.current?.firstChild;
       if (firstChild) {
         const mergedText = firstChild.textContent || '';
@@ -42234,7 +42278,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {!isComposing && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
           <div 
-            className="pointer-events-none fixed z-[300] flex items-center justify-center"
+            className="pointer-events-none fixed z-[500] flex items-center justify-center"
             style={{
               left: `${dictationAnchor.left}px`,
               top: `${dictationAnchor.top}px`,
