@@ -12,7 +12,7 @@ import {
   ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
   FileText, Trash, Settings, MoreHorizontal, MoreVertical,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
-  File, User, PenTool, AlignLeft, AlignCenter, AlignRight, 
+  File, User, PenTool, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown, ChevronUp,
   Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
@@ -41707,17 +41707,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }} 
             />
             <div
-              className="fixed z-[8999] w-[240px] rounded-2xl border border-slate-200/80 bg-white/95 backdrop-blur-md p-2 shadow-2xl flex flex-col gap-2 font-sans text-slate-800"
+              className="fixed z-[8999] w-[240px] rounded-2xl border border-slate-200/40 bg-white/70 backdrop-blur-xl p-3 shadow-2xl flex flex-col gap-2.5 font-sans text-slate-800"
               style={{ top: `${menuTop}px`, left: `${menuLeft}px` }}
               onPointerDown={(e) => e.stopPropagation()}
             >
-              <div className="grid grid-cols-5 gap-1 border-b border-slate-100 pb-2">
+              <div className="grid grid-cols-5 gap-1 border-b border-slate-100/40 pb-2.5">
                 {[
                   { tag: "P", label: "T", tooltip: "Paragraph" },
-                  { tag: "H1", label: "H1", tooltip: "Heading 1" },
-                  { tag: "H2", label: "H2", tooltip: "Heading 2" },
-                  { tag: "H3", label: "H3", tooltip: "Heading 3" },
-                  { tag: "H4", label: "H4", tooltip: "Heading 4" }
+                  { tag: "H1", label: "H₁", tooltip: "Heading 1" },
+                  { tag: "H2", label: "H₂", tooltip: "Heading 2" },
+                  { tag: "H3", label: "H₃", tooltip: "Heading 3" },
+                  { tag: "H4", label: "H₄", tooltip: "Heading 4" }
                 ].map((item) => {
                   const isActive = dragHandleMenu.node?.tagName === item.tag;
                   return (
@@ -41726,10 +41726,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       type="button"
                       title={item.tooltip}
                       onClick={() => changeBlockTag(dragHandleMenu.node, item.tag)}
-                      className={`h-7 rounded-lg text-xs font-semibold flex items-center justify-center border transition-all ${
+                      className={`h-8 rounded-lg text-xs flex items-center justify-center border transition-all ${
                         isActive 
-                          ? "bg-slate-100 border-slate-300 text-slate-900 font-bold" 
-                          : "bg-white border-slate-200 hover:bg-slate-50 text-slate-655"
+                          ? "bg-slate-50/50 border-slate-200/70 text-slate-900 font-bold" 
+                          : "bg-white/40 border-slate-200/50 hover:bg-slate-50/50 hover:border-slate-300/40 text-slate-500 font-semibold"
                       }`}
                     >
                       {item.label}
@@ -41738,12 +41738,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 })}
               </div>
 
-              <div className="grid grid-cols-4 gap-1 border-b border-slate-100 pb-2">
+              <div className="grid grid-cols-4 gap-1 border-b border-slate-100/40 pb-2.5">
                 {[
                   { align: "left", icon: <AlignLeft size={13} />, tooltip: "Align Left" },
                   { align: "center", icon: <AlignCenter size={13} />, tooltip: "Align Center" },
                   { align: "right", icon: <AlignRight size={13} />, tooltip: "Align Right" },
-                  { align: "justify", icon: <span className="text-[10px] font-bold">J</span>, tooltip: "Justify" }
+                  { align: "justify", icon: <AlignJustify size={13} />, tooltip: "Justify" }
                 ].map((item) => {
                   const isActive = dragHandleMenu.node?.style.textAlign === item.align || (!dragHandleMenu.node?.style.textAlign && item.align === "left");
                   return (
@@ -41752,10 +41752,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       type="button"
                       title={item.tooltip}
                       onClick={() => changeBlockAlign(dragHandleMenu.node, item.align)}
-                      className={`h-7 rounded-lg flex items-center justify-center border transition-all ${
+                      className={`h-8 rounded-lg flex items-center justify-center border transition-all ${
                         isActive 
-                          ? "bg-slate-100 border-slate-300 text-slate-900 font-bold" 
-                          : "bg-white border-slate-200 hover:bg-slate-50 text-slate-655"
+                          ? "bg-slate-50/50 border-slate-200/70 text-slate-900 font-bold" 
+                          : "bg-white/40 border-slate-200/50 hover:bg-slate-50/50 hover:border-slate-300/40 text-slate-500 font-semibold"
                       }`}
                     >
                       {item.icon}
@@ -41770,10 +41770,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   setListDropdownOpen(true);
                   setDragHandleMenu({ open: false, top: 0, left: 0, node: null });
                 }}
-                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors"
+                className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-slate-50/50 text-slate-655 text-xs font-semibold transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <GripVertical size={13} className="text-slate-400" />
+                  <LayoutGrid size={13} className="text-slate-400" />
                   <span>Paragraph Layout</span>
                 </div>
                 <ChevronRight size={13} className="text-slate-400" />
@@ -41782,9 +41782,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 onClick={() => refineBlockWithAI(dragHandleMenu.node)}
-                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-bold transition-all border border-violet-200/50"
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-slate-50/50 text-violet-700 text-xs font-bold transition-all"
               >
-                <Sparkles size={13} className="text-violet-600" />
+                <Wand2 size={13} className="text-violet-600" />
                 <span>AI Refine Block</span>
               </button>
             </div>
