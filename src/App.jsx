@@ -33810,208 +33810,222 @@ if (productMode === 'deck' || productMode === 'sheets') {
       </div>
     );
   }
-            const renderDocumentOutlineContent = () => (
-        <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-3" style={{ fontFamily: editorFont }}>
-            <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
-                <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
-                  {outlineTreeData.length} Sections
-                </span>
-              </div>
-              
-              <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
-                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Focused document</div>
-                <div 
-                  className="text-xs font-bold text-gray-955 truncate mt-0.5 outline-none cursor-text" 
-                  title={docTitleDisplay}
-                  contentEditable
-                  suppressContentEditableWarning
-                  onBlur={(e) => setDocTitle(e.target.textContent)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      e.target.blur();
-                    }
-                  }}
-                >
-                  {docTitleDisplay}
-                </div>
-              </div>
-
-              {outlineTreeData.length > 0 ? (
-                <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
-                  {outlineTreeData.map((section) => {
-                    let badgeColorClass = "bg-slate-50 text-slate-655 border border-slate-150";
-                    if (section.completed || section.progress >= 80) {
-                      badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
-                    } else if (section.progress >= 40) {
-                      badgeColorClass = "bg-amber-50 text-amber-600 border border-amber-100";
-                    } else if (section.progress > 0) {
-                      badgeColorClass = "bg-rose-50 text-rose-600 border border-rose-100";
-                    }
-
-                    return (
-                      <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
-                        <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50/70 transition-colors relative flex-nowrap min-w-0">
-                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
-                              }}
-                              className="text-slate-400 hover:text-slate-650 transition-colors shrink-0"
-                            >
-                              {section.subsections?.length > 0 ? (
-                                section.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />
-                              ) : (
-                                <span className="w-3.5 block" />
-                              )}
-                            </button>
-                            
-                            {editingOutlineId === section.id ? (
-                              <input
-                                type="text"
-                                value={editingOutlineText}
-                                onChange={(e) => setEditingOutlineText(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.target.blur(); // Triggers the onBlur save
-                                  }
-                                }}
-                                onBlur={() => {
-                                  setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
-                                  setEditingOutlineId(null);
-                                  showToast('Section renamed');
-                                }}
-                                autoFocus
-                                className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
-                                style={{ fontFamily: editorFont }}
-                              />
-                            ) : (
-                              <span 
-                                onClick={() => {
-                                  setEditingOutlineId(section.id);
-                                  setEditingOutlineText(section.title);
-                                }}
-                                className="text-[12.5px] font-bold text-slate-800 truncate cursor-text hover:text-slate-955 whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1"
-                              >
-                                {section.title}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-1 pl-1 shrink-0">
-                            {section.completed ? (
-                              <span className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[9px] text-emerald-600 font-bold">✓</span>
-                            ) : (
-                              section.progress > 0 && (
-                                <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${badgeColorClass}`}>
-                                  {section.progress}%
-                                </span>
-                              )
-                            )}
-
-                            {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                              <div className="relative">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const rect = e.currentTarget.getBoundingClientRect();
-                                    setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
-                                    setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id);
-                                  }}
-                                  className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
-                                >
-                                  <MoreVertical size={13} />
-                                </button>
-                              </div>
-                            )}
-                          </div>
+            const renderDocumentOutlineContent = () => {
+              const wordsCount = documentStats?.words || 0;
+              const minRead = Math.max(1, Math.ceil(wordsCount / 200));
+              return (
+                <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-3" style={{ fontFamily: editorFont }}>
+                    <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
+                          <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
+                            {outlineTreeData.length} Sections
+                          </span>
                         </div>
-
-                        {/* Render Subsections */}
-                        {section.expanded && section.subsections && section.subsections.length > 0 && (
-                          <div className="pl-4 space-y-1.5 border-l border-slate-200 ml-2.5">
-                            {section.subsections.map(sub => (
-                              <div key={sub.id} className="flex items-center gap-2 py-0.5 min-w-0 flex-nowrap">
-                                <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
-                                <span className="text-[11.5px] text-slate-500 font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1">{sub.title}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        <div className="text-[10.5px] text-slate-400 font-medium">
+                          {minRead} min read &bull; {wordsCount} words
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-10 px-4 text-center mt-2">
-                  <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-4">
-                    <AlignLeft size={20} className="text-slate-300" />
-                  </div>
-                  <p className="text-[13px] font-bold text-slate-700 mb-1">Outline is empty</p>
-                  <p className="text-[11.5px] text-slate-400 mb-5 leading-relaxed max-w-[180px]">Paste content or start typing to automatically build your outline.</p>
-                  <button type="button" onClick={() => {
-                    setOutlineTreeData([{ id: `sec-${Date.now()}`, title: 'New Section', progress: 0, completed: false, subsections: [], expanded: false }]);
-                  }} className="text-[11.5px] font-semibold text-violet-700 bg-violet-50 border border-violet-100 hover:bg-violet-100 px-5 py-2 rounded-full transition-all shadow-sm">
-                    Add Section
-                  </button>
-                </div>
-              )}
+                      
+                      <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
+                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">DOCUMENT TITLE</div>
+                        <div 
+                          className="text-xs font-bold text-gray-955 truncate mt-0.5 outline-none cursor-text" 
+                          title={docTitleDisplay}
+                          contentEditable
+                          suppressContentEditableWarning
+                          onBlur={(e) => setDocTitle(e.target.textContent)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.target.blur();
+                            }
+                          }}
+                        >
+                          {docTitleDisplay}
+                        </div>
+                      </div>
 
-              {/* Add New Section Buttons */}
-              {outlineTreeData.length > 0 && currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                <div className="flex gap-2 w-full mt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newId = `sec-${Date.now()}`;
-                      setOutlineTreeData(prev => [...prev, { id: newId, title: 'Untitled', progress: 0, completed: false, subsections: [], expanded: false }]);
-                      setEditingOutlineId(newId);
-                      setEditingOutlineText('Untitled');
-                    }}
-                    className="flex-1 py-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                    style={{ fontFamily: editorFont }}
-                  >
-                    + Add Section
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      showToast('Generating AI Section...');
-                      setTimeout(() => {
-                        const newId = `sec-ai-${Date.now()}`;
-                        setOutlineTreeData(prev => [...prev, { id: newId, title: 'AI Generated Insights', progress: 0, completed: false, subsections: [], expanded: false }]);
-                        setEditingOutlineId(newId);
-                        setEditingOutlineText('AI Generated Insights');
-                        showToast('AI Section Generated');
-                      }, 1000);
-                    }}
-                    className="flex-1 py-2 rounded-xl border border-dashed border-violet-300 hover:border-violet-500 bg-violet-50/50 hover:bg-violet-100 text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                    style={{ fontFamily: editorFont }}
-                  >
-                    <Sparkles size={13} /> AI Section
-                  </button>
-                </div>
-              )}
-              
-              {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    insertEnterprisePage();
-                  }}
-                  className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                  style={{ fontFamily: editorFont }}
-                >
-                  + New page
-                </button>
-              )}
-            </div>
-          </div>
-      );
+                      {outlineTreeData.length > 0 ? (
+                        <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
+                          {outlineTreeData.map((section) => {
+                            let badgeColorClass = "bg-slate-50 text-slate-655 border border-slate-150";
+                            if (section.completed || section.progress >= 80) {
+                              badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                            } else if (section.progress >= 40) {
+                              badgeColorClass = "bg-amber-50 text-amber-600 border border-amber-100";
+                            } else if (section.progress > 0) {
+                              badgeColorClass = "bg-rose-50 text-rose-600 border border-rose-100";
+                            }
+
+                            return (
+                              <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
+                                <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50/70 transition-colors relative flex-nowrap min-w-0">
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
+                                      }}
+                                      className="text-slate-400 hover:text-slate-650 transition-colors shrink-0"
+                                    >
+                                      {section.subsections?.length > 0 ? (
+                                        section.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />
+                                      ) : (
+                                        <span className="w-3.5 block" />
+                                      )}
+                                    </button>
+                                    
+                                    {editingOutlineId === section.id ? (
+                                      <input
+                                        type="text"
+                                        value={editingOutlineText}
+                                        onChange={(e) => setEditingOutlineText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.target.blur(); // Triggers the onBlur save
+                                          }
+                                        }}
+                                        onBlur={() => {
+                                          setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                                          setEditingOutlineId(null);
+                                          showToast('Section renamed');
+                                        }}
+                                        autoFocus
+                                        className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
+                                        style={{ fontFamily: editorFont }}
+                                      />
+                                    ) : (
+                                      <span 
+                                        onClick={() => {
+                                          setEditingOutlineId(section.id);
+                                          setEditingOutlineText(section.title);
+                                        }}
+                                        className="text-[12.5px] font-bold text-slate-800 truncate cursor-text hover:text-slate-955 whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1"
+                                      >
+                                        {section.title}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-1 pl-1 shrink-0">
+                                    {section.completed ? (
+                                      <span className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[9px] text-emerald-600 font-bold">✓</span>
+                                    ) : (
+                                      section.progress > 0 && (
+                                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${badgeColorClass}`}>
+                                          {section.progress}%
+                                        </span>
+                                      )
+                                    )}
+
+                                    {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                                      <div className="relative">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const rect = e.currentTarget.getBoundingClientRect();
+                                            setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
+                                            setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id);
+                                          }}
+                                          className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
+                                        >
+                                          <MoreVertical size={13} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Render Subsections */}
+                                {section.expanded && section.subsections && section.subsections.length > 0 && (
+                                  <div className="pl-4 space-y-1.5 border-l border-slate-200 ml-2.5">
+                                    {section.subsections.map(sub => (
+                                      <div key={sub.id} className="flex items-center gap-2 py-0.5 min-w-0 flex-nowrap">
+                                        <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
+                                        <span className="text-[11.5px] text-slate-500 font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1">{sub.title}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-10 px-4 text-center mt-2">
+                          <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-3">
+                            <Menu size={18} className="text-slate-400" />
+                          </div>
+                          <p className="text-[13px] font-bold text-slate-700 mb-1">Outline is empty</p>
+                          <p className="text-[11px] text-slate-400 mb-5 leading-relaxed max-w-[200px]">Paste content containing headings to auto-populate outline.</p>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              setOutlineTreeData([{ id: `sec-${Date.now()}`, title: 'New Section', progress: 0, completed: false, subsections: [], expanded: false }]);
+                            }} 
+                            className="text-[11.5px] font-semibold text-violet-750 bg-violet-50/50 border border-dashed border-violet-250 hover:bg-violet-50 hover:border-violet-300 px-5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1 cursor-pointer select-none"
+                            style={{ fontFamily: editorFont }}
+                          >
+                            + Add Section
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Add New Section Buttons */}
+                      {outlineTreeData.length > 0 && currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                        <div className="flex gap-2 w-full mt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newId = `sec-${Date.now()}`;
+                              setOutlineTreeData(prev => [...prev, { id: newId, title: 'Untitled', progress: 0, completed: false, subsections: [], expanded: false }]);
+                              setEditingOutlineId(newId);
+                              setEditingOutlineText('Untitled');
+                            }}
+                            className="flex-1 py-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                            style={{ fontFamily: editorFont }}
+                          >
+                            + Add Section
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              showToast('Generating AI Section...');
+                              setTimeout(() => {
+                                const newId = `sec-ai-${Date.now()}`;
+                                setOutlineTreeData(prev => [...prev, { id: newId, title: 'AI Generated Insights', progress: 0, completed: false, subsections: [], expanded: false }]);
+                                setEditingOutlineId(newId);
+                                setEditingOutlineText('AI Generated Insights');
+                                showToast('AI Section Generated');
+                              }, 1000);
+                            }}
+                            className="flex-1 py-2 rounded-xl border border-dashed border-violet-300 hover:border-violet-500 bg-violet-50/50 hover:bg-violet-100 text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                            style={{ fontFamily: editorFont }}
+                          >
+                            <Sparkles size={13} /> AI Section
+                          </button>
+                        </div>
+                      )}
+                      
+                      {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            insertEnterprisePage();
+                          }}
+                          className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                          style={{ fontFamily: editorFont }}
+                        >
+                          + New page
+                        </button>
+                      )}
+                    </div>
+                  </div>
+              );
+            };
 
   const handleWorkspaceModuleClick = (moduleName) => {
     if (focusedModule === moduleName) return;
