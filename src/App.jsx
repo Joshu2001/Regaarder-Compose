@@ -5728,6 +5728,7 @@ export default function App() {
   const docSearchAutoPlayTimerRef = useRef(null);
   const roomJoinInputRef = useRef(null);
   const meetingShareFileInputRef = useRef(null);
+  const lastMergedBlockRef = useRef(null);
 
   const commitEditableTextForActiveDoc = (target, setter, event) => {
     if (!target || typeof setter !== 'function') {
@@ -14232,7 +14233,29 @@ Generate the updated output according to the instruction. Preserve layout and ta
   const handleTitleKeyDown = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      focusEditableNode(subtitleEditableRef.current, false);
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const offset = range.startOffset;
+        const text = titleEditableRef.current.textContent || '';
+        const beforeText = text.substring(0, offset);
+        const afterText = text.substring(offset);
+        if (afterText.length > 0) {
+          setDocTitle(beforeText);
+          if (titleEditableRef.current) {
+            titleEditableRef.current.textContent = beforeText;
+          }
+          const prevSubtitleText = subtitleEditableRef.current?.textContent || '';
+          setDocSubtitle(afterText + prevSubtitleText);
+          setTimeout(() => {
+            focusEditableNode(subtitleEditableRef.current, false);
+          }, 0);
+        } else {
+          focusEditableNode(subtitleEditableRef.current, false);
+        }
+      } else {
+        focusEditableNode(subtitleEditableRef.current, false);
+      }
     } else if (event.key === 'ArrowDown') {
       event.preventDefault();
       focusEditableNode(subtitleEditableRef.current, false);
@@ -14243,12 +14266,93 @@ Generate the updated output according to the instruction. Preserve layout and ta
     if (event.key === 'ArrowUp') {
       event.preventDefault();
       focusEditableNode(titleEditableRef.current, true);
-    } else if ((event.key === 'Enter' && !event.shiftKey) || event.key === 'ArrowDown') {
+    } else if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      const selection = window.getSelection();
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const offset = range.startOffset;
+        const text = subtitleEditableRef.current.textContent || '';
+        const beforeText = text.substring(0, offset);
+        const afterText = text.substring(offset);
+
+        if (afterText.length > 0) {
+          setDocSubtitle(beforeText);
+          if (subtitleEditableRef.current) {
+            subtitleEditableRef.current.textContent = beforeText;
+            
+            // Reset subtitle custom styles to fallback to default styling
+            subtitleEditableRef.current.style.fontSize = '';
+            subtitleEditableRef.current.style.fontWeight = '';
+            subtitleEditableRef.current.style.color = '';
+            subtitleEditableRef.current.style.fontStyle = '';
+            subtitleEditableRef.current.style.textDecoration = '';
+          }
+
+          // Create a new element at the start of blankBodyRef using the saved element structure to preserve all formats/styles
+          let newBlock;
+          if (lastMergedBlockRef.current) {
+            newBlock = lastMergedBlockRef.current.cloneNode(true);
+            const replaceTextInDOM = (node, newText) => {
+              if (node.nodeType === Node.TEXT_NODE) {
+                node.textContent = newText;
+                return true;
+              }
+              if (node.childNodes.length === 0 && node.nodeType === Node.ELEMENT_NODE) {
+                node.appendChild(document.createTextNode(newText));
+                return true;
+              }
+              let replaced = false;
+              for (let child of node.childNodes) {
+                if (replaceTextInDOM(child, replaced ? '' : newText)) {
+                  replaced = true;
+                }
+              }
+              return replaced;
+            };
+            replaceTextInDOM(newBlock, afterText);
+          } else {
+            newBlock = document.createElement('p');
+            newBlock.textContent = afterText;
+          }
+
+          if (blankBodyRef.current) {
+            if (blankBodyRef.current.firstChild) {
+              blankBodyRef.current.insertBefore(newBlock, blankBodyRef.current.firstChild);
+            } else {
+              blankBodyRef.current.appendChild(newBlock);
+            }
+            setDocBodyHtml(blankBodyRef.current.innerHTML);
+            
+            // Reset to default
+            lastMergedBlockRef.current = null;
+
+            setTimeout(() => {
+              focusEditableNode(newBlock, false);
+            }, 0);
+          }
+        } else {
+          focusEditableNode(blankBodyRef.current, false);
+        }
+      } else {
+        focusEditableNode(blankBodyRef.current, false);
+      }
+    } else if (event.key === 'ArrowDown') {
       event.preventDefault();
       focusEditableNode(blankBodyRef.current, false);
     } else if (event.key === 'Backspace') {
       if (isSelectionAtStartOfNode(subtitleEditableRef.current)) {
         event.preventDefault();
+        
+        // Reset subtitle custom styles
+        if (subtitleEditableRef.current) {
+          subtitleEditableRef.current.style.fontSize = '';
+          subtitleEditableRef.current.style.fontWeight = '';
+          subtitleEditableRef.current.style.color = '';
+          subtitleEditableRef.current.style.fontStyle = '';
+          subtitleEditableRef.current.style.textDecoration = '';
+        }
+
         const subtitleText = subtitleEditableRef.current.textContent || '';
         const originalTitleLength = docTitle.length;
         setDocSubtitle('');
@@ -14342,6 +14446,29 @@ Generate the updated output according to the instruction. Preserve layout and ta
       const firstChild = blankBodyRef.current?.firstChild;
       if (firstChild) {
         const mergedText = firstChild.textContent || '';
+        lastMergedBlockRef.current = firstChild.cloneNode(true); // Save the cloned node structure!
+        
+        // Copy computed styles to subtitleEditableRef to preserve visual formatting
+        const sourceElement = firstChild.nodeType === Node.ELEMENT_NODE ? firstChild : null;
+        if (sourceElement && subtitleEditableRef.current) {
+          const computed = window.getComputedStyle(sourceElement);
+          subtitleEditableRef.current.style.fontSize = computed.fontSize;
+          subtitleEditableRef.current.style.fontWeight = computed.fontWeight;
+          subtitleEditableRef.current.style.color = computed.color;
+          subtitleEditableRef.current.style.fontStyle = computed.fontStyle;
+          subtitleEditableRef.current.style.textDecoration = computed.textDecoration;
+          
+          const innerSpan = sourceElement.querySelector('span');
+          if (innerSpan) {
+            const innerComputed = window.getComputedStyle(innerSpan);
+            subtitleEditableRef.current.style.fontSize = innerComputed.fontSize;
+            subtitleEditableRef.current.style.fontWeight = innerComputed.fontWeight;
+            subtitleEditableRef.current.style.color = innerComputed.color;
+            subtitleEditableRef.current.style.fontStyle = innerComputed.fontStyle;
+            subtitleEditableRef.current.style.textDecoration = innerComputed.textDecoration;
+          }
+        }
+
         firstChild.remove();
         setDocBodyHtml(blankBodyRef.current.innerHTML);
         
@@ -41659,6 +41786,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
             newEl.setAttribute(attr.name, attr.value);
           }
           newEl.innerHTML = node.innerHTML;
+          
+          const sizes = {
+            "H1": `${editorSize}px`, // Title size (T)
+            "H2": "42px",            // Heading 1 size (H1)
+            "H3": "34px",            // Heading 2 size (H2)
+            "H4": "26px",            // Heading 3 size (H3)
+            "H5": "20px"             // Heading 4 size (H4)
+          };
+          if (sizes[newTag]) {
+            newEl.style.fontSize = sizes[newTag];
+            // Clear internal child font sizes so they inherit the heading size correctly
+            const children = newEl.querySelectorAll('*');
+            children.forEach(child => {
+              if (child.style) {
+                child.style.fontSize = '';
+              }
+            });
+          }
+
           node.parentNode.replaceChild(newEl, node);
           if (blankBodyRef.current) {
             setDocBodyHtml(blankBodyRef.current.innerHTML);
@@ -41713,15 +41859,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
             >
               <div className="grid grid-cols-5 gap-1 border-b border-slate-100/40 pb-2.5">
                 {[
-                  { tag: "P", label: "T", tooltip: "Paragraph" },
-                  { tag: "H1", label: "H₁", tooltip: "Heading 1" },
-                  { tag: "H2", label: "H₂", tooltip: "Heading 2" },
-                  { tag: "H3", label: "H₃", tooltip: "Heading 3" },
-                  { tag: "H4", label: "H₄", tooltip: "Heading 4" }
+                  { tag: "H1", label: "T", tooltip: "Title" },
+                  { tag: "H2", label: "H₁", tooltip: "Heading 1" },
+                  { tag: "H3", label: "H₂", tooltip: "Heading 2" },
+                  { tag: "H4", label: "H₃", tooltip: "Heading 3" },
+                  { tag: "H5", label: "H₄", tooltip: "Heading 4" }
                 ].map((item) => {
-                  const isActive = item.tag === "P"
-                    ? (dragHandleMenu.node?.tagName === "P" || dragHandleMenu.node?.tagName === "DIV")
-                    : dragHandleMenu.node?.tagName === item.tag;
+                  const isActive = dragHandleMenu.node?.tagName === item.tag;
                   return (
                     <button
                       key={item.tag}
