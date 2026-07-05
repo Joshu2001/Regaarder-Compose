@@ -4379,6 +4379,12 @@ export default function App() {
   const [commentMentionOpen, setCommentMentionOpen] = useState(false);
   const [commentWorkspaceRefOpen, setCommentWorkspaceRefOpen] = useState(false);
   const [commentPopover, setCommentPopover] = useState({ open: false, top: 0, left: 0, text: '', commentId: null });
+
+  useEffect(() => {
+    if (comments.length === 0 && activeRightTab === 'comments') {
+      setActiveRightTab('chat');
+    }
+  }, [comments.length, activeRightTab]);
   
   const handleCommentDrag = (e) => {
     if (e.button !== 0 || e.target.closest('button') || e.target.closest('textarea') || e.target.closest('input')) return;
@@ -10351,6 +10357,18 @@ export default function App() {
       const next = prev.filter((attachment) => attachment.id !== attachmentId);
       return next;
     });
+  };
+
+  const triggerAttachmentUpload = (type) => {
+    if (!promptFileInputRef.current) return;
+    if (type === 'image') {
+      promptFileInputRef.current.accept = 'image/*';
+    } else if (type === 'document') {
+      promptFileInputRef.current.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt';
+    } else if (type === 'file') {
+      promptFileInputRef.current.accept = '*/*';
+    }
+    promptFileInputRef.current.click();
   };
 
   const attachFilesToPrompt = async (files) => {
@@ -22362,12 +22380,19 @@ Respond with a JSON array of slide objects matching the schema.`;
                     {chatAttachments.map((attachment) => {
                       const isImage = attachment.type?.startsWith('image/');
                       return (
-                        <div key={attachment.id} className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-xl border border-violet-100 bg-violet-50/50 text-violet-800 text-[11px] font-semibold shadow-xs transition-all hover:bg-violet-50">
+                        <div
+                          key={attachment.id}
+                          onClick={() => setPreviewAttachment(attachment)}
+                          className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-xl border border-violet-100 bg-violet-50/50 text-violet-800 text-[11px] font-semibold shadow-xs transition-all hover:bg-violet-50 cursor-pointer"
+                        >
                           {isImage ? <ImageIcon size={12} className="text-violet-500" /> : <FileText size={12} className="text-violet-500" />}
                           <span className="max-w-[120px] truncate">{attachment.name}</span>
                           <button
                             type="button"
-                            onClick={() => setChatAttachments(prev => prev.filter(att => att.id !== attachment.id))}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
+                            }}
                             className="p-0.5 rounded-md hover:bg-violet-200/60 text-violet-500 hover:text-violet-750 transition-colors"
                             title="Remove attachment"
                           >
@@ -24629,20 +24654,30 @@ Respond with a JSON array of slide objects matching the schema.`;
         </div>
 
         <div
-          onClick={() => handleMiniSidebarClick('comments')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'comments' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center justify-center"
+          style={{
+            height: comments.length > 0 ? '48px' : '0px',
+            opacity: comments.length > 0 ? 1 : 0,
+            pointerEvents: comments.length > 0 ? 'auto' : 'none',
+            transform: comments.length > 0 ? 'scale(1)' : 'scale(0.8)',
+          }}
         >
-          <div className={`p-2 rounded-xl transition-all relative ${activeRightTab === 'comments' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            {selectedEditorText ? <MessageSquarePlus size={20} /> : <MessageSquareText size={20} />}
-            {comments.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold">
-                {comments.filter(c => !c.resolved).length}
-              </span>
-            )}
+          <div
+            onClick={() => handleMiniSidebarClick('comments')}
+            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
+              activeRightTab === 'comments' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
+            }`}
+          >
+            <div className={`p-2 rounded-xl transition-all relative ${activeRightTab === 'comments' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+              {selectedEditorText ? <MessageSquarePlus size={20} /> : <MessageSquareText size={20} />}
+              {comments.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold">
+                  {comments.filter(c => !c.resolved).length}
+                </span>
+              )}
+            </div>
+            <span className="text-[9px] font-semibold">Comments</span>
           </div>
-          <span className="text-[9px] font-semibold">Comments</span>
         </div>
 
         <div
@@ -34646,20 +34681,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {previewAttachment && (
-        <div className="fixed inset-0 z-[130] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-[640px] max-w-[95vw] max-h-[90vh] overflow-auto rounded-2xl bg-white border border-gray-200 shadow-2xl p-4">
+        <div
+          onClick={() => setPreviewAttachment(null)}
+          className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-[640px] max-w-[95vw] max-h-[90vh] overflow-auto rounded-2xl bg-white border border-gray-200 shadow-2xl p-4 cursor-default"
+          >
             <div className="flex items-center justify-between gap-2 mb-3">
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-gray-900 truncate">{previewAttachment.name}</div>
                 <div className="text-[11px] text-gray-500">{previewAttachment.type || 'Unknown type'} - {Math.round((previewAttachment.size || 0) / 1024)} KB</div>
               </div>
-              <button
-                type="button"
-                onClick={() => setPreviewAttachment(null)}
-                className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-              >
-                <X size={14} />
-              </button>
             </div>
             {previewAttachment.isImage ? (
               <img src={previewAttachment.url} alt={previewAttachment.name} className="w-full h-auto rounded-xl border border-gray-200" />
@@ -39599,49 +39633,127 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                 </div>
               ) : (
-                <div className="relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onPointerDown={(event) => beginPanelResize('prompt', event)}
-                    className="p-1.5 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 cursor-move touch-none shrink-0"
-                    title="Move prompt bar"
-                  >
-                    <Move size={14} />
-                  </button>
-                  <div className="relative">
+                <div className="flex flex-col gap-2 w-full items-start">
+                  {promptAttachments.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 px-1">
+                      {promptAttachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="inline-flex items-center gap-2 rounded-xl border border-[#e8e6f1] bg-white px-2.5 py-1.5 text-xs text-slate-700 shadow-sm hover:border-violet-200 transition-all group relative cursor-pointer"
+                          onClick={() => setPreviewAttachment(attachment)}
+                          title="Preview attachment"
+                        >
+                          {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
+                            <img
+                              src={attachment.url}
+                              alt={attachment.name}
+                              className="w-6 h-6 rounded-lg object-cover border border-gray-100"
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center text-violet-500 border border-violet-100">
+                              {attachment.type && attachment.type.includes('audio') ? (
+                                <Mic size={12} />
+                              ) : (
+                                <FileText size={12} />
+                              )}
+                            </div>
+                          )}
+                          <span className="max-w-[150px] truncate font-medium">{attachment.name}</span>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              removePromptAttachment(attachment.id);
+                            }}
+                            className="text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
+                            title="Remove"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-center gap-2 w-full">
                     <button
                       type="button"
-                      onClick={() => setAiAttachmentMenuOpen(!aiAttachmentMenuOpen)}
-                      className="p-1.5 rounded-full text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
-                      title="Add attachments"
+                      onPointerDown={(event) => beginPanelResize('prompt', event)}
+                      className="p-1.5 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 cursor-move touch-none shrink-0"
+                      title="Move prompt bar"
                     >
-                      <Plus size={18} />
+                      <Move size={14} />
                     </button>
-                    {aiAttachmentMenuOpen && (
-                      <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
-                        <button type="button" onClick={() => setAiAttachmentMenuOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"><ImageIcon size={14} /> Image</button>
-                        <button type="button" onClick={() => setAiAttachmentMenuOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"><FileText size={14} /> Document</button>
-                        <button type="button" onClick={() => setAiAttachmentMenuOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"><Mic size={14} /> Audio</button>
-                        <button type="button" onClick={() => setAiAttachmentMenuOpen(false)} className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"><File size={14} /> File</button>
-                      </div>
-                    )}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setAiAttachmentMenuOpen(!aiAttachmentMenuOpen)}
+                        className="p-1.5 rounded-full text-gray-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                        title="Add attachments"
+                      >
+                        <Plus size={18} />
+                      </button>
+                      {aiAttachmentMenuOpen && (
+                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAiAttachmentMenuOpen(false);
+                              triggerAttachmentUpload('image');
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                          >
+                            <ImageIcon size={14} /> Image
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAiAttachmentMenuOpen(false);
+                              triggerAttachmentUpload('document');
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                          >
+                            <FileText size={14} /> Document
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAiAttachmentMenuOpen(false);
+                              promptAudioInputRef.current?.click();
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                          >
+                            <Mic size={14} /> Audio
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAiAttachmentMenuOpen(false);
+                              triggerAttachmentUpload('file');
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-violet-50 hover:text-violet-600 flex items-center gap-2"
+                          >
+                            <File size={14} /> File
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <textarea
+                      value={floatingPrompt}
+                      onChange={(e) => setFloatingPrompt(e.target.value)}
+                      onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
+                      placeholder="Ask Compose AI..."
+                      rows={1}
+                      style={{ textAlign: alignMode }}
+                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isComposing || !floatingPrompt.trim()}
+                      className={`p-1.5 rounded-full transition-colors flex shrink-0 ${isComposing || !floatingPrompt.trim() ? 'text-gray-300 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm'}`}
+                    >
+                      {isComposing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                    </button>
                   </div>
-                  <textarea
-                    value={floatingPrompt}
-                    onChange={(e) => setFloatingPrompt(e.target.value)}
-                    onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                    placeholder="Ask Compose AI..."
-                    rows={1}
-                    style={{ textAlign: alignMode }}
-                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1"
-                  />
-                  <button
-                    type="submit"
-                    disabled={isComposing || !floatingPrompt.trim()}
-                    className={`p-1.5 rounded-full transition-colors flex shrink-0 ${isComposing || !floatingPrompt.trim() ? 'text-gray-300 cursor-not-allowed' : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm'}`}
-                  >
-                    {isComposing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                  </button>
                 </div>
               )}
             </form>
