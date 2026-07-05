@@ -90,3 +90,12 @@ This walkthrough details the visual improvements, event-handler corrections, and
 - **Identical Column Dimensions**:
   - Added `minWidth: 'max-content'` to both the header grid and the body cell grid container. This guarantees both grids compute column dimensions identically using the CSS custom properties width variables, correcting layout shifts regardless of horizontal viewport scale.
 
+---
+
+## 10. titleEditableRef Cleanup
+- **Complete Removal**: Removed all code references, state detections, and hooks referring to `titleEditableRef` (which was a legacy ref pointing to a deleted DOM element) across [App.jsx](file:///c:/Users/user/Downloads/Project%20MOAT/Regaarder%20Compose/src/App.jsx) to ensure clean build verification and eliminate any potential references to missing nodes.
+
+---
+
+## 11. React Initialization Order Crash Fix
+- **Moving State Declarations Up**: Moved the initialization of `docBodyHtml` state via `useState` to the very top of the `App` component body (Line 1727). This resolves a runtime `ReferenceError: Cannot access 'docBodyHtml' before initialization` where early hooks/effects and helpers inside the component body accessed `docBodyHtml` before its legacy line location was reached.

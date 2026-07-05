@@ -1724,7 +1724,9 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
 
 
 export default function App() {
-  useEffect(() => {
+  const [docBodyHtml, setDocBodyHtml] = useState('');
+
+    useEffect(() => {
     let hideTimeout = null;
     const handleBlockHover = (e) => {
       let targetNode = e.target;
@@ -5609,6 +5611,7 @@ export default function App() {
 
   // Auto-scroll ref for chat
   const chatEndRef = useRef(null);
+  const activeDocIdRef = useRef(null);
   const sheetShapeMenuRef = useRef(null);
   const sheetChartMenuRef = useRef(null);
   const sheetTablePresetMenuRef = useRef(null);
@@ -5619,9 +5622,7 @@ export default function App() {
   const blankBodyRef = useRef(null);
   const pageOptionsMenuRef = useRef(null);
   const emojiControlsRef = useRef(null);
-  const activeDocIdRef = useRef(null);
-  const titleEditableRef = useRef(null);
-  const subtitleEditableRef = useRef(null);
+
 
   const [blockDragHandle, setBlockDragHandle] = useState({ visible: false, top: 0, left: 0, node: null });
   const [dragHandleMenu, setDragHandleMenu] = useState({ open: false, top: 0, left: 0, node: null });
@@ -5760,21 +5761,20 @@ export default function App() {
     setter(target.innerHTML || '');
   };
 
-  // Stateful document content
   const [docTitle, setDocTitle] = useState('');
   const [docSubtitle, setDocSubtitle] = useState('');
 
   useEffect(() => {
-    if (titleEditableRef.current && titleEditableRef.current.textContent !== docTitle) {
-      titleEditableRef.current.textContent = docTitle;
+    if (!docBodyHtml) {
+      setDocTitle('Untitled Document');
+      return;
     }
-  }, [docTitle]);
-
-  useEffect(() => {
-    if (subtitleEditableRef.current && subtitleEditableRef.current.textContent !== docSubtitle) {
-      subtitleEditableRef.current.textContent = docSubtitle;
-    }
-  }, [docSubtitle]);
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(docBodyHtml, 'text/html');
+    const firstBlock = doc.body.firstElementChild;
+    const titleText = firstBlock ? (firstBlock.textContent || '').trim() : '';
+    setDocTitle(titleText || 'Untitled Document');
+  }, [docBodyHtml]);
 
   const [isTopDraftTitleExpanded, setIsTopDraftTitleExpanded] = useState(false);
   const [initiatives, setInitiatives] = useState(defaultInitiatives);
@@ -5800,7 +5800,7 @@ export default function App() {
     };
   }, [setActiveDocId]);
 
-  const [docBodyHtml, setDocBodyHtml] = useState('');
+  
 
   // Yjs state for Real-Time Collaboration
   const yDocRef = useRef(null);
@@ -6166,7 +6166,7 @@ export default function App() {
     }
 
     if (item.isTitle) {
-      titleEditableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      blankBodyRef.current?.firstElementChild?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -7930,22 +7930,7 @@ export default function App() {
       const activeElement = document.activeElement;
       const insideEditor = Boolean(activeElement && documentCardRef.current?.contains(activeElement));
 
-      const isCrossFieldSelection = (() => {
-        const selection = window.getSelection();
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0);
-          if (!range.collapsed) {
-            const title = titleEditableRef.current;
-            const subtitle = subtitleEditableRef.current;
-            const body = blankBodyRef.current;
-            const hasTitleOrSub = (title && (title.contains(range.startContainer) || title.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(title)))) ||
-                                  (subtitle && (subtitle.contains(range.startContainer) || subtitle.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(subtitle))));
-            const hasBody = body && (body.contains(range.startContainer) || body.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(body)));
-            return hasTitleOrSub && hasBody;
-          }
-        }
-        return false;
-      })();
+      const isCrossFieldSelection = false;
 
       if (!(event.ctrlKey || event.metaKey) && (wholeDocSelectionRef.current || isCrossFieldSelection) && insideEditor && (event.key === 'Backspace' || event.key === 'Delete')) {
         event.preventDefault();
@@ -8610,10 +8595,7 @@ export default function App() {
     }
 
     const bodyRoot = blankBodyRef.current || documentCardRef.current;
-    const insideBody = Boolean(bodyRoot && bodyRoot.contains(targetNode));
-    const insideTitle = Boolean(titleEditableRef.current && titleEditableRef.current.contains(targetNode));
-    const insideSubtitle = Boolean(subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
-    return insideBody || insideTitle || insideSubtitle;
+    return Boolean(bodyRoot && bodyRoot.contains(targetNode));
   };
   const stripMarkdownArtifacts = (value) => String(value || '')
     .replace(/```[\s\S]*?```/g, ' ')
@@ -8767,15 +8749,9 @@ export default function App() {
       const ancestor = range.commonAncestorContainer;
       const element = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
       if (element) {
-        if (titleEditableRef.current && titleEditableRef.current.contains(element)) {
-          setActiveFontSize(editorSize);
-        } else if (subtitleEditableRef.current && subtitleEditableRef.current.contains(element)) {
-          setActiveFontSize(subtitleSize);
-        } else {
-          const style = window.getComputedStyle(element);
-          const size = parseInt(style.fontSize, 10);
-          setActiveFontSize(size || 14);
-        }
+        const style = window.getComputedStyle(element);
+        const size = parseInt(style.fontSize, 10);
+        setActiveFontSize(size || 14);
       }
     } catch (_error) {
       // noop
@@ -9162,6 +9138,11 @@ export default function App() {
 
     event.preventDefault();
     const isBodyTarget = target === blankBodyRef.current;
+    if (!isBodyTarget) {
+      document.execCommand('insertText', false, plainText);
+      if (afterPaste) setTimeout(() => afterPaste(target), 0);
+      return;
+    }
     if (isBodyTarget && htmlText.trim()) {
       let cleanHtml = htmlText;
       // Strip Word/Office/WPS conditional comments and XML namespaces
@@ -9317,21 +9298,7 @@ export default function App() {
     const forceAppendToEnd = Boolean(options.forceAppendToEnd);
 
     const getFallbackDocumentTarget = () => {
-      if (blankBodyRef.current) {
-        return blankBodyRef.current;
-      }
-
-      if (!documentCardRef.current) {
-        return null;
-      }
-
-      const editableNodes = Array.from(documentCardRef.current.querySelectorAll('[contenteditable="true"]'));
-      if (!editableNodes.length) {
-        return null;
-      }
-
-      const nonHeaderNode = editableNodes.find((node) => node !== titleEditableRef.current && node !== subtitleEditableRef.current);
-      return nonHeaderNode || editableNodes[editableNodes.length - 1] || null;
+      return blankBodyRef.current || null;
     };
 
     const active = document.activeElement;
@@ -9400,11 +9367,7 @@ export default function App() {
     }
     normalizeEditableDirection(target);
 
-    if (target === titleEditableRef.current) {
-      setDocTitle(target.textContent || '');
-    } else if (target === subtitleEditableRef.current) {
-      setDocSubtitle(target.textContent || '');
-    } else if (target === blankBodyRef.current) {
+    if (target === blankBodyRef.current) {
       setIsBlankDocument(true);
       setDocBodyHtml(target.innerHTML);
       
@@ -12579,15 +12542,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
   };
 
   const isSelectionInHeader = () => {
-    const selection = window.getSelection();
-    if (!selection || !selection.rangeCount) return false;
-    const range = selection.getRangeAt(0);
-    const ancestor = range.commonAncestorContainer;
-    const targetNode = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-    return Boolean(targetNode && (
-      titleEditableRef.current?.contains(targetNode) ||
-      subtitleEditableRef.current?.contains(targetNode)
-    ));
+    return false;
   };
 
   const insertInlineIconSelector = () => {
@@ -14230,162 +14185,9 @@ Generate the updated output according to the instruction. Preserve layout and ta
     return true;
   };
 
-  const handleTitleKeyDown = (event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const offset = range.startOffset;
-        const text = titleEditableRef.current.textContent || '';
-        const beforeText = text.substring(0, offset);
-        const afterText = text.substring(offset);
-        if (afterText.length > 0) {
-          setDocTitle(beforeText);
-          if (titleEditableRef.current) {
-            titleEditableRef.current.textContent = beforeText;
-          }
-          const prevSubtitleText = subtitleEditableRef.current?.textContent || '';
-          setDocSubtitle(afterText + prevSubtitleText);
-          setTimeout(() => {
-            focusEditableNode(subtitleEditableRef.current, false);
-          }, 0);
-        } else {
-          focusEditableNode(subtitleEditableRef.current, false);
-        }
-      } else {
-        focusEditableNode(subtitleEditableRef.current, false);
-      }
-    } else if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      focusEditableNode(subtitleEditableRef.current, false);
-    }
-  };
 
-  const handleSubtitleKeyDown = (event) => {
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      focusEditableNode(titleEditableRef.current, true);
-    } else if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        const offset = range.startOffset;
-        const text = subtitleEditableRef.current.textContent || '';
-        const beforeText = text.substring(0, offset);
-        const afterText = text.substring(offset);
-
-        if (afterText.length > 0) {
-          setDocSubtitle(beforeText);
-          if (subtitleEditableRef.current) {
-            subtitleEditableRef.current.textContent = beforeText;
-            
-            // Reset subtitle custom styles to fallback to default styling
-            subtitleEditableRef.current.style.fontSize = '';
-            subtitleEditableRef.current.style.fontWeight = '';
-            subtitleEditableRef.current.style.color = '';
-            subtitleEditableRef.current.style.fontStyle = '';
-            subtitleEditableRef.current.style.textDecoration = '';
-          }
-
-          // Create a new element at the start of blankBodyRef using the saved element structure to preserve all formats/styles
-          let newBlock;
-          if (lastMergedBlockRef.current) {
-            newBlock = lastMergedBlockRef.current.cloneNode(true);
-            const replaceTextInDOM = (node, newText) => {
-              if (node.nodeType === Node.TEXT_NODE) {
-                node.textContent = newText;
-                return true;
-              }
-              if (node.childNodes.length === 0 && node.nodeType === Node.ELEMENT_NODE) {
-                node.appendChild(document.createTextNode(newText));
-                return true;
-              }
-              let replaced = false;
-              for (let child of node.childNodes) {
-                if (replaceTextInDOM(child, replaced ? '' : newText)) {
-                  replaced = true;
-                }
-              }
-              return replaced;
-            };
-            replaceTextInDOM(newBlock, afterText);
-          } else {
-            newBlock = document.createElement('p');
-            newBlock.textContent = afterText;
-          }
-
-          if (blankBodyRef.current) {
-            if (blankBodyRef.current.firstChild) {
-              blankBodyRef.current.insertBefore(newBlock, blankBodyRef.current.firstChild);
-            } else {
-              blankBodyRef.current.appendChild(newBlock);
-            }
-            setDocBodyHtml(blankBodyRef.current.innerHTML);
-            
-            // Reset to default
-            lastMergedBlockRef.current = null;
-
-            setTimeout(() => {
-              focusEditableNode(newBlock, false);
-            }, 0);
-          }
-        } else {
-          focusEditableNode(blankBodyRef.current, false);
-        }
-      } else {
-        focusEditableNode(blankBodyRef.current, false);
-      }
-    } else if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      focusEditableNode(blankBodyRef.current, false);
-    } else if (event.key === 'Backspace') {
-      if (isSelectionAtStartOfNode(subtitleEditableRef.current)) {
-        event.preventDefault();
-        
-        // Reset subtitle custom styles
-        if (subtitleEditableRef.current) {
-          subtitleEditableRef.current.style.fontSize = '';
-          subtitleEditableRef.current.style.fontWeight = '';
-          subtitleEditableRef.current.style.color = '';
-          subtitleEditableRef.current.style.fontStyle = '';
-          subtitleEditableRef.current.style.textDecoration = '';
-        }
-
-        const subtitleText = subtitleEditableRef.current.textContent || '';
-        const originalTitleLength = docTitle.length;
-        setDocSubtitle('');
-        setDocTitle(prev => prev + subtitleText);
-        setTimeout(() => {
-          focusEditableNodeAtOffset(titleEditableRef.current, originalTitleLength);
-        }, 0);
-      }
-    }
-  };
 
   const handleEditorKeyDown = (event) => {
-    if (event.key === 'Backspace' || event.key === 'Delete') {
-      const selection = window.getSelection();
-      if (selection && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        if (!range.collapsed) {
-          const title = titleEditableRef.current;
-          const subtitle = subtitleEditableRef.current;
-          const body = blankBodyRef.current;
-          const hasTitleOrSub = (title && (title.contains(range.startContainer) || title.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(title)))) ||
-                                (subtitle && (subtitle.contains(range.startContainer) || subtitle.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(subtitle))));
-          const hasBody = body && (body.contains(range.startContainer) || body.contains(range.endContainer) || (range.intersectsNode && range.intersectsNode(body)));
-          if (hasTitleOrSub && hasBody) {
-            event.preventDefault();
-            clearEntireCompositionText();
-            wholeDocSelectionRef.current = false;
-            return;
-          }
-        }
-      }
-    }
-
     // Use nativeEvent for dedup flag ??React 18 creates separate SyntheticEvent
     // objects for capture vs bubble handlers, so we must tag the native event.
     if (event.nativeEvent._editorHandled) return;
@@ -14430,57 +14232,6 @@ Generate the updated output according to the instruction. Preserve layout and ta
           }
         }
       }
-    }
-
-    if (event.key === 'ArrowUp' && isSelectionAtStartOfNode(blankBodyRef.current)) {
-      event.preventDefault();
-      focusEditableNode(subtitleEditableRef.current, true);
-      return;
-    }
-    if (event.key === 'Backspace' && isSelectionAtStartOfNode(blankBodyRef.current)) {
-      event.preventDefault();
-      // Remove any leading comment nodes first to avoid merging comment strings like "StartFragment"
-      while (blankBodyRef.current?.firstChild && blankBodyRef.current.firstChild.nodeType === Node.COMMENT_NODE) {
-        blankBodyRef.current.firstChild.remove();
-      }
-      const firstChild = blankBodyRef.current?.firstChild;
-      if (firstChild) {
-        const mergedText = firstChild.textContent || '';
-        lastMergedBlockRef.current = firstChild.cloneNode(true); // Save the cloned node structure!
-        
-        // Copy computed styles to subtitleEditableRef to preserve visual formatting
-        const sourceElement = firstChild.nodeType === Node.ELEMENT_NODE ? firstChild : null;
-        if (sourceElement && subtitleEditableRef.current) {
-          const computed = window.getComputedStyle(sourceElement);
-          subtitleEditableRef.current.style.fontSize = computed.fontSize;
-          subtitleEditableRef.current.style.fontWeight = computed.fontWeight;
-          subtitleEditableRef.current.style.color = computed.color;
-          subtitleEditableRef.current.style.fontStyle = computed.fontStyle;
-          subtitleEditableRef.current.style.textDecoration = computed.textDecoration;
-          
-          const innerSpan = sourceElement.querySelector('span');
-          if (innerSpan) {
-            const innerComputed = window.getComputedStyle(innerSpan);
-            subtitleEditableRef.current.style.fontSize = innerComputed.fontSize;
-            subtitleEditableRef.current.style.fontWeight = innerComputed.fontWeight;
-            subtitleEditableRef.current.style.color = innerComputed.color;
-            subtitleEditableRef.current.style.fontStyle = innerComputed.fontStyle;
-            subtitleEditableRef.current.style.textDecoration = innerComputed.textDecoration;
-          }
-        }
-
-        firstChild.remove();
-        setDocBodyHtml(blankBodyRef.current.innerHTML);
-        
-        const originalSubtitleLength = docSubtitle.length;
-        setDocSubtitle(prev => prev + mergedText);
-        setTimeout(() => {
-          focusEditableNodeAtOffset(subtitleEditableRef.current, originalSubtitleLength);
-        }, 0);
-      } else {
-        focusEditableNode(subtitleEditableRef.current, true);
-      }
-      return;
     }
 
     // Handle slash menu key interactions FIRST (before opening a new menu)
@@ -19104,8 +18855,8 @@ Rules:
       const isCurrent = activeDocId === docId;
       return {
         ...target,
-        title: isCurrent ? (titleEditableRef.current?.innerText || target.title) : target.title,
-        subtitle: isCurrent ? (subtitleEditableRef.current?.innerText || target.subtitle) : target.subtitle,
+        title: isCurrent ? docTitle : target.title,
+        subtitle: isCurrent ? docSubtitle : target.subtitle,
         bodyHtml: isCurrent ? sanitizeHtmlForExport(blankBodyRef.current?.innerHTML || target.bodyHtml) : sanitizeHtmlForExport(target.bodyHtml)
       };
     }
@@ -19589,8 +19340,8 @@ Respond with a JSON array of slide objects matching the schema.`;
 
       const ancestor = activeRange.commonAncestorContainer;
       const targetNode = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-      const insideTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
-      const insideSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+      const insideTitle = false;
+      const insideSubtitle = false;
 
       if (insideTitle) {
         setEditorSize(safeSize);
@@ -19688,15 +19439,9 @@ Respond with a JSON array of slide objects matching the schema.`;
       const ancestor = range.commonAncestorContainer;
       const element = ancestor.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
       if (element) {
-        if (titleEditableRef.current && titleEditableRef.current.contains(element)) {
-          setActiveFontSize(editorSize);
-        } else if (subtitleEditableRef.current && subtitleEditableRef.current.contains(element)) {
-          setActiveFontSize(subtitleSize);
-        } else {
-          const style = window.getComputedStyle(element);
-          const size = parseInt(style.fontSize, 10);
-          setActiveFontSize(size || 14);
-        }
+        const style = window.getComputedStyle(element);
+        const size = parseInt(style.fontSize, 10);
+        setActiveFontSize(size || 14);
       }
     } catch (_error) {
       // noop
@@ -22642,9 +22387,6 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 value={docTitle}
                                 onChange={(e) => {
                                   setDocTitle(e.target.value);
-                                  if (titleEditableRef.current) {
-                                    titleEditableRef.current.textContent = e.target.value;
-                                  }
                                 }}
                                 onBlur={() => setIsEditingTitleFromPanel(false)}
                                 onKeyDown={(e) => {
@@ -35795,8 +35537,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           const range = getEditorSelectionRange();
                           const ancestor = range?.commonAncestorContainer;
                           const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-                          const isTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
-                          const isSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+                          const isTitle = false;
+                          const isSubtitle = false;
                           
                           if (isTitle) {
                             setEditorSize(nextHeading.size);
@@ -35932,8 +35674,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 const range = getEditorSelectionRange();
                 const ancestor = range?.commonAncestorContainer;
                 const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-                const isTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
-                const isSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+                const isTitle = false;
+                const isSubtitle = false;
                 
                 if (isTitle) {
                   setEditorSize(nextSize);
@@ -35973,8 +35715,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           const range = getEditorSelectionRange();
                           const ancestor = range?.commonAncestorContainer;
                           const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-                          const isTitle = Boolean(targetNode && titleEditableRef.current && titleEditableRef.current.contains(targetNode));
-                          const isSubtitle = Boolean(targetNode && subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+                          const isTitle = false;
+                           const isSubtitle = false;
                           
                           if (isTitle) {
                             setEditorSize(option);
@@ -38934,42 +38676,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             )}
 
             
-            {/* Title & Subtitle */}
-            <div
-              ref={titleEditableRef}
-              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-              suppressContentEditableWarning
-              onInput={(e) => {
-                normalizeEditableDirection(e.currentTarget);
-                setDocTitle(e.currentTarget.textContent || '');
-              }}
-              onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocTitle(target.textContent || ''))}
-              onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocTitle, e)}
-              onKeyDown={handleTitleKeyDown}
-              dir="ltr"
-              data-doc-id={activeDocId || ''}
-              className="w-full text-gray-900 leading-tight mb-2 tracking-tight border-none outline-none focus:ring-0 bg-transparent font-semibold title-editable"
-              style={{ fontSize: `${editorSize}px`, fontFamily: editorFont, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              data-placeholder={showHeaderGhostPlaceholder ? AI_NATIVE_PLACEHOLDER : ""}
-            />
-            
-            <div
-              ref={subtitleEditableRef}
-              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-              suppressContentEditableWarning
-              onInput={(e) => {
-                normalizeEditableDirection(e.currentTarget);
-                setDocSubtitle(e.currentTarget.textContent || '');
-              }}
-              onPaste={(e) => handleEditablePaste(e, AI_NATIVE_PLACEHOLDER, (target) => setDocSubtitle(target.textContent || ''))}
-              onBlur={(e) => commitEditableTextForActiveDoc(e.currentTarget, setDocSubtitle, e)}
-              onKeyDown={handleSubtitleKeyDown}
-              dir="ltr"
-              data-doc-id={activeDocId || ''}
-              className="w-full text-[17px] text-gray-500 mb-10 leading-relaxed max-w-2xl border-none outline-none resize-none focus:ring-0 bg-transparent min-h-14 subtitle-editable"
-              style={{ fontFamily: editorFont, fontSize: `${subtitleSize}px`, textAlign: alignMode, direction: 'ltr', unicodeBidi: 'plaintext' }}
-              data-placeholder={showHeaderGhostPlaceholder ? "Write, speak, or collaborate. Compose handles the rest." : ""}
-            />
+
 
             {isBlankDocument && (
               <div style={{ position: 'relative' }}>
