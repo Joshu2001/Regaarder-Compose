@@ -2087,7 +2087,7 @@ export default function App() {
     };
   }, []);
 
-  const [leftSidebarWidth, setLeftSidebarWidth] = useState(256);
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(320);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
 
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
