@@ -41719,7 +41719,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   { tag: "H3", label: "H₃", tooltip: "Heading 3" },
                   { tag: "H4", label: "H₄", tooltip: "Heading 4" }
                 ].map((item) => {
-                  const isActive = dragHandleMenu.node?.tagName === item.tag;
+                  const isActive = item.tag === "P"
+                    ? (dragHandleMenu.node?.tagName === "P" || dragHandleMenu.node?.tagName === "DIV")
+                    : dragHandleMenu.node?.tagName === item.tag;
                   return (
                     <button
                       key={item.tag}
@@ -41728,7 +41730,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onClick={() => changeBlockTag(dragHandleMenu.node, item.tag)}
                       className={`h-8 rounded-lg text-xs flex items-center justify-center border transition-all ${
                         isActive 
-                          ? "bg-slate-50/50 border-slate-200/70 text-slate-900 font-bold" 
+                          ? "bg-slate-100/80 border-slate-200/80 text-slate-900 font-bold" 
                           : "bg-white/40 border-slate-200/50 hover:bg-slate-50/50 hover:border-slate-300/40 text-slate-700 font-semibold"
                       }`}
                     >
@@ -41754,7 +41756,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onClick={() => changeBlockAlign(dragHandleMenu.node, item.align)}
                       className={`h-8 rounded-lg flex items-center justify-center border transition-all ${
                         isActive 
-                          ? "bg-slate-50/50 border-slate-200/70 text-slate-900 font-bold" 
+                          ? "bg-slate-100/80 border-slate-200/80 text-slate-900 font-bold" 
                           : "bg-white/40 border-slate-200/50 hover:bg-slate-50/50 hover:border-slate-300/40 text-slate-700 font-semibold"
                       }`}
                     >
