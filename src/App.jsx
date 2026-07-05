@@ -24653,15 +24653,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           <span className="text-[9px] font-semibold">Chat</span>
         </div>
 
-        <div
-          className="transition-all duration-300 ease-in-out overflow-hidden flex flex-col items-center justify-center"
-          style={{
-            height: comments.length > 0 ? '48px' : '0px',
-            opacity: comments.length > 0 ? 1 : 0,
-            pointerEvents: comments.length > 0 ? 'auto' : 'none',
-            transform: comments.length > 0 ? 'scale(1)' : 'scale(0.8)',
-          }}
-        >
+        {comments.length > 0 && (
           <div
             onClick={() => handleMiniSidebarClick('comments')}
             className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
@@ -24670,15 +24662,13 @@ Respond with a JSON array of slide objects matching the schema.`;
           >
             <div className={`p-2 rounded-xl transition-all relative ${activeRightTab === 'comments' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
               {selectedEditorText ? <MessageSquarePlus size={20} /> : <MessageSquareText size={20} />}
-              {comments.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold">
-                  {comments.filter(c => !c.resolved).length}
-                </span>
-              )}
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold animate-scale-in">
+                {comments.filter(c => !c.resolved).length}
+              </span>
             </div>
             <span className="text-[9px] font-semibold">Comments</span>
           </div>
-        </div>
+        )}
 
         <div
           onClick={() => handleMiniSidebarClick('dm')}
@@ -24824,37 +24814,22 @@ Respond with a JSON array of slide objects matching the schema.`;
   const sharedReplayPanel = (
     <React.Fragment>
         {replayPanelOpen && (
-          <div ref={replayPanelRef} className="absolute right-6 top-16 z-[260] w-[430px] overflow-visible rounded-2xl border border-slate-200/60 bg-white/95 backdrop-blur-md shadow-[0_24px_50px_-15px_rgba(15,23,42,0.15),0_0_1px_rgba(0,0,0,0.06)]">
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100/80 px-5 py-4">
-              <div>
-                <div className="text-[13px] font-semibold text-slate-900 tracking-tight">Edit replay</div>
-                <div className="mt-0.5 text-[11px] font-medium text-slate-400">
-                  {replayTimeline.length
-                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps • ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
-                    : 'Start typing or editing to build a replay history'}
-                </div>
-                {replayTimeline.length > 0 && (
-                  <div className="mt-2 flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-50/50 px-2.5 py-1.5 rounded-xl border border-slate-100/60">
-                    <span className="font-semibold text-slate-500 uppercase tracking-wider">Version:</span>
-                    <span>{new Date(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp || Date.now()).toISOString().replace('T', ' ').substring(0, 19)}</span>
-                    <span className="ml-auto text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded-md font-semibold tracking-tight">ID: {replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.id?.slice(0,8) || 'genesis'}</span>
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setReplayPanelOpen(false);
-                  setIsReplayPlaying(false);
-                }}
-                className="rounded-xl p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all duration-150 active:scale-95 border border-transparent hover:border-slate-100"
-                title="Close replay"
-              >
-                <X size={15} />
-              </button>
+          <div 
+            ref={replayPanelRef} 
+            className="absolute right-6 top-16 z-[260] w-[380px] rounded-2xl bg-white/90 backdrop-blur-xl shadow-[0_32px_64px_-16px_rgba(15,23,42,0.18),0_0_1px_rgba(0,0,0,0.08)] p-6 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] animate-in fade-in zoom-in-95 select-none border border-slate-200/40"
+          >
+            {/* Header Section: Title, and lightweight step information */}
+            <div className="flex flex-col gap-1 mb-6 text-center">
+              <h4 className="text-[14px] font-bold text-slate-800 tracking-tight">Edit Replay</h4>
+              <p className="text-[11px] font-semibold text-slate-400">
+                {replayTimeline.length
+                  ? `Step ${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length}`
+                  : 'No edit history yet'}
+              </p>
             </div>
 
-            <div className="space-y-4 px-5 py-4">
+            {/* Scrubber Area: Range Slider and Labels */}
+            <div className="mb-6">
               <input
                 type="range"
                 min="0"
@@ -24862,73 +24837,79 @@ Respond with a JSON array of slide objects matching the schema.`;
                 value={Math.max(0, replayIndex ?? Math.max(0, replayTimeline.length - 1))}
                 onChange={(event) => applyReplayIndex(Number(event.target.value))}
                 disabled={!replayTimeline.length}
-                className="w-full accent-violet-600 cursor-pointer h-1.5 bg-slate-150 rounded-lg appearance-none outline-none"
+                className="premium-timeline-slider"
                 title="Scrub through edit steps"
               />
-
-              <div className="flex items-center justify-between text-[11px] font-medium text-slate-400">
+              <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 mt-2 tracking-wide uppercase">
                 <span>
                   {replayTimeline.length && replayTimeline[0]?.timestamp && replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp
                     ? formatReplayDuration(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)].timestamp - replayTimeline[0].timestamp)
                     : '0:00'}
                 </span>
-                <span>{replayTimeline.length ? `Step ${Math.max(0, replayIndex ?? replayTimeline.length - 1) + 1}` : 'No steps yet'}</span>
+                <span>
+                  {replayTimeline.length
+                    ? formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))
+                    : '0:00'}
+                </span>
               </div>
+            </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => applyReplayIndex((replayIndex ?? replayTimeline.length - 1) - 1)}
-                  disabled={!replayTimeline.length || (replayIndex ?? replayTimeline.length - 1) <= 0}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200/70 bg-white px-3 py-2.5 text-[12px] font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 shadow-sm"
-                  title="Move one step backward"
-                >
-                  <Undo2 size={13} />
-                  Step Back
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleSmartReplayPlayback}
-                  disabled={!replayTimeline.length}
-                  className={`flex-1 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2.5 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-40 transition-all duration-200 active:scale-95 shadow-sm ${
-                    isReplayPlaying 
-                      ? 'border border-violet-500 bg-violet-50/30 text-violet-900 ring-1 ring-violet-500/20 outline-violet-500' 
-                      : 'bg-violet-600 text-white hover:bg-violet-750'
-                  }`}
-                  title={isReplayPlaying ? 'Pause replay' : (getSmartReplayDirection() < 0 ? 'Play backward toward earlier edits' : 'Play forward toward latest edits')}
-                >
-                  {isReplayPlaying ? <Pause size={13} /> : <Play size={13} />}
-                  Rewind
-                </button>
-                <button
-                  type="button"
-                  onClick={() => applyReplayIndex((replayIndex ?? 0) + 1)}
-                  disabled={!replayTimeline.length || (replayIndex ?? 0) >= replayTimeline.length - 1}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200/70 bg-white px-3 py-2.5 text-[12px] font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 shadow-sm"
-                  title="Move one step forward"
-                >
-                  <Redo2 size={13} />
-                  Step Forward
-                </button>
-              </div>
+            {/* Main Action Controls: Play (Focal Point), Back & Forward (De-emphasized) */}
+            <div className="flex items-center justify-center gap-6 mb-6">
+              <button
+                type="button"
+                onClick={() => applyReplayIndex((replayIndex ?? replayTimeline.length - 1) - 1)}
+                disabled={!replayTimeline.length || (replayIndex ?? replayTimeline.length - 1) <= 0}
+                className="p-2.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all duration-150 active:scale-90 disabled:opacity-25 disabled:hover:bg-transparent"
+                title="Step backward"
+              >
+                <Undo2 size={16} strokeWidth={2.5} />
+              </button>
 
-              <div className="flex items-center justify-between gap-2 pt-1" ref={replaySpeedMenuRef}>
-                <label className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Playback Speed</label>
-                <div className="relative">
+              <button
+                type="button"
+                onClick={toggleSmartReplayPlayback}
+                disabled={!replayTimeline.length}
+                className={`w-[56px] h-[56px] rounded-full flex items-center justify-center transition-all duration-200 hover:scale-[1.03] active:translate-y-[2px] active:scale-[0.97] ${
+                  isReplayPlaying 
+                    ? 'border-2 border-[#6441E5] bg-[#6441E5]/5 text-[#6441E5] outline-[#6441E5] font-bold shadow-none' 
+                    : 'bg-[#6441E5] hover:bg-[#5332cc] text-white shadow-[0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_16px_rgba(100,65,229,0.22)]'
+                }`}
+                title={isReplayPlaying ? 'Pause replay' : (getSmartReplayDirection() < 0 ? 'Play backward' : 'Play forward')}
+              >
+                {isReplayPlaying ? <Pause size={20} strokeWidth={3} /> : <Play size={20} className="ml-1" strokeWidth={3} />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => applyReplayIndex((replayIndex ?? 0) + 1)}
+                disabled={!replayTimeline.length || (replayIndex ?? 0) >= replayTimeline.length - 1}
+                className="p-2.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all duration-150 active:scale-90 disabled:opacity-25 disabled:hover:bg-transparent"
+                title="Step forward"
+              >
+                <Redo2 size={16} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Auxiliary Options: Speed & Share Replay & Metadata */}
+            <div className="mt-6 pt-5 border-t border-slate-100/50 space-y-4">
+              <div className="flex items-center justify-between">
+                {/* Playback Speed selector */}
+                <div className="relative" ref={replaySpeedMenuRef}>
                   <button
                     type="button"
                     onClick={() => {
                       setNotificationsOpen(false);
                       setReplaySpeedMenuOpen((prev) => !prev);
                     }}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-all duration-200 active:scale-95 shadow-sm"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-700 transition-colors tracking-tight"
                     title="Playback speed"
                   >
-                    <span>{replaySpeed}x</span>
-                    <ChevronDown size={13} className={`transition-transform ${replaySpeedMenuOpen ? 'rotate-180' : ''}`} />
+                    <span>Speed · {replaySpeed}×</span>
+                    <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${replaySpeedMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {replaySpeedMenuOpen && (
-                    <div className="absolute right-0 top-[34px] z-[320] w-[110px] rounded-xl border border-slate-200 bg-white shadow-[0_12px_24px_-8px_rgba(0,0,0,0.1),0_0_1px_rgba(0,0,0,0.08)] p-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="absolute left-0 top-full mt-2 z-[320] w-[110px] rounded-xl border border-slate-200/80 bg-white shadow-[0_12px_24px_-8px_rgba(0,0,0,0.1),0_0_1px_rgba(0,0,0,0.08)] p-1 animate-in fade-in slide-in-from-top-2 duration-150">
                       {[0.5, 1, 1.5, 2, 3, 4, 5].map((speedOption) => (
                         <button
                           key={speedOption}
@@ -24937,27 +24918,39 @@ Respond with a JSON array of slide objects matching the schema.`;
                             setReplaySpeed(speedOption);
                             setReplaySpeedMenuOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] ${replaySpeed === speedOption ? 'bg-violet-50/50 text-violet-700 font-semibold' : 'text-slate-650 hover:bg-slate-50/80'}`}
+                          className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-xs ${replaySpeed === speedOption ? 'bg-[#6441E5]/5 text-[#6441E5] font-semibold' : 'text-slate-650 hover:bg-slate-50/80'}`}
                         >
                           <span>{speedOption}x</span>
-                          {replaySpeed === speedOption && <Check size={11} className="text-violet-600 stroke-[3]" />}
+                          {replaySpeed === speedOption && <Check size={11} className="text-[#6441E5] stroke-[3]" />}
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
+
+                {/* Share Button */}
+                <button
+                  type="button"
+                  onClick={shareReplayTimeline}
+                  disabled={!replayTimeline.length || replaySharing}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-700 transition-colors tracking-tight disabled:opacity-40"
+                  title="Copy a replay link that other users can open and play"
+                >
+                  <LinkIcon size={12} strokeWidth={2.5} className="text-slate-500" />
+                  <span>{replaySharing ? 'Link...' : 'Share'}</span>
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={shareReplayTimeline}
-                disabled={!replayTimeline.length || replaySharing}
-                className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-2.5 text-[12px] font-semibold text-slate-700 transition-all duration-200 active:scale-95 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
-                title="Copy a replay link that other users can open and play"
-              >
-                <LinkIcon size={14} />
-                {replaySharing ? 'Preparing Link...' : 'Share Replay'}
-              </button>
+              {replayTimeline.length > 0 && (
+                <div className="flex items-center justify-between text-[10px] font-medium tracking-tight pt-1 border-t border-slate-100/30 text-slate-400/40">
+                  <span>
+                    Updated {new Date(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span>
+                    Version {replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.id?.slice(0,8) || 'genesis'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -42208,297 +42201,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {/* Floating Volume Icon / TTS Controls */}
-      {productMode !== 'landing' && (
-      <div
-        onPointerDown={handleVolumePointerDown}
-        onPointerMove={handleVolumePointerMove}
-        onPointerUp={handleVolumePointerUp}
-        className={`fixed flex items-center gap-2 rounded-full shadow-lg z-50 transition-colors ${
-          isReadingAloud ? 'bg-white border border-violet-200 text-violet-600 p-2' : 'bg-white text-violet-600 border border-violet-200 hover:bg-violet-50 p-4 cursor-pointer'
-        }`}
-        style={{
-          left: volumeBtnPos.x !== null ? `${volumeBtnPos.x}px` : 'auto',
-          top: volumeBtnPos.y !== null ? `${volumeBtnPos.y}px` : 'auto',
-          bottom: volumeBtnPos.y !== null ? 'auto' : '1.5rem',
-          right: volumeBtnPos.x !== null ? 'auto' : '1.5rem',
-          touchAction: 'none',
-          cursor: isDraggingVolume ? 'grabbing' : 'grab',
-        }}
-        title="Read document out loud (Drag to reposition)"
-        onClick={(e) => {
-          if (volumeDraggedRef.current || isReadingAloud) return;
-          
-          let textToRead = '';
-          let startNode = null;
-          
-          const selection = window.getSelection();
-          if (selection && selection.toString().trim() !== '') {
-            textToRead = selection.toString();
-          } else {
-            textToRead = blankBodyRef.current ? blankBodyRef.current.innerText : document.body.innerText;
-          }
-          
-          if (!textToRead || textToRead.trim() === '') {
-            showToast('No text available to read.');
-            return;
-          }
-          
-          const utterance = new SpeechSynthesisUtterance(textToRead);
-          utterance.rate = ttsSpeed;
-          setTtsUtterance(utterance);
-          
-          let lastMark = null;
-          
-          utterance.onboundary = (event) => {
-            if (event.name !== 'word') return;
-            
-            // Clean up last highlight
-            if (lastMark && lastMark.parentNode) {
-              const parent = lastMark.parentNode;
-              parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
-              parent.normalize();
-              lastMark = null;
-            }
-            
-            const word = event.currentTarget.text.substring(event.charIndex).split(/[\s.,!?]/)[0];
-            if (!word || !blankBodyRef.current) return;
-            
-            const walker = document.createTreeWalker(blankBodyRef.current, NodeFilter.SHOW_TEXT, null, false);
-            let node;
-            while ((node = walker.nextNode())) {
-              const idx = node.nodeValue.indexOf(word);
-              if (idx !== -1) {
-                const mark = document.createElement('mark');
-                mark.className = 'tts-highlight';
-                mark.textContent = word;
-                const parent = node.parentNode;
-                
-                const before = node.nodeValue.substring(0, idx);
-                const after = node.nodeValue.substring(idx + word.length);
-                
-                const fragment = document.createDocumentFragment();
-                if (before) fragment.appendChild(document.createTextNode(before));
-                fragment.appendChild(mark);
-                if (after) fragment.appendChild(document.createTextNode(after));
-                
-                parent.replaceChild(fragment, node);
-                lastMark = mark;
-                mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                break;
-              }
-            }
-          };
-          
-          utterance.onend = () => {
-            setIsReadingAloud(false);
-            setTtsPaused(false);
-            setTtsUtterance(null);
-            if (lastMark && lastMark.parentNode) {
-              const parent = lastMark.parentNode;
-              parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
-              parent.normalize();
-            }
-          };
-          
-          window.speechSynthesis.speak(utterance);
-          setIsReadingAloud(true);
-          setTtsPaused(false);
-        }}
-      >
-        {!isReadingAloud ? (
-          <Volume2 size={24} className="pointer-events-none" />
-        ) : (
-          <div className="flex items-center gap-1.5 px-2">
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (ttsPaused) {
-                  window.speechSynthesis.resume();
-                  setTtsPaused(false);
-                } else {
-                  window.speechSynthesis.pause();
-                  setTtsPaused(true);
-                }
-              }}
-              className="p-1.5 hover:bg-violet-100 rounded-full text-violet-700 transition-colors"
-              title={ttsPaused ? 'Resume' : 'Pause'}
-            >
-              {ttsPaused ? <Play size={18} /> : <Pause size={18} />}
-            </button>
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                window.speechSynthesis.cancel();
-                setIsReadingAloud(false);
-                setTtsPaused(false);
-                setTtsUtterance(null);
-              }}
-              className="p-1.5 hover:bg-red-50 text-red-600 rounded-full transition-colors"
-              title="Stop"
-            >
-              <Square size={16} fill="currentColor" />
-            </button>
-            <div className="w-px h-4 bg-violet-200 mx-1"></div>
-            <select
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-              value={ttsSpeed}
-              onChange={(e) => {
-                e.stopPropagation();
-                const newSpeed = parseFloat(e.target.value);
-                setTtsSpeed(newSpeed);
-                // Changing speed mid-speech isn't universally supported in all browsers without restarting utterance.
-                // But we can try setting the rate. Note: standard synthesis might need a cancel & restart to take effect properly.
-                if (ttsUtterance) {
-                    window.speechSynthesis.cancel();
-                    // Just reset the state; the user can click play again to restart from the beginning with the new speed
-                    setIsReadingAloud(false);
-                    setTtsPaused(false);
-                    setTtsUtterance(null);
-                    showToast('Speed changed. Click play again.');
-                }
-              }}
-              className="bg-transparent text-[10px] font-bold text-violet-700 outline-none cursor-pointer"
-              title="Reading Speed"
-            >
-              <option value="0.75">0.75x</option>
-              <option value="1">1x</option>
-              <option value="1.25">1.25x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2">2x</option>
-              <option value="2.5">2.5x</option>
-            </select>
-          </div>
-        )}
-      </div>
-      )}
-
-      {/* Gesture visual cues */}
-      {gestureRipples.map(r => (
-        <div
-          key={r.id}
-          className="fixed pointer-events-none z-[99999] rounded-full border border-violet-500/30 bg-violet-500/10 animate-gesture-ripple"
-          style={{
-            left: r.x - 20,
-            top: r.y - 20,
-            width: 40,
-            height: 40,
-          }}
-        />
-      ))}
-
-      {gestureNotification && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] pointer-events-none animate-gesture-pill-in">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/90 backdrop-blur-md text-white text-xs font-semibold shadow-xl border border-white/10">
-            <Sparkles size={14} className="text-violet-400 animate-pulse" />
-            <span>{gestureNotification.label}</span>
-          </div>
-        </div>
-      )}
-
-        {!isComposing && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
-          <div 
-            className="pointer-events-none fixed z-[500] flex items-center justify-center"
-            style={{
-              left: `${dictationAnchor.left}px`,
-              top: `${dictationAnchor.top}px`,
-              transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
-            }}
-          >
-            <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/70 backdrop-blur-sm px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.35)] border border-white/70">
-              <button
-                type="button"
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  beginPanelResize('dictation', event);
-                }}
-                className="inline-flex items-center gap-2 text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1 cursor-move touch-none hover:border-violet-300 hover:text-violet-700"
-                title="Drag dictation"
-              >
-                <Move size={12} />
-                Drag dictation
-              </button>
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={async () => {
-                  await toggleVoiceRecording('document');
-                }}
-                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${
-                  isVoiceActive && voiceTarget === 'document' 
-                    ? (isVoiceCommandMode 
-                        ? 'border-indigo-400 bg-indigo-50 shadow-[0_0_0_6px_rgba(99,102,241,0.22),0_0_35px_rgba(99,102,241,0.65)] animate-pulse' 
-                        : 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]') 
-                    : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'
-                }`}
-                title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
-              >
-                <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
-                {isVoiceActive && voiceTarget === 'document' && (
-                  <>
-                    <span className={`absolute inset-0 rounded-full border-2 animate-ping ${isVoiceCommandMode ? 'border-indigo-300' : 'border-violet-300'}`}></span>
-                    <span className={`absolute -inset-2 rounded-full border animate-pulse ${isVoiceCommandMode ? 'border-indigo-200/80' : 'border-violet-200/80'}`}></span>
-                  </>
-                )}
-              </button>
-              <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-xl px-4 py-2 max-w-[200px] text-center break-words shadow-sm">
-                {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
-              </div>
-              {isVoiceActive && voiceTarget === 'document' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    isVoiceActiveRef.current = false;
-                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
-                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
-                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
-                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
-                    const tracks = audioStreamRef.current?.getTracks(); if (tracks) tracks.forEach(t => t.stop());
-                    audioStreamRef.current = null;
-                    setIsVoiceActive(false);
-                    setLiveSpeechInterimText('');
-                    setIsVoiceCommandMode(false);
-                    isVoiceCommandModeRef.current = false;
-                    setVoiceCommandBuffer('');
-        voiceCommandBufferRef.current = '';
-        commandModeActivatedAtRef.current = 0;
-        commandModeLastInputAtRef.current = 0;
-                  }}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    isVoiceActiveRef.current = false;
-                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
-                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
-                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
-                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
-                    const trk = audioStreamRef.current?.getTracks(); if (trk) trk.forEach(t => t.stop());
-                    audioStreamRef.current = null;
-                    setIsVoiceActive(false);
-                    setLiveSpeechInterimText('');
-                    setIsVoiceCommandMode(false);
-                    isVoiceCommandModeRef.current = false;
-                    setVoiceCommandBuffer('');
-        voiceCommandBufferRef.current = '';
-        commandModeActivatedAtRef.current = 0;
-        commandModeLastInputAtRef.current = 0;
-                  }}
-                  className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
-                >
-                  {isVoiceCommandMode ? 'Cancel AI Prompt' : 'Dismiss'}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
       {settingsModalOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
           {/* Backdrop with a very subtle blur */}
@@ -42720,6 +42422,298 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
       
+      {/* Floating Volume Icon / TTS Controls */}
+      {productMode !== 'landing' && (
+      <div
+        onPointerDown={handleVolumePointerDown}
+        onPointerMove={handleVolumePointerMove}
+        onPointerUp={handleVolumePointerUp}
+        className={`fixed flex items-center gap-2 rounded-full shadow-lg z-50 transition-colors ${
+          isReadingAloud ? 'bg-white border border-violet-200 text-violet-600 p-2' : 'bg-white text-violet-600 border border-violet-200 hover:bg-violet-50 p-4 cursor-pointer'
+        }`}
+        style={{
+          left: volumeBtnPos.x !== null ? `${volumeBtnPos.x}px` : 'auto',
+          top: volumeBtnPos.y !== null ? `${volumeBtnPos.y}px` : 'auto',
+          bottom: volumeBtnPos.y !== null ? 'auto' : '1.5rem',
+          right: volumeBtnPos.x !== null ? 'auto' : '1.5rem',
+          touchAction: 'none',
+          cursor: isDraggingVolume ? 'grabbing' : 'grab',
+        }}
+        title="Read document out loud (Drag to reposition)"
+        onClick={(e) => {
+          if (volumeDraggedRef.current || isReadingAloud) return;
+          
+          let textToRead = '';
+          let startNode = null;
+          
+          const selection = window.getSelection();
+          if (selection && selection.toString().trim() !== '') {
+            textToRead = selection.toString();
+          } else {
+            textToRead = blankBodyRef.current ? blankBodyRef.current.innerText : document.body.innerText;
+          }
+          
+          if (!textToRead || textToRead.trim() === '') {
+            showToast('No text available to read.');
+            return;
+          }
+          
+          const utterance = new SpeechSynthesisUtterance(textToRead);
+          utterance.rate = ttsSpeed;
+          setTtsUtterance(utterance);
+          
+          let lastMark = null;
+          
+          utterance.onboundary = (event) => {
+            if (event.name !== 'word') return;
+            
+            // Clean up last highlight
+            if (lastMark && lastMark.parentNode) {
+              const parent = lastMark.parentNode;
+              parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
+              parent.normalize();
+              lastMark = null;
+            }
+            
+            const word = event.currentTarget.text.substring(event.charIndex).split(/[\s.,!?]/)[0];
+            if (!word || !blankBodyRef.current) return;
+            
+            const walker = document.createTreeWalker(blankBodyRef.current, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+            while ((node = walker.nextNode())) {
+              const idx = node.nodeValue.indexOf(word);
+              if (idx !== -1) {
+                const mark = document.createElement('mark');
+                mark.className = 'tts-highlight';
+                mark.textContent = word;
+                const parent = node.parentNode;
+                
+                const before = node.nodeValue.substring(0, idx);
+                const after = node.nodeValue.substring(idx + word.length);
+                
+                const fragment = document.createDocumentFragment();
+                if (before) fragment.appendChild(document.createTextNode(before));
+                fragment.appendChild(mark);
+                if (after) fragment.appendChild(document.createTextNode(after));
+                
+                parent.replaceChild(fragment, node);
+                lastMark = mark;
+                mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                break;
+              }
+            }
+          };
+          
+          utterance.onend = () => {
+            setIsReadingAloud(false);
+            setTtsPaused(false);
+            setTtsUtterance(null);
+            if (lastMark && lastMark.parentNode) {
+              const parent = lastMark.parentNode;
+              parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
+              parent.normalize();
+            }
+          };
+          
+          window.speechSynthesis.speak(utterance);
+          setIsReadingAloud(true);
+          setTtsPaused(false);
+        }}
+      >
+        {!isReadingAloud ? (
+          <Volume2 size={24} className="pointer-events-none" />
+        ) : (
+          <div className="flex items-center gap-1.5 px-2">
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (ttsPaused) {
+                  window.speechSynthesis.resume();
+                  setTtsPaused(false);
+                } else {
+                  window.speechSynthesis.pause();
+                  setTtsPaused(true);
+                }
+              }}
+              className="p-1.5 hover:bg-violet-100 rounded-full text-violet-700 transition-colors"
+              title={ttsPaused ? 'Resume' : 'Pause'}
+            >
+              {ttsPaused ? <Play size={18} /> : <Pause size={18} />}
+            </button>
+            <button
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.speechSynthesis.cancel();
+                setIsReadingAloud(false);
+                setTtsPaused(false);
+                setTtsUtterance(null);
+              }}
+              className="p-1.5 hover:bg-red-50 text-red-600 rounded-full transition-colors"
+              title="Stop"
+            >
+              <Square size={16} fill="currentColor" />
+            </button>
+            <div className="w-px h-4 bg-violet-200 mx-1"></div>
+            <select
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+              value={ttsSpeed}
+              onChange={(e) => {
+                e.stopPropagation();
+                const newSpeed = parseFloat(e.target.value);
+                setTtsSpeed(newSpeed);
+                // Changing speed mid-speech isn't universally supported in all browsers without restarting utterance.
+                // But we can try setting the rate. Note: standard synthesis might need a cancel & restart to take effect properly.
+                if (ttsUtterance) {
+                    window.speechSynthesis.cancel();
+                    // Just reset the state; the user can click play again to restart from the beginning with the new speed
+                    setIsReadingAloud(false);
+                    setTtsPaused(false);
+                    setTtsUtterance(null);
+                    showToast('Speed changed. Click play again.');
+                }
+              }}
+              className="bg-transparent text-[10px] font-bold text-violet-700 outline-none cursor-pointer"
+              title="Reading Speed"
+            >
+              <option value="0.75">0.75x</option>
+              <option value="1">1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+              <option value="2.5">2.5x</option>
+            </select>
+          </div>
+        )}
+      </div>
+      )}
+
+      {/* Gesture visual cues */}
+      {gestureRipples.map(r => (
+        <div
+          key={r.id}
+          className="fixed pointer-events-none z-[99999] rounded-full border border-violet-500/30 bg-violet-500/10 animate-gesture-ripple"
+          style={{
+            left: r.x - 20,
+            top: r.y - 20,
+            width: 40,
+            height: 40,
+          }}
+        />
+      ))}
+
+      {gestureNotification && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[99999] pointer-events-none animate-gesture-pill-in">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/90 backdrop-blur-md text-white text-xs font-semibold shadow-xl border border-white/10">
+            <Sparkles size={14} className="text-violet-400 animate-pulse" />
+            <span>{gestureNotification.label}</span>
+          </div>
+        </div>
+      )}
+
+        {!isComposing && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
+          <div 
+            className="pointer-events-none fixed z-[15000] flex items-center justify-center"
+            style={{
+              left: `${dictationAnchor.left}px`,
+              top: `${dictationAnchor.top}px`,
+              transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
+            }}
+          >
+            <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/70 backdrop-blur-sm px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.35)] border border-white/70">
+              <button
+                type="button"
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  beginPanelResize('dictation', event);
+                }}
+                className="inline-flex items-center gap-2 text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1 cursor-move touch-none hover:border-violet-300 hover:text-violet-700"
+                title="Drag dictation"
+              >
+                <Move size={12} />
+                Drag dictation
+              </button>
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={async () => {
+                  await toggleVoiceRecording('document');
+                }}
+                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${
+                  isVoiceActive && voiceTarget === 'document' 
+                    ? (isVoiceCommandMode 
+                        ? 'border-indigo-400 bg-indigo-50 shadow-[0_0_0_6px_rgba(99,102,241,0.22),0_0_35px_rgba(99,102,241,0.65)] animate-pulse' 
+                        : 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]') 
+                    : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'
+                }`}
+                title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
+              >
+                <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
+                {isVoiceActive && voiceTarget === 'document' && (
+                  <>
+                    <span className={`absolute inset-0 rounded-full border-2 animate-ping ${isVoiceCommandMode ? 'border-indigo-300' : 'border-violet-300'}`}></span>
+                    <span className={`absolute -inset-2 rounded-full border animate-pulse ${isVoiceCommandMode ? 'border-indigo-200/80' : 'border-violet-200/80'}`}></span>
+                  </>
+                )}
+              </button>
+              <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-xl px-4 py-2 max-w-[200px] text-center break-words shadow-sm">
+                {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
+              </div>
+              {isVoiceActive && voiceTarget === 'document' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    isVoiceActiveRef.current = false;
+                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
+                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
+                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
+                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
+                    const tracks = audioStreamRef.current?.getTracks(); if (tracks) tracks.forEach(t => t.stop());
+                    audioStreamRef.current = null;
+                    setIsVoiceActive(false);
+                    setLiveSpeechInterimText('');
+                    setIsVoiceCommandMode(false);
+                    isVoiceCommandModeRef.current = false;
+                    setVoiceCommandBuffer('');
+        voiceCommandBufferRef.current = '';
+        commandModeActivatedAtRef.current = 0;
+        commandModeLastInputAtRef.current = 0;
+                  }}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    isVoiceActiveRef.current = false;
+                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
+                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
+                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
+                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
+                    const trk = audioStreamRef.current?.getTracks(); if (trk) trk.forEach(t => t.stop());
+                    audioStreamRef.current = null;
+                    setIsVoiceActive(false);
+                    setLiveSpeechInterimText('');
+                    setIsVoiceCommandMode(false);
+                    isVoiceCommandModeRef.current = false;
+                    setVoiceCommandBuffer('');
+        voiceCommandBufferRef.current = '';
+        commandModeActivatedAtRef.current = 0;
+        commandModeLastInputAtRef.current = 0;
+                  }}
+                  className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
+                >
+                  {isVoiceCommandMode ? 'Cancel AI Prompt' : 'Dismiss'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+
       {/* Compose Pickers */}
       <UnifiedMediaModal isOpen={mediaPickerOpen} setOpen={setMediaPickerOpen} anchorEl={document.getElementById('compose-media-btn')} mediaInsertionModal={mediaInsertionModal} setMediaInsertionModal={setMediaInsertionModal} />
       <EmojiGalleryPicker isOpen={composeEmojiPickerOpen} setOpen={setComposeEmojiPickerOpen} anchorEl={document.getElementById('compose-insert-btn')} />

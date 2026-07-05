@@ -53,7 +53,12 @@ export default function ShareModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[520] bg-slate-950/20 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300">
+    <div 
+      className="fixed inset-0 z-[520] bg-slate-950/20 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="w-[640px] max-w-[95vw] rounded-2xl bg-white border border-slate-200/80 shadow-[0_24px_60px_-15px_rgba(15,23,42,0.12),0_0_1px_rgba(0,0,0,0.08)] p-6 transition-all duration-200">
         
         {/* Header Section */}
@@ -438,7 +443,7 @@ export default function ShareModal({
           <button
             type="button"
             onClick={handleShareModalConfirm}
-            className="px-4.5 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-750 text-white shadow-sm transition-all duration-200 hover:scale-[1.01] active:scale-95"
+            className="px-6 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-750 text-white shadow-sm transition-all duration-200 hover:scale-[1.01] active:scale-95 whitespace-nowrap min-w-[90px]"
           >
             {shareDestination === 'downloads' ? `Export ${shareFormat}` : shareDestination === 'apps' ? 'Share to Apps' : 'Copy Link'}
           </button>
