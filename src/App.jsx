@@ -21752,7 +21752,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               ].map((tab) => (
                 <button
                   key={tab.key}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-full transition-all text-[12.5px] font-semibold ${activeRightTab === tab.key ? 'bg-white text-slate-800 shadow-sm border border-slate-200' : 'text-slate-500 border border-transparent hover:text-slate-800 hover:bg-slate-100/80'}`}
+                  className={`shrink-0 px-3.5 py-1.5 rounded-[6px] transition-all text-[12.5px] font-semibold ${activeRightTab === tab.key ? 'bg-white text-slate-800 shadow-sm border border-slate-200/80' : 'text-slate-500 border border-transparent hover:text-slate-800 hover:bg-slate-100/80'}`}
                   onClick={() => {
                     if (tab.key === 'manageen') {
                       createManageenExperience();
@@ -24467,7 +24467,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} relative z-[300] w-[74px] border-l border-gray-100 bg-[#FAFAFC] flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar`}>
+      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} relative z-[300] w-[74px] border-l border-slate-200/55 bg-[#FAFAFC]/95 backdrop-blur-md flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar`}>
         <div className="relative">
           <div
             className="group flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-gray-600"
@@ -24516,7 +24516,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'chat' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'chat' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'chat' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
             <MessageCircle size={20} />
           </div>
           <span className="text-[9px] font-semibold">Chat</span>
@@ -24529,7 +24529,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               activeRightTab === 'comments' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
             }`}
           >
-            <div className={`p-2 rounded-xl transition-all relative ${activeRightTab === 'comments' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+            <div className={`p-2 rounded-[6px] transition-all relative ${activeRightTab === 'comments' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
               {selectedEditorText ? <MessageSquarePlus size={20} /> : <MessageSquareText size={20} />}
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold animate-scale-in">
                 {comments.filter(c => !c.resolved).length}
@@ -24545,7 +24545,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             productMode === 'dm' ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${productMode === 'dm' ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all ${productMode === 'dm' ? 'bg-violet-100' : ''}`}>
             <MessageSquare size={20} />
           </div>
           <span className="text-[9px] font-semibold">DMs</span>
@@ -24557,7 +24557,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'assistant' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all relative ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100' : ''} ${selectedEditorText ? 'text-violet-600' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all relative ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100' : ''} ${selectedEditorText ? 'text-violet-600' : ''}`}>
             <PenTool size={20} />
             {selectedEditorText && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse" />}
           </div>
@@ -24570,7 +24570,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'whiteboard' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'whiteboard' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'whiteboard' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
             <LayoutGrid size={20} />
           </div>
           <span className="text-[9px] font-semibold">Whiteboard</span>
@@ -24582,7 +24582,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'tasks' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'tasks' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'tasks' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
             <CheckSquare size={20} />
           </div>
           <span className="text-[9px] font-semibold">Tasks</span>
@@ -24594,7 +24594,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'calendar' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'calendar' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'calendar' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
             <Calendar size={20} />
           </div>
           <span className="text-[9px] font-semibold">Schedule</span>
@@ -24606,7 +24606,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'people' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'people' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'people' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
             <Users size={20} />
           </div>
           <span className="text-[9px] font-semibold">People</span>
@@ -24618,7 +24618,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'memory' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'memory' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
             <Database size={20} />
           </div>
           <span className="text-[9px] font-semibold">Memory</span>
@@ -24630,7 +24630,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'orb' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Cloud size={20} /></div>
+          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Cloud size={20} /></div>
           <span className="text-[9px] font-semibold">Orb</span>
         </div>
 
@@ -24640,7 +24640,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'manageen' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'manageen' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'manageen' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
             <ListTodo size={20} />
           </div>
           <span className="text-[9px] font-semibold">Manageen</span>
@@ -24652,7 +24652,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
           }`}
         >
-          <div className={`p-2 rounded-xl transition-all ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
+          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
             <MonitorPlay size={20} />
           </div>
           <span className="text-[9px] font-semibold">Room</span>
@@ -42281,7 +42281,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         onPointerDown={handleVolumePointerDown}
         onPointerMove={handleVolumePointerMove}
         onPointerUp={handleVolumePointerUp}
-        className={`fixed flex items-center gap-2 rounded-full shadow-lg z-50 transition-colors ${
+        className={`fixed flex items-center gap-2 rounded-full shadow-lg z-[16000] transition-colors ${
           isReadingAloud ? 'bg-white border border-violet-200 text-violet-600 p-2' : 'bg-white text-violet-600 border border-violet-200 hover:bg-violet-50 p-4 cursor-pointer'
         }`}
         style={{
