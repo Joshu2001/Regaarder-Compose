@@ -32,7 +32,7 @@ import RegaarderComposeLanding from './RegaarderComposeLanding';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { diff_match_patch as DiffMatchPatch } from 'diff-match-patch';
-import randomColor from 'randomcolor';// Inline attachment chip ??avoids module-order TDZ in the production bundle
+import randomColor from 'randomcolor';// Inline attachment chip — avoids module-order TDZ in the production bundle
 import { exportCompose, exportSheets, exportDeck, exportWhiteboard } from './utils/exportUtils';
 function AIChatAttachmentChip({ file, onRemove }) {
   return (
@@ -50,7 +50,7 @@ function AIChatAttachmentChip({ file, onRemove }) {
         aria-label="Remove attachment"
         onClick={onRemove}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7c3aed', lineHeight: 1, padding: '0 2px', fontSize: '1rem' }}
-      >?</button>
+      >×</button>
     </span>
   );
 }
@@ -444,7 +444,7 @@ const createBlankDeckSlide = (id = 1) => ({
   keyMetric: '',
   speakerNotes: '',
   section: '',
-  footer: 'Original design ??Editable',
+  footer: 'Original design 繚 Editable',
 });
 
 // Sub-component to cleanly handle the local video stream without cluttering the main render
@@ -993,7 +993,7 @@ const TableGridPicker = ({ setInsertDropdownOpen }) => {
           <LayoutGrid size={14} className="text-slate-500" />
           <span className="text-[13px] font-medium text-slate-800">Table</span>
         </div>
-        <span className="text-[11px] text-slate-400">{hovered.r > 0 ? `${hovered.r} ? ${hovered.c}` : 'Hover to pick size'}</span>
+        <span className="text-[11px] text-slate-400">{hovered.r > 0 ? `${hovered.r} × ${hovered.c}` : 'Hover to pick size'}</span>
       </div>
       <div className="inline-grid gap-0.5" style={{ gridTemplateColumns: `repeat(${COLS}, 18px)` }} onPointerLeave={() => setHovered({ r: 0, c: 0 })}>
         {Array.from({ length: ROWS }, (_, r) => Array.from({ length: COLS }, (_, c) => (
@@ -1369,13 +1369,13 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
             : 'text-slate-500 border-slate-100 hover:bg-slate-50 hover:text-slate-700'
         }`}
         title={isTableLocked
-          ? 'All inserted items are Locked ??editing modals, naming popups, and cell toolbars are suppressed. Click to unlock.'
-          : 'Lock all inserted items ??prevents editing modals, popups and toolbars from appearing on any block.'
+          ? 'All inserted items are Locked — editing modals, naming popups, and cell toolbars are suppressed. Click to unlock.'
+          : 'Lock all inserted items — prevents editing modals, popups and toolbars from appearing on any block.'
         }
       >
         <span className="flex items-center gap-1.5">
           {isTableLocked ? <Lock size={11} /> : <Unlock size={11} />}
-          {isTableLocked ? 'Locked ??Click to Unlock' : 'Lock All Items'}
+          {isTableLocked ? 'Locked — Click to Unlock' : 'Lock All Items'}
         </span>
         {isTableLocked && <span className="text-[9px] font-bold tracking-wider uppercase text-amber-500">Active</span>}
       </button>
@@ -1402,10 +1402,10 @@ const EmojiGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   const rect = anchorEl.getBoundingClientRect();
     const categories = ['Recent', 'Smileys', 'Animals', 'Food', 'Activity', 'Travel', 'Objects', 'Symbols'];
   const emojis = {
-    'Smileys': ['??', '??', '?撘?, '??', '??', '??', '??', '???, '??, '???, '??', '瞏?, '?甇?', '??, '??, '??', '???, '?謋?, '??', '??'],
-    'Animals': ['???, '???, '???, '???, '???, '??', '???, '???, '???, '???, '??', '???, '???, '???, '???],
-    'Food': ['??', '??', '??', '??', '??', '??', '??', '??', '??', '??', '??', '??', '?撟?, '??', '?摮?],
-    'Recent': ['??', '??', '??, '???, '??]
+    'Smileys': ['😀', '😂', '🥰', '😎', '🤔', '🙌', '🎉', '🔥', '✨', '💡', '🚀', '⭐', '❤️', '✅', '❌', '👀', '🥺', '😭', '😊', '😅'],
+    'Animals': ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵'],
+    'Food': ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥'],
+    'Recent': ['🎉', '🚀', '✨', '🔥', '✅']
   };
 
   const displayEmojis = search ? Object.values(emojis).flat().filter(e => true) : (emojis[activeTab] || emojis['Smileys']);
@@ -1463,11 +1463,11 @@ const SymbolGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   
   const categories = ['Math', 'Currency', 'Arrows', 'Greek', 'Technical'];
   const symbolsMap = {
-    'Math': ['蝪?, '?', '蝜?, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??],
-    'Currency': ['??, '??, '??, '??, '??, '??, '??, '??, '??, '??],
-    'Arrows': ['??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??],
-    'Greek': ['撣?, '撣?, '撣?, '撣?, '摨?, '摨?, '摨?, '摨?, '摨?, '摨?, '撘?, '撘?, '敶?, '敺?, '??, '?', '?', '?', '?', '?', '?', '?', '?', '?'],
-    'Technical': ['蝛?, '蝪?, '??, '蝜?, '蝜?, '蝳?, '蝪?, '??, '??, '??]
+    'Math': ['±', '×', '÷', '∞', '≈', '≠', '≤', '≥', '∑', '∏', '∫', '∆', '∇', '√', '∝'],
+    'Currency': ['€', '£', '¥', '¢', '₹', '₽', '₩', '₪', '₫', '฿'],
+    'Arrows': ['←', '↑', '→', '↓', '↔', '↕', '⇐', '⇑', '⇒', '⇓', '⇔', '⇕'],
+    'Greek': ['α', 'β', 'γ', 'δ', 'ε', 'ζ', 'η', 'θ', 'ι', 'κ', 'λ', 'μ', 'ν', 'ξ', 'ο', 'π', 'ρ', 'σ', 'τ', 'υ', 'φ', 'χ', 'ψ', 'ω'],
+    'Technical': ['©', '®', '™', 'µ', '¶', '§', '°', '†', '‡', '•']
   };
 
   return (
@@ -1513,12 +1513,12 @@ const EquationGalleryPicker = ({ isOpen, setOpen, anchorEl }) => {
   if (!isOpen || !anchorEl) return null;
   const rect = anchorEl.getBoundingClientRect();
   const equations = [
-    { label: 'Area of Circle', eq: 'A = ?r蝪? },
-    { label: 'Pythagorean Theorem', eq: 'a蝪?+ b蝪?= c蝪? },
-    { label: 'Quadratic Formula', eq: 'x = (-b 蝪???b蝪?- 4ac)) / 2a' },
-    { label: 'Standard Deviation', eq: '? = ??撜?x - 撘?蝪?/ N)' },
-    { label: 'Einstein Energy', eq: 'E = mc蝪? },
-    { label: 'Euler Identity', eq: 'e^(i?) + 1 = 0' }
+    { label: 'Area of Circle', eq: 'A = πr²' },
+    { label: 'Pythagorean Theorem', eq: 'a² + b² = c²' },
+    { label: 'Quadratic Formula', eq: 'x = (-b ± √(b² - 4ac)) / 2a' },
+    { label: 'Standard Deviation', eq: 'σ = √(Σ(x - μ)² / N)' },
+    { label: 'Einstein Energy', eq: 'E = mc²' },
+    { label: 'Euler Identity', eq: 'e^(iπ) + 1 = 0' }
   ];
   return (
     <>
@@ -1564,13 +1564,13 @@ const ListGalleryPicker = ({ isOpen, initialTab, setOpen, anchorEl }) => {
   if (activeTab === 'bullet') {
     items = [
       { id: 'none', label: 'None', preview: 'None' },
-      { id: 'disc', label: 'Solid Circle', preview: '??n??n?? },
-      { id: 'circle', label: 'Hollow Circle', preview: '??跚n??跚n?? },
-      { id: 'square', label: 'Solid Square', preview: '?賹愧n?賹愧n?? },
-      { id: 'arrow', label: 'Arrow', preview: '?銋n?銋n?? },
-      { id: 'check', label: 'Checkmark', preview: '??閱n??閱n?? },
-      { id: 'diamond', label: 'Diamond', preview: '??功n??功n?? },
-      { id: 'star', label: 'Star', preview: '??n??n?? }
+      { id: 'disc', label: 'Solid Circle', preview: '●\\n●\\n●' },
+      { id: 'circle', label: 'Hollow Circle', preview: '○\\n○\\n○' },
+      { id: 'square', label: 'Solid Square', preview: '■\\n■\\n■' },
+      { id: 'arrow', label: 'Arrow', preview: '➤\\n➤\\n➤' },
+      { id: 'check', label: 'Checkmark', preview: '✓\\n✓\\n✓' },
+      { id: 'diamond', label: 'Diamond', preview: '◆\\n◆\\n◆' },
+      { id: 'star', label: 'Star', preview: '★\\n★\\n★' }
     ];
   } else if (activeTab === 'numbered') {
     items = [
@@ -1589,7 +1589,7 @@ const ListGalleryPicker = ({ isOpen, initialTab, setOpen, anchorEl }) => {
       { id: 'multi-1', label: '1. a. i.', preview: '1.\\n  a.\\n    i.' },
       { id: 'multi-2', label: '1. 1.1. 1.1.1.', preview: '1.\\n  1.1.\\n    1.1.1.' },
       { id: 'multi-3', label: 'Article', preview: 'Article I.\\n  Section 1.01\\n    (a)' },
-      { id: 'multi-4', label: 'Bullets', preview: '??n  ??跚n    ?? },
+      { id: 'multi-4', label: 'Bullets', preview: '●\\n  ○\\n    ■' },
       { id: 'multi-5', label: 'Chapters', preview: 'Chapter 1\\n  Heading 1\\n    Sub 1' }
     ];
   } else {
@@ -3637,8 +3637,8 @@ export default function App() {
             item.dueLabel ? `Due: ${item.dueLabel}` : '',
             item.dependencies?.length ? `Depends on: ${item.dependencies.join(', ')}` : '',
             item.subtasks?.length ? `Subtasks: ${item.subtasks.join(' | ')}` : '',
-          ].filter(Boolean).join(' ?謕? ');
-          const text = `[${segments.join(' ?謕? ')}] ${item.title}${meta ? ` ?謕 ${meta}` : ''}`;
+          ].filter(Boolean).join(' 嚙瘟 ');
+          const text = `[${segments.join(' 嚙瘟 ')}] ${item.title}${meta ? ` 嚙碼 ${meta}` : ''}`;
           return {
             id: Date.now() + index,
             text,
@@ -3696,19 +3696,19 @@ export default function App() {
       return;
     }
     if (toolKey === 'select') {
-      showToast('Select tool ?謕 tap widgets to select, drag to move');
+      showToast('Select tool 嚙碼 tap widgets to select, drag to move');
       return;
     }
     if (toolKey === 'hand') {
-      showToast('Hand tool ?謕 drag to pan canvas');
+      showToast('Hand tool 嚙碼 drag to pan canvas');
       return;
     }
     if (toolKey === 'eraser') {
-      showToast('Eraser tool ?謕 draw over strokes to erase');
+      showToast('Eraser tool 嚙碼 draw over strokes to erase');
       return;
     }
     if (toolKey === 'comment') {
-      showToast('Comment tool ?謕 click to place a comment');
+      showToast('Comment tool 嚙碼 click to place a comment');
       return;
     }
     showToast(`${toolKey.charAt(0).toUpperCase()}${toolKey.slice(1)} tool active`);
@@ -4113,7 +4113,7 @@ export default function App() {
     }
   };
 
-  const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*?謕?]\s+|\d+\.\s+)/, '');
+  const stripListPrefix = (line) => String(line).replace(/^\s*(?:[-*嚙瘟]\s+|\d+\.\s+)/, '');
 
   const toggleWidgetList = (widgetId, nextType) => {
     setWhiteboardWidgets((prev) => prev.map((w) => {
@@ -4128,7 +4128,7 @@ export default function App() {
       if (nextType === 'numbered') {
         return { ...w, hasList: true, listType: 'numbered', text: normalized.map((line, i) => `${i + 1}. ${line}`).join('\n') };
       }
-      return { ...w, hasList: true, listType: 'bullet', text: normalized.map((line) => `?謕? ${line}`).join('\n') };
+      return { ...w, hasList: true, listType: 'bullet', text: normalized.map((line) => `嚙瘟 ${line}`).join('\n') };
     }));
   };
 
@@ -4462,14 +4462,14 @@ export default function App() {
   
   const commentTextareaRef = useRef(null);
   const commentPopoverRef = useRef(null);
-  const COMMENT_EMOJIS = ['??','??','?甇?','??','?謋?,'?謋?,'?謋?,'??','???,'??,'??,'???,'??','?蹎?','??','???,'??','??'];
+  const COMMENT_EMOJIS = ['👍','👎','❤️','😂','😮','😢','😡','🎉','🔥','✅','❌','💡','📌','⚠️','🙏','💬','📎','🔗'];
   const COMMENT_WORKSPACE_TYPES = [
-    { icon: '??', label: 'Compose Document', key: 'compose' },
-    { icon: '????, label: 'Workspace File', key: 'file' },
-    { icon: '????, label: 'Whiteboard', key: 'whiteboard' },
-    { icon: '??, label: 'Task', key: 'task' },
-    { icon: '???, label: 'Room', key: 'room' },
-    { icon: '??', label: 'Schedule', key: 'schedule' },
+    { icon: '📄', label: 'Compose Document', key: 'compose' },
+    { icon: '🗂️', label: 'Workspace File', key: 'file' },
+    { icon: '🖊️', label: 'Whiteboard', key: 'whiteboard' },
+    { icon: '✅', label: 'Task', key: 'task' },
+    { icon: '💬', label: 'Room', key: 'room' },
+    { icon: '📅', label: 'Schedule', key: 'schedule' },
   ];
 
 
@@ -4627,7 +4627,7 @@ export default function App() {
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const val = textarea.value;
-        const htmlLink = `<a href="#" class="workspace-doc-link text-violet-600 font-semibold underline" data-doc-id="${docId}">?? ${docTitle}</a>`;
+        const htmlLink = `<a href="#" class="workspace-doc-link text-violet-600 font-semibold underline" data-doc-id="${docId}">📄 ${docTitle}</a>`;
         textarea.value = val.substring(0, start) + htmlLink + val.substring(end);
         textarea.focus();
         textarea.selectionStart = textarea.selectionEnd = start + htmlLink.length;
@@ -4646,7 +4646,7 @@ export default function App() {
           const docId = parseInt(docIdStr, 10);
           window.setActiveDocIdGlobal?.(docId);
         } else {
-          // External URL link ??open in new tab
+          // External URL link — open in new tab
           const href = docLink.getAttribute('href');
           if (href && href !== '#') {
             window.open(href, '_blank', 'noopener,noreferrer');
@@ -4861,7 +4861,7 @@ export default function App() {
 
       const newChip = {
         id,
-        text: `?? Protected ${label}`,
+        text: `🔒 Protected ${label}`,
         fullText: block.innerText || `Protected ${label}`,
         type: 'block'
       };
@@ -5398,7 +5398,7 @@ export default function App() {
 
   // editingCellKey tracks which cell the user is actively typing in (format: "row-col")
   // editingCellValue buffers keystrokes locally so that React re-renders between keystrokes
-  // do NOT overwrite the input mid-composition ??eliminating the 2-char truncation bug.
+  // do NOT overwrite the input mid-composition — eliminating the 2-char truncation bug.
   const [editingCellKey, setEditingCellKey] = useState(null);
   const [editingCellValue, setEditingCellValue] = useState('');
 
@@ -5618,8 +5618,6 @@ export default function App() {
   const subtitleEditableRef = useRef(null);
 
   const [blockDragHandle, setBlockDragHandle] = useState({ visible: false, top: 0, left: 0, node: null });
-  const [dragHandleMenu, setDragHandleMenu] = useState({ open: false, top: 0, left: 0, node: null });
-  const [dragHandleMenu, setDragHandleMenu] = useState({ open: false, top: 0, left: 0, node: null });
   const [dragHandleMenu, setDragHandleMenu] = useState({ open: false, top: 0, left: 0, node: null });
   const dragHandleTimeoutRef = useRef(null);
   const findNearestBlockElement = (node) => {
@@ -6591,7 +6589,7 @@ export default function App() {
 
     // Split inline numbered sections into standalone blocks.
     normalized = normalized
-      .replace(/([.!?"?謕???])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
+      .replace(/([.!?"嚙踝蕭'])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
       .replace(/([a-zA-Z])\s*(\d+)[.)]\s*/g, '$1\n\n$2. ')
       .replace(/(\d+)\.(\S)/g, '$1. $2')
       .replace(/[ \t]+/g, ' ')
@@ -7925,10 +7923,7 @@ export default function App() {
       const activeElement = document.activeElement;
       const insideEditor = Boolean(activeElement && documentCardRef.current?.contains(activeElement));
 
-      const sel = window.getSelection();
-      const isWholeSel = sel && sel.rangeCount > 0 && !sel.getRangeAt(0).collapsed && isWholeDocumentSelection(sel.getRangeAt(0));
-
-      if (!(event.ctrlKey || event.metaKey) && isWholeSel && insideEditor && (event.key === 'Backspace' || event.key === 'Delete')) {
+      if (!(event.ctrlKey || event.metaKey) && wholeDocSelectionRef.current && insideEditor && (event.key === 'Backspace' || event.key === 'Delete')) {
         event.preventDefault();
         clearEntireCompositionText();
         wholeDocSelectionRef.current = false;
@@ -8590,7 +8585,11 @@ export default function App() {
       return false;
     }
 
-    return documentCardRef.current.contains(targetNode);
+    const bodyRoot = blankBodyRef.current || documentCardRef.current;
+    const insideBody = Boolean(bodyRoot && bodyRoot.contains(targetNode));
+    const insideTitle = Boolean(titleEditableRef.current && titleEditableRef.current.contains(targetNode));
+    const insideSubtitle = Boolean(subtitleEditableRef.current && subtitleEditableRef.current.contains(targetNode));
+    return insideBody || insideTitle || insideSubtitle;
   };
   const stripMarkdownArtifacts = (value) => String(value || '')
     .replace(/```[\s\S]*?```/g, ' ')
@@ -8645,7 +8644,7 @@ export default function App() {
     };
 
     lines.forEach((line, index) => {
-      const bulletMatch = line.match(/^(?:[-*??謕?|\d+[.)])\s+(.+)$/);
+      const bulletMatch = line.match(/^(?:[-*?嚙稽|\d+[.)])\s+(.+)$/);
       if (bulletMatch) {
         if (!listOpen) {
           html.push('<ul style="margin:0 0 10px 18px;padding:0;list-style:disc;color:#334155;line-height:1.7;">');
@@ -8938,34 +8937,20 @@ export default function App() {
   };
 
   const selectEntireComposition = (options = {}) => {
-    const includeHeaders = options.includeHeaders !== false;
+    const includeHeaders = Boolean(options.includeHeaders);
+    const bodyRoot = blankBodyRef.current || documentCardRef.current;
+    const targetRoot = includeHeaders ? documentCardRef.current : bodyRoot;
+    if (!targetRoot) {
+      return;
+    }
+
     const selection = window.getSelection();
     if (!selection) {
       return;
     }
 
     const range = document.createRange();
-    if (includeHeaders && titleEditableRef.current) {
-      const startNode = titleEditableRef.current;
-      const endNode = blankBodyRef.current || documentCardRef.current;
-      if (startNode && endNode) {
-        range.setStart(startNode, 0);
-        if (endNode.childNodes.length > 0) {
-          range.setEnd(endNode, endNode.childNodes.length);
-        } else {
-          range.setEndAfter(endNode);
-        }
-      } else {
-        const targetRoot = documentCardRef.current || blankBodyRef.current;
-        if (targetRoot) range.selectNodeContents(targetRoot);
-      }
-    } else {
-      const targetRoot = blankBodyRef.current || documentCardRef.current;
-      if (targetRoot) {
-        range.selectNodeContents(targetRoot);
-      }
-    }
-
+    range.selectNodeContents(targetRoot);
     selection.removeAllRanges();
     selection.addRange(range);
     savedSelectionRef.current = range.cloneRange();
@@ -8978,7 +8963,7 @@ export default function App() {
       return false;
     }
     const selected = range.toString().replace(/\s+/g, ' ').trim();
-    const allText = ((titleEditableRef.current?.textContent || '') + ' ' + (subtitleEditableRef.current?.textContent || '') + ' ' + (bodyRoot.textContent || '')).replace(/\s+/g, ' ').trim();
+    const allText = (bodyRoot.textContent || '').replace(/\s+/g, ' ').trim();
     if (!selected || !allText) {
       return false;
     }
@@ -9158,9 +9143,6 @@ export default function App() {
       // Strip Word/Office/WPS conditional comments and XML namespaces
       cleanHtml = cleanHtml.replace(/<!--\[if[\s\S]*?<!\[endif\]-->/g, '');
       cleanHtml = cleanHtml.replace(/<[\/]?([oxwm]:|xml)[^>]*?>/gi, '');
-      cleanHtml = cleanHtml.replace(/<!--StartFragment-->|<!--EndFragment-->/g, '');
-      cleanHtml = cleanHtml.replace(/<!--StartFragment-->|<!--EndFragment-->/g, '');
-      cleanHtml = cleanHtml.replace(/<!--StartFragment-->|<!--EndFragment-->/g, '');
       
       // Parse HTML to strip compose-generated-page containers
       const parser = new DOMParser();
@@ -9852,7 +9834,7 @@ export default function App() {
 
       if (finalTranscript.trim()) {
         const normalizedFinal = finalTranscript.trim();
-        const looksLikeVoiceIntent = /\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|蝢鉉ersetze|uebersetze|replace|delete|remove|set\s+title|make\s+all\s+headings|bold|italic|underline|chart|graph|plot|list|table|pie|bar|line|heatmap)\b/i.test(normalizedFinal);
+        const looksLikeVoiceIntent = /\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|übersetze|uebersetze|replace|delete|remove|set\s+title|make\s+all\s+headings|bold|italic|underline|chart|graph|plot|list|table|pie|bar|line|heatmap)\b/i.test(normalizedFinal);
         const hasSelection = Boolean(String(window.getSelection?.()?.toString?.() || selectedEditorTextRef.current || savedSelectionRef.current?.toString?.() || '').trim());
 
         if (looksLikeVoiceIntent) {
@@ -9911,7 +9893,7 @@ export default function App() {
           if (fullSpeechText) {
             const commandCheck = detectCommandPrefix(fullSpeechText);
             const hasSelection = Boolean(String(window.getSelection?.()?.toString?.() || selectedEditorTextRef.current || savedSelectionRef.current?.toString?.() || '').trim());
-            const looksLikeIntent = /\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|蝢鉉ersetze|uebersetze|replace|delete|remove|set\s+title|make\s+all\s+headings|bold|italic|underline|chart|graph|plot|list|table|pie|bar|line|heatmap)\b/i.test(fullSpeechText);
+            const looksLikeIntent = /\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|übersetze|uebersetze|replace|delete|remove|set\s+title|make\s+all\s+headings|bold|italic|underline|chart|graph|plot|list|table|pie|bar|line|heatmap)\b/i.test(fullSpeechText);
 
             if (commandCheck.matched || looksLikeIntent || hasSelection || isVoiceCommandModeRef.current) {
               if (!isVoiceCommandModeRef.current) {
@@ -10692,7 +10674,7 @@ export default function App() {
         keyMetric: '',
         speakerNotes: `Frame this ${section.toLowerCase()} point clearly, then transition to the next narrative beat.`,
         section,
-        footer: 'Original design ??Editable',
+        footer: 'Original design 繚 Editable',
       };
     };
 
@@ -10715,7 +10697,7 @@ export default function App() {
             keyMetric: String(slide.keyMetric || ''),
             speakerNotes: String(slide.speakerNotes || ''),
             section: String(slide.section || inferDeckStorySection(slide, index, sourceSlides.length)),
-            footer: 'Original design ??Editable',
+            footer: 'Original design 繚 Editable',
           };
         });
 
@@ -11922,7 +11904,7 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       }
     }
     // Remove enclosing quotes and trim
-    cleanPrompt = cleanPrompt.replace(/^['"?雓包+|['"?鞊?]+$/g, '').trim();
+    cleanPrompt = cleanPrompt.replace(/^['"?s]+|['"?s]+$/g, '').trim();
     if (!cleanPrompt) {
       cleanPrompt = 'beautiful landscape Yosemite Valley';
     }
@@ -13005,7 +12987,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     if (!range) {
       const selection = window.getSelection();
       if (!selection || !selection.rangeCount) {
-        // No selection at all ??open a floating comment panel at center of viewport
+        // No selection at all — open a floating comment panel at center of viewport
         const commentId = `comment_${Date.now()}`;
         setComments(prev => [...prev, { id: commentId, text: '', author: 'U', createdAt: Date.now(), resolved: false, replies: [] }]);
         setHoveredCommentId(commentId);
@@ -13037,7 +13019,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
         range.insertNode(span);
       }
     } else {
-      // Collapsed range ??insert at cursor position
+      // Collapsed range — insert at cursor position
       range.insertNode(span);
     }
 
@@ -14023,7 +14005,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       if (event.key === '/') {
         // Special case for sheets mode: open sheet slash menu.
         // IMPORTANT: Cell <input> elements handle their own '/' trigger via onKeyDown.
-        // The global listener must NOT intercept '/' inside cell inputs ??that breaks
+        // The global listener must NOT intercept '/' inside cell inputs — that breaks
         // normal typing. Only handle non-input targets here (e.g., grid container focus).
         if (productMode === 'sheets') {
           const target = event.target;
@@ -14038,7 +14020,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           }
           event.preventDefault();
 
-          // Grid container is focused (no specific cell input) ??center the menu
+          // Grid container is focused (no specific cell input) — center the menu
           setSheetSlashMenu({ 
             open: true, 
             left: event.target ? event.target.getBoundingClientRect().left : window.innerWidth / 2, 
@@ -16735,7 +16717,7 @@ Rules:
                   keyMetric: String(slide?.keyMetric || ''),
                   speakerNotes: String(slide?.speakerNotes || ''),
                   section: String(slide?.section || ''),
-                  footer: 'Original design ??Editable',
+                  footer: 'Original design 繚 Editable',
                 };
               })
               .slice(0, 20);
@@ -17501,7 +17483,7 @@ Rules:
           } else {
             // Check command triggers
             const commandCheck = detectCommandPrefix(cleanedText);
-            const looksLikeIntent = /\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|蝢鉉ersetze|uebersetze|replace|delete|remove|set\s+title|make\s+all\s+headings|bold|italic|underline|chart|graph|plot|list|table|pie|bar|line|heatmap)\b/i.test(cleanedText);
+            const looksLikeIntent = /\b(?:translate|traduis(?:-?moi)?|traduisez(?:-?moi)?|traducir|traduce|traduzir|traduza|traduci|übersetze|uebersetze|replace|delete|remove|set\s+title|make\s+all\s+headings|bold|italic|underline|chart|graph|plot|list|table|pie|bar|line|heatmap)\b/i.test(cleanedText);
             const hasSelection = Boolean(String(window.getSelection?.()?.toString?.() || selectedEditorTextRef.current || savedSelectionRef.current?.toString?.() || '').trim());
             
             if (commandCheck.matched || looksLikeIntent || hasSelection || isVoiceCommandModeRef.current) {
@@ -19200,7 +19182,7 @@ Respond with a JSON array of slide objects matching the schema.`;
             keyMetric: slide.keyMetric || '',
             speakerNotes: slide.speakerNotes || '',
             section: slide.section || '',
-            footer: 'AI Generated ??Convert to Deck'
+            footer: 'AI Generated 繚 Convert to Deck'
           };
         });
 
@@ -20389,7 +20371,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       keyMetric: activeDeckSlide.keyMetric || '',
       speakerNotes: activeDeckSlide.speakerNotes || '',
       section: activeDeckSlide.section || inferDeckStorySection(activeDeckSlide, Math.max(0, activeDeckSlide.id - 1), Math.max(1, deckSlides.length)),
-      footer: activeDeckSlide.footer || 'Original design ??Editable',
+      footer: activeDeckSlide.footer || 'Original design 繚 Editable',
     };
   }, [activeDeckSlide, deckSlides.length]);
 
@@ -20512,7 +20494,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         designPresetKey: randomPreset.key,
         headline,
         blurb,
-        footer: `Original concept ??${new Date().toLocaleDateString()}`,
+        footer: `Original concept 繚 ${new Date().toLocaleDateString()}`,
       };
     }));
     showToast('Generated original slide design. You can edit headline and body directly.');
@@ -20565,7 +20547,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       layoutStyle: template.layoutStyle,
       motionCue: template.motionCue,
       section: slide.section || inferDeckStorySection(slide, index, total),
-      footer: `${template.label} ??Editable`,
+      footer: `${template.label} 繚 Editable`,
     });
 
     if (scope === 'deck') {
@@ -20601,7 +20583,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       keyMetric: '',
       speakerNotes: '',
       section: inferDeckStorySection({ title: `Slide ${nextId}` }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
-      footer: 'Original design ??Editable',
+      footer: 'Original design 繚 Editable',
     };
     setDeckSlidesData((prev) => [...prev, newSlide]);
     setActiveDeckSlideId(nextId);
@@ -20654,7 +20636,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       if (!newCells[r]) newCells[r] = [];
       
       if (sheetLinkModal.type === 'bookmark') {
-        newCells[r][c] = `?? ${label}`;
+        newCells[r][c] = `📌 ${label}`;
         if (!newFormats[r]) newFormats[r] = {};
         newFormats[r][c] = {
           ...newFormats[r][c],
@@ -23090,18 +23072,6 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </div>
                         <span className="text-[10px] text-slate-400">{(c.replies?.length || 0) + 1} msg</span>
                       </div>
-                      {(() => {
-                        const span = blankBodyRef.current?.querySelector(`.comment-highlight[data-comment-id="${c.id}"]`);
-                        const contextText = span?.textContent?.trim();
-                        if (contextText) {
-                          return (
-                            <div className="mb-2 text-[10.5px] bg-slate-50 border-l-2 border-violet-400 px-2 py-1 text-slate-500 italic rounded-r truncate max-w-full">
-                              "{contextText}"
-                            </div>
-                          );
-                        }
-                        return null;
-                      })()}
                       <div className="text-xs text-slate-600 line-clamp-2" dangerouslySetInnerHTML={{ __html: c.text || '<i>Empty comment</i>' }} />
                       
                       {activeCommentThreadId === c.id && (
@@ -23892,7 +23862,7 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                         <div className="relative z-10 w-full md:w-1/2 text-center md:text-left">
                           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-[13px] font-medium mb-3">
-                            Good afternoon, Joshua <span className="text-base leading-none">??</span>
+                            Good afternoon, Joshua <span className="text-base leading-none">👋</span>
                           </div>
                           <h1 className="text-2xl md:text-[32px] font-bold text-slate-900 leading-tight mb-2 tracking-tight">Ready to collaborate?</h1>
                           <p className="text-sm text-slate-500 mb-6 max-w-[340px] mx-auto md:mx-0 leading-relaxed">Start a room, join a meeting, or continue where you left off.</p>
@@ -23939,9 +23909,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                           
                           <div className="space-y-3 flex-1">
                             {[
-                              { title: 'Beta Launch Kickoff', time: 'Thursday, May 15 ??10:00 AM', color: 'bg-violet-100 text-violet-600' },
-                              { title: 'Design System Review', time: 'Friday, May 16 ??2:00 PM', color: 'bg-fuchsia-100 text-fuchsia-600' },
-                              { title: 'Marketing Sync', time: 'Monday, May 19 ??11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
+                              { title: 'Beta Launch Kickoff', time: 'Thursday, May 15 • 10:00 AM', color: 'bg-violet-100 text-violet-600' },
+                              { title: 'Design System Review', time: 'Friday, May 16 • 2:00 PM', color: 'bg-fuchsia-100 text-fuchsia-600' },
+                              { title: 'Marketing Sync', time: 'Monday, May 19 • 11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
                             ].map((mtg, i) => (
                               <div key={i} className="group p-4 rounded-[16px] border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all flex items-start justify-between">
                                 <div className="flex gap-6">
@@ -23981,10 +23951,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                           
                           <div className="space-y-3 flex-1">
                             {[
-                              { title: 'Q2 Launch Strategy', time: 'May 12 ??2:30 PM' },
-                              { title: 'Product Review', time: 'May 9 ??11:00 AM' },
-                              { title: 'Investor Update', time: 'May 7 ??4:00 PM' },
-                              { title: 'Design Critique', time: 'May 5 ??10:30 AM' }
+                              { title: 'Q2 Launch Strategy', time: 'May 12 • 2:30 PM' },
+                              { title: 'Product Review', time: 'May 9 • 11:00 AM' },
+                              { title: 'Investor Update', time: 'May 7 • 4:00 PM' },
+                              { title: 'Design Critique', time: 'May 5 • 10:30 AM' }
                             ].map((room, i) => (
                               <div key={i} className="group p-3 rounded-[16px] border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-between cursor-pointer" onClick={() => startMeetingNow(generateRoomCode())}>
                                 <div className="flex items-center gap-4">
@@ -24393,7 +24363,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       placeholder="Search Orb..."
                       className="w-full rounded-xl bg-gray-100 py-2 pl-8 pr-14 text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-violet-300 border-0"
                     />
-                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">?雓?/span>
+                    <span className="absolute right-3 top-[7px] text-[10px] font-semibold text-gray-400 border border-gray-300 rounded px-1.5 py-0.5 bg-white">?</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-5 px-4 text-xs font-semibold border-b border-gray-100">
@@ -24621,7 +24591,7 @@ Respond with a JSON array of slide objects matching the schema.`;
           }`}
         >
           <div className={`p-2 rounded-xl transition-all relative ${activeRightTab === 'comments' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <MessageSquareText size={20} />
+            {selectedEditorText ? <MessageSquarePlus size={20} /> : <MessageSquareText size={20} />}
             {comments.length > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold">
                 {comments.filter(c => !c.resolved).length}
@@ -24772,21 +24742,20 @@ Respond with a JSON array of slide objects matching the schema.`;
       </div>
     </React.Fragment>
   );
-
   const sharedReplayPanel = (
     <React.Fragment>
         {replayPanelOpen && (
-          <div ref={replayPanelRef} className="absolute right-6 top-16 z-[260] w-[430px] overflow-visible rounded-[22px] border border-[#e8e6f2] bg-white shadow-[0_30px_70px_-34px_rgba(15,23,42,0.42)]">
-            <div className="flex items-start justify-between gap-3 border-b border-[#efedf6] px-5 py-4">
+          <div ref={replayPanelRef} className="absolute right-6 top-16 z-[260] w-[430px] overflow-visible rounded-2xl border border-slate-200/60 bg-white/95 backdrop-blur-md shadow-[0_24px_50px_-15px_rgba(15,23,42,0.15),0_0_1px_rgba(0,0,0,0.06)]">
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100/80 px-5 py-4">
               <div>
-                <div className="text-[13px] font-semibold text-slate-900">Edit replay</div>
-                <div className="mt-1 text-[12px] text-slate-500">
+                <div className="text-[13px] font-semibold text-slate-900 tracking-tight">Edit replay</div>
+                <div className="mt-0.5 text-[11px] font-medium text-slate-400">
                   {replayTimeline.length
-                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps ??${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
+                    ? `${replayIndex === null ? replayTimeline.length : replayIndex + 1} of ${replayTimeline.length} steps • ${formatReplayDuration((replayTimeline[replayTimeline.length - 1]?.timestamp || 0) - (replayTimeline[0]?.timestamp || 0))} worked`
                     : 'Start typing or editing to build a replay history'}
                 </div>
                 {replayTimeline.length > 0 && (
-                  <div className="mt-2 flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-100">
+                  <div className="mt-2 flex items-center gap-2 text-[10px] font-mono text-slate-400 bg-slate-50/50 px-2.5 py-1.5 rounded-xl border border-slate-100/60">
                     <span className="font-semibold text-slate-500 uppercase tracking-wider">Version:</span>
                     <span>{new Date(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp || Date.now()).toISOString().replace('T', ' ').substring(0, 19)}</span>
                     <span className="ml-auto text-violet-600 bg-violet-100 px-1.5 py-0.5 rounded-md font-semibold tracking-tight">ID: {replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.id?.slice(0,8) || 'genesis'}</span>
@@ -24799,10 +24768,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                   setReplayPanelOpen(false);
                   setIsReplayPlaying(false);
                 }}
-                className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                className="rounded-xl p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all duration-150 active:scale-95 border border-transparent hover:border-slate-100"
                 title="Close replay"
               >
-                <X size={14} />
+                <X size={15} />
               </button>
             </div>
 
@@ -24814,11 +24783,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                 value={Math.max(0, replayIndex ?? Math.max(0, replayTimeline.length - 1))}
                 onChange={(event) => applyReplayIndex(Number(event.target.value))}
                 disabled={!replayTimeline.length}
-                className="w-full accent-violet-600"
+                className="w-full accent-violet-600 cursor-pointer h-1.5 bg-slate-150 rounded-lg appearance-none outline-none"
                 title="Scrub through edit steps"
               />
 
-              <div className="flex items-center justify-between text-[12px] text-slate-500">
+              <div className="flex items-center justify-between text-[11px] font-medium text-slate-400">
                 <span>
                   {replayTimeline.length && replayTimeline[0]?.timestamp && replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)]?.timestamp
                     ? formatReplayDuration(replayTimeline[Math.max(0, replayIndex ?? replayTimeline.length - 1)].timestamp - replayTimeline[0].timestamp)
@@ -24832,7 +24801,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   type="button"
                   onClick={() => applyReplayIndex((replayIndex ?? replayTimeline.length - 1) - 1)}
                   disabled={!replayTimeline.length || (replayIndex ?? replayTimeline.length - 1) <= 0}
-                  className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#e5e7eb] bg-white px-3 py-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200/70 bg-white px-3 py-2.5 text-[12px] font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 shadow-sm"
                   title="Move one step backward"
                 >
                   <Undo2 size={13} />
@@ -24842,7 +24811,11 @@ Respond with a JSON array of slide objects matching the schema.`;
                   type="button"
                   onClick={toggleSmartReplayPlayback}
                   disabled={!replayTimeline.length}
-                  className={`flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-3 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 ${isReplayPlaying ? 'bg-[#5b21b6] hover:bg-[#4c1d95]' : 'bg-violet-600 hover:bg-violet-700'}`}
+                  className={`flex-1 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-4 py-2.5 text-[12px] font-semibold disabled:cursor-not-allowed disabled:opacity-40 transition-all duration-200 active:scale-95 shadow-sm ${
+                    isReplayPlaying 
+                      ? 'border border-violet-500 bg-violet-50/30 text-violet-900 ring-1 ring-violet-500/20 outline-violet-500' 
+                      : 'bg-violet-600 text-white hover:bg-violet-750'
+                  }`}
                   title={isReplayPlaying ? 'Pause replay' : (getSmartReplayDirection() < 0 ? 'Play backward toward earlier edits' : 'Play forward toward latest edits')}
                 >
                   {isReplayPlaying ? <Pause size={13} /> : <Play size={13} />}
@@ -24852,7 +24825,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   type="button"
                   onClick={() => applyReplayIndex((replayIndex ?? 0) + 1)}
                   disabled={!replayTimeline.length || (replayIndex ?? 0) >= replayTimeline.length - 1}
-                  className="flex-1 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#e5e7eb] bg-white px-3 py-3 text-[13px] font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200/70 bg-white px-3 py-2.5 text-[12px] font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 shadow-sm"
                   title="Move one step forward"
                 >
                   <Redo2 size={13} />
@@ -24861,7 +24834,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               </div>
 
               <div className="flex items-center justify-between gap-2 pt-1" ref={replaySpeedMenuRef}>
-                <label className="text-[12px] font-medium text-slate-500">Speed</label>
+                <label className="text-[12px] font-semibold text-slate-400 uppercase tracking-wider">Playback Speed</label>
                 <div className="relative">
                   <button
                     type="button"
@@ -24869,14 +24842,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                       setNotificationsOpen(false);
                       setReplaySpeedMenuOpen((prev) => !prev);
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-[12px] font-semibold text-violet-700 hover:bg-violet-100"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 transition-all duration-200 active:scale-95 shadow-sm"
                     title="Playback speed"
                   >
                     <span>{replaySpeed}x</span>
                     <ChevronDown size={13} className={`transition-transform ${replaySpeedMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {replaySpeedMenuOpen && (
-                    <div className="absolute right-0 top-[42px] z-[320] w-[110px] rounded-xl border border-violet-100 bg-white shadow-[0_18px_40px_-22px_rgba(76,29,149,0.45)] p-1">
+                    <div className="absolute right-0 top-[34px] z-[320] w-[110px] rounded-xl border border-slate-200 bg-white shadow-[0_12px_24px_-8px_rgba(0,0,0,0.1),0_0_1px_rgba(0,0,0,0.08)] p-1 animate-in fade-in slide-in-from-top-1 duration-150">
                       {[0.5, 1, 1.5, 2, 3, 4, 5].map((speedOption) => (
                         <button
                           key={speedOption}
@@ -24885,10 +24858,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                             setReplaySpeed(speedOption);
                             setReplaySpeedMenuOpen(false);
                           }}
-                          className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[12px] ${replaySpeed === speedOption ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}
+                          className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-[11px] ${replaySpeed === speedOption ? 'bg-violet-50/50 text-violet-700 font-semibold' : 'text-slate-650 hover:bg-slate-50/80'}`}
                         >
                           <span>{speedOption}x</span>
-                          {replaySpeed === speedOption && <Check size={12} className="text-violet-600" />}
+                          {replaySpeed === speedOption && <Check size={11} className="text-violet-600 stroke-[3]" />}
                         </button>
                       ))}
                     </div>
@@ -24900,7 +24873,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 type="button"
                 onClick={shareReplayTimeline}
                 disabled={!replayTimeline.length || replaySharing}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2.5 text-[13px] font-medium text-violet-700 hover:bg-violet-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 px-3 py-2.5 text-[12px] font-semibold text-slate-700 transition-all duration-200 active:scale-95 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
                 title="Copy a replay link that other users can open and play"
               >
                 <LinkIcon size={14} />
@@ -25273,7 +25246,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         return;
       }
       const phrases = [
-        { author: 'Sarah Johnson', text: 'Let?雓?finalize the marketing launch copy by tomorrow morning.' },
+        { author: 'Sarah Johnson', text: 'Let? finalize the marketing launch copy by tomorrow morning.' },
         { author: 'Alex Morgan', text: 'I decided to start engineering sprint MVP planning on Monday.' },
         { author: 'Michael Chen', text: 'We will draft the Q2 operating budget outline for review.' },
         { author: 'Sarah Johnson', text: 'I approve the new landing page dashboard layouts.' }
@@ -26156,7 +26129,7 @@ You can recommend task creations on the board.`;
                     >
                       <div className="text-sm font-semibold text-slate-800">{item.author}</div>
                       <div className="text-sm text-slate-600 mt-0.5 line-clamp-2">{item.text}</div>
-                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies ?謕? Open thread</div>
+                      <div className="text-xs text-violet-600 mt-1">{item.replyCount} replies 嚙瘟 Open thread</div>
                     </button>
                   ))}
                 </div>
@@ -26171,7 +26144,7 @@ You can recommend task creations on the board.`;
                     <div key={decision.id} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                       <div className="text-sm font-semibold text-amber-900">Decision</div>
                       <div className="text-sm text-amber-800 mt-0.5">{decision.summary}</div>
-                      <div className="text-xs text-amber-700 mt-1">{decision.by} ?謕? {formatDmRelative(decision.createdAt)}</div>
+                      <div className="text-xs text-amber-700 mt-1">{decision.by} 嚙瘟 {formatDmRelative(decision.createdAt)}</div>
                     </div>
                   ))}
                 </div>
@@ -27115,7 +27088,7 @@ You can recommend task creations on the board.`;
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="text-sm font-semibold text-slate-900">{file.name}</div>
-                      <div className="mt-1 text-xs text-slate-500">{file.kind} ?謕? {file.owner}</div>
+                      <div className="mt-1 text-xs text-slate-500">{file.kind} 嚙瘟 {file.owner}</div>
                     </div>
                     <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{file.updated}</span>
                   </div>
@@ -27419,7 +27392,7 @@ You can recommend task creations on the board.`;
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-slate-900">{task.title}</div>
-                          <div className="mt-1 text-xs text-slate-500">{task.columnTitle} ?謕? {task.assignee || 'Joshua'}</div>
+                          <div className="mt-1 text-xs text-slate-500">{task.columnTitle} 嚙瘟 {task.assignee || 'Joshua'}</div>
                         </div>
                         <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-slate-500 border border-slate-200">{task.due}</span>
                       </div>
@@ -27527,7 +27500,7 @@ You can recommend task creations on the board.`;
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="text-sm font-semibold text-slate-900">{request.title}</div>
-                          <div className="mt-1 text-xs text-slate-500">{request.type} ?謕? {request.owner}</div>
+                          <div className="mt-1 text-xs text-slate-500">{request.type} 嚙瘟 {request.owner}</div>
                         </div>
                         <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${request.tone}`}>{request.status}</span>
                       </div>
@@ -27687,7 +27660,7 @@ You can recommend task creations on the board.`;
             </div>
             <Clock size={12} className="text-gray-400" />
           </div>
-          <div className="text-[10px] text-gray-500 mb-2">AI generated ?? 2 min ago</div>
+          <div className="text-[10px] text-gray-500 mb-2">AI generated �E 2 min ago</div>
           <div className="text-xs text-gray-700 leading-relaxed mb-3">
             The team discussed Q3 priorities, focusing on collaboration, AI integration, templates, and mobile improvements.
           </div>
@@ -27743,7 +27716,7 @@ You can recommend task creations on the board.`;
                   <div className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded-xl rounded-tl-none border border-gray-100">
                     Let's launch the new template system in September.
                   </div>
-                  <div className="inline-flex mt-1 bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded-full text-[10px] border border-violet-100">?? 2</div>
+                  <div className="inline-flex mt-1 bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded-full text-[10px] border border-violet-100">🙌 2</div>
                 </div>
               </div>
               <div className="flex gap-2.5">
@@ -28486,7 +28459,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       </div>
     </div>
   ) : (sheetToolbarTab === 'Data' && !hasImportedData) ? (
-                        /* ???? DATA TAB: OMNI-IMPORT PORTAL ?????????????????????????????????????????????? */
+                        /* ── DATA TAB: OMNI-IMPORT PORTAL ─────────────────────── */
                         <div className="flex-1 overflow-y-auto thin-scrollbar bg-[#FAFAFC]">
                           <div className="max-w-3xl mx-auto px-6 py-10 flex flex-col gap-10">
 
@@ -28500,7 +28473,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   <p className="text-[13px] font-semibold text-violet-900">Relationships detected</p>
                                   <p className="text-[12px] text-violet-700 mt-0.5">Matching customer IDs found across your uploaded files. Would you like to connect these datasets automatically?</p>
                                   <div className="flex items-center gap-2 mt-3">
-                                    <button type="button" onClick={() => { setDataPortalRelationshipPrompt(false); setHasImportedData(true); showToast('Datasets connected ??no VLOOKUP required!'); }} className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors">Connect Datasets</button>
+                                    <button type="button" onClick={() => { setDataPortalRelationshipPrompt(false); setHasImportedData(true); showToast('Datasets connected — no VLOOKUP required!'); }} className="px-3 py-1.5 text-[12px] font-medium rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors">Connect Datasets</button>
                                     <button type="button" onClick={() => setDataPortalRelationshipPrompt(false)} className="px-3 py-1.5 text-[12px] font-medium rounded-lg border border-violet-200 text-violet-700 hover:bg-violet-100 transition-colors">Dismiss</button>
                                   </div>
                                 </div>
@@ -28528,7 +28501,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 files.forEach(f => {
                                   setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
                                 });
-                                showToast(`${files.length} file${files.length > 1 ? 's' : ''} received ??analyzing...`);
+                                showToast(`${files.length} file${files.length > 1 ? 's' : ''} received — analyzing...`);
                               }}
                             >
                               <div className="p-16 flex flex-col items-center text-center gap-8">
@@ -28542,7 +28515,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 {/* Headline */}
                                 <div>
                                   <h2 className="text-[24px] font-semibold text-slate-800 tracking-tight">What would you like to analyze?</h2>
-                                  <p className="text-[14px] text-slate-500 mt-2 max-w-sm mx-auto">Drop any file or paste content ??Regaarder converts it into structured, intelligent data.</p>
+                                  <p className="text-[14px] text-slate-500 mt-2 max-w-sm mx-auto">Drop any file or paste content — Regaarder converts it into structured, intelligent data.</p>
                                   <div className="flex flex-col gap-1.5 mt-4 text-[13px] text-slate-500">
                                     <span className="font-semibold text-slate-600">Try asking:</span>
                                     <div className="flex flex-wrap items-center justify-center gap-2">
@@ -28574,7 +28547,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       files.forEach(f => {
                                         setDataPortalImports(prev => [{ id: Date.now() + Math.random(), name: f.name, type: f.name.split('.').pop(), date: 'Just now', icon: FileSpreadsheet, color: 'text-violet-500 bg-violet-50' }, ...prev]);
                                       });
-                                      showToast(`${files.length} file${files.length > 1 ? 's' : ''} ready ??converting to sheet...`);
+                                      showToast(`${files.length} file${files.length > 1 ? 's' : ''} ready — converting to sheet...`);
                                     }} />
                                   </label>
                                 </div>
@@ -28582,7 +28555,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 {/* Secondary actions */}
                                 <div className="flex items-center gap-6 mt-2">
                                   <button type="button" onClick={() => { setHasImportedData(true); showToast('Paste content view loaded'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Paste Content</button>
-                                  <button type="button" onClick={() => { setHasImportedData(true); showToast('AI generation ready ??describe your sheet'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Ask AI</button>
+                                  <button type="button" onClick={() => { setHasImportedData(true); showToast('AI generation ready — describe your sheet'); }} className="text-[13px] text-slate-500 hover:text-violet-600 transition-colors font-medium">Ask AI</button>
                                 </div>
 
                                 {dataPortalDragOver && (
@@ -28969,7 +28942,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         className="grid text-[11px] font-semibold text-slate-700"
                         style={{ gridTemplateColumns: `48px ${Array.from({ length: activeSheetGrid.cols }).map((_, i) => `var(--col-${i}-width, 100px)`).join(' ')}`, minWidth: 'max-content' }}
                       >
-                          {/* ???? Corner Select-All Button ???? */}
+                          {/* ── Corner Select-All Button ── */}
                           <div
                             className="h-8 border-r border-gray-200 relative group flex items-center justify-center cursor-pointer hover:bg-violet-50 transition-colors"
                             onClick={() => {
@@ -30734,7 +30707,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           }
                                         }}
                                         onChange={(event) => {
-                                          // Update only the local buffer ??no global state write mid-keystroke
+                                          // Update only the local buffer — no global state write mid-keystroke
                                           setEditingCellValue(event.target.value);
                                         }}
                                         onKeyDown={(e) => {
@@ -31024,7 +30997,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <div className={`h-16 rounded-lg ${preset.background} border border-white/20`} />
                                 <div className="mt-2 text-xs font-semibold text-gray-900">{template.label}</div>
                                 <div className="text-[11px] text-gray-500">{template.detail}</div>
-                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} ??{template.motionCue}</div>
+                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} 繚 {template.motionCue}</div>
                                 <div className="mt-2 flex items-center gap-1.5">
                                   <button
                                     type="button"
@@ -31297,14 +31270,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <MonitorPlay size={16} className="text-gray-500 group-hover:text-violet-600" />
               </div>
               <span className="text-sm font-semibold text-gray-900">Presentation</span>
-              <span className="text-xs text-gray-500 mt-1">1920 ? 1080 px</span>
+              <span className="text-xs text-gray-500 mt-1">1920 × 1080 px</span>
             </button>
             <button className="flex flex-col items-start p-4 border border-gray-200 rounded-xl hover:border-violet-500 hover:bg-violet-50 transition-colors text-left group">
               <div className="w-10 h-8 bg-gray-100 group-hover:bg-violet-100 rounded mb-3 flex items-center justify-center">
                 <Presentation size={16} className="text-gray-500 group-hover:text-violet-600" />
               </div>
               <span className="text-sm font-semibold text-gray-900">Presentation (4:3)</span>
-              <span className="text-xs text-gray-500 mt-1">1024 ? 768 px</span>
+              <span className="text-xs text-gray-500 mt-1">1024 × 768 px</span>
             </button>
           </div>
         </div>
@@ -31465,7 +31438,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         )}
 
-      {/* ???? Share Modal (Deck & Sheets) ???? */}
+      {/* ── Share Modal (Deck & Sheets) ── */}
       
       
             
@@ -31661,10 +31634,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
           setShareExpirationUnit={setShareExpirationUnit}
           shareExpirationDate={shareExpirationDate}
           setShareExpirationDate={setShareExpirationDate}
+          showToast={showToast}
         />
       )}
 
-      {/* ???? Sheet Slash Menu ???? */}
+      {/* ── Sheet Slash Menu ── */}
       {productMode === 'sheets' && sheetSlashMenu.open && (() => {
         const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
           opt.label.toLowerCase().includes((sheetSlashMenu.filterText || '').toLowerCase())
@@ -31722,7 +31696,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         );
       })()}
 
-      {/* ???? Table Presets ???? */}
+      {/* ── Table Presets ── */}
       {productMode === 'sheets' && sheetTablePresetMenu.open && (
         <div
           ref={sheetTablePresetMenuRef}
@@ -31992,7 +31966,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {/* ???? Injected Sheets Modals & Overlays ???? */}
+      {/* ── Injected Sheets Modals & Overlays ── */}
       {specialCharactersModal.open && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
                                              if (document.activeElement === e.target) {
@@ -32042,27 +32016,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       value={specialCharactersModal.currencySymbol || '$$'}
                     >
                       <option value="$$">$$ USD (United States Dollar)</option>
-                      <option value="??>??EUR (Euro)</option>
-                      <option value="??>??GBP (British Pound)</option>
-                      <option value="??>??JPY (Japanese Yen)</option>
-                      <option value="??>??INR (Indian Rupee)</option>
-                      <option value="??>??CNY (Chinese Yuan)</option>
-                      <option value="??>??RUB (Russian Ruble)</option>
-                      <option value="??>??ILS (Israeli New Shekel)</option>
-                      <option value="??>??KRW (South Korean Won)</option>
-                      <option value="??>??TRY (Turkish Lira)</option>
-                      <option value="??>??CHF (Swiss Franc)</option>
+                      <option value="€">€ EUR (Euro)</option>
+                      <option value="£">£ GBP (British Pound)</option>
+                      <option value="¥">¥ JPY (Japanese Yen)</option>
+                      <option value="₹">₹ INR (Indian Rupee)</option>
+                      <option value="元">元 CNY (Chinese Yuan)</option>
+                      <option value="₽">₽ RUB (Russian Ruble)</option>
+                      <option value="₪">₪ ILS (Israeli New Shekel)</option>
+                      <option value="₩">₩ KRW (South Korean Won)</option>
+                      <option value="₺">₺ TRY (Turkish Lira)</option>
+                      <option value="₣">₣ CHF (Swiss Franc)</option>
                       <option value="A$">A$ AUD (Australian Dollar)</option>
                       <option value="C$">C$ CAD (Canadian Dollar)</option>
                       <option value="NZ$">NZ$ NZD (New Zealand Dollar)</option>
                       <option value="S$">S$ SGD (Singapore Dollar)</option>
                       <option value="HK$">HK$ HKD (Hong Kong Dollar)</option>
                       <option value="R$">R$ BRL (Brazilian Real)</option>
-                      <option value="??>??PHP (Philippine Peso)</option>
-                      <option value="??>??VND (Vietnamese Dong)</option>
-                      <option value="??>??THB (Thai Baht)</option>
+                      <option value="₱">₱ PHP (Philippine Peso)</option>
+                      <option value="₫">₫ VND (Vietnamese Dong)</option>
+                      <option value="฿">฿ THB (Thai Baht)</option>
                       <option value="KSh">KSh KES (Kenyan Shilling)</option>
-                      <option value="??>??NGN (Nigerian Naira)</option>
+                      <option value="₦">₦ NGN (Nigerian Naira)</option>
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
@@ -32107,7 +32081,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Global Currencies</label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {['$$', '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??].map(sym => (
+                  {['$$', '€', '£', '¥', '₹', '元', '₽', '₪', '₩', '₺', '₣', '₱', '₫', '฿', '₦'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -32125,7 +32099,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Math & Academics</label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {['??, '?', '??, '蝪?, '?', '蝜?, '??, '??, '??, '??, '??, '??, '?', '撘?, '??].map(sym => (
+                  {['√', 'π', '∞', '±', '×', '÷', '≈', '≠', '≤', '≥', '∑', '∏', 'Δ', 'μ', '∫'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -32143,7 +32117,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Financial, Academic & General Symbols</label>
                 <div className="grid grid-cols-10 gap-1.5">
-                  {['??, '??, '??, '??, '??, '蝪?, '蝳?, '蝜?, '??, '??, '蝛?, '蝪?, '??, '??, '??, '??, '??, '??, '??, '??].map(sym => (
+                  {['▲', '▼', '★', '✖', '✔', '°', '§', '¶', '†', '‡', '©', '®', '™', '‰', '✓', '✗', '♠', '♣', '♥', '♦'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -32213,7 +32187,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                 {sheetLinkModal.type === 'bookmark' ? (
                   <>
-                    <span className="text-violet-600">??</span>
+                    <span className="text-violet-600">📌</span>
                     Insert Bookmark
                   </>
                 ) : (
@@ -32664,27 +32638,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       value={specialCharactersModal.currencySymbol || '$$'}
                     >
                       <option value="$$">$$ USD (United States Dollar)</option>
-                      <option value="??>??EUR (Euro)</option>
-                      <option value="??>??GBP (British Pound)</option>
-                      <option value="??>??JPY (Japanese Yen)</option>
-                      <option value="??>??INR (Indian Rupee)</option>
-                      <option value="??>??CNY (Chinese Yuan)</option>
-                      <option value="??>??RUB (Russian Ruble)</option>
-                      <option value="??>??ILS (Israeli New Shekel)</option>
-                      <option value="??>??KRW (South Korean Won)</option>
-                      <option value="??>??TRY (Turkish Lira)</option>
-                      <option value="??>??CHF (Swiss Franc)</option>
+                      <option value="€">€ EUR (Euro)</option>
+                      <option value="£">£ GBP (British Pound)</option>
+                      <option value="¥">¥ JPY (Japanese Yen)</option>
+                      <option value="₹">₹ INR (Indian Rupee)</option>
+                      <option value="元">元 CNY (Chinese Yuan)</option>
+                      <option value="₽">₽ RUB (Russian Ruble)</option>
+                      <option value="₪">₪ ILS (Israeli New Shekel)</option>
+                      <option value="₩">₩ KRW (South Korean Won)</option>
+                      <option value="₺">₺ TRY (Turkish Lira)</option>
+                      <option value="₣">₣ CHF (Swiss Franc)</option>
                       <option value="A$">A$ AUD (Australian Dollar)</option>
                       <option value="C$">C$ CAD (Canadian Dollar)</option>
                       <option value="NZ$">NZ$ NZD (New Zealand Dollar)</option>
                       <option value="S$">S$ SGD (Singapore Dollar)</option>
                       <option value="HK$">HK$ HKD (Hong Kong Dollar)</option>
                       <option value="R$">R$ BRL (Brazilian Real)</option>
-                      <option value="??>??PHP (Philippine Peso)</option>
-                      <option value="??>??VND (Vietnamese Dong)</option>
-                      <option value="??>??THB (Thai Baht)</option>
+                      <option value="₱">₱ PHP (Philippine Peso)</option>
+                      <option value="₫">₫ VND (Vietnamese Dong)</option>
+                      <option value="฿">฿ THB (Thai Baht)</option>
                       <option value="KSh">KSh KES (Kenyan Shilling)</option>
-                      <option value="??>??NGN (Nigerian Naira)</option>
+                      <option value="₦">₦ NGN (Nigerian Naira)</option>
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
@@ -32729,7 +32703,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Global Currencies</label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {['$$', '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??].map(sym => (
+                  {['$$', '€', '£', '¥', '₹', '元', '₽', '₪', '₩', '₺', '₣', '₱', '₫', '฿', '₦'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -32747,7 +32721,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Math & Academics</label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {['??, '?', '??, '蝪?, '?', '蝜?, '??, '??, '??, '??, '??, '??, '?', '撘?, '??].map(sym => (
+                  {['√', 'π', '∞', '±', '×', '÷', '≈', '≠', '≤', '≥', '∑', '∏', 'Δ', 'μ', '∫'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -32765,7 +32739,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Financial, Academic & General Symbols</label>
                 <div className="grid grid-cols-10 gap-1.5">
-                  {['??, '??, '??, '??, '??, '蝪?, '蝳?, '蝜?, '??, '??, '蝛?, '蝪?, '??, '??, '??, '??, '??, '??, '??, '??].map(sym => (
+                  {['▲', '▼', '★', '✖', '✔', '°', '§', '¶', '†', '‡', '©', '®', '™', '‰', '✓', '✗', '♠', '♣', '♥', '♦'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -33216,7 +33190,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-1">
             <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              ?? Insert Date
+              📅 Insert Date
             </span>
             <button 
               type="button" 
@@ -33316,8 +33290,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {commentPopover.open && (() => {
         const comment = comments.find(c => c.id === commentPopover.commentId);
         const replies = comment?.replies || [];
-        const span = document.querySelector(`.comment-highlight[data-comment-id="${commentPopover.commentId}"]`);
-        const commentedText = span ? span.textContent.trim() : '';
         return (
           <div
             ref={commentPopoverRef}
@@ -33331,13 +33303,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
             }}
           >
             <div className="bg-white/95 backdrop-blur-md text-slate-800 rounded-2xl border border-slate-200/80 overflow-hidden flex flex-col shadow-[0_15px_40px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.02)]" style={{ maxHeight: '500px' }}>
-              {commentedText && (
-                <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/40 text-[11px] text-slate-500 italic truncate max-w-[360px] pl-6 relative">
-                  <span className="absolute left-3 text-violet-400 font-bold">??/span>
-                  {commentedText}
-                  <span className="text-violet-400 font-bold">??/span>
-                </div>
-              )}
               <div 
                 className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-transparent cursor-move select-none"
                 onPointerDown={handleCommentDrag}
@@ -33346,7 +33311,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">U</div>
                   <div>
                     <span className="text-[11px] font-bold text-slate-700">You</span>
-                    <span className="text-[10px] text-slate-400 ml-1.5">蝜?Just now</span>
+                    <span className="text-[10px] text-slate-400 ml-1.5">· Just now</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -33355,7 +33320,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onClick={() => {
                         setComments(prev => prev.map(c => c.id === commentPopover.commentId ? { ...c, resolved: true } : c));
                         setCommentPopover(p => ({ ...p, open: false }));
-                        showToast('Comment resolved ??);
+                        showToast('Comment resolved ✓');
                       }}
                       className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200"
                       title="Resolve"
@@ -33479,7 +33444,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         setCommentDraftText('');
                         setCommentPopover(p => ({ ...p, open: false }));
-                        showToast('Comment posted ??);
+                        showToast('Comment posted ✓');
                       }}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-[11px] font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-sm"
                     >
@@ -33670,7 +33635,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </button>
                 </div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-100/50 text-violet-700 text-[13px] font-medium mb-4 backdrop-blur-sm mt-8">
-                  Good afternoon, Joshua <span className="text-base leading-none">??</span>
+                  Good afternoon, Joshua <span className="text-base leading-none">👋</span>
                 </div>
                 <h1 className="text-[36px] font-bold text-slate-900 leading-tight mb-3 tracking-tight">Ready to collaborate?</h1>
                 <p className="text-[15px] text-slate-600 mb-8 max-w-[340px] leading-relaxed">Start a room, join a meeting, or continue where you left off.</p>
@@ -33717,9 +33682,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 
                 <div className="space-y-3 flex-1">
                   {[
-                    { title: 'Beta Launch Kickoff', time: 'Thursday, May 15 ??10:00 AM', color: 'bg-violet-100 text-violet-600' },
-                    { title: 'Design System Review', time: 'Friday, May 16 ??2:00 PM', color: 'bg-fuchsia-100 text-fuchsia-600' },
-                    { title: 'Marketing Sync', time: 'Monday, May 19 ??11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
+                    { title: 'Beta Launch Kickoff', time: 'Thursday, May 15 • 10:00 AM', color: 'bg-violet-100 text-violet-600' },
+                    { title: 'Design System Review', time: 'Friday, May 16 • 2:00 PM', color: 'bg-fuchsia-100 text-fuchsia-600' },
+                    { title: 'Marketing Sync', time: 'Monday, May 19 • 11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
                   ].map((mtg, i) => (
                     <div key={i} className="group p-4 rounded-[16px] border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all flex items-start justify-between">
                       <div className="flex gap-4">
@@ -33759,10 +33724,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 
                 <div className="space-y-3 flex-1">
                   {[
-                    { title: 'Q2 Launch Strategy', time: 'May 12 ??2:30 PM' },
-                    { title: 'Product Review', time: 'May 9 ??11:00 AM' },
-                    { title: 'Investor Update', time: 'May 7 ??4:00 PM' },
-                    { title: 'Design Critique', time: 'May 5 ??10:30 AM' }
+                    { title: 'Q2 Launch Strategy', time: 'May 12 • 2:30 PM' },
+                    { title: 'Product Review', time: 'May 9 • 11:00 AM' },
+                    { title: 'Investor Update', time: 'May 7 • 4:00 PM' },
+                    { title: 'Design Critique', time: 'May 5 • 10:30 AM' }
                   ].map((room, i) => (
                     <div key={i} className="group p-3 rounded-[16px] border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-between cursor-pointer" onClick={() => startMeetingNow(generateRoomCode())}>
                       <div className="flex items-center gap-4">
@@ -33801,222 +33766,208 @@ if (productMode === 'deck' || productMode === 'sheets') {
       </div>
     );
   }
-            const renderDocumentOutlineContent = () => {
-              const wordsCount = documentStats?.words || 0;
-              const minRead = Math.max(1, Math.ceil(wordsCount / 200));
-              return (
-                <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-3" style={{ fontFamily: editorFont }}>
-                    <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
-                          <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
-                            {outlineTreeData.length} Sections
-                          </span>
-                        </div>
-                        <div className="text-[10.5px] text-slate-400 font-medium">
-                          {minRead} min read &bull; {wordsCount} words
-                        </div>
-                      </div>
-                      
-                      <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
-                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">DOCUMENT TITLE</div>
-                        <div 
-                          className="text-xs font-bold text-gray-955 truncate mt-0.5 outline-none cursor-text" 
-                          title={docTitleDisplay}
-                          contentEditable
-                          suppressContentEditableWarning
-                          onBlur={(e) => setDocTitle(e.target.textContent)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              e.target.blur();
-                            }
-                          }}
-                        >
-                          {docTitleDisplay}
-                        </div>
-                      </div>
+            const renderDocumentOutlineContent = () => (
+        <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-3" style={{ fontFamily: editorFont }}>
+            <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
+                <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
+                  {outlineTreeData.length} Sections
+                </span>
+              </div>
+              
+              <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
+                <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Focused document</div>
+                <div 
+                  className="text-xs font-bold text-gray-955 truncate mt-0.5 outline-none cursor-text" 
+                  title={docTitleDisplay}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onBlur={(e) => setDocTitle(e.target.textContent)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.target.blur();
+                    }
+                  }}
+                >
+                  {docTitleDisplay}
+                </div>
+              </div>
 
-                      {outlineTreeData.length > 0 ? (
-                        <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
-                          {outlineTreeData.map((section) => {
-                            let badgeColorClass = "bg-slate-50 text-slate-655 border border-slate-150";
-                            if (section.completed || section.progress >= 80) {
-                              badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
-                            } else if (section.progress >= 40) {
-                              badgeColorClass = "bg-amber-50 text-amber-600 border border-amber-100";
-                            } else if (section.progress > 0) {
-                              badgeColorClass = "bg-rose-50 text-rose-600 border border-rose-100";
-                            }
+              {outlineTreeData.length > 0 ? (
+                <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
+                  {outlineTreeData.map((section) => {
+                    let badgeColorClass = "bg-slate-50 text-slate-655 border border-slate-150";
+                    if (section.completed || section.progress >= 80) {
+                      badgeColorClass = "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                    } else if (section.progress >= 40) {
+                      badgeColorClass = "bg-amber-50 text-amber-600 border border-amber-100";
+                    } else if (section.progress > 0) {
+                      badgeColorClass = "bg-rose-50 text-rose-600 border border-rose-100";
+                    }
 
-                            return (
-                              <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
-                                <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50/70 transition-colors relative flex-nowrap min-w-0">
-                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
-                                      }}
-                                      className="text-slate-400 hover:text-slate-650 transition-colors shrink-0"
-                                    >
-                                      {section.subsections?.length > 0 ? (
-                                        section.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />
-                                      ) : (
-                                        <span className="w-3.5 block" />
-                                      )}
-                                    </button>
-                                    
-                                    {editingOutlineId === section.id ? (
-                                      <input
-                                        type="text"
-                                        value={editingOutlineText}
-                                        onChange={(e) => setEditingOutlineText(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.target.blur(); // Triggers the onBlur save
-                                          }
-                                        }}
-                                        onBlur={() => {
-                                          setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
-                                          setEditingOutlineId(null);
-                                          showToast('Section renamed');
-                                        }}
-                                        autoFocus
-                                        className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
-                                        style={{ fontFamily: editorFont }}
-                                      />
-                                    ) : (
-                                      <span 
-                                        onClick={() => {
-                                          setEditingOutlineId(section.id);
-                                          setEditingOutlineText(section.title);
-                                        }}
-                                        className="text-[12.5px] font-bold text-slate-800 truncate cursor-text hover:text-slate-955 whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1"
-                                      >
-                                        {section.title}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  <div className="flex items-center gap-1 pl-1 shrink-0">
-                                    {section.completed ? (
-                                      <span className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[9px] text-emerald-600 font-bold">??/span>
-                                    ) : (
-                                      section.progress > 0 && (
-                                        <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${badgeColorClass}`}>
-                                          {section.progress}%
-                                        </span>
-                                      )
-                                    )}
-
-                                    {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                                      <div className="relative">
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            const rect = e.currentTarget.getBoundingClientRect();
-                                            setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
-                                            setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id);
-                                          }}
-                                          className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
-                                        >
-                                          <MoreVertical size={13} />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Render Subsections */}
-                                {section.expanded && section.subsections && section.subsections.length > 0 && (
-                                  <div className="pl-4 space-y-1.5 border-l border-slate-200 ml-2.5">
-                                    {section.subsections.map(sub => (
-                                      <div key={sub.id} className="flex items-center gap-2 py-0.5 min-w-0 flex-nowrap">
-                                        <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
-                                        <span className="text-[11.5px] text-slate-500 font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1">{sub.title}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-10 px-4 text-center mt-2">
-                          <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-3">
-                            <Menu size={18} className="text-slate-400" />
+                    return (
+                      <div key={section.id} className="space-y-1" style={{ fontFamily: editorFont }}>
+                        <div className="group flex items-center justify-between p-1 rounded-lg hover:bg-slate-50/70 transition-colors relative flex-nowrap min-w-0">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, expanded: !s.expanded } : s));
+                              }}
+                              className="text-slate-400 hover:text-slate-650 transition-colors shrink-0"
+                            >
+                              {section.subsections?.length > 0 ? (
+                                section.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />
+                              ) : (
+                                <span className="w-3.5 block" />
+                              )}
+                            </button>
+                            
+                            {editingOutlineId === section.id ? (
+                              <input
+                                type="text"
+                                value={editingOutlineText}
+                                onChange={(e) => setEditingOutlineText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.target.blur(); // Triggers the onBlur save
+                                  }
+                                }}
+                                onBlur={() => {
+                                  setOutlineTreeData(prev => prev.map(s => s.id === section.id ? { ...s, title: editingOutlineText } : s));
+                                  setEditingOutlineId(null);
+                                  showToast('Section renamed');
+                                }}
+                                autoFocus
+                                className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-violet-500 w-full"
+                                style={{ fontFamily: editorFont }}
+                              />
+                            ) : (
+                              <span 
+                                onClick={() => {
+                                  setEditingOutlineId(section.id);
+                                  setEditingOutlineText(section.title);
+                                }}
+                                className="text-[12.5px] font-bold text-slate-800 truncate cursor-text hover:text-slate-955 whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1"
+                              >
+                                {section.title}
+                              </span>
+                            )}
                           </div>
-                          <p className="text-[13px] font-bold text-slate-700 mb-1">Outline is empty</p>
-                          <p className="text-[11px] text-slate-400 mb-5 leading-relaxed max-w-[200px]">Paste content containing headings to auto-populate outline.</p>
-                          <button 
-                            type="button" 
-                            onClick={() => {
-                              setOutlineTreeData([{ id: `sec-${Date.now()}`, title: 'New Section', progress: 0, completed: false, subsections: [], expanded: false }]);
-                            }} 
-                            className="text-[11.5px] font-semibold text-violet-750 bg-violet-50/50 border border-dashed border-violet-250 hover:bg-violet-50 hover:border-violet-300 px-5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1 cursor-pointer select-none"
-                            style={{ fontFamily: editorFont }}
-                          >
-                            + Add Section
-                          </button>
-                        </div>
-                      )}
 
-                      {/* Add New Section Buttons */}
-                      {outlineTreeData.length > 0 && currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                        <div className="flex gap-2 w-full mt-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newId = `sec-${Date.now()}`;
-                              setOutlineTreeData(prev => [...prev, { id: newId, title: 'Untitled', progress: 0, completed: false, subsections: [], expanded: false }]);
-                              setEditingOutlineId(newId);
-                              setEditingOutlineText('Untitled');
-                            }}
-                            className="flex-1 py-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                            style={{ fontFamily: editorFont }}
-                          >
-                            + Add Section
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              showToast('Generating AI Section...');
-                              setTimeout(() => {
-                                const newId = `sec-ai-${Date.now()}`;
-                                setOutlineTreeData(prev => [...prev, { id: newId, title: 'AI Generated Insights', progress: 0, completed: false, subsections: [], expanded: false }]);
-                                setEditingOutlineId(newId);
-                                setEditingOutlineText('AI Generated Insights');
-                                showToast('AI Section Generated');
-                              }, 1000);
-                            }}
-                            className="flex-1 py-2 rounded-xl border border-dashed border-violet-300 hover:border-violet-500 bg-violet-50/50 hover:bg-violet-100 text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                            style={{ fontFamily: editorFont }}
-                          >
-                            <Sparkles size={13} /> AI Section
-                          </button>
+                          <div className="flex items-center gap-1 pl-1 shrink-0">
+                            {section.completed ? (
+                              <span className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[9px] text-emerald-600 font-bold">✓</span>
+                            ) : (
+                              section.progress > 0 && (
+                                <span className={`text-[8px] font-bold px-1 py-0.5 rounded-full ${badgeColorClass}`}>
+                                  {section.progress}%
+                                </span>
+                              )
+                            )}
+
+                            {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setOutlineMenuCoords({ top: rect.bottom, left: rect.right - 140 });
+                                    setActiveOutlineMenuId(activeOutlineMenuId === section.id ? null : section.id);
+                                  }}
+                                  className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-655 transition-all cursor-pointer"
+                                >
+                                  <MoreVertical size={13} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      
-                      {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            insertEnterprisePage();
-                          }}
-                          className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                          style={{ fontFamily: editorFont }}
-                        >
-                          + New page
-                        </button>
-                      )}
-                    </div>
+
+                        {/* Render Subsections */}
+                        {section.expanded && section.subsections && section.subsections.length > 0 && (
+                          <div className="pl-4 space-y-1.5 border-l border-slate-200 ml-2.5">
+                            {section.subsections.map(sub => (
+                              <div key={sub.id} className="flex items-center gap-2 py-0.5 min-w-0 flex-nowrap">
+                                <span className="w-1.5 h-1.5 rounded-full border border-slate-400 bg-transparent shrink-0" />
+                                <span className="text-[11.5px] text-slate-500 font-semibold truncate whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 flex-1">{sub.title}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center mt-2">
+                  <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-4">
+                    <AlignLeft size={20} className="text-slate-300" />
                   </div>
-              );
-            };
+                  <p className="text-[13px] font-bold text-slate-700 mb-1">Outline is empty</p>
+                  <p className="text-[11.5px] text-slate-400 mb-5 leading-relaxed max-w-[180px]">Paste content or start typing to automatically build your outline.</p>
+                  <button type="button" onClick={() => {
+                    setOutlineTreeData([{ id: `sec-${Date.now()}`, title: 'New Section', progress: 0, completed: false, subsections: [], expanded: false }]);
+                  }} className="text-[11.5px] font-semibold text-violet-700 bg-violet-50 border border-violet-100 hover:bg-violet-100 px-5 py-2 rounded-full transition-all shadow-sm">
+                    Add Section
+                  </button>
+                </div>
+              )}
+
+              {/* Add New Section Buttons */}
+              {outlineTreeData.length > 0 && currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                <div className="flex gap-2 w-full mt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newId = `sec-${Date.now()}`;
+                      setOutlineTreeData(prev => [...prev, { id: newId, title: 'Untitled', progress: 0, completed: false, subsections: [], expanded: false }]);
+                      setEditingOutlineId(newId);
+                      setEditingOutlineText('Untitled');
+                    }}
+                    className="flex-1 py-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                    style={{ fontFamily: editorFont }}
+                  >
+                    + Add Section
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      showToast('Generating AI Section...');
+                      setTimeout(() => {
+                        const newId = `sec-ai-${Date.now()}`;
+                        setOutlineTreeData(prev => [...prev, { id: newId, title: 'AI Generated Insights', progress: 0, completed: false, subsections: [], expanded: false }]);
+                        setEditingOutlineId(newId);
+                        setEditingOutlineText('AI Generated Insights');
+                        showToast('AI Section Generated');
+                      }, 1000);
+                    }}
+                    className="flex-1 py-2 rounded-xl border border-dashed border-violet-300 hover:border-violet-500 bg-violet-50/50 hover:bg-violet-100 text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                    style={{ fontFamily: editorFont }}
+                  >
+                    <Sparkles size={13} /> AI Section
+                  </button>
+                </div>
+              )}
+              
+              {currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    insertEnterprisePage();
+                  }}
+                  className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                  style={{ fontFamily: editorFont }}
+                >
+                  + New page
+                </button>
+              )}
+            </div>
+          </div>
+      );
 
   const handleWorkspaceModuleClick = (moduleName) => {
     if (focusedModule === moduleName) return;
@@ -34450,10 +34401,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
     setShareExpirationUnit={setShareExpirationUnit}
     shareExpirationDate={shareExpirationDate}
     setShareExpirationDate={setShareExpirationDate}
-  />
+    showToast={showToast}
+        />
 )}
 
-      {/* ???? Zero-Knowledge Side-by-Side Preview Modal ???? */}
+      {/* ── Zero-Knowledge Side-by-Side Preview Modal ── */}
       {zeroKnowledgePreviewOpen && (
         <div className="fixed inset-0 z-[530] bg-slate-900/50 backdrop-blur-md flex items-start justify-center p-6 overflow-auto">
           <div className="w-full max-w-[1100px] rounded-3xl bg-white border border-slate-200 shadow-[0_60px_120px_-40px_rgba(15,23,42,0.5)] flex flex-col overflow-hidden">
@@ -34468,7 +34420,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="text-base font-bold text-slate-900">Preview Shared Version</div>
                   <div className="text-xs text-slate-500 mt-0.5">
                     {zeroKnowledgeRedactions.length === 0
-                      ? 'No content is currently protected ??both views are identical.'
+                      ? 'No content is currently protected — both views are identical.'
                       : `${zeroKnowledgeRedactions.length} protected item${zeroKnowledgeRedactions.length !== 1 ? 's' : ''} hidden from recipient`}
                   </div>
                 </div>
@@ -34488,7 +34440,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-violet-400 mr-1">Protected:</span>
                 {zeroKnowledgeRedactions.map(chip => (
                   <span key={chip.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[11px] font-medium border border-violet-200">
-                    ?? <span className="max-w-[120px] truncate" title={chip.fullText}>{chip.text}</span>
+                    🔒 <span className="max-w-[120px] truncate" title={chip.fullText}>{chip.text}</span>
                   </span>
                 ))}
               </div>
@@ -34497,7 +34449,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {/* Two-Column Compare */}
             <div className="flex flex-1 overflow-hidden min-h-[500px]">
               
-              {/* ???? Owner View (left) ???? */}
+              {/* ── Owner View (left) ── */}
               <div className="flex-1 flex flex-col border-r border-slate-100 overflow-hidden">
                 <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 border-b border-slate-100 shrink-0">
                   <div className="w-2 h-2 rounded-full bg-green-400"></div>
@@ -34522,7 +34474,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               </div>
 
-              {/* ???? Recipient View (right) ???? */}
+              {/* ── Recipient View (right) ── */}
               <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex items-center gap-2 px-6 py-3 bg-slate-50 border-b border-slate-100 shrink-0">
                   <div className="w-2 h-2 rounded-full bg-violet-400"></div>
@@ -34530,14 +34482,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <span className="text-[10px] text-slate-400 ml-auto">Protected content omitted</span>
                 </div>
                 <div className="flex-1 overflow-auto px-8 py-6 bg-white">
-                  {/* Recipient Title ??keywords stripped */}
+                  {/* Recipient Title — keywords stripped */}
                   {getRecipientTitle() && (
                     <h1 className="text-2xl font-bold text-slate-900 mb-1 leading-tight">{getRecipientTitle()}</h1>
                   )}
                   {getRecipientSubtitle() && (
                     <p className="text-sm text-slate-500 mb-5">{getRecipientSubtitle()}</p>
                   )}
-                  {/* Recipient Document Body ??protected nodes removed */}
+                  {/* Recipient Document Body — protected nodes removed */}
                   {getRecipientHtml() ? (
                     <div
                       className="prose prose-sm max-w-none text-slate-700 leading-relaxed"
@@ -34546,7 +34498,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   ) : (
                     <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-sm gap-2">
                       <EyeOff size={32} className="text-slate-200" />
-                      <span>All content is protected ??nothing visible to recipient.</span>
+                      <span>All content is protected — nothing visible to recipient.</span>
                     </div>
                   )}
                 </div>
@@ -34557,7 +34509,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {/* Modal Footer */}
             <div className="flex items-center justify-between px-8 py-4 border-t border-slate-100 bg-slate-50/50 shrink-0">
               <p className="text-[11px] text-slate-400 max-w-md leading-relaxed">
-                Protected content is completely omitted from the recipient view ??no redaction marks or warnings are shown.
+                Protected content is completely omitted from the recipient view — no redaction marks or warnings are shown.
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -34655,36 +34607,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <img src={previewAttachment.url} alt={previewAttachment.name} className="w-full h-auto rounded-xl border border-gray-200" />
             ) : previewAttachment.type?.startsWith('audio/') ? (
               <audio controls src={previewAttachment.url} className="w-full" />
-            ) : (previewAttachment.name?.toLowerCase().endsWith('.docx') || previewAttachment.name?.toLowerCase().endsWith('.doc')) ? (
-              <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col font-sans">
-                <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded bg-blue-500 flex items-center justify-center text-white font-bold text-[10px] tracking-tight">DOC</div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-800">{previewAttachment.name}</div>
-                    <div className="text-[10px] text-slate-400">Word Document Preview</div>
-                  </div>
-                </div>
-                <div className="p-4 bg-slate-100/50 min-h-[300px] flex flex-col items-center justify-center gap-3">
-                  <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm p-6 w-full max-w-md min-h-[220px] flex flex-col gap-2 relative">
-                    <div className="w-1/3 h-3 bg-slate-200 rounded mb-4" />
-                    {previewAttachment.previewText ? (
-                      <div className="text-[11px] text-slate-600 leading-normal line-clamp-[6] whitespace-pre-wrap">
-                        {previewAttachment.previewText}
-                      </div>
-                    ) : (
-                      <>
-                        <div className="w-full h-2.5 bg-slate-100 rounded" />
-                        <div className="w-full h-2.5 bg-slate-100 rounded" />
-                        <div className="w-5/6 h-2.5 bg-slate-100 rounded mb-3" />
-                        <div className="w-1/4 h-2.5 bg-slate-200 rounded mb-2" />
-                        <div className="w-full h-2.5 bg-slate-100 rounded" />
-                        <div className="w-2/3 h-2.5 bg-slate-100 rounded" />
-                      </>
-                    )}
-                    <div className="absolute bottom-3 right-4 text-[8px] text-slate-400 font-bold uppercase tracking-wider">Page 1</div>
-                  </div>
-                </div>
-              </div>
             ) : previewAttachment.previewText ? (
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-700 leading-5 whitespace-pre-wrap">
                 {previewAttachment.previewText}
@@ -35919,7 +35841,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }}
                       className="w-full text-left px-2 py-1 text-xs rounded hover:bg-red-50 hover:text-red-650 flex items-center gap-1.5 font-medium"
                     >
-                      <span>瞍?/span> Redact Selection
+                      <span>⬛</span> Redact Selection
                     </button>
                     <button
                       type="button"
@@ -35929,7 +35851,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }}
                       className="w-full text-left px-2 py-1 text-xs rounded hover:bg-red-50 hover:text-red-650 flex items-center gap-1.5 font-medium"
                     >
-                      <span>瞍?/span> Redact Element (Table/Image/etc)
+                      <span>⬛</span> Redact Element (Table/Image/etc)
                     </button>
                   </div>
                 </div>
@@ -36054,7 +35976,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Choose bullet style', action: () => { setListGalleryOpen('bullet'); setListDropdownOpen(false); } },
                     { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Choose numbering style', action: () => { setListGalleryOpen('numbered'); setListDropdownOpen(false); } },
                     { id: 'multilevel', icon: <ListTree size={14} />, label: 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
-                    { id: 'checklist', icon: <span className="text-[13px]">??/span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
+                    { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
                   ].map(item => (
                     <button key={item.id} onPointerDown={(e) => { e.preventDefault(); item.action(); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                       <div className="text-slate-500 w-5 flex items-center justify-center">{item.icon}</div>
@@ -36105,7 +36027,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <Pi size={14} className="text-slate-500" />
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Symbols</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Math, currency, arrows??/div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Math, currency, arrows…</div>
                     </div>
                   </button>
                   <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('equation'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
@@ -36119,7 +36041,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
                   <TableGridPicker setInsertDropdownOpen={setInsertDropdownOpen} />
                   <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('callout'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <span className="text-slate-500 text-base leading-none font-bold">??/span>
+                    <span className="text-slate-500 text-base leading-none font-bold">❝</span>
                     <div>
                       <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
                       <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
@@ -37010,10 +36932,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     const showWidgetReactionControls = (isWidgetHovered || isSelected || isWidgetReactionMenuOpen) && !isWidgetEditing && !['hand', 'eraser'].includes(whiteboardTool);
                     const showWidgetAnchorDots = (isWidgetHovered || isSelected) && !['hand', 'eraser'].includes(whiteboardTool);
                     const widgetAnchorPoints = [
-                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '?謕???, kind: 'resize' },
-                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'pointer', icon: '?謕???, kind: 'connect' },
-                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '?謕???, kind: 'resize' },
-                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '?謕???, kind: 'resize' },
+                      { key: 'top', x: (widget.width || 170) / 2, y: -8, cursor: 'ns-resize', icon: '嚙踝蕭', kind: 'resize' },
+                      { key: 'right', x: (widget.width || 170) + 8, y: (widget.height || 120) / 2, cursor: 'pointer', icon: '嚙踝蕭', kind: 'connect' },
+                      { key: 'bottom', x: (widget.width || 170) / 2, y: (widget.height || 120) + 8, cursor: 'ns-resize', icon: '嚙踝蕭', kind: 'resize' },
+                      { key: 'left', x: -8, y: (widget.height || 120) / 2, cursor: 'ew-resize', icon: '嚙踝蕭', kind: 'resize' },
                     ];
                     return (
                     <div
@@ -37986,7 +37908,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white border border-gray-200 rounded-full text-gray-400 hover:text-red-500 items-center justify-center hidden group-hover:flex"
                           title="Remove comment"
                         >
-                          ?謕???
+                          嚙踝蕭
                         </button>
                       </div>
                     </div>
@@ -38024,7 +37946,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                               title="Clear"
                             >
-                              ?謕???
+                              嚙踝蕭
                             </button>
                           </div>
                           <div className="mt-2 flex items-center gap-2 text-slate-500 overflow-x-auto thin-scrollbar pb-1">
@@ -38046,7 +37968,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 type="button"
                                 onClick={() => applyWhiteboardReaction(item.emoji)}
                                 className="h-8 rounded-lg border border-slate-100 text-lg hover:bg-slate-100"
-                                title={`${item.emoji} ?謕? ${item.count || 0} uses`}
+                                title={`${item.emoji} 嚙瞑 ${item.count || 0} uses`}
                               >
                                 {item.emoji}
                               </button>
@@ -38177,7 +38099,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
-                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow ?謕 coming soon'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow 嚙碼 coming soon'); setWhiteboardAddMenuOpen(false); } },
                           ].map((item) => (
                             <button
                               key={item.label}
@@ -39886,7 +39808,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {/* ???? Sheet Slash Menu ???????????????????????????????????????????????????????????????????????????? */}
+      {/* ── Sheet Slash Menu ────────────────────────────────────── */}
       {productMode === 'sheets' && sheetSlashMenu.open && (() => {
         const filtered = SHEET_SLASH_OPTIONS.filter(opt =>
           opt.label.toLowerCase().includes((sheetSlashMenu.filterText || '').toLowerCase())
@@ -39964,7 +39886,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         );
       })()}
 
-      {/* ???? Cell Format Modal ???????????????????????????????????????????????????????????????????????????? */}
+      {/* ── Cell Format Modal ────────────────────────────────────── */}
       {specialCharactersModal.open && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
                                              if (document.activeElement === e.target) {
@@ -40014,27 +39936,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       value={specialCharactersModal.currencySymbol || '$$'}
                     >
                       <option value="$$">$$ USD (United States Dollar)</option>
-                      <option value="??>??EUR (Euro)</option>
-                      <option value="??>??GBP (British Pound)</option>
-                      <option value="??>??JPY (Japanese Yen)</option>
-                      <option value="??>??INR (Indian Rupee)</option>
-                      <option value="??>??CNY (Chinese Yuan)</option>
-                      <option value="??>??RUB (Russian Ruble)</option>
-                      <option value="??>??ILS (Israeli New Shekel)</option>
-                      <option value="??>??KRW (South Korean Won)</option>
-                      <option value="??>??TRY (Turkish Lira)</option>
-                      <option value="??>??CHF (Swiss Franc)</option>
+                      <option value="€">€ EUR (Euro)</option>
+                      <option value="£">£ GBP (British Pound)</option>
+                      <option value="¥">¥ JPY (Japanese Yen)</option>
+                      <option value="₹">₹ INR (Indian Rupee)</option>
+                      <option value="元">元 CNY (Chinese Yuan)</option>
+                      <option value="₽">₽ RUB (Russian Ruble)</option>
+                      <option value="₪">₪ ILS (Israeli New Shekel)</option>
+                      <option value="₩">₩ KRW (South Korean Won)</option>
+                      <option value="₺">₺ TRY (Turkish Lira)</option>
+                      <option value="₣">₣ CHF (Swiss Franc)</option>
                       <option value="A$">A$ AUD (Australian Dollar)</option>
                       <option value="C$">C$ CAD (Canadian Dollar)</option>
                       <option value="NZ$">NZ$ NZD (New Zealand Dollar)</option>
                       <option value="S$">S$ SGD (Singapore Dollar)</option>
                       <option value="HK$">HK$ HKD (Hong Kong Dollar)</option>
                       <option value="R$">R$ BRL (Brazilian Real)</option>
-                      <option value="??>??PHP (Philippine Peso)</option>
-                      <option value="??>??VND (Vietnamese Dong)</option>
-                      <option value="??>??THB (Thai Baht)</option>
+                      <option value="₱">₱ PHP (Philippine Peso)</option>
+                      <option value="₫">₫ VND (Vietnamese Dong)</option>
+                      <option value="฿">฿ THB (Thai Baht)</option>
                       <option value="KSh">KSh KES (Kenyan Shilling)</option>
-                      <option value="??>??NGN (Nigerian Naira)</option>
+                      <option value="₦">₦ NGN (Nigerian Naira)</option>
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
@@ -40079,7 +40001,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Global Currencies</label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {['$$', '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??].map(sym => (
+                  {['$$', '€', '£', '¥', '₹', '元', '₽', '₪', '₩', '₺', '₣', '₱', '₫', '฿', '₦'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -40097,7 +40019,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Math & Academics</label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {['??, '?', '??, '蝪?, '?', '蝜?, '??, '??, '??, '??, '??, '??, '?', '撘?, '??].map(sym => (
+                  {['√', 'π', '∞', '±', '×', '÷', '≈', '≠', '≤', '≥', '∑', '∏', 'Δ', 'μ', '∫'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -40115,7 +40037,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Financial, Academic & General Symbols</label>
                 <div className="grid grid-cols-10 gap-1.5">
-                  {['??, '??, '??, '??, '??, '蝪?, '蝳?, '蝜?, '??, '??, '蝛?, '蝪?, '??, '??, '??, '??, '??, '??, '??, '??].map(sym => (
+                  {['▲', '▼', '★', '✖', '✔', '°', '§', '¶', '†', '‡', '©', '®', '™', '‰', '✓', '✗', '♠', '♣', '♥', '♦'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -40185,7 +40107,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                 {sheetLinkModal.type === 'bookmark' ? (
                   <>
-                    <span className="text-violet-600">??</span>
+                    <span className="text-violet-600">📌</span>
                     Insert Bookmark
                   </>
                 ) : (
@@ -40636,27 +40558,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       value={specialCharactersModal.currencySymbol || '$$'}
                     >
                       <option value="$$">$$ USD (United States Dollar)</option>
-                      <option value="??>??EUR (Euro)</option>
-                      <option value="??>??GBP (British Pound)</option>
-                      <option value="??>??JPY (Japanese Yen)</option>
-                      <option value="??>??INR (Indian Rupee)</option>
-                      <option value="??>??CNY (Chinese Yuan)</option>
-                      <option value="??>??RUB (Russian Ruble)</option>
-                      <option value="??>??ILS (Israeli New Shekel)</option>
-                      <option value="??>??KRW (South Korean Won)</option>
-                      <option value="??>??TRY (Turkish Lira)</option>
-                      <option value="??>??CHF (Swiss Franc)</option>
+                      <option value="€">€ EUR (Euro)</option>
+                      <option value="£">£ GBP (British Pound)</option>
+                      <option value="¥">¥ JPY (Japanese Yen)</option>
+                      <option value="₹">₹ INR (Indian Rupee)</option>
+                      <option value="元">元 CNY (Chinese Yuan)</option>
+                      <option value="₽">₽ RUB (Russian Ruble)</option>
+                      <option value="₪">₪ ILS (Israeli New Shekel)</option>
+                      <option value="₩">₩ KRW (South Korean Won)</option>
+                      <option value="₺">₺ TRY (Turkish Lira)</option>
+                      <option value="₣">₣ CHF (Swiss Franc)</option>
                       <option value="A$">A$ AUD (Australian Dollar)</option>
                       <option value="C$">C$ CAD (Canadian Dollar)</option>
                       <option value="NZ$">NZ$ NZD (New Zealand Dollar)</option>
                       <option value="S$">S$ SGD (Singapore Dollar)</option>
                       <option value="HK$">HK$ HKD (Hong Kong Dollar)</option>
                       <option value="R$">R$ BRL (Brazilian Real)</option>
-                      <option value="??>??PHP (Philippine Peso)</option>
-                      <option value="??>??VND (Vietnamese Dong)</option>
-                      <option value="??>??THB (Thai Baht)</option>
+                      <option value="₱">₱ PHP (Philippine Peso)</option>
+                      <option value="₫">₫ VND (Vietnamese Dong)</option>
+                      <option value="฿">฿ THB (Thai Baht)</option>
                       <option value="KSh">KSh KES (Kenyan Shilling)</option>
-                      <option value="??>??NGN (Nigerian Naira)</option>
+                      <option value="₦">₦ NGN (Nigerian Naira)</option>
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
@@ -40701,7 +40623,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Global Currencies</label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {['$$', '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??, '??].map(sym => (
+                  {['$$', '€', '£', '¥', '₹', '元', '₽', '₪', '₩', '₺', '₣', '₱', '₫', '฿', '₦'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -40719,7 +40641,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Math & Academics</label>
                 <div className="grid grid-cols-5 gap-1.5">
-                  {['??, '?', '??, '蝪?, '?', '蝜?, '??, '??, '??, '??, '??, '??, '?', '撘?, '??].map(sym => (
+                  {['√', 'π', '∞', '±', '×', '÷', '≈', '≠', '≤', '≥', '∑', '∏', 'Δ', 'μ', '∫'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -40737,7 +40659,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="space-y-2 p-3 bg-slate-50/50 rounded-xl border border-slate-100 col-span-2">
                 <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Financial, Academic & General Symbols</label>
                 <div className="grid grid-cols-10 gap-1.5">
-                  {['??, '??, '??, '??, '??, '蝪?, '蝳?, '蝜?, '??, '??, '蝛?, '蝪?, '??, '??, '??, '??, '??, '??, '??, '??].map(sym => (
+                  {['▲', '▼', '★', '✖', '✔', '°', '§', '¶', '†', '‡', '©', '®', '™', '‰', '✓', '✗', '♠', '♣', '♥', '♦'].map(sym => (
                     <button 
                       key={sym} 
                       type="button" 
@@ -41093,7 +41015,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-1">
             <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              ?? Insert Date
+              📅 Insert Date
             </span>
             <button 
               type="button" 
@@ -41295,8 +41217,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {commentPopover.open && (() => {
         const comment = comments.find(c => c.id === commentPopover.commentId);
         const replies = comment?.replies || [];
-        const span = document.querySelector(`.comment-highlight[data-comment-id="${commentPopover.commentId}"]`);
-        const commentedText = span ? span.textContent.trim() : '';
         return (
           <div
             ref={commentPopoverRef}
@@ -41310,13 +41230,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
             }}
           >
             <div className="bg-white/95 backdrop-blur-md text-slate-800 rounded-2xl border border-slate-200/80 overflow-hidden flex flex-col shadow-[0_15px_40px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.02)]" style={{ maxHeight: '500px' }}>
-              {commentedText && (
-                <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/40 text-[11px] text-slate-500 italic truncate max-w-[360px] pl-6 relative">
-                  <span className="absolute left-3 text-violet-400 font-bold">??/span>
-                  {commentedText}
-                  <span className="text-violet-400 font-bold">??/span>
-                </div>
-              )}
               <div 
                 className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-transparent cursor-move select-none"
                 onPointerDown={handleCommentDrag}
@@ -41325,7 +41238,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white flex items-center justify-center text-[10px] font-bold shadow-sm">U</div>
                   <div>
                     <span className="text-[11px] font-bold text-slate-700">You</span>
-                    <span className="text-[10px] text-slate-400 ml-1.5">蝜?Just now</span>
+                    <span className="text-[10px] text-slate-400 ml-1.5">· Just now</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -41334,7 +41247,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onClick={() => {
                         setComments(prev => prev.map(c => c.id === commentPopover.commentId ? { ...c, resolved: true } : c));
                         setCommentPopover(p => ({ ...p, open: false }));
-                        showToast('Comment resolved ??);
+                        showToast('Comment resolved ✓');
                       }}
                       className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200"
                       title="Resolve"
@@ -41458,7 +41371,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                         setCommentDraftText('');
                         setCommentPopover(p => ({ ...p, open: false }));
-                        showToast('Comment posted ??);
+                        showToast('Comment posted ✓');
                       }}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-[11px] font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-sm"
                     >
@@ -41526,7 +41439,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-      {blockDragHandle.visible && blockDragHandle.node && (
+       {blockDragHandle.visible && blockDragHandle.node && (
         <div
           className="block-drag-handle fixed z-[9000] cursor-pointer text-slate-300 hover:text-slate-500 hover:bg-slate-100 rounded flex items-center justify-center transition-colors p-0.5"
           style={{ top: `${blockDragHandle.top + 2}px`, left: `${blockDragHandle.left}px` }}
@@ -41652,7 +41565,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onClick={() => changeBlockTag(dragHandleMenu.node, item.tag)}
                       className={`h-7 rounded-lg text-xs font-semibold flex items-center justify-center border transition-all ${
                         isActive 
-                          ? "bg-violet-50 border-violet-200 text-violet-750 font-bold" 
+                          ? "bg-slate-100 border-slate-300 text-slate-900 font-bold" 
                           : "bg-white border-slate-200 hover:bg-slate-50 text-slate-655"
                       }`}
                     >
@@ -41678,7 +41591,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       onClick={() => changeBlockAlign(dragHandleMenu.node, item.align)}
                       className={`h-7 rounded-lg flex items-center justify-center border transition-all ${
                         isActive 
-                          ? "bg-violet-50 border-violet-200 text-violet-750" 
+                          ? "bg-slate-100 border-slate-300 text-slate-900 font-bold" 
                           : "bg-white border-slate-200 hover:bg-slate-50 text-slate-655"
                       }`}
                     >
@@ -41831,7 +41744,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </button>
 
           <div className="flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-400 rounded px-1.5 h-6 text-[10px] font-semibold uppercase tracking-wider ml-1">
-            {figureNameInput.trim() ? '??Enter' : 'esc'}
+            {figureNameInput.trim() ? '↵ Enter' : 'esc'}
           </div>
         </div>
       )}
@@ -41967,11 +41880,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex items-center justify-between gap-3">
                 <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider w-12">Angle</label>
                 <input type="range" min="-90" max="90" step="5" value={docWatermark?.rotation ?? -45} onChange={(e) => setDocWatermark(prev => ({ ...prev, rotation: parseInt(e.target.value) }))} className="flex-1 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900" />
-                <span className="text-[10px] font-medium text-gray-500 w-8 text-right">{docWatermark?.rotation ?? -45}蝪?/span>
+                <span className="text-[10px] font-medium text-gray-500 w-8 text-right">{docWatermark?.rotation ?? -45}°</span>
               </div>
             </div>
             {/* Tip */}
-            <p className="text-[9px] text-gray-400 italic">???Tip: After applying, hover over the watermark to drag or use the rotate handle above it.</p>
+            <p className="text-[9px] text-gray-400 italic">💡 Tip: After applying, hover over the watermark to drag or use the rotate handle above it.</p>
 
             <div className="flex gap-2 pt-1 border-t border-gray-100">
               <button
@@ -42595,12 +42508,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     onClick={() => {
                                       setCurrentLanguage(lang);
                                       setLanguageMenuOpen(false);
-                                      showToast(`Language changed to ${lang === 'French' ? 'Fran?is' : lang === 'Traditional Chinese' ? '?撚????' : lang}`);
+                                      showToast(`Language changed to ${lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}`);
                                     }}
                                     className="w-full flex items-center justify-between px-3 py-2 text-xs text-left rounded-lg hover:bg-slate-50 transition-colors group"
                                   >
                                     <span className={`font-medium ${currentLanguage === lang ? 'text-violet-600' : 'text-slate-700 group-hover:text-slate-900'}`}>
-                                      {lang === 'French' ? 'Fran?is' : lang === 'Traditional Chinese' ? '?撚????' : lang}
+                                      {lang === 'French' ? 'Français' : lang === 'Traditional Chinese' ? '繁體中文' : lang}
                                     </span>
                                     {currentLanguage === lang && <Check size={14} className="text-violet-600" />}
                                   </button>
