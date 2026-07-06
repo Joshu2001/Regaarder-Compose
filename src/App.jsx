@@ -4729,6 +4729,11 @@ export default function App() {
   ]);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastCallback, setToastCallback] = useState(null);
+  const [isButtonPulsing, setIsButtonPulsing] = useState(false);
+  const [pulseCycleActive, setPulseCycleActive] = useState(false);
+  const pulseTimerRef = useRef(null);
+  const pulseCycleIntervalRef = useRef(null);
   const [workspaces, setWorkspaces] = useState(defaultWorkspaces);
   const [workspaceModalOpen, setWorkspaceModalOpen] = useState(false);
   const [workspaceModalMode, setWorkspaceModalMode] = useState('create');
@@ -8439,6 +8444,10 @@ export default function App() {
       if (!immersiveActive && isDocumentImmersive) {
         setIsDocumentImmersive(false);
         setIsFocusMode(false);
+        setPulseCycleActive(true);
+        showToast('Fullscreen mode disabled. Click here to restore.', () => {
+          toggleDocumentImmersiveMode();
+        });
       }
     };
 
@@ -8463,6 +8472,44 @@ export default function App() {
       window.removeEventListener('focus', handleWindowFocus);
     };
   }, [isDocumentImmersive]);
+
+  useEffect(() => {
+    if (isDocumentImmersive) {
+      setPulseCycleActive(false);
+      setIsButtonPulsing(false);
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+      if (pulseCycleIntervalRef.current) clearInterval(pulseCycleIntervalRef.current);
+    }
+  }, [isDocumentImmersive]);
+
+  useEffect(() => {
+    if (!pulseCycleActive) {
+      setIsButtonPulsing(false);
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+      if (pulseCycleIntervalRef.current) clearInterval(pulseCycleIntervalRef.current);
+      return;
+    }
+
+    const triggerPulseBurst = () => {
+      setIsButtonPulsing(true);
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+      pulseTimerRef.current = setTimeout(() => {
+        setIsButtonPulsing(false);
+      }, 10000); // Pulse for 10 seconds
+    };
+
+    triggerPulseBurst();
+
+    if (pulseCycleIntervalRef.current) clearInterval(pulseCycleIntervalRef.current);
+    pulseCycleIntervalRef.current = setInterval(() => {
+      triggerPulseBurst();
+    }, 120000); // Pulse again after 2 minutes
+
+    return () => {
+      if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
+      if (pulseCycleIntervalRef.current) clearInterval(pulseCycleIntervalRef.current);
+    };
+  }, [pulseCycleActive]);
 
   useEffect(() => {
     setRoomStageFrame((prev) => {
@@ -10104,15 +10151,17 @@ export default function App() {
   };
 
   // Toast notifier helper
-  const showToast = (msg) => {
+  const showToast = (msg, callback = null) => {
     if (toastTimerRef.current) {
       clearTimeout(toastTimerRef.current);
     }
     setToastMessage(msg);
+    setToastCallback(() => callback);
     toastTimerRef.current = setTimeout(() => {
       setToastMessage('');
+      setToastCallback(null);
       toastTimerRef.current = null;
-    }, 2800);
+    }, callback ? 4500 : 2800);
   };
 
   const handleOpenLinkPopover = (rangeParam = null) => {
@@ -17795,7 +17844,10 @@ Rules:
       }
       setIsDocumentImmersive(false);
       setIsFocusMode(false);
-      showToast('Fullscreen mode disabled');
+      setPulseCycleActive(true);
+      showToast('Fullscreen mode disabled. Click here to restore.', () => {
+        toggleDocumentImmersiveMode();
+      });
     } catch (_error) {
       console.error('Fullscreen toggle error:', _error);
       if (entering) {
@@ -17828,6 +17880,10 @@ Rules:
       if (!document.fullscreenElement && isDocumentImmersive) {
         setIsDocumentImmersive(false);
         setIsFocusMode(false);
+        setPulseCycleActive(true);
+        showToast('Fullscreen mode disabled. Click here to restore.', () => {
+          toggleDocumentImmersiveMode();
+        });
       }
     };
     
@@ -25555,7 +25611,10 @@ You can recommend task creations on the board.`;
     return (
       <div ref={appShellRef} className={`flex bg-[#f6f5f8] text-slate-800 overflow-hidden relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         {toastMessage && (
-          <div className="fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300">
+          <div 
+            onClick={toastCallback ? () => { toastCallback(); setToastMessage(''); } : undefined}
+            className={`fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300 ${toastCallback ? 'cursor-pointer hover:bg-slate-50 hover:border-violet-300 hover:shadow-md' : ''}`}
+          >
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500"></span>
             <span>{toastMessage}</span>
           </div>
@@ -25873,7 +25932,7 @@ You can recommend task creations on the board.`;
                 <button
                   type="button"
                   onClick={toggleDocumentImmersiveMode}
-                  className={`p-1.5 rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+                  className={`p-1.5 rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
                   title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
                   aria-label={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
                 >
@@ -27815,7 +27874,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
           })}
         </div>
         {toastMessage && (
-          <div className="fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300">
+          <div 
+            onClick={toastCallback ? () => { toastCallback(); setToastMessage(''); } : undefined}
+            className={`fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300 ${toastCallback ? 'cursor-pointer hover:bg-slate-50 hover:border-violet-300 hover:shadow-md' : ''}`}
+          >
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500"></span>
             <span>{toastMessage}</span>
           </div>
@@ -28214,7 +28276,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   onClick={toggleDocumentImmersiveMode}
-                  className={`p-1.5 flex items-center justify-center rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                  className={`p-1.5 flex items-center justify-center rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
                   title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
                 >
                   {isDocumentImmersive ? <Minimize2 size={16} /> : <Expand size={16} />}
@@ -34016,8 +34078,23 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {roomState === 'active' && roomPanelMode === 'expanded' && renderRoomBottomBar()}
       
       {/* Dynamic Toast System */}
+      <style>{`
+        @keyframes soft-pulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4); }
+          50% { transform: scale(1.04); box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+        }
+        .fullscreen-pulse {
+          animation: soft-pulse 1.8s infinite ease-in-out;
+          border-color: #8b5cf6 !important;
+          background-color: #f5f3ff !important;
+          color: #7c3aed !important;
+        }
+      `}</style>
       {toastMessage && (
-        <div className="fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300">
+        <div 
+          onClick={toastCallback ? () => { toastCallback(); setToastMessage(''); } : undefined}
+          className={`fixed top-6 right-6 max-w-[380px] bg-white border border-gray-200 text-slate-700 text-[13px] font-semibold px-5 py-2.5 rounded-full shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] z-[9999] flex items-center gap-2.5 transition-all duration-300 ${toastCallback ? 'cursor-pointer hover:bg-slate-50 hover:border-violet-300 hover:shadow-md' : ''}`}
+        >
           <span className="inline-block w-2.5 h-2.5 rounded-full bg-violet-500"></span>
           <span>{toastMessage}</span>
         </div>
@@ -36054,7 +36131,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 <button
             type="button"
             onClick={toggleDocumentImmersiveMode}
-            className={`p-1.5 rounded-md transition-all ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:bg-gray-900 hover:bg-gray-100'}`}
+            className={`p-1.5 rounded-md transition-all ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:text-gray-900 hover:bg-gray-100'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
             title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
           >
             {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
@@ -39734,7 +39811,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
             <button
               onClick={() => setIsFocusMode((prev) => !prev)}
-              className={`px-2 py-1 rounded transition-colors ${isFocusMode ? 'bg-violet-100 text-violet-700' : 'hover:bg-gray-50 hover:text-gray-700'}`}
+              className={`px-2 py-1 rounded transition-colors ${isFocusMode ? 'bg-violet-100 text-violet-700' : 'hover:bg-gray-50 hover:text-gray-700'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
               title="Toggle focus mode"
             >
               {isFocusMode ? 'Exit Focus Mode' : 'Focus Mode'}
