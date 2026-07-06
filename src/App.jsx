@@ -14013,7 +14013,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     } else if (key === 'media' || key === 'image') {
       setMediaPickerOpen(true);
       return;
-    } else if (['table', 'translate', 'proofread', 'schedule', 'bookmark'].includes(key)) {
+    } else if (['table', 'translate', 'proofread', 'schedule', 'bookmark', 'ai'].includes(key)) {
       const selectedText = targetRange && !targetRange.collapsed ? targetRange.toString().trim() : '';
       if (selectedText) {
         if (key === 'proofread') {
@@ -14032,7 +14032,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
             const textToTarget = paragraphText || fullText;
             applyDirectSelectionAIAction(key, textToTarget, targetRange, blockEl);
           } else {
-            showToast(`Error: Write or select some text first to ${key}!`);
+            showToast(`Error: Write or select some text first to proofread!`);
           }
         } else if (key === 'translate') {
           if (fullText) {
@@ -14041,7 +14041,25 @@ Generate the updated output according to the instruction. Preserve layout and ta
             const textToTarget = paragraphText || fullText;
             insertInlinePromptBox(key, 'French', textToTarget);
           } else {
-            showToast(`Error: Write or select some text first to ${key}!`);
+            showToast(`Error: Write or select some text first to translate!`);
+          }
+        } else if (key === 'table') {
+          if (fullText) {
+            const blockEl = findNearestBlockElement(targetRange?.commonAncestorContainer);
+            const paragraphText = blockEl ? blockEl.textContent.trim() : '';
+            const textToTarget = paragraphText || fullText;
+            insertInlinePromptBox(key, textToTarget);
+          } else {
+            showToast(`Error: Write or select some text first to generate a table!`);
+          }
+        } else if (key === 'ai') {
+          if (fullText) {
+            const blockEl = findNearestBlockElement(targetRange?.commonAncestorContainer);
+            const paragraphText = blockEl ? blockEl.textContent.trim() : '';
+            const textToTarget = paragraphText || fullText;
+            insertInlinePromptBox(key, textToTarget);
+          } else {
+            showToast(`Error: Write or select some text first to write with AI!`);
           }
         } else {
           insertInlinePromptBox(key);
@@ -17217,10 +17235,30 @@ Rules:
       return;
     }
 
+    const liveDocumentText = String(documentCardRef.current?.innerText || '')
+      .replace(/\r/g, '')
+      .replace(/\u00a0/g, ' ')
+      .trim();
+    const currentDocumentSourceText = selectedEditorTextRef.current || selectedEditorText || liveDocumentText;
+
+    const actionKey = String(actionMeta.actionKey || '').toLowerCase();
+
+    if (productMode === 'compose' && !currentDocumentSourceText) {
+      if (!['insert-page-cover', 'insert-shapes', 'insert-chart'].includes(actionKey)) {
+        let actionLabel = actionKey;
+        if (actionKey === 'adjust-tone') actionLabel = 'adjust tone';
+        else if (actionKey === 'create-outline') actionLabel = 'create outline';
+        else if (actionKey === 'generate-toc' || actionKey === 'toc' || actionKey === 'table-of-content') actionLabel = 'generate table of content';
+        else if (actionKey === 'title-headers' || actionKey === 'headers') actionLabel = 'generate title/headers';
+        
+        showToast(`Error: Write or select some text first to ${actionLabel}!`);
+        return;
+      }
+    }
+
     const requestedSelectionScope = actionMeta.selectionScoped !== undefined
       ? Boolean(actionMeta.selectionScoped)
       : undefined;
-    const actionKey = String(actionMeta.actionKey || '').toLowerCase();
     const selectedToneKey = String(actionMeta.toneKey || '').toLowerCase();
     const requestedOutlineLevels = Math.max(2, Math.min(4, Number(actionMeta.outlineLevels || outlineLevels || 3) || 3));
 
@@ -17247,11 +17285,6 @@ Rules:
     const effectiveInstruction = toneDirective
       ? `${instruction}\n\n${toneDirective}`
       : instruction;
-    const liveDocumentText = String(documentCardRef.current?.innerText || '')
-      .replace(/\r/g, '')
-      .replace(/\u00a0/g, ' ')
-      .trim();
-    const currentDocumentSourceText = selectedEditorTextRef.current || selectedEditorText || liveDocumentText;
     const aiReadyDocumentContext = liveDocumentText
       .split(/\n+/)
       .map((line) => line.trim())
