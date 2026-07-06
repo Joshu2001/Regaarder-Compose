@@ -2430,6 +2430,7 @@ export default function App() {
   const [insertDropdownOpen, setInsertDropdownOpen] = useState(false);
   const [listDropdownOpen, setListDropdownOpen] = useState(false);
   const [composeEmojiPickerOpen, setComposeEmojiPickerOpen] = useState(false);
+  const [composeEmojiPickerPosition, setComposeEmojiPickerPosition] = useState(null);
   const [symbolsPickerOpen, setSymbolsPickerOpen] = useState(false);
   const [equationsPickerOpen, setEquationsPickerOpen] = useState(false);
   const [listGalleryOpen, setListGalleryOpen] = useState(null); // 'bullet', 'numbered', 'multilevel'
@@ -12033,42 +12034,137 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
     }
   };
 
-  const insertInlineShapeBoxWithType = (shapeType) => {
-    if (blankBodyRef.current) blankBodyRef.current.focus();
-    const boxId = 'shape-' + Date.now();
-    let svgHtml = '';
-    if (shapeType === 'Flowchart') {
-      svgHtml = '<svg width="120" height="80" viewBox="0 0 120 80" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="5" width="110" height="70" rx="8" fill="#f8fafc" stroke="#3b82f6" stroke-width="2"/><text x="60" y="45" font-family="sans-serif" font-size="14" fill="#1e293b" text-anchor="middle">Process</text></svg>';
-    } else if (shapeType === 'Decision') {
-      svgHtml = '<svg width="120" height="80" viewBox="0 0 120 80" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><polygon points="60,5 115,40 60,75 5,40" fill="#f8fafc" stroke="#8b5cf6" stroke-width="2"/><text x="60" y="45" font-family="sans-serif" font-size="14" fill="#1e293b" text-anchor="middle">Decision</text></svg>';
-    } else if (shapeType === 'Database') {
-      svgHtml = '<svg width="80" height="100" viewBox="0 0 80 100" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><path d="M5,25 C5,10 75,10 75,25 L75,75 C75,90 5,90 5,75 Z" fill="#f8fafc" stroke="#10b981" stroke-width="2"/><path d="M5,25 C5,40 75,40 75,25" fill="none" stroke="#10b981" stroke-width="2"/><text x="40" y="60" font-family="sans-serif" font-size="14" fill="#1e293b" text-anchor="middle">Data</text></svg>';
-    } else if (shapeType === 'Cloud') {
-      svgHtml = '<svg width="130" height="90" viewBox="0 0 130 90" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><path d="M 40 40 C 40 20 75 20 85 30 C 100 25 125 35 120 60 C 125 80 95 85 85 80 C 75 95 40 95 35 80 C 15 85 5 65 15 50 C 5 35 25 25 40 40 Z" fill="#f8fafc" stroke="#0ea5e9" stroke-width="2"/><text x="65" y="60" font-family="sans-serif" font-size="14" fill="#1e293b" text-anchor="middle">Cloud</text></svg>';
+  /**
+   * Restores a previously saved Range into the editor and places the cursor
+   * at the end of it, then executes the given insertion.
+   * This is the canonical pattern for inserting into a contentEditable after
+   * focus has been moved away by a picker overlay click.
+   */
+  const _restoreRangeAndInsert = (savedRange, htmlText) => {
+    const editor = blankBodyRef.current;
+    if (!editor) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (savedRange && sel) {
+      sel.removeAllRanges();
+      sel.addRange(savedRange);
     }
-
-    const htmlText = `<div id="${boxId}" contenteditable="false" style="display:inline-block; cursor:pointer;">${svgHtml}</div><p><br></p>`;
     document.execCommand('insertHTML', false, htmlText);
+    if (editor) setDocBodyHtml(editor.innerHTML);
+  };
+
+  /**
+   * Generates the SVG markup for a given shape type key (as used by the
+   * shape picker menu — e.g. 'rect', 'circle', 'arrow-right', etc.)
+   * and inserts it inline at the current cursor position.
+   * Accepts an optional savedRange to restore focus before insertion.
+   */
+  const insertInlineShapeBoxWithType = (shapeType, savedRange) => {
+    const boxId = 'shape-' + Date.now();
+    // Map every type key from SHAPE_SECTIONS to a canonical SVG string.
+    const SVG_MAP = {
+      // ── Rectangles / basic ──
+      rect:             '<svg width="120" height="70" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="112" height="62" rx="4" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/></svg>',
+      'rounded-rect':   '<svg width="120" height="70" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="112" height="62" rx="14" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/></svg>',
+      circle:           '<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><circle cx="40" cy="40" r="36" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/></svg>',
+      oval:             '<svg width="120" height="70" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg"><ellipse cx="60" cy="35" rx="56" ry="31" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/></svg>',
+      triangle:         '<svg width="90" height="80" viewBox="0 0 90 80" xmlns="http://www.w3.org/2000/svg"><polygon points="45,4 86,76 4,76" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/></svg>',
+      'right-triangle': '<svg width="90" height="80" viewBox="0 0 90 80" xmlns="http://www.w3.org/2000/svg"><polygon points="4,4 86,76 4,76" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/></svg>',
+      diamond:          '<svg width="90" height="80" viewBox="0 0 90 80" xmlns="http://www.w3.org/2000/svg"><polygon points="45,4 86,40 45,76 4,40" fill="#fce7f3" stroke="#db2777" stroke-width="2"/></svg>',
+      parallelogram:    '<svg width="120" height="70" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg"><polygon points="20,4 116,4 100,66 4,66" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/></svg>',
+      trapezoid:        '<svg width="120" height="70" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg"><polygon points="24,4 96,4 116,66 4,66" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/></svg>',
+      hexagon:          '<svg width="90" height="80" viewBox="0 0 90 80" xmlns="http://www.w3.org/2000/svg"><polygon points="45,4 83,22 83,58 45,76 7,58 7,22" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/></svg>',
+      pentagon:         '<svg width="90" height="85" viewBox="0 0 90 85" xmlns="http://www.w3.org/2000/svg"><polygon points="45,4 86,32 70,80 20,80 4,32" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/></svg>',
+      octagon:          '<svg width="90" height="90" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg"><polygon points="27,4 63,4 86,27 86,63 63,86 27,86 4,63 4,27" fill="#ffedd5" stroke="#ea580c" stroke-width="2"/></svg>',
+      // ── Arrows ──
+      'arrow-right':    '<svg width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg"><polygon points="4,18 88,18 88,4 116,30 88,56 88,42 4,42" fill="#bfdbfe" stroke="#3b82f6" stroke-width="2"/></svg>',
+      'arrow-left':     '<svg width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg"><polygon points="116,18 32,18 32,4 4,30 32,56 32,42 116,42" fill="#bfdbfe" stroke="#3b82f6" stroke-width="2"/></svg>',
+      'arrow-up':       '<svg width="60" height="110" viewBox="0 0 60 110" xmlns="http://www.w3.org/2000/svg"><polygon points="18,106 18,28 4,28 30,4 56,28 42,28 42,106" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/></svg>',
+      'arrow-down':     '<svg width="60" height="110" viewBox="0 0 60 110" xmlns="http://www.w3.org/2000/svg"><polygon points="18,4 18,82 4,82 30,106 56,82 42,82 42,4" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/></svg>',
+      'double-arrow':   '<svg width="130" height="60" viewBox="0 0 130 60" xmlns="http://www.w3.org/2000/svg"><polygon points="4,30 28,4 28,18 102,18 102,4 126,30 102,56 102,42 28,42 28,56" fill="#fde68a" stroke="#d97706" stroke-width="2"/></svg>',
+      'curved-arrow':   '<svg width="100" height="90" viewBox="0 0 100 90" xmlns="http://www.w3.org/2000/svg"><path d="M10,80 Q10,20 70,20" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round"/><polygon points="62,10 80,22 64,32" fill="#8b5cf6"/></svg>',
+      'bent-arrow':     '<svg width="100" height="90" viewBox="0 0 100 90" xmlns="http://www.w3.org/2000/svg"><polyline points="10,80 10,20 70,20" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round"/><polygon points="60,10 80,22 64,32" fill="#8b5cf6"/></svg>',
+      'u-turn-arrow':   '<svg width="100" height="90" viewBox="0 0 100 90" xmlns="http://www.w3.org/2000/svg"><path d="M20,80 L20,40 Q20,10 60,10 Q100,10 100,40 L100,80" fill="none" stroke="#ec4899" stroke-width="3"/><polygon points="92,72 100,88 108,72" fill="#ec4899" transform="translate(-8,0)"/></svg>',
+      'notched-arrow':  '<svg width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg"><polygon points="4,18 80,18 80,4 116,30 80,56 80,42 4,42 16,30" fill="#fce7f3" stroke="#db2777" stroke-width="2"/></svg>',
+      // ── Flowchart ──
+      process:          '<svg width="120" height="70" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="112" height="62" rx="4" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/><text x="60" y="40" font-family="sans-serif" font-size="13" fill="#0c4a6e" text-anchor="middle">Process</text></svg>',
+      decision:         '<svg width="110" height="80" viewBox="0 0 110 80" xmlns="http://www.w3.org/2000/svg"><polygon points="55,4 106,40 55,76 4,40" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/><text x="55" y="44" font-family="sans-serif" font-size="12" fill="#713f12" text-anchor="middle">Decision</text></svg>',
+      terminator:       '<svg width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="112" height="52" rx="26" fill="#dcfce7" stroke="#16a34a" stroke-width="2"/><text x="60" y="34" font-family="sans-serif" font-size="13" fill="#14532d" text-anchor="middle">Start/End</text></svg>',
+      document:         '<svg width="120" height="80" viewBox="0 0 120 80" xmlns="http://www.w3.org/2000/svg"><path d="M4,4 H116 V60 Q90,80 60,60 Q30,40 4,60 Z" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/></svg>',
+      database:         '<svg width="80" height="100" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg"><path d="M5,25 C5,10 75,10 75,25 L75,75 C75,90 5,90 5,75 Z" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/><path d="M5,25 C5,40 75,40 75,25" fill="none" stroke="#16a34a" stroke-width="2"/><text x="40" y="66" font-family="sans-serif" font-size="12" fill="#14532d" text-anchor="middle">Data</text></svg>',
+      cloud:            '<svg width="130" height="90" viewBox="0 0 130 90" xmlns="http://www.w3.org/2000/svg"><path d="M40,40 C40,20 75,20 85,30 C100,25 125,35 120,60 C125,80 95,85 85,80 C75,95 40,95 35,80 C15,85 5,65 15,50 C5,35 25,25 40,40Z" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/></svg>',
+      'manual-input':   '<svg width="120" height="70" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg"><polygon points="4,20 116,4 116,66 4,66" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/></svg>',
+      'on-page-ref':    '<svg width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg"><circle cx="35" cy="35" r="31" fill="#fce7f3" stroke="#db2777" stroke-width="2"/><text x="35" y="40" font-family="sans-serif" font-size="13" fill="#831843" text-anchor="middle">A</text></svg>',
+      'off-page-ref':   '<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="4,4 76,4 76,56 40,76 4,56" fill="#ffe4e6" stroke="#e11d48" stroke-width="2"/></svg>',
+      // ── Equations ──
+      'plus-shape':     '<svg width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg"><rect x="26" y="4" width="18" height="62" rx="3" fill="#bfdbfe" stroke="#3b82f6" stroke-width="1.5"/><rect x="4" y="26" width="62" height="18" rx="3" fill="#bfdbfe" stroke="#3b82f6" stroke-width="1.5"/></svg>',
+      'minus-shape':    '<svg width="70" height="40" viewBox="0 0 70 40" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="10" width="62" height="18" rx="3" fill="#fde68a" stroke="#d97706" stroke-width="1.5"/></svg>',
+      'multiply-shape': '<svg width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg"><line x1="8" y1="8" x2="62" y2="62" stroke="#8b5cf6" stroke-width="12" stroke-linecap="round"/><line x1="62" y1="8" x2="8" y2="62" stroke="#8b5cf6" stroke-width="12" stroke-linecap="round"/></svg>',
+      'divide-shape':   '<svg width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="30" width="62" height="10" rx="3" fill="#fb923c"/><circle cx="35" cy="14" r="7" fill="#fb923c"/><circle cx="35" cy="56" r="7" fill="#fb923c"/></svg>',
+      'equal-shape':    '<svg width="70" height="50" viewBox="0 0 70 50" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="8" width="62" height="10" rx="3" fill="#10b981"/><rect x="4" y="32" width="62" height="10" rx="3" fill="#10b981"/></svg>',
+      // ── Stars & banners ──
+      'star-4':         '<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,4 48,32 76,40 48,48 40,76 32,48 4,40 32,32" fill="#fde68a" stroke="#d97706" stroke-width="1.5"/></svg>',
+      'star-5':         '<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,4 49,29 76,30 55,47 62,74 40,58 18,74 25,47 4,30 31,29" fill="#fde68a" stroke="#d97706" stroke-width="1.5"/></svg>',
+      'star-6':         '<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,4 51,27 76,27 56,44 63,68 40,55 17,68 24,44 4,27 29,27" fill="#fde68a" stroke="#d97706" stroke-width="1.5"/></svg>',
+      'star-burst':     '<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg"><polygon points="40,4 44,26 62,12 54,32 76,28 60,44 74,62 52,58 52,80 40,62 28,80 28,58 6,62 20,44 4,28 26,32 18,12 36,26" fill="#fde68a" stroke="#d97706" stroke-width="1"/></svg>',
+      ribbon:           '<svg width="130" height="50" viewBox="0 0 130 50" xmlns="http://www.w3.org/2000/svg"><polygon points="0,0 110,0 130,25 110,50 0,50 18,25" fill="#fce7f3" stroke="#db2777" stroke-width="1.5"/></svg>',
+      banner:           '<svg width="130" height="50" viewBox="0 0 130 50" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="122" height="42" rx="4" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/><line x1="20" y1="46" x2="4" y2="62" stroke="#0284c7" stroke-width="1.5"/><line x1="110" y1="46" x2="126" y2="62" stroke="#0284c7" stroke-width="1.5"/></svg>',
+      wave:             '<svg width="130" height="50" viewBox="0 0 130 50" xmlns="http://www.w3.org/2000/svg"><path d="M4,10 Q20,4 30,12 Q50,28 70,14 Q90,0 110,14 Q122,22 126,10 L126,46 Q110,52 90,40 Q70,28 50,40 Q30,52 10,40 Q4,36 4,46 Z" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.5"/></svg>',
+    };
+
+    // Fallback: render a generic labelled rectangle for unknown types
+    const svgHtml = SVG_MAP[shapeType] ||
+      `<svg width="120" height="70" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="112" height="62" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/><text x="60" y="40" font-family="sans-serif" font-size="12" fill="#475569" text-anchor="middle">${shapeType}</text></svg>`;
+
+    const htmlText = `<div id="${boxId}" contenteditable="false" style="display:inline-block; cursor:pointer; vertical-align:middle; margin:4px 2px;">${svgHtml}</div>`;
+    _restoreRangeAndInsert(savedRange, htmlText);
     setShapesModalOpen(false);
     setOpenDropdown(null);
   };
 
-  const insertInlineChartBoxWithType = (chartType) => {
-    if (blankBodyRef.current) blankBodyRef.current.focus();
+  /**
+   * Generates an inline SVG chart placeholder for the given chart type key
+   * (as used by the chart picker menu — e.g. 'column', 'bar', 'line', etc.)
+   * and inserts it at the current cursor position.
+   * Accepts an optional savedRange to restore focus before insertion.
+   */
+  const insertInlineChartBoxWithType = (chartType, savedRange) => {
     const boxId = 'chart-' + Date.now();
-    let svgHtml = '';
-    if (chartType === 'Bar Chart') {
-      svgHtml = '<svg width="200" height="150" viewBox="0 0 200 150" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="10" width="2" height="120" fill="#94a3b8"/><rect x="20" y="130" width="160" height="2" fill="#94a3b8"/><rect x="40" y="70" width="30" height="60" fill="#3b82f6" rx="2"/><rect x="90" y="30" width="30" height="100" fill="#8b5cf6" rx="2"/><rect x="140" y="90" width="30" height="40" fill="#10b981" rx="2"/></svg>';
-    } else if (chartType === 'Line Chart') {
-      svgHtml = '<svg width="200" height="150" viewBox="0 0 200 150" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="10" width="2" height="120" fill="#94a3b8"/><rect x="20" y="130" width="160" height="2" fill="#94a3b8"/><polyline points="30,110 80,50 130,80 180,20" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="30" cy="110" r="4" fill="#f59e0b"/><circle cx="80" cy="50" r="4" fill="#f59e0b"/><circle cx="130" cy="80" r="4" fill="#f59e0b"/><circle cx="180" cy="20" r="4" fill="#f59e0b"/></svg>';
-    } else if (chartType === 'Pie Chart') {
-      svgHtml = '<svg width="150" height="150" viewBox="0 0 150 150" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><path d="M75,75 L75,10 A65,65 0 0,1 140,75 Z" fill="#3b82f6"/><path d="M75,75 L140,75 A65,65 0 0,1 30,125 Z" fill="#8b5cf6"/><path d="M75,75 L30,125 A65,65 0 0,1 75,10 Z" fill="#10b981"/></svg>';
-    } else if (chartType === 'Scatter Plot') {
-      svgHtml = '<svg width="200" height="150" viewBox="0 0 200 150" style="display:inline-block; margin:8px;" xmlns="http://www.w3.org/2000/svg"><rect x="20" y="10" width="2" height="120" fill="#94a3b8"/><rect x="20" y="130" width="160" height="2" fill="#94a3b8"/><circle cx="50" cy="90" r="5" fill="#ec4899"/><circle cx="80" cy="60" r="5" fill="#ec4899"/><circle cx="110" cy="100" r="5" fill="#ec4899"/><circle cx="140" cy="40" r="5" fill="#ec4899"/><circle cx="160" cy="70" r="5" fill="#ec4899"/><circle cx="70" cy="110" r="5" fill="#ec4899"/></svg>';
-    }
+    const W = 220, H = 160;
+    const axes = `<rect x="24" y="10" width="2" height="128" fill="#cbd5e1"/><rect x="24" y="136" width="178" height="2" fill="#cbd5e1"/>`;
+    const CHART_SVG_MAP = {
+      // ── Column / Bar ──
+      column:      `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<rect x="44" y="76" width="28" height="60" fill="#3b82f6" rx="2"/><rect x="88" y="36" width="28" height="100" fill="#8b5cf6" rx="2"/><rect x="132" y="96" width="28" height="40" fill="#10b981" rx="2"/><rect x="176" y="56" width="28" height="80" fill="#f59e0b" rx="2"/></svg>`,
+      bar:         `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<rect x="26" y="26" width="80" height="22" fill="#3b82f6" rx="2"/><rect x="26" y="58" width="130" height="22" fill="#8b5cf6" rx="2"/><rect x="26" y="90" width="60" height="22" fill="#10b981" rx="2"/><rect x="26" y="122" width="110" height="22" fill="#f59e0b" rx="2"/></svg>`,
+      'stacked-column': `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<rect x="44" y="96" width="28" height="40" fill="#3b82f6" rx="2"/><rect x="44" y="66" width="28" height="30" fill="#8b5cf6"/><rect x="44" y="46" width="28" height="20" fill="#10b981"/><rect x="88" y="76" width="28" height="60" fill="#3b82f6" rx="2"/><rect x="88" y="46" width="28" height="30" fill="#8b5cf6"/></svg>`,
+      // ── Lines / Area ──
+      line:        `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<polyline points="26,120 76,60 126,90 176,30 206,50" fill="none" stroke="#3b82f6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="120" r="4" fill="#3b82f6"/><circle cx="76" cy="60" r="4" fill="#3b82f6"/><circle cx="126" cy="90" r="4" fill="#3b82f6"/><circle cx="176" cy="30" r="4" fill="#3b82f6"/><circle cx="206" cy="50" r="4" fill="#3b82f6"/></svg>`,
+      area:        `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<path d="M26,120 76,60 126,90 176,30 206,50 206,136 26,136Z" fill="#bfdbfe" opacity="0.7"/><polyline points="26,120 76,60 126,90 176,30 206,50" fill="none" stroke="#3b82f6" stroke-width="2.5"/></svg>`,
+      'spline':    `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<path d="M26,110 C60,110 60,40 100,60 C140,80 160,20 206,40" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round"/></svg>`,
+      // ── Pie / Donut ──
+      pie:         `<svg width="${H}" height="${H}" viewBox="0 0 ${H} ${H}" xmlns="http://www.w3.org/2000/svg"><path d="M80,80 L80,10 A70,70 0 0,1 150,80 Z" fill="#3b82f6"/><path d="M80,80 L150,80 A70,70 0 0,1 44,136 Z" fill="#8b5cf6"/><path d="M80,80 L44,136 A70,70 0 0,1 80,10 Z" fill="#10b981"/></svg>`,
+      donut:       `<svg width="${H}" height="${H}" viewBox="0 0 ${H} ${H}" xmlns="http://www.w3.org/2000/svg"><path d="M80,80 L80,10 A70,70 0 0,1 150,80 Z" fill="#3b82f6"/><path d="M80,80 L150,80 A70,70 0 0,1 44,136 Z" fill="#8b5cf6"/><path d="M80,80 L44,136 A70,70 0 0,1 80,10 Z" fill="#10b981"/><circle cx="80" cy="80" r="36" fill="#fff"/></svg>`,
+      // ── Scatter / Bubble ──
+      scatter:     `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<circle cx="55" cy="100" r="5" fill="#ec4899"/><circle cx="90" cy="65" r="5" fill="#ec4899"/><circle cx="120" cy="110" r="5" fill="#ec4899"/><circle cx="155" cy="42" r="5" fill="#ec4899"/><circle cx="185" cy="78" r="5" fill="#ec4899"/><circle cx="75" cy="120" r="5" fill="#ec4899"/><circle cx="140" cy="90" r="5" fill="#8b5cf6"/></svg>`,
+      bubble:      `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<circle cx="70" cy="100" r="18" fill="#bfdbfe" stroke="#3b82f6" stroke-width="1.5"/><circle cx="130" cy="60" r="28" fill="#c4b5fd" stroke="#8b5cf6" stroke-width="1.5"/><circle cx="185" cy="110" r="12" fill="#bbf7d0" stroke="#10b981" stroke-width="1.5"/></svg>`,
+      // ── Statistical ──
+      histogram:   `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<rect x="26" y="106" width="34" height="30" fill="#3b82f6"/><rect x="60" y="76" width="34" height="60" fill="#3b82f6"/><rect x="94" y="46" width="34" height="90" fill="#3b82f6"/><rect x="128" y="66" width="34" height="70" fill="#3b82f6"/><rect x="162" y="96" width="34" height="40" fill="#3b82f6"/></svg>`,
+      waterfall:   `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<rect x="34" y="86" width="28" height="50" fill="#10b981" rx="1"/><rect x="72" y="76" width="28" height="10" fill="#94a3b8" opacity="0.4"/><rect x="72" y="56" width="28" height="20" fill="#3b82f6" rx="1"/><rect x="110" y="96" width="28" height="40" fill="#ef4444" rx="1"/><rect x="148" y="76" width="28" height="60" fill="#10b981" rx="1"/></svg>`,
+      // ── Other common types ──
+      radar:       `<svg width="${H}" height="${H}" viewBox="0 0 ${H} ${H}" xmlns="http://www.w3.org/2000/svg"><polygon points="80,12 130,46 112,104 48,104 30,46" fill="none" stroke="#e2e8f0" stroke-width="1.5"/><polygon points="80,30 112,54 100,90 60,90 48,54" fill="none" stroke="#e2e8f0" stroke-width="1"/><polygon points="80,16 122,48 106,100 54,100 38,48" fill="#c4b5fd" opacity="0.6" stroke="#8b5cf6" stroke-width="2"/></svg>`,
+      heatmap:     `<svg width="${H}" height="${H}" viewBox="0 0 ${H} ${H}" xmlns="http://www.w3.org/2000/svg">${[0,1,2,3].map(r=>[0,1,2,3].map(c=>`<rect x="${10+c*36}" y="${10+r*36}" width="32" height="32" rx="3" fill="${['#fef9c3','#fde68a','#f59e0b','#d97706','#92400e'][ Math.floor(Math.random()*5) ]}"/>`).join('')).join('')}</svg>`,
+      treemap:     `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="120" height="90" rx="3" fill="#bfdbfe"/><rect x="128" y="4" width="88" height="56" rx="3" fill="#c4b5fd"/><rect x="128" y="64" width="88" height="30" rx="3" fill="#bbf7d0"/><rect x="4" y="98" width="60" height="58" rx="3" fill="#fde68a"/><rect x="68" y="98" width="60" height="58" rx="3" fill="#fed7aa"/><rect x="132" y="98" width="84" height="58" rx="3" fill="#fce7f3"/></svg>`,
+      map:         `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="212" height="152" rx="8" fill="#e0f2fe" stroke="#bae6fd" stroke-width="1.5"/><path d="M30,80 Q70,40 110,70 Q150,100 190,50" fill="none" stroke="#7dd3fc" stroke-width="2"/><circle cx="110" cy="70" r="6" fill="#ef4444"/></svg>`,
+      'combo':     `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${axes}<rect x="44" y="86" width="28" height="50" fill="#3b82f6" rx="2"/><rect x="88" y="56" width="28" height="80" fill="#3b82f6" rx="2"/><rect x="132" y="76" width="28" height="60" fill="#3b82f6" rx="2"/><polyline points="26,100 72,50 126,80 176,30" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+      funnel:      `<svg width="${H}" height="${W}" viewBox="0 0 ${H} ${W}" xmlns="http://www.w3.org/2000/svg"><polygon points="10,10 150,10 130,46 30,46" fill="#bfdbfe" stroke="#3b82f6" stroke-width="1.5"/><polygon points="30,50 130,50 110,86 50,86" fill="#c4b5fd" stroke="#8b5cf6" stroke-width="1.5"/><polygon points="50,90 110,90 90,126 70,126" fill="#bbf7d0" stroke="#10b981" stroke-width="1.5"/><polygon points="70,130 90,130 83,158 77,158" fill="#fde68a" stroke="#d97706" stroke-width="1.5"/></svg>`,
+      gantt:       `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="212" height="152" rx="4" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/><rect x="60" y="20" width="80" height="16" rx="3" fill="#3b82f6"/><rect x="90" y="44" width="100" height="16" rx="3" fill="#8b5cf6"/><rect x="50" y="68" width="60" height="16" rx="3" fill="#10b981"/><rect x="80" y="92" width="110" height="16" rx="3" fill="#f59e0b"/><rect x="40" y="116" width="90" height="16" rx="3" fill="#ef4444"/></svg>`,
+    };
 
-    const htmlText = `<div id="${boxId}" contenteditable="false" style="display:inline-block; cursor:pointer;">${svgHtml}</div><p><br></p>`;
-    document.execCommand('insertHTML', false, htmlText);
+    const svgHtml = CHART_SVG_MAP[chartType] ||
+      `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="212" height="152" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/><text x="110" y="84" font-family="sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">${chartType}</text></svg>`;
+
+    const htmlText = `<div id="${boxId}" contenteditable="false" style="display:block; cursor:pointer; margin:8px 0;">${svgHtml}</div>`;
+    _restoreRangeAndInsert(savedRange, htmlText);
     setChartsModalOpen(false);
     setOpenDropdown(null);
   };
@@ -13813,13 +13909,39 @@ Generate the updated output according to the instruction. Preserve layout and ta
     }
     
     if (key === 'shapes') {
-      insertInlineShapeBox();
+      const menuLeft = slashMenu.left || window.innerWidth / 2;
+      const menuTop = typeof slashMenu.top === 'string' ? parseFloat(slashMenu.top) : (slashMenu.top || window.innerHeight / 2);
+      // Shared picker: works for both Compose and Sheets.
+      // The picker's internal onPointerDown branches on !isSheetsMode to call
+      // insertInlineShapeBoxWithType (Compose) or add an overlay (Sheets).
+      setSheetShapeMenu({
+        open: true,
+        left: menuLeft,
+        top: menuTop,
+        anchorCell: null,
+        savedRange: productMode !== 'sheets' ? (savedRange || null) : null,
+      });
+      return;
+    } else if (key === 'graph') {
+      const menuLeft = slashMenu.left || window.innerWidth / 2;
+      const menuTop = typeof slashMenu.top === 'string' ? parseFloat(slashMenu.top) : (slashMenu.top || window.innerHeight / 2);
+      // Shared picker: works for both Compose and Sheets.
+      // The picker's internal insertChart branches on !isSheetsMode to call
+      // insertInlineChartBoxWithType (Compose) or add an overlay (Sheets).
+      setSheetChartMenu({
+        open: true,
+        left: menuLeft,
+        top: menuTop,
+        anchorCell: null,
+        savedRange: productMode !== 'sheets' ? (savedRange || null) : null,
+      });
+      return;
     } else if (key === 'hyperlink') {
       handleOpenLinkPopover(targetRange);
     } else if (key === 'media' || key === 'image') {
       setMediaPickerOpen(true);
       return;
-    } else if (['table', 'graph', 'translate', 'proofread', 'schedule', 'bookmark'].includes(key)) {
+    } else if (['table', 'translate', 'proofread', 'schedule', 'bookmark'].includes(key)) {
       const selectedText = targetRange && !targetRange.collapsed ? targetRange.toString().trim() : '';
       if (selectedText) {
         if (key === 'proofread') {
@@ -13860,7 +13982,11 @@ Generate the updated output according to the instruction. Preserve layout and ta
       setListGalleryOpen('numbered');
       return;
     } else if (key === 'icon') {
-      insertInlineIconSelector();
+      const menuLeft = slashMenu.left || window.innerWidth / 2;
+      const menuTop = typeof slashMenu.top === 'string' ? parseFloat(slashMenu.top) : (slashMenu.top || window.innerHeight / 2);
+      setComposeEmojiPickerOpen(true);
+      setComposeEmojiPickerPosition({ left: menuLeft, top: menuTop });
+      return;
     } else if (key === 'callout') {
       const calloutHtml = '<div class="callout-block" data-block-type="callout" style="border-left:3px solid #8b5cf6;padding:12px 16px;background:#faf5ff;border-radius:0 8px 8px 0;margin:12px 0;color:#4c1d95;font-style:italic; transition:background 0.3s ease;">&nbsp;</div><p><br></p>';
       if (window.__composeInsertHTML) window.__composeInsertHTML(calloutHtml);
@@ -31735,239 +31861,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-                {/* Chart Picker Menu */}
-          {productMode === 'sheets' && sheetChartMenu.open && (() => {
-            const CHART_CATEGORIES = [
-              {
-                label: 'Basic',
-                accentColor: '#8b5cf6',
-                charts: [
-                  { type: 'column',          label: 'Column',         icon: <BarChart2 size={24} /> },
-                  { type: 'bar',             label: 'Bar',            icon: <BarChartHorizontal size={24} /> },
-                  { type: 'line',            label: 'Line',           icon: <LineChart size={24} /> },
-                  { type: 'pie',             label: 'Pie',            icon: <PieChart size={24} /> },
-                  { type: 'donut',           label: 'Donut',          icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg> },
-                ],
-              },
-              {
-                label: 'Advanced',
-                accentColor: '#3b82f6',
-                charts: [
-                  { type: 'area',            label: 'Area',           icon: <TrendingUp size={24} /> },
-                  { type: 'scatter',         label: 'Scatter',        icon: <Activity size={24} /> },
-                  { type: 'combo',           label: 'Combo',          icon: <Layers size={24} /> },
-                  { type: 'stacked_column',  label: 'Stacked Col',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="12" width="5" height="9"/><rect x="3" y="6" width="5" height="6"/><rect x="10" y="8" width="5" height="13"/><rect x="10" y="3" width="5" height="5"/><rect x="17" y="10" width="5" height="11"/><rect x="17" y="5" width="5" height="5"/></svg> },
-                  { type: 'stacked_bar',     label: 'Stacked Bar',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="9" height="4"/><rect x="12" y="4" width="6" height="4"/><rect x="3" y="10" width="13" height="4"/><rect x="16" y="10" width="4" height="4"/><rect x="3" y="16" width="7" height="4"/><rect x="10" y="16" width="9" height="4"/></svg> },
-                  { type: 'stacked_area',    label: 'Stacked Area',   icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,18 8,10 13,14 21,6"/><polyline points="3,21 8,16 13,18 21,12"/></svg> },
-                ],
-              },
-              {
-                label: 'Stock',
-                accentColor: '#eab308',
-                charts: [
-                  { type: 'hlc',             label: 'High-Low-Close', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
-                  { type: 'ohlc',            label: 'OHLC',           icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="4" y1="8" x2="6" y2="8"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="10" y1="10" x2="12" y2="10"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="16" y1="6" x2="18" y2="6"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
-                  { type: 'candlestick',     label: 'Candlestick',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><rect x="4" y="8" width="4" height="8" fill="currentColor"/><line x1="12" y1="6" x2="12" y2="18"/><rect x="10" y="10" width="4" height="4" fill="none"/><line x1="18" y1="2" x2="18" y2="22"/><rect x="16" y="6" width="4" height="12" fill="currentColor"/></svg> },
-                  { type: 'volume',          label: 'Volume + OHLC',  icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="14" width="4" height="6" fill="currentColor"/><rect x="10" y="10" width="4" height="10" fill="currentColor"/><rect x="16" y="16" width="4" height="4" fill="currentColor"/></svg> },
-                ],
-              },
-              {
-                label: 'Financial & Operations',
-                accentColor: '#10b981',
-                charts: [
-                  { type: 'waterfall',       label: 'Waterfall',      icon: <TrendingDown size={24} /> },
-                  { type: 'gantt',           label: 'Gantt',          icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="11" height="3"/><rect x="8" y="11" width="9" height="3"/><rect x="5" y="17" width="13" height="3"/></svg> },
-                  { type: 'radar',           label: 'Radar', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="8.5" x2="21" y2="15.5"/><line x1="21" y1="8.5" x2="3" y2="15.5"/></svg> },
-                    { type: 'radar_markers',   label: 'With Markers', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="8.5" r="2" fill="currentColor"/><circle cx="21" cy="15.5" r="2" fill="currentColor"/><circle cx="12" cy="21" r="2" fill="currentColor"/><circle cx="3" cy="15.5" r="2" fill="currentColor"/><circle cx="3" cy="8.5" r="2" fill="currentColor"/></svg> },
-                    { type: 'radar_filled',    label: 'Filled', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8" fill="currentColor" fillOpacity="0.5"/></svg> },
-                ],
-              },
-              {
-                label: 'Relational & Process',
-                accentColor: '#f59e0b',
-                charts: [
-                  { type: 'bubble',          label: 'Bubble',         icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="7" cy="16" r="3"/><circle cx="17" cy="8" r="5"/><circle cx="12" cy="18" r="2"/></svg> },
-                  { type: 'funnel',          label: 'Funnel',         icon: <Filter size={24} /> },
-                  { type: 'sankey',          label: 'Sankey',         icon: <Waypoints size={24} /> },
-                ],
-              },
-              {
-                label: 'Geographic & Hierarchical',
-                accentColor: '#ef4444',
-                charts: [
-                  { type: 'map',             label: 'Map Chart',      icon: <MapIcon size={24} /> },
-                  { type: 'treemap',         label: 'Treemap',        icon: <LayoutDashboard size={24} /> },
-                ],
-              },
-            ];
+                {/* Chart Picker Menu — shared between Compose and Sheets. */}
+                {renderSharedChartPicker()}
 
-            const insertChart = (type, accentColor) => {
-              const newOverlays = [...(activeSheetGridRaw.overlays || [])];
-              const cellAnchor = sheetChartMenu.anchorCell || { startRow: 1, startCol: 1 };
-              
-              let dataRange = undefined;
-              let chartData = undefined;
-              if (selectedSheetRange && Math.abs(selectedSheetRange.endRow - selectedSheetRange.startRow) + Math.abs(selectedSheetRange.endCol - selectedSheetRange.startCol) > 0) {
-                 dataRange = selectedSheetRange;
-                 const detected = detectChartStructure(dataRange, activeSheetGridRaw);
-                 if (detected) chartData = { labels: detected.labels, series: detected.series };
-              }
-
-              newOverlays.push({
-                id: 'overlay-' + Date.now(),
-                type: 'chart',
-                chartType: type,
-                dataRange,
-                chartData,
-                row: cellAnchor.startRow,
-                col: cellAnchor.startCol,
-                x: 60, y: 60, width: 320, height: 200,
-                fillColor: accentColor,
-                strokeColor: '#e2e8f0',
-                showLegend: true,
-                showAxes: true,
-                chartTheme: 'light',
-              });
-              updateSheetSettings(activeSheetId, { overlays: newOverlays });
-              setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
-            };
-
-            return (
-              <div
-                ref={sheetChartMenuRef}
-                className="fixed z-[120] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-100 overflow-hidden flex flex-col w-[440px] max-h-[82vh]"
-                style={{ left: sheetChartMenu.left, top: sheetChartMenu.top }}
-                onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0">
-                  <h3 className="text-[14px] font-semibold text-slate-800">Insert Chart</h3>
-                </div>
-
-                {/* Scrollable body */}
-                <div className="flex-1 overflow-y-auto p-5 thin-scrollbar bg-slate-50 space-y-6">
-                  {CHART_CATEGORIES.map(({ label, accentColor, charts }) => (
-                    <div key={label}>
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 px-0.5">{label}</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {charts.map(({ type, label: chartLabel, icon }) => (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => insertChart(type, accentColor)}
-                            className="p-3 border border-gray-100 bg-white rounded-xl hover:border-violet-300 hover:bg-violet-50 hover:shadow-sm transition-all flex flex-col items-center gap-2 group"
-                          >
-                            <span className="text-slate-400 group-hover:text-violet-500 transition-colors [&>svg]:transition-transform group-hover:[&>svg]:scale-110">
-                              {icon}
-                            </span>
-                            <span className="text-[11px] text-slate-600 font-medium text-center leading-tight">{chartLabel}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-
-          {productMode === 'sheets' && sheetShapeMenu.open && (
-        <div
-          ref={sheetShapeMenuRef}
-          className={`fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden transition-opacity duration-200 ${isShapeInteracting || (hoveringOverlayId && hoveringOverlayId === sheetShapeMenu.editingOverlayId) ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-          style={{
-            left: `${sheetShapeMenu.left}px`,
-            top: `${sheetShapeMenu.top}px`,
-            width: '280px',
-            maxHeight: '520px',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-          onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
-            <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
-            
-          </div>
-
-          {/* Scrollable shape sections */}
-          <div className="flex-1 overflow-y-auto p-4 thin-scrollbar bg-slate-50">
-            {[
-              { label: 'Recently Used', shapes: recentlyUsedShapes.slice(0, 8) },
-              ...SHAPE_SECTIONS
-            ]
-            .filter(sec => sec.label !== 'Recently Used' || sec.shapes.length > 0)
-            .map((section) => (
-              <div key={section.label} className="mb-3">
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-0.5">
-                  {section.label}
-                </div>
-                <div className="flex flex-wrap gap-0.5">
-                  {section.shapes.map((shape) => {
-                    let svgContent = shape.svg;
-                    if (section.label === 'Recently Used') {
-                      svgContent = <rect x="2" y="4" width="12" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>;
-                      for (const sec of SHAPE_SECTIONS) {
-                        const found = sec.shapes.find(s => s.type === shape.type);
-                        if (found) { svgContent = found.svg; break; }
-                      }
-                    }
-                    
-                    return (
-                      <button
-                        key={shape.type}
-                        type="button"
-                        title={shape.label || shape.type}
-                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-violet-50 hover:text-violet-700 text-gray-600 transition-colors group"
-                        onClick={() => {
-                          setRecentlyUsedShapes(prev => [{ type: shape.type }, ...prev.filter(s => s.type !== shape.type)].slice(0, 8));
-                          if (sheetShapeMenu.editingOverlayId) {
-                            const updatedOverlays = (activeSheetGridRaw.overlays || []).map(o =>
-                              o.id === sheetShapeMenu.editingOverlayId ? { ...o, shapeType: shape.type } : o
-                            );
-                            updateSheetSettings(activeSheetId, { overlays: updatedOverlays });
-                          } else {
-                            const newOverlays = [...(activeSheetGridRaw.overlays || [])];
-                            const cellAnchor = sheetShapeMenu.anchorCell || { startRow: 1, startCol: 1 };
-                            newOverlays.push({
-                              id: 'overlay-' + Date.now(),
-                              type: 'rectangle',
-                              shapeType: shape.type,
-                              row: cellAnchor.startRow,
-                              col: cellAnchor.startCol,
-                              x: 60, y: 60, width: 120, height: 80,
-                              content: 'New Text', color: '#ffffff', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid' });
-                            updateSheetSettings(activeSheetId, { overlays: newOverlays });
-                          }
-                          setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
-                        }}
-                      >
-                        <svg
-                          viewBox="0 0 16 16"
-                          width="18"
-                          height="18"
-                          className="group-hover:scale-110 transition-transform"
-                        >
-                          {svgContent}
-                        </svg>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                {/* Shape Picker Menu — shared between Compose and Sheets. */}
+                {renderSharedShapePicker()}
 
       {/* ── Injected Sheets Modals & Overlays ── */}
       {specialCharactersModal.open && (
@@ -33769,7 +33667,258 @@ if (productMode === 'deck' || productMode === 'sheets') {
       </div>
     );
   }
-            const renderDocumentOutlineContent = () => {
+
+  const renderSharedChartPicker = () => {
+    if (!sheetChartMenu.open) return null;
+    const CHART_CATEGORIES = [
+      {
+        label: 'Basic',
+        accentColor: '#8b5cf6',
+        charts: [
+          { type: 'column',          label: 'Column',         icon: <BarChart2 size={24} /> },
+          { type: 'bar',             label: 'Bar',            icon: <BarChartHorizontal size={24} /> },
+          { type: 'line',            label: 'Line',           icon: <LineChart size={24} /> },
+          { type: 'pie',             label: 'Pie',            icon: <PieChart size={24} /> },
+          { type: 'donut',           label: 'Donut',          icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg> },
+        ],
+      },
+      {
+        label: 'Advanced',
+        accentColor: '#3b82f6',
+        charts: [
+          { type: 'area',            label: 'Area',           icon: <TrendingUp size={24} /> },
+          { type: 'scatter',         label: 'Scatter',        icon: <Activity size={24} /> },
+          { type: 'combo',           label: 'Combo',          icon: <Layers size={24} /> },
+          { type: 'stacked_column',  label: 'Stacked Col',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="12" width="5" height="9"/><rect x="3" y="6" width="5" height="6"/><rect x="10" y="8" width="5" height="13"/><rect x="10" y="3" width="5" height="5"/><rect x="17" y="10" width="5" height="11"/><rect x="17" y="5" width="5" height="5"/></svg> },
+          { type: 'stacked_bar',     label: 'Stacked Bar',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="9" height="4"/><rect x="12" y="4" width="6" height="4"/><rect x="3" y="10" width="13" height="4"/><rect x="16" y="10" width="4" height="4"/><rect x="3" y="16" width="7" height="4"/><rect x="10" y="16" width="9" height="4"/></svg> },
+          { type: 'stacked_area',    label: 'Stacked Area',   icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,18 8,10 13,14 21,6"/><polyline points="3,21 8,16 13,18 21,12"/></svg> },
+        ],
+      },
+      {
+        label: 'Stock',
+        accentColor: '#eab308',
+        charts: [
+          { type: 'hlc',             label: 'High-Low-Close', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
+          { type: 'ohlc',            label: 'OHLC',           icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="4" y1="8" x2="6" y2="8"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="10" y1="10" x2="12" y2="10"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="16" y1="6" x2="18" y2="6"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
+          { type: 'candlestick',     label: 'Candlestick',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><rect x="4" y="8" width="4" height="8" fill="currentColor"/><line x1="12" y1="6" x2="12" y2="18"/><rect x="10" y="10" width="4" height="4" fill="none"/><line x1="18" y1="2" x2="18" y2="22"/><rect x="16" y="6" width="4" height="12" fill="currentColor"/></svg> },
+          { type: 'volume',          label: 'Volume + OHLC',  icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="14" width="4" height="6" fill="currentColor"/><rect x="10" y="10" width="4" height="10" fill="currentColor"/><rect x="16" y="16" width="4" height="4" fill="currentColor"/></svg> },
+        ],
+      },
+      {
+        label: 'Financial & Operations',
+        accentColor: '#10b981',
+        charts: [
+          { type: 'waterfall',       label: 'Waterfall',      icon: <TrendingDown size={24} /> },
+          { type: 'gantt',           label: 'Gantt',          icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="11" height="3"/><rect x="8" y="11" width="9" height="3"/><rect x="5" y="17" width="13" height="3"/></svg> },
+          { type: 'radar',           label: 'Radar', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="8.5" x2="21" y2="15.5"/><line x1="21" y1="8.5" x2="3" y2="15.5"/></svg> },
+          { type: 'radar_markers',   label: 'With Markers', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="8.5" r="2" fill="currentColor"/><circle cx="21" cy="15.5" r="2" fill="currentColor"/><circle cx="12" cy="21" r="2" fill="currentColor"/><circle cx="3" cy="15.5" r="2" fill="currentColor"/><circle cx="3" cy="8.5" r="2" fill="currentColor"/></svg> },
+          { type: 'radar_filled',    label: 'Filled', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8" fill="currentColor" fillOpacity="0.5"/></svg> },
+        ],
+      },
+      {
+        label: 'Relational & Process',
+        accentColor: '#f59e0b',
+        charts: [
+          { type: 'bubble',          label: 'Bubble',         icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="7" cy="16" r="3"/><circle cx="17" cy="8" r="5"/><circle cx="12" cy="18" r="2"/></svg> },
+          { type: 'funnel',          label: 'Funnel',         icon: <Filter size={24} /> },
+          { type: 'sankey',          label: 'Sankey',         icon: <Waypoints size={24} /> },
+        ],
+      },
+      {
+        label: 'Geographic & Hierarchical',
+        accentColor: '#ef4444',
+        charts: [
+          { type: 'map',             label: 'Map Chart',      icon: <MapIcon size={24} /> },
+          { type: 'treemap',         label: 'Treemap',        icon: <LayoutDashboard size={24} /> },
+        ],
+      },
+    ];
+
+    const insertChart = (type, accentColor) => {
+      if (!isSheetsMode) {
+        insertInlineChartBoxWithType(type, sheetChartMenu.savedRange);
+        setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
+        return;
+      }
+      const newOverlays = [...(activeSheetGridRaw.overlays || [])];
+      const cellAnchor = sheetChartMenu.anchorCell || { startRow: 1, startCol: 1 };
+      
+      let dataRange = undefined;
+      let chartData = undefined;
+      if (selectedSheetRange && Math.abs(selectedSheetRange.endRow - selectedSheetRange.startRow) + Math.abs(selectedSheetRange.endCol - selectedSheetRange.startCol) > 0) {
+         dataRange = selectedSheetRange;
+         const detected = detectChartStructure(dataRange, activeSheetGridRaw);
+         if (detected) chartData = { labels: detected.labels, series: detected.series };
+      }
+
+      newOverlays.push({
+        id: 'overlay-' + Date.now(),
+        type: 'chart',
+        chartType: type,
+        dataRange,
+        chartData,
+        row: cellAnchor.startRow,
+        col: cellAnchor.startCol,
+        x: 60, y: 60, width: 320, height: 200,
+        fillColor: accentColor,
+        strokeColor: '#e2e8f0',
+        showLegend: true,
+        showAxes: true,
+        chartTheme: 'light',
+      });
+      updateSheetSettings(activeSheetId, { overlays: newOverlays });
+      setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
+    };
+
+    return (
+      <div
+        ref={sheetChartMenuRef}
+        className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-100 overflow-hidden flex flex-col w-[440px] max-h-[82vh]"
+        style={{ left: sheetChartMenu.left, top: sheetChartMenu.top }}
+        onMouseDown={e => {
+          if (document.activeElement === e.target) {
+            e.stopPropagation();
+          }
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0">
+          <h3 className="text-[14px] font-semibold text-slate-800">Insert Chart</h3>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto p-5 thin-scrollbar bg-slate-50 space-y-6">
+          {CHART_CATEGORIES.map(({ label, accentColor, charts }) => (
+            <div key={label}>
+              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 px-0.5">{label}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {charts.map(({ type, label: chartLabel, icon }) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      insertChart(type, accentColor);
+                    }}
+                    className="p-3 border border-gray-100 bg-white rounded-xl hover:border-violet-300 hover:bg-violet-50 hover:shadow-sm transition-all flex flex-col items-center gap-2 group"
+                  >
+                    <span className="text-slate-400 group-hover:text-violet-500 transition-colors [&>svg]:transition-transform group-hover:[&>svg]:scale-110">
+                      {icon}
+                    </span>
+                    <span className="text-[11px] text-slate-600 font-medium text-center leading-tight">{chartLabel}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderSharedShapePicker = () => {
+    if (!sheetShapeMenu.open) return null;
+    return (
+      <div
+        ref={sheetShapeMenuRef}
+        className={`fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden transition-opacity duration-200 ${isShapeInteracting || (hoveringOverlayId && hoveringOverlayId === sheetShapeMenu.editingOverlayId) ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        style={{
+          left: `${sheetShapeMenu.left}px`,
+          top: `${sheetShapeMenu.top}px`,
+          width: '280px',
+          maxHeight: '520px',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+        onMouseDown={e => {
+          if (document.activeElement === e.target) {
+            e.stopPropagation();
+          }
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
+          <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
+        </div>
+
+        {/* Scrollable shape sections */}
+        <div className="flex-1 overflow-y-auto p-4 thin-scrollbar bg-slate-50">
+          {[
+            { label: 'Recently Used', shapes: recentlyUsedShapes.slice(0, 8) },
+            ...SHAPE_SECTIONS
+          ]
+          .filter(sec => sec.label !== 'Recently Used' || sec.shapes.length > 0)
+          .map((section) => (
+            <div key={section.label} className="mb-3">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-0.5">
+                {section.label}
+              </div>
+              <div className="flex flex-wrap gap-0.5">
+                {section.shapes.map((shape) => {
+                  let svgContent = shape.svg;
+                  if (section.label === 'Recently Used') {
+                    svgContent = <rect x="2" y="4" width="12" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>;
+                    for (const sec of SHAPE_SECTIONS) {
+                      const found = sec.shapes.find(s => s.type === shape.type);
+                      if (found) { svgContent = found.svg; break; }
+                    }
+                  }
+                  
+                  return (
+                    <button
+                      key={shape.type}
+                      type="button"
+                      title={shape.label || shape.type}
+                      className="w-8 h-8 flex items-center justify-center rounded hover:bg-violet-50 hover:text-violet-700 text-gray-600 transition-colors group"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        setRecentlyUsedShapes(prev => [{ type: shape.type }, ...prev.filter(s => s.type !== shape.type)].slice(0, 8));
+                        if (!isSheetsMode) {
+                          insertInlineShapeBoxWithType(shape.type, sheetShapeMenu.savedRange);
+                          setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
+                          return;
+                        }
+                        if (sheetShapeMenu.editingOverlayId) {
+                          const updatedOverlays = (activeSheetGridRaw.overlays || []).map(o =>
+                            o.id === sheetShapeMenu.editingOverlayId ? { ...o, shapeType: shape.type } : o
+                          );
+                          updateSheetSettings(activeSheetId, { overlays: updatedOverlays });
+                        } else {
+                          const newOverlays = [...(activeSheetGridRaw.overlays || [])];
+                          const cellAnchor = sheetShapeMenu.anchorCell || { startRow: 1, startCol: 1 };
+                          newOverlays.push({
+                            id: 'overlay-' + Date.now(),
+                            type: 'rectangle',
+                            shapeType: shape.type,
+                            row: cellAnchor.startRow,
+                            col: cellAnchor.startCol,
+                            x: 60, y: 60, width: 120, height: 80,
+                            content: 'New Text', color: '#ffffff', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid' });
+                          updateSheetSettings(activeSheetId, { overlays: newOverlays });
+                        }
+                        setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
+                      }}
+                    >
+                      <svg
+                        viewBox="0 0 16 16"
+                        width="18"
+                        height="18"
+                        className="group-hover:scale-110 transition-transform"
+                      >
+                        {svgContent}
+                      </svg>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderDocumentOutlineContent = () => {
               const wordsCount = documentStats?.words || 0;
               const minRead = Math.max(1, Math.ceil(wordsCount / 200));
               return (
@@ -42696,6 +42845,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <BlockHoverMenu menu={hoveredBlockMenu} setMenu={setHoveredBlockMenu} focusedTableCell={focusedTableCell} setFocusedTableCell={setFocusedTableCell} isTableLocked={isTableLocked} setIsTableLocked={setIsTableLocked} />
       <TableGridPickerModal isOpen={tableGridModalOpen} setOpen={setTableGridModalOpen} rect={tableGridAnchor} />
       <ListGalleryPicker isOpen={!!listGalleryOpen} initialTab={typeof listGalleryOpen === 'string' ? listGalleryOpen : 'bullet'} setOpen={setListGalleryOpen} anchorEl={document.getElementById('compose-list-btn')} />
+      
+      {/* Shared Chart and Shape Pickers */}
+      {renderSharedChartPicker()}
+      {renderSharedShapePicker()}
     </div>
   );
 }
