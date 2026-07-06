@@ -29588,7 +29588,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            const effectBlur = overlay.effectBlur || { active: false, radius: 0 };
                            const opacity = overlay.opacity !== undefined ? overlay.opacity : 100;
                            const isLocked = overlay.isLocked || false;
-                           const is1D = ['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType);
+                           const is1D = ['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType);
                            
                            // SVG styling
                            let strokeDasharray = 'none';
@@ -29629,11 +29629,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                let newW = startW; let newH = startH;
                                let newL = startL; let newT = startT;
                                
-                               if (dirX === 1) newW = Math.max(20, startW + dx);
-                               else if (dirX === -1) { newW = Math.max(20, startW - dx); newL = startL + (startW - newW); }
+                               const minW = is1D ? 0 : 20;
+
                                
-                               if (dirY === 1) newH = Math.max(20, startH + dy);
-                               else if (dirY === -1) { newH = Math.max(20, startH - dy); newT = startT + (startH - newH); }
+                               const minH = is1D ? 0 : 20;
+
+                               
+                               if (dirX === 1) newW = Math.max(minW, startW + dx);
+
+                               
+                               else if (dirX === -1) { newW = Math.max(minW, startW - dx); newL = startL + (startW - newW); }
+
+                               
+                               
+
+                               
+                               if (dirY === 1) newH = Math.max(minH, startH + dy);
+
+                               
+                               else if (dirY === -1) { newH = Math.max(minH, startH - dy); newT = startT + (startH - newH); }
                                
                                updateOverlay({ width: newW, height: newH, x: newL, y: newT });
                              };
@@ -30215,7 +30229,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     );
                                  } else if (overlay.type === 'rectangle' && overlay.shapeType) {
 
-                                   const is1DLine = ['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType);
+                                   const is1DLine = ['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType);
 
                                    const cr = overlay.cornerRadius || 0; // 0 to 50
 
@@ -30314,7 +30328,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                        );
 
-                                     } else if (overlay.shapeType === 'line_arrow') {
+                                     } else if (overlay.shapeType === 'line_arrow' || overlay.shapeType === 'arrow') {
 
                                        shapeContent = (
 
@@ -30461,7 +30475,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                      <>
 
-                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100, overflow: 'visible' }} {...(!is1DLine ? { viewBox: "0 0 16 16", preserveAspectRatio: "none" } : { viewBox: `0 0 ${overlay.width} ${overlay.height}` })}>
+                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100, overflow: 'visible' }} {...(!is1DLine ? { viewBox: "0 0 16 16", preserveAspectRatio: "none" } : {})}>
 
                                          {renderDefs()}
 
@@ -30501,7 +30515,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                {isSelected && !isLocked && (
                                  <>
                                    {/* Bounding box outline */}
-                                   {!['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType) && <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />}
+                                   {!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType) && <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />}
                                    
                                    {/* Rotation Handle */}
                                    <div className="resize-handle absolute top-[-30px] left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center cursor-grab hover:bg-gray-50" onMouseDown={handleRotate}>
@@ -30509,7 +30523,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    </div>
                                    <div className="absolute top-[-18px] left-1/2 w-px h-[18px] bg-blue-500 pointer-events-none" />
 
-                                   {(!['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType)) ? (
+                                   {(!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType)) ? (
                                      <>
                                        {/* 8 Resize Handles */}
                                        <div className="resize-handle absolute top-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, -1)} />
@@ -39055,7 +39069,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            const effectBlur = overlay.effectBlur || { active: false, radius: 0 };
                            const opacity = overlay.opacity !== undefined ? overlay.opacity : 100;
                            const isLocked = overlay.isLocked || false;
-                           const is1D = ['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType);
+                           const is1D = ['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType);
                            
                            // SVG styling
                            let strokeDasharray = 'none';
@@ -39096,11 +39110,25 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                let newW = startW; let newH = startH;
                                let newL = startL; let newT = startT;
                                
-                               if (dirX === 1) newW = Math.max(20, startW + dx);
-                               else if (dirX === -1) { newW = Math.max(20, startW - dx); newL = startL + (startW - newW); }
+                               const minW = is1D ? 0 : 20;
+
                                
-                               if (dirY === 1) newH = Math.max(20, startH + dy);
-                               else if (dirY === -1) { newH = Math.max(20, startH - dy); newT = startT + (startH - newH); }
+                               const minH = is1D ? 0 : 20;
+
+                               
+                               if (dirX === 1) newW = Math.max(minW, startW + dx);
+
+                               
+                               else if (dirX === -1) { newW = Math.max(minW, startW - dx); newL = startL + (startW - newW); }
+
+                               
+                               
+
+                               
+                               if (dirY === 1) newH = Math.max(minH, startH + dy);
+
+                               
+                               else if (dirY === -1) { newH = Math.max(minH, startH - dy); newT = startT + (startH - newH); }
                                
                                updateOverlay({ width: newW, height: newH, x: newL, y: newT });
                              };
@@ -39673,7 +39701,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     );
                                  } else if (overlay.type === 'rectangle' && overlay.shapeType) {
 
-                                   const is1DLine = ['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType);
+                                   const is1DLine = ['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType);
 
                                    const cr = overlay.cornerRadius || 0; // 0 to 50
 
@@ -39772,7 +39800,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                        );
 
-                                     } else if (overlay.shapeType === 'line_arrow') {
+                                     } else if (overlay.shapeType === 'line_arrow' || overlay.shapeType === 'arrow') {
 
                                        shapeContent = (
 
@@ -39919,7 +39947,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                      <>
 
-                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100, overflow: 'visible' }} {...(!is1DLine ? { viewBox: "0 0 16 16", preserveAspectRatio: "none" } : { viewBox: `0 0 ${overlay.width} ${overlay.height}` })}>
+                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100, overflow: 'visible' }} {...(!is1DLine ? { viewBox: "0 0 16 16", preserveAspectRatio: "none" } : {})}>
 
                                          {renderDefs()}
 
@@ -39959,7 +39987,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                {isSelected && !isLocked && (
                                  <>
                                    {/* Bounding box outline */}
-                                   {!['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType) && <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />}
+                                   {!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType) && <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />}
                                    
                                    {/* Rotation Handle */}
                                    <div className="resize-handle absolute top-[-30px] left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center cursor-grab hover:bg-gray-50" onMouseDown={handleRotate}>
@@ -39967,7 +39995,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    </div>
                                    <div className="absolute top-[-18px] left-1/2 w-px h-[18px] bg-blue-500 pointer-events-none" />
 
-                                   {(!['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType)) ? (
+                                   {(!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType)) ? (
                                      <>
                                        {/* 8 Resize Handles */}
                                        <div className="resize-handle absolute top-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, -1)} />
