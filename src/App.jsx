@@ -1731,7 +1731,7 @@ export default function App() {
     const handleBlockHover = (e) => {
       let targetNode = e.target;
       if (targetNode?.nodeType === 3) targetNode = targetNode.parentNode;
-      const targetBlock = targetNode?.closest?.('.callout-block, .code-block, .divider-block, .table-block');
+      const targetBlock = targetNode?.closest?.('.callout-block, .code-block, .divider-block, .table-block, .interactive-shape-block, .interactive-chart-block');
       const menu = targetNode?.closest?.('#block-hover-menu');
       
       if (targetBlock) {
@@ -1744,6 +1744,8 @@ export default function App() {
         else if (targetBlock.classList.contains('code-block')) type = 'code_block';
         else if (targetBlock.classList.contains('divider-block')) type = 'divider';
         else if (targetBlock.classList.contains('table-block')) type = 'table';
+        else if (targetBlock.classList.contains('interactive-shape-block')) type = 'shapes';
+        else if (targetBlock.classList.contains('interactive-chart-block')) type = 'graph';
         
         setHoveredBlockMenu({
           element: targetBlock,
@@ -2674,7 +2676,9 @@ export default function App() {
       if (headerContextMenuRef.current && !headerContextMenuRef.current.contains(e.target)) {
         setHeaderContextMenu({ open: false, x: 0, y: 0, type: '', index: -1 });
       }
-      setSelectedSheetOverlayId(null);
+      if (e.target && typeof e.target.closest === 'function' && !e.target.closest('.absolute.z-\\[100\\]')) {
+        setSelectedSheetOverlayId(null);
+      }
       
       if (sheetChartMenuRef.current && !sheetChartMenuRef.current.contains(e.target)) {
         setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
@@ -5148,19 +5152,19 @@ export default function App() {
     let firstColHasText = false;
 
     // Check if the intersection cell is text
-    const intersectionIsText = isNaN(parseFloat(grid.cells[startR]?.[startC]));
+    const intersectionIsText = isNaN(parseFloat(grid.cells?.[startR]?.[startC]));
 
     // Check the rest of the first row
     if (cols > 1) {
       for (let c = startC + 1; c <= endC; c++) {
-        if (isNaN(parseFloat(grid.cells[startR]?.[c]))) firstRowHasText = true;
+        if (isNaN(parseFloat(grid.cells?.[startR]?.[c]))) firstRowHasText = true;
       }
     }
     
     // Check the rest of the first column
     if (rows > 1) {
       for (let r = startR + 1; r <= endR; r++) {
-        if (isNaN(parseFloat(grid.cells[r]?.[startC]))) firstColHasText = true;
+        if (isNaN(parseFloat(grid.cells?.[r]?.[startC]))) firstColHasText = true;
       }
     }
 
@@ -5180,7 +5184,7 @@ export default function App() {
       isColHeaders = true;
       dataStartC++;
       for(let r = startR + (firstRowHasText?1:0); r <= endR; r++) {
-        labels.push(grid.cells[r]?.[startC] || 'Row ' + (r+1));
+        labels.push(grid.cells?.[r]?.[startC] || 'Row ' + (r+1));
       }
     }
     
@@ -5190,7 +5194,7 @@ export default function App() {
       dataStartR++;
       if (!isColHeaders) {
         for(let c = startC + (isColHeaders?1:0); c <= endC; c++) {
-           labels.push(grid.cells[startR]?.[c] || 'Col ' + (c+1));
+           labels.push(grid.cells?.[startR]?.[c] || 'Col ' + (c+1));
         }
       }
     }
@@ -5207,19 +5211,19 @@ export default function App() {
     // Extract Series
     if (isColHeaders) {
        for (let c = dataStartC; c <= endC; c++) {
-          let sName = (isRowHeaders ? grid.cells[startR]?.[c] : 'Series ' + (c-dataStartC+1)) || 'Series ' + (c-dataStartC+1);
+          let sName = (isRowHeaders ? grid.cells?.[startR]?.[c] : 'Series ' + (c-dataStartC+1)) || 'Series ' + (c-dataStartC+1);
           let values = [];
           for (let r = dataStartR; r <= endR; r++) {
-            values.push(parseFloat(grid.cells[r]?.[c]) || 0);
+            values.push(parseFloat(grid.cells?.[r]?.[c]) || 0);
           }
           series.push({ name: String(sName), data: values });
        }
     } else {
        for (let r = dataStartR; r <= endR; r++) {
-          let sName = (isColHeaders ? grid.cells[r]?.[startC] : 'Series ' + (r-dataStartR+1)) || 'Series ' + (r-dataStartR+1);
+          let sName = (isColHeaders ? grid.cells?.[r]?.[startC] : 'Series ' + (r-dataStartR+1)) || 'Series ' + (r-dataStartR+1);
           let values = [];
           for (let c = dataStartC; c <= endC; c++) {
-             values.push(parseFloat(grid.cells[r]?.[c]) || 0);
+             values.push(parseFloat(grid.cells?.[r]?.[c]) || 0);
           }
           series.push({ name: String(sName), data: values });
        }
@@ -6009,6 +6013,8 @@ export default function App() {
   const [equationModalOpen, setEquationModalOpen] = useState(false);
   const [equationFile, setEquationFile] = useState(null);
   const [equationFilePreview, setEquationFilePreview] = useState(null);
+  const [composeOverlays, setComposeOverlays] = useState([]);
+  const [selectedComposeOverlayId, setSelectedComposeOverlayId] = useState(null);
 
   const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
   const headingMeta = {
@@ -12049,7 +12055,17 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
       sel.removeAllRanges();
       sel.addRange(savedRange);
     }
-    document.execCommand('insertHTML', false, htmlText);
+    if (htmlText instanceof Node) {
+      const range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+      if (range) {
+        range.deleteContents();
+        range.insertNode(htmlText);
+      } else {
+        editor.appendChild(htmlText);
+      }
+    } else {
+      document.execCommand('insertHTML', false, htmlText);
+    }
     if (editor) setDocBodyHtml(editor.innerHTML);
   };
 
@@ -12116,8 +12132,39 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
     const svgHtml = SVG_MAP[shapeType] ||
       `<svg width="120" height="70" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="112" height="62" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/><text x="60" y="40" font-family="sans-serif" font-size="12" fill="#475569" text-anchor="middle">${shapeType}</text></svg>`;
 
-    const htmlText = `<div id="${boxId}" contenteditable="false" style="display:inline-block; cursor:pointer; vertical-align:middle; margin:4px 2px;">${svgHtml}</div>`;
-    _restoreRangeAndInsert(savedRange, htmlText);
+    const container = document.createElement('div');
+    container.className = 'interactive-shape-block';
+    container.setAttribute('contenteditable', 'false');
+    container.setAttribute('id', boxId);
+    container.setAttribute('data-block-type', 'shapes');
+    
+    const defaultState = {
+      type: shapeType,
+      color: 'lavender',
+      scale: 1.0,
+      text: ''
+    };
+    container.setAttribute('data-shape-data', JSON.stringify(defaultState));
+    
+    _restoreRangeAndInsert(savedRange, container);
+    
+    const spacer = document.createElement('p');
+    spacer.innerHTML = '<br>';
+    container.parentNode.insertBefore(spacer, container.nextSibling);
+
+    window.refreshShapeBlock(boxId);
+    if (window.bindDragHandler) {
+      window.bindDragHandler(container);
+    }
+    
+    // Focus caret to the spacer to type after shape
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.setStart(spacer, 0);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+
     setShapesModalOpen(false);
     setOpenDropdown(null);
   };
@@ -12163,8 +12210,34 @@ Respond ONLY with a JSON object in this format (no markdown code blocks, no othe
     const svgHtml = CHART_SVG_MAP[chartType] ||
       `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="212" height="152" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/><text x="110" y="84" font-family="sans-serif" font-size="13" fill="#94a3b8" text-anchor="middle">${chartType}</text></svg>`;
 
-    const htmlText = `<div id="${boxId}" contenteditable="false" style="display:block; cursor:pointer; margin:8px 0;">${svgHtml}</div>`;
-    _restoreRangeAndInsert(savedRange, htmlText);
+    const container = document.createElement('div');
+    container.className = 'interactive-chart-block';
+    container.setAttribute('contenteditable', 'false');
+    container.setAttribute('id', boxId);
+    container.setAttribute('data-block-type', 'graph');
+    container.style.display = 'block';
+    container.style.cursor = 'pointer';
+    container.style.margin = '8px 0';
+    container.innerHTML = svgHtml;
+
+    _restoreRangeAndInsert(savedRange, container);
+
+    const spacer = document.createElement('p');
+    spacer.innerHTML = '<br>';
+    container.parentNode.insertBefore(spacer, container.nextSibling);
+
+    if (window.bindDragHandler) {
+      window.bindDragHandler(container);
+    }
+
+    // Focus caret to the spacer to type after chart
+    const range = document.createRange();
+    const sel = window.getSelection();
+    range.setStart(spacer, 0);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+
     setChartsModalOpen(false);
     setOpenDropdown(null);
   };
@@ -20562,7 +20635,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     parser.on('callRangeValue', (startCellCoord, endCellCoord, done) => {
       const fragment = [];
       for (let row = startCellCoord.row.index; row <= endCellCoord.row.index; row++) {
-        const rowData = activeSheetGridRaw.cells[row];
+        const rowData = activeSheetGridRaw.cells?.[row];
         const colFragment = [];
         for (let col = startCellCoord.column.index; col <= endCellCoord.column.index; col++) {
           colFragment.push(rowData ? rowData[col] : null);
@@ -20572,8 +20645,8 @@ Respond with a JSON array of slide objects matching the schema.`;
       done(fragment);
     });
 
-    const evaluatedCells = activeSheetGridRaw.cells.map((row, r) => 
-      row.map((cell, c) => {
+    const evaluatedCells = (activeSheetGridRaw.cells || []).map((row, r) => 
+      (row || []).map((cell, c) => {
         if (typeof cell === 'string' && cell.startsWith('=')) {
           const result = parser.parse(cell.substring(1));
           return result.error ? result.error : result.result;
@@ -27965,6 +28038,272 @@ const renderRoomTopHeader = () => (
   // --- END ROOM UI COMPONENTS ---
 
 
+  const renderSharedChartPicker = () => {
+    if (!sheetChartMenu.open) return null;
+    const CHART_CATEGORIES = [
+      {
+        label: 'Basic',
+        accentColor: '#8b5cf6',
+        charts: [
+          { type: 'column',          label: 'Column',         icon: <BarChart2 size={24} /> },
+          { type: 'bar',             label: 'Bar',            icon: <BarChartHorizontal size={24} /> },
+          { type: 'line',            label: 'Line',           icon: <LineChart size={24} /> },
+          { type: 'pie',             label: 'Pie',            icon: <PieChart size={24} /> },
+          { type: 'donut',           label: 'Donut',          icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg> },
+        ],
+      },
+      {
+        label: 'Advanced',
+        accentColor: '#3b82f6',
+        charts: [
+          { type: 'area',            label: 'Area',           icon: <TrendingUp size={24} /> },
+          { type: 'scatter',         label: 'Scatter',        icon: <Activity size={24} /> },
+          { type: 'combo',           label: 'Combo',          icon: <Layers size={24} /> },
+          { type: 'stacked_column',  label: 'Stacked Col',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="12" width="5" height="9"/><rect x="3" y="6" width="5" height="6"/><rect x="10" y="8" width="5" height="13"/><rect x="10" y="3" width="5" height="5"/><rect x="17" y="10" width="5" height="11"/><rect x="17" y="5" width="5" height="5"/></svg> },
+          { type: 'stacked_bar',     label: 'Stacked Bar',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="9" height="4"/><rect x="12" y="4" width="6" height="4"/><rect x="3" y="10" width="13" height="4"/><rect x="16" y="10" width="4" height="4"/><rect x="3" y="16" width="7" height="4"/><rect x="10" y="16" width="9" height="4"/></svg> },
+          { type: 'stacked_area',    label: 'Stacked Area',   icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,18 8,10 13,14 21,6"/><polyline points="3,21 8,16 13,18 21,12"/></svg> },
+        ],
+      },
+      {
+        label: 'Stock',
+        accentColor: '#eab308',
+        charts: [
+          { type: 'hlc',             label: 'High-Low-Close', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
+          { type: 'ohlc',            label: 'OHLC',           icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="4" y1="8" x2="6" y2="8"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="10" y1="10" x2="12" y2="10"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="16" y1="6" x2="18" y2="6"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
+          { type: 'candlestick',     label: 'Candlestick',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><rect x="4" y="8" width="4" height="8" fill="currentColor"/><line x1="12" y1="6" x2="12" y2="18"/><rect x="10" y="10" width="4" height="4" fill="none"/><line x1="18" y1="2" x2="18" y2="22"/><rect x="16" y="6" width="4" height="12" fill="currentColor"/></svg> },
+          { type: 'volume',          label: 'Volume + OHLC',  icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="14" width="4" height="6" fill="currentColor"/><rect x="10" y="10" width="4" height="10" fill="currentColor"/><rect x="16" y="16" width="4" height="4" fill="currentColor"/></svg> },
+        ],
+      },
+      {
+        label: 'Financial & Operations',
+        accentColor: '#10b981',
+        charts: [
+          { type: 'waterfall',       label: 'Waterfall',      icon: <TrendingDown size={24} /> },
+          { type: 'gantt',           label: 'Gantt',          icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="11" height="3"/><rect x="8" y="11" width="9" height="3"/><rect x="5" y="17" width="13" height="3"/></svg> },
+          { type: 'radar',           label: 'Radar', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="8.5" x2="21" y2="15.5"/><line x1="21" y1="8.5" x2="3" y2="15.5"/></svg> },
+          { type: 'radar_markers',   label: 'With Markers', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="8.5" r="2" fill="currentColor"/><circle cx="21" cy="15.5" r="2" fill="currentColor"/><circle cx="12" cy="21" r="2" fill="currentColor"/><circle cx="3" cy="15.5" r="2" fill="currentColor"/><circle cx="3" cy="8.5" r="2" fill="currentColor"/></svg> },
+          { type: 'radar_filled',    label: 'Filled', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8" fill="currentColor" fillOpacity="0.5"/></svg> },
+        ],
+      },
+      {
+        label: 'Relational & Process',
+        accentColor: '#f59e0b',
+        charts: [
+          { type: 'bubble',          label: 'Bubble',         icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="7" cy="16" r="3"/><circle cx="17" cy="8" r="5"/><circle cx="12" cy="18" r="2"/></svg> },
+          { type: 'funnel',          label: 'Funnel',         icon: <Filter size={24} /> },
+          { type: 'sankey',          label: 'Sankey',         icon: <Waypoints size={24} /> },
+        ],
+      },
+      {
+        label: 'Geographic & Hierarchical',
+        accentColor: '#ef4444',
+        charts: [
+          { type: 'map',             label: 'Map Chart',      icon: <MapIcon size={24} /> },
+          { type: 'treemap',         label: 'Treemap',        icon: <LayoutDashboard size={24} /> },
+        ],
+      },
+    ];
+
+    const insertChart = (type, accentColor) => {
+      if (!isSheetsMode) {
+        const newOverlays = [...(composeOverlays || [])];
+        newOverlays.push({
+          id: 'compose-overlay-' + Date.now(),
+          type: 'chart',
+          chartType: type,
+          x: 100, y: 100, width: 320, height: 200,
+        });
+        setComposeOverlays(newOverlays);
+        setSelectedComposeOverlayId(newOverlays[newOverlays.length - 1].id);
+        setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
+        return;
+      }
+      const newOverlays = [...(activeSheetGridRaw.overlays || [])];
+      const cellAnchor = sheetChartMenu.anchorCell || { startRow: 1, startCol: 1 };
+      
+      let dataRange = undefined;
+      let chartData = undefined;
+      if (selectedSheetRange && Math.abs(selectedSheetRange.endRow - selectedSheetRange.startRow) + Math.abs(selectedSheetRange.endCol - selectedSheetRange.startCol) > 0) {
+         dataRange = selectedSheetRange;
+         const detected = detectChartStructure(dataRange, activeSheetGridRaw);
+         if (detected) chartData = { labels: detected.labels, series: detected.series };
+      }
+
+      newOverlays.push({
+        id: 'overlay-' + Date.now(),
+        type: 'chart',
+        chartType: type,
+        dataRange,
+        chartData,
+        row: cellAnchor.startRow,
+        col: cellAnchor.startCol,
+        x: 60, y: 60, width: 320, height: 200,
+        fillColor: accentColor,
+        strokeColor: '#e2e8f0',
+        showLegend: true,
+        showAxes: true,
+        chartTheme: 'light',
+      });
+      updateSheetSettings(activeSheetId, { overlays: newOverlays });
+      setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
+    };
+
+    return (
+      <div
+        ref={sheetChartMenuRef}
+        className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-100 overflow-hidden flex flex-col w-[440px] max-h-[82vh]"
+        style={{ left: sheetChartMenu.left, top: sheetChartMenu.top }}
+        onMouseDown={e => {
+          if (document.activeElement === e.target) {
+            e.stopPropagation();
+          }
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0">
+          <h3 className="text-[14px] font-semibold text-slate-800">Insert Chart</h3>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto p-5 thin-scrollbar bg-slate-50 space-y-6">
+          {CHART_CATEGORIES.map(({ label, accentColor, charts }) => (
+            <div key={label}>
+              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 px-0.5">{label}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {charts.map(({ type, label: chartLabel, icon }) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      insertChart(type, accentColor);
+                    }}
+                    className="p-3 border border-gray-100 bg-white rounded-xl hover:border-violet-300 hover:bg-violet-50 hover:shadow-sm transition-all flex flex-col items-center gap-2 group"
+                  >
+                    <span className="text-slate-400 group-hover:text-violet-500 transition-colors [&>svg]:transition-transform group-hover:[&>svg]:scale-110">
+                      {icon}
+                    </span>
+                    <span className="text-[11px] text-slate-600 font-medium text-center leading-tight">{chartLabel}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderSharedShapePicker = () => {
+    if (!sheetShapeMenu.open) return null;
+    return (
+      <div
+        ref={sheetShapeMenuRef}
+        className={`fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden transition-opacity duration-200 ${isShapeInteracting || (hoveringOverlayId && hoveringOverlayId === sheetShapeMenu.editingOverlayId) ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        style={{
+          left: `${sheetShapeMenu.left}px`,
+          top: `${sheetShapeMenu.top}px`,
+          width: '280px',
+          maxHeight: '520px',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+        onMouseDown={e => {
+          if (document.activeElement === e.target) {
+            e.stopPropagation();
+          }
+        }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
+          <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
+        </div>
+
+        {/* Scrollable shape sections */}
+        <div className="flex-1 overflow-y-auto p-4 thin-scrollbar bg-slate-50">
+          {[
+            { label: 'Recently Used', shapes: recentlyUsedShapes.slice(0, 8) },
+            ...SHAPE_SECTIONS
+          ]
+          .filter(sec => sec.label !== 'Recently Used' || sec.shapes.length > 0)
+          .map((section) => (
+            <div key={section.label} className="mb-3">
+              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-0.5">
+                {section.label}
+              </div>
+              <div className="flex flex-wrap gap-0.5">
+                {section.shapes.map((shape) => {
+                  let svgContent = shape.svg;
+                  if (section.label === 'Recently Used') {
+                    svgContent = <rect x="2" y="4" width="12" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>;
+                    for (const sec of SHAPE_SECTIONS) {
+                      const found = sec.shapes.find(s => s.type === shape.type);
+                      if (found) { svgContent = found.svg; break; }
+                    }
+                  }
+                  
+                  return (
+                    <button
+                      key={shape.type}
+                      type="button"
+                      title={shape.label || shape.type}
+                      className="w-8 h-8 flex items-center justify-center rounded hover:bg-violet-50 hover:text-violet-700 text-gray-600 transition-colors group"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        setRecentlyUsedShapes(prev => [{ type: shape.type }, ...prev.filter(s => s.type !== shape.type)].slice(0, 8));
+                        if (!isSheetsMode) {
+        const newOverlays = [...(composeOverlays || [])];
+        newOverlays.push({
+          id: 'compose-overlay-' + Date.now(),
+          type: 'shape',
+          shapeType: shape.type,
+          x: 100, y: 100, width: 100, height: 100,
+        });
+        setComposeOverlays(newOverlays);
+        setSelectedComposeOverlayId(newOverlays[newOverlays.length - 1].id);
+        setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
+        return;
+      }
+                        if (sheetShapeMenu.editingOverlayId) {
+                          const updatedOverlays = (activeSheetGridRaw.overlays || []).map(o =>
+                            o.id === sheetShapeMenu.editingOverlayId ? { ...o, shapeType: shape.type } : o
+                          );
+                          updateSheetSettings(activeSheetId, { overlays: updatedOverlays });
+                        } else {
+                          const newOverlays = [...(activeSheetGridRaw.overlays || [])];
+                          const cellAnchor = sheetShapeMenu.anchorCell || { startRow: 1, startCol: 1 };
+                          newOverlays.push({
+                            id: 'overlay-' + Date.now(),
+                            type: 'rectangle',
+                            shapeType: shape.type,
+                            row: cellAnchor.startRow,
+                            col: cellAnchor.startCol,
+                            x: 60, y: 60, width: 120, height: 80,
+                            content: 'New Text', color: '#ffffff', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid' });
+                          updateSheetSettings(activeSheetId, { overlays: newOverlays });
+                        }
+                        setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
+                      }}
+                    >
+                      <svg
+                        viewBox="0 0 16 16"
+                        width="18"
+                        height="18"
+                        className="group-hover:scale-110 transition-transform"
+                      >
+                        {svgContent}
+                      </svg>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div ref={appShellRef} className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
@@ -33668,256 +34007,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
     );
   }
 
-  const renderSharedChartPicker = () => {
-    if (!sheetChartMenu.open) return null;
-    const CHART_CATEGORIES = [
-      {
-        label: 'Basic',
-        accentColor: '#8b5cf6',
-        charts: [
-          { type: 'column',          label: 'Column',         icon: <BarChart2 size={24} /> },
-          { type: 'bar',             label: 'Bar',            icon: <BarChartHorizontal size={24} /> },
-          { type: 'line',            label: 'Line',           icon: <LineChart size={24} /> },
-          { type: 'pie',             label: 'Pie',            icon: <PieChart size={24} /> },
-          { type: 'donut',           label: 'Donut',          icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg> },
-        ],
-      },
-      {
-        label: 'Advanced',
-        accentColor: '#3b82f6',
-        charts: [
-          { type: 'area',            label: 'Area',           icon: <TrendingUp size={24} /> },
-          { type: 'scatter',         label: 'Scatter',        icon: <Activity size={24} /> },
-          { type: 'combo',           label: 'Combo',          icon: <Layers size={24} /> },
-          { type: 'stacked_column',  label: 'Stacked Col',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="12" width="5" height="9"/><rect x="3" y="6" width="5" height="6"/><rect x="10" y="8" width="5" height="13"/><rect x="10" y="3" width="5" height="5"/><rect x="17" y="10" width="5" height="11"/><rect x="17" y="5" width="5" height="5"/></svg> },
-          { type: 'stacked_bar',     label: 'Stacked Bar',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="9" height="4"/><rect x="12" y="4" width="6" height="4"/><rect x="3" y="10" width="13" height="4"/><rect x="16" y="10" width="4" height="4"/><rect x="3" y="16" width="7" height="4"/><rect x="10" y="16" width="9" height="4"/></svg> },
-          { type: 'stacked_area',    label: 'Stacked Area',   icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3,18 8,10 13,14 21,6"/><polyline points="3,21 8,16 13,18 21,12"/></svg> },
-        ],
-      },
-      {
-        label: 'Stock',
-        accentColor: '#eab308',
-        charts: [
-          { type: 'hlc',             label: 'High-Low-Close', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
-          { type: 'ohlc',            label: 'OHLC',           icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><line x1="4" y1="8" x2="6" y2="8"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="12" y1="6" x2="12" y2="18"/><line x1="10" y1="10" x2="12" y2="10"/><line x1="12" y1="14" x2="14" y2="14"/><line x1="18" y1="2" x2="18" y2="22"/><line x1="16" y1="6" x2="18" y2="6"/><line x1="18" y1="18" x2="20" y2="18"/></svg> },
-          { type: 'candlestick',     label: 'Candlestick',    icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="4" x2="6" y2="20"/><rect x="4" y="8" width="4" height="8" fill="currentColor"/><line x1="12" y1="6" x2="12" y2="18"/><rect x="10" y="10" width="4" height="4" fill="none"/><line x1="18" y1="2" x2="18" y2="22"/><rect x="16" y="6" width="4" height="12" fill="currentColor"/></svg> },
-          { type: 'volume',          label: 'Volume + OHLC',  icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="14" width="4" height="6" fill="currentColor"/><rect x="10" y="10" width="4" height="10" fill="currentColor"/><rect x="16" y="16" width="4" height="4" fill="currentColor"/></svg> },
-        ],
-      },
-      {
-        label: 'Financial & Operations',
-        accentColor: '#10b981',
-        charts: [
-          { type: 'waterfall',       label: 'Waterfall',      icon: <TrendingDown size={24} /> },
-          { type: 'gantt',           label: 'Gantt',          icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="5" width="11" height="3"/><rect x="8" y="11" width="9" height="3"/><rect x="5" y="17" width="13" height="3"/></svg> },
-          { type: 'radar',           label: 'Radar', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="8.5" x2="21" y2="15.5"/><line x1="21" y1="8.5" x2="3" y2="15.5"/></svg> },
-          { type: 'radar_markers',   label: 'With Markers', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><circle cx="12" cy="3" r="2" fill="currentColor"/><circle cx="21" cy="8.5" r="2" fill="currentColor"/><circle cx="21" cy="15.5" r="2" fill="currentColor"/><circle cx="12" cy="21" r="2" fill="currentColor"/><circle cx="3" cy="15.5" r="2" fill="currentColor"/><circle cx="3" cy="8.5" r="2" fill="currentColor"/></svg> },
-          { type: 'radar_filled',    label: 'Filled', icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12,3 21,8.5 21,15.5 12,21 3,15.5 3,8.5"/><polygon points="12,7 17,9.8 17,14.2 12,17 7,14.2 7,9.8" fill="currentColor" fillOpacity="0.5"/></svg> },
-        ],
-      },
-      {
-        label: 'Relational & Process',
-        accentColor: '#f59e0b',
-        charts: [
-          { type: 'bubble',          label: 'Bubble',         icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="7" cy="16" r="3"/><circle cx="17" cy="8" r="5"/><circle cx="12" cy="18" r="2"/></svg> },
-          { type: 'funnel',          label: 'Funnel',         icon: <Filter size={24} /> },
-          { type: 'sankey',          label: 'Sankey',         icon: <Waypoints size={24} /> },
-        ],
-      },
-      {
-        label: 'Geographic & Hierarchical',
-        accentColor: '#ef4444',
-        charts: [
-          { type: 'map',             label: 'Map Chart',      icon: <MapIcon size={24} /> },
-          { type: 'treemap',         label: 'Treemap',        icon: <LayoutDashboard size={24} /> },
-        ],
-      },
-    ];
-
-    const insertChart = (type, accentColor) => {
-      if (!isSheetsMode) {
-        insertInlineChartBoxWithType(type, sheetChartMenu.savedRange);
-        setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
-        return;
-      }
-      const newOverlays = [...(activeSheetGridRaw.overlays || [])];
-      const cellAnchor = sheetChartMenu.anchorCell || { startRow: 1, startCol: 1 };
-      
-      let dataRange = undefined;
-      let chartData = undefined;
-      if (selectedSheetRange && Math.abs(selectedSheetRange.endRow - selectedSheetRange.startRow) + Math.abs(selectedSheetRange.endCol - selectedSheetRange.startCol) > 0) {
-         dataRange = selectedSheetRange;
-         const detected = detectChartStructure(dataRange, activeSheetGridRaw);
-         if (detected) chartData = { labels: detected.labels, series: detected.series };
-      }
-
-      newOverlays.push({
-        id: 'overlay-' + Date.now(),
-        type: 'chart',
-        chartType: type,
-        dataRange,
-        chartData,
-        row: cellAnchor.startRow,
-        col: cellAnchor.startCol,
-        x: 60, y: 60, width: 320, height: 200,
-        fillColor: accentColor,
-        strokeColor: '#e2e8f0',
-        showLegend: true,
-        showAxes: true,
-        chartTheme: 'light',
-      });
-      updateSheetSettings(activeSheetId, { overlays: newOverlays });
-      setSheetChartMenu({ open: false, left: 0, top: 0, anchorCell: null });
-    };
-
-    return (
-      <div
-        ref={sheetChartMenuRef}
-        className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-100 overflow-hidden flex flex-col w-[440px] max-h-[82vh]"
-        style={{ left: sheetChartMenu.left, top: sheetChartMenu.top }}
-        onMouseDown={e => {
-          if (document.activeElement === e.target) {
-            e.stopPropagation();
-          }
-        }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0">
-          <h3 className="text-[14px] font-semibold text-slate-800">Insert Chart</h3>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto p-5 thin-scrollbar bg-slate-50 space-y-6">
-          {CHART_CATEGORIES.map(({ label, accentColor, charts }) => (
-            <div key={label}>
-              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-3 px-0.5">{label}</p>
-              <div className="grid grid-cols-3 gap-2">
-                {charts.map(({ type, label: chartLabel, icon }) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      insertChart(type, accentColor);
-                    }}
-                    className="p-3 border border-gray-100 bg-white rounded-xl hover:border-violet-300 hover:bg-violet-50 hover:shadow-sm transition-all flex flex-col items-center gap-2 group"
-                  >
-                    <span className="text-slate-400 group-hover:text-violet-500 transition-colors [&>svg]:transition-transform group-hover:[&>svg]:scale-110">
-                      {icon}
-                    </span>
-                    <span className="text-[11px] text-slate-600 font-medium text-center leading-tight">{chartLabel}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderSharedShapePicker = () => {
-    if (!sheetShapeMenu.open) return null;
-    return (
-      <div
-        ref={sheetShapeMenuRef}
-        className={`fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden transition-opacity duration-200 ${isShapeInteracting || (hoveringOverlayId && hoveringOverlayId === sheetShapeMenu.editingOverlayId) ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-        style={{
-          left: `${sheetShapeMenu.left}px`,
-          top: `${sheetShapeMenu.top}px`,
-          width: '280px',
-          maxHeight: '520px',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-        onMouseDown={e => {
-          if (document.activeElement === e.target) {
-            e.stopPropagation();
-          }
-        }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
-          <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
-        </div>
-
-        {/* Scrollable shape sections */}
-        <div className="flex-1 overflow-y-auto p-4 thin-scrollbar bg-slate-50">
-          {[
-            { label: 'Recently Used', shapes: recentlyUsedShapes.slice(0, 8) },
-            ...SHAPE_SECTIONS
-          ]
-          .filter(sec => sec.label !== 'Recently Used' || sec.shapes.length > 0)
-          .map((section) => (
-            <div key={section.label} className="mb-3">
-              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-0.5">
-                {section.label}
-              </div>
-              <div className="flex flex-wrap gap-0.5">
-                {section.shapes.map((shape) => {
-                  let svgContent = shape.svg;
-                  if (section.label === 'Recently Used') {
-                    svgContent = <rect x="2" y="4" width="12" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>;
-                    for (const sec of SHAPE_SECTIONS) {
-                      const found = sec.shapes.find(s => s.type === shape.type);
-                      if (found) { svgContent = found.svg; break; }
-                    }
-                  }
-                  
-                  return (
-                    <button
-                      key={shape.type}
-                      type="button"
-                      title={shape.label || shape.type}
-                      className="w-8 h-8 flex items-center justify-center rounded hover:bg-violet-50 hover:text-violet-700 text-gray-600 transition-colors group"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        setRecentlyUsedShapes(prev => [{ type: shape.type }, ...prev.filter(s => s.type !== shape.type)].slice(0, 8));
-                        if (!isSheetsMode) {
-                          insertInlineShapeBoxWithType(shape.type, sheetShapeMenu.savedRange);
-                          setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
-                          return;
-                        }
-                        if (sheetShapeMenu.editingOverlayId) {
-                          const updatedOverlays = (activeSheetGridRaw.overlays || []).map(o =>
-                            o.id === sheetShapeMenu.editingOverlayId ? { ...o, shapeType: shape.type } : o
-                          );
-                          updateSheetSettings(activeSheetId, { overlays: updatedOverlays });
-                        } else {
-                          const newOverlays = [...(activeSheetGridRaw.overlays || [])];
-                          const cellAnchor = sheetShapeMenu.anchorCell || { startRow: 1, startCol: 1 };
-                          newOverlays.push({
-                            id: 'overlay-' + Date.now(),
-                            type: 'rectangle',
-                            shapeType: shape.type,
-                            row: cellAnchor.startRow,
-                            col: cellAnchor.startCol,
-                            x: 60, y: 60, width: 120, height: 80,
-                            content: 'New Text', color: '#ffffff', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid' });
-                          updateSheetSettings(activeSheetId, { overlays: newOverlays });
-                        }
-                        setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
-                      }}
-                    >
-                      <svg
-                        viewBox="0 0 16 16"
-                        width="18"
-                        height="18"
-                        className="group-hover:scale-110 transition-transform"
-                      >
-                        {svgContent}
-                      </svg>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const renderDocumentOutlineContent = () => {
               const wordsCount = documentStats?.words || 0;
               const minRead = Math.max(1, Math.ceil(wordsCount / 200));
@@ -38738,6 +38827,1031 @@ if (productMode === 'deck' || productMode === 'sheets') {
               '--page-padding': docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px',
             }}
           >
+{(composeOverlays || []).map(overlay => {
+                           let currentChartData = overlay.chartData;
+                           if (overlay.type === 'chart' && overlay.dataRange) {
+                             currentChartData = detectChartStructure(overlay.dataRange, activeSheetGridRaw) || currentChartData;
+                           }
+
+                           const left = overlay.x !== undefined ? overlay.x : (overlay.col * 100);
+                           const top = overlay.y !== undefined ? overlay.y : (overlay.row * 36);
+                           
+                           // Default properties
+                           const isSelected = selectedComposeOverlayId === overlay.id;
+                           const rotation = overlay.rotation || 0;
+                           const fillType = overlay.fillType || 'solid'; // 'solid', 'none', 'linear', 'radial'
+                           const fillColor = overlay.fillColor || overlay.color || '#3b82f6';
+                           const fillSecondaryColor = overlay.fillSecondaryColor || '#ffffff';
+                           const gradientDirection = overlay.gradientDirection || '90deg';
+                           const strokeType = overlay.strokeType || 'solid'; // 'solid', 'dashed', 'dotted', 'dash-dot', 'none'
+                           const strokeColor = overlay.strokeColor || '#000000';
+                           const strokeWidth = overlay.strokeWidth || 0;
+                           const effectGlow = overlay.effectGlow || { active: false, intensity: 5, color: '#000000' };
+                           const effectShadow = overlay.effectShadow || { active: false, blur: 4, distance: 4, opacity: 0.25, angle: 45 };
+                           const effectBlur = overlay.effectBlur || { active: false, radius: 0 };
+                           const opacity = overlay.opacity !== undefined ? overlay.opacity : 100;
+                           const isLocked = overlay.isLocked || false;
+                           
+                           // SVG styling
+                           let strokeDasharray = 'none';
+                           if (strokeType === 'dashed') strokeDasharray = `${strokeWidth * 3}, ${strokeWidth * 3}`;
+                           else if (strokeType === 'dotted') strokeDasharray = `${strokeWidth}, ${strokeWidth * 2}`;
+                           else if (strokeType === 'dash-dot') strokeDasharray = `${strokeWidth * 3}, ${strokeWidth * 2}, ${strokeWidth}, ${strokeWidth * 2}`;
+                           
+                           let fillDef = fillColor;
+                           if (fillType === 'none') fillDef = 'none';
+                           else if (fillType === 'linear' || fillType === 'radial') {
+                             fillDef = `url(#gradient-${overlay.id})`;
+                           }
+
+                           let filterDef = '';
+                           if (effectShadow.active || effectGlow.active || effectBlur.active) {
+                             filterDef = `url(#filter-${overlay.id})`;
+                           }
+
+                           // Update function wrapper
+                           const updateOverlay = (updates) => {
+                             if (isLocked && !updates.isLocked && updates.isLocked !== false) return;
+                             const newOverlays = (composeOverlays || []).map(o => o.id === overlay.id ? { ...o, ...updates } : o);
+                             setComposeOverlays(newOverlays);
+                           };
+
+                           // Handle resizing setup
+                           const handleResize = (e, dirX, dirY) => {
+                             if (isLocked) return;
+                             e.preventDefault(); e.stopPropagation();
+                             setIsShapeInteracting(true);
+                             const startX = e.clientX; const startY = e.clientY;
+                             const startW = overlay.width; const startH = overlay.height;
+                             const startL = left; const startT = top;
+                             
+                             const onMouseMove = (moveEvent) => {
+                               let dx = (moveEvent.clientX - startX) / (zoomLevel / 100);
+                               let dy = (moveEvent.clientY - startY) / (zoomLevel / 100);
+                               let newW = startW; let newH = startH;
+                               let newL = startL; let newT = startT;
+                               
+                               if (dirX === 1) newW = Math.max(20, startW + dx);
+                               else if (dirX === -1) { newW = Math.max(20, startW - dx); newL = startL + (startW - newW); }
+                               
+                               if (dirY === 1) newH = Math.max(20, startH + dy);
+                               else if (dirY === -1) { newH = Math.max(20, startH - dy); newT = startT + (startH - newH); }
+                               
+                               updateOverlay({ width: newW, height: newH, x: newL, y: newT });
+                             };
+                             const onMouseUp = () => { setIsShapeInteracting(false); window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+                             window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
+                           };
+
+                           const handleRotate = (e) => {
+                             if (isLocked) return;
+                             e.preventDefault(); e.stopPropagation();
+                             setIsShapeInteracting(true);
+                             const cx = left + overlay.width / 2;
+                             const cy = top + overlay.height / 2;
+                             const sheetEl = document.querySelector('.compose-editor-surface') || document.body;
+                             const sheetRect = sheetEl.getBoundingClientRect();
+                             
+                             const onMouseMove = (moveEvent) => {
+                               const ex = moveEvent.clientX - sheetRect.left;
+                               const ey = moveEvent.clientY - sheetRect.top;
+                               const angle = Math.atan2(ey - cy, ex - cx) * 180 / Math.PI;
+                               let newRot = Math.round(angle + 90);
+                               if (newRot < 0) newRot += 360;
+                               if (moveEvent.shiftKey) newRot = Math.round(newRot / 15) * 15;
+                               updateOverlay({ rotation: newRot });
+                             };
+                             const onMouseUp = () => { setIsShapeInteracting(false); window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+                             window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
+                           };
+
+                           // Handle dragging
+                            const handleDrag = (e) => {
+                              if (isLocked) return;
+                              if (!isSelected) {
+                                setSelectedComposeOverlayId(overlay.id);
+                              }
+                              // if clicked on panel or handles, dont drag
+                              if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
+                              
+                              const isTextarea = e.target.tagName === 'TEXTAREA';
+                              const isFocused = document.activeElement === e.target;
+                              if (isTextarea && isFocused) {
+                                return;
+                              }
+                              
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setIsShapeInteracting(true);
+                              const startX = e.clientX; const startY = e.clientY;
+                              const startL = left; const startT = top;
+                              
+                              let hasMoved = false;
+                              const onMouseMove = (moveEvent) => {
+                                const dx = (moveEvent.clientX - startX) / (zoomLevel / 100);
+                                const dy = (moveEvent.clientY - startY) / (zoomLevel / 100);
+                                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                  hasMoved = true;
+                                  updateOverlay({ x: startL + dx, y: startT + dy });
+                                }
+                              };
+                              const onMouseUp = () => {
+                                setIsShapeInteracting(false);
+                                window.removeEventListener('mousemove', onMouseMove);
+                                window.removeEventListener('mouseup', onMouseUp);
+                                
+                                if (!hasMoved && isTextarea) {
+                                  e.target.focus();
+                                  const len = e.target.value.length;
+                                  e.target.setSelectionRange(len, len);
+                                }
+                              };
+                              window.addEventListener('mousemove', onMouseMove);
+                              window.addEventListener('mouseup', onMouseUp);
+                            };;
+
+                           return (
+                             <div 
+                               key={overlay.id}
+                               className={`absolute z-[100] flex items-center justify-center text-sm group hover:outline hover:outline-2 hover:outline-blue-400/50 transition-all ${isLocked ? 'cursor-not-allowed' : 'cursor-move'}`}
+                                   onMouseEnter={() => setHoveringOverlayId(overlay.id)}
+                                   onMouseLeave={() => setHoveringOverlayId(null)}
+                               style={{
+                                 left: left,
+                                 top: top,
+                                 width: overlay.width,
+                                 height: overlay.height,
+                                 transform: `rotate(${rotation}deg)`,
+                                 zIndex: isSelected ? 105 : 100,
+                                 cursor: isLocked ? 'not-allowed' : 'move'
+                               }}
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 if (overlay.type === 'rectangle') {
+                                   const rect = e.currentTarget.getBoundingClientRect();
+                                   // Keeping this for backwards compatibility with tests and older shape picker
+                                   setSheetShapeMenu({
+                                     open: true,
+                                     left: rect.left,
+                                     top: rect.bottom + 12,
+                                     editingOverlayId: overlay.id,
+                                     anchorCell: null
+                                   });
+                                 }
+                               }}
+                               onMouseDown={handleDrag}
+                             >
+                               {/* The SVG Shape */}
+                               {(() => {
+                                 if (overlay.type === 'note') {
+                                   return (
+                                     <textarea
+                                       className="w-full h-full bg-yellow-200 p-2 text-xs shadow-md resize-none border-none outline-none"
+                                       style={{ opacity: opacity / 100 }}
+                                       value={overlay.content || ''}
+                                       onChange={(e) => updateOverlay({ content: e.target.value })}
+                                       onClick={(e) => { e.stopPropagation(); setSelectedComposeOverlayId(overlay.id); }}
+                                       onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
+                                     />
+                                   );
+                                 } else if (overlay.type === 'chart') {
+                                    const { chartType, showAxes, showLegend, fillColor, strokeColor } = overlay;
+                                    const isDark = overlay.chartTheme === 'dark';
+                                    const bg = isDark ? '#1e293b' : '#ffffff';
+                                    const gridLine = isDark ? '#334155' : '#f1f5f9';
+                                    const textClr = isDark ? '#94a3b8' : '#64748b';
+                                    const opacity = overlay.opacity !== undefined ? overlay.opacity / 100 : 1;
+
+                                    let chartContent = null;
+                                    
+                                    if (currentChartData) {
+                                      const defaultShowLabels = chartType === 'pie' || chartType === 'donut' || chartType === 'column' || chartType === 'bar';
+                                      const showLabels = overlay.showLabels !== undefined ? overlay.showLabels : defaultShowLabels;
+                                      chartContent = renderDynamicChart(chartType, currentChartData, fillColor, strokeColor, showLabels, overlay.categoryColors || {});
+                                    }
+                                    
+                                    if (!chartContent) {
+                                      if (chartType === 'column') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="20" y="40" width="15" height="60" fill={fillColor} rx="2" />
+                                            <rect x="45" y="20" width="15" height="80" fill={strokeColor} rx="2" />
+                                            <rect x="70" y="60" width="15" height="40" fill={fillColor} rx="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'bar') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="10" y="20" width="60" height="15" fill={fillColor} rx="2" />
+                                            <rect x="10" y="45" width="80" height="15" fill={strokeColor} rx="2" />
+                                            <rect x="10" y="70" width="40" height="15" fill={fillColor} rx="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'line') {
+                                        chartContent = (
+                                          <path d="M10 80 L30 40 L50 60 L70 20 L90 50" fill="none" stroke={fillColor} strokeWidth="3" />
+                                        );
+                                    } else if (chartType === 'pie') {
+                                        chartContent = (
+                                          <g transform="translate(50, 50)">
+                                            <path d="M0 0 L 0 -35 A 35 35 0 0 1 35 0 Z" fill={fillColor} />
+                                            <path d="M0 0 L 35 0 A 35 35 0 1 1 0 -35 Z" fill={strokeColor} />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'donut') {
+                                        chartContent = (
+                                          <g transform="translate(50, 50)">
+                                            <path d="M0 -35 A 35 35 0 0 1 35 0" fill="none" stroke={fillColor} strokeWidth="15" />
+                                            <path d="M35 0 A 35 35 0 1 1 0 -35" fill="none" stroke={strokeColor} strokeWidth="15" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'area') {
+                                        chartContent = (
+                                          <g>
+                                            <path d="M10 80 L30 40 L50 60 L70 20 L90 50 L90 100 L10 100 Z" fill={fillColor} opacity="0.3" />
+                                            <path d="M10 80 L30 40 L50 60 L70 20 L90 50" fill="none" stroke={fillColor} strokeWidth="3" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'scatter') {
+                                        chartContent = (
+                                          <g fill={fillColor}>
+                                            <circle cx="20" cy="40" r="3" />
+                                            <circle cx="35" cy="25" r="4" fill={strokeColor}/>
+                                            <circle cx="50" cy="60" r="3" />
+                                            <circle cx="70" cy="20" r="5" />
+                                            <circle cx="85" cy="45" r="3" fill={strokeColor}/>
+                                          </g>
+                                        );
+                                    } else if (chartType === 'combo') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="25" y="40" width="10" height="60" fill={strokeColor} opacity="0.5" />
+                                            <rect x="65" y="30" width="10" height="70" fill={strokeColor} opacity="0.5" />
+                                            <path d="M10 80 L30 30 L50 70 L70 20 L90 60" fill="none" stroke={fillColor} strokeWidth="3" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'stacked_column') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="20" y="60" width="15" height="40" fill={fillColor} rx="1" />
+                                            <rect x="20" y="30" width="15" height="30" fill={strokeColor} rx="1" />
+                                            <rect x="45" y="50" width="15" height="50" fill={fillColor} rx="1" />
+                                            <rect x="45" y="20" width="15" height="30" fill={strokeColor} rx="1" />
+                                            <rect x="70" y="70" width="15" height="30" fill={fillColor} rx="1" />
+                                            <rect x="70" y="40" width="15" height="30" fill={strokeColor} rx="1" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'stacked_bar') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="10" y="20" width="40" height="15" fill={fillColor} rx="1" />
+                                            <rect x="50" y="20" width="30" height="15" fill={strokeColor} rx="1" />
+                                            <rect x="10" y="45" width="50" height="15" fill={fillColor} rx="1" />
+                                            <rect x="60" y="45" width="20" height="15" fill={strokeColor} rx="1" />
+                                            <rect x="10" y="70" width="30" height="15" fill={fillColor} rx="1" />
+                                            <rect x="40" y="70" width="40" height="15" fill={strokeColor} rx="1" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'stacked_area') {
+                                        chartContent = (
+                                          <g>
+                                            <path d="M10 60 L30 30 L50 40 L70 10 L90 30 L90 100 L10 100 Z" fill={strokeColor} opacity="0.6" />
+                                            <path d="M10 80 L30 50 L50 70 L70 30 L90 50 L90 100 L10 100 Z" fill={fillColor} opacity="0.8" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'waterfall') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="15" y="60" width="10" height="40" fill={strokeColor} />
+                                            <rect x="30" y="30" width="10" height="30" fill={fillColor} />
+                                            <rect x="45" y="20" width="10" height="10" fill={fillColor} />
+                                            <rect x="60" y="20" width="10" height="25" fill="#ef4444" />
+                                            <rect x="75" y="45" width="10" height="55" fill={strokeColor} />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'gantt') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="20" y="20" width="30" height="10" fill={fillColor} rx="2" />
+                                            <rect x="40" y="40" width="40" height="10" fill={strokeColor} rx="2" />
+                                            <rect x="60" y="60" width="25" height="10" fill={fillColor} rx="2" />
+                                            <rect x="30" y="80" width="50" height="10" fill={strokeColor} rx="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'radar') {
+                                        chartContent = (
+                                          <g transform="translate(50, 50)">
+                                            <polygon points="0,-40 38,-12 24,32 -24,32 -38,-12" fill="none" stroke={gridLine} strokeWidth="1" />
+                                            <polygon points="0,-20 19,-6 12,16 -12,16 -19,-6" fill="none" stroke={gridLine} strokeWidth="1" />
+                                            <polygon points="0,-30 25,-5 15,25 -20,10 -30,-20" fill={fillColor} opacity="0.4" stroke={fillColor} strokeWidth="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'bubble') {
+                                        chartContent = (
+                                          <g>
+                                            <circle cx="30" cy="70" r="15" fill={fillColor} opacity="0.6" />
+                                            <circle cx="60" cy="40" r="25" fill={strokeColor} opacity="0.6" />
+                                            <circle cx="80" cy="80" r="10" fill={fillColor} opacity="0.6" />
+                                            <circle cx="40" cy="30" r="8" fill={strokeColor} opacity="0.6" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'funnel') {
+                                        chartContent = (
+                                          <g>
+                                            <polygon points="10,10 90,10 75,40 25,40" fill={strokeColor} opacity="0.9" />
+                                            <polygon points="25,42 75,42 60,70 40,70" fill={fillColor} opacity="0.9" />
+                                            <polygon points="40,72 60,72 55,90 45,90" fill={strokeColor} opacity="0.6" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'sankey') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="10" y="20" width="5" height="60" fill={strokeColor} />
+                                            <rect x="85" y="10" width="5" height="30" fill={fillColor} />
+                                            <rect x="85" y="50" width="5" height="40" fill={fillColor} />
+                                            <path d="M15 35 C 50 35, 50 25, 85 25" fill="none" stroke={fillColor} strokeWidth="15" opacity="0.4" />
+                                            <path d="M15 65 C 50 65, 50 70, 85 70" fill="none" stroke={fillColor} strokeWidth="20" opacity="0.4" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'map') {
+                                        chartContent = (
+                                          <g>
+                                            <path d="M20 50 Q 40 20 60 40 T 90 50 Q 70 80 40 70 T 20 50" fill={fillColor} opacity="0.6" stroke={strokeColor} strokeWidth="2" />
+                                            <circle cx="45" cy="55" r="3" fill="#ffffff" />
+                                            <circle cx="65" cy="45" r="2" fill="#ffffff" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'hlc') {
+                                        chartContent = (
+                                          <g stroke={fillColor} strokeWidth="2">
+                                            <line x1="20" y1="20" x2="20" y2="80" />
+                                            <line x1="20" y1="70" x2="30" y2="70" />
+                                            
+                                            <line x1="50" y1="40" x2="50" y2="90" />
+                                            <line x1="50" y1="80" x2="60" y2="80" />
+                                            
+                                            <line x1="80" y1="10" x2="80" y2="60" stroke={strokeColor} />
+                                            <line x1="80" y1="20" x2="90" y2="20" stroke={strokeColor} />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'ohlc') {
+                                        chartContent = (
+                                          <g stroke={fillColor} strokeWidth="2">
+                                            <line x1="20" y1="20" x2="20" y2="80" />
+                                            <line x1="10" y1="30" x2="20" y2="30" />
+                                            <line x1="20" y1="70" x2="30" y2="70" />
+                                            
+                                            <line x1="50" y1="40" x2="50" y2="90" />
+                                            <line x1="40" y1="60" x2="50" y2="60" />
+                                            <line x1="50" y1="80" x2="60" y2="80" />
+                                            
+                                            <line x1="80" y1="10" x2="80" y2="60" stroke={strokeColor} />
+                                            <line x1="70" y1="50" x2="80" y2="50" stroke={strokeColor} />
+                                            <line x1="80" y1="20" x2="90" y2="20" stroke={strokeColor} />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'candlestick') {
+                                        chartContent = (
+                                          <g>
+                                            <line x1="25" y1="20" x2="25" y2="80" stroke={fillColor} strokeWidth="1.5" />
+                                            <rect x="15" y="30" width="20" height="40" fill={fillColor} />
+                                            
+                                            <line x1="55" y1="40" x2="55" y2="90" stroke={fillColor} strokeWidth="1.5" />
+                                            <rect x="45" y="60" width="20" height="20" fill={fillColor} />
+                                            
+                                            <line x1="85" y1="10" x2="85" y2="60" stroke={strokeColor} strokeWidth="1.5" />
+                                            <rect x="75" y="20" width="20" height="30" fill={bg} stroke={strokeColor} strokeWidth="2" />
+                                          </g>
+                                        );
+                                    } else if (chartType === 'volume') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="15" y="60" width="10" height="40" fill={fillColor} opacity="0.8" />
+                                            <rect x="35" y="40" width="10" height="60" fill={strokeColor} opacity="0.8" />
+                                            <rect x="55" y="75" width="10" height="25" fill={fillColor} opacity="0.8" />
+                                            <rect x="75" y="20" width="10" height="80" fill={strokeColor} opacity="0.8" />
+                                          {chartType === 'radar_markers' && (
+                                              <>
+                                                <circle cx="50" cy="15" r="2" fill={fillColor} />
+                                                <circle cx="85" cy="35" r="2" fill={fillColor} />
+                                                <circle cx="85" cy="70" r="2" fill={fillColor} />
+                                                <circle cx="50" cy="85" r="2" fill={fillColor} />
+                                                <circle cx="15" cy="70" r="2" fill={fillColor} />
+                                                <circle cx="15" cy="35" r="2" fill={fillColor} />
+                                                
+                                                <circle cx="50" cy="35" r="2" fill={strokeColor} />
+                                                <circle cx="65" cy="45" r="2" fill={strokeColor} />
+                                                <circle cx="65" cy="60" r="2" fill={strokeColor} />
+                                                <circle cx="50" cy="70" r="2" fill={strokeColor} />
+                                                <circle cx="35" cy="60" r="2" fill={strokeColor} />
+                                                <circle cx="35" cy="45" r="2" fill={strokeColor} />
+                                              </>
+                                            )}
+                                            {chartType === 'radar_filled' && (
+                                              <>
+                                                <polygon points="50,15 85,35 85,70 50,85 15,70 15,35" fill={fillColor} opacity="0.3" />
+                                                <polygon points="50,35 65,45 65,60 50,70 35,60 35,45" fill={strokeColor} opacity="0.4" />
+                                              </>
+                                            )}
+                                            </g>
+                                        );
+                                    } else if (chartType === 'treemap') {
+                                        chartContent = (
+                                          <g>
+                                            <rect x="10" y="10" width="50" height="80" fill={strokeColor} opacity="0.8" rx="2" />
+                                            <rect x="62" y="10" width="28" height="45" fill={fillColor} opacity="0.8" rx="2" />
+                                            <rect x="62" y="57" width="28" height="33" fill={fillColor} opacity="0.5" rx="2" />
+                                          </g>
+                                        );
+                                    }
+                                    }
+
+                                    return (
+                                      <>
+                                        <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm rounded-lg" style={{ opacity: opacity, backgroundColor: bg, border: `1px solid ${gridLine}` }} viewBox="0 -15 100 115" preserveAspectRatio="none">
+                                          {showAxes && chartType !== 'pie' && chartType !== 'donut' && chartType !== 'radar' && chartType !== 'treemap' && chartType !== 'map' && (
+                                            <g stroke={gridLine} strokeWidth="1">
+                                              <line x1="10" y1="20" x2="100" y2="20" />
+                                              <line x1="10" y1="40" x2="100" y2="40" />
+                                              <line x1="10" y1="60" x2="100" y2="60" />
+                                              <line x1="10" y1="80" x2="100" y2="80" />
+                                              <line x1="10" y1="100" x2="100" y2="100" />
+                                              <line x1="10" y1="0" x2="10" y2="100" />
+                                            </g>
+                                          )}
+                                          {chartContent}
+                                        </svg>
+                                        
+                                        {overlay.labelDisplay !== 'none' && overlay.labelDisplay !== 'hidden' && overlay.labelDisplay !== 'legend' && (() => {
+                                            if (overlay.chartType === 'pie' || overlay.chartType === 'donut') {
+                                              const s1 = currentChartData?.series?.[0]?.data || [];
+                                              const total = s1.reduce((a,b)=>a+b, 0) || 1;
+                                              let startAngle = 0;
+                                              let lastPositions = [];
+                                              return (
+                                                <div className="absolute inset-0 pointer-events-none">
+                                                  {s1.map((v, i) => {
+                                                     const sliceAngle = (v / total) * 360;
+                                                     if (sliceAngle === 360) {
+                                                        return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                     }
+                                                     const midAngle = startAngle + (sliceAngle / 2);
+                                                     const r = 32;
+                                                     let baseRMultiplier = overlay.labelDisplay === 'outside' ? 1.25 : (overlay.chartType === 'donut' ? 0.82 : 0.65);
+                                                     let textR = r * baseRMultiplier;
+                                                     const cx = 50, cy = 46;
+                                                     
+                                                     let tx = cx + textR * Math.cos(Math.PI * midAngle / 180);
+                                                     let ty = cy + textR * Math.sin(Math.PI * midAngle / 180);
+                                                     
+                                                     let collision = true;
+                                                     let maxAttempts = 6;
+                                                     while (collision && maxAttempts > 0) {
+                                                       collision = lastPositions.some(pos => Math.abs(pos.ty - ty) < 8 && Math.abs(pos.tx - tx) < 8);
+                                                       if (collision) {
+                                                         textR += r * 0.18;
+                                                         tx = cx + textR * Math.cos(Math.PI * midAngle / 180);
+                                                         ty = cy + textR * Math.sin(Math.PI * midAngle / 180);
+                                                       }
+                                                       maxAttempts--;
+                                                     }
+                                                     lastPositions.push({ tx, ty });
+                                                     
+                                                     startAngle += sliceAngle;
+                                                     if (sliceAngle <= 2 && overlay.labelDisplay !== 'outside') return null;
+                                                     
+                                                     return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className={`absolute bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{left: tx+'%', top: ty+'%', transform: 'translate(-50%, -50%)', color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                  })}
+                                                </div>
+                                              );
+                                            }
+                                            return null;
+                                          })()}
+
+                                        <div 
+                                          className="absolute pointer-events-auto z-10 cursor-move flex items-center justify-center w-full"
+                                          style={{ 
+                                            top: overlay.titlePos ? overlay.titlePos.y : '8px', 
+                                            left: overlay.titlePos ? overlay.titlePos.x : '0%',
+                                            transform: overlay.titlePos ? 'none' : 'translateX(0%)'
+                                          }}
+                                          onPointerDown={(e) => {
+                                            e.stopPropagation();
+                                            const startX = e.clientX;
+                                            const startY = e.clientY;
+                                            const el = e.currentTarget;
+                                            const currentX = overlay.titlePos ? parseInt(overlay.titlePos.x) : el.offsetLeft;
+                                            const currentY = overlay.titlePos ? parseInt(overlay.titlePos.y) : el.offsetTop;
+                                            
+                                            const onMove = (moveEvent) => {
+                                              updateOverlay({ titlePos: { x: (currentX + (moveEvent.clientX - startX)) + 'px', y: (currentY + (moveEvent.clientY - startY)) + 'px' } });
+                                            };
+                                            const onUp = () => {
+                                              document.removeEventListener('pointermove', onMove);
+                                              document.removeEventListener('pointerup', onUp);
+                                            };
+                                            document.addEventListener('pointermove', onMove);
+                                            document.addEventListener('pointerup', onUp);
+                                          }}
+                                        >
+                                          <input 
+                                            type="text" 
+                                            placeholder="Chart Title"
+                                              value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series ? currentChartData.series.map(s => s.name).filter(n => n && !n.toLowerCase().startsWith('series')).join(' vs ') : '') || 'Chart Title')} 
+                                            onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
+                                            onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
+                                            className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"
+                                            style={{ color: textClr }}
+                                          />
+                                        </div>
+
+                                        {showLegend && (() => {
+                                          const align = overlay.legendAlign || (chartType === 'pie' || chartType === 'donut' ? 'bottom' : 'top');
+                                          let legendStyle = { top: overlay.legendPos ? overlay.legendPos.y : 'auto', left: overlay.legendPos ? overlay.legendPos.x : 'auto', transform: 'none' };
+                                          let flexDir = 'flex-row';
+                                          if (!overlay.legendPos) {
+                                            if (align === 'bottom') { legendStyle = { bottom: '0px', left: '0', width: '100%', justifyContent: 'center' }; }
+                                            else if (align === 'top') { legendStyle = { top: '28px', left: '0', width: '100%', justifyContent: 'center' }; }
+                                            else if (align === 'left') { legendStyle = { left: '8px', top: '50%', transform: 'translateY(-50%)', justifyContent: 'center' }; flexDir = 'flex-col'; }
+                                            else if (align === 'right') { legendStyle = { right: '8px', top: '50%', transform: 'translateY(-50%)', justifyContent: 'center' }; flexDir = 'flex-col'; }
+                                          }
+                                          return (
+                                          <div 
+                                            className={`absolute flex gap-3 pointer-events-auto z-10 cursor-move flex-wrap px-2 ${flexDir}`}
+                                            style={legendStyle}
+                                            onPointerDown={(e) => {
+                                              e.stopPropagation();
+                                              const startX = e.clientX;
+                                              const startY = e.clientY;
+                                              const el = e.currentTarget;
+                                              const currentX = overlay.legendPos ? parseInt(overlay.legendPos.x) : el.offsetLeft;
+                                              const currentY = overlay.legendPos ? parseInt(overlay.legendPos.y) : el.offsetTop;
+                                              
+                                              const onMove = (moveEvent) => {
+                                                updateOverlay({ legendPos: { x: (currentX + (moveEvent.clientX - startX)) + 'px', y: (currentY + (moveEvent.clientY - startY)) + 'px' } });
+                                              };
+                                              const onUp = () => {
+                                                document.removeEventListener('pointermove', onMove);
+                                                document.removeEventListener('pointerup', onUp);
+                                              };
+                                              document.addEventListener('pointermove', onMove);
+                                              document.addEventListener('pointerup', onUp);
+                                            }}
+                                          >
+                                            {(() => {
+                                              if (overlay.chartType === 'pie' || overlay.chartType === 'donut') {
+                                                const CHART_COLORS = [fillColor, strokeColor, '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
+                                                const labels = currentChartData?.labels || ['Category 1', 'Category 2'];
+                                                const s1 = currentChartData?.series?.[0]?.data || [];
+                                                const total = s1.reduce((a,b)=>a+b, 0) || 1;
+                                                return labels.map((label, idx) => {
+                                                  const val = s1[idx] || 0;
+                                                  const pct = Math.round((val / total) * 100);
+                                                  return (
+                                                  <div key={idx} className="flex items-center gap-1.5 shrink-0">
+                                                    <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }} />
+                                                    <input 
+                                                      type="text" 
+                                                      placeholder={`Category ${idx + 1}`}
+                                                      value={overlay[`category${idx}Name`] !== undefined ? overlay[`category${idx}Name`] : label} 
+                                                      onChange={(e) => updateOverlay({ [`category${idx}Name`]: e.target.value })}
+                                                      onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
+                                                      className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
+                                                      style={{ color: textClr }}
+                                                    />
+                                                    {overlay.labelDisplay === 'legend' && (
+                                                      <span className="text-[11px] font-medium opacity-60" style={{ color: textClr }}>
+                                                        {val} ({pct}%)
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                )});
+                                              } else {
+                                                const seriesNames = [
+                                                  { prop: 'series1Name', def: currentChartData?.series?.[0]?.name || 'Series 1', color: fillColor },
+                                                  { prop: 'series2Name', def: currentChartData?.series?.[1]?.name || 'Series 2', color: strokeColor }
+                                                ];
+                                                const visibleSeries = currentChartData?.series ? currentChartData.series.slice(0, 2) : seriesNames;
+                                                return visibleSeries.map((s, idx) => {
+                                                  const sn = seriesNames[idx];
+                                                  return (
+                                                    <div key={idx} className="flex items-center gap-1.5 shrink-0">
+                                                      <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: sn.color }} />
+                                                      <input 
+                                                        type="text" 
+                                                        placeholder={`Series ${idx + 1}`}
+                                                        value={overlay[sn.prop] !== undefined ? overlay[sn.prop] : sn.def} 
+                                                        onChange={(e) => updateOverlay({ [sn.prop]: e.target.value })}
+                                                        onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
+                                                        className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
+                                                        style={{ color: textClr }}
+                                                      />
+                                                    </div>
+                                                  );
+                                                });
+                                              }
+                                            })()}
+                                          </div>
+                                        )})}
+                                      </>
+                                    );
+                                 } else if (overlay.type === 'rectangle' && overlay.shapeType) {
+                                   const isLine = overlay.shapeType === 'line' || overlay.shapeType === 'arrow';
+                                   const cr = overlay.cornerRadius || 0; // 0 to 50
+                                   const rx = (cr / 100) * Math.min(overlay.width, overlay.height);
+                                   
+                                   const renderDefs = () => (
+                                      <defs>
+                                        {fillType === 'linear' && (
+                                          <linearGradient id={`gradient-${overlay.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stopColor={fillColor} />
+                                            <stop offset="100%" stopColor={fillSecondaryColor} />
+                                          </linearGradient>
+                                        )}
+                                        {fillType === 'radial' && (
+                                          <radialGradient id={`gradient-${overlay.id}`} cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" stopColor={fillColor} />
+                                            <stop offset="100%" stopColor={fillSecondaryColor} />
+                                          </radialGradient>
+                                        )}
+                                        <filter id={`filter-${overlay.id}`}>
+                                          {effectShadow.active && (
+                                            <feDropShadow dx={effectShadow.distance} dy={effectShadow.distance} stdDeviation={effectShadow.blur} floodOpacity={effectShadow.opacity} />
+                                          )}
+                                          {effectGlow.active && (
+                                            <feDropShadow dx="0" dy="0" stdDeviation={effectGlow.intensity} floodColor={effectGlow.color} floodOpacity="1" />
+                                          )}
+                                          {effectBlur.active && (
+                                            <feGaussianBlur stdDeviation={effectBlur.radius} />
+                                          )}
+                                        </filter>
+                                      </defs>
+                                   );
+
+                                   // Fetch base SVG template from SHAPE_SECTIONS
+                                   let shapeSvgTemplate = null;
+                                   for (const sec of SHAPE_SECTIONS) {
+                                     const found = sec.shapes.find(s => s.type === overlay.shapeType);
+                                     if (found) { shapeSvgTemplate = found.svg; break; }
+                                   }
+
+                                   // Deep clone and customize the template's properties
+                                   const customizeShapeSvg = (node) => {
+                                     if (!React.isValidElement(node)) return node;
+                                     if (node.type === React.Fragment) {
+                                       return React.cloneElement(node, {}, React.Children.map(node.props.children, customizeShapeSvg));
+                                     }
+                                     
+                                     const overrides = {};
+                                     // Override Stroke
+                                     if (node.props.stroke === 'currentColor' || node.props.stroke !== 'none') {
+                                       overrides.stroke = strokeType !== 'none' ? strokeColor : 'none';
+                                       // scale down stroke width because viewBox is 16x16 but width is 100+
+                                       const strokeScale = 16 / Math.max(overlay.width, overlay.height);
+                                       overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (node.props.strokeWidth || 1.5);
+                                       
+                                       if (strokeDasharray !== 'none') {
+                                         // scale dash array for viewBox
+                                         const scaledDash = strokeDasharray.split(',').map(v => (parseFloat(v.trim()) * strokeScale).toFixed(2)).join(',');
+                                         overrides.strokeDasharray = scaledDash;
+                                       }
+                                     }
+                                     
+                                     // Override Fill
+                                     if (node.type !== 'line' && node.type !== 'polyline') {
+                                       // It's a shape that can be filled
+                                       overrides.fill = fillDef;
+                                     } else if (node.props.fill === 'currentColor') {
+                                       // Arrow heads etc.
+                                       overrides.fill = strokeType !== 'none' ? strokeColor : fillColor;
+                                     }
+
+                                     // Apply filter
+                                     if (filterDef !== '') {
+                                       overrides.filter = filterDef;
+                                     }
+                                     
+                                     // Special case: Corner radius for rectangles
+                                     if (node.type === 'rect' && overlay.cornerRadius > 0) {
+                                        overrides.rx = (overlay.cornerRadius / 100) * 8; // 8 is half of viewBox 16
+                                     }
+
+                                     return React.cloneElement(node, overrides, React.Children.map(node.props.children, customizeShapeSvg));
+                                   };
+
+                                   let shapeContent = shapeSvgTemplate ? customizeShapeSvg(shapeSvgTemplate) : <rect x="0" y="0" width="16" height="16" fill={fillDef} />;
+
+                                   return (
+                                     <>
+                                       <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
+                                         {renderDefs()}
+                                         {shapeContent}
+                                       </svg>
+                                       {overlay.type === 'rectangle' && (
+                                         <textarea
+                                           className="absolute inset-0 w-full h-full bg-transparent p-3 text-sm resize-none border-none outline-none z-10 font-medium"
+                                           style={{
+                                             color: overlay.color || '#333333',
+                                             textAlign: overlay.textAlign || 'center',
+                                             fontFamily: overlay.fontFamily || 'inherit',
+                                             fontSize: overlay.fontSize ? `${overlay.fontSize}px` : 'inherit',
+                                             fontWeight: overlay.bold ? 'bold' : 'normal',
+                                             fontStyle: overlay.italic ? 'italic' : 'normal',
+                                             textDecoration: [
+                                               overlay.underline ? 'underline' : '',
+                                               overlay.strikeThrough ? 'line-through' : ''
+                                             ].filter(Boolean).join(' ') || 'none',
+                                             backgroundColor: overlay.highlight || 'transparent'
+                                           }}
+                                           value={overlay.content || ''}
+                                           placeholder={isSelected ? "New Text" : ""}
+                                           onChange={(e) => updateOverlay({ content: e.target.value })}
+                                           onClick={(e) => { e.stopPropagation(); setSelectedComposeOverlayId(overlay.id); }}
+                                           onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }}
+                                         />
+                                       )}
+                                     </>
+                                   );
+                                 }
+                                 return overlay.content;
+                               })()}
+                               
+                               {/* Smart Selection Frame & Resize Handles */}
+                               {isSelected && !isLocked && (
+                                 <>
+                                   {/* Bounding box outline */}
+                                   <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />
+                                   
+                                   {/* Rotation Handle */}
+                                   <div className="resize-handle absolute top-[-30px] left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center cursor-grab hover:bg-gray-50" onMouseDown={handleRotate}>
+                                     <RotateCw size={12} className="text-gray-600 pointer-events-none" />
+                                   </div>
+                                   <div className="absolute top-[-18px] left-1/2 w-px h-[18px] bg-blue-500 pointer-events-none" />
+
+                                   {/* 8 Resize Handles */}
+                                   <div className="resize-handle absolute top-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, -1)} />
+                                   <div className="resize-handle absolute top-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 0, -1)} />
+                                   <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
+                                   
+                                   <div className="resize-handle absolute top-1/2 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, 0)} />
+                                   <div className="resize-handle absolute top-1/2 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, 0)} />
+                                   
+                                   <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
+                                   <div className="resize-handle absolute bottom-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 0, 1)} />
+                                   <div className="resize-handle absolute bottom-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 1, 1)} />
+
+                                   {/* Floating Style Panel */}
+                                   {overlay.type === 'chart' ? (
+                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default max-h-[360px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }} onClick={e => e.stopPropagation()}>
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-[12px] font-semibold text-slate-800">Chart Styles</span>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2">
+                                          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Theme</p>
+                                          <div className="flex bg-gray-100/50 p-1 rounded-lg">
+                                            <button type="button" onClick={() => updateOverlay({ chartTheme: 'light' })} className={`flex-1 py-1.5 text-[11px] font-medium rounded-md transition-colors ${overlay.chartTheme !== 'dark' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Light</button>
+                                            <button type="button" onClick={() => updateOverlay({ chartTheme: 'dark' })} className={`flex-1 py-1.5 text-[11px] font-medium rounded-md transition-colors ${overlay.chartTheme === 'dark' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Dark</button>
+                                          </div>
+                                        </div>
+
+                                        <hr className="border-gray-100" />
+
+                                        <div className="flex flex-col gap-2">
+                                          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Colors</p>
+                                          {overlay.chartType === 'pie' || overlay.chartType === 'donut' ? (
+                                            <div className="flex flex-col gap-2">
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-[12px] text-slate-600">Categories</span>
+                                                <button type="button" className="text-[10px] text-violet-500 hover:text-violet-600 font-medium transition-colors" onClick={() => {
+                                                  const newColors = {};
+                                                  const count = currentChartData?.labels?.length || 5;
+                                                  for(let i=0; i<count; i++) {
+                                                    newColors[i] = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                                                  }
+                                                  updateOverlay({ categoryColors: newColors });
+                                                }}>Regenerate Palette</button>
+                                              </div>
+                                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                                {(currentChartData?.labels || ['Category 1', 'Category 2']).map((label, idx) => {
+                                                   const CHART_COLORS = [fillColor, strokeColor, '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
+                                                   const defaultColor = CHART_COLORS[idx % CHART_COLORS.length];
+                                                   const activeColor = overlay.categoryColors?.[idx] || defaultColor;
+                                                   return (
+                                                     <div key={idx} className="flex items-center gap-1.5 bg-gray-50/50 rounded-md px-1.5 py-1 border border-gray-100" title={label}>
+                                                       <label className="w-4 h-4 rounded-full shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0" style={{ backgroundColor: activeColor }}>
+                                                         <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={activeColor} onChange={(e) => {
+                                                           const newCatColors = {...(overlay.categoryColors || {})};
+                                                           newCatColors[idx] = e.target.value;
+                                                           updateOverlay({ categoryColors: newCatColors });
+                                                         }} />
+                                                       </label>
+                                                       <span className="text-[10px] font-medium text-slate-600 truncate max-w-[50px]">{label}</span>
+                                                     </div>
+                                                   );
+                                                })}
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <>
+                                              <div className="flex items-center justify-between">
+                                                <span className="text-[12px] text-slate-600">Primary Series</span>
+                                                <div className="flex gap-1.5">
+                                                  {['#ef4444', '#3b82f6', '#22c55e', '#8b5cf6'].map(c => (
+                                                    <button key={c} className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 transition-transform shadow-sm" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c })} />
+                                                  ))}
+                                                  <label className="w-5 h-5 rounded-full border border-gray-200 shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                                    <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={overlay.fillColor || '#3b82f6'} onChange={(e) => updateOverlay({ fillColor: e.target.value })} />
+                                                    <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+                                                  </label>
+                                                </div>
+                                              </div>
+                                              <div className="flex items-center justify-between mt-1">
+                                                <span className="text-[12px] text-slate-600">Secondary Series</span>
+                                                <div className="flex gap-1.5">
+                                                  {['#f87171', '#60a5fa', '#4ade80', '#e2e8f0'].map(c => (
+                                                    <button key={c} className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 transition-transform shadow-sm" style={{ backgroundColor: c }} onClick={() => updateOverlay({ strokeColor: c })} />
+                                                  ))}
+                                                  <label className="w-5 h-5 rounded-full border border-gray-200 shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                                    <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={overlay.strokeColor || '#e2e8f0'} onChange={(e) => updateOverlay({ strokeColor: e.target.value })} />
+                                                    <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+                                                  </label>
+                                                </div>
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+
+                                        <hr className="border-gray-100" />
+
+                                        <div className="flex flex-col gap-3">
+                                          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Elements</p>
+                                          <label className="flex items-center justify-between cursor-pointer group">
+                                            <span className="text-[12px] text-slate-600 group-hover:text-slate-800 transition-colors">Show Axes & Grid</span>
+                                            <div className={`w-8 h-4 rounded-full transition-colors relative ${overlay.showAxes !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
+                                              <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${overlay.showAxes !== false ? 'translate-x-4' : 'translate-x-0'}`} />
+                                              <input type="checkbox" className="hidden" checked={overlay.showAxes !== false} onChange={(e) => updateOverlay({ showAxes: e.target.checked })} />
+                                            </div>
+                                          </label>
+                                          
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[12px] text-slate-600">Legend</span>
+                                            <div className="flex bg-gray-100 rounded p-0.5">
+                                              {['top', 'bottom', 'left', 'right', 'none'].map(pos => {
+                                                const isActive = overlay.legendAlign === pos || (pos === 'none' && overlay.showLegend === false) || (pos === 'bottom' && overlay.legendAlign === undefined && overlay.showLegend !== false);
+                                                return (
+                                                  <button key={pos} onClick={() => updateOverlay({ legendAlign: pos, legendPos: null, showLegend: pos !== 'none' })} className={`px-2 py-1 text-[10px] font-medium rounded transition-colors capitalize ${isActive ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>{pos}</button>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[12px] text-slate-600">Data Labels</span>
+                                            <div className="flex bg-gray-100 rounded p-0.5">
+                                              {[ {val: 'inside', label: 'Chart'}, {val: 'legend', label: 'Legend'}, {val: 'none', label: 'Hidden'} ].map(opt => {
+                                                 const isActive = overlay.labelDisplay === opt.val || (opt.val === 'inside' && overlay.labelDisplay === undefined && overlay.showLabels !== false) || (opt.val === 'none' && overlay.showLabels === false);
+                                                 return (
+                                                   <button key={opt.val} onClick={() => updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' })} className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${isActive ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>{opt.label}</button>
+                                                 );
+                                              })}
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-2 mt-1">
+                                          <div className="flex items-center justify-between">
+                                            <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Opacity</p>
+                                            <span className="text-[10px] text-slate-400">{opacity}%</span>
+                                          </div>
+                                          <input type="range" min="0" max="100" value={opacity} onChange={(e) => updateOverlay({ opacity: parseInt(e.target.value) })} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-500" />
+                                        </div>
+                                      </div>
+                                   ) : (
+                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => {
+                                             if (document.activeElement === e.target) {
+                                               e.stopPropagation();
+                                             }
+                                           }} onClick={e => e.stopPropagation()}>
+                                     {/* Color Swatches */}
+                                     <div className="flex gap-1.5 justify-center mb-1">
+                                       {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
+                                          <button key={c} className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c, color: c })} />
+                                       ))}
+                                       <label className="w-6 h-6 rounded-full border border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                         <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={fillColor} onChange={(e) => updateOverlay({ fillColor: e.target.value, color: e.target.value })} />
+                                         <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+                                       </label>
+                                     </div>
+
+                                     <hr className="border-gray-100" />
+
+                                     {/* Fill Options */}
+                                     <div className="flex flex-col gap-2">
+                                       <span className="text-xs font-semibold text-gray-500 uppercase">Fill</span>
+                                       <div className="flex bg-gray-50 rounded-lg p-1">
+                                         {['solid', 'none', 'linear'].map(t => (
+                                            <button key={t} className={`flex-1 text-[11px] py-1 rounded-md font-medium capitalize ${fillType === t ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => updateOverlay({ fillType: t })}>{t}</button>
+                                         ))}
+                                       </div>
+                                     </div>
+
+                                     {/* Stroke Options */}
+                                     <div className="flex flex-col gap-2">
+                                       <span className="text-xs font-semibold text-gray-500 uppercase">Stroke</span>
+                                       <div className="flex bg-gray-50 rounded-lg p-1">
+                                         {['none', 'solid', 'dashed'].map(t => (
+                                            <button key={t} className={`flex-1 text-[11px] py-1 rounded-md font-medium capitalize ${strokeType === t ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => updateOverlay({ strokeType: t })}>{t}</button>
+                                         ))}
+                                       </div>
+                                       {strokeType !== 'none' && (
+                                         <div className="flex items-center justify-between px-1 mt-1">
+                                           <span className="text-[10px] text-gray-400">Color</span>
+                                           <div className="flex gap-1">
+                                             {['#000000', '#3b82f6', '#ef4444'].map(c => (
+                                                <button key={c} className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: c }} onClick={() => updateOverlay({ strokeColor: c })} />
+                                             ))}
+                                             <label className="w-4 h-4 rounded-full border border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
+                                               <input type="color" className="absolute opacity-0 w-6 h-6 cursor-pointer" value={strokeColor} onChange={(e) => updateOverlay({ strokeColor: e.target.value })} />
+                                               <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+                                             </label>
+                                           </div>
+                                         </div>
+                                       )}
+                                       {strokeType !== 'none' && (
+                                         <div className="flex items-center justify-between px-1">
+                                           <span className="text-[10px] text-gray-400">Weight: {strokeWidth}px</span>
+                                           <input type="range" min="1" max="24" value={strokeWidth} onChange={e => updateOverlay({ strokeWidth: parseInt(e.target.value) })} className="w-24 accent-blue-500" />
+                                         </div>
+                                       )}
+                                     </div>
+
+                                     {/* Appearance / Corners */}
+                                     <div className="flex flex-col gap-2">
+                                        <span className="text-xs font-semibold text-gray-500 uppercase">Appearance</span>
+                                        <div className="flex items-center justify-between px-1">
+                                           <span className="text-[10px] text-gray-400">Opacity: {opacity}%</span>
+                                           <input type="range" min="0" max="100" value={opacity} onChange={e => updateOverlay({ opacity: parseInt(e.target.value) })} className="w-24 accent-blue-500" />
+                                        </div>
+                                        {overlay.shapeType === 'rectangle' && (
+                                          <div className="flex items-center justify-between px-1">
+                                             <span className="text-[10px] text-gray-400">Corners: {overlay.cornerRadius || 0}%</span>
+                                             <input type="range" min="0" max="50" value={overlay.cornerRadius || 0} onChange={e => updateOverlay({ cornerRadius: parseInt(e.target.value) })} className="w-24 accent-blue-500" />
+                                          </div>
+                                        )}
+                                     </div>
+
+                                     {/* Effects */}
+                                     <div className="flex flex-col gap-2">
+                                        <span className="text-xs font-semibold text-gray-500 uppercase">Effects</span>
+                                        <div className="grid grid-cols-3 gap-1">
+                                           <button className={`text-[10px] py-1.5 rounded border ${effectShadow.active ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600'}`} onClick={() => updateOverlay({ effectShadow: { ...effectShadow, active: !effectShadow.active } })}>Shadow</button>
+                                           <button className={`text-[10px] py-1.5 rounded border ${effectGlow.active ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600'}`} onClick={() => updateOverlay({ effectGlow: { ...effectGlow, active: !effectGlow.active } })}>Glow</button>
+                                           <button className={`text-[10px] py-1.5 rounded border ${effectBlur.active ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 bg-white text-gray-600'}`} onClick={() => updateOverlay({ effectBlur: { ...effectBlur, active: !effectBlur.active } })}>Blur</button>
+                                        </div>
+                                     </div>
+
+                                     <hr className="border-gray-100" />
+                                     <div className="flex justify-between px-1 pb-1">
+                                       <button className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100" onClick={() => updateOverlay({ isLocked: !isLocked })} title="Lock/Unlock">
+                                         {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+                                       </button>
+                                       <button className="p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.filter(o => o.id !== overlay.id) })} title="Delete">
+                                         <Trash2 size={14} />
+                                       </button>
+                                     </div>
+                                   </div>
+                                   )}
+                                 </>
+                               )}
+                             </div>
+                           );
+                        })}
+\n
             {/* Page 1 Sheet Wrapper */}
             <div
               data-enterprise-page="true"
