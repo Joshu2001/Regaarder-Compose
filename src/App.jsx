@@ -29738,8 +29738,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                style={{
                                  left: left,
                                  top: top,
-                                 width: overlay.width,
-                                 height: overlay.height,
+                                 width: Math.max(1, overlay.width),
+
+                                 height: Math.max(1, overlay.height),
                                  transform: `rotate(${rotation}deg)`,
                                  zIndex: isSelected ? 105 : 100,
                                  cursor: isLocked ? 'not-allowed' : 'move'
@@ -30518,10 +30519,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    {!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType) && <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />}
                                    
                                    {/* Rotation Handle */}
-                                   <div className="resize-handle absolute top-[-30px] left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center cursor-grab hover:bg-gray-50" onMouseDown={handleRotate}>
-                                     <RotateCw size={12} className="text-gray-600 pointer-events-none" />
-                                   </div>
-                                   <div className="absolute top-[-18px] left-1/2 w-px h-[18px] bg-blue-500 pointer-events-none" />
+
+                                   
+                                   {!is1D && (
+
+                                   
+                                     <>
+
+                                   
+                                       
+
+                                   
+                                       {/* Rotation Handle */}
+
+                                   
+                                       <div className="resize-handle absolute top-[-30px] left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center cursor-grab hover:bg-gray-50" onMouseDown={handleRotate}>
+
+                                   
+                                       <RotateCw size={12} className="text-gray-600 pointer-events-none" />
+
+                                   
+                                       </div>
+
+                                   
+                                       <div className="absolute top-[-18px] left-1/2 w-px h-[18px] bg-blue-500 pointer-events-none" />
+
+                                   
+                                     </>
+
+                                   
+                                   )}
 
                                    {(!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType)) ? (
                                      <>
@@ -39219,8 +39246,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                style={{
                                  left: left,
                                  top: top,
-                                 width: overlay.width,
-                                 height: overlay.height,
+                                 width: Math.max(1, overlay.width),
+
+                                 height: Math.max(1, overlay.height),
                                  transform: `rotate(${rotation}deg)`,
                                  zIndex: isSelected ? 105 : 100,
                                  cursor: isLocked ? 'not-allowed' : 'move'
@@ -39990,10 +40018,36 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    {!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType) && <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />}
                                    
                                    {/* Rotation Handle */}
-                                   <div className="resize-handle absolute top-[-30px] left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center cursor-grab hover:bg-gray-50" onMouseDown={handleRotate}>
-                                     <RotateCw size={12} className="text-gray-600 pointer-events-none" />
-                                   </div>
-                                   <div className="absolute top-[-18px] left-1/2 w-px h-[18px] bg-blue-500 pointer-events-none" />
+
+                                   
+                                   {!is1D && (
+
+                                   
+                                     <>
+
+                                   
+                                       
+
+                                   
+                                       {/* Rotation Handle */}
+
+                                   
+                                       <div className="resize-handle absolute top-[-30px] left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center cursor-grab hover:bg-gray-50" onMouseDown={handleRotate}>
+
+                                   
+                                       <RotateCw size={12} className="text-gray-600 pointer-events-none" />
+
+                                   
+                                       </div>
+
+                                   
+                                       <div className="absolute top-[-18px] left-1/2 w-px h-[18px] bg-blue-500 pointer-events-none" />
+
+                                   
+                                     </>
+
+                                   
+                                   )}
 
                                    {(!['line', 'line_arrow', 'double_arrow', 'arrow'].includes(overlay.shapeType)) ? (
                                      <>
