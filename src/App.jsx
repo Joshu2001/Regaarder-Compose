@@ -30567,8 +30567,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    ) : (
                                      <>
                                        {/* 2 Resize Handles for Line */}
-                                       <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
-                                       <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
+                                       <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-pointer transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
+                                        <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-pointer transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
                                      </>
                                    )}
 
@@ -40066,8 +40066,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    ) : (
                                      <>
                                        {/* 2 Resize Handles for Line */}
-                                       <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
-                                       <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
+                                       <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-pointer transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
+                                        <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-pointer transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
                                      </>
                                    )}
 
