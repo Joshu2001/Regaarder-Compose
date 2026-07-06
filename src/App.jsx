@@ -28152,7 +28152,7 @@ const renderRoomTopHeader = () => (
         ref={sheetChartMenuRef}
         className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-100 overflow-hidden flex flex-col w-[440px] max-h-[82vh]"
         style={{ left: sheetChartMenu.left, top: sheetChartMenu.top }}
-        onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+        onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0">
@@ -28203,7 +28203,7 @@ const renderRoomTopHeader = () => (
           display: 'flex',
           flexDirection: 'column',
         }}
-        onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+        onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
@@ -29664,48 +29664,55 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                            // Handle dragging
                              const handleDrag = (e) => {
-                               if (isLocked) return;
-                               if (!isSelected) {
-                                 setSelectedSheetOverlayId(overlay.id);
-                               }
-                               // if clicked on panel or handles, dont drag
-                               if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
-                               
-                               const isTextarea = e.target.tagName === 'TEXTAREA';
-                               const isFocused = document.activeElement === e.target;
-                               if (isTextarea && isFocused) {
-                                 return;
-                               }
-                               
-                               e.preventDefault();
-                               e.stopPropagation();
-                               setIsShapeInteracting(true);
-                               const startX = e.clientX; const startY = e.clientY;
-                               const startL = left; const startT = top;
-                               
-                               let hasMoved = false;
-                               const onMouseMove = (moveEvent) => {
-                                 const dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
-                                 const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
-                                 if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-                                   hasMoved = true;
-                                   updateOverlay({ x: startL + dx, y: startT + dy });
-                                 }
-                               };
-                               const onMouseUp = () => {
-                                 setIsShapeInteracting(false);
-                                 window.removeEventListener('mousemove', onMouseMove);
-                                 window.removeEventListener('mouseup', onMouseUp);
-                                 
-                                 if (!hasMoved && isTextarea) {
-                                   e.target.focus();
-                                   const len = e.target.value.length;
-                                   e.target.setSelectionRange(len, len);
-                                 }
-                               };
-                               window.addEventListener('mousemove', onMouseMove);
-                               window.addEventListener('mouseup', onMouseUp);
-                             };
+                                if (isLocked) return;
+                                if (!isSelected) {
+                                  setSelectedSheetOverlayId(overlay.id);
+                                }
+                                // if clicked on panel or handles, dont drag
+                                if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
+                                
+                                const isTextarea = e.target.tagName === 'TEXTAREA';
+                                const isFocused = document.activeElement === e.target;
+                                if (isTextarea && isFocused) {
+                                  return;
+                                }
+                                
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setIsShapeInteracting(true);
+                                const startX = e.clientX; const startY = e.clientY;
+                                const startL = left; const startT = top;
+                                
+                                let hasMoved = false;
+                                const target = e.currentTarget;
+                                const pointerId = e.pointerId;
+                                target.setPointerCapture(pointerId);
+
+                                const onPointerMove = (moveEvent) => {
+                                  if (moveEvent.pointerId !== pointerId) return;
+                                  const dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
+                                  const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
+                                  if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                    hasMoved = true;
+                                    updateOverlay({ x: startL + dx, y: startT + dy });
+                                  }
+                                };
+                                const onPointerUp = (upEvent) => {
+                                  if (upEvent.pointerId !== pointerId) return;
+                                  setIsShapeInteracting(false);
+                                  target.removeEventListener('pointermove', onPointerMove);
+                                  target.removeEventListener('pointerup', onPointerUp);
+                                  target.releasePointerCapture(pointerId);
+                                  
+                                  if (!hasMoved && isTextarea) {
+                                    e.target.focus();
+                                    const len = e.target.value.length;
+                                    e.target.setSelectionRange(len, len);
+                                  }
+                                };
+                                target.addEventListener('pointermove', onPointerMove);
+                                target.addEventListener('pointerup', onPointerUp);
+                              };
 
                            return (
                              <div 
@@ -29736,7 +29743,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    });
                                  }
                                }}
-                               onMouseDown={handleDrag}
+                               onPointerDown={handleDrag}
                              >
                                {/* The SVG Shape */}
                                {(() => {
@@ -29748,7 +29755,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        value={overlay.content || ''}
                                        onChange={(e) => updateOverlay({ content: e.target.value })}
                                        onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
-                                       onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                       onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                      />
                                    );
                                  } else if (overlay.type === 'chart') {
@@ -30109,7 +30116,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             placeholder="Chart Title"
                                               value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series ? currentChartData.series.map(s => s.name).filter(n => n && !n.toLowerCase().startsWith('series')).join(' vs ') : '') || 'Chart Title')} 
                                             onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
-                                            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                            onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                             className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"
                                             style={{ color: textClr }}
                                           />
@@ -30165,7 +30172,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       placeholder={`Category ${idx + 1}`}
                                                       value={overlay[`category${idx}Name`] !== undefined ? overlay[`category${idx}Name`] : label} 
                                                       onChange={(e) => updateOverlay({ [`category${idx}Name`]: e.target.value })}
-                                                      onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                                      onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                                       className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                       style={{ color: textClr }}
                                                     />
@@ -30192,7 +30199,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         placeholder={`Series ${idx + 1}`}
                                                         value={overlay[sn.prop] !== undefined ? overlay[sn.prop] : sn.def} 
                                                         onChange={(e) => updateOverlay({ [sn.prop]: e.target.value })}
-                                                        onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                                        onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                                         className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                         style={{ color: textClr }}
                                                       />
@@ -30322,7 +30329,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            placeholder=""
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
-                                           onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                           onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                          />
                                        )}
                                      </>
@@ -30335,7 +30342,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                {isSelected && !isLocked && (
                                  <>
                                    {/* Bounding box outline */}
-                                   <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />
+                                   {!['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType) && <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />}
                                    
                                    {/* Rotation Handle */}
                                    <div className="resize-handle absolute top-[-30px] left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center cursor-grab hover:bg-gray-50" onMouseDown={handleRotate}>
@@ -30367,7 +30374,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                    {/* Floating Style Panel */}
                                    {overlay.type === 'chart' ? (
-                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[360px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }} onClick={e => e.stopPropagation()}>
+                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[360px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }} onClick={e => e.stopPropagation()}>
                                         <div className="flex items-center justify-between mb-1">
                                           <span className="text-[12px] font-semibold text-slate-800">Chart Styles</span>
                                         </div>
@@ -30544,7 +30551,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       </div>
                                    ) : (
-                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }} onClick={e => e.stopPropagation()}>
+                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
                                      <div className="flex gap-1.5 justify-center mb-1">
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
@@ -32168,7 +32175,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               maxHeight: '360px',
               overflowY: 'auto',
             }}
-            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+            onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
           >
             {sheetSlashMenu.filterText && (
               <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
@@ -32209,7 +32216,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           ref={sheetTablePresetMenuRef}
           className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
           style={{ left: `${sheetTablePresetMenu.left}px`, top: `${sheetTablePresetMenu.top}px` }}
-          onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+          onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
         >
           <div className="text-xs font-semibold text-gray-500 mb-2 px-1">Table Presets</div>
           <div className="grid grid-cols-2 gap-2">
@@ -32243,7 +32250,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Injected Sheets Modals & Overlays ── */}
       {specialCharactersModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}>
           <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -32448,7 +32455,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
       {sheetLinkModal.open && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-80 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -32532,7 +32539,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {sheetTranslateModal.open && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-96 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -32677,7 +32684,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div 
             className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-100 p-4 w-64 flex flex-col gap-3 text-left font-sans animate-in fade-in zoom-in-95 duration-150"
             style={{ left: sheetFilterMenu.x, top: sheetFilterMenu.y }}
-            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+            onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -32849,7 +32856,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       })()}
 
       {specialCharactersModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}>
           <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -38942,48 +38949,55 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                            // Handle dragging
                             const handleDrag = (e) => {
-                              if (isLocked) return;
-                              if (!isSelected) {
-                                setSelectedComposeOverlayId(overlay.id);
-                              }
-                              // if clicked on panel or handles, dont drag
-                              if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
-                              
-                              const isTextarea = e.target.tagName === 'TEXTAREA';
-                              const isFocused = document.activeElement === e.target;
-                              if (isTextarea && isFocused) {
-                                return;
-                              }
-                              
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setIsShapeInteracting(true);
-                              const startX = e.clientX; const startY = e.clientY;
-                              const startL = left; const startT = top;
-                              
-                              let hasMoved = false;
-                              const onMouseMove = (moveEvent) => {
-                                const dx = (moveEvent.clientX - startX) / (zoomLevel / 100);
-                                const dy = (moveEvent.clientY - startY) / (zoomLevel / 100);
-                                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-                                  hasMoved = true;
-                                  updateOverlay({ x: startL + dx, y: startT + dy });
-                                }
-                              };
-                              const onMouseUp = () => {
-                                setIsShapeInteracting(false);
-                                window.removeEventListener('mousemove', onMouseMove);
-                                window.removeEventListener('mouseup', onMouseUp);
-                                
-                                if (!hasMoved && isTextarea) {
-                                  e.target.focus();
-                                  const len = e.target.value.length;
-                                  e.target.setSelectionRange(len, len);
-                                }
-                              };
-                              window.addEventListener('mousemove', onMouseMove);
-                              window.addEventListener('mouseup', onMouseUp);
-                            };;
+                               if (isLocked) return;
+                               if (!isSelected) {
+                                 setSelectedComposeOverlayId(overlay.id);
+                               }
+                               // if clicked on panel or handles, dont drag
+                               if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
+                               
+                               const isTextarea = e.target.tagName === 'TEXTAREA';
+                               const isFocused = document.activeElement === e.target;
+                               if (isTextarea && isFocused) {
+                                 return;
+                               }
+                               
+                               e.preventDefault();
+                               e.stopPropagation();
+                               setIsShapeInteracting(true);
+                               const startX = e.clientX; const startY = e.clientY;
+                               const startL = left; const startT = top;
+                               
+                               let hasMoved = false;
+                               const target = e.currentTarget;
+                               const pointerId = e.pointerId;
+                               target.setPointerCapture(pointerId);
+
+                               const onPointerMove = (moveEvent) => {
+                                 if (moveEvent.pointerId !== pointerId) return;
+                                 const dx = (moveEvent.clientX - startX) / (zoomLevel / 100);
+                                 const dy = (moveEvent.clientY - startY) / (zoomLevel / 100);
+                                 if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                   hasMoved = true;
+                                   updateOverlay({ x: startL + dx, y: startT + dy });
+                                 }
+                               };
+                               const onPointerUp = (upEvent) => {
+                                 if (upEvent.pointerId !== pointerId) return;
+                                 setIsShapeInteracting(false);
+                                 target.removeEventListener('pointermove', onPointerMove);
+                                 target.removeEventListener('pointerup', onPointerUp);
+                                 target.releasePointerCapture(pointerId);
+                                 
+                                 if (!hasMoved && isTextarea) {
+                                   e.target.focus();
+                                   const len = e.target.value.length;
+                                   e.target.setSelectionRange(len, len);
+                                 }
+                               };
+                               target.addEventListener('pointermove', onPointerMove);
+                               target.addEventListener('pointerup', onPointerUp);
+                             };;
 
                            return (
                              <div 
@@ -39014,7 +39028,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    });
                                  }
                                }}
-                               onMouseDown={handleDrag}
+                               onPointerDown={handleDrag}
                              >
                                {/* The SVG Shape */}
                                {(() => {
@@ -39026,7 +39040,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        value={overlay.content || ''}
                                        onChange={(e) => updateOverlay({ content: e.target.value })}
                                        onClick={(e) => { e.stopPropagation(); setSelectedComposeOverlayId(overlay.id); }}
-                                       onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                       onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                      />
                                    );
                                  } else if (overlay.type === 'chart') {
@@ -39378,7 +39392,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             placeholder="Chart Title"
                                               value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series ? currentChartData.series.map(s => s.name).filter(n => n && !n.toLowerCase().startsWith('series')).join(' vs ') : '') || 'Chart Title')} 
                                             onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
-                                            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                            onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                             className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"
                                             style={{ color: textClr }}
                                           />
@@ -39434,7 +39448,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       placeholder={`Category ${idx + 1}`}
                                                       value={overlay[`category${idx}Name`] !== undefined ? overlay[`category${idx}Name`] : label} 
                                                       onChange={(e) => updateOverlay({ [`category${idx}Name`]: e.target.value })}
-                                                      onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                                      onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                                       className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                       style={{ color: textClr }}
                                                     />
@@ -39461,7 +39475,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         placeholder={`Series ${idx + 1}`}
                                                         value={overlay[sn.prop] !== undefined ? overlay[sn.prop] : sn.def} 
                                                         onChange={(e) => updateOverlay({ [sn.prop]: e.target.value })}
-                                                        onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                                        onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                                         className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                         style={{ color: textClr }}
                                                       />
@@ -39591,7 +39605,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            placeholder=""
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedComposeOverlayId(overlay.id); }}
-                                           onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+                                           onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
                                          />
                                        )}
                                      </>
@@ -39604,7 +39618,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                {isSelected && !isLocked && (
                                  <>
                                    {/* Bounding box outline */}
-                                   <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />
+                                   {!['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType) && <div className="absolute inset-0 border border-blue-500 pointer-events-none rounded-[1px]" style={{ left: -1, right: -1, top: -1, bottom: -1 }} />}
                                    
                                    {/* Rotation Handle */}
                                    <div className="resize-handle absolute top-[-30px] left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white border border-gray-300 rounded-full shadow flex items-center justify-center cursor-grab hover:bg-gray-50" onMouseDown={handleRotate}>
@@ -39636,7 +39650,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                    {/* Floating Style Panel */}
                                    {overlay.type === 'chart' ? (
-                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[360px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }} onClick={e => e.stopPropagation()}>
+                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[360px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }} onClick={e => e.stopPropagation()}>
                                         <div className="flex items-center justify-between mb-1">
                                           <span className="text-[12px] font-semibold text-slate-800">Chart Styles</span>
                                         </div>
@@ -39813,7 +39827,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       </div>
                                    ) : (
-                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }} onClick={e => e.stopPropagation()}>
+                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
                                      <div className="flex gap-1.5 justify-center mb-1">
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
@@ -41269,7 +41283,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 maxHeight: '360px',
                 overflowY: 'auto',
               }}
-              onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+              onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
             >
               {sheetSlashMenu.filterText && (
                 <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
@@ -41325,7 +41339,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Cell Format Modal ────────────────────────────────────── */}
       {specialCharactersModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}>
           <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -41530,7 +41544,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
       {sheetLinkModal.open && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-80 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -41614,7 +41628,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {sheetTranslateModal.open && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-96 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -41759,7 +41773,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div 
             className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-100 p-4 w-64 flex flex-col gap-3 text-left font-sans animate-in fade-in zoom-in-95 duration-150"
             style={{ left: sheetFilterMenu.x, top: sheetFilterMenu.y }}
-            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
+            onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -41931,7 +41945,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       })()}
 
       {specialCharactersModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }}>
           <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
