@@ -5100,6 +5100,7 @@ export default function App() {
   const [multiSelectedCells, setMultiSelectedCells] = useState([]);
 
   const [quickChartPreview, setQuickChartPreview] = useState(null);
+  const [activeChartMenu, setActiveChartMenu] = useState(null);
   
   const getSheetsSidebarActions = () => {
     if (selectedDatasets && selectedDatasets.length > 1) {
@@ -5248,45 +5249,45 @@ export default function App() {
     };
   };
 
-  const renderDynamicChart = (chartType, chartData, fill, stroke, showLabels = false, categoryColors = {}) => {
+  const renderDynamicChart = (chartType, chartData, fill, stroke, showLabels = false, categoryColors = {}, onSeriesSelect = null) => {
     if (!chartData || !chartData.series || chartData.series.length === 0) return null;
-    
+
     const labels = chartData.labels || [];
-    const s1 = chartData.series[0]?.data || [];
-    const s2 = chartData.series[1]?.data || [];
-    
-    // Categorical colors array ensuring distinct colors for pie/donut
     const CHART_COLORS = [fill, stroke, '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
     
-    // Auto-calculate scale based on data
-    const maxVal = Math.max(...s1, ...(s2.length ? s2 : []));
+    // Map all series dynamically
+    const allSeries = chartData.series.map((s, idx) => ({
+        data: s.data || [],
+        color: categoryColors[idx] || (idx === 0 ? fill : (idx === 1 ? stroke : CHART_COLORS[idx % CHART_COLORS.length]))
+    }));
+    
+    const numSeries = allSeries.length;
+    const numDataPoints = Math.max(...allSeries.map(s => s.data.length), 1);
+    const gap = 100 / Math.max(numDataPoints, 1);
+
+    // Auto-calculate scale based on all data
+    const allVals = allSeries.flatMap(s => s.data);
+    const maxVal = Math.max(...allVals, 0);
     const getNormY = (val) => {
       if (maxVal === 0) return 90;
       return 90 - (val / maxVal * 80); // maps 0-max to 90-10
     };
-    
-    const gap = 100 / Math.max(s1.length, 1);
-    
+
     if (chartType === 'column') {
       return (
         <g>
-          {s1.map((v, i) => {
-             const h = 90 - getNormY(v);
-             return (
-               <g key={`s1-${i}`}>
-                 <rect x={(i * gap) + (gap * 0.1)} y={getNormY(v)} width={s2.length ? gap * 0.35 : gap * 0.8} height={h} fill={fill} rx="2" />
-                 {showLabels && <text x={(i * gap) + (gap * (s2.length ? 0.275 : 0.5))} y={getNormY(v) - 3} fontSize="4" fill="#64748b" textAnchor="middle" fontWeight="bold">{v}</text>}
-               </g>
-             );
-          })}
-          {s2.map((v, i) => {
-             const h = 90 - getNormY(v);
-             return (
-               <g key={`s2-${i}`}>
-                 <rect x={(i * gap) + (gap * 0.55)} y={getNormY(v)} width={gap * 0.35} height={h} fill={stroke} rx="2" />
-                 {showLabels && <text x={(i * gap) + (gap * 0.725)} y={getNormY(v) - 3} fontSize="4" fill="#64748b" textAnchor="middle" fontWeight="bold">{v}</text>}
-               </g>
-             );
+          {allSeries.map((series, sIdx) => {
+             const barWidth = (gap * 0.8) / numSeries;
+             return series.data.map((v, i) => {
+               const h = 90 - getNormY(v);
+               const x = (i * gap) + (gap * 0.1) + (sIdx * barWidth);
+               return (
+                 <g key={`s${sIdx}-${i}`} onClick={(e) => { e.stopPropagation(); onSeriesSelect?.(sIdx); }} className="cursor-pointer hover:opacity-80 transition-opacity">
+                   <rect x={x} y={getNormY(v)} width={barWidth * 0.9} height={h} fill={series.color} rx="2" />
+                   {showLabels && <text x={x + (barWidth * 0.45)} y={getNormY(v) - 3} fontSize="4" fill="#64748b" textAnchor="middle" fontWeight="bold">{v}</text>}
+                 </g>
+               );
+             });
           })}
         </g>
       );
@@ -5297,52 +5298,48 @@ export default function App() {
       };
       return (
         <g>
-          {s1.map((v, i) => {
-             const w = getNormW(v);
-             return (
-               <g key={`s1-${i}`}>
-                 <rect x="10" y={(i * gap) + (gap * 0.1)} width={w} height={s2.length ? gap * 0.35 : gap * 0.8} fill={fill} rx="2" />
-                 {showLabels && <text x={10 + w + 3} y={(i * gap) + (gap * (s2.length ? 0.275 : 0.5)) + 1.5} fontSize="4" fill="#64748b" textAnchor="start" alignmentBaseline="middle" fontWeight="bold">{v}</text>}
-               </g>
-             );
-          })}
-          {s2.map((v, i) => {
-             const w = getNormW(v);
-             return (
-               <g key={`s2-${i}`}>
-                 <rect x="10" y={(i * gap) + (gap * 0.55)} width={w} height={gap * 0.35} fill={stroke} rx="2" />
-                 {showLabels && <text x={10 + w + 3} y={(i * gap) + (gap * 0.725) + 1.5} fontSize="4" fill="#64748b" textAnchor="start" alignmentBaseline="middle" fontWeight="bold">{v}</text>}
-               </g>
-             );
+          {allSeries.map((series, sIdx) => {
+             const barHeight = (gap * 0.8) / numSeries;
+             return series.data.map((v, i) => {
+               const w = getNormW(v);
+               const y = (i * gap) + (gap * 0.1) + (sIdx * barHeight);
+               return (
+                 <g key={`s${sIdx}-${i}`} onClick={(e) => { e.stopPropagation(); onSeriesSelect?.(sIdx); }} className="cursor-pointer hover:opacity-80 transition-opacity">
+                   <rect x="10" y={y} width={w} height={barHeight * 0.9} fill={series.color} rx="2" />
+                   {showLabels && <text x={10 + w + 3} y={y + (barHeight * 0.45) + 1.5} fontSize="4" fill="#64748b" textAnchor="start" alignmentBaseline="middle" fontWeight="bold">{v}</text>}
+                 </g>
+               );
+             });
           })}
         </g>
       );
     } else if (chartType === 'line' || chartType === 'area') {
-      const p1 = s1.map((v, i) => `${(i * gap) + (gap/2)},${getNormY(v)}`).join(' L ');
-      const p2 = s2.map((v, i) => `${(i * gap) + (gap/2)},${getNormY(v)}`).join(' L ');
       return (
         <g>
-          {chartType === 'area' && s1.length > 0 && <path d={`M ${(gap/2)},90 L ${p1} L ${((s1.length-1)*gap) + (gap/2)},90 Z`} fill={fill} opacity="0.3" />}
-          {chartType === 'area' && s2.length > 0 && <path d={`M ${(gap/2)},90 L ${p2} L ${((s2.length-1)*gap) + (gap/2)},90 Z`} fill={stroke} opacity="0.3" />}
+          {chartType === 'area' && allSeries.map((series, sIdx) => {
+             if (series.data.length === 0) return null;
+             const p = series.data.map((v, i) => `${(i * gap) + (gap/2)},${getNormY(v)}`).join(' L ');
+             return <path key={`area-${sIdx}`} d={`M ${(gap/2)},90 L ${p} L ${((series.data.length-1)*gap) + (gap/2)},90 Z`} fill={series.color} opacity="0.3" onClick={(e) => { e.stopPropagation(); onSeriesSelect?.(sIdx); }} className="cursor-pointer transition-opacity" />;
+          })}
           
-          {s1.length > 0 && <path d={`M ${p1}`} fill="none" stroke={fill} strokeWidth="3" />}
-          {s2.length > 0 && <path d={`M ${p2}`} fill="none" stroke={stroke} strokeWidth="3" />}
+          {allSeries.map((series, sIdx) => {
+             if (series.data.length === 0) return null;
+             const p = series.data.map((v, i) => `${(i * gap) + (gap/2)},${getNormY(v)}`).join(' L ');
+             return <path key={`line-${sIdx}`} d={`M ${p}`} fill="none" stroke={series.color} strokeWidth="3" onClick={(e) => { e.stopPropagation(); onSeriesSelect?.(sIdx); }} className="cursor-pointer transition-opacity" />;
+          })}
           
-          {s1.map((v, i) => (
-             <g key={`c1-${i}`}>
-               <circle cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="3" fill="#fff" stroke={fill} strokeWidth="2" />
-               {showLabels && <text x={(i * gap) + (gap/2)} y={getNormY(v) - 5} fontSize="4" fill="#64748b" textAnchor="middle" fontWeight="bold">{v}</text>}
-             </g>
-          ))}
-          {s2.map((v, i) => (
-             <g key={`c2-${i}`}>
-               <circle cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="3" fill="#fff" stroke={stroke} strokeWidth="2" />
-               {showLabels && <text x={(i * gap) + (gap/2)} y={getNormY(v) - 5} fontSize="4" fill="#64748b" textAnchor="middle" fontWeight="bold">{v}</text>}
-             </g>
-          ))}
+          {allSeries.map((series, sIdx) => {
+             return series.data.map((v, i) => (
+               <g key={`c${sIdx}-${i}`} onClick={(e) => { e.stopPropagation(); onSeriesSelect?.(sIdx); }} className="cursor-pointer hover:opacity-80 transition-opacity">
+                 <circle cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="3" fill="#fff" stroke={series.color} strokeWidth="2" />
+                 {showLabels && <text x={(i * gap) + (gap/2)} y={getNormY(v) - 5} fontSize="4" fill="#64748b" textAnchor="middle" fontWeight="bold">{v}</text>}
+               </g>
+             ));
+          })}
         </g>
       );
     } else if (chartType === 'pie' || chartType === 'donut') {
+      const s1 = allSeries[0]?.data || [];
       const total = s1.reduce((a,b)=>a+b, 0) || 1;
       let startAngle = 0;
       let paths = [];
@@ -5352,7 +5349,7 @@ export default function App() {
          const sliceColor = categoryColors[i] || CHART_COLORS[i % CHART_COLORS.length];
          if (sliceAngle === 360) {
             paths.push(
-               <g key={i}>
+               <g key={i} onClick={(e) => { e.stopPropagation(); onSeriesSelect?.(i); }} className="cursor-pointer hover:opacity-80 transition-opacity">
                  <circle cx={cx} cy={cy} r={r} fill={sliceColor} />
                </g>
             );
@@ -5366,7 +5363,7 @@ export default function App() {
          const largeArc = sliceAngle > 180 ? 1 : 0;
          
          paths.push(
-           <g key={i}>
+           <g key={i} onClick={(e) => { e.stopPropagation(); onSeriesSelect?.(i); }} className="cursor-pointer hover:opacity-80 transition-opacity">
              <path d={`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`} fill={sliceColor}/>
            </g>
          );
@@ -5381,11 +5378,10 @@ export default function App() {
     } else if (chartType === 'scatter') {
       return (
         <g>
-          {s1.map((v, i) => {
-             return <circle key={`s1-${i}`} cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="4" fill={fill} opacity="0.8"/>;
-          })}
-          {s2.map((v, i) => {
-             return <circle key={`s2-${i}`} cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="4" fill={stroke} opacity="0.8"/>;
+          {allSeries.map((series, sIdx) => {
+             return series.data.map((v, i) => (
+               <circle key={`s${sIdx}-${i}`} cx={(i * gap) + (gap/2)} cy={getNormY(v)} r="4" fill={series.color} opacity="0.8" onClick={(e) => { e.stopPropagation(); onSeriesSelect?.(sIdx); }} className="cursor-pointer hover:opacity-100 transition-opacity" />
+             ));
           })}
         </g>
       );
@@ -28156,11 +28152,7 @@ const renderRoomTopHeader = () => (
         ref={sheetChartMenuRef}
         className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-100 overflow-hidden flex flex-col w-[440px] max-h-[82vh]"
         style={{ left: sheetChartMenu.left, top: sheetChartMenu.top }}
-        onMouseDown={e => {
-          if (document.activeElement === e.target) {
-            e.stopPropagation();
-          }
-        }}
+        onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-white sticky top-0">
@@ -28211,11 +28203,7 @@ const renderRoomTopHeader = () => (
           display: 'flex',
           flexDirection: 'column',
         }}
-        onMouseDown={e => {
-          if (document.activeElement === e.target) {
-            e.stopPropagation();
-          }
-        }}
+        onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
@@ -29759,15 +29747,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        value={overlay.content || ''}
                                        onChange={(e) => updateOverlay({ content: e.target.value })}
                                        onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
-                                       onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                       onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                      />
                                    );
                                  } else if (overlay.type === 'chart') {
-                                    const { chartType, showAxes, showLegend, fillColor, strokeColor } = overlay;
+                                    const { chartType, showAxes, showLegend } = overlay;
+                                    const rawFill = overlay.fillColor || '#4f46e5';
+                                    const rawStroke = overlay.strokeColor || '#ec4899';
+                                    const fillColor = overlay.categoryColors?.[0] || rawFill;
+                                    const strokeColor = overlay.categoryColors?.[1] || rawStroke;
                                     const isDark = overlay.chartTheme === 'dark';
                                     const bg = isDark ? '#1e293b' : '#ffffff';
                                     const gridLine = isDark ? '#334155' : '#f1f5f9';
@@ -29779,7 +29767,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     if (currentChartData) {
                                       const defaultShowLabels = chartType === 'pie' || chartType === 'donut' || chartType === 'column' || chartType === 'bar';
                                       const showLabels = overlay.showLabels !== undefined ? overlay.showLabels : defaultShowLabels;
-                                      chartContent = renderDynamicChart(chartType, currentChartData, fillColor, strokeColor, showLabels, overlay.categoryColors || {});
+                                      chartContent = renderDynamicChart(chartType, currentChartData, fillColor, strokeColor, showLabels, overlay.categoryColors || {}, (idx) => {
+      // Find the input element for series ${idx + 1} and focus it, or just scroll the panel
+      const el = document.getElementById('series-input-' + overlay.id + '-' + idx);
+      if(el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+        el.classList.add('ring-2', 'ring-violet-500', 'ring-offset-1');
+        setTimeout(() => el.classList.remove('ring-2', 'ring-violet-500', 'ring-offset-1'), 1000);
+      }
+    });
                                     }
                                     
                                     if (!chartContent) {
@@ -30045,7 +30042,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   {s1.map((v, i) => {
                                                      const sliceAngle = (v / total) * 360;
                                                      if (sliceAngle === 360) {
-                                                        return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                        return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onPointerDown={e=>e.stopPropagation()} className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
                                                      }
                                                      const midAngle = startAngle + (sliceAngle / 2);
                                                      const r = 32;
@@ -30072,7 +30069,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      startAngle += sliceAngle;
                                                      if (sliceAngle <= 2 && overlay.labelDisplay !== 'outside') return null;
                                                      
-                                                     return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className={`absolute bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{left: tx+'%', top: ty+'%', transform: 'translate(-50%, -50%)', color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                     return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onPointerDown={e=>e.stopPropagation()} className={`absolute bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{left: tx+'%', top: ty+'%', transform: 'translate(-50%, -50%)', color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
                                                   })}
                                                 </div>
                                               );
@@ -30111,11 +30108,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             placeholder="Chart Title"
                                               value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series ? currentChartData.series.map(s => s.name).filter(n => n && !n.toLowerCase().startsWith('series')).join(' vs ') : '') || 'Chart Title')} 
                                             onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
-                                            onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                             className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"
                                             style={{ color: textClr }}
                                           />
@@ -30171,11 +30164,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       placeholder={`Category ${idx + 1}`}
                                                       value={overlay[`category${idx}Name`] !== undefined ? overlay[`category${idx}Name`] : label} 
                                                       onChange={(e) => updateOverlay({ [`category${idx}Name`]: e.target.value })}
-                                                      onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                                      onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                                       className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                       style={{ color: textClr }}
                                                     />
@@ -30202,11 +30191,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         placeholder={`Series ${idx + 1}`}
                                                         value={overlay[sn.prop] !== undefined ? overlay[sn.prop] : sn.def} 
                                                         onChange={(e) => updateOverlay({ [sn.prop]: e.target.value })}
-                                                        onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                                        onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                                         className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                         style={{ color: textClr }}
                                                       />
@@ -30331,11 +30316,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            placeholder={isSelected ? "New Text" : ""}
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
-                                           onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                           onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                          />
                                        )}
                                      </>
@@ -30370,11 +30351,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                    {/* Floating Style Panel */}
                                    {overlay.type === 'chart' ? (
-                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default max-h-[360px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }} onClick={e => e.stopPropagation()}>
+                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[360px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }} onClick={e => e.stopPropagation()}>
                                         <div className="flex items-center justify-between mb-1">
                                           <span className="text-[12px] font-semibold text-slate-800">Chart Styles</span>
                                         </div>
@@ -30475,28 +30452,70 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </div>
                                           </label>
                                           
-                                          <div className="flex items-center justify-between">
+                                          <div className="flex items-center justify-between relative">
                                             <span className="text-[13px] font-medium text-slate-700">Legend</span>
-                                            <div className="flex bg-slate-100 rounded-lg p-0.5 shadow-inner">
-                                              {['top', 'bottom', 'left', 'right', 'none'].map(pos => {
-                                                const isActive = overlay.legendAlign === pos || (pos === 'none' && overlay.showLegend === false) || (pos === 'bottom' && overlay.legendAlign === undefined && overlay.showLegend !== false);
-                                                return (
-                                                  <button key={pos} onClick={() => updateOverlay({ legendAlign: pos, legendPos: null, showLegend: pos !== 'none' })} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all capitalize ${isActive ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'}`}>{pos}</button>
-                                                );
-                                              })}
-                                            </div>
+                                            <button 
+                                              type="button"
+                                              onClick={(e) => { e.stopPropagation(); setActiveChartMenu(activeChartMenu === 'legend' ? null : 'legend'); }}
+                                              className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors text-[11px] font-semibold rounded-md px-2 py-1 outline-none"
+                                            >
+                                              <span className="capitalize">{overlay.legendAlign || (overlay.showLegend === false ? 'none' : 'bottom')}</span>
+                                              <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${activeChartMenu === 'legend' ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {activeChartMenu === 'legend' && (
+                                              <div className="absolute right-0 top-full mt-1.5 z-[320] w-[120px] rounded-xl border border-slate-200/80 bg-white shadow-[0_12px_24px_-8px_rgba(0,0,0,0.1),0_0_1px_rgba(0,0,0,0.08)] p-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                {['top', 'bottom', 'left', 'right', 'none'].map((opt) => {
+                                                  const currentVal = overlay.legendAlign || (overlay.showLegend === false ? 'none' : 'bottom');
+                                                  return (
+                                                  <button
+                                                    key={opt}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      updateOverlay({ legendAlign: opt, legendPos: null, showLegend: opt !== 'none' });
+                                                      setActiveChartMenu(null);
+                                                    }}
+                                                    className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-xs capitalize ${currentVal === opt ? 'bg-[#6441E5]/5 text-[#6441E5] font-semibold' : 'text-slate-600 hover:bg-slate-50/80'}`}
+                                                  >
+                                                    <span>{opt}</span>
+                                                    {currentVal === opt && <Check size={12} className="text-[#6441E5] stroke-[3]" />}
+                                                  </button>
+                                                )})}
+                                              </div>
+                                            )}
                                           </div>
                                           
-                                          <div className="flex items-center justify-between">
+                                          <div className="flex items-center justify-between relative">
                                             <span className="text-[13px] font-medium text-slate-700">Data Labels</span>
-                                            <div className="flex bg-slate-100 rounded-lg p-0.5 shadow-inner">
-                                              {[ {val: 'inside', label: 'Chart'}, {val: 'legend', label: 'Legend'}, {val: 'none', label: 'Hidden'} ].map(opt => {
-                                                 const isActive = overlay.labelDisplay === opt.val || (opt.val === 'inside' && overlay.labelDisplay === undefined && overlay.showLabels !== false) || (opt.val === 'none' && overlay.showLabels === false);
-                                                 return (
-                                                   <button key={opt.val} onClick={() => updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' })} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${isActive ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'}`}>{opt.label}</button>
-                                                 );
-                                              })}
-                                            </div>
+                                            <button 
+                                              type="button"
+                                              onClick={(e) => { e.stopPropagation(); setActiveChartMenu(activeChartMenu === 'datalabels' ? null : 'datalabels'); }}
+                                              className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors text-[11px] font-semibold rounded-md px-2 py-1 outline-none"
+                                            >
+                                              <span>{[{val:'inside', l:'Chart'}, {val:'legend', l:'Legend'}, {val:'none', l:'Hidden'}].find(o => o.val === (overlay.labelDisplay || (overlay.showLabels === false ? 'none' : 'inside')))?.l || 'Chart'}</span>
+                                              <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${activeChartMenu === 'datalabels' ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {activeChartMenu === 'datalabels' && (
+                                              <div className="absolute right-0 top-full mt-1.5 z-[320] w-[120px] rounded-xl border border-slate-200/80 bg-white shadow-[0_12px_24px_-8px_rgba(0,0,0,0.1),0_0_1px_rgba(0,0,0,0.08)] p-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                {[{val:'inside', l:'Chart'}, {val:'legend', l:'Legend'}, {val:'none', l:'Hidden'}].map((opt) => {
+                                                  const currentVal = overlay.labelDisplay || (overlay.showLabels === false ? 'none' : 'inside');
+                                                  return (
+                                                  <button
+                                                    key={opt.val}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' });
+                                                      setActiveChartMenu(null);
+                                                    }}
+                                                    className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-xs ${currentVal === opt.val ? 'bg-[#6441E5]/5 text-[#6441E5] font-semibold' : 'text-slate-600 hover:bg-slate-50/80'}`}
+                                                  >
+                                                    <span>{opt.l}</span>
+                                                    {currentVal === opt.val && <Check size={12} className="text-[#6441E5] stroke-[3]" />}
+                                                  </button>
+                                                )})}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
 
@@ -30509,11 +30528,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       </div>
                                    ) : (
-                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }} onClick={e => e.stopPropagation()}>
+                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
                                      <div className="flex gap-1.5 justify-center mb-1">
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
@@ -32137,11 +32152,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               maxHeight: '360px',
               overflowY: 'auto',
             }}
-            onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
           >
             {sheetSlashMenu.filterText && (
               <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
@@ -32182,11 +32193,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           ref={sheetTablePresetMenuRef}
           className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
           style={{ left: `${sheetTablePresetMenu.left}px`, top: `${sheetTablePresetMenu.top}px` }}
-          onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+          onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
         >
           <div className="text-xs font-semibold text-gray-500 mb-2 px-1">Table Presets</div>
           <div className="grid grid-cols-2 gap-2">
@@ -32220,11 +32227,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Injected Sheets Modals & Overlays ── */}
       {specialCharactersModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
           <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -32429,11 +32432,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
       {sheetLinkModal.open && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}>
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-80 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -32517,11 +32516,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {sheetTranslateModal.open && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}>
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-96 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -32666,11 +32661,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div 
             className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-100 p-4 w-64 flex flex-col gap-3 text-left font-sans animate-in fade-in zoom-in-95 duration-150"
             style={{ left: sheetFilterMenu.x, top: sheetFilterMenu.y }}
-            onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -32842,11 +32833,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       })()}
 
       {specialCharactersModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
           <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -39023,15 +39010,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        value={overlay.content || ''}
                                        onChange={(e) => updateOverlay({ content: e.target.value })}
                                        onClick={(e) => { e.stopPropagation(); setSelectedComposeOverlayId(overlay.id); }}
-                                       onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                       onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                      />
                                    );
                                  } else if (overlay.type === 'chart') {
-                                    const { chartType, showAxes, showLegend, fillColor, strokeColor } = overlay;
+                                    const { chartType, showAxes, showLegend } = overlay;
+                                    const rawFill = overlay.fillColor || '#4f46e5';
+                                    const rawStroke = overlay.strokeColor || '#ec4899';
+                                    const fillColor = overlay.categoryColors?.[0] || rawFill;
+                                    const strokeColor = overlay.categoryColors?.[1] || rawStroke;
                                     const isDark = overlay.chartTheme === 'dark';
                                     const bg = isDark ? '#1e293b' : '#ffffff';
                                     const gridLine = isDark ? '#334155' : '#f1f5f9';
@@ -39309,7 +39296,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                   {s1.map((v, i) => {
                                                      const sliceAngle = (v / total) * 360;
                                                      if (sliceAngle === 360) {
-                                                        return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                        return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onPointerDown={e=>e.stopPropagation()} className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
                                                      }
                                                      const midAngle = startAngle + (sliceAngle / 2);
                                                      const r = 32;
@@ -39336,7 +39323,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                      startAngle += sliceAngle;
                                                      if (sliceAngle <= 2 && overlay.labelDisplay !== 'outside') return null;
                                                      
-                                                     return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onMouseDown={e=>e.stopPropagation()} className={`absolute bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{left: tx+'%', top: ty+'%', transform: 'translate(-50%, -50%)', color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
+                                                     return <input key={i} value={overlay[`lbl${i}`] !== undefined ? overlay[`lbl${i}`] : `${Math.round((v/total)*100)}%`} onChange={e => updateOverlay({[`lbl${i}`]: e.target.value})} onPointerDown={e=>e.stopPropagation()} className={`absolute bg-transparent text-center font-bold text-[12px] w-16 outline-none pointer-events-auto ${overlay.labelDisplay === 'outside' ? '' : 'text-white'}`} style={{left: tx+'%', top: ty+'%', transform: 'translate(-50%, -50%)', color: overlay.labelDisplay === 'outside' ? textClr : undefined, textShadow: overlay.labelDisplay === 'outside' ? 'none' : '0 0 4px rgba(0,0,0,0.8)'}} />;
                                                   })}
                                                 </div>
                                               );
@@ -39375,11 +39362,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             placeholder="Chart Title"
                                               value={overlay.chartTitle !== undefined ? overlay.chartTitle : (currentChartData?.title || (currentChartData?.series ? currentChartData.series.map(s => s.name).filter(n => n && !n.toLowerCase().startsWith('series')).join(' vs ') : '') || 'Chart Title')} 
                                             onChange={(e) => updateOverlay({ chartTitle: e.target.value })}
-                                            onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                             className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-center font-bold text-[13px] rounded px-2 py-0.5 outline-none max-w-[80%]"
                                             style={{ color: textClr }}
                                           />
@@ -39435,11 +39418,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                       placeholder={`Category ${idx + 1}`}
                                                       value={overlay[`category${idx}Name`] !== undefined ? overlay[`category${idx}Name`] : label} 
                                                       onChange={(e) => updateOverlay({ [`category${idx}Name`]: e.target.value })}
-                                                      onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                                      onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                                       className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                       style={{ color: textClr }}
                                                     />
@@ -39466,11 +39445,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                                         placeholder={`Series ${idx + 1}`}
                                                         value={overlay[sn.prop] !== undefined ? overlay[sn.prop] : sn.def} 
                                                         onChange={(e) => updateOverlay({ [sn.prop]: e.target.value })}
-                                                        onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                                        onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                                         className="bg-transparent border border-transparent hover:border-gray-200 focus:border-violet-400 focus:bg-white focus:shadow-sm transition-all text-[11px] font-medium rounded px-1 py-0.5 outline-none min-w-[30px] max-w-[80px]"
                                                         style={{ color: textClr }}
                                                       />
@@ -39595,11 +39570,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                            placeholder={isSelected ? "New Text" : ""}
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedComposeOverlayId(overlay.id); }}
-                                           onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+                                           onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
                                          />
                                        )}
                                      </>
@@ -39634,11 +39605,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                    {/* Floating Style Panel */}
                                    {overlay.type === 'chart' ? (
-                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default max-h-[360px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }} onClick={e => e.stopPropagation()}>
+                                      <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 p-4 flex flex-col gap-4 z-[110] w-[280px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[360px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }} onClick={e => e.stopPropagation()}>
                                         <div className="flex items-center justify-between mb-1">
                                           <span className="text-[12px] font-semibold text-slate-800">Chart Styles</span>
                                         </div>
@@ -39739,28 +39706,70 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                             </div>
                                           </label>
                                           
-                                          <div className="flex items-center justify-between">
+                                          <div className="flex items-center justify-between relative">
                                             <span className="text-[13px] font-medium text-slate-700">Legend</span>
-                                            <div className="flex bg-slate-100 rounded-lg p-0.5 shadow-inner">
-                                              {['top', 'bottom', 'left', 'right', 'none'].map(pos => {
-                                                const isActive = overlay.legendAlign === pos || (pos === 'none' && overlay.showLegend === false) || (pos === 'bottom' && overlay.legendAlign === undefined && overlay.showLegend !== false);
-                                                return (
-                                                  <button key={pos} onClick={() => updateOverlay({ legendAlign: pos, legendPos: null, showLegend: pos !== 'none' })} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all capitalize ${isActive ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'}`}>{pos}</button>
-                                                );
-                                              })}
-                                            </div>
+                                            <button 
+                                              type="button"
+                                              onClick={(e) => { e.stopPropagation(); setActiveChartMenu(activeChartMenu === 'legend' ? null : 'legend'); }}
+                                              className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors text-[11px] font-semibold rounded-md px-2 py-1 outline-none"
+                                            >
+                                              <span className="capitalize">{overlay.legendAlign || (overlay.showLegend === false ? 'none' : 'bottom')}</span>
+                                              <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${activeChartMenu === 'legend' ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {activeChartMenu === 'legend' && (
+                                              <div className="absolute right-0 top-full mt-1.5 z-[320] w-[120px] rounded-xl border border-slate-200/80 bg-white shadow-[0_12px_24px_-8px_rgba(0,0,0,0.1),0_0_1px_rgba(0,0,0,0.08)] p-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                {['top', 'bottom', 'left', 'right', 'none'].map((opt) => {
+                                                  const currentVal = overlay.legendAlign || (overlay.showLegend === false ? 'none' : 'bottom');
+                                                  return (
+                                                  <button
+                                                    key={opt}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      updateOverlay({ legendAlign: opt, legendPos: null, showLegend: opt !== 'none' });
+                                                      setActiveChartMenu(null);
+                                                    }}
+                                                    className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-xs capitalize ${currentVal === opt ? 'bg-[#6441E5]/5 text-[#6441E5] font-semibold' : 'text-slate-600 hover:bg-slate-50/80'}`}
+                                                  >
+                                                    <span>{opt}</span>
+                                                    {currentVal === opt && <Check size={12} className="text-[#6441E5] stroke-[3]" />}
+                                                  </button>
+                                                )})}
+                                              </div>
+                                            )}
                                           </div>
                                           
-                                          <div className="flex items-center justify-between">
+                                          <div className="flex items-center justify-between relative">
                                             <span className="text-[13px] font-medium text-slate-700">Data Labels</span>
-                                            <div className="flex bg-slate-100 rounded-lg p-0.5 shadow-inner">
-                                              {[ {val: 'inside', label: 'Chart'}, {val: 'legend', label: 'Legend'}, {val: 'none', label: 'Hidden'} ].map(opt => {
-                                                 const isActive = overlay.labelDisplay === opt.val || (opt.val === 'inside' && overlay.labelDisplay === undefined && overlay.showLabels !== false) || (opt.val === 'none' && overlay.showLabels === false);
-                                                 return (
-                                                   <button key={opt.val} onClick={() => updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' })} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${isActive ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'}`}>{opt.label}</button>
-                                                 );
-                                              })}
-                                            </div>
+                                            <button 
+                                              type="button"
+                                              onClick={(e) => { e.stopPropagation(); setActiveChartMenu(activeChartMenu === 'datalabels' ? null : 'datalabels'); }}
+                                              className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors text-[11px] font-semibold rounded-md px-2 py-1 outline-none"
+                                            >
+                                              <span>{[{val:'inside', l:'Chart'}, {val:'legend', l:'Legend'}, {val:'none', l:'Hidden'}].find(o => o.val === (overlay.labelDisplay || (overlay.showLabels === false ? 'none' : 'inside')))?.l || 'Chart'}</span>
+                                              <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${activeChartMenu === 'datalabels' ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {activeChartMenu === 'datalabels' && (
+                                              <div className="absolute right-0 top-full mt-1.5 z-[320] w-[120px] rounded-xl border border-slate-200/80 bg-white shadow-[0_12px_24px_-8px_rgba(0,0,0,0.1),0_0_1px_rgba(0,0,0,0.08)] p-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                {[{val:'inside', l:'Chart'}, {val:'legend', l:'Legend'}, {val:'none', l:'Hidden'}].map((opt) => {
+                                                  const currentVal = overlay.labelDisplay || (overlay.showLabels === false ? 'none' : 'inside');
+                                                  return (
+                                                  <button
+                                                    key={opt.val}
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' });
+                                                      setActiveChartMenu(null);
+                                                    }}
+                                                    className={`w-full flex items-center justify-between rounded-lg px-2 py-1.5 text-xs ${currentVal === opt.val ? 'bg-[#6441E5]/5 text-[#6441E5] font-semibold' : 'text-slate-600 hover:bg-slate-50/80'}`}
+                                                  >
+                                                    <span>{opt.l}</span>
+                                                    {currentVal === opt.val && <Check size={12} className="text-[#6441E5] stroke-[3]" />}
+                                                  </button>
+                                                )})}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
 
@@ -39773,11 +39782,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
                                       </div>
                                    ) : (
-                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default max-h-[320px] overflow-y-auto thin-scrollbar transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }} onClick={e => e.stopPropagation()}>
+                                   <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
                                      <div className="flex gap-1.5 justify-center mb-1">
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
@@ -40653,7 +40658,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
-          className={`pointer-events-none fixed bottom-14 z-[1210] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document')) ? 'opacity-0 translate-y-6' : 'opacity-100 translate-y-0'}`}
+          className={`fixed bottom-14 z-[1210] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open) ? 'opacity-0 translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0 pointer-events-none'}`}
           style={{
             left: `${blurLeftInset}px`,
             right: `${blurRightInset}px`,
@@ -40671,7 +40676,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 event.preventDefault();
                 attachFilesToPrompt(event.dataTransfer?.files);
               }}
-              className={`relative transition-all duration-500 ${isVoiceActive && voiceTarget === 'document' ? 'pointer-events-none' : 'pointer-events-auto'}`}
+              className={`relative transition-all duration-500 ${(isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open ? 'pointer-events-none' : 'pointer-events-auto'}`}
               style={{ width: isPromptExpanded ? `min(1360px, calc(100vw - ${blurLeftInset + blurRightInset + 120}px))` : `${Math.max(320, Math.min(promptWidth, 980))}px`, maxWidth: '100%' }}
             >
               <input
@@ -40909,11 +40914,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="relative bg-white border border-gray-100 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300">
                     <button
                       type="button"
-                      onPointerDown={(event) => beginPanelResize('prompt', event)}
-                      className="p-1.5 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 cursor-move touch-none shrink-0"
-                      title="Move prompt bar"
+                      onClick={() => {
+                        setIsPromptMinimized(true);
+                        setIsPromptExpanded(false);
+                      }}
+                      className="p-1.5 rounded-lg bg-violet-50/70 text-violet-400 hover:bg-violet-100 hover:text-violet-600 shrink-0"
+                      title="Minimize to floating icon"
                     >
-                      <Move size={14} />
+                      <Sparkles size={16} />
                     </button>
                     <div className="relative">
                       <button
@@ -41230,11 +41238,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 maxHeight: '360px',
                 overflowY: 'auto',
               }}
-              onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+              onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
             >
               {sheetSlashMenu.filterText && (
                 <div className="px-3 py-2 border-b border-gray-100 text-[11px] text-gray-500 bg-gray-50">
@@ -41290,11 +41294,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Cell Format Modal ────────────────────────────────────── */}
       {specialCharactersModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
           <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -41499,11 +41499,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
       {sheetLinkModal.open && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}>
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-80 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -41587,11 +41583,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {sheetTranslateModal.open && (
-        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}>
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm flex items-center justify-center z-[10000] font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
           <div className="bg-white rounded-2xl shadow-2xl w-96 overflow-hidden flex flex-col border border-slate-100 p-5 gap-4 animate-in fade-in zoom-in-95 duration-150 text-left">
             <div className="flex justify-between items-center pb-2 border-b border-slate-100">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
@@ -41736,11 +41728,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div 
             className="fixed z-[10000] bg-white rounded-xl shadow-2xl border border-slate-100 p-4 w-64 flex flex-col gap-3 text-left font-sans animate-in fade-in zoom-in-95 duration-150"
             style={{ left: sheetFilterMenu.x, top: sheetFilterMenu.y }}
-            onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}
+            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -41912,11 +41900,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       })()}
 
       {specialCharactersModal.open && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onMouseDown={e => {
-                                             if (document.activeElement === e.target) {
-                                               e.stopPropagation();
-                                             }
-                                           }}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm font-sans" onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}>
           <div className="w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4 text-left">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
