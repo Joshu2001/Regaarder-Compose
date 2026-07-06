@@ -8408,6 +8408,9 @@ export default function App() {
       if (!event.target.closest('[data-meeting-overflow-root]')) {
         setIsMeetingOverflowParticipantsOpen(false);
       }
+      if (!event.target.closest('.style-panel') && !event.target.closest('.cursor-move') && !event.target.closest('.resize-handle')) {
+        setSelectedComposeOverlayId(null);
+      }
     };
 
     window.addEventListener('pointerdown', handleClickOutside);
@@ -30422,73 +30425,82 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               </div>
                                             </div>
                                           ) : (
-                                            <>
-                                              <div className="flex items-center justify-between">
-                                                <span className="text-[12px] text-slate-600">Primary Series</span>
-                                                <div className="flex gap-1.5">
-                                                  {['#ef4444', '#3b82f6', '#22c55e', '#8b5cf6'].map(c => (
-                                                    <button key={c} className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 transition-transform shadow-sm" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c })} />
-                                                  ))}
-                                                  <label className="w-5 h-5 rounded-full border border-gray-200 shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
-                                                    <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={overlay.fillColor || '#3b82f6'} onChange={(e) => updateOverlay({ fillColor: e.target.value })} />
-                                                    <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
-                                                  </label>
-                                                </div>
+                                            <div className="flex flex-col gap-3">
+                                              <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[12px] font-medium text-slate-700">Series Colors</span>
+                                                <button type="button" className="text-[10px] text-violet-500 hover:text-violet-600 font-medium transition-colors" onClick={() => {
+                                                  const newColors = {};
+                                                  const count = currentChartData?.series?.length || 2;
+                                                  for(let i=0; i<count; i++) {
+                                                    newColors[i] = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                                                  }
+                                                  updateOverlay({ categoryColors: newColors });
+                                                }}>Regenerate Palette</button>
                                               </div>
-                                              <div className="flex items-center justify-between mt-1">
-                                                <span className="text-[12px] text-slate-600">Secondary Series</span>
-                                                <div className="flex gap-1.5">
-                                                  {['#f87171', '#60a5fa', '#4ade80', '#e2e8f0'].map(c => (
-                                                    <button key={c} className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 transition-transform shadow-sm" style={{ backgroundColor: c }} onClick={() => updateOverlay({ strokeColor: c })} />
-                                                  ))}
-                                                  <label className="w-5 h-5 rounded-full border border-gray-200 shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
-                                                    <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={overlay.strokeColor || '#e2e8f0'} onChange={(e) => updateOverlay({ strokeColor: e.target.value })} />
-                                                    <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
-                                                  </label>
-                                                </div>
+                                              <div className="flex flex-col gap-2">
+                                                {(currentChartData?.series || [{name: 'Primary Series'}, {name: 'Secondary Series'}]).map((series, idx) => {
+                                                   const CHART_COLORS = [fillColor, strokeColor, '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
+                                                   const defaultColor = CHART_COLORS[idx % CHART_COLORS.length];
+                                                   const activeColor = overlay.categoryColors?.[idx] || (idx === 0 ? overlay.fillColor : (idx === 1 ? overlay.strokeColor : defaultColor));
+                                                   return (
+                                                     <div key={idx} className="flex items-center gap-2 bg-slate-50/80 rounded-md px-2.5 py-1.5 border border-slate-100 hover:border-slate-200 transition-colors w-full" title={series.name}>
+                                                       <label className="w-5 h-5 rounded-full shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0" style={{ backgroundColor: activeColor || defaultColor }}>
+                                                         <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={activeColor || defaultColor} onChange={(e) => {
+                                                           const newCatColors = {...(overlay.categoryColors || {})};
+                                                           newCatColors[idx] = e.target.value;
+                                                           if (idx === 0) updateOverlay({ fillColor: e.target.value, categoryColors: newCatColors });
+                                                           else if (idx === 1) updateOverlay({ strokeColor: e.target.value, categoryColors: newCatColors });
+                                                           else updateOverlay({ categoryColors: newCatColors });
+                                                         }} />
+                                                       </label>
+                                                       <span className="text-[12px] font-medium text-slate-700 truncate flex-1">{series.name || `Series ${idx + 1}`}</span>
+                                                     </div>
+                                                   );
+                                                })}
                                               </div>
-                                            </>
+                                            </div>
                                           )}
                                         </div>
 
-                                        <hr className="border-gray-100" />
+                                        <hr className="border-slate-100 my-1.5" />
 
-                                        <div className="flex flex-col gap-3">
-                                          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Elements</p>
+                                        <div className="flex flex-col gap-3.5 p-1">
+                                          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-0.5">Elements</p>
+                                          
                                           <label className="flex items-center justify-between cursor-pointer group">
-                                            <span className="text-[12px] text-slate-600 group-hover:text-slate-800 transition-colors">Show Axes & Grid</span>
-                                            <div className={`w-8 h-4 rounded-full transition-colors relative ${overlay.showAxes !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
-                                              <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${overlay.showAxes !== false ? 'translate-x-4' : 'translate-x-0'}`} />
+                                            <span className="text-[13px] font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Show Axes & Grid</span>
+                                            <div className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${overlay.showAxes !== false ? 'bg-violet-500' : 'bg-slate-200'}`}>
+                                              <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${overlay.showAxes !== false ? 'translate-x-4' : 'translate-x-0'}`} />
                                               <input type="checkbox" className="hidden" checked={overlay.showAxes !== false} onChange={(e) => updateOverlay({ showAxes: e.target.checked })} />
                                             </div>
                                           </label>
                                           
                                           <div className="flex items-center justify-between">
-                                            <span className="text-[12px] text-slate-600">Legend</span>
-                                            <div className="flex bg-gray-100 rounded p-0.5">
+                                            <span className="text-[13px] font-medium text-slate-700">Legend</span>
+                                            <div className="flex bg-slate-100 rounded-lg p-0.5 shadow-inner">
                                               {['top', 'bottom', 'left', 'right', 'none'].map(pos => {
                                                 const isActive = overlay.legendAlign === pos || (pos === 'none' && overlay.showLegend === false) || (pos === 'bottom' && overlay.legendAlign === undefined && overlay.showLegend !== false);
                                                 return (
-                                                  <button key={pos} onClick={() => updateOverlay({ legendAlign: pos, legendPos: null, showLegend: pos !== 'none' })} className={`px-2 py-1 text-[10px] font-medium rounded transition-colors capitalize ${isActive ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>{pos}</button>
+                                                  <button key={pos} onClick={() => updateOverlay({ legendAlign: pos, legendPos: null, showLegend: pos !== 'none' })} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all capitalize ${isActive ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'}`}>{pos}</button>
                                                 );
                                               })}
                                             </div>
                                           </div>
                                           
                                           <div className="flex items-center justify-between">
-                                            <span className="text-[12px] text-slate-600">Data Labels</span>
-                                            <div className="flex bg-gray-100 rounded p-0.5">
+                                            <span className="text-[13px] font-medium text-slate-700">Data Labels</span>
+                                            <div className="flex bg-slate-100 rounded-lg p-0.5 shadow-inner">
                                               {[ {val: 'inside', label: 'Chart'}, {val: 'legend', label: 'Legend'}, {val: 'none', label: 'Hidden'} ].map(opt => {
                                                  const isActive = overlay.labelDisplay === opt.val || (opt.val === 'inside' && overlay.labelDisplay === undefined && overlay.showLabels !== false) || (opt.val === 'none' && overlay.showLabels === false);
                                                  return (
-                                                   <button key={opt.val} onClick={() => updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' })} className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${isActive ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>{opt.label}</button>
+                                                   <button key={opt.val} onClick={() => updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' })} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${isActive ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'}`}>{opt.label}</button>
                                                  );
                                               })}
                                             </div>
                                           </div>
                                         </div>
 
-                                        <div className="flex flex-col gap-2 mt-1">
+                                        <div className="flex flex-col gap-2 mt-2">
                                           <div className="flex items-center justify-between">
                                             <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Opacity</p>
                                             <span className="text-[10px] text-slate-400">{opacity}%</span>
@@ -39677,73 +39689,82 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                               </div>
                                             </div>
                                           ) : (
-                                            <>
-                                              <div className="flex items-center justify-between">
-                                                <span className="text-[12px] text-slate-600">Primary Series</span>
-                                                <div className="flex gap-1.5">
-                                                  {['#ef4444', '#3b82f6', '#22c55e', '#8b5cf6'].map(c => (
-                                                    <button key={c} className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 transition-transform shadow-sm" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c })} />
-                                                  ))}
-                                                  <label className="w-5 h-5 rounded-full border border-gray-200 shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
-                                                    <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={overlay.fillColor || '#3b82f6'} onChange={(e) => updateOverlay({ fillColor: e.target.value })} />
-                                                    <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
-                                                  </label>
-                                                </div>
+                                            <div className="flex flex-col gap-3">
+                                              <div className="flex items-center justify-between mb-1">
+                                                <span className="text-[12px] font-medium text-slate-700">Series Colors</span>
+                                                <button type="button" className="text-[10px] text-violet-500 hover:text-violet-600 font-medium transition-colors" onClick={() => {
+                                                  const newColors = {};
+                                                  const count = currentChartData?.series?.length || 2;
+                                                  for(let i=0; i<count; i++) {
+                                                    newColors[i] = '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+                                                  }
+                                                  updateOverlay({ categoryColors: newColors });
+                                                }}>Regenerate Palette</button>
                                               </div>
-                                              <div className="flex items-center justify-between mt-1">
-                                                <span className="text-[12px] text-slate-600">Secondary Series</span>
-                                                <div className="flex gap-1.5">
-                                                  {['#f87171', '#60a5fa', '#4ade80', '#e2e8f0'].map(c => (
-                                                    <button key={c} className="w-5 h-5 rounded-full border border-gray-200 hover:scale-110 transition-transform shadow-sm" style={{ backgroundColor: c }} onClick={() => updateOverlay({ strokeColor: c })} />
-                                                  ))}
-                                                  <label className="w-5 h-5 rounded-full border border-gray-200 shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
-                                                    <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={overlay.strokeColor || '#e2e8f0'} onChange={(e) => updateOverlay({ strokeColor: e.target.value })} />
-                                                    <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
-                                                  </label>
-                                                </div>
+                                              <div className="flex flex-col gap-2">
+                                                {(currentChartData?.series || [{name: 'Primary Series'}, {name: 'Secondary Series'}]).map((series, idx) => {
+                                                   const CHART_COLORS = [fillColor, strokeColor, '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#64748b'];
+                                                   const defaultColor = CHART_COLORS[idx % CHART_COLORS.length];
+                                                   const activeColor = overlay.categoryColors?.[idx] || (idx === 0 ? overlay.fillColor : (idx === 1 ? overlay.strokeColor : defaultColor));
+                                                   return (
+                                                     <div key={idx} className="flex items-center gap-2 bg-slate-50/80 rounded-md px-2.5 py-1.5 border border-slate-100 hover:border-slate-200 transition-colors w-full" title={series.name}>
+                                                       <label className="w-5 h-5 rounded-full shadow-sm ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0" style={{ backgroundColor: activeColor || defaultColor }}>
+                                                         <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={activeColor || defaultColor} onChange={(e) => {
+                                                           const newCatColors = {...(overlay.categoryColors || {})};
+                                                           newCatColors[idx] = e.target.value;
+                                                           if (idx === 0) updateOverlay({ fillColor: e.target.value, categoryColors: newCatColors });
+                                                           else if (idx === 1) updateOverlay({ strokeColor: e.target.value, categoryColors: newCatColors });
+                                                           else updateOverlay({ categoryColors: newCatColors });
+                                                         }} />
+                                                       </label>
+                                                       <span className="text-[12px] font-medium text-slate-700 truncate flex-1">{series.name || `Series ${idx + 1}`}</span>
+                                                     </div>
+                                                   );
+                                                })}
                                               </div>
-                                            </>
+                                            </div>
                                           )}
                                         </div>
 
-                                        <hr className="border-gray-100" />
+                                        <hr className="border-slate-100 my-1.5" />
 
-                                        <div className="flex flex-col gap-3">
-                                          <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Elements</p>
+                                        <div className="flex flex-col gap-3.5 p-1">
+                                          <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-0.5">Elements</p>
+                                          
                                           <label className="flex items-center justify-between cursor-pointer group">
-                                            <span className="text-[12px] text-slate-600 group-hover:text-slate-800 transition-colors">Show Axes & Grid</span>
-                                            <div className={`w-8 h-4 rounded-full transition-colors relative ${overlay.showAxes !== false ? 'bg-violet-500' : 'bg-gray-200'}`}>
-                                              <div className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm ${overlay.showAxes !== false ? 'translate-x-4' : 'translate-x-0'}`} />
+                                            <span className="text-[13px] font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Show Axes & Grid</span>
+                                            <div className={`w-9 h-5 rounded-full transition-colors relative shadow-inner ${overlay.showAxes !== false ? 'bg-violet-500' : 'bg-slate-200'}`}>
+                                              <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform shadow-sm ${overlay.showAxes !== false ? 'translate-x-4' : 'translate-x-0'}`} />
                                               <input type="checkbox" className="hidden" checked={overlay.showAxes !== false} onChange={(e) => updateOverlay({ showAxes: e.target.checked })} />
                                             </div>
                                           </label>
                                           
                                           <div className="flex items-center justify-between">
-                                            <span className="text-[12px] text-slate-600">Legend</span>
-                                            <div className="flex bg-gray-100 rounded p-0.5">
+                                            <span className="text-[13px] font-medium text-slate-700">Legend</span>
+                                            <div className="flex bg-slate-100 rounded-lg p-0.5 shadow-inner">
                                               {['top', 'bottom', 'left', 'right', 'none'].map(pos => {
                                                 const isActive = overlay.legendAlign === pos || (pos === 'none' && overlay.showLegend === false) || (pos === 'bottom' && overlay.legendAlign === undefined && overlay.showLegend !== false);
                                                 return (
-                                                  <button key={pos} onClick={() => updateOverlay({ legendAlign: pos, legendPos: null, showLegend: pos !== 'none' })} className={`px-2 py-1 text-[10px] font-medium rounded transition-colors capitalize ${isActive ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>{pos}</button>
+                                                  <button key={pos} onClick={() => updateOverlay({ legendAlign: pos, legendPos: null, showLegend: pos !== 'none' })} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all capitalize ${isActive ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'}`}>{pos}</button>
                                                 );
                                               })}
                                             </div>
                                           </div>
                                           
                                           <div className="flex items-center justify-between">
-                                            <span className="text-[12px] text-slate-600">Data Labels</span>
-                                            <div className="flex bg-gray-100 rounded p-0.5">
+                                            <span className="text-[13px] font-medium text-slate-700">Data Labels</span>
+                                            <div className="flex bg-slate-100 rounded-lg p-0.5 shadow-inner">
                                               {[ {val: 'inside', label: 'Chart'}, {val: 'legend', label: 'Legend'}, {val: 'none', label: 'Hidden'} ].map(opt => {
                                                  const isActive = overlay.labelDisplay === opt.val || (opt.val === 'inside' && overlay.labelDisplay === undefined && overlay.showLabels !== false) || (opt.val === 'none' && overlay.showLabels === false);
                                                  return (
-                                                   <button key={opt.val} onClick={() => updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' })} className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${isActive ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-700'}`}>{opt.label}</button>
+                                                   <button key={opt.val} onClick={() => updateOverlay({ labelDisplay: opt.val, showLabels: opt.val !== 'none' })} className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${isActive ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50/50'}`}>{opt.label}</button>
                                                  );
                                               })}
                                             </div>
                                           </div>
                                         </div>
 
-                                        <div className="flex flex-col gap-2 mt-1">
+                                        <div className="flex flex-col gap-2 mt-2">
                                           <div className="flex items-center justify-between">
                                             <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Opacity</p>
                                             <span className="text-[10px] text-slate-400">{opacity}%</span>
@@ -39851,7 +39872,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                              </div>
                            );
                         })}
-\n
+
             {/* Page 1 Sheet Wrapper */}
             <div
               data-enterprise-page="true"
