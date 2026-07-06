@@ -519,7 +519,7 @@ export const SHAPE_SECTIONS = [
     shapes: [
       { type: 'line',          label: 'Line',           svg: <line x1="2" y1="14" x2="14" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/> },
       { type: 'line_arrow',    label: 'Line Arrow',     svg: <><line x1="2" y1="14" x2="14" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><polygon points="14,2 9,2 14,7" fill="currentColor"/></> },
-      { type: 'double_arrow',  label: 'Double Arrow',   svg: <><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><polygon points="14,8 11,5 11,11" fill="currentColor"/><polygon points="2,8 5,5 5,11" fill="currentColor"/></> },
+      { type: 'double_arrow',  label: 'Double Arrow',   svg: <><line x1="2" y1="14" x2="14" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><polygon points="14,2 9,2 14,7" fill="currentColor"/><polygon points="2,14 7,14 2,9" fill="currentColor"/></> },
       { type: 'elbow',         label: 'Elbow',          svg: <polyline points="2,14 2,2 14,2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/> },
       { type: 'curve',         label: 'Curve',          svg: <path d="M2 14 Q8 2 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/> },
     ],
@@ -29588,6 +29588,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            const effectBlur = overlay.effectBlur || { active: false, radius: 0 };
                            const opacity = overlay.opacity !== undefined ? overlay.opacity : 100;
                            const isLocked = overlay.isLocked || false;
+                           const is1D = ['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType);
                            
                            // SVG styling
                            let strokeDasharray = 'none';
@@ -30213,101 +30214,259 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       </>
                                     );
                                  } else if (overlay.type === 'rectangle' && overlay.shapeType) {
-                                   const isLine = overlay.shapeType === 'line' || overlay.shapeType === 'arrow';
+
+                                   const is1DLine = ['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType);
+
                                    const cr = overlay.cornerRadius || 0; // 0 to 50
+
                                    const rx = (cr / 100) * Math.min(overlay.width, overlay.height);
-                                   
+
+
                                    const renderDefs = () => (
-                                      <defs>
-                                        {fillType === 'linear' && (
-                                          <linearGradient id={`gradient-${overlay.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor={fillColor} />
-                                            <stop offset="100%" stopColor={fillSecondaryColor} />
-                                          </linearGradient>
-                                        )}
-                                        {fillType === 'radial' && (
-                                          <radialGradient id={`gradient-${overlay.id}`} cx="50%" cy="50%" r="50%">
-                                            <stop offset="0%" stopColor={fillColor} />
-                                            <stop offset="100%" stopColor={fillSecondaryColor} />
-                                          </radialGradient>
-                                        )}
-                                        <filter id={`filter-${overlay.id}`}>
-                                          {effectShadow.active && (
-                                            <feDropShadow dx={effectShadow.distance} dy={effectShadow.distance} stdDeviation={effectShadow.blur} floodOpacity={effectShadow.opacity} />
-                                          )}
-                                          {effectGlow.active && (
-                                            <feDropShadow dx="0" dy="0" stdDeviation={effectGlow.intensity} floodColor={effectGlow.color} floodOpacity="1" />
-                                          )}
-                                          {effectBlur.active && (
-                                            <feGaussianBlur stdDeviation={effectBlur.radius} />
-                                          )}
-                                        </filter>
-                                      </defs>
+
+                                     <defs>
+
+                                       {fillType === 'linear' && (
+
+                                         <linearGradient id={`gradient-${overlay.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+
+                                           <stop offset="0%" stopColor={fillColor} />
+
+                                           <stop offset="100%" stopColor={fillSecondaryColor} />
+
+                                         </linearGradient>
+
+                                       )}
+
+                                       {fillType === 'radial' && (
+
+                                         <radialGradient id={`gradient-${overlay.id}`} cx="50%" cy="50%" r="50%">
+
+                                           <stop offset="0%" stopColor={fillColor} />
+
+                                           <stop offset="100%" stopColor={fillSecondaryColor} />
+
+                                         </radialGradient>
+
+                                       )}
+
+                                       <filter id={`filter-${overlay.id}`}>
+
+                                         {effectShadow.active && (
+
+                                           <feDropShadow dx={effectShadow.distance} dy={effectShadow.distance} stdDeviation={effectShadow.blur} floodOpacity={effectShadow.opacity} />
+
+                                         )}
+
+                                         {effectGlow.active && (
+
+                                           <feDropShadow dx="0" dy="0" stdDeviation={effectGlow.intensity} floodColor={effectGlow.color} floodOpacity="1" />
+
+                                         )}
+
+                                         {effectBlur.active && (
+
+                                           <feGaussianBlur stdDeviation={effectBlur.radius} />
+
+                                         )}
+
+                                       </filter>
+
+                                     </defs>
+
                                    );
 
-                                   // Fetch base SVG template from SHAPE_SECTIONS
-                                   let shapeSvgTemplate = null;
-                                   for (const sec of SHAPE_SECTIONS) {
-                                     const found = sec.shapes.find(s => s.type === overlay.shapeType);
-                                     if (found) { shapeSvgTemplate = found.svg; break; }
+
+                                   let shapeContent = null;
+
+
+                                   if (is1DLine) {
+
+                                     const W = overlay.width;
+
+                                     const H = overlay.height;
+
+                                     const effectiveStrokeWidth = strokeWidth > 0 ? strokeWidth : 1.5;
+
+                                     const color = strokeType !== 'none' ? strokeColor : fillColor;
+
+
+                                     let strokeDash = 'none';
+
+                                     if (strokeType === 'dashed') strokeDash = `${effectiveStrokeWidth * 3}, dots`; // Wait, let's keep the real expressions
+    if (strokeType === 'dashed') strokeDash = `${effectiveStrokeWidth * 3}, ${effectiveStrokeWidth * 3}`;
+
+                                     else if (strokeType === 'dotted') strokeDash = `${effectiveStrokeWidth}, ${effectiveStrokeWidth * 2}`;
+
+                                     else if (strokeType === 'dash-dot') strokeDash = `${effectiveStrokeWidth * 3}, ${effectiveStrokeWidth * 2}, ${effectiveStrokeWidth}, ${effectiveStrokeWidth * 2}`;
+
+
+                                     const theta = Math.atan2(-H, W);
+
+                                     const angleDeg = (theta * 180) / Math.PI;
+
+
+                                     if (overlay.shapeType === 'line') {
+
+                                       shapeContent = (
+
+                                         <line x1={0} y1={H} x2={W} y2={0} stroke={color} strokeWidth={effectiveStrokeWidth} strokeDasharray={strokeDash} strokeLinecap="round" />
+
+                                       );
+
+                                     } else if (overlay.shapeType === 'line_arrow') {
+
+                                       shapeContent = (
+
+                                         <>
+
+                                           <line x1={0} y1={H} x2={W} y2={0} stroke={color} strokeWidth={effectiveStrokeWidth} strokeDasharray={strokeDash} strokeLinecap="round" />
+
+                                           <polygon points="0,0 -12,-5 -12,5" fill={color} transform={`translate(${W}, 0) rotate(${angleDeg})`} />
+
+                                         </>
+
+                                       );
+
+                                     } else if (overlay.shapeType === 'double_arrow') {
+
+                                       shapeContent = (
+
+                                         <>
+
+                                           <line x1={0} y1={H} x2={W} y2={0} stroke={color} strokeWidth={effectiveStrokeWidth} strokeDasharray={strokeDash} strokeLinecap="round" />
+
+                                           <polygon points="0,0 -12,-5 -12,5" fill={color} transform={`translate(${W}, 0) rotate(${angleDeg})`} />
+
+                                           <polygon points="0,0 12,-5 12,5" fill={color} transform={`translate(0, ${H}) rotate(${angleDeg})`} />
+
+                                         </>
+
+                                       );
+
+                                     }
+
+                                   } else {
+
+                                     // Fetch base SVG template from SHAPE_SECTIONS
+
+                                     let shapeSvgTemplate = null;
+
+                                     for (const sec of SHAPE_SECTIONS) {
+
+                                       const found = sec.shapes.find(s => s.type === overlay.shapeType);
+
+                                       if (found) { shapeSvgTemplate = found.svg; break; }
+
+                                     }
+
+
+                                     // Deep clone and customize the template's properties
+
+                                     const customizeShapeSvg = (node) => {
+
+                                       if (!React.isValidElement(node)) return node;
+
+                                       if (node.type === React.Fragment) {
+
+                                         return React.cloneElement(node, {}, React.Children.map(node.props.children, customizeShapeSvg));
+
+                                       }
+
+
+                                       const overrides = {};
+
+                                       // Override Stroke
+
+                                       if (node.props.stroke === 'currentColor' || node.props.stroke !== 'none') {
+
+                                         let effectiveStroke = strokeType !== 'none' ? strokeColor : 'none';
+
+                                         if (effectiveStroke === 'none' && (node.type === 'line' || node.type === 'polyline' || (node.type === 'path' && node.props.d && !node.props.d.includes('Z') && !node.props.d.includes('z')))) {
+
+                                           effectiveStroke = fillColor;
+
+                                         }
+
+                                         overrides.stroke = effectiveStroke;
+
+                                         // scale down stroke width because viewBox is 16x16 but width is 100+
+
+                                         const strokeScale = 16 / Math.max(overlay.width, overlay.height);
+
+                                         let baseStrokeWidth = node.props.strokeWidth ? parseFloat(node.props.strokeWidth) : 1.5;
+
+                                         overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (baseStrokeWidth * strokeScale);
+
+
+                                         if (strokeDasharray !== 'none') {
+
+                                           // scale dash array for viewBox
+
+                                           const scaledDash = strokeDasharray.split(',').map(v => (parseFloat(v.trim()) * strokeScale).toFixed(2)).join(',');
+
+                                           overrides.strokeDasharray = scaledDash;
+
+                                         }
+
+                                       }
+
+
+                                       // Override Fill
+
+                                       if (node.type !== 'line' && node.type !== 'polyline') {
+
+                                         // It's a shape that can be filled
+
+                                         overrides.fill = fillDef;
+
+                                       } else if (node.props.fill === 'currentColor') {
+
+                                         // Arrow heads etc.
+
+                                         overrides.fill = strokeType !== 'none' ? strokeColor : fillColor;
+
+                                       }
+
+
+                                       // Apply filter
+
+                                       if (filterDef !== '') {
+
+                                         overrides.filter = filterDef;
+
+                                       }
+
+
+                                       // Special case: Corner radius for rectangles
+
+                                       if (node.type === 'rect' && overlay.cornerRadius > 0) {
+
+                                          overrides.rx = (overlay.cornerRadius / 100) * 8; // 8 is half of viewBox 16
+
+                                       }
+
+
+                                       return React.cloneElement(node, overrides, React.Children.map(node.props.children, customizeShapeSvg));
+
+                                     };
+
+
+                                     shapeContent = shapeSvgTemplate ? customizeShapeSvg(shapeSvgTemplate) : <rect x="0" y="0" width="16" height="16" fill={fillDef} />;
+
                                    }
 
-                                   // Deep clone and customize the template's properties
-                                   const customizeShapeSvg = (node) => {
-                                     if (!React.isValidElement(node)) return node;
-                                     if (node.type === React.Fragment) {
-                                       return React.cloneElement(node, {}, React.Children.map(node.props.children, customizeShapeSvg));
-                                     }
-                                     
-                                     const overrides = {};
-                                     // Override Stroke
-                                     if (node.props.stroke === 'currentColor' || node.props.stroke !== 'none') {
-                                       let effectiveStroke = strokeType !== 'none' ? strokeColor : 'none';
-                                       if (effectiveStroke === 'none' && (node.type === 'line' || node.type === 'polyline' || (node.type === 'path' && node.props.d && !node.props.d.includes('Z') && !node.props.d.includes('z')))) {
-                                         effectiveStroke = fillColor;
-                                       }
-                                       overrides.stroke = effectiveStroke;
-                                       // scale down stroke width because viewBox is 16x16 but width is 100+
-                                       const strokeScale = 16 / Math.max(overlay.width, overlay.height);
-                                       let baseStrokeWidth = node.props.strokeWidth ? parseFloat(node.props.strokeWidth) : 1.5;
-                                       overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (baseStrokeWidth * strokeScale);
-                                       
-                                       if (strokeDasharray !== 'none') {
-                                         // scale dash array for viewBox
-                                         const scaledDash = strokeDasharray.split(',').map(v => (parseFloat(v.trim()) * strokeScale).toFixed(2)).join(',');
-                                         overrides.strokeDasharray = scaledDash;
-                                       }
-                                     }
-                                     
-                                     // Override Fill
-                                     if (node.type !== 'line' && node.type !== 'polyline') {
-                                       // It's a shape that can be filled
-                                       overrides.fill = fillDef;
-                                     } else if (node.props.fill === 'currentColor') {
-                                       // Arrow heads etc.
-                                       overrides.fill = strokeType !== 'none' ? strokeColor : fillColor;
-                                     }
-
-                                     // Apply filter
-                                     if (filterDef !== '') {
-                                       overrides.filter = filterDef;
-                                     }
-                                     
-                                     // Special case: Corner radius for rectangles
-                                     if (node.type === 'rect' && overlay.cornerRadius > 0) {
-                                        overrides.rx = (overlay.cornerRadius / 100) * 8; // 8 is half of viewBox 16
-                                     }
-
-                                     return React.cloneElement(node, overrides, React.Children.map(node.props.children, customizeShapeSvg));
-                                   };
-
-                                   let shapeContent = shapeSvgTemplate ? customizeShapeSvg(shapeSvgTemplate) : <rect x="0" y="0" width="16" height="16" fill={fillDef} />;
 
                                    return (
+
                                      <>
-                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
+
+                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100, overflow: 'visible' }} {...(!is1DLine ? { viewBox: "0 0 16 16", preserveAspectRatio: "none" } : { viewBox: `0 0 ${overlay.width} ${overlay.height}` })}>
+
                                          {renderDefs()}
+
                                          {shapeContent}
+
                                        </svg>
                                        {overlay.type === 'rectangle' && (
                                          <textarea
@@ -30553,27 +30712,50 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    ) : (
                                    <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
+
                                      <div className="flex gap-1.5 justify-center mb-1">
+
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
-                                          <button key={c} className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c, color: c })} />
+
+                                          <button key={c} className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c, color: c, ...(is1D ? { strokeColor: c } : {}) })} />
+
                                        ))}
+
                                        <label className="w-6 h-6 rounded-full border border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
-                                         <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={fillColor} onChange={(e) => updateOverlay({ fillColor: e.target.value, color: e.target.value })} />
+
+                                         <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={fillColor} onChange={(e) => updateOverlay({ fillColor: e.target.value, color: e.target.value, ...(is1D ? { strokeColor: e.target.value } : {}) })} />
+
                                          <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+
                                        </label>
+
                                      </div>
+
 
                                      <hr className="border-gray-100" />
 
+
                                      {/* Fill Options */}
-                                     <div className="flex flex-col gap-2">
-                                       <span className="text-xs font-semibold text-gray-500 uppercase">Fill</span>
-                                       <div className="flex bg-gray-50 rounded-lg p-1">
-                                         {['solid', 'none', 'linear'].map(t => (
-                                            <button key={t} className={`flex-1 text-[11px] py-1 rounded-md font-medium capitalize ${fillType === t ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => updateOverlay({ fillType: t })}>{t}</button>
-                                         ))}
+
+                                     {!is1D && (
+
+                                       <div className="flex flex-col gap-2">
+
+                                           <span className="text-xs font-semibold text-gray-500 uppercase">Fill</span>
+
+                                           <div className="flex bg-gray-50 rounded-lg p-1">
+
+                                             {['solid', 'none', 'linear'].map(t => (
+
+                                                <button key={t} className={`flex-1 text-[11px] py-1 rounded-md font-medium capitalize ${fillType === t ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => updateOverlay({ fillType: t })}>{t}</button>
+
+                                             ))}
+
+                                           </div>
+
                                        </div>
-                                     </div>
+
+                                     )}
 
                                      {/* Stroke Options */}
                                      <div className="flex flex-col gap-2">
@@ -38873,6 +39055,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            const effectBlur = overlay.effectBlur || { active: false, radius: 0 };
                            const opacity = overlay.opacity !== undefined ? overlay.opacity : 100;
                            const isLocked = overlay.isLocked || false;
+                           const is1D = ['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType);
                            
                            // SVG styling
                            let strokeDasharray = 'none';
@@ -39489,101 +39672,259 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       </>
                                     );
                                  } else if (overlay.type === 'rectangle' && overlay.shapeType) {
-                                   const isLine = overlay.shapeType === 'line' || overlay.shapeType === 'arrow';
+
+                                   const is1DLine = ['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType);
+
                                    const cr = overlay.cornerRadius || 0; // 0 to 50
+
                                    const rx = (cr / 100) * Math.min(overlay.width, overlay.height);
-                                   
+
+
                                    const renderDefs = () => (
-                                      <defs>
-                                        {fillType === 'linear' && (
-                                          <linearGradient id={`gradient-${overlay.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor={fillColor} />
-                                            <stop offset="100%" stopColor={fillSecondaryColor} />
-                                          </linearGradient>
-                                        )}
-                                        {fillType === 'radial' && (
-                                          <radialGradient id={`gradient-${overlay.id}`} cx="50%" cy="50%" r="50%">
-                                            <stop offset="0%" stopColor={fillColor} />
-                                            <stop offset="100%" stopColor={fillSecondaryColor} />
-                                          </radialGradient>
-                                        )}
-                                        <filter id={`filter-${overlay.id}`}>
-                                          {effectShadow.active && (
-                                            <feDropShadow dx={effectShadow.distance} dy={effectShadow.distance} stdDeviation={effectShadow.blur} floodOpacity={effectShadow.opacity} />
-                                          )}
-                                          {effectGlow.active && (
-                                            <feDropShadow dx="0" dy="0" stdDeviation={effectGlow.intensity} floodColor={effectGlow.color} floodOpacity="1" />
-                                          )}
-                                          {effectBlur.active && (
-                                            <feGaussianBlur stdDeviation={effectBlur.radius} />
-                                          )}
-                                        </filter>
-                                      </defs>
+
+                                     <defs>
+
+                                       {fillType === 'linear' && (
+
+                                         <linearGradient id={`gradient-${overlay.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+
+                                           <stop offset="0%" stopColor={fillColor} />
+
+                                           <stop offset="100%" stopColor={fillSecondaryColor} />
+
+                                         </linearGradient>
+
+                                       )}
+
+                                       {fillType === 'radial' && (
+
+                                         <radialGradient id={`gradient-${overlay.id}`} cx="50%" cy="50%" r="50%">
+
+                                           <stop offset="0%" stopColor={fillColor} />
+
+                                           <stop offset="100%" stopColor={fillSecondaryColor} />
+
+                                         </radialGradient>
+
+                                       )}
+
+                                       <filter id={`filter-${overlay.id}`}>
+
+                                         {effectShadow.active && (
+
+                                           <feDropShadow dx={effectShadow.distance} dy={effectShadow.distance} stdDeviation={effectShadow.blur} floodOpacity={effectShadow.opacity} />
+
+                                         )}
+
+                                         {effectGlow.active && (
+
+                                           <feDropShadow dx="0" dy="0" stdDeviation={effectGlow.intensity} floodColor={effectGlow.color} floodOpacity="1" />
+
+                                         )}
+
+                                         {effectBlur.active && (
+
+                                           <feGaussianBlur stdDeviation={effectBlur.radius} />
+
+                                         )}
+
+                                       </filter>
+
+                                     </defs>
+
                                    );
 
-                                   // Fetch base SVG template from SHAPE_SECTIONS
-                                   let shapeSvgTemplate = null;
-                                   for (const sec of SHAPE_SECTIONS) {
-                                     const found = sec.shapes.find(s => s.type === overlay.shapeType);
-                                     if (found) { shapeSvgTemplate = found.svg; break; }
+
+                                   let shapeContent = null;
+
+
+                                   if (is1DLine) {
+
+                                     const W = overlay.width;
+
+                                     const H = overlay.height;
+
+                                     const effectiveStrokeWidth = strokeWidth > 0 ? strokeWidth : 1.5;
+
+                                     const color = strokeType !== 'none' ? strokeColor : fillColor;
+
+
+                                     let strokeDash = 'none';
+
+                                     if (strokeType === 'dashed') strokeDash = `${effectiveStrokeWidth * 3}, dots`; // Wait, let's keep the real expressions
+    if (strokeType === 'dashed') strokeDash = `${effectiveStrokeWidth * 3}, ${effectiveStrokeWidth * 3}`;
+
+                                     else if (strokeType === 'dotted') strokeDash = `${effectiveStrokeWidth}, ${effectiveStrokeWidth * 2}`;
+
+                                     else if (strokeType === 'dash-dot') strokeDash = `${effectiveStrokeWidth * 3}, ${effectiveStrokeWidth * 2}, ${effectiveStrokeWidth}, ${effectiveStrokeWidth * 2}`;
+
+
+                                     const theta = Math.atan2(-H, W);
+
+                                     const angleDeg = (theta * 180) / Math.PI;
+
+
+                                     if (overlay.shapeType === 'line') {
+
+                                       shapeContent = (
+
+                                         <line x1={0} y1={H} x2={W} y2={0} stroke={color} strokeWidth={effectiveStrokeWidth} strokeDasharray={strokeDash} strokeLinecap="round" />
+
+                                       );
+
+                                     } else if (overlay.shapeType === 'line_arrow') {
+
+                                       shapeContent = (
+
+                                         <>
+
+                                           <line x1={0} y1={H} x2={W} y2={0} stroke={color} strokeWidth={effectiveStrokeWidth} strokeDasharray={strokeDash} strokeLinecap="round" />
+
+                                           <polygon points="0,0 -12,-5 -12,5" fill={color} transform={`translate(${W}, 0) rotate(${angleDeg})`} />
+
+                                         </>
+
+                                       );
+
+                                     } else if (overlay.shapeType === 'double_arrow') {
+
+                                       shapeContent = (
+
+                                         <>
+
+                                           <line x1={0} y1={H} x2={W} y2={0} stroke={color} strokeWidth={effectiveStrokeWidth} strokeDasharray={strokeDash} strokeLinecap="round" />
+
+                                           <polygon points="0,0 -12,-5 -12,5" fill={color} transform={`translate(${W}, 0) rotate(${angleDeg})`} />
+
+                                           <polygon points="0,0 12,-5 12,5" fill={color} transform={`translate(0, ${H}) rotate(${angleDeg})`} />
+
+                                         </>
+
+                                       );
+
+                                     }
+
+                                   } else {
+
+                                     // Fetch base SVG template from SHAPE_SECTIONS
+
+                                     let shapeSvgTemplate = null;
+
+                                     for (const sec of SHAPE_SECTIONS) {
+
+                                       const found = sec.shapes.find(s => s.type === overlay.shapeType);
+
+                                       if (found) { shapeSvgTemplate = found.svg; break; }
+
+                                     }
+
+
+                                     // Deep clone and customize the template's properties
+
+                                     const customizeShapeSvg = (node) => {
+
+                                       if (!React.isValidElement(node)) return node;
+
+                                       if (node.type === React.Fragment) {
+
+                                         return React.cloneElement(node, {}, React.Children.map(node.props.children, customizeShapeSvg));
+
+                                       }
+
+
+                                       const overrides = {};
+
+                                       // Override Stroke
+
+                                       if (node.props.stroke === 'currentColor' || node.props.stroke !== 'none') {
+
+                                         let effectiveStroke = strokeType !== 'none' ? strokeColor : 'none';
+
+                                         if (effectiveStroke === 'none' && (node.type === 'line' || node.type === 'polyline' || (node.type === 'path' && node.props.d && !node.props.d.includes('Z') && !node.props.d.includes('z')))) {
+
+                                           effectiveStroke = fillColor;
+
+                                         }
+
+                                         overrides.stroke = effectiveStroke;
+
+                                         // scale down stroke width because viewBox is 16x16 but width is 100+
+
+                                         const strokeScale = 16 / Math.max(overlay.width, overlay.height);
+
+                                         let baseStrokeWidth = node.props.strokeWidth ? parseFloat(node.props.strokeWidth) : 1.5;
+
+                                         overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (baseStrokeWidth * strokeScale);
+
+
+                                         if (strokeDasharray !== 'none') {
+
+                                           // scale dash array for viewBox
+
+                                           const scaledDash = strokeDasharray.split(',').map(v => (parseFloat(v.trim()) * strokeScale).toFixed(2)).join(',');
+
+                                           overrides.strokeDasharray = scaledDash;
+
+                                         }
+
+                                       }
+
+
+                                       // Override Fill
+
+                                       if (node.type !== 'line' && node.type !== 'polyline') {
+
+                                         // It's a shape that can be filled
+
+                                         overrides.fill = fillDef;
+
+                                       } else if (node.props.fill === 'currentColor') {
+
+                                         // Arrow heads etc.
+
+                                         overrides.fill = strokeType !== 'none' ? strokeColor : fillColor;
+
+                                       }
+
+
+                                       // Apply filter
+
+                                       if (filterDef !== '') {
+
+                                         overrides.filter = filterDef;
+
+                                       }
+
+
+                                       // Special case: Corner radius for rectangles
+
+                                       if (node.type === 'rect' && overlay.cornerRadius > 0) {
+
+                                          overrides.rx = (overlay.cornerRadius / 100) * 8; // 8 is half of viewBox 16
+
+                                       }
+
+
+                                       return React.cloneElement(node, overrides, React.Children.map(node.props.children, customizeShapeSvg));
+
+                                     };
+
+
+                                     shapeContent = shapeSvgTemplate ? customizeShapeSvg(shapeSvgTemplate) : <rect x="0" y="0" width="16" height="16" fill={fillDef} />;
+
                                    }
 
-                                   // Deep clone and customize the template's properties
-                                   const customizeShapeSvg = (node) => {
-                                     if (!React.isValidElement(node)) return node;
-                                     if (node.type === React.Fragment) {
-                                       return React.cloneElement(node, {}, React.Children.map(node.props.children, customizeShapeSvg));
-                                     }
-                                     
-                                     const overrides = {};
-                                     // Override Stroke
-                                     if (node.props.stroke === 'currentColor' || node.props.stroke !== 'none') {
-                                       let effectiveStroke = strokeType !== 'none' ? strokeColor : 'none';
-                                       if (effectiveStroke === 'none' && (node.type === 'line' || node.type === 'polyline' || (node.type === 'path' && node.props.d && !node.props.d.includes('Z') && !node.props.d.includes('z')))) {
-                                         effectiveStroke = fillColor;
-                                       }
-                                       overrides.stroke = effectiveStroke;
-                                       // scale down stroke width because viewBox is 16x16 but width is 100+
-                                       const strokeScale = 16 / Math.max(overlay.width, overlay.height);
-                                       let baseStrokeWidth = node.props.strokeWidth ? parseFloat(node.props.strokeWidth) : 1.5;
-                                       overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (baseStrokeWidth * strokeScale);
-                                       
-                                       if (strokeDasharray !== 'none') {
-                                         // scale dash array for viewBox
-                                         const scaledDash = strokeDasharray.split(',').map(v => (parseFloat(v.trim()) * strokeScale).toFixed(2)).join(',');
-                                         overrides.strokeDasharray = scaledDash;
-                                       }
-                                     }
-                                     
-                                     // Override Fill
-                                     if (node.type !== 'line' && node.type !== 'polyline') {
-                                       // It's a shape that can be filled
-                                       overrides.fill = fillDef;
-                                     } else if (node.props.fill === 'currentColor') {
-                                       // Arrow heads etc.
-                                       overrides.fill = strokeType !== 'none' ? strokeColor : fillColor;
-                                     }
-
-                                     // Apply filter
-                                     if (filterDef !== '') {
-                                       overrides.filter = filterDef;
-                                     }
-                                     
-                                     // Special case: Corner radius for rectangles
-                                     if (node.type === 'rect' && overlay.cornerRadius > 0) {
-                                        overrides.rx = (overlay.cornerRadius / 100) * 8; // 8 is half of viewBox 16
-                                     }
-
-                                     return React.cloneElement(node, overrides, React.Children.map(node.props.children, customizeShapeSvg));
-                                   };
-
-                                   let shapeContent = shapeSvgTemplate ? customizeShapeSvg(shapeSvgTemplate) : <rect x="0" y="0" width="16" height="16" fill={fillDef} />;
 
                                    return (
+
                                      <>
-                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
+
+                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100, overflow: 'visible' }} {...(!is1DLine ? { viewBox: "0 0 16 16", preserveAspectRatio: "none" } : { viewBox: `0 0 ${overlay.width} ${overlay.height}` })}>
+
                                          {renderDefs()}
+
                                          {shapeContent}
+
                                        </svg>
                                        {overlay.type === 'rectangle' && (
                                          <textarea
@@ -39829,27 +40170,50 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    ) : (
                                    <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
+
                                      <div className="flex gap-1.5 justify-center mb-1">
+
                                        {['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#000000'].map(c => (
-                                          <button key={c} className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c, color: c })} />
+
+                                          <button key={c} className="w-6 h-6 rounded-full border border-gray-200 hover:scale-110 transition-transform" style={{ backgroundColor: c }} onClick={() => updateOverlay({ fillColor: c, color: c, ...(is1D ? { strokeColor: c } : {}) })} />
+
                                        ))}
+
                                        <label className="w-6 h-6 rounded-full border border-gray-200 shadow-[0_2px_8px_rgba(0,0,0,0.08)] ring-1 ring-black/5 cursor-pointer overflow-hidden relative hover:scale-110 transition-transform flex items-center justify-center shrink-0">
-                                         <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={fillColor} onChange={(e) => updateOverlay({ fillColor: e.target.value, color: e.target.value })} />
+
+                                         <input type="color" className="absolute opacity-0 w-8 h-8 cursor-pointer" value={fillColor} onChange={(e) => updateOverlay({ fillColor: e.target.value, color: e.target.value, ...(is1D ? { strokeColor: e.target.value } : {}) })} />
+
                                          <div className="w-full h-full bg-[conic-gradient(red,yellow,green,cyan,blue,magenta,red)]" />
+
                                        </label>
+
                                      </div>
+
 
                                      <hr className="border-gray-100" />
 
+
                                      {/* Fill Options */}
-                                     <div className="flex flex-col gap-2">
-                                       <span className="text-xs font-semibold text-gray-500 uppercase">Fill</span>
-                                       <div className="flex bg-gray-50 rounded-lg p-1">
-                                         {['solid', 'none', 'linear'].map(t => (
-                                            <button key={t} className={`flex-1 text-[11px] py-1 rounded-md font-medium capitalize ${fillType === t ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => updateOverlay({ fillType: t })}>{t}</button>
-                                         ))}
+
+                                     {!is1D && (
+
+                                       <div className="flex flex-col gap-2">
+
+                                           <span className="text-xs font-semibold text-gray-500 uppercase">Fill</span>
+
+                                           <div className="flex bg-gray-50 rounded-lg p-1">
+
+                                             {['solid', 'none', 'linear'].map(t => (
+
+                                                <button key={t} className={`flex-1 text-[11px] py-1 rounded-md font-medium capitalize ${fillType === t ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`} onClick={() => updateOverlay({ fillType: t })}>{t}</button>
+
+                                             ))}
+
+                                           </div>
+
                                        </div>
-                                     </div>
+
+                                     )}
 
                                      {/* Stroke Options */}
                                      <div className="flex flex-col gap-2">
