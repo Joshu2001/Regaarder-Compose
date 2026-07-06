@@ -29663,49 +29663,49 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            };
 
                            // Handle dragging
-                            const handleDrag = (e) => {
-                              if (isLocked) return;
-                              if (!isSelected) {
-                                setSelectedSheetOverlayId(overlay.id);
-                              }
-                              // if clicked on panel or handles, dont drag
-                              if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
-                              
-                              const isTextarea = e.target.tagName === 'TEXTAREA';
-                              const isFocused = document.activeElement === e.target;
-                              if (isTextarea && isFocused) {
-                                return;
-                              }
-                              
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setIsShapeInteracting(true);
-                              const startX = e.clientX; const startY = e.clientY;
-                              const startL = left; const startT = top;
-                              
-                              let hasMoved = false;
-                              const onMouseMove = (moveEvent) => {
-                                const dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
-                                const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
-                                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-                                  hasMoved = true;
-                                  updateOverlay({ x: startL + dx, y: startT + dy });
-                                }
-                              };
-                              const onMouseUp = () => {
-                                setIsShapeInteracting(false);
-                                window.removeEventListener('mousemove', onMouseMove);
-                                window.removeEventListener('mouseup', onMouseUp);
-                                
-                                if (!hasMoved && isTextarea) {
-                                  e.target.focus();
-                                  const len = e.target.value.length;
-                                  e.target.setSelectionRange(len, len);
-                                }
-                              };
-                              window.addEventListener('mousemove', onMouseMove);
-                              window.addEventListener('mouseup', onMouseUp);
-                            };;
+                             const handleDrag = (e) => {
+                               if (isLocked) return;
+                               if (!isSelected) {
+                                 setSelectedSheetOverlayId(overlay.id);
+                               }
+                               // if clicked on panel or handles, dont drag
+                               if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
+                               
+                               const isTextarea = e.target.tagName === 'TEXTAREA';
+                               const isFocused = document.activeElement === e.target;
+                               if (isTextarea && isFocused) {
+                                 return;
+                               }
+                               
+                               e.preventDefault();
+                               e.stopPropagation();
+                               setIsShapeInteracting(true);
+                               const startX = e.clientX; const startY = e.clientY;
+                               const startL = left; const startT = top;
+                               
+                               let hasMoved = false;
+                               const onMouseMove = (moveEvent) => {
+                                 const dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
+                                 const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
+                                 if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                   hasMoved = true;
+                                   updateOverlay({ x: startL + dx, y: startT + dy });
+                                 }
+                               };
+                               const onMouseUp = () => {
+                                 setIsShapeInteracting(false);
+                                 window.removeEventListener('mousemove', onMouseMove);
+                                 window.removeEventListener('mouseup', onMouseUp);
+                                 
+                                 if (!hasMoved && isTextarea) {
+                                   e.target.focus();
+                                   const len = e.target.value.length;
+                                   e.target.setSelectionRange(len, len);
+                                 }
+                               };
+                               window.addEventListener('mousemove', onMouseMove);
+                               window.addEventListener('mouseup', onMouseUp);
+                             };
 
                            return (
                              <div 
@@ -30255,10 +30255,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                      const overrides = {};
                                      // Override Stroke
                                      if (node.props.stroke === 'currentColor' || node.props.stroke !== 'none') {
-                                       overrides.stroke = strokeType !== 'none' ? strokeColor : 'none';
+                                       let effectiveStroke = strokeType !== 'none' ? strokeColor : 'none';
+                                       if (effectiveStroke === 'none' && (node.type === 'line' || node.type === 'polyline' || (node.type === 'path' && node.props.d && !node.props.d.includes('Z') && !node.props.d.includes('z')))) {
+                                         effectiveStroke = fillColor;
+                                       }
+                                       overrides.stroke = effectiveStroke;
                                        // scale down stroke width because viewBox is 16x16 but width is 100+
                                        const strokeScale = 16 / Math.max(overlay.width, overlay.height);
-                                       overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (node.props.strokeWidth || 1.5);
+                                       let baseStrokeWidth = node.props.strokeWidth ? parseFloat(node.props.strokeWidth) : 1.5;
+                                       overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (baseStrokeWidth * strokeScale);
                                        
                                        if (strokeDasharray !== 'none') {
                                          // scale dash array for viewBox
@@ -30293,7 +30298,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                    return (
                                      <>
-                                       <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
+                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
                                          {renderDefs()}
                                          {shapeContent}
                                        </svg>
@@ -30338,17 +30343,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    </div>
                                    <div className="absolute top-[-18px] left-1/2 w-px h-[18px] bg-blue-500 pointer-events-none" />
 
-                                   {/* 8 Resize Handles */}
-                                   <div className="resize-handle absolute top-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, -1)} />
-                                   <div className="resize-handle absolute top-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 0, -1)} />
-                                   <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
-                                   
-                                   <div className="resize-handle absolute top-1/2 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, 0)} />
-                                   <div className="resize-handle absolute top-1/2 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, 0)} />
-                                   
-                                   <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
-                                   <div className="resize-handle absolute bottom-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 0, 1)} />
-                                   <div className="resize-handle absolute bottom-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 1, 1)} />
+                                   {(!['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType)) ? (
+                                     <>
+                                       {/* 8 Resize Handles */}
+                                       <div className="resize-handle absolute top-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, -1)} />
+                                       <div className="resize-handle absolute top-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 0, -1)} />
+                                       <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
+                                       
+                                       <div className="resize-handle absolute top-1/2 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, 0)} />
+                                       <div className="resize-handle absolute top-1/2 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, 0)} />
+                                       
+                                       <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
+                                       <div className="resize-handle absolute bottom-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 0, 1)} />
+                                       <div className="resize-handle absolute bottom-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 1, 1)} />
+                                     </>
+                                   ) : (
+                                     <>
+                                       {/* 2 Resize Handles for Line */}
+                                       <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
+                                       <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
+                                     </>
+                                   )}
 
                                    {/* Floating Style Panel */}
                                    {overlay.type === 'chart' ? (
@@ -39509,10 +39524,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                      const overrides = {};
                                      // Override Stroke
                                      if (node.props.stroke === 'currentColor' || node.props.stroke !== 'none') {
-                                       overrides.stroke = strokeType !== 'none' ? strokeColor : 'none';
+                                       let effectiveStroke = strokeType !== 'none' ? strokeColor : 'none';
+                                       if (effectiveStroke === 'none' && (node.type === 'line' || node.type === 'polyline' || (node.type === 'path' && node.props.d && !node.props.d.includes('Z') && !node.props.d.includes('z')))) {
+                                         effectiveStroke = fillColor;
+                                       }
+                                       overrides.stroke = effectiveStroke;
                                        // scale down stroke width because viewBox is 16x16 but width is 100+
                                        const strokeScale = 16 / Math.max(overlay.width, overlay.height);
-                                       overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (node.props.strokeWidth || 1.5);
+                                       let baseStrokeWidth = node.props.strokeWidth ? parseFloat(node.props.strokeWidth) : 1.5;
+                                       overrides.strokeWidth = strokeWidth > 0 ? (strokeWidth * strokeScale) : (baseStrokeWidth * strokeScale);
                                        
                                        if (strokeDasharray !== 'none') {
                                          // scale dash array for viewBox
@@ -39547,7 +39567,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                    return (
                                      <>
-                                       <svg className="absolute inset-0 w-full h-full pointer-events-none drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
+                                       <svg className="absolute inset-0 w-full h-full drop-shadow-sm" style={{ opacity: opacity / 100 }} viewBox="0 0 16 16" preserveAspectRatio="none">
                                          {renderDefs()}
                                          {shapeContent}
                                        </svg>
@@ -39592,17 +39612,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                    </div>
                                    <div className="absolute top-[-18px] left-1/2 w-px h-[18px] bg-blue-500 pointer-events-none" />
 
-                                   {/* 8 Resize Handles */}
-                                   <div className="resize-handle absolute top-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, -1)} />
-                                   <div className="resize-handle absolute top-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 0, -1)} />
-                                   <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
-                                   
-                                   <div className="resize-handle absolute top-1/2 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, 0)} />
-                                   <div className="resize-handle absolute top-1/2 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, 0)} />
-                                   
-                                   <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
-                                   <div className="resize-handle absolute bottom-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 0, 1)} />
-                                   <div className="resize-handle absolute bottom-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 1, 1)} />
+                                   {(!['line', 'line_arrow', 'double_arrow'].includes(overlay.shapeType)) ? (
+                                     <>
+                                       {/* 8 Resize Handles */}
+                                       <div className="resize-handle absolute top-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, -1)} />
+                                       <div className="resize-handle absolute top-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 0, -1)} />
+                                       <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
+                                       
+                                       <div className="resize-handle absolute top-1/2 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform -translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, -1, 0)} />
+                                       <div className="resize-handle absolute top-1/2 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ew-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, 0)} />
+                                       
+                                       <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
+                                       <div className="resize-handle absolute bottom-0 left-1/2 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-ns-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 0, 1)} />
+                                       <div className="resize-handle absolute bottom-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nwse-resize transform translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, 1, 1)} />
+                                     </>
+                                   ) : (
+                                     <>
+                                       {/* 2 Resize Handles for Line */}
+                                       <div className="resize-handle absolute bottom-0 left-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform -translate-x-1/2 translate-y-1/2" onMouseDown={e => handleResize(e, -1, 1)} />
+                                       <div className="resize-handle absolute top-0 right-0 w-3 h-3 bg-white border border-blue-500 rounded-full cursor-nesw-resize transform translate-x-1/2 -translate-y-1/2" onMouseDown={e => handleResize(e, 1, -1)} />
+                                     </>
+                                   )}
 
                                    {/* Floating Style Panel */}
                                    {overlay.type === 'chart' ? (
@@ -39867,7 +39897,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                        <button className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100" onClick={() => updateOverlay({ isLocked: !isLocked })} title="Lock/Unlock">
                                          {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
                                        </button>
-                                       <button className="p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.filter(o => o.id !== overlay.id) })} title="Delete">
+                                       <button className="p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => setComposeOverlays(composeOverlays.filter(o => o.id !== overlay.id))} title="Delete">
                                          <Trash2 size={14} />
                                        </button>
                                      </div>
