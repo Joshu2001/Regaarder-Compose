@@ -1114,4 +1114,20 @@ div[contenteditable="true"]:focus {
   background: #2d2d2d !important;
 }
 
+@keyframes fadeInSlideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in-slide-right {
+  animation: fadeInSlideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
 

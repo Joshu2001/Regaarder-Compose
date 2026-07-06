@@ -33711,7 +33711,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               const wordsCount = documentStats?.words || 0;
               const minRead = Math.max(1, Math.ceil(wordsCount / 200));
               return (
-                <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-3" style={{ fontFamily: editorFont }}>
+                <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-3 animate-fade-in-slide-right" style={{ fontFamily: editorFont }}>
                     <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
@@ -33728,11 +33728,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
                         <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">DOCUMENT TITLE</div>
                         <div 
-                          className="text-xs font-bold text-gray-955 truncate mt-0.5 outline-none cursor-text" 
-                          title={docTitleDisplay}
+                          className="text-xs font-bold text-gray-955 truncate mt-0.5 outline-none cursor-text hover:bg-white hover:shadow-sm rounded px-1 -mx-1 py-0.5 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:outline" 
+                          title={docTitle || 'Untitled Document'}
                           contentEditable
                           suppressContentEditableWarning
-                          onBlur={(e) => setDocTitle(e.target.textContent)}
+                          onBlur={(e) => {
+                            const nextTitle = e.target.textContent.trim() || 'Untitled Document';
+                            setDocTitle(nextTitle);
+                            if (activeDocId) {
+                              setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
+                            }
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -33740,7 +33746,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             }
                           }}
                         >
-                          {docTitleDisplay}
+                          {docTitle || 'Untitled Document'}
                         </div>
                       </div>
 
@@ -33863,7 +33869,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             onClick={() => {
                               setOutlineTreeData([{ id: `sec-${Date.now()}`, title: 'New Section', progress: 0, completed: false, subsections: [], expanded: false }]);
                             }} 
-                            className="text-[11.5px] font-semibold text-violet-750 bg-violet-50/50 border border-dashed border-violet-250 hover:bg-violet-50 hover:border-violet-300 px-5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1 cursor-pointer select-none"
+                            className="text-[11.5px] font-semibold text-violet-700 bg-violet-50/30 border border-dashed border-violet-200/80 hover:bg-violet-50 hover:border-violet-300 px-5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1 cursor-pointer select-none"
                             style={{ fontFamily: editorFont }}
                           >
                             + Add Section
@@ -33882,7 +33888,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setEditingOutlineId(newId);
                               setEditingOutlineText('Untitled');
                             }}
-                            className="flex-1 py-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                            className="flex-1 py-2 rounded-xl border border-dashed border-slate-200 hover:border-violet-400/80 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-650 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
                             style={{ fontFamily: editorFont }}
                           >
                             + Add Section
@@ -33899,7 +33905,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 showToast('AI Section Generated');
                               }, 1000);
                             }}
-                            className="flex-1 py-2 rounded-xl border border-dashed border-violet-300 hover:border-violet-500 bg-violet-50/50 hover:bg-violet-100 text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                            className="flex-1 py-2 rounded-xl border border-dashed border-violet-200/80 hover:border-violet-450 bg-violet-50/40 hover:bg-violet-100 text-violet-655 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
                             style={{ fontFamily: editorFont }}
                           >
                             <Sparkles size={13} /> AI Section
@@ -33913,7 +33919,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={() => {
                             insertEnterprisePage();
                           }}
-                          className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-300 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                          className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-200 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
                           style={{ fontFamily: editorFont }}
                         >
                           + New page
@@ -34590,7 +34596,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <FileText size={16} className="text-violet-600" />
               <span>Document Outline</span>
             </div>
-            <div className="mt-2 text-[11px] text-gray-500 truncate" title={docTitle}>{docTitleDisplay}</div>
+            <div 
+              className="mt-2 text-[11px] text-gray-500 truncate outline-none cursor-text w-full hover:bg-slate-50 hover:text-gray-800 rounded px-1 -mx-1 py-0.5 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:text-gray-900 focus:outline" 
+              title={docTitle || 'Untitled Document'}
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const nextTitle = e.target.textContent.trim() || 'Untitled Document';
+                setDocTitle(nextTitle);
+                if (activeDocId) {
+                  setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.target.blur();
+                }
+              }}
+            >
+              {docTitle || 'Untitled Document'}
+            </div>
           </div>
         ) : (
           <>
@@ -35512,7 +35538,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'));
               }}
-              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap shrink-0"
+              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all ${openDropdown === 'heading' ? 'outline outline-[1.5px] outline-violet-500/40 bg-violet-50/30' : ''}`}
             >
               {editorHeading} <ChevronDown size={14} className="text-gray-400" />
             </button>
@@ -35572,7 +35598,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
               }}
-              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded text-xs whitespace-nowrap"
+              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded text-xs whitespace-nowrap transition-all ${openDropdown === 'page-number' ? 'outline outline-[1.5px] outline-violet-500/40 bg-violet-50/30' : ''}`}
               title="Page numbering"
             >
               Page # <ChevronDown size={13} className="text-gray-400" />
@@ -35611,7 +35637,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             )}
           </div>
-          <div className="w-px h-4 bg-gray-200"></div>
+          
+          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
+
           <div
             className="relative"
             onMouseEnter={() => setIsFormattingDropdownHovered(true)}
@@ -35622,7 +35650,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
               }}
-              className="flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap"
+              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all ${openDropdown === 'font' ? 'outline outline-[1.5px] outline-violet-500/40 bg-violet-50/30' : ''}`}
             >
               {editorFont} <ChevronDown size={14} className="text-gray-400" />
             </button>
@@ -35656,7 +35684,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             )}
           </div>
-          <div className="w-px h-4 bg-gray-200"></div>
+          
+          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
+
           <div
             className="relative flex items-center gap-1"
             onMouseEnter={() => setIsFormattingDropdownHovered(true)}
@@ -35736,7 +35766,134 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             )}
           </div>
-          <div className="w-px h-4 bg-gray-200"></div>
+          
+          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
+
+          <div className="flex items-center gap-3">
+            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all ${alignMode === 'left' ? 'text-violet-700 bg-violet-50 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'} cursor-pointer`}
+            title="Align Left (Ctrl+Shift+L)" />
+            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all ${alignMode === 'center' ? 'text-violet-700 bg-violet-50 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'} cursor-pointer`}
+            title="Align Center (Ctrl+Shift+E)" />
+            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all ${alignMode === 'right' ? 'text-violet-700 bg-violet-50 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'} cursor-pointer`}
+            title="Align Right (Ctrl+Shift+R)" />
+          </div>
+          
+          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
+
+          {/* Consolidated Lists Dropdown */}
+          <div className="relative">
+            <button
+              id="compose-list-btn"
+              onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium transition-all ${listDropdownOpen ? 'bg-violet-50 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+              title="Lists (Ctrl+Shift+8)"
+            >
+              <List size={15} className={isListActive ? 'text-violet-600' : ''} />
+              <span className="text-[12px]">Lists</span>
+              <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {listDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setListDropdownOpen(false); }} />
+                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-52 flex flex-col gap-0.5">
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">List Styles</div>
+                  {[
+                    { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Choose bullet style', action: () => { setListGalleryOpen('bullet'); setListDropdownOpen(false); } },
+                    { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Choose numbering style', action: () => { setListGalleryOpen('numbered'); setListDropdownOpen(false); } },
+                    { id: 'multilevel', icon: <ListTree size={14} />, label: 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
+                    { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
+                  ].map(item => (
+                    <button key={item.id} onPointerDown={(e) => { e.preventDefault(); item.action(); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                      <div className="text-slate-500 w-5 flex items-center justify-center">{item.icon}</div>
+                      <div>
+                        <div className="text-[13px] font-medium text-slate-800 leading-tight">{item.label}</div>
+                        <div className="text-[11px] text-slate-400 leading-tight">{item.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          
+{/* Consolidated Insert Dropdown */}
+          <div className="relative">
+            <button
+              id="compose-insert-btn"
+              onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium transition-all ${insertDropdownOpen ? 'bg-violet-50 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+              title="Insert Elements (Ctrl+/ or type /)"
+            >
+              <Plus size={15} />
+              <span className="text-[12px]">Insert</span>
+              <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {insertDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
+                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 'min(480px, calc(100vh - 120px))', scrollbarWidth: 'thin', scrollbarColor: '#c7d2fe transparent' }}>
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
+                  <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <ImageIcon size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Images / Videos / Files</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Upload, AI, Stock, URL</div>
+                    </div>
+                  </button>
+                  <div className="h-px bg-slate-100 my-1" />
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Special Characters</div>
+                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('emoji'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <SmilePlus size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Emoji</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Browse emoji categories</div>
+                    </div>
+                  </button>
+                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('symbol'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <Pi size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Symbols</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Math, currency, arrows…</div>
+                    </div>
+                  </button>
+                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('equation'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <SigmaIcon size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Equations</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Common math formulas</div>
+                    </div>
+                  </button>
+                  <div className="h-px bg-slate-100 my-1" />
+                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
+                  <TableGridPicker setInsertDropdownOpen={setInsertDropdownOpen} />
+                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('callout'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <span className="text-slate-500 text-base leading-none font-bold">❝</span>
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
+                    </div>
+                  </button>
+                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('code_block'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <FileText size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Code Block</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Monospaced code area</div>
+                    </div>
+                  </button>
+                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('divider'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                    <Minus size={14} className="text-slate-500" />
+                    <div>
+                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Divider</div>
+                      <div className="text-[11px] text-slate-400 leading-tight">Horizontal rule</div>
+                    </div>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
+
           <div className="flex items-center gap-4">
             <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
             <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
@@ -35821,7 +35978,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     closeTransientMenus();
                     setComposeExportMenuOpen(!composeExportMenuOpen);
                   }}
-                  className={`text-xs font-semibold px-2.5 py-1.5 rounded flex items-center gap-1 transition-colors ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-violet-50 hover:text-violet-700'}`}
+                  className={`text-xs font-semibold px-2.5 py-1.5 rounded flex items-center gap-1 transition-all ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-600 hover:bg-violet-50 hover:text-violet-700'}`}
                   title="Export Compose options"
                 >
                   Export {composeExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -35893,133 +36050,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             </>
           )}
-          <button
+          
+<button
             type="button"
             onClick={toggleDocumentImmersiveMode}
-            className={`p-1.5 rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+            className={`p-1.5 rounded-md transition-all ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:bg-gray-900 hover:bg-gray-100'}`}
             title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
           >
             {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
           </button>
 
-          <div className="w-px h-4 bg-gray-200"></div>
-          <div className="flex items-center gap-3">
-            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`${alignMode === 'left' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
-            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} className={`${alignMode === 'center' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
-            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} className={`${alignMode === 'right' ? 'text-violet-600' : 'hover:text-gray-900'} cursor-pointer`} />
-          </div>
-          <div className="w-px h-4 bg-gray-200"></div>
-          {/* Consolidated Lists Dropdown */}
-          <div className="relative">
-            <button
-              id="compose-list-btn"
-              onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-colors ${listDropdownOpen ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
-              title="Lists"
-            >
-              <List size={15} className={isListActive ? 'text-violet-600' : ''} />
-              <span className="text-[12px]">Lists</span>
-              <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {listDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setListDropdownOpen(false); }} />
-                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-52 flex flex-col gap-0.5">
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">List Styles</div>
-                  {[
-                    { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Choose bullet style', action: () => { setListGalleryOpen('bullet'); setListDropdownOpen(false); } },
-                    { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Choose numbering style', action: () => { setListGalleryOpen('numbered'); setListDropdownOpen(false); } },
-                    { id: 'multilevel', icon: <ListTree size={14} />, label: 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
-                    { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
-                  ].map(item => (
-                    <button key={item.id} onPointerDown={(e) => { e.preventDefault(); item.action(); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                      <div className="text-slate-500 w-5 flex items-center justify-center">{item.icon}</div>
-                      <div>
-                        <div className="text-[13px] font-medium text-slate-800 leading-tight">{item.label}</div>
-                        <div className="text-[11px] text-slate-400 leading-tight">{item.desc}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          {/* Consolidated Insert Dropdown */}
-          <div className="relative">
-            <button
-              id="compose-insert-btn"
-              onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-colors ${insertDropdownOpen ? 'bg-violet-50 text-violet-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
-              title="Insert"
-            >
-              <Plus size={15} />
-              <span className="text-[12px]">Insert</span>
-              <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {insertDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
-                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 'min(480px, calc(100vh - 120px))', scrollbarWidth: 'thin', scrollbarColor: '#c7d2fe transparent' }}>
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
-                  <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <ImageIcon size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Images / Videos / Files</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Upload, AI, Stock, URL</div>
-                    </div>
-                  </button>
-                  <div className="h-px bg-slate-100 my-1" />
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Special Characters</div>
-                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('emoji'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <SmilePlus size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Emoji</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Browse emoji categories</div>
-                    </div>
-                  </button>
-                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('symbol'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <Pi size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Symbols</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Math, currency, arrows…</div>
-                    </div>
-                  </button>
-                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('equation'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <SigmaIcon size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Equations</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Common math formulas</div>
-                    </div>
-                  </button>
-                  <div className="h-px bg-slate-100 my-1" />
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
-                  <TableGridPicker setInsertDropdownOpen={setInsertDropdownOpen} />
-                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('callout'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <span className="text-slate-500 text-base leading-none font-bold">❝</span>
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
-                    </div>
-                  </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('code_block'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <FileText size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Code Block</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Monospaced code area</div>
-                    </div>
-                  </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('divider'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <Minus size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Divider</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Horizontal rule</div>
-                    </div>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-          <div className="w-px h-4 bg-gray-200"></div>
+          
+          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
+
           <div className="relative flex items-center gap-3" ref={docSearchPanelRef}>
             <button
               type="button"
@@ -36028,8 +36071,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setDocSearchPanelOpen((prev) => !prev);
                 setDocSearchAutoPlay(false);
               }}
-              className={`p-1.5 rounded-md transition-colors ${docSearchPanelOpen ? 'text-violet-700 bg-violet-50' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
-              title="Find, replace, and go to"
+              className={`w-7.5 h-7.5 p-1.5 rounded-md transition-all ${docSearchPanelOpen ? 'text-violet-700 bg-violet-50 outline outline-[1.5px] outline-violet-500/45' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+              title="Find & Replace (Ctrl+F)"
             >
               <Search size={15} />
             </button>
@@ -36198,7 +36241,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             )}
           </div>
-        </div>
+        
+</div>
 
         {/* Document Editor Content (Beautifully separated page area) */}
         <div className="flex-1 relative w-full h-full overflow-hidden bg-[#F7F7F9]">
@@ -39501,7 +39545,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ))}
                     </div>
                   )}
-                  <div className="relative bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-center gap-2 w-full">
+                  <div className="relative bg-white border border-gray-100 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300">
                     <button
                       type="button"
                       onPointerDown={(event) => beginPanelResize('prompt', event)}
@@ -39568,10 +39612,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       value={floatingPrompt}
                       onChange={(e) => setFloatingPrompt(e.target.value)}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                      placeholder="Ask Compose AI..."
+                      placeholder="Ask Compose AI to write, edit, or summarize..."
                       rows={1}
                       style={{ textAlign: alignMode }}
-                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-gray-300 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1"
+                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-slate-400/80 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1"
                     />
                     <button
                       type="submit"
@@ -42478,7 +42522,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
             }}
           >
-            <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/70 backdrop-blur-sm px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.35)] border border-white/70">
+            <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/85 backdrop-blur-md px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.25)] border border-white/80">
               <button
                 type="button"
                 onPointerDown={(event) => {
