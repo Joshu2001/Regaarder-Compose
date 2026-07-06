@@ -13652,7 +13652,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           col: cellCol,
           x: overlayX, y: overlayY,
           width: 200, height: 60,
-          content: 'New Text',
+          content: '',
           color: '#4c1d95',
           fillColor: '#ede9fe',
           strokeColor: '#ddd6fe',
@@ -14931,7 +14931,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       layer.style.pointerEvents = 'auto';
       layer.style.border = '1px dashed #cbd5e1';
       layer.style.minWidth = '50px';
-      layer.innerHTML = 'New Text';
+      layer.innerHTML = '';
       
       let zIndex = 10;
       
@@ -15292,7 +15292,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
       }
       
       const svgCode = `
-        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="max-width:100%; display:block; margin:0 auto; transition:all 0.2s; overflow:visible;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" style="max-width:100%; display:block; margin:0 auto; transition:all 0.2s; overflow:visible;">
           ${shapeMarkup}
         </svg>
       `;
@@ -28246,9 +28246,10 @@ const renderRoomTopHeader = () => (
         const newOverlays = [...(composeOverlays || [])];
         newOverlays.push({
           id: 'compose-overlay-' + Date.now(),
-          type: 'shape',
+          type: 'rectangle',
           shapeType: shape.type,
           x: 100, y: 100, width: 100, height: 100,
+          color: '#ffffff', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid'
         });
         setComposeOverlays(newOverlays);
         setSelectedComposeOverlayId(newOverlays[newOverlays.length - 1].id);
@@ -28270,7 +28271,7 @@ const renderRoomTopHeader = () => (
                             row: cellAnchor.startRow,
                             col: cellAnchor.startCol,
                             x: 60, y: 60, width: 120, height: 80,
-                            content: 'New Text', color: '#ffffff', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid' });
+                            content: '', color: '#ffffff', fillColor: '#8b5cf6', strokeType: 'none', fillType: 'solid' });
                           updateSheetSettings(activeSheetId, { overlays: newOverlays });
                         }
                         setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
@@ -30313,7 +30314,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              backgroundColor: overlay.highlight || 'transparent'
                                            }}
                                            value={overlay.content || ''}
-                                           placeholder={isSelected ? "New Text" : ""}
+                                           placeholder=""
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedSheetOverlayId(overlay.id); }}
                                            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
@@ -39567,7 +39568,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                              backgroundColor: overlay.highlight || 'transparent'
                                            }}
                                            value={overlay.content || ''}
-                                           placeholder={isSelected ? "New Text" : ""}
+                                           placeholder=""
                                            onChange={(e) => updateOverlay({ content: e.target.value })}
                                            onClick={(e) => { e.stopPropagation(); setSelectedComposeOverlayId(overlay.id); }}
                                            onPointerDown={e => { e.stopPropagation(); if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); e.target.focus(); }}
@@ -40658,7 +40659,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         {activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !shareModalOpen && (
         <div
-          className={`fixed bottom-14 z-[1210] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open) ? 'opacity-0 translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0 pointer-events-none'}`}
+          className={`fixed bottom-14 z-[1210] transition-all duration-500 ease-out ${(!isPromptAutoVisible || isPromptDismissed || isPromptMinimized || isComposing || (isVoiceActive && voiceTarget === 'document') || slashMenu?.open || selectionActionMenu?.open || sheetSlashMenu?.open || shapeToolbar?.open || shapeColorMenu?.open || shapeBorderMenu?.open || selectedComposeOverlayId !== null) ? 'opacity-0 translate-y-6 pointer-events-none' : 'opacity-100 translate-y-0 pointer-events-none'}`}
           style={{
             left: `${blurLeftInset}px`,
             right: `${blurRightInset}px`,
