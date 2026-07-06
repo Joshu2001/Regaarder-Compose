@@ -29743,7 +29743,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  height: Math.max(1, overlay.height),
                                  transform: `rotate(${rotation}deg)`,
                                  zIndex: isSelected ? 105 : 100,
-                                 cursor: isLocked ? 'not-allowed' : 'move'
+                                 cursor: isLocked ? 'not-allowed' : (is1D ? 'pointer' : 'move')
                                }}
                                onClick={(e) => {
                                  e.stopPropagation();
@@ -30743,13 +30743,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
 
                                         <div className="flex flex-col gap-2 mt-2">
+
+
                                           <div className="flex items-center justify-between">
+
+
                                             <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Opacity</p>
+
+
                                             <span className="text-[10px] text-slate-400">{opacity}%</span>
+
+
                                           </div>
+
+
                                           <input type="range" min="0" max="100" value={opacity} onChange={(e) => updateOverlay({ opacity: parseInt(e.target.value) })} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-500" />
+
+
                                         </div>
-                                      </div>
+
+
+                                        <hr className="border-gray-100 my-1" />
+
+
+                                        <div className="flex justify-between px-1 pb-1">
+
+
+                                          <button className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100" onClick={() => updateOverlay({ isLocked: !isLocked })} title="Lock/Unlock">
+
+
+                                            {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+
+
+                                          </button>
+
+
+                                          <button className="p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => updateSheetSettings(activeSheetId, { overlays: activeSheetGridRaw.overlays.filter(o => o.id !== overlay.id) })} title="Delete">
+
+
+                                            <Trash2 size={14} />
+
+
+                                          </button>
+
+
+                                        </div>
+
+
+                                        </div>
                                    ) : (
                                    <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
@@ -39251,7 +39292,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                  height: Math.max(1, overlay.height),
                                  transform: `rotate(${rotation}deg)`,
                                  zIndex: isSelected ? 105 : 100,
-                                 cursor: isLocked ? 'not-allowed' : 'move'
+                                 cursor: isLocked ? 'not-allowed' : (is1D ? 'pointer' : 'move')
                                }}
                                onClick={(e) => {
                                  e.stopPropagation();
@@ -40242,13 +40283,54 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                         </div>
 
                                         <div className="flex flex-col gap-2 mt-2">
+
+
                                           <div className="flex items-center justify-between">
+
+
                                             <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Opacity</p>
+
+
                                             <span className="text-[10px] text-slate-400">{opacity}%</span>
+
+
                                           </div>
+
+
                                           <input type="range" min="0" max="100" value={opacity} onChange={(e) => updateOverlay({ opacity: parseInt(e.target.value) })} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-violet-500" />
+
+
                                         </div>
-                                      </div>
+
+
+                                        <hr className="border-gray-100 my-1" />
+
+
+                                        <div className="flex justify-between px-1 pb-1">
+
+
+                                          <button className="p-1.5 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100" onClick={() => updateOverlay({ isLocked: !isLocked })} title="Lock/Unlock">
+
+
+                                            {isLocked ? <Lock size={14} /> : <Unlock size={14} />}
+
+
+                                          </button>
+
+
+                                          <button className="p-1.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => setComposeOverlays(composeOverlays.filter(o => o.id !== overlay.id))} title="Delete">
+
+
+                                            <Trash2 size={14} />
+
+
+                                          </button>
+
+
+                                        </div>
+
+
+                                        </div>
                                    ) : (
                                    <div className={`style-panel absolute top-0 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-gray-100 p-3 flex flex-col gap-3 z-[110] w-[260px] cursor-default ${activeChartMenu ? 'overflow-visible' : 'max-h-[320px] overflow-y-auto thin-scrollbar'} transition-opacity duration-200 ${isShapeInteracting ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ [left > 280 ? 'right' : 'left']: 'calc(100% + 16px)' }} onPointerDown={e => { if (e.nativeEvent) e.nativeEvent.stopImmediatePropagation(); }} onClick={e => e.stopPropagation()}>
                                      {/* Color Swatches */}
