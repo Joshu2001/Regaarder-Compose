@@ -5758,6 +5758,8 @@ export default function App() {
   const chatFileInputRef = useRef(null);
   const scheduleFileInputRef = useRef(null);
   const schedulePeopleMenuRef = useRef(null);
+  const morePanelRef = useRef(null);
+  const moreButtonRef = useRef(null);
   const quickAddSourceMenuRef = useRef(null);
   const voiceTargetRef = useRef('compose');
   const isMicMutedRef = useRef(false);
@@ -6037,6 +6039,20 @@ export default function App() {
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [isDocumentImmersive, setIsDocumentImmersive] = useState(false);
   const [workspaceLauncherOpen, setWorkspaceLauncherOpen] = useState(false);
+  // Smart sidebar: persisted usage counts (key → cumulative clicks)
+  const [featureUsageCounts, setFeatureUsageCounts] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('rg_feature_usage') || '{}'); }
+    catch { return {}; }
+  });
+  // Currently promoted dynamic slot keys (max 2); defaults: room, tasks
+  const [dynamicSlots, setDynamicSlots] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('rg_dynamic_slots') || 'null');
+      return Array.isArray(stored) ? stored : ['room', 'tasks'];
+    } catch { return ['room', 'tasks']; }
+  });
+  const [morePanelOpen, setMorePanelOpen] = useState(false);
+  const [morePanelPos, setMorePanelPos] = useState({ top: 0, right: 0 });
   const [workspaceLauncherIconStyle, setWorkspaceLauncherIconStyle] = useState('solid');
   const [workspaceLauncherIconSize, setWorkspaceLauncherIconSize] = useState('md');
   const [workspaceLauncherIconColor, setWorkspaceLauncherIconColor] = useState('#7c3aed');
@@ -18149,6 +18165,71 @@ Rules:
     }
   };
 
+  // ─── Smart Sidebar: Feature Usage Engine ─────────────────────────────────
+
+  // Keys that are always pinned and cannot fill dynamic slots
+  const SIDEBAR_PINNED_KEYS = new Set(['home', 'chat', 'assistant']);
+  // Maximum number of dynamic (usage-promoted) slots shown in the sidebar
+  const SIDEBAR_DYNAMIC_SLOT_COUNT = 2;
+
+  /**
+   * Derives the top-N most-used non-pinned tab keys from a usage map.
+   * Returns an array of at most SIDEBAR_DYNAMIC_SLOT_COUNT keys.
+   */
+  const deriveTopSlots = (counts) => {
+    return Object.entries(counts)
+      .filter(([k]) => !SIDEBAR_PINNED_KEYS.has(k))
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, SIDEBAR_DYNAMIC_SLOT_COUNT)
+      .map(([k]) => k);
+  };
+
+  /**
+   * Recalculates dynamic slots from the latest usage counts.
+   * Only promotes when a significant threshold is crossed — specifically when
+   * the top candidate's count is ≥1.5× the current slot's count, or has
+   * accumulated ≥20 total clicks since the last promotion. This ensures
+   * slots reflect long-term trends rather than transient session spikes.
+   */
+  const recalculateDynamicSlots = (counts) => {
+    const candidates = deriveTopSlots(counts);
+    if (candidates.length === 0) return;
+
+    setDynamicSlots(prev => {
+      // Determine if any candidate meaningfully outperforms its current slot
+      const hasSignificantChange = candidates.some((key, idx) => {
+        const candidateCount = counts[key] || 0;
+        const currentKey = prev[idx];
+        const currentCount = currentKey ? (counts[currentKey] || 0) : 0;
+        if (key === currentKey) return false;
+        // Promote if candidate is 1.5× ahead or has ≥20 total uses
+        return candidateCount >= 20 || candidateCount >= currentCount * 1.5;
+      });
+
+      if (!hasSignificantChange) return prev;
+
+      const next = candidates;
+      localStorage.setItem('rg_dynamic_slots', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  /**
+   * Records a feature interaction and schedules a slot recalculation.
+   * Pinned features (Home, Chat, Assist) are excluded from tracking.
+   */
+  const recordFeatureUsage = (tabKey) => {
+    if (SIDEBAR_PINNED_KEYS.has(tabKey) || tabKey === 'home') return;
+    setFeatureUsageCounts(prev => {
+      const next = { ...prev, [tabKey]: (prev[tabKey] || 0) + 1 };
+      try { localStorage.setItem('rg_feature_usage', JSON.stringify(next)); } catch { /* quota */ }
+      recalculateDynamicSlots(next);
+      return next;
+    });
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   const launchWorkspaceFromMiniPlus = (workspaceKey) => {
     setWorkspaceLauncherOpen(false);
     openLandingWorkspace(workspaceKey);
@@ -18193,6 +18274,19 @@ Rules:
     }
   };
 
+  // More panel: dismiss on outside click using a single global listener targeting the sidebar container
+  useEffect(() => {
+    if (!morePanelOpen) return;
+    const handleOutsideClick = (e) => {
+      const sidebarContainer = document.querySelector('.fixed.right-0.top-0.w-\\[74px\\]');
+      if (sidebarContainer && !sidebarContainer.contains(e.target)) {
+        setMorePanelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [morePanelOpen]);
+
   // Ensure only one of the left or right side panels is open at a time.
   useEffect(() => {
     if (leftSidebarOpen && rightSidebarOpen) {
@@ -18205,6 +18299,7 @@ Rules:
       setLeftSidebarOpen(false);
     }
   }, [rightSidebarOpen]);
+
 
   // Listen for fullscreen changes and sync state
   useEffect(() => {
@@ -24935,272 +25030,200 @@ Respond with a JSON array of slide objects matching the schema.`;
         </div>
       </div>
 
-      {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[74px] translate-x-[64px] hover:translate-x-0 opacity-20 hover:opacity-100 border-l border-slate-200/50 bg-[#FAFAFC]/90 backdrop-blur-xl flex-col items-center py-4 gap-6 select-none overflow-y-auto overflow-x-visible thin-scrollbar transition-all duration-300 ease-in-out shadow-[-10px_0_30px_rgba(0,0,0,0.03)]`}>
-        <div className="relative">
-          <div
-            className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-            onClick={() => {
-              setProductMode('landing');
-            }}
-          >
-            <div className="p-2.5 rounded-xl border border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700 transition-all duration-200">
-              <Home size={20} strokeWidth={2} />
-            </div>
-            <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-600 transition-colors">Home</span>
-          </div>
+      {/* 4. Far Right Mini Sidebar — Smart 5-slot navigation */}
+      {(() => {
+        /**
+         * Full feature registry for the mini sidebar.
+         * 'pinned' features always occupy fixed slots and are never moved to More.
+         * 'comments' is conditionally shown only when comments exist.
+         */
+        const ALL_FEATURES = [
+          { key: 'chat',       label: 'Chat',       icon: MessageCircle,    pinned: true },
+          { key: 'assistant',  label: 'Assist',     icon: Wand2,            pinned: true },
+          { key: 'comments',   label: 'Comments',   icon: MessageSquareText, conditional: comments.length > 0 },
+          { key: 'dm',         label: 'DMs',        icon: MessageSquare },
+          { key: 'whiteboard', label: 'Whiteboard', icon: Shapes },
+          { key: 'tasks',      label: 'Tasks',      icon: CheckSquare },
+          { key: 'calendar',   label: 'Schedule',   icon: Calendar },
+          { key: 'people',     label: 'People',     icon: Users },
+          { key: 'memory',     label: 'Memory',     icon: Database },
+          { key: 'orb',        label: 'Orb',        icon: Cloud },
+          { key: 'manageen',   label: 'Manageen',   icon: ListTodo },
+          { key: 'room',       label: 'Room',       icon: MonitorPlay },
+          { key: 'files',      label: 'Files',      icon: File },
+        ];
 
-          {workspaceLauncherOpen && (
-            <div className="absolute right-full top-0 mr-4 z-[9999] w-[180px] bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 overflow-hidden origin-right animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between px-3 py-2 mb-1 border-b border-slate-50">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Create New</span>
-                <button onClick={() => setWorkspaceLauncherOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
-                  <X size={14} />
-                </button>
+        // Keys currently visible in the sidebar (pinned + dynamic slots)
+        const visibleKeys = new Set(['chat', 'assistant', ...dynamicSlots]);
+
+        // Items shown in the More panel: non-pinned, not currently in a dynamic slot,
+        // and passing any conditional check
+        const moreItems = ALL_FEATURES.filter(f =>
+          !f.pinned && !visibleKeys.has(f.key) && (f.conditional !== false)
+        );
+
+        // Helper: determine if a given tabKey is currently "active" (panel open + tab matches)
+        const isActive = (key) => {
+          if (key === 'dm') return productMode === 'dm';
+          return activeRightTab === key && rightSidebarOpen;
+        };
+
+        // Unified icon button renderer — used for both fixed and dynamic slots
+        const renderNavIcon = (feature, opts = {}) => {
+          const { icon: Icon, key, label } = feature;
+          const active = isActive(key);
+          const isAssist = key === 'assistant';
+          const isComments = key === 'comments';
+
+          const handleClick = () => {
+            recordFeatureUsage(key);
+            setMorePanelOpen(false);
+            if (key === 'files') {
+              handleMiniSidebarClick('room');
+              setActiveMeetingStageTab('files');
+              return;
+            }
+            handleMiniSidebarClick(key);
+          };
+
+          return (
+            <div
+              key={opts.animKey || key}
+              onClick={handleClick}
+              className="group flex flex-col items-center gap-1 cursor-pointer select-none"
+              style={opts.style}
+            >
+              <div className={`p-2.5 rounded-xl transition-all duration-300 ease-out border relative ${
+                active
+                  ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]'
+                  : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+              }`}>
+                <Icon size={20} strokeWidth={2} />
+                {/* Assist: pulsing dot when text is selected */}
+                {isAssist && selectedEditorText && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-violet-500 animate-pulse border border-white" />
+                )}
+                {/* Comments: unresolved count badge */}
+                {isComments && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold border border-white">
+                    {comments.filter(c => !c.resolved).length}
+                  </span>
+                )}
               </div>
-              <div className="space-y-0.5">
-                {[
-                  { key: 'compose', label: 'Compose', icon: FileText },
-                  { key: 'deck', label: 'Deck', icon: MonitorPlay },
-                  { key: 'sheet', label: 'Sheet', icon: Table },
-                  { key: 'room', label: 'Room', icon: Video },
-                  { key: 'whiteboard', label: 'Whiteboard', icon: Shapes },
-                ].map(({ key, label, icon: Icon }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => launchWorkspaceFromMiniPlus(key)}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-colors text-left font-medium group"
+              <span className={`text-[10px] font-medium transition-colors ${
+                active ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+              }`}>{label}</span>
+            </div>
+          );
+        };
+
+        return (
+          <>
+            {/* ── Sidebar shell ─────────────────────────────────────────── */}
+            <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[74px] translate-x-[64px] hover:translate-x-0 opacity-20 hover:opacity-100 border-l border-slate-200/50 bg-[#FAFAFC]/90 backdrop-blur-xl flex-col items-center py-4 gap-1 select-none overflow-y-auto overflow-x-visible thin-scrollbar transition-all duration-300 ease-in-out shadow-[-10px_0_30px_rgba(0,0,0,0.03)]`}>
+
+              {/* ── Slot 1: Home (always fixed) ─── */}
+              <div className="relative mb-5">
+                <div
+                  className="group flex flex-col items-center gap-1 cursor-pointer select-none"
+                  onClick={() => setProductMode('landing')}
+                >
+                  <div className="p-2.5 rounded-xl border border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700 transition-all duration-200">
+                    <Home size={20} strokeWidth={2} />
+                  </div>
+                  <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-600 transition-colors">Home</span>
+                </div>
+
+                {/* Workspace launcher popover */}
+                {workspaceLauncherOpen && (
+                  <div className="absolute right-full top-0 mr-4 z-[9999] w-[180px] bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 overflow-hidden origin-right animate-in fade-in zoom-in-95 duration-200">
+                    <div className="flex items-center justify-between px-3 py-2 mb-1 border-b border-slate-50">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Create New</span>
+                      <button onClick={() => setWorkspaceLauncherOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <div className="space-y-0.5">
+                      {[
+                        { key: 'compose', label: 'Compose', icon: FileText },
+                        { key: 'deck',    label: 'Deck',    icon: MonitorPlay },
+                        { key: 'sheet',   label: 'Sheet',   icon: Table },
+                        { key: 'room',    label: 'Room',    icon: Video },
+                        { key: 'whiteboard', label: 'Whiteboard', icon: Shapes },
+                      ].map(({ key, label, icon: Icon }) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => launchWorkspaceFromMiniPlus(key)}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-violet-50 hover:text-violet-700 rounded-lg transition-colors text-left font-medium group"
+                        >
+                          <Icon size={16} strokeWidth={2} className="text-slate-400 group-hover:text-violet-500 transition-colors" />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Slot 2: Chat (always fixed) ─── */}
+              <div className="mb-1">{renderNavIcon({ key: 'chat', label: 'Chat', icon: MessageCircle })}</div>
+
+              {/* ── Slot 3: Assist (always fixed) ─── */}
+              <div className="mb-5">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: Wand2 })}</div>
+
+              {/* ── Slots 4–5: Dynamic (usage-promoted, animated on key change) ─── */}
+              {dynamicSlots.map((slotKey, idx) => {
+                const feature = ALL_FEATURES.find(f => f.key === slotKey);
+                if (!feature) return null;
+                // React uses `key` to detect a slot change and plays the CSS animation
+                return (
+                  <div
+                    key={`dynamic-${idx}-${slotKey}`}
+                    className="mb-1 animate-in fade-in zoom-in-90 duration-300 ease-out"
                   >
-                    <Icon size={16} strokeWidth={2} className="text-slate-400 group-hover:text-violet-500 transition-colors" />
-                    {label}
-                  </button>
-                ))}
+                    {renderNavIcon(feature)}
+                  </div>
+                );
+              })}
+
+              {/* ── One icon-height gap before More ─── */}
+              <div className="h-[52px]" aria-hidden="true" />
+
+              {/* ── Inline expanded icons (shown when More is tapped) ─── */}
+              {morePanelOpen && moreItems.map(feature => (
+                <div
+                  key={`more-${feature.key}`}
+                  className="mb-1 animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
+                >
+                  {renderNavIcon(feature)}
+                </div>
+              ))}
+
+              {/* ── More button ─── */}
+              <div
+                onClick={() => setMorePanelOpen(prev => !prev)}
+                className="group flex flex-col items-center gap-1 cursor-pointer select-none"
+              >
+                <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+                  morePanelOpen
+                    ? 'bg-slate-100/80 border-slate-200 text-slate-700'
+                    : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+                }`}>
+                  <MoreHorizontal size={20} strokeWidth={2} />
+                </div>
+                <span className={`text-[10px] font-medium transition-colors ${
+                  morePanelOpen ? 'text-slate-700 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+                }`}>More</span>
               </div>
             </div>
-          )}
-        </div>
-        
-        <div 
-          onClick={() => handleMiniSidebarClick('chat')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            activeRightTab === 'chat' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <MessageCircle size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'chat' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>Chat</span>
-        </div>
+          </>
+        );
+      })()}
 
-        {comments.length > 0 && (
-          <div
-            onClick={() => handleMiniSidebarClick('comments')}
-            className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-          >
-            <div className={`p-2.5 rounded-xl transition-all duration-200 border relative ${
-              activeRightTab === 'comments' && rightSidebarOpen 
-                ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-                : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-            }`}>
-              {selectedEditorText ? <MessageSquarePlus size={20} strokeWidth={2} /> : <MessageSquareText size={20} strokeWidth={2} />}
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold animate-scale-in border border-white">
-                {comments.filter(c => !c.resolved).length}
-              </span>
-            </div>
-            <span className={`text-[10px] font-medium transition-colors ${
-              activeRightTab === 'comments' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-            }`}>Comments</span>
-          </div>
-        )}
-
-        <div
-          onClick={() => handleMiniSidebarClick('dm')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            productMode === 'dm' 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <MessageSquare size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            productMode === 'dm' ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>DMs</span>
-        </div>
-
-        <div 
-          onClick={() => handleMiniSidebarClick('assistant')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border relative ${
-            activeRightTab === 'assistant' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <Wand2 size={20} strokeWidth={2} />
-            {selectedEditorText && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-violet-500 animate-pulse border border-white" />}
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'assistant' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>Assist</span>
-        </div>
-
-        <div
-          onClick={() => handleMiniSidebarClick('whiteboard')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            activeRightTab === 'whiteboard' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <Shapes size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'whiteboard' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>Whiteboard</span>
-        </div>
-
-        <div 
-          onClick={() => handleMiniSidebarClick('tasks')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            activeRightTab === 'tasks' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <CheckSquare size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'tasks' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>Tasks</span>
-        </div>
-
-        <div 
-          onClick={() => handleMiniSidebarClick('calendar')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            activeRightTab === 'calendar' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <Calendar size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'calendar' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>Schedule</span>
-        </div>
-
-        <div
-          onClick={() => handleMiniSidebarClick('people')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            activeRightTab === 'people' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <Users size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'people' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>People</span>
-        </div>
-
-        <div
-          onClick={() => handleMiniSidebarClick('memory')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            activeRightTab === 'memory' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <Database size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>Memory</span>
-        </div>
-
-        <div
-          onClick={() => handleMiniSidebarClick('orb')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            activeRightTab === 'orb' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <Cloud size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'orb' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>Orb</span>
-        </div>
-
-        <div
-          onClick={() => handleMiniSidebarClick('manageen')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            activeRightTab === 'manageen' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <ListTodo size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'manageen' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>Manageen</span>
-        </div>
-
-        <div
-          onClick={() => handleMiniSidebarClick('room')}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
-            activeRightTab === 'room' && rightSidebarOpen 
-              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
-              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-          }`}>
-            <MonitorPlay size={20} strokeWidth={2} />
-          </div>
-          <span className={`text-[10px] font-medium transition-colors ${
-            activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-          }`}>Room</span>
-        </div>
-
-        <div
-          onClick={() => {
-            handleMiniSidebarClick('room');
-            setActiveMeetingStageTab('files');
-          }}
-          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-        >
-          <div className="p-2.5 rounded-xl border border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700 transition-all duration-200">
-            <File size={20} strokeWidth={2} />
-          </div>
-          <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-600 transition-colors">Files</span>
-        </div>
-
-        <div className="group flex flex-col items-center gap-1 cursor-pointer select-none mt-auto">
-          <div className="p-2.5 rounded-xl border border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700 transition-all duration-200">
-            <MoreHorizontal size={20} strokeWidth={2} />
-          </div>
-          <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-600 transition-colors">More</span>
-        </div>
-      </div>
     </React.Fragment>
   );
+
   const sharedReplayPanel = (
     <React.Fragment>
         {replayPanelOpen && (
