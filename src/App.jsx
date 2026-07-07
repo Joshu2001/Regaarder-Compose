@@ -6095,6 +6095,23 @@ export default function App() {
   const [openDocMenuId, setOpenDocMenuId] = useState(null);
   const [renamingDocId, setRenamingDocId] = useState(null);
   const [renameDocValue, setRenameDocValue] = useState('');
+  const [whiteboards, setWhiteboards] = useState([
+    {
+      id: Date.now() + 1,
+      title: 'Untitled whiteboard',
+      strokes: [],
+      shapes: [],
+      widgets: [],
+      comments: [],
+      pinned: false,
+    }
+  ]);
+  const [activeWhiteboardId, setActiveWhiteboardId] = useState(null);
+  const activeWhiteboard = whiteboards.find((wb) => wb.id === activeWhiteboardId);
+  const [closeConfirmWbId, setCloseConfirmWbId] = useState(null);
+  const [openWbMenuId, setOpenWbMenuId] = useState(null);
+  const [renamingWbId, setRenamingWbId] = useState(null);
+  const [renameWbValue, setRenameWbValue] = useState('');
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [currentLanguage, setCurrentLanguage] = useState('Auto detect');
   const [isUnsavedDraftVisible, setIsUnsavedDraftVisible] = useState(true);
@@ -7527,11 +7544,38 @@ export default function App() {
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [isPromptExpanded, isPromptAutoVisible, isPromptDismissed]);
 
+
   useEffect(() => {
     if (!activeDocId && documents.length) {
       setActiveDocId(documents[0].id);
     }
   }, [documents, activeDocId]);
+
+  useEffect(() => {
+    if (!activeWhiteboardId && whiteboards.length) {
+      setActiveWhiteboardId(whiteboards[0].id);
+    }
+  }, [whiteboards, activeWhiteboardId]);
+
+  useEffect(() => {
+    if (!activeWhiteboardId) {
+      return;
+    }
+
+    setWhiteboards((prev) =>
+      prev.map((wb) =>
+        wb.id === activeWhiteboardId
+          ? {
+              ...wb,
+              strokes: whiteboardStrokes,
+              shapes: whiteboardShapes,
+              widgets: whiteboardWidgets,
+              comments: whiteboardComments,
+            }
+          : wb
+      )
+    );
+  }, [activeWhiteboardId, whiteboardStrokes, whiteboardShapes, whiteboardWidgets, whiteboardComments]);
 
   useEffect(() => {
     activeDocIdRef.current = activeDocId;
@@ -8519,6 +8563,9 @@ export default function App() {
       }
       if (!event.target.closest('[data-doc-menu-root]')) {
         setOpenDocMenuId(null);
+      }
+      if (!event.target.closest('[data-wb-menu-root]')) {
+        setOpenWbMenuId(null);
       }
       if (promptMenuRef.current && !promptMenuRef.current.contains(event.target)) {
         setIsPromptMenuOpen(false);
@@ -10741,6 +10788,7 @@ export default function App() {
     setDeckExportMenuOpen(false);
     setWhiteboardExportMenuOpen(false);
     setOpenDocMenuId(null);
+    setOpenWbMenuId(null);
     setIsPromptMenuOpen(false);
     setPromptTuneMenuOpen(false);
     setPromptFormatMenuOpen(false);
@@ -18856,6 +18904,112 @@ Rules:
     joinRoom(meetingCode);
   }, []);
 
+  const switchWhiteboard = (wbId) => {
+    const targetWb = whiteboards.find((wb) => wb.id === wbId);
+    if (!targetWb) {
+      return;
+    }
+
+    setActiveWhiteboardId(wbId);
+    setWhiteboardStrokes(targetWb.strokes || []);
+    setWhiteboardShapes(targetWb.shapes || []);
+    setWhiteboardWidgets(targetWb.widgets || []);
+    setWhiteboardComments(targetWb.comments || []);
+    setSelectedWidgetId(null);
+    setSelectedShapeIndex(null);
+  };
+
+  const createNewWhiteboard = () => {
+    const newWb = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      title: 'Untitled whiteboard',
+      strokes: [],
+      shapes: [],
+      widgets: [],
+      comments: [],
+      pinned: false,
+    };
+
+    setWhiteboards((prev) => [...prev, newWb]);
+    setActiveWhiteboardId(newWb.id);
+    setWhiteboardStrokes([]);
+    setWhiteboardShapes([]);
+    setWhiteboardWidgets([]);
+    setWhiteboardComments([]);
+    setSelectedWidgetId(null);
+    setSelectedShapeIndex(null);
+  };
+
+  const startRenameWhiteboard = (wb) => {
+    setRenamingWbId(wb.id);
+    setRenameWbValue(wb.title?.trim() ? wb.title : '');
+    setOpenWbMenuId(null);
+  };
+
+  const commitRenameWhiteboard = (wbId) => {
+    const nextTitle = renameWbValue.trim();
+    setWhiteboards((prev) =>
+      prev.map((wb) => (wb.id === wbId ? { ...wb, title: nextTitle } : wb))
+    );
+    setRenamingWbId(null);
+    setRenameWbValue('');
+    showToast('Whiteboard renamed');
+  };
+
+  const handleWhiteboardAction = (action, wbId) => {
+    if (action === 'rename') {
+      const target = whiteboards.find((wb) => wb.id === wbId);
+      if (target) {
+        startRenameWhiteboard(target);
+      }
+      return;
+    }
+
+    if (action === 'pin') {
+      setWhiteboards((prev) =>
+        prev.map((wb) =>
+          wb.id === wbId
+            ? {
+                ...wb,
+                pinned: !wb.pinned,
+              }
+            : wb
+        )
+      );
+      setOpenWbMenuId(null);
+      showToast('Pin state updated');
+      return;
+    }
+
+    if (action === 'close') {
+      requestCloseWhiteboard(wbId);
+      return;
+    }
+  };
+
+  const requestCloseWhiteboard = (wbId) => {
+    setCloseConfirmWbId(wbId);
+    setOpenWbMenuId(null);
+  };
+
+  const confirmCloseWhiteboard = () => {
+    if (!closeConfirmWbId) {
+      return;
+    }
+
+    const remaining = whiteboards.filter((wb) => wb.id !== closeConfirmWbId);
+    if (!remaining.length) {
+      setCloseConfirmWbId(null);
+      createNewWhiteboard();
+      return;
+    }
+
+    setWhiteboards(remaining);
+    const nextActive = remaining[0];
+    setCloseConfirmWbId(null);
+    switchWhiteboard(nextActive.id);
+  };
+
   const switchDocument = (docId) => {
     const targetDoc = documents.find((doc) => doc.id === docId);
     if (!targetDoc) {
@@ -21665,6 +21819,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     || textStyleMenuOpen
     || languageMenuOpen
     || Boolean(openDocMenuId)
+    || Boolean(openWbMenuId)
     || Boolean(openWorkspaceMenuId)
     || isPromptMenuOpen
     || promptTuneMenuOpen

@@ -112,6 +112,15 @@ export default function RegaarderComposeLanding({ onLaunch }) {
             </div>
           )}
 
+          {/* Footer with Terms of Service & Legal */}
+          <div className="mt-16 flex items-center gap-6 text-xs text-slate-400 select-none">
+            <a href="#/terms" onClick={(e) => { e.preventDefault(); alert("Terms of Service"); }} className="hover:text-slate-600 transition-colors">Terms of Service</a>
+            <span className="w-1 h-1 rounded-full bg-slate-300" />
+            <a href="#/privacy" onClick={(e) => { e.preventDefault(); alert("Privacy Policy"); }} className="hover:text-slate-600 transition-colors">Privacy Policy</a>
+            <span className="w-1 h-1 rounded-full bg-slate-300" />
+            <a href="#/legal" onClick={(e) => { e.preventDefault(); alert("Legal Notices"); }} className="hover:text-slate-600 transition-colors">Legal</a>
+          </div>
+
         </div>
       </div>
 
