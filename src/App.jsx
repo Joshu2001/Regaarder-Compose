@@ -2663,6 +2663,12 @@ export default function App() {
     };
 
     const handleOutsideClick = (e) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
+        setProfileMenuOpen(false);
+      }
+      if (composeProfileMenuRef.current && !composeProfileMenuRef.current.contains(e.target)) {
+        setComposeProfileMenuOpen(false);
+      }
       if (replayPanelRef.current && !replayPanelRef.current.contains(e.target)) {
         setReplayPanelOpen(false);
         setIsReplayPlaying(false);
@@ -5896,6 +5902,67 @@ export default function App() {
   const isLocalUpdateRef = useRef(false);
   const [awarenessUsers, setAwarenessUsers] = useState(new Map());
   const dmpRef = useRef(new DiffMatchPatch());
+  const profileMenuRef = useRef(null);
+  const composeProfileMenuRef = useRef(null);
+  const [composeProfileMenuOpen, setComposeProfileMenuOpen] = useState(false);
+  
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('rc.user');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [authTab, setAuthTab] = useState('login'); // 'login' | 'register'
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Auto-login on load
+  useEffect(() => {
+    const token = localStorage.getItem('rc.token');
+    if (token) {
+      fetch('http://localhost:3001/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      .then(res => {
+        if (res.status === 200) {
+          return res.json();
+        } else {
+          localStorage.removeItem('rc.token');
+          localStorage.removeItem('rc.user');
+          setCurrentUser(null);
+          throw new Error('Session expired');
+        }
+      })
+      .then(data => {
+        if (data && data.user) {
+          setCurrentUser(data.user);
+          localStorage.setItem('rc.user', JSON.stringify(data.user));
+        }
+      })
+      .catch(err => {
+        console.warn('Auto-login failed:', err.message);
+      });
+    }
+  }, []);
+
+  // Update local awareness dynamically
+  useEffect(() => {
+    if (providerRef.current?.awareness) {
+      providerRef.current.awareness.setLocalStateField('user', {
+        name: currentUser ? currentUser.name : `User ${Math.floor(Math.random() * 1000)}`,
+        color: currentUser ? '#10B981' : '#7C3AED'
+      });
+    }
+  }, [currentUser]);
   
   useEffect(() => {
     yDocRef.current = new Y.Doc();
@@ -5907,8 +5974,8 @@ export default function App() {
 
     const awareness = providerRef.current.awareness;
     awareness.setLocalStateField('user', {
-      name: `User ${Math.floor(Math.random() * 1000)}`,
-      color: randomColor({ luminosity: 'dark' })
+      name: currentUser ? currentUser.name : `User ${Math.floor(Math.random() * 1000)}`,
+      color: currentUser ? '#10B981' : randomColor({ luminosity: 'dark' })
     });
 
     awareness.on('change', () => {
@@ -18154,7 +18221,11 @@ Rules:
       createManageenExperience();
       return;
     }
-    const shouldBeFullscreen = ['room', 'whiteboard', 'people', 'calendar', 'tasks', 'schedule', 'memory'].includes(tabKey);
+    if (tabKey === 'whiteboard') {
+      setProductMode('compose');
+      setLeftSidebarOpen(true);
+    }
+    const shouldBeFullscreen = ['room'].includes(tabKey);
     if (rightSidebarOpen && activeRightTab === tabKey) {
       setRightSidebarOpen(false);
       if (rightPanelMaximized) setRightPanelMaximized(false);
@@ -18791,6 +18862,10 @@ Rules:
       return;
     }
 
+    if (activeRightTab === 'whiteboard') {
+      setActiveRightTab('assistant');
+    }
+
     setActiveDocId(docId);
     setDocTitle(targetDoc.title);
     setDocSubtitle(targetDoc.subtitle);
@@ -18811,6 +18886,10 @@ Rules:
       bodyHtml: initialHtml,
       pinned: false,
     };
+
+    if (activeRightTab === 'whiteboard') {
+      setActiveRightTab('assistant');
+    }
 
     setDocuments((prev) => [...prev, newDoc]);
     setActiveDocId(newDoc.id);
@@ -28586,6 +28665,246 @@ const renderRoomTopHeader = () => (
     );
   };
 
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    if (!authEmail || !authPassword) {
+      setAuthError('Email and password are required.');
+      return;
+    }
+    if (authTab === 'register' && !authName) {
+      setAuthError('Name is required for registration.');
+      return;
+    }
+
+    setAuthError('');
+    setAuthLoading(true);
+
+    try {
+      const endpoint = authTab === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const body = authTab === 'login' 
+        ? { email: authEmail, password: authPassword }
+        : { email: authEmail, password: authPassword, name: authName };
+
+      const res = await fetch(`http://localhost:3001${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Authentication failed.');
+      }
+
+      localStorage.setItem('rc.token', data.token);
+      localStorage.setItem('rc.user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
+      setAuthModalOpen(false);
+      showToast(authTab === 'login' ? `Welcome back, ${data.user.name}! ✓` : `Account created! Welcome, ${data.user.name}! ✓`);
+      
+      setAuthEmail('');
+      setAuthPassword('');
+      setAuthName('');
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleSocialAuth = async (provider) => {
+    setAuthError('');
+    setAuthLoading(true);
+
+    const mockEmail = `${provider}_user_${Math.floor(Math.random() * 10000)}@example.com`;
+    const mockName = provider === 'google' ? 'Google Developer' : 'Apple User';
+
+    try {
+      const res = await fetch('http://localhost:3001/api/auth/social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider,
+          email: mockEmail,
+          name: mockName
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Social sign-in failed.');
+      }
+
+      localStorage.setItem('rc.token', data.token);
+      localStorage.setItem('rc.user', JSON.stringify(data.user));
+      setCurrentUser(data.user);
+      setAuthModalOpen(false);
+      showToast(`Connected with ${provider === 'google' ? 'Google' : 'Apple'} ✓`);
+      
+      setAuthEmail('');
+      setAuthPassword('');
+      setAuthName('');
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const renderAuthModal = () => {
+    if (!authModalOpen) return null;
+    return (
+      <div 
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[99999] flex items-center justify-center font-sans animate-in fade-in duration-200"
+        onMouseDown={() => setAuthModalOpen(false)}
+      >
+        <div 
+          className="bg-white dark:bg-[#1c1c1e] rounded-3xl shadow-[0_24px_60px_-15px_rgba(0,0,0,0.3)] border border-slate-200/50 dark:border-zinc-800 w-[380px] p-6 relative flex flex-col gap-4.5 animate-in zoom-in-95 duration-200"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <button 
+            type="button"
+            onClick={() => setAuthModalOpen(false)}
+            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors focus:outline-none"
+            title="Close"
+          >
+            <X size={15} />
+          </button>
+
+          <div className="flex flex-col items-center text-center gap-1.5 mt-1">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 via-pink-500 to-purple-600 shadow-lg flex items-center justify-center shadow-pink-500/20 transform rotate-6">
+              <div className="w-4.5 h-4.5 bg-white rounded-full opacity-20 -translate-x-0.5 -translate-y-0.5" />
+            </div>
+            <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white mt-2.5">Welcome to Regaarder</h2>
+            <p className="text-[10.5px] text-slate-500 dark:text-zinc-400">One workspace for all your office needs.</p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => handleSocialAuth('google')}
+              disabled={authLoading}
+              className="w-full h-9 flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-850 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-zinc-750 rounded-lg text-[12px] font-medium text-slate-700 dark:text-zinc-200 transition-all duration-150 active:scale-[0.99]"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continue with Google
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSocialAuth('apple')}
+              disabled={authLoading}
+              className="w-full h-9 flex items-center justify-center gap-2 bg-black hover:bg-zinc-900 text-white rounded-lg text-[12px] font-medium transition-all duration-150 active:scale-[0.99]"
+            >
+              <svg className="w-3.5 h-3.5 fill-white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-1 .04-2.2.67-2.92 1.5-.62.71-1.16 1.85-1.01 2.96 1.12.09 2.26-.59 2.94-1.4"/>
+              </svg>
+              Continue with Apple
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3.5 my-0.5">
+            <div className="h-px flex-1 bg-slate-100 dark:bg-zinc-800/80"></div>
+            <span className="text-[9.5px] font-bold text-slate-400 dark:text-zinc-550 uppercase tracking-widest">or use email</span>
+            <div className="h-px flex-1 bg-slate-100 dark:bg-zinc-800/80"></div>
+          </div>
+
+          <div className="flex bg-slate-100 dark:bg-zinc-900/60 p-0.5 rounded-lg border border-slate-200/20 dark:border-zinc-800/20">
+            <button
+              type="button"
+              onClick={() => { setAuthTab('login'); setAuthError(''); }}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded-md transition-all duration-150 ${
+                authTab === 'login' 
+                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-black/5 dark:border-white/5' 
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-350'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAuthTab('register'); setAuthError(''); }}
+              className={`flex-1 py-1 text-[11px] font-semibold rounded-md transition-all duration-150 ${
+                authTab === 'register' 
+                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-[0_1px_3px_rgba(0,0,0,0.08)] border border-black/5 dark:border-white/5' 
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-zinc-355'
+              }`}
+            >
+              Create Account
+            </button>
+          </div>
+
+          <form onSubmit={handleAuthSubmit} className="flex flex-col gap-3.5">
+            {authError && (
+              <div className="p-2.5 bg-rose-50 border border-rose-100/60 dark:bg-rose-950/20 dark:border-rose-900/30 rounded-lg text-rose-600 dark:text-rose-400 text-[10.5px] font-medium leading-relaxed">
+                {authError}
+              </div>
+            )}
+
+            {authTab === 'register' && (
+              <div className="flex flex-col gap-1">
+                <label className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Full Name</label>
+                <input
+                  type="text"
+                  placeholder="Sarah Johnson"
+                  value={authName}
+                  onChange={(e) => setAuthName(e.target.value)}
+                  disabled={authLoading}
+                  className="h-9 px-3 text-[12px] bg-slate-50 hover:bg-slate-100/50 focus:bg-white dark:bg-zinc-900 dark:hover:bg-zinc-850/50 dark:focus:bg-zinc-900 border border-transparent focus:border-violet-500 dark:focus:border-violet-500 rounded-lg outline-none transition-all duration-150"
+                  required
+                />
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Email Address</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                disabled={authLoading}
+                className="h-9 px-3 text-[12px] bg-slate-50 hover:bg-slate-100/50 focus:bg-white dark:bg-zinc-900 dark:hover:bg-zinc-850/50 dark:focus:bg-zinc-900 border border-transparent focus:border-violet-500 dark:focus:border-violet-500 rounded-lg outline-none transition-all duration-150"
+                required
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                disabled={authLoading}
+                className="h-9 px-3 text-[12px] bg-slate-50 hover:bg-slate-100/50 focus:bg-white dark:bg-zinc-900 dark:hover:bg-zinc-850/50 dark:focus:bg-zinc-900 border border-transparent focus:border-violet-500 dark:focus:border-violet-500 rounded-lg outline-none transition-all duration-150"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={authLoading}
+              className="w-full h-9.5 mt-1 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white rounded-lg text-[12px] font-semibold shadow-md flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] transition-all duration-150"
+            >
+              {authLoading ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  Please wait...
+                </>
+              ) : authTab === 'login' ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
       <div ref={appShellRef} className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
@@ -29042,22 +29361,106 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <Users size={14} /> Share
                 </button>
                 <div className="flex items-center gap-4">
-                  <div className="flex -space-x-2">
-                    {Array.from(awarenessUsers.values()).map((userState, idx) => {
+                  {/* Remote Users Pile */}
+                  <div className="flex -space-x-1.5 mr-1">
+                    {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
                       if (!userState.user) return null;
+                      const isMe = clientID === providerRef.current?.awareness?.clientID;
+                      if (isMe) return null; // Render me separately
                       return (
                         <div
-                          key={`avatar-${idx}`}
+                          key={`remote-avatar-${idx}`}
                           className="w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] shadow-sm flex items-center justify-center text-[11px] font-bold text-white relative group"
                           style={{ backgroundColor: userState.user.color }}
                         >
                           {userState.user.name.charAt(0).toUpperCase()}
-                          <div className="absolute top-full mt-1 bg-black text-white text-[10px] py-0.5 px-1.5 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-[100]">
+                          <div className="absolute top-full mt-1 bg-black/85 backdrop-blur-md text-white text-[10px] py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-[500] transition-opacity shadow-md">
                             {userState.user.name}
                           </div>
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Local User Profile Avatar Button */}
+                  <div className="relative" ref={profileMenuRef}>
+                    <button
+                      type="button"
+                      onClick={() => setProfileMenuOpen(prev => !prev)}
+                      className="w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850 flex items-center justify-center text-[11px] font-semibold text-white transition-all shadow-sm focus:outline-none"
+                      style={{
+                        backgroundColor: currentUser ? '#10B981' : '#7C3AED',
+                      }}
+                      title={currentUser ? `Profile: ${currentUser.name}` : 'Sign In'}
+                    >
+                      {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </button>
+
+                    {/* Profile Dropdown Menu */}
+                    {profileMenuOpen && (
+                      <div className="absolute right-0 top-9 z-[500] w-64 rounded-xl border border-slate-200/80 bg-white dark:bg-[#1c1c1e] dark:border-zinc-800 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-4 font-sans animate-in fade-in slide-in-from-top-2 duration-200">
+                        {currentUser ? (
+                          // Logged In State
+                          <div className="flex flex-col gap-3">
+                            <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                              <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-inner">
+                                {currentUser.name.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">{currentUser.name}</span>
+                                <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">{currentUser.email}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1 text-[10px] text-slate-400 dark:text-zinc-500">
+                              <div className="flex justify-between">
+                                <span>Sign-in Provider</span>
+                                <span className="font-medium text-slate-655 dark:text-zinc-400 capitalize">{currentUser.provider}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Status</span>
+                                <span className="font-medium text-emerald-600 dark:text-emerald-400">Authenticated ✓</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                localStorage.removeItem('rc.token');
+                                localStorage.removeItem('rc.user');
+                                setCurrentUser(null);
+                                setProfileMenuOpen(false);
+                                showToast('Disconnected successfully');
+                              }}
+                              className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-450 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/30 transition-all duration-200"
+                            >
+                              Disconnect Account
+                            </button>
+                          </div>
+                        ) : (
+                          // Guest State
+                          <div className="flex flex-col gap-3 text-center py-1">
+                            <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 flex items-center justify-center text-md font-bold mx-auto mb-1">
+                              G
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[12px] font-bold text-slate-800 dark:text-zinc-200">Guest Mode</span>
+                              <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 max-w-[200px] mx-auto leading-relaxed">
+                                Sign in to sync your work, collaborate, and access premium AI tools.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProfileMenuOpen(false);
+                                setAuthModalOpen(true);
+                              }}
+                              className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+                            >
+                              Sign In
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <div className="relative" ref={notificationsPanelRef}>
                     <button
@@ -35391,6 +35794,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     if (!isAlreadyOpen) {
                        setDocuments(prev => [...prev, { ...doc.data, id: doc.id }]);
                     }
+                    if (activeRightTab === 'whiteboard') {
+                      setActiveRightTab('assistant');
+                    }
                     setActiveDocId(doc.id);
                     setDocTitle(doc.data.title || '');
                     setDocSubtitle(doc.data.subtitle || '');
@@ -35743,6 +36149,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="flex -space-x-2">
               {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
                 if (!userState.user) return null;
+                const isMe = clientID === providerRef.current?.awareness?.clientID;
+                if (isMe) return null;
                 return (
                   <div
                     key={`immersive-avatar-${idx}`}
@@ -35766,6 +36174,87 @@ if (productMode === 'deck' || productMode === 'sheets') {
             >
               {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>
+
+            {/* Local User Profile Avatar Button */}
+            <div className="relative font-sans" ref={composeProfileMenuRef}>
+              <button
+                type="button"
+                onClick={() => setComposeProfileMenuOpen(prev => !prev)}
+                className="w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850 flex items-center justify-center text-[11px] font-semibold text-white transition-all shadow-sm focus:outline-none"
+                style={{
+                  backgroundColor: currentUser ? '#10B981' : '#7C3AED',
+                }}
+                title={currentUser ? `Profile: ${currentUser?.name || ''}` : 'Sign In'}
+              >
+                {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+              </button>
+
+              {/* Profile Dropdown Menu */}
+              {composeProfileMenuOpen && (
+                <div className="absolute right-0 top-9 z-[500] w-64 rounded-xl border border-slate-200/80 bg-white dark:bg-[#1c1c1e] dark:border-zinc-800 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-4 font-sans animate-in fade-in slide-in-from-top-2 duration-200">
+                  {currentUser ? (
+                    // Logged In State
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-3 pb-2.5 border-b border-slate-100 dark:border-zinc-800">
+                        <div className="w-9 h-9 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-inner">
+                          {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 truncate">{currentUser?.name || ''}</span>
+                          <span className="text-[10px] text-slate-550 dark:text-zinc-400 truncate">{currentUser?.email || ''}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1 text-[10px] text-slate-400 dark:text-zinc-500">
+                        <div className="flex justify-between">
+                          <span>Sign-in Provider</span>
+                          <span className="font-medium text-slate-655 dark:text-zinc-400 capitalize">{currentUser?.provider || ''}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Status</span>
+                          <span className="font-medium text-emerald-600 dark:text-emerald-400">Authenticated ✓</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          localStorage.removeItem('rc.token');
+                          localStorage.removeItem('rc.user');
+                          setCurrentUser(null);
+                          setComposeProfileMenuOpen(false);
+                          showToast('Disconnected successfully');
+                        }}
+                        className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-955/20 dark:text-rose-450 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/30 transition-all duration-200"
+                      >
+                        Disconnect Account
+                      </button>
+                    </div>
+                  ) : (
+                    // Guest State
+                    <div className="flex flex-col gap-3 text-center py-1">
+                      <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-955/40 text-violet-600 dark:text-violet-400 flex items-center justify-center text-md font-bold mx-auto mb-1">
+                        G
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[12px] font-bold text-slate-800 dark:text-zinc-200">Guest Mode</span>
+                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1 max-w-[200px] mx-auto leading-relaxed">
+                          Sign in to sync your work, collaborate, and access premium AI tools.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setComposeProfileMenuOpen(false);
+                          setAuthModalOpen(true);
+                        }}
+                        className="w-full mt-1.5 py-1.5 px-3 text-[11px] font-semibold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm hover:-translate-y-0.5 active:scale-95 transition-all duration-200"
+                      >
+                        Sign In
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="relative" ref={notificationsPanelRef}>
               <button
@@ -42001,7 +42490,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3 text-gray-400">
-              <button onClick={() => { setActiveDocView('document'); showToast('Document view active'); }} className={`p-1 rounded ${activeDocView === 'document' ? 'text-violet-600 bg-violet-50' : 'hover:text-gray-600'}`} title="Document view"><FileText size={14} /></button>
+              <button onClick={() => { setActiveDocView('document'); if (activeRightTab === 'whiteboard') { setActiveRightTab('assistant'); } showToast('Document view active'); }} className={`p-1 rounded ${activeDocView === 'document' ? 'text-violet-600 bg-violet-50' : 'hover:text-gray-600'}`} title="Document view"><FileText size={14} /></button>
               <button onClick={() => setTextStyleMenuOpen((prev) => !prev)} className="p-1 rounded hover:text-gray-600" title="Text style options"><Type size={14} /></button>
               <button onClick={() => { setRightSidebarOpen((prev) => !prev); }} className="p-1 rounded hover:text-gray-600" title="Toggle right panel"><LayoutGrid size={14} /></button>
               <button onClick={() => showToast('Quality review complete: no critical formatting issues')} className="p-1 rounded hover:text-gray-600" title="Run quick quality check"><AlertTriangle size={14} /></button>
@@ -44673,6 +45162,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Shared Chart and Shape Pickers */}
       {renderSharedChartPicker()}
       {renderSharedShapePicker()}
+      {renderAuthModal()}
     </div>
   );
 }
