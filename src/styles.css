@@ -53,50 +53,117 @@ body { margin: 0; background: #ffffff; }
 }
 
 .app-dark {
-	background: #0d0d0d !important;
-	color: #e5e5e5;
+	background-color: #121214 !important;
+	color: #f5f5f7;
 }
 
+/* Base Background Overrides */
 .app-dark .bg-white,
 .app-dark .bg-white\/95,
+.app-dark .bg-white\/90,
+.app-dark .bg-white\/80,
 .app-dark .bg-\[\#FAFAFC\],
 .app-dark .bg-\[\#FDFDFD\],
 .app-dark .bg-\[\#f5f7fc\],
 .app-dark .bg-\[\#f3f5fb\],
 .app-dark .bg-gray-50,
-.app-dark .bg-slate-50 {
-	background-color: #1a1a1a !important;
+.app-dark .bg-slate-50,
+.app-dark header.bg-white,
+.app-dark .sheets-toolbar-container {
+	background-color: #1c1c1e !important;
 }
 
-.app-dark .bg-white\/90 {
-	background-color: rgba(26, 26, 26, 0.9) !important;
+.app-dark .bg-slate-100,
+.app-dark .bg-gray-100 {
+	background-color: #2c2c2e !important;
 }
 
-.app-dark .bg-white\/80 {
-	background-color: rgba(26, 26, 26, 0.8) !important;
+/* Secondary Surfaces and Panels */
+.app-dark .border-b.bg-white,
+.app-dark .border-t.bg-white,
+.app-dark .border-l.bg-white,
+.app-dark .border-r.bg-white {
+	background-color: #1c1c1e !important;
 }
 
+/* Editor Surface & Enterprise Page in Dark Mode */
+.app-dark [data-enterprise-page="true"] {
+	background: #1c1c1e !important;
+	border-color: rgba(255, 255, 255, 0.08) !important;
+	box-shadow: 0 4px 24px -6px rgba(0, 0, 0, 0.5) !important;
+	color: #ffffff !important;
+}
+
+/* Text Colors */
 .app-dark .text-gray-900,
 .app-dark .text-gray-800,
 .app-dark .text-slate-900,
-.app-dark .text-slate-800 {
-	color: #f5f5f5 !important;
+.app-dark .text-slate-800,
+.app-dark .text-zinc-900,
+.app-dark .text-zinc-800 {
+	color: #ffffff !important;
 }
 
+.app-dark .text-gray-750,
 .app-dark .text-gray-700,
 .app-dark .text-gray-600,
-.app-dark .text-gray-500,
-.app-dark .text-gray-400,
+.app-dark .text-slate-700,
 .app-dark .text-slate-600,
-.app-dark .text-slate-500 {
-	color: #a3a3a3 !important;
+.app-dark .text-[#374151] {
+	color: #e5e5e7 !important;
 }
 
+.app-dark .text-gray-500,
+.app-dark .text-gray-400,
+.app-dark .text-slate-500,
+.app-dark .text-slate-400,
+.app-dark .text-zinc-500,
+.app-dark .text-zinc-400 {
+	color: #8e8e93 !important;
+}
+
+/* Subtle Premium Borders */
 .app-dark .border-gray-100,
 .app-dark .border-gray-200,
 .app-dark .border-slate-100,
-.app-dark .border-violet-100 {
-	border-color: #2d2d2d !important;
+.app-dark .border-slate-200,
+.app-dark .border-violet-100,
+.app-dark .border-zinc-200,
+.app-dark .border-gray-300,
+.app-dark .border-slate-350 {
+	border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Button & Dropdown Hover States in Dark Mode */
+.app-dark .hover\:bg-gray-50:hover,
+.app-dark .hover\:bg-gray-100:hover,
+.app-dark .hover\:bg-slate-50:hover,
+.app-dark .hover\:bg-slate-100:hover,
+.app-dark .hover\:bg-slate-200:hover {
+	background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Inputs and Forms in Dark Mode */
+.app-dark input,
+.app-dark textarea,
+.app-dark select {
+	background-color: #2c2c2e !important;
+	color: #ffffff !important;
+	border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.app-dark input::placeholder,
+.app-dark textarea::placeholder {
+	color: #636366 !important;
+}
+
+/* Scrollbar customization in Dark Mode */
+.app-dark .thin-scrollbar::-webkit-scrollbar-thumb {
+	background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.app-dark .thin-scrollbar::-webkit-scrollbar-track {
+	background: transparent !important;
 }
 
 .brand-select {

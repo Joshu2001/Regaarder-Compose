@@ -24859,7 +24859,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} relative z-[300] w-[74px] border-l border-slate-200/50 bg-[#FAFAFC]/90 backdrop-blur-xl flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar`}>
+      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[74px] translate-x-[64px] hover:translate-x-0 opacity-20 hover:opacity-100 border-l border-slate-200/50 bg-[#FAFAFC]/90 backdrop-blur-xl flex-col items-center py-4 gap-6 select-none overflow-y-auto overflow-x-visible thin-scrollbar transition-all duration-300 ease-in-out shadow-[-10px_0_30px_rgba(0,0,0,0.03)]`}>
         <div className="relative">
           <div
             className="group flex flex-col items-center gap-1 cursor-pointer select-none"
@@ -28900,22 +28900,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="flex items-center gap-1">
               {/* History Group */}
               <div className="flex items-center gap-0.5 px-2">
-                <button onClick={undoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
-                <button onClick={redoDocumentChange} className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
-                <button onClick={openReplayPanel} className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="History (Ctrl+H)"><Clock size={16} /></button>
+                <button onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
+                <button onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
+                <button onClick={openReplayPanel} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`} title="History (Ctrl+H)"><Clock size={16} /></button>
                 {!isSheetsMode && (
-                  <button onClick={() => setShowDeckComments(s => !s)} className={`p-1.5 rounded-md transition-colors ${showDeckComments ? 'text-violet-600 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`} title="Comments"><MessageSquareText size={16} /></button>
+                  <button onClick={() => setShowDeckComments(s => !s)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${showDeckComments ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`} title="Comments"><MessageSquareText size={16} /></button>
                 )}
               </div>
 
-              <div className="w-px h-5 bg-gray-200 mx-1"></div>
+              <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-1"></div>
 
               {/* Display Group */}
               <div className="flex items-center gap-0.5 px-2">
                 <button
                   type="button"
                   onClick={() => setIsDarkMode((prev) => !prev)}
-                  className="p-1.5 flex items-center justify-center rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
                   title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
                   {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
@@ -28923,21 +28923,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <button
                   type="button"
                   onClick={toggleDocumentImmersiveMode}
-                  className={`p-1.5 flex items-center justify-center rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
                   title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
                 >
                   {isDocumentImmersive ? <Minimize2 size={16} /> : <Expand size={16} />}
                 </button>
               </div>
 
-              <div className="w-px h-5 bg-gray-200 mx-1"></div>
+              <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-1"></div>
 
               {/* Collaboration Group */}
               <div className="flex items-center gap-4 pl-3">
                 <button
                   type="button"
                   onClick={() => openShareModal(activeDocId || documents[0]?.id)}
-                  className="bg-violet-600 hover:bg-violet-700 text-white text-[13px] font-semibold px-4 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition-all hover:-translate-y-0.5"
+                  className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
                 >
                   <Users size={14} /> Share
                 </button>
@@ -28948,7 +28948,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       return (
                         <div
                           key={`avatar-${idx}`}
-                          className="w-7 h-7 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-[11px] font-bold text-white relative group"
+                          className="w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] shadow-sm flex items-center justify-center text-[11px] font-bold text-white relative group"
                           style={{ backgroundColor: userState.user.color }}
                         >
                           {userState.user.name.charAt(0).toUpperCase()}
@@ -28961,33 +28961,33 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                   <div className="relative" ref={notificationsPanelRef}>
                     <button
-                  type="button"
-                  onClick={() => {
-                    setReplaySpeedMenuOpen(false);
-                    setNotificationsOpen((prev) => !prev);
-                    setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
-                  }}
-                  className="text-gray-400 hover:text-gray-600 relative"
-                  title="Notifications"
-                >
-                  <Bell size={18} />
-                  {notifications.length > 0 && (
-                    <span className="absolute top-1 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white"></span>
-                  )}
-                </button>
-                {notificationsOpen && (
-                  <div className="absolute right-0 top-8 z-[450] w-[300px] rounded-2xl border border-violet-100 bg-white shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] p-2">
-                    <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600">Notifications</div>
-                    <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
-                      {notifications.map((item) => (
-                        <div key={item.id} className="rounded-xl border border-slate-100 px-3 py-2.5 hover:bg-violet-50/50">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="text-[12px] font-medium text-slate-800">{item.title}</div>
-                            {item.unread && <span className="mt-1 h-2 w-2 rounded-full bg-violet-500" />}
-                          </div>
-                          <div className="mt-0.5 text-[11px] text-slate-500">{item.detail}</div>
-                        </div>
-                      ))}
+                      type="button"
+                      onClick={() => {
+                        setReplaySpeedMenuOpen(false);
+                        setNotificationsOpen((prev) => !prev);
+                        setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
+                      }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
+                      title="Notifications"
+                    >
+                      <Bell size={16} />
+                      {notifications.length > 0 && (
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214]"></span>
+                      )}
+                    </button>
+                    {notificationsOpen && (
+                      <div className="absolute right-0 top-10 z-[450] w-[300px] rounded-2xl border border-violet-100 bg-white dark:bg-[#1c1c1e] dark:border-zinc-800 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] p-2">
+                        <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600 dark:text-violet-400">Notifications</div>
+                        <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
+                          {notifications.map((item) => (
+                            <div key={item.id} className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200">{item.title}</div>
+                                {item.unread && <span className="mt-1 h-2 w-2 rounded-full bg-violet-500" />}
+                              </div>
+                              <div className="mt-0.5 text-[11px] text-slate-500 dark:text-zinc-400">{item.detail}</div>
+                            </div>
+                          ))}
                     </div>
                   </div>
                 )}
@@ -29003,7 +29003,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'w-full flex-1'}`}>
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
-                    <div className="px-4 py-3 border-b border-gray-200 bg-white flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
+                    <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121214] flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
                       <div className="flex items-center gap-4">
                         {['Data', 'Templates', 'Analyze', 'Visualize'].map((tab) => (
                           <button
@@ -29017,7 +29017,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 showToast(`${tab} tools ready`);
                               }
                             }}
-                            className={`px-3 py-1.5 rounded-lg transition-colors ${sheetToolbarTab === tab ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
+                            className={`px-3 py-1.5 rounded-lg border text-sm font-semibold transition-colors ${sheetToolbarTab === tab ? 'border-violet-500 text-violet-700 bg-transparent dark:border-violet-400 dark:text-violet-400' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
                           >
                             {tab}
                           </button>
@@ -29029,7 +29029,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             closeTransientMenus();
                             setSheetsExportMenuOpen(!sheetsExportMenuOpen);
                           }}
-                          className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-colors ${sheetsExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
+                          className={`text-[13px] font-semibold px-3 py-1.5 rounded-lg border flex items-center gap-1 transition-colors ${sheetsExportMenuOpen ? 'border-violet-500 text-violet-700 bg-transparent dark:border-violet-400 dark:text-violet-400' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
                           title="Export options"
                         >
                           Export {sheetsExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -35624,38 +35624,38 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="flex items-center gap-1">
               <button
                 onClick={undoDocumentChange}
-                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
                 title="Undo (Ctrl+Z)"
               >
-                <Undo2 size={15} />
+                <Undo2 size={16} />
               </button>
               <button
                 onClick={redoDocumentChange}
-                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
                 title="Redo (Ctrl+Y)"
               >
-                <Redo2 size={15} />
+                <Redo2 size={16} />
               </button>
               <button
                 onClick={openReplayPanel}
-                className={`p-1.5 rounded-md transition-colors ${replayPanelOpen ? 'text-violet-700 bg-violet-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
                 title="Open edit replay"
               >
-                <Clock size={15} />
+                <Clock size={16} />
               </button>
               <button
                 onClick={saveDocumentLocally}
-                className="p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
                 title="Save locally (Ctrl+S)"
               >
-                <Save size={15} />
+                <Save size={16} />
               </button>
             </div>
             <button
               onClick={() => openShareModal(activeDocId || documents[0]?.id)}
-              className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-1.5 rounded-md flex items-center gap-2 transition-all active:scale-95"
+              className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
             >
-              <Users size={16} /> Share
+              <Users size={14} /> Share
             </button>
             
             {/* Avatars */}
@@ -35665,7 +35665,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 return (
                   <div
                     key={`immersive-avatar-${idx}`}
-                    className="w-7 h-7 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-[11px] font-bold text-white relative group"
+                    className="w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] shadow-sm flex items-center justify-center text-[11px] font-bold text-white relative group"
                     style={{ backgroundColor: userState.user.color }}
                   >
                     {userState.user.name.charAt(0).toUpperCase()}
@@ -35680,39 +35680,39 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               type="button"
               onClick={() => setIsDarkMode((prev) => !prev)}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
               title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {isDarkMode ? <Sun size={14} /> : <Moon size={14} />}
+              {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
             <div className="relative" ref={notificationsPanelRef}>
               <button
                 type="button"
                 onClick={() => {
-                    setReplaySpeedMenuOpen(false);
+                  setReplaySpeedMenuOpen(false);
                   setNotificationsOpen((prev) => !prev);
                   setNotifications((prev) => prev.map((item) => ({ ...item, unread: false })));
                 }}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 relative transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
                 title="Notifications"
               >
-                <Bell size={18} />
+                <Bell size={16} />
                 {notifications.length > 0 && (
-                  <span className="absolute top-1 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white"></span>
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214]"></span>
                 )}
               </button>
               {notificationsOpen && (
-                <div className="absolute right-0 top-8 z-[450] w-[300px] rounded-2xl border border-violet-100 bg-white shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] p-2">
-                  <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600">Notifications</div>
+                <div className="absolute right-0 top-10 z-[450] w-[300px] rounded-2xl border border-violet-100 bg-white dark:bg-[#1c1c1e] dark:border-zinc-800 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.45)] p-2">
+                  <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600 dark:text-violet-400">Notifications</div>
                   <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
                     {notifications.map((item) => (
-                      <div key={item.id} className="rounded-xl border border-slate-100 px-3 py-2.5 hover:bg-violet-50/50">
+                      <div key={item.id} className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20">
                         <div className="flex items-start justify-between gap-2">
-                          <div className="text-[12px] font-medium text-slate-800">{item.title}</div>
+                          <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200">{item.title}</div>
                           {item.unread && <span className="mt-1 h-2 w-2 rounded-full bg-violet-500" />}
                         </div>
-                        <div className="mt-0.5 text-[11px] text-slate-500">{item.detail}</div>
+                        <div className="mt-0.5 text-[11px] text-slate-500 dark:text-zinc-400">{item.detail}</div>
                       </div>
                     ))}
                   </div>
@@ -35721,9 +35721,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
             <button 
               onClick={() => handleMiniSidebarClick('assistant')}
-              className={`w-7 h-7 flex items-center justify-center rounded-md transition-colors ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100 text-violet-700' : 'bg-violet-50 text-violet-600 hover:bg-violet-100'}`}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/45 dark:text-violet-400' : 'bg-violet-50 text-violet-600 hover:bg-violet-100 dark:bg-violet-950/20 dark:text-violet-300 dark:hover:bg-violet-950/40'}`}
             >
-              <Sparkles size={14} />
+              <Sparkles size={16} />
             </button>
           </div>
         </div>
@@ -44692,89 +44692,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
               transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
             }}
           >
-            <div className="pointer-events-auto flex flex-col items-center gap-3 rounded-3xl bg-white/85 backdrop-blur-md px-4 py-3 shadow-[0_12px_40px_-20px_rgba(91,33,182,0.25)] border border-white/80">
-              <button
-                type="button"
-                onPointerDown={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
+            <div 
+              onPointerDown={(event) => {
+                if (event.target.tagName !== 'BUTTON' && !event.target.closest('button')) {
                   beginPanelResize('dictation', event);
-                }}
-                className="inline-flex items-center gap-2 text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-full px-3 py-1 cursor-move touch-none hover:border-violet-300 hover:text-violet-700"
-                title="Drag dictation"
-              >
-                <Move size={12} />
-                Drag dictation
-              </button>
+                }
+              }}
+              className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-xl ${
+                isVoiceActive && voiceTarget === 'document' 
+                  ? 'rounded-2xl bg-violet-50/95 border-violet-400 outline outline-2 outline-violet-500/30 px-4 py-2.5 gap-3 shadow-[0_12px_40px_-15px_rgba(139,92,246,0.3)] min-w-[240px] max-w-[320px]' 
+                  : 'rounded-full bg-white/90 border-slate-200/80 p-1 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:border-violet-300/80'
+              }`}
+            >
               <button
                 type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={async () => {
                   await toggleVoiceRecording('document');
                 }}
-                className={`relative w-24 h-24 rounded-full border transition-all cursor-move touch-none ${
-                  isVoiceActive && voiceTarget === 'document' 
-                    ? (isVoiceCommandMode 
-                        ? 'border-indigo-400 bg-indigo-50 shadow-[0_0_0_6px_rgba(99,102,241,0.22),0_0_35px_rgba(99,102,241,0.65)] animate-pulse' 
-                        : 'border-violet-400 bg-violet-50 shadow-[0_0_0_6px_rgba(139,92,246,0.18),0_0_35px_rgba(139,92,246,0.55)]') 
-                    : 'border-gray-200 bg-white/95 hover:border-violet-300 hover:bg-violet-50/70'
+                className={`flex items-center justify-center rounded-full transition-all duration-300 ${
+                  isVoiceActive && voiceTarget === 'document'
+                    ? 'w-8 h-8 bg-violet-600 text-white shadow-[0_0_12px_rgba(124,58,237,0.5)] animate-pulse'
+                    : 'w-10 h-10 bg-slate-50 hover:bg-violet-50 text-slate-500 hover:text-violet-600'
                 }`}
-                title={isVoiceActive && voiceTarget === 'document' ? 'Stop document voice transcription' : 'Start document voice transcription'}
+                title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice transcription' : 'Start voice transcription'}
               >
-                <Mic size={34} className={`mx-auto ${isVoiceActive && voiceTarget === 'document' ? 'text-violet-600 animate-pulse' : 'text-gray-500'}`} />
-                {isVoiceActive && voiceTarget === 'document' && (
-                  <>
-                    <span className={`absolute inset-0 rounded-full border-2 animate-ping ${isVoiceCommandMode ? 'border-indigo-300' : 'border-violet-300'}`}></span>
-                    <span className={`absolute -inset-2 rounded-full border animate-pulse ${isVoiceCommandMode ? 'border-indigo-200/80' : 'border-violet-200/80'}`}></span>
-                  </>
-                )}
+                <Mic size={isVoiceActive && voiceTarget === 'document' ? 16 : 18} />
               </button>
-              <div className="text-[11px] text-gray-500 bg-white/95 border border-gray-200 rounded-xl px-4 py-2 max-w-[200px] text-center break-words shadow-sm">
-                {isVoiceActive && voiceTarget === 'document' ? (liveSpeechInterimText || 'Listening... start speaking') : 'Voice dictation'}
-              </div>
-              {isVoiceActive && voiceTarget === 'document' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    isVoiceActiveRef.current = false;
-                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
-                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
-                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
-                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
-                    const tracks = audioStreamRef.current?.getTracks(); if (tracks) tracks.forEach(t => t.stop());
-                    audioStreamRef.current = null;
-                    setIsVoiceActive(false);
-                    setLiveSpeechInterimText('');
-                    setIsVoiceCommandMode(false);
-                    isVoiceCommandModeRef.current = false;
-                    setVoiceCommandBuffer('');
-        voiceCommandBufferRef.current = '';
-        commandModeActivatedAtRef.current = 0;
-        commandModeLastInputAtRef.current = 0;
-                  }}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    isVoiceActiveRef.current = false;
-                    try { speechRecognitionRef.current?.stop(); } catch (_e) { /* noop */ }
-                    if (voiceSilenceTimerRef.current) { clearTimeout(voiceSilenceTimerRef.current); voiceSilenceTimerRef.current = null; }
-                    if (chunkIntervalRef.current) { clearTimeout(chunkIntervalRef.current); chunkIntervalRef.current = null; }
-                    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') { try { mediaRecorderRef.current.stop(); } catch (_e) { /* noop */ } }
-                    const trk = audioStreamRef.current?.getTracks(); if (trk) trk.forEach(t => t.stop());
-                    audioStreamRef.current = null;
-                    setIsVoiceActive(false);
-                    setLiveSpeechInterimText('');
-                    setIsVoiceCommandMode(false);
-                    isVoiceCommandModeRef.current = false;
-                    setVoiceCommandBuffer('');
-        voiceCommandBufferRef.current = '';
-        commandModeActivatedAtRef.current = 0;
-        commandModeLastInputAtRef.current = 0;
-                  }}
-                  className="text-[11px] text-violet-700 bg-white/95 border border-violet-200 rounded-full px-3 py-1 hover:bg-violet-50"
-                >
-                  {isVoiceCommandMode ? 'Cancel AI Prompt' : 'Dismiss'}
-                </button>
+
+              {isVoiceActive && voiceTarget === 'document' ? (
+                <div className="flex-1 flex flex-col justify-center min-w-0 pr-1">
+                  <div className="text-[10px] font-bold text-violet-600 tracking-wider uppercase opacity-85">Dictation Active</div>
+                  <div className="text-[12px] font-medium text-slate-700 truncate leading-relaxed">
+                    {liveSpeechInterimText || 'Listening...'}
+                  </div>
+                </div>
+              ) : (
+                <span className="text-[11px] font-semibold text-slate-400 px-3 pr-4 pointer-events-none">Dictate</span>
               )}
             </div>
           </div>
