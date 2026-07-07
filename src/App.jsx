@@ -4812,6 +4812,83 @@ export default function App() {
     }
   };
 
+  const handleTtsToggle = () => {
+    if (isReadingAloud) {
+      window.speechSynthesis.cancel();
+      setIsReadingAloud(false);
+      setTtsPaused(false);
+      setTtsUtterance(null);
+      showToast('Reading stopped');
+      return;
+    }
+
+    let textToRead = '';
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim() !== '') {
+      textToRead = selection.toString();
+    } else {
+      textToRead = blankBodyRef.current ? blankBodyRef.current.innerText : document.body.innerText;
+    }
+    
+    if (!textToRead || textToRead.trim() === '') {
+      showToast('No text available to read.');
+      return;
+    }
+    
+    const utterance = new SpeechSynthesisUtterance(textToRead);
+    utterance.rate = ttsSpeed;
+    setTtsUtterance(utterance);
+    
+    let lastMark = null;
+    utterance.onboundary = (event) => {
+      if (event.name !== 'word') return;
+      if (lastMark && lastMark.parentNode) {
+        const parent = lastMark.parentNode;
+        parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
+        parent.normalize();
+        lastMark = null;
+      }
+      const word = event.currentTarget.text.substring(event.charIndex).split(/[\s.,!?]/)[0];
+      if (!word || !blankBodyRef.current) return;
+      const walker = document.createTreeWalker(blankBodyRef.current, NodeFilter.SHOW_TEXT, null, false);
+      let node;
+      while ((node = walker.nextNode())) {
+        const idx = node.nodeValue.indexOf(word);
+        if (idx !== -1) {
+          const mark = document.createElement('mark');
+          mark.className = 'tts-highlight';
+          mark.textContent = word;
+          const parent = node.parentNode;
+          const before = node.nodeValue.substring(0, idx);
+          const after = node.nodeValue.substring(idx + word.length);
+          const fragment = document.createDocumentFragment();
+          if (before) fragment.appendChild(document.createTextNode(before));
+          fragment.appendChild(mark);
+          if (after) fragment.appendChild(document.createTextNode(after));
+          parent.replaceChild(fragment, node);
+          lastMark = mark;
+          mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          break;
+        }
+      }
+    };
+    
+    utterance.onend = () => {
+      setIsReadingAloud(false);
+      setTtsPaused(false);
+      setTtsUtterance(null);
+      if (lastMark && lastMark.parentNode) {
+        const parent = lastMark.parentNode;
+        parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
+        parent.normalize();
+      }
+    };
+    
+    window.speechSynthesis.speak(utterance);
+    setIsReadingAloud(true);
+    setTtsPaused(false);
+  };
+
   // Zero-Knowledge Redaction / Protection Helpers
   const protectSelectedRange = (type = 'text') => {
     const selection = window.getSelection();
@@ -31907,6 +31984,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         })()}
                       </div>
                       <div className="flex items-center gap-3 text-[13px] font-medium text-gray-500 shrink-0">
+                        <button 
+                          onClick={handleTtsToggle} 
+                          className={`p-1 rounded-lg transition-all duration-300 ${isReadingAloud ? 'text-violet-600 bg-violet-50 outline outline-1 outline-violet-500/30' : 'hover:text-gray-800 hover:bg-gray-100'}`} 
+                          title={isReadingAloud ? "Stop reading out loud" : "Read sheet out loud"}
+                        >
+                          {isReadingAloud ? (
+                            <div className="flex items-center gap-0.5 h-3.5 px-0.5">
+                              <span className="w-0.5 h-2 bg-violet-600 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
+                              <span className="w-0.5 h-3 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
+                              <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
+                            </div>
+                          ) : (
+                            <Volume2 size={14} />
+                          )}
+                        </button>
                         <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom out" onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}>-</button>
                         <span className="w-10 text-center">{sheetZoomLevel}%</span>
                         <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom in" onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}>+</button>
@@ -41924,6 +42016,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button onClick={() => setTextStyleMenuOpen((prev) => !prev)} className="p-1 rounded hover:text-gray-600" title="Text style options"><Type size={14} /></button>
               <button onClick={() => { setRightSidebarOpen((prev) => !prev); }} className="p-1 rounded hover:text-gray-600" title="Toggle right panel"><LayoutGrid size={14} /></button>
               <button onClick={() => showToast('Quality review complete: no critical formatting issues')} className="p-1 rounded hover:text-gray-600" title="Run quick quality check"><AlertTriangle size={14} /></button>
+              <button 
+                onClick={handleTtsToggle} 
+                className={`p-1 rounded transition-all duration-300 ${isReadingAloud ? 'text-violet-600 bg-violet-50 outline outline-1 outline-violet-500/30' : 'hover:text-gray-600'}`} 
+                title={isReadingAloud ? "Stop reading out loud" : "Read document out loud"}
+              >
+                {isReadingAloud ? (
+                  <div className="flex items-center gap-0.5 h-3.5 px-0.5">
+                    <span className="w-0.5 h-2 bg-violet-600 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
+                    <span className="w-0.5 h-3 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
+                    <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
+                  </div>
+                ) : (
+                  <Volume2 size={14} />
+                )}
+              </button>
             </div>
             <div className="relative flex items-center gap-2">
               <button onClick={() => setZoomLevel(Math.max(50, zoomLevel - 10))} className="text-gray-400 hover:text-gray-600 px-1.5 py-1 hover:bg-gray-50 rounded" title="Zoom out">-</button>
@@ -44488,177 +44595,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
-      
-      {/* Floating Volume Icon / TTS Controls */}
-      {productMode !== 'landing' && (
-      <div
-        onPointerDown={handleVolumePointerDown}
-        onPointerMove={handleVolumePointerMove}
-        onPointerUp={handleVolumePointerUp}
-        className={`fixed flex items-center gap-2 rounded-full shadow-lg z-[16000] transition-colors ${
-          isReadingAloud ? 'bg-white border border-violet-200 text-violet-600 p-2' : 'bg-white text-violet-600 border border-violet-200 hover:bg-violet-50 p-4 cursor-pointer'
-        }`}
-        style={{
-          left: volumeBtnPos.x !== null ? `${volumeBtnPos.x}px` : 'auto',
-          top: volumeBtnPos.y !== null ? `${volumeBtnPos.y}px` : 'auto',
-          bottom: volumeBtnPos.y !== null ? 'auto' : '1.5rem',
-          right: volumeBtnPos.x !== null ? 'auto' : '1.5rem',
-          touchAction: 'none',
-          cursor: isDraggingVolume ? 'grabbing' : 'grab',
-        }}
-        title="Read document out loud (Drag to reposition)"
-        onClick={(e) => {
-          if (volumeDraggedRef.current || isReadingAloud) return;
-          
-          let textToRead = '';
-          let startNode = null;
-          
-          const selection = window.getSelection();
-          if (selection && selection.toString().trim() !== '') {
-            textToRead = selection.toString();
-          } else {
-            textToRead = blankBodyRef.current ? blankBodyRef.current.innerText : document.body.innerText;
-          }
-          
-          if (!textToRead || textToRead.trim() === '') {
-            showToast('No text available to read.');
-            return;
-          }
-          
-          const utterance = new SpeechSynthesisUtterance(textToRead);
-          utterance.rate = ttsSpeed;
-          setTtsUtterance(utterance);
-          
-          let lastMark = null;
-          
-          utterance.onboundary = (event) => {
-            if (event.name !== 'word') return;
-            
-            // Clean up last highlight
-            if (lastMark && lastMark.parentNode) {
-              const parent = lastMark.parentNode;
-              parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
-              parent.normalize();
-              lastMark = null;
-            }
-            
-            const word = event.currentTarget.text.substring(event.charIndex).split(/[\s.,!?]/)[0];
-            if (!word || !blankBodyRef.current) return;
-            
-            const walker = document.createTreeWalker(blankBodyRef.current, NodeFilter.SHOW_TEXT, null, false);
-            let node;
-            while ((node = walker.nextNode())) {
-              const idx = node.nodeValue.indexOf(word);
-              if (idx !== -1) {
-                const mark = document.createElement('mark');
-                mark.className = 'tts-highlight';
-                mark.textContent = word;
-                const parent = node.parentNode;
-                
-                const before = node.nodeValue.substring(0, idx);
-                const after = node.nodeValue.substring(idx + word.length);
-                
-                const fragment = document.createDocumentFragment();
-                if (before) fragment.appendChild(document.createTextNode(before));
-                fragment.appendChild(mark);
-                if (after) fragment.appendChild(document.createTextNode(after));
-                
-                parent.replaceChild(fragment, node);
-                lastMark = mark;
-                mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                break;
-              }
-            }
-          };
-          
-          utterance.onend = () => {
-            setIsReadingAloud(false);
-            setTtsPaused(false);
-            setTtsUtterance(null);
-            if (lastMark && lastMark.parentNode) {
-              const parent = lastMark.parentNode;
-              parent.replaceChild(document.createTextNode(lastMark.textContent), lastMark);
-              parent.normalize();
-            }
-          };
-          
-          window.speechSynthesis.speak(utterance);
-          setIsReadingAloud(true);
-          setTtsPaused(false);
-        }}
-      >
-        {!isReadingAloud ? (
-          <Volume2 size={24} className="pointer-events-none" />
-        ) : (
-          <div className="flex items-center gap-1.5 px-2">
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (ttsPaused) {
-                  window.speechSynthesis.resume();
-                  setTtsPaused(false);
-                } else {
-                  window.speechSynthesis.pause();
-                  setTtsPaused(true);
-                }
-              }}
-              className="p-1.5 hover:bg-violet-100 rounded-full text-violet-700 transition-colors"
-              title={ttsPaused ? 'Resume' : 'Pause'}
-            >
-              {ttsPaused ? <Play size={18} /> : <Pause size={18} />}
-            </button>
-            <button
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                e.stopPropagation();
-                window.speechSynthesis.cancel();
-                setIsReadingAloud(false);
-                setTtsPaused(false);
-                setTtsUtterance(null);
-              }}
-              className="p-1.5 hover:bg-red-50 text-red-600 rounded-full transition-colors"
-              title="Stop"
-            >
-              <Square size={16} fill="currentColor" />
-            </button>
-            <div className="w-px h-4 bg-violet-200 mx-1"></div>
-            <select
-              onPointerDown={(e) => e.stopPropagation()}
-              onPointerUp={(e) => e.stopPropagation()}
-              onClick={(e) => e.stopPropagation()}
-              value={ttsSpeed}
-              onChange={(e) => {
-                e.stopPropagation();
-                const newSpeed = parseFloat(e.target.value);
-                setTtsSpeed(newSpeed);
-                // Changing speed mid-speech isn't universally supported in all browsers without restarting utterance.
-                // But we can try setting the rate. Note: standard synthesis might need a cancel & restart to take effect properly.
-                if (ttsUtterance) {
-                    window.speechSynthesis.cancel();
-                    // Just reset the state; the user can click play again to restart from the beginning with the new speed
-                    setIsReadingAloud(false);
-                    setTtsPaused(false);
-                    setTtsUtterance(null);
-                    showToast('Speed changed. Click play again.');
-                }
-              }}
-              className="bg-transparent text-[10px] font-bold text-violet-700 outline-none cursor-pointer"
-              title="Reading Speed"
-            >
-              <option value="0.75">0.75x</option>
-              <option value="1">1x</option>
-              <option value="1.25">1.25x</option>
-              <option value="1.5">1.5x</option>
-              <option value="2">2x</option>
-              <option value="2.5">2.5x</option>
-            </select>
-          </div>
-        )}
-      </div>
-      )}
+
 
       {/* Gesture visual cues */}
       {gestureRipples.map(r => (
