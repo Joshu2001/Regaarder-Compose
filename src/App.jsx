@@ -12,7 +12,7 @@ import {
   ChevronLeft, ChevronRight, Cloud, Users, Home, Inbox, Star, 
   FileText, Trash, Settings, MoreHorizontal, MoreVertical,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
-  File, User, PenTool, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
+  File, User, PenTool, Pen, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
   List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown, ChevronUp,
   Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
@@ -5043,6 +5043,7 @@ export default function App() {
   const selectionActionMenuEnabled = false;
   const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
   const [promptAttachments, setPromptAttachments] = useState([]);
+  const [assistantAttachments, setAssistantAttachments] = useState([]);
   const [previewAttachment, setPreviewAttachment] = useState(null);
   const [lastComposeRun, setLastComposeRun] = useState(null);
   const [liveSpeechInterimText, setLiveSpeechInterimText] = useState('');
@@ -5672,6 +5673,7 @@ export default function App() {
   const appShellRef = useRef(null);
   const roomStageRef = useRef(null);
   const promptFileInputRef = useRef(null);
+  const assistantFileInputRef = useRef(null);
   const dmAnyAttachmentInputRef = useRef(null);
   const dmImageAttachmentInputRef = useRef(null);
   const dmAudioAttachmentInputRef = useRef(null);
@@ -9454,6 +9456,8 @@ export default function App() {
     type: file.type || 'application/octet-stream',
     size: file.size || 0,
     file,
+    url: URL.createObjectURL(file),
+    isImage: (file.type || '').startsWith('image/'),
   }));
 
   const ingestScheduleAttachments = async (files) => {
@@ -9842,6 +9846,14 @@ export default function App() {
 
           insertTranscriptIntoDocumentRef.current?.(textToInsert, { forceAppendToEnd: true });
           lastDocumentTranscriptRef.current = { text: normalizedText, source, at: Date.now() };
+        } else if (activeVoiceTarget === 'chat') {
+          setDmComposerValue((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+        } else if (activeVoiceTarget === 'agent-chat') {
+          setDmAiChatInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+        } else if (activeVoiceTarget === 'right-chat') {
+          setChatInput((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
+        } else if (activeVoiceTarget === 'right-assistant') {
+          setAssistantQuickPrompt((prev) => `${prev}${prev ? ' ' : ''}${normalizedText}`);
         } else {
           setFloatingPrompt((prev) => {
             const newPrompt = `${prev}${prev ? ' ' : ''}${normalizedText}`;
@@ -17211,7 +17223,7 @@ Rules:
         tone: promptTone,
         lengthMode: promptLengthMode,
         lengthValue: promptLengthValue,
-        attachments: promptAttachments,
+        attachments: assistantAttachments,
       });
       setRightSidebarOpen(true);
       setActiveRightTab('assistant');
@@ -17221,12 +17233,13 @@ Rules:
         ? `Target column ${colLabel} of Sheet ${activeSheetId}.` 
         : `Target specific elements of Sheet ${activeSheetId}.`;
       const sheetPrompt = `${prompt}\n\nContext: ${contextStr} Assistant mode: analyze spreadsheet data.`;
-      handleAISubmit(sheetPrompt, { source: 'chat' });
+      handleAISubmit(sheetPrompt, { source: 'chat', attachments: assistantAttachments });
     } else {
       const docPrompt = `${prompt}\n\nContext: Operate on the active document/text context. Assistant mode: draft and edit.`;
-      handleAISubmit(docPrompt, { source: 'chat' });
+      handleAISubmit(docPrompt, { source: 'chat', attachments: assistantAttachments });
     }
     setAssistantQuickPrompt('');
+    setAssistantAttachments([]);
   };
 
   const runSmartAssistAction = (instruction, actionMeta = {}) => {
@@ -21314,6 +21327,48 @@ Respond with a JSON array of slide objects matching the schema.`;
     </svg>`;
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   };
+
+  const buildComposePreviewDataUri = (title) => {
+    const escapedTitle = escapeSvgText(title || 'Untitled Document');
+    const displayTitle = escapedTitle.length > 22 ? escapedTitle.substring(0, 20) + '...' : escapedTitle;
+    const dateStr = new Date().toLocaleDateString();
+    
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192">
+      <defs>
+        <filter id="pageShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.12"/>
+        </filter>
+      </defs>
+      <!-- Slate background for context -->
+      <rect width="320" height="192" rx="14" fill="#f1f5f9"/>
+      
+      <!-- Portrait Page Sheet -->
+      <rect x="96" y="12" width="128" height="168" rx="4" fill="#ffffff" filter="url(#pageShadow)"/>
+      
+      <!-- Academic Double Border (Simulated) -->
+      <rect x="102" y="18" width="116" height="156" fill="none" stroke="#cbd5e1" stroke-width="0.75"/>
+      <rect x="104" y="20" width="112" height="152" fill="none" stroke="#cbd5e1" stroke-width="0.75"/>
+      
+      <!-- Tiny Draft badge simulation at top-right of page -->
+      <rect x="186" y="26" width="22" height="8" rx="2" fill="#f3e8ff"/>
+      <rect x="188" y="28" width="4" height="4" rx="2" fill="#8b5cf6"/>
+      <rect x="194" y="29" width="10" height="2" rx="1" fill="#c084fc"/>
+      
+      <!-- Main Content / Title (academic-centered styling) -->
+      <text x="160" y="85" font-size="8" font-family="'Times New Roman', Times, Georgia, serif" fill="#0f172a" font-weight="bold" text-anchor="middle">${displayTitle}</text>
+      
+      <!-- Subtitle / Author -->
+      <text x="160" y="102" font-size="5" font-family="'Times New Roman', Times, Georgia, serif" fill="#64748b" text-anchor="middle">Author Name</text>
+      
+      <!-- Date -->
+      <text x="160" y="145" font-size="4" font-family="'Times New Roman', Times, Georgia, serif" fill="#94a3b8" text-anchor="middle">${dateStr}</text>
+      
+      <!-- Pen/Icon decoration or extra lines -->
+      <line x1="140" y1="115" x2="180" y2="115" stroke="#e2e8f0" stroke-width="0.75"/>
+    </svg>`;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  };
+
   const handleGenerateSheetFilePrompt = () => {
     if (!isSheetsMode) {
       return;
@@ -22017,18 +22072,17 @@ Respond with a JSON array of slide objects matching the schema.`;
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
         <div className="h-14 flex items-center border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC] px-2">
-          {productMode !== 'sheets' ? (
           <div
-            className="flex-1 min-w-0 overflow-x-auto no-scrollbar"
+            className="flex-1 min-w-0 overflow-x-auto no-scrollbar py-2"
             tabIndex={0}
             onKeyDown={handleRightSidebarTabsKeyDown}
             aria-label="Right panel tabs"
           >
-            <div className="inline-flex items-center gap-1 min-w-max px-1">
+            <div className="inline-flex items-center gap-0.5 min-w-max p-1 bg-slate-100/60 rounded-lg ml-2">
               {[
                 { key: 'chat', label: 'AI Chat' },
                 { key: 'assistant', label: 'AI Assistant' },
-                { key: 'properties', label: 'Properties' },
+                productMode !== 'sheets' && { key: 'properties', label: 'Properties' },
                 { key: 'whiteboard', label: 'Whiteboard' },
                 { key: 'tasks', label: `Tasks (${tasks.filter((t) => !t.completed).length})` },
                 { key: 'manageen', label: 'Manageen' },
@@ -22036,10 +22090,14 @@ Respond with a JSON array of slide objects matching the schema.`;
                 { key: 'room', label: 'Room' },
                 { key: 'memory', label: 'Memory' },
                 { key: 'orb', label: 'Orb' },
-              ].map((tab) => (
+              ].filter(Boolean).map((tab) => (
                 <button
                   key={tab.key}
-                  className={`shrink-0 px-3.5 py-1.5 rounded-[6px] transition-all text-[12.5px] font-semibold ${activeRightTab === tab.key ? 'bg-white text-slate-800 shadow-sm border border-slate-200/80' : 'text-slate-500 border border-transparent hover:text-slate-800 hover:bg-slate-100/80'}`}
+                  className={`shrink-0 px-3.5 py-1 rounded-[6px] transition-all text-[12px] font-medium ${
+                    activeRightTab === tab.key 
+                      ? 'bg-white text-slate-800 shadow-[0_1px_3px_rgba(0,0,0,0.06),0_1px_1px_rgba(0,0,0,0.04)] border border-slate-200/10' 
+                      : 'text-slate-500 border border-transparent hover:text-slate-800 hover:bg-white/30'
+                  }`}
                   onClick={() => {
                     if (tab.key === 'manageen') {
                       createManageenExperience();
@@ -22053,24 +22111,22 @@ Respond with a JSON array of slide objects matching the schema.`;
               ))}
             </div>
           </div>
-          ) : (
-            <div className="flex-1 min-w-0" />
-          )}
-          <div className="w-16 shrink-0 flex items-center justify-center border-l border-gray-100 gap-1 px-1">
+          <div className="w-16 shrink-0 flex items-center justify-end border-l border-gray-100 gap-1 px-2">
             <button
               type="button"
               title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
               onClick={() => { setRightPanelMaximized((p) => !p); if (!rightSidebarOpen) setRightSidebarOpen(true); }}
-              className="p-1.5 rounded-md text-slate-400 hover:bg-violet-50 hover:text-violet-600 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200"
             >
-              {rightPanelMaximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+              {rightPanelMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
             <button
               type="button"
-              className="p-1.5 rounded-md text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+              title="Close panel"
+              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200"
               onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
             >
-              <X size={16} strokeWidth={2.5} />
+              <X size={14} />
             </button>
           </div>
         </div>
@@ -22309,9 +22365,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                       {productMode === 'compose' ? 'Compose AI Assistant' : productMode === 'sheets' ? 'Sheets AI Assistant' : 'Deck AI Assistant'}
                     </h3>
                     <p className="text-[13px] text-slate-500 max-w-[260px] leading-relaxed mb-8">
-                      {productMode === 'compose' ? 'Your intelligent copilot. Ask questions, extract insights, or draft new content effortlessly.' :
-                       productMode === 'sheets' ? 'Your data copilot. Ask questions about your numbers, create formulas, or analyze trends.' :
-                       'Your presentation copilot. Ask for design tips, generate speaker notes, or refine slide content.'}
+                      {productMode === 'compose' ? 'Ask questions, analyze content, or edit drafts instantly.' :
+                       productMode === 'sheets' ? 'Ask questions about numbers, create formulas, or analyze trends.' :
+                       'Ask for design tips, generate speaker notes, or refine slide content.'}
                     </p>
                     
                     <div className="flex flex-col gap-3 w-full max-w-[290px]">
@@ -22323,7 +22379,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           <div className="text-[12.5px] font-semibold text-slate-700">
                             {productMode === 'compose' ? 'Summarize Document' : productMode === 'sheets' ? 'Summarize Sheet' : 'Summarize Deck'}
                           </div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">Extract the key points instantly</div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">Extract key points instantly</div>
                         </div>
                       </button>
                       
@@ -22343,21 +22399,11 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                       <button onClick={() => setChatInput('Refine this ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
                         <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100 transition-colors">
-                          <PenTool size={16} strokeWidth={2.5} />
+                          <Pen size={16} strokeWidth={2.5} />
                         </div>
                         <div className="flex-1">
                           <div className="text-[12.5px] font-semibold text-slate-700">Refine Writing</div>
                           <div className="text-[11px] text-slate-400 mt-0.5">Improve clarity and tone</div>
-                        </div>
-                      </button>
-
-                      <button onClick={() => setChatInput('Generate action items ')} className="group p-3.5 rounded-xl bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-md hover:shadow-violet-500/5 transition-all text-left flex items-start gap-3">
-                        <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
-                          <CheckSquare size={16} strokeWidth={2.5} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-[12.5px] font-semibold text-slate-700">Action Items</div>
-                          <div className="text-[11px] text-slate-400 mt-0.5">Create tasks from text</div>
                         </div>
                       </button>
                     </div>
@@ -22536,30 +22582,42 @@ Respond with a JSON array of slide objects matching the schema.`;
               <form onSubmit={handleSidebarSend} className="p-3 border-t border-gray-100 bg-[#FAFAFC]">
                 {chatAttachments.length > 0 && (
                   <div className="mb-2.5 flex flex-wrap gap-2 px-1">
-                    {chatAttachments.map((attachment) => {
-                      const isImage = attachment.type?.startsWith('image/');
-                      return (
-                        <div
-                          key={attachment.id}
-                          onClick={() => setPreviewAttachment(attachment)}
-                          className="flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-xl border border-violet-100 bg-violet-50/50 text-violet-800 text-[11px] font-semibold shadow-xs transition-all hover:bg-violet-50 cursor-pointer"
+                    {chatAttachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="inline-flex items-center gap-2 rounded-xl border border-[#e8e6f1] bg-white px-2.5 py-1.5 text-xs text-slate-700 shadow-sm hover:border-violet-200 transition-all group relative cursor-pointer"
+                        onClick={() => setPreviewAttachment(attachment)}
+                        title="Preview attachment"
+                      >
+                        {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
+                          <img
+                            src={attachment.url}
+                            alt={attachment.name}
+                            className="w-6 h-6 rounded-lg object-cover border border-gray-100"
+                          />
+                        ) : (
+                          <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center text-violet-500 border border-violet-100">
+                            {attachment.type && attachment.type.includes('audio') ? (
+                              <Mic size={12} />
+                            ) : (
+                              <FileText size={12} />
+                            )}
+                          </div>
+                        )}
+                        <span className="max-w-[125px] truncate font-medium">{attachment.name}</span>
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
+                          }}
+                          className="text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
+                          title="Remove"
                         >
-                          {isImage ? <ImageIcon size={12} className="text-violet-500" /> : <FileText size={12} className="text-violet-500" />}
-                          <span className="max-w-[120px] truncate">{attachment.name}</span>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setChatAttachments(prev => prev.filter(att => att.id !== attachment.id));
-                            }}
-                            className="p-0.5 rounded-md hover:bg-violet-200/60 text-violet-500 hover:text-violet-750 transition-colors"
-                            title="Remove attachment"
-                          >
-                            <X size={12} />
-                          </button>
-                        </div>
-                      );
-                    })}
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
                 <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
@@ -22604,8 +22662,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                       </button>
                       <button
                         type="button"
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                        title="Voice dictation"
+                        onClick={() => toggleVoiceRecording('right-chat')}
+                        className={`p-1.5 rounded-lg transition-all ${
+                          isVoiceActive && voiceTarget === 'right-chat'
+                            ? 'text-violet-600 bg-violet-50 hover:bg-violet-100 shadow-[0_0_0_2px_rgba(139,92,246,0.2)] animate-pulse'
+                            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                        }`}
+                        title={isVoiceActive && voiceTarget === 'right-chat' ? 'Stop voice dictation' : 'Voice dictation'}
                       >
                         <Mic size={18} />
                       </button>
@@ -22630,34 +22693,16 @@ Respond with a JSON array of slide objects matching the schema.`;
             <div className="flex-1 flex flex-col min-h-0 bg-white">
               <div className="flex-1 overflow-y-auto thin-scrollbar p-5">
                 <div className="flex flex-col items-center justify-start min-h-full text-center mt-2 pb-8">
-                  <div className="w-full max-w-[280px] text-[13px] font-semibold text-gray-800 text-left mb-2">Currently editing</div>
-                  <div className="w-full max-w-[280px] mb-8 bg-white border border-gray-200 rounded-xl p-3 shadow-sm text-left flex items-center justify-between">
+                  <div className="w-full text-[13px] font-semibold text-gray-800 text-left mb-2">Currently editing</div>
+                  <div className="w-full mb-8 bg-white border border-gray-200 rounded-xl p-3 shadow-sm text-left flex items-center justify-between">
                     <div className="flex items-center gap-3 overflow-hidden w-full mr-2">
                       {productMode === 'compose' ? (
-                        <div className="w-12 h-8 rounded shrink-0 bg-gray-100 flex items-center justify-center border border-gray-200 text-violet-600">
-                          {shareAccess === 'Viewer' && (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                            </svg>
-                          )}
-                          {shareAccess === 'Commenter' && (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            </svg>
-                          )}
-                          {shareAccess === 'Editor' && (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M12 20h9"></path>
-                              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                            </svg>
-                          )}
-                          {shareAccess === 'Full access' && (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                              <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
-                            </svg>
-                          )}
+                        <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
+                          <img src={buildComposePreviewDataUri(docTitle)} className="w-full h-full object-cover" alt="thumbnail" />
+                        </div>
+                      ) : productMode === 'sheets' ? (
+                        <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
+                          <img src={buildSheetPreviewDataUri({ title: docTitle || 'Untitled Sheet', subtitle: 'Active Sheet' })} className="w-full h-full object-cover" alt="thumbnail" />
                         </div>
                       ) : (
                         <div className="w-12 h-8 rounded shrink-0 bg-gray-100 overflow-hidden border border-gray-200">
@@ -22687,7 +22732,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                             ) : (
                               <div 
                                 onClick={() => setIsEditingTitleFromPanel(true)}
-                                className="text-[11px] text-gray-500 truncate hover:text-gray-800 hover:bg-slate-50 rounded px-1 -mx-1 py-0.5 cursor-text border border-transparent hover:border-slate-150 transition-all"
+                                className={`text-[11px] truncate hover:text-gray-800 hover:bg-slate-50 rounded px-1 -mx-1 py-0.5 cursor-text border border-transparent hover:border-slate-150 transition-all ${
+                                  docTitle ? 'text-gray-700 font-medium' : 'text-gray-400 italic'
+                                }`}
                               >
                                 {docTitle || 'Untitled Document'}
                               </div>
@@ -22707,30 +22754,30 @@ Respond with a JSON array of slide objects matching the schema.`;
                         onClick={() => setIsEditingTitleFromPanel(true)}
                         className="p-1.5 text-gray-400 hover:text-gray-700 transition-colors shrink-0"
                       >
-                        <PenTool size={14} />
+                        <Pen size={14} />
                       </button>
                     )}
                   </div>
 
-                  <h3 className="text-[14px] font-bold text-gray-900 mb-4 tracking-tight text-left w-full max-w-[280px]">
+                  <h3 className="text-[14px] font-bold text-gray-900 mb-4 tracking-tight text-left w-full">
                     {productMode === 'compose' ? 'How can I help you with this doc?' : productMode === 'sheets' ? 'How can I help with this sheet?' : 'How can I help with this slide?'}
                   </h3>
                   
-                  <div className="flex flex-col w-full max-w-[280px] gap-1 mx-auto">
+                  <div className="flex flex-col w-full gap-1 mx-auto">
                     {(productMode === 'compose' ? [
-                      { label: 'Write an article based on my notes and audio files', subtitle: 'Generate a comprehensive draft from your materials', icon: PenTool },
-                      { label: 'Transform this document into a presentation deck', subtitle: 'Convert text content into structured slides', icon: Presentation },
-                      { label: 'Create a project timeline from these documents', subtitle: 'Build a chronological roadmap from references', icon: Calendar },
-                      { label: 'Summarize this document into key takeaways', subtitle: 'Extract main themes and core insights', icon: FileText },
-                      { label: 'Extract action items from this meeting recording', subtitle: 'Action items and tasks checklist', icon: ListTodo },
-                      { label: 'Build a report using data from these files', subtitle: 'Synthesize structured reports from inputs', icon: Database }
+                      { label: 'Draft from notes', subtitle: 'Generate a draft from your materials', icon: Pen },
+                      { label: 'Create presentation', subtitle: 'Convert text to structured slides', icon: Presentation },
+                      { label: 'Project timeline', subtitle: 'Build a roadmap from references', icon: Calendar },
+                      { label: 'Summarize document', subtitle: 'Extract key takeaways and main themes', icon: FileText },
+                      { label: 'Extract action items', subtitle: 'Generate task checklists from content', icon: ListTodo },
+                      { label: 'Synthesize data report', subtitle: 'Create structured reports from inputs', icon: Database }
                     ] : productMode === 'sheets' ? getSheetsSidebarActions() : [
-                      { label: 'Improve slide clarity', subtitle: 'Make your message stronger and easier to understand', icon: Sparkles },
-                      { label: 'Rewrite content', subtitle: 'Improve wording, tone, and flow', icon: PenTool },
-                      { label: 'Generate visuals', subtitle: 'Add images, charts, or illustrations', icon: ImageIcon },
-                      { label: 'Create speaker notes', subtitle: 'Add talking points for this slide', icon: FileText },
-                      { label: 'Reduce slide count', subtitle: 'Combine and simplify where possible', icon: LayoutGrid },
-                      { label: 'Improve structure', subtitle: 'Enhance flow and presentation order', icon: AlignCenter }
+                      { label: 'Improve slide clarity', subtitle: 'Make message stronger and clearer', icon: Sparkles },
+                      { label: 'Rewrite content', subtitle: 'Improve tone and content flow', icon: Pen },
+                      { label: 'Generate visuals', subtitle: 'Add charts, images, or graphics', icon: ImageIcon },
+                      { label: 'Create speaker notes', subtitle: 'Add presenter talking points', icon: FileText },
+                      { label: 'Reduce slide count', subtitle: 'Simplify and merge slides', icon: LayoutGrid },
+                      { label: 'Improve structure', subtitle: 'Enhance layout and presentation order', icon: AlignCenter }
                     ]).map((item, idx) => {
                       const Icon = item.icon;
                       return (
@@ -22739,16 +22786,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                           onClick={() => setAssistantQuickPrompt(item.label)} 
                           className="group px-3 py-3 bg-white hover:bg-gray-50 rounded-xl text-left transition-all flex items-center justify-between w-full border border-transparent hover:border-gray-100"
                         >
-                          <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="p-2 rounded-xl bg-violet-50 text-violet-600 shrink-0 group-hover:bg-violet-100 transition-colors">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div className="p-2 rounded-xl bg-violet-50 text-violet-600 shrink-0 group-hover:bg-violet-100 transition-colors mt-0.5">
                               <Icon size={16} />
                             </div>
                             <div className="min-w-0">
-                              <div className="text-[13px] font-semibold text-gray-900 truncate">{item.label}</div>
-                              <div className="text-[11px] text-gray-500 truncate mt-0.5 leading-tight">{item.subtitle}</div>
+                              <div className="text-[13px] font-semibold text-gray-900 leading-snug">{item.label}</div>
+                              <div className="text-[11px] text-gray-500 mt-1 leading-normal">{item.subtitle}</div>
                             </div>
                           </div>
-                          <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 shrink-0 ml-2 transition-colors" />
+                          <ChevronRight size={16} className="text-gray-300 group-hover:text-gray-500 shrink-0 ml-2 transition-colors self-center" />
                         </button>
                       );
                     })}
@@ -22766,18 +22813,44 @@ Respond with a JSON array of slide objects matching the schema.`;
                   if (!assistantQuickPrompt.trim()) return;
                   handleAssistantQuickPromptSend(e);
                 }}>
-                  <div className="mb-3 text-[12px] font-medium text-gray-700 px-1">
-                    {productMode === 'compose' ? 'Ask AI anything about this doc...' : 'Ask AI anything about this slide...'}
-                  </div>
                   <div className="flex flex-col bg-white border border-gray-200 rounded-[16px] focus-within:border-violet-400 transition-colors shadow-sm">
-                    {promptAttachments.length > 0 && (
-                      <div className="flex flex-wrap gap-1 pt-2 px-3">
-                        {promptAttachments.map((file, idx) => (
-                          <AIChatAttachmentChip
-                            key={idx}
-                            file={file}
-                            onRemove={() => setPromptAttachments(prev => prev.filter((_, i) => i !== idx))}
-                          />
+                    {assistantAttachments.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 px-3 pt-2">
+                        {assistantAttachments.map((attachment) => (
+                          <div
+                            key={attachment.id}
+                            className="inline-flex items-center gap-2 rounded-xl border border-[#e8e6f1] bg-white px-2.5 py-1.5 text-xs text-slate-700 shadow-sm hover:border-violet-200 transition-all group relative cursor-pointer"
+                            onClick={() => setPreviewAttachment(attachment)}
+                            title="Preview attachment"
+                          >
+                            {attachment.isImage || (attachment.type && attachment.type.startsWith('image/')) ? (
+                              <img
+                                src={attachment.url}
+                                alt={attachment.name}
+                                className="w-6 h-6 rounded-lg object-cover border border-gray-100"
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center text-violet-500 border border-violet-100">
+                                {attachment.type && attachment.type.includes('audio') ? (
+                                  <Mic size={12} />
+                                ) : (
+                                  <FileText size={12} />
+                                )}
+                              </div>
+                            )}
+                            <span className="max-w-[125px] truncate font-medium">{attachment.name}</span>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setAssistantAttachments(prev => prev.filter(att => att.id !== attachment.id));
+                              }}
+                              className="text-gray-400 hover:text-gray-600 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
+                              title="Remove"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -22796,7 +22869,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           handleAssistantQuickPromptSend(e);
                         }
                       }}
-                      placeholder="Ask AI Assistant from here..."
+                      placeholder={productMode === 'compose' ? 'Ask AI anything about this doc...' : productMode === 'sheets' ? 'Ask AI anything about this sheet...' : 'Ask AI anything about this slide...'}
                       rows={3}
                       className="w-full bg-transparent border-none focus:outline-none text-[13px] pt-3 px-4 pb-2 text-gray-800 placeholder-gray-500 resize-none min-h-[80px]"
                     />
@@ -22808,14 +22881,20 @@ Respond with a JSON array of slide objects matching the schema.`;
                         >
                           <Plus size={18} strokeWidth={2.5} />
                           <input
-                            ref={dmAnyAttachmentInputRef}
+                            ref={assistantFileInputRef}
                             type="file"
                             multiple
                             className="hidden"
                             onChange={(e) => {
                               const files = Array.from(e.target.files || []);
                               if (files.length > 0) {
-                                setPromptAttachments(prev => [...prev, ...files.map(f => ({ name: f.name, type: f.type }))]);
+                                setAssistantAttachments(prev => [...prev, ...files.map(f => ({
+                                  id: `assistant-${Date.now()}-${Math.random()}`,
+                                  name: f.name,
+                                  type: f.type,
+                                  url: URL.createObjectURL(f),
+                                  isImage: f.type.startsWith('image/')
+                                }))]);
                               }
                               e.target.value = '';
                             }}
@@ -22823,14 +22902,26 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </label>
                         <button
                           type="button"
-                          className="p-2 rounded-lg text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-                          title="Voice dictation"
+                          onClick={() => toggleVoiceRecording('right-assistant')}
+                          className={`p-2 rounded-lg transition-all ${
+                            isVoiceActive && voiceTarget === 'right-assistant'
+                              ? 'text-violet-600 bg-violet-50 hover:bg-violet-100 shadow-[0_0_0_2px_rgba(139,92,246,0.2)] animate-pulse'
+                              : 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+                          }`}
+                          title={isVoiceActive && voiceTarget === 'right-assistant' ? 'Stop voice dictation' : 'Voice dictation'}
                         >
                           <Mic size={18} />
                         </button>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button type="button" className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"><Maximize2 size={16} strokeWidth={2.5} /></button>
+                        <button 
+                          type="button" 
+                          onClick={() => setRightPanelMaximized((p) => !p)}
+                          className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                          title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
+                        >
+                          {rightPanelMaximized ? <Minimize2 size={16} strokeWidth={2.5} /> : <Maximize2 size={16} strokeWidth={2.5} />}
+                        </button>
                         <button 
                           type="submit" 
                           disabled={isComposing || !assistantQuickPrompt.trim() || !isLiveAiReady}
@@ -24754,16 +24845,18 @@ Respond with a JSON array of slide objects matching the schema.`;
       </div>
 
       {/* 4. Far Right Mini Sidebar (Icons only / Navigation controller) */}
-      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} relative z-[300] w-[74px] border-l border-slate-200/55 bg-[#FAFAFC]/95 backdrop-blur-md flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar`}>
+      <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} relative z-[300] w-[74px] border-l border-slate-200/50 bg-[#FAFAFC]/90 backdrop-blur-xl flex-col items-center py-4 gap-6 shrink-0 select-none overflow-y-auto overflow-x-visible thin-scrollbar`}>
         <div className="relative">
           <div
-            className="group flex flex-col items-center gap-1 cursor-pointer transition-colors text-gray-400 hover:text-gray-600"
+            className="group flex flex-col items-center gap-1 cursor-pointer select-none"
             onClick={() => {
               setProductMode('landing');
             }}
           >
-            <Home className="transition-all" size={20} strokeWidth={2} />
-            <span className="text-[9px] font-semibold">Home</span>
+            <div className="p-2.5 rounded-xl border border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700 transition-all duration-200">
+              <Home size={20} strokeWidth={2} />
+            </div>
+            <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-600 transition-colors">Home</span>
           </div>
 
           {workspaceLauncherOpen && (
@@ -24780,7 +24873,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   { key: 'deck', label: 'Deck', icon: MonitorPlay },
                   { key: 'sheet', label: 'Sheet', icon: Table },
                   { key: 'room', label: 'Room', icon: Video },
-                  { key: 'whiteboard', label: 'Whiteboard', icon: PenTool },
+                  { key: 'whiteboard', label: 'Whiteboard', icon: Shapes },
                 ].map(({ key, label, icon: Icon }) => (
                   <button
                     key={key}
@@ -24799,150 +24892,200 @@ Respond with a JSON array of slide objects matching the schema.`;
         
         <div 
           onClick={() => handleMiniSidebarClick('chat')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'chat' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'chat' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <MessageCircle size={20} />
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            activeRightTab === 'chat' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <MessageCircle size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">Chat</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'chat' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>Chat</span>
         </div>
 
         {comments.length > 0 && (
           <div
             onClick={() => handleMiniSidebarClick('comments')}
-            className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-              activeRightTab === 'comments' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-            }`}
+            className="group flex flex-col items-center gap-1 cursor-pointer select-none"
           >
-            <div className={`p-2 rounded-[6px] transition-all relative ${activeRightTab === 'comments' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-              {selectedEditorText ? <MessageSquarePlus size={20} /> : <MessageSquareText size={20} />}
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold animate-scale-in">
+            <div className={`p-2.5 rounded-xl transition-all duration-200 border relative ${
+              activeRightTab === 'comments' && rightSidebarOpen 
+                ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+                : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+            }`}>
+              {selectedEditorText ? <MessageSquarePlus size={20} strokeWidth={2} /> : <MessageSquareText size={20} strokeWidth={2} />}
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold animate-scale-in border border-white">
                 {comments.filter(c => !c.resolved).length}
               </span>
             </div>
-            <span className="text-[9px] font-semibold">Comments</span>
+            <span className={`text-[10px] font-medium transition-colors ${
+              activeRightTab === 'comments' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+            }`}>Comments</span>
           </div>
         )}
 
         <div
           onClick={() => handleMiniSidebarClick('dm')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            productMode === 'dm' ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${productMode === 'dm' ? 'bg-violet-100' : ''}`}>
-            <MessageSquare size={20} />
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            productMode === 'dm' 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <MessageSquare size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">DMs</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            productMode === 'dm' ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>DMs</span>
         </div>
 
         <div 
           onClick={() => handleMiniSidebarClick('assistant')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'assistant' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all relative ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100' : ''} ${selectedEditorText ? 'text-violet-600' : ''}`}>
-            <PenTool size={20} />
-            {selectedEditorText && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse" />}
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border relative ${
+            activeRightTab === 'assistant' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <Wand2 size={20} strokeWidth={2} />
+            {selectedEditorText && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-violet-500 animate-pulse border border-white" />}
           </div>
-          <span className="text-[9px] font-semibold">Assist</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'assistant' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>Assist</span>
         </div>
 
         <div
           onClick={() => handleMiniSidebarClick('whiteboard')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'whiteboard' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'whiteboard' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <LayoutGrid size={20} />
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            activeRightTab === 'whiteboard' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <Shapes size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">Whiteboard</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'whiteboard' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>Whiteboard</span>
         </div>
 
         <div 
           onClick={() => handleMiniSidebarClick('tasks')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'tasks' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'tasks' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <CheckSquare size={20} />
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            activeRightTab === 'tasks' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <CheckSquare size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">Tasks</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'tasks' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>Tasks</span>
         </div>
 
         <div 
           onClick={() => handleMiniSidebarClick('calendar')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'calendar' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'calendar' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <Calendar size={20} />
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            activeRightTab === 'calendar' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <Calendar size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">Schedule</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'calendar' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>Schedule</span>
         </div>
 
         <div
           onClick={() => handleMiniSidebarClick('people')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'people' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'people' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <Users size={20} />
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            activeRightTab === 'people' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <Users size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">People</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'people' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>People</span>
         </div>
 
         <div
           onClick={() => handleMiniSidebarClick('memory')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'memory' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <Database size={20} />
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            activeRightTab === 'memory' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <Database size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">Memory</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'memory' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>Memory</span>
         </div>
 
         <div
           onClick={() => handleMiniSidebarClick('orb')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'orb' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'orb' && rightSidebarOpen ? 'bg-violet-100' : ''}`}><Cloud size={20} /></div>
-          <span className="text-[9px] font-semibold">Orb</span>
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            activeRightTab === 'orb' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <Cloud size={20} strokeWidth={2} />
+          </div>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'orb' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>Orb</span>
         </div>
 
         <div
           onClick={() => handleMiniSidebarClick('manageen')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'manageen' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'manageen' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <ListTodo size={20} />
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            activeRightTab === 'manageen' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <ListTodo size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">Manageen</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'manageen' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>Manageen</span>
         </div>
 
         <div
           onClick={() => handleMiniSidebarClick('room')}
-          className={`flex flex-col items-center gap-1 cursor-pointer transition-colors ${
-            activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600' : 'text-gray-400 hover:text-violet-600'
-          }`}
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className={`p-2 rounded-[6px] transition-all ${activeRightTab === 'room' && rightSidebarOpen ? 'bg-violet-100' : ''}`}>
-            <MonitorPlay size={20} />
+          <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+            activeRightTab === 'room' && rightSidebarOpen 
+              ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]' 
+              : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
+          }`}>
+            <MonitorPlay size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">Room</span>
+          <span className={`text-[10px] font-medium transition-colors ${
+            activeRightTab === 'room' && rightSidebarOpen ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
+          }`}>Room</span>
         </div>
 
         <div
@@ -24950,19 +25093,19 @@ Respond with a JSON array of slide objects matching the schema.`;
             handleMiniSidebarClick('room');
             setActiveMeetingStageTab('files');
           }}
-          className="flex flex-col items-center gap-1 text-gray-400 hover:text-violet-600 cursor-pointer"
+          className="group flex flex-col items-center gap-1 cursor-pointer select-none"
         >
-          <div className="p-2">
-            <File size={20} />
+          <div className="p-2.5 rounded-xl border border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700 transition-all duration-200">
+            <File size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">Files</span>
+          <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-600 transition-colors">Files</span>
         </div>
 
-        <div className="flex flex-col items-center gap-1 text-gray-400 hover:text-gray-600 cursor-pointer mt-auto">
-          <div className="p-2">
-            <MoreHorizontal size={20} />
+        <div className="group flex flex-col items-center gap-1 cursor-pointer select-none mt-auto">
+          <div className="p-2.5 rounded-xl border border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700 transition-all duration-200">
+            <MoreHorizontal size={20} strokeWidth={2} />
           </div>
-          <span className="text-[9px] font-semibold">More</span>
+          <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-600 transition-colors">More</span>
         </div>
       </div>
     </React.Fragment>
@@ -34348,7 +34491,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
                         <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">DOCUMENT TITLE</div>
                         <div 
-                          className="text-xs font-bold text-gray-955 truncate mt-0.5 outline-none cursor-text hover:bg-white hover:shadow-sm rounded px-1 -mx-1 py-0.5 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:outline" 
+                          className={`text-xs font-bold truncate mt-0.5 outline-none cursor-text hover:bg-white hover:shadow-sm rounded px-1 -mx-1 py-0.5 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:outline-none ${
+                            docTitle ? 'text-gray-955' : 'text-gray-400 font-normal italic'
+                          }`} 
                           title={docTitle || 'Untitled Document'}
                           contentEditable
                           suppressContentEditableWarning
@@ -35232,7 +35377,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <span>Document Outline</span>
             </div>
             <div 
-              className="mt-2 text-[11px] text-gray-500 truncate outline-none cursor-text w-full hover:bg-slate-50 hover:text-gray-800 rounded px-1 -mx-1 py-0.5 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:text-gray-900 focus:outline" 
+              className={`mt-2 text-[11px] truncate outline-none cursor-text w-full hover:bg-slate-50 hover:text-gray-800 rounded px-1 -mx-1 py-0.5 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:text-gray-900 focus:outline-none ${
+                docTitle ? 'text-gray-700 font-medium' : 'text-gray-400 italic'
+              }`} 
               title={docTitle || 'Untitled Document'}
               contentEditable
               suppressContentEditableWarning
@@ -44466,7 +44613,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        {!isComposing && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
+        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
           <div 
             className="pointer-events-none fixed z-[15000] flex items-center justify-center"
             style={{

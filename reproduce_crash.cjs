@@ -11,7 +11,7 @@ const fs = require('fs');
   page.on('console', msg => console.log('BROWSER LOG:', msg.text()));
   page.on('pageerror', err => console.error('BROWSER ERROR:', err));
 
-  await page.goto('http://127.0.0.1:5173/');
+  await page.goto('http://localhost:5174/');
   
   // Wait for the app to load
   await new Promise(r => setTimeout(r, 5000));
@@ -27,7 +27,8 @@ const fs = require('fs');
   
   // Click grid cell to focus
   await page.evaluate(() => {
-    const cells = document.querySelectorAll('input.cell-input');
+    const cells = Array.from(document.querySelectorAll('input')).filter(i => i.style.position === 'absolute' || i.className.includes('cursor-cell'));
+    console.log('Cells found:', cells.length);
     if (cells.length > 0) cells[0].click();
   });
   
