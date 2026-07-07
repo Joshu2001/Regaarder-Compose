@@ -1,0 +1,183 @@
+{(activeSheetGridRaw.overlays || []).map(overlay => {
+                           let currentChartData = overlay.chartData;
+                           if (overlay.type === 'chart' && overlay.dataRange) {
+                             currentChartData = detectChartStructure(overlay.dataRange, activeSheetGridRaw) || currentChartData;
+                           }
+
+                           const left = overlay.x !== undefined ? overlay.x : (overlay.col * 100);
+                           const top = overlay.y !== undefined ? overlay.y : (overlay.row * 36);
+                           
+                           // Default properties
+                           const isSelected = selectedSheetOverlayId === overlay.id;
+                           const rotation = overlay.rotation || 0;
+                           const fillType = overlay.fillType || 'solid'; // 'solid', 'none', 'linear', 'radial'
+                           const fillColor = overlay.fillColor || overlay.color || '#3b82f6';
+                           const fillSecondaryColor = overlay.fillSecondaryColor || '#ffffff';
+                           const gradientDirection = overlay.gradientDirection || '90deg';
+                           const strokeType = overlay.strokeType || 'solid'; // 'solid', 'dashed', 'dotted', 'dash-dot', 'none'
+                           const strokeColor = overlay.strokeColor || '#000000';
+                           const strokeWidth = overlay.strokeWidth || 0;
+                           const effectGlow = overlay.effectGlow || { active: false, intensity: 5, color: '#000000' };
+                           const effectShadow = overlay.effectShadow || { active: false, blur: 4, distance: 4, opacity: 0.25, angle: 45 };
+                           const effectBlur = overlay.effectBlur || { active: false, radius: 0 };
+                           const opacity = overlay.opacity !== undefined ? overlay.opacity : 100;
+                           const isLocked = overlay.isLocked || false;
+                           
+                           // SVG styling
+                           let strokeDasharray = 'none';
+                           if (strokeType === 'dashed') strokeDasharray = `${strokeWidth * 3}, ${strokeWidth * 3}`;
+                           else if (strokeType === 'dotted') strokeDasharray = `${strokeWidth}, ${strokeWidth * 2}`;
+                           else if (strokeType === 'dash-dot') strokeDasharray = `${strokeWidth * 3}, ${strokeWidth * 2}, ${strokeWidth}, ${strokeWidth * 2}`;
+                           
+                           let fillDef = fillColor;
+                           if (fillType === 'none') fillDef = 'none';
+                           else if (fillType === 'linear' || fillType === 'radial') {
+                             fillDef = `url(#gradient-${overlay.id})`;
+                           }
+
+                           let filterDef = '';
+                           if (effectShadow.active || effectGlow.active || effectBlur.active) {
+                             filterDef = `url(#filter-${overlay.id})`;
+                           }
+
+                           // Update function wrapper
+                           const updateOverlay = (updates) => {
+                             if (isLocked && !updates.isLocked && updates.isLocked !== false) return;
+                             const newOverlays = (activeSheetGridRaw.overlays || []).map(o => o.id === overlay.id ? { ...o, ...updates } : o);
+                             updateSheetSettings(activeSheetId, { overlays: newOverlays });
+                           };
+
+                           // Handle resizing setup
+                           const handleResize = (e, dirX, dirY) => {
+                             if (isLocked) return;
+                             e.preventDefault(); e.stopPropagation();
+                             setIsShapeInteracting(true);
+                             const startX = e.clientX; const startY = e.clientY;
+                             const startW = overlay.width; const startH = overlay.height;
+                             const startL = left; const startT = top;
+                             
+                             const onMouseMove = (moveEvent) => {
+                               let dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
+                               let dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
+                               let newW = startW; let newH = startH;
+                               let newL = startL; let newT = startT;
+                               
+                               if (dirX === 1) newW = Math.max(20, startW + dx);
+                               else if (dirX === -1) { newW = Math.max(20, startW - dx); newL = startL + (startW - newW); }
+                               
+                               if (dirY === 1) newH = Math.max(20, startH + dy);
+                               else if (dirY === -1) { newH = Math.max(20, startH - dy); newT = startT + (startH - newH); }
+                               
+                               updateOverlay({ width: newW, height: newH, x: newL, y: newT });
+                             };
+                             const onMouseUp = () => { setIsShapeInteracting(false); window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+                             window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
+                           };
+
+                           const handleRotate = (e) => {
+                             if (isLocked) return;
+                             e.preventDefault(); e.stopPropagation();
+                             setIsShapeInteracting(true);
+                             const cx = left + overlay.width / 2;
+                             const cy = top + overlay.height / 2;
+                             const sheetEl = document.querySelector('.sheets-container') || document.body;
+                             const sheetRect = sheetEl.getBoundingClientRect();
+                             
+                             const onMouseMove = (moveEvent) => {
+                               const ex = moveEvent.clientX - sheetRect.left;
+                               const ey = moveEvent.clientY - sheetRect.top;
+                               const angle = Math.atan2(ey - cy, ex - cx) * 180 / Math.PI;
+                               let newRot = Math.round(angle + 90);
+                               if (newRot < 0) newRot += 360;
+                               if (moveEvent.shiftKey) newRot = Math.round(newRot / 15) * 15;
+                               updateOverlay({ rotation: newRot });
+                             };
+                             const onMouseUp = () => { setIsShapeInteracting(false); window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mouseup', onMouseUp); };
+                             window.addEventListener('mousemove', onMouseMove); window.addEventListener('mouseup', onMouseUp);
+                           };
+
+                           // Handle dragging
+                            const handleDrag = (e) => {
+                              if (isLocked) return;
+                              if (!isSelected) {
+                                setSelectedSheetOverlayId(overlay.id);
+                              }
+                              // if clicked on panel or handles, dont drag
+                              if (e.target.closest('.resize-handle') || e.target.closest('.style-panel')) return;
+                              
+                              const isTextarea = e.target.tagName === 'TEXTAREA';
+                              const isFocused = document.activeElement === e.target;
+                              if (isTextarea && isFocused) {
+                                return;
+                              }
+                              
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setIsShapeInteracting(true);
+                              const startX = e.clientX; const startY = e.clientY;
+                              const startL = left; const startT = top;
+                              
+                              let hasMoved = false;
+                              const onMouseMove = (moveEvent) => {
+                                const dx = (moveEvent.clientX - startX) / (sheetZoomLevel / 100);
+                                const dy = (moveEvent.clientY - startY) / (sheetZoomLevel / 100);
+                                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                  hasMoved = true;
+                                  updateOverlay({ x: startL + dx, y: startT + dy });
+                                }
+                              };
+                              const onMouseUp = () => {
+                                setIsShapeInteracting(false);
+                                window.removeEventListener('mousemove', onMouseMove);
+                                window.removeEventListener('mouseup', onMouseUp);
+                                
+                                if (!hasMoved && isTextarea) {
+                                  e.target.focus();
+                                  const len = e.target.value.length;
+                                  e.target.setSelectionRange(len, len);
+                                }
+                              };
+                              window.addEventListener('mousemove', onMouseMove);
+                              window.addEventListener('mouseup', onMouseUp);
+                            };;
+
+                           return (
+                             <div 
+                               key={overlay.id}
+                               className={`absolute z-[100] flex items-center justify-center text-sm group hover:outline hover:outline-2 hover:outline-blue-400/50 transition-all ${isLocked ? 'cursor-not-allowed' : 'cursor-move'}`}
+                                   onMouseEnter={() => setHoveringOverlayId(overlay.id)}
+                                   onMouseLeave={() => setHoveringOverlayId(null)}
+                               style={{
+                                 left: left,
+                                 top: top,
+                                 width: overlay.width,
+                                 height: overlay.height,
+                                 transform: `rotate(${rotation}deg)`,
+                                 zIndex: isSelected ? 105 : 100,
+                                 cursor: isLocked ? 'not-allowed' : 'move'
+                               }}
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 if (overlay.type === 'rectangle') {
+                                   const rect = e.currentTarget.getBoundingClientRect();
+                                   // Keeping this for backwards compatibility with tests and older shape picker
+                                   setSheetShapeMenu({
+                                     open: true,
+                                     left: rect.left,
+                                     top: rect.bottom + 12,
+                                     editingOverlayId: overlay.id,
+                                     anchorCell: null
+                                   });
+                                 }
+                               }}
+                               onMouseDown={handleDrag}
+                             >
+                               {/* The SVG Shape */}
+                               {(() => {
+                                 if (overlay.type === 'note') {
+                                   return (
+                                     <textarea
+                                       className="w-full h-full bg-yellow-200 p-2 text-xs shadow-md resize-none border-none outline-none"
+                                       style={{ opacity: opacity / 100 }}
+                                       value={overlay.content || ''}
+                                       onChange={(e) => updateOverlay({ content: e.target.value })}

@@ -31903,41 +31903,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
                     </div>
-                    {isSheetsMode && (
-                      <button 
-                        className="absolute bottom-16 right-8 w-14 h-14 bg-white rounded-full flex items-center justify-center text-violet-600 shadow-lg ring-1 ring-black/5 hover:scale-105 hover:bg-violet-50 transition-all z-30"
-                        onClick={(e) => {
-                          if (isReadingAloud) {
-                            window.speechSynthesis.cancel();
-                            setIsReadingAloud(false);
-                            setTtsPaused(false);
-                            setTtsUtterance(null);
-                          } else {
-                            const cells = activeSheetGridRaw?.cells || [];
-                            const textToRead = cells.map(row => row.filter(cell => cell && cell.trim().length > 0).join(', ')).filter(row => row.length > 0).join('. ');
-                            if (!textToRead) {
-                              showToast('Sheet is empty');
-                              return;
-                            }
-                            const utterance = new SpeechSynthesisUtterance(textToRead);
-                            utterance.rate = ttsSpeed;
-                            utterance.pitch = ttsPitch;
-                            utterance.voice = window.speechSynthesis.getVoices().find(v => v.name === ttsVoiceName) || null;
-                            utterance.onend = () => {
-                              setIsReadingAloud(false);
-                              setTtsPaused(false);
-                              setTtsUtterance(null);
-                            };
-                            window.speechSynthesis.speak(utterance);
-                            setIsReadingAloud(true);
-                            setTtsPaused(false);
-                            showToast('Reading sheet aloud');
-                          }
-                        }}
-                      >
-                        {isReadingAloud ? <Pause size={24} strokeWidth={2.5} /> : <Volume2 size={24} strokeWidth={2.5} />}
-                      </button>
-                    )}
+
                     <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
                         {sheetsData.map((sheet) => (
