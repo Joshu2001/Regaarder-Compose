@@ -6014,11 +6014,13 @@ export default function App() {
   const [composeOverlays, setComposeOverlays] = useState([]);
   const [selectedComposeOverlayId, setSelectedComposeOverlayId] = useState(null);
 
-  const headingOptions = ['Heading 1', 'Heading 2', 'Heading 3', 'Paragraph'];
+  const headingOptions = ['Title', 'Heading 1', 'Heading 2', 'Heading 3', 'Heading 4', 'Paragraph'];
   const headingMeta = {
-    'Heading 1': { tag: 'H1', size: 42, previewClass: 'text-base font-bold' },
-    'Heading 2': { tag: 'H2', size: 34, previewClass: 'text-sm font-semibold' },
-    'Heading 3': { tag: 'H3', size: 26, previewClass: 'text-xs font-semibold' },
+    'Title': { tag: 'H1', size: editorSize, previewClass: 'text-lg font-bold' },
+    'Heading 1': { tag: 'H2', size: 42, previewClass: 'text-base font-bold' },
+    'Heading 2': { tag: 'H3', size: 34, previewClass: 'text-sm font-semibold' },
+    'Heading 3': { tag: 'H4', size: 26, previewClass: 'text-xs font-semibold' },
+    'Heading 4': { tag: 'H5', size: 20, previewClass: 'text-xs font-medium' },
     Paragraph: { tag: 'P', size: 16, previewClass: 'text-xs font-normal' },
   };
   const fontOptions = [
@@ -8807,6 +8809,18 @@ export default function App() {
         const style = window.getComputedStyle(element);
         const size = parseInt(style.fontSize, 10);
         setActiveFontSize(size || 14);
+
+        const blockEl = findNearestBlockElement(element);
+        if (blockEl) {
+          const tag = blockEl.tagName.toUpperCase();
+          let headingName = 'Paragraph';
+          if (tag === 'H1') headingName = 'Title';
+          else if (tag === 'H2') headingName = 'Heading 1';
+          else if (tag === 'H3') headingName = 'Heading 2';
+          else if (tag === 'H4') headingName = 'Heading 3';
+          else if (tag === 'H5') headingName = 'Heading 4';
+          setEditorHeading(headingName);
+        }
       }
     } catch (_error) {
       // noop
@@ -36345,18 +36359,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           const range = getEditorSelectionRange();
                           const ancestor = range?.commonAncestorContainer;
                           const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-                          const isTitle = false;
-                          const isSubtitle = false;
-                          
-                          if (isTitle) {
-                            setEditorSize(nextHeading.size);
-                          } else if (isSubtitle) {
-                            setSubtitleSize(nextHeading.size);
-                          }
                           setActiveFontSize(nextHeading.size);
                           
-                          applyFormatCommand('formatBlock', nextHeading.tag);
-                          applyFormatCommand('fontSize', String(nextHeading.size));
+                          const blockEl = findNearestBlockElement(targetNode);
+                          if (blockEl) {
+                            const newTag = nextHeading.tag;
+                            const doc = blockEl.ownerDocument;
+                            const newEl = doc.createElement(newTag);
+                            for (let i = 0; i < blockEl.attributes.length; i++) {
+                              const attr = blockEl.attributes[i];
+                              newEl.setAttribute(attr.name, attr.value);
+                            }
+                            newEl.innerHTML = blockEl.innerHTML;
+                            newEl.style.fontSize = `${nextHeading.size}px`;
+                            
+                            if (newTag === 'H1') {
+                              const titleCaseTextNodes = (element) => {
+                                const walker = element.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+                                let textNode;
+                                const nodesToConvert = [];
+                                while (textNode = walker.nextNode()) {
+                                  nodesToConvert.push(textNode);
+                                }
+                                nodesToConvert.forEach(nd => {
+                                  nd.nodeValue = toAcademicTitleCase(nd.nodeValue);
+                                });
+                              };
+                              titleCaseTextNodes(newEl);
+                            }
+                            
+                            // Clear internal child font sizes so they inherit correctly
+                            const children = newEl.querySelectorAll('*');
+                            children.forEach(child => {
+                              if (child.style) {
+                                child.style.fontSize = '';
+                              }
+                            });
+                            
+                            blockEl.parentNode.replaceChild(newEl, blockEl);
+                            if (blankBodyRef.current) {
+                              setDocBodyHtml(blankBodyRef.current.innerHTML);
+                            }
+                            
+                            // Restore selection
+                            const newRange = doc.createRange();
+                            newRange.selectNodeContents(newEl);
+                            const sel = window.getSelection();
+                            sel.removeAllRanges();
+                            sel.addRange(newRange);
+                            savedSelectionRef.current = newRange.cloneRange();
+                          } else {
+                            applyFormatCommand('formatBlock', nextHeading.tag);
+                            applyFormatCommand('fontSize', String(nextHeading.size));
+                          }
                           setOpenDropdown(null);
                         }}
                         className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
@@ -43638,6 +43693,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }
           newEl.innerHTML = node.innerHTML;
           
+          if (newTag === 'H1') {
+            const titleCaseTextNodes = (element) => {
+              const walker = element.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+              let textNode;
+              const nodesToConvert = [];
+              while (textNode = walker.nextNode()) {
+                nodesToConvert.push(textNode);
+              }
+              nodesToConvert.forEach(nd => {
+                nd.nodeValue = toAcademicTitleCase(nd.nodeValue);
+              });
+            };
+            titleCaseTextNodes(newEl);
+          }
+
           const sizes = {
             "H1": `${editorSize}px`, // Title size (T)
             "H2": "42px",            // Heading 1 size (H1)
