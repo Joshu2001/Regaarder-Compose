@@ -37714,10 +37714,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
           >
           {activeRightTab === 'whiteboard' && (
             <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-[340] p-0 bg-white' : isWhiteboardFloatingUiOpen ? 'z-[320] p-6 md:p-8 bg-[#F7F7F9]' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
-              <div className={`h-full w-full bg-white overflow-hidden flex flex-col ${isWhiteboardImmersive ? 'rounded-none border-0 shadow-none' : 'rounded-[24px] border border-violet-100 shadow-[0_20px_60px_-30px_rgba(124,58,237,0.45)]'}`}>
+              <div className={`h-full w-full bg-white overflow-hidden flex flex-col ${isWhiteboardImmersive ? 'rounded-none border-0 shadow-none' : 'rounded-[24px] border border-violet-100/50 shadow-[0_20px_50px_-30px_rgba(124,58,237,0.15)]'}`}>
                 <div className="h-14 border-b border-gray-100 px-5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center">
+                    <div className="h-8 w-8 rounded-lg bg-violet-50 text-violet-700 flex items-center justify-center">
                       <PenTool size={15} />
                     </div>
                     <div>
@@ -37745,11 +37745,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <StickyNote size={13} />
                       Sticky notes
                     </button>
-                    <button onClick={openWhiteboardTaskPreview} className="px-2.5 py-1.5 text-xs rounded-lg bg-violet-600 text-white hover:bg-violet-700">Convert to Tasks</button>
+                    <button onClick={openWhiteboardTaskPreview} className="px-2.5 py-1.5 text-xs rounded-lg bg-violet-50 text-violet-700 hover:bg-violet-100/80 border border-violet-200/60 font-semibold transition-colors shadow-sm">Convert to Tasks</button>
                   </div>
                 </div>
                 <div className="flex-1 relative bg-[radial-gradient(circle_at_1px_1px,#ececf6_1px,transparent_0)] bg-[size:24px_24px]" style={{ zoom: whiteboardZoomScale }}>
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-2 flex flex-col gap-1.5">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.06)] p-2 flex flex-col gap-1.5">
                     {[
                       { key: 'select', label: 'Select', icon: MousePointer2 },
                       { key: 'hand', label: 'Hand (pan)', icon: Hand },
@@ -37789,7 +37789,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setWhiteboardEraserMenuOpen(true);
                             }
                           }}
-                          className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                          className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === tool.key ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                           title={tool.label}
                         >
                           <ToolIcon size={15} style={toolIconStyle} />
@@ -37798,7 +37798,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     })}
                   </div>
                   {whiteboardTool === 'eraser' && whiteboardEraserMenuOpen && (
-                    <div className="absolute left-20 top-[74%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-2.5 w-[172px]">
+                    <div className="absolute left-20 top-[74%] -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.06)] p-2.5 w-[172px]">
                       <p className="text-[10px] font-semibold text-gray-500">Eraser size</p>
                       <div className="mt-2 flex items-end justify-between gap-2">
                         {whiteboardEraserSizeOptions.map((sizeValue) => (
@@ -37806,7 +37806,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             key={`eraser-size-${sizeValue}`}
                             type="button"
                             onClick={() => setWhiteboardEraserSize(sizeValue)}
-                            className={`flex flex-col items-center gap-1 rounded-lg px-1.5 py-1 ${whiteboardEraserSize === sizeValue ? 'bg-violet-50 text-violet-700' : 'text-gray-500 hover:bg-gray-100'}`}
+                            className={`flex flex-col items-center gap-1 rounded-lg px-1.5 py-1 ${whiteboardEraserSize === sizeValue ? 'bg-slate-100 text-slate-800 font-semibold' : 'text-gray-500 hover:bg-gray-100'}`}
                             title={`${sizeValue}px eraser`}
                           >
                             <span className="rounded-full border border-gray-300 bg-white" style={{ width: `${Math.max(8, sizeValue)}px`, height: `${Math.max(8, sizeValue)}px` }} />
@@ -37816,7 +37816,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <button
                         type="button"
                         onClick={() => setWhiteboardEraserCustomSizeOpen((prev) => !prev)}
-                        className={`mt-2 w-full rounded-lg border px-2 py-1.5 text-[11px] font-medium ${whiteboardEraserCustomSizeOpen ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                        className={`mt-2 w-full rounded-lg border px-2 py-1.5 text-[11px] font-medium ${whiteboardEraserCustomSizeOpen ? 'border-slate-300 bg-slate-50 text-slate-800' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                       >
                         Custom size
                       </button>
@@ -37841,7 +37841,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
                   {whiteboardTool === 'pen' && whiteboardPenMenuOpen && (
-                    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-2.5 flex flex-col gap-1.5 w-[172px]">
+                    <div className="absolute left-20 top-1/2 -translate-y-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_32px_rgba(0,0,0,0.06)] p-2.5 flex flex-col gap-1.5 w-[172px]">
                       <p className="text-[10px] font-semibold text-gray-500 px-1">Pen styles</p>
                       {whiteboardPenPresets.map((penPreset, penIndex) => (
                         <button
@@ -37854,7 +37854,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             setWhiteboardPenMenuOpen(false);
                             showToast(`${penPreset.label} selected`);
                           }}
-                          className={`h-8 rounded-lg px-2 flex items-center gap-2 transition-colors ${whiteboardPenVariant === penPreset.key ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                          className={`h-8 rounded-lg px-2 flex items-center gap-2 transition-colors ${whiteboardPenVariant === penPreset.key ? 'bg-slate-100 text-slate-800 font-semibold' : 'text-gray-600 hover:bg-gray-100'}`}
                           title={penPreset.label}
                         >
                           <span className="h-5 w-5 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center">
@@ -37877,7 +37877,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   setWhiteboardPenWidthOverride(sizeValue);
                                   setWhiteboardPenCustomWidth(sizeValue);
                                 }}
-                                className={`flex flex-col items-center justify-end rounded-lg px-1.5 py-1 ${isActive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-white'}`}
+                                className={`flex flex-col items-center justify-end rounded-lg px-1.5 py-1 ${isActive ? 'bg-slate-200 text-slate-800 font-semibold' : 'text-gray-500 hover:bg-white'}`}
                                 title={`${sizeValue}px stroke`}
                               >
                                 <span className="rounded-full bg-current" style={{ width: `${Math.max(4, sizeValue * 2.8)}px`, height: `${Math.max(4, sizeValue * 2.8)}px`, opacity: 0.9 }} />
@@ -37889,14 +37889,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <button
                             type="button"
                             onClick={() => setWhiteboardPenWidthOverride(null)}
-                            className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-medium ${whiteboardPenWidthOverride === null ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+                            className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-medium ${whiteboardPenWidthOverride === null ? 'border-slate-300 bg-slate-100 text-slate-800 font-medium' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
                           >
                             Auto
                           </button>
                           <button
                             type="button"
                             onClick={() => setWhiteboardPenCustomSizeOpen((prev) => !prev)}
-                            className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-medium ${whiteboardPenCustomSizeOpen ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
+                            className={`flex-1 rounded-md border px-2 py-1 text-[10px] font-medium ${whiteboardPenCustomSizeOpen ? 'border-slate-300 bg-slate-100 text-slate-800 font-medium' : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'}`}
                           >
                             Custom
                           </button>
@@ -39383,12 +39383,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     );
                   })()}
-                  <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/95 shadow-[0_8px_30px_rgba(124,58,237,0.06)] px-2.5 py-2 flex items-center gap-1.5">
+                  <div className="absolute left-1/2 bottom-4 -translate-x-1/2 z-20 rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.08)] px-2.5 py-2 flex items-center gap-1.5">
                     <button type="button" onClick={handleWhiteboardUndo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Undo (Ctrl+Z)"><Undo2 size={15} /></button>
                     <button type="button" onClick={handleWhiteboardRedo} className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center" title="Redo (Ctrl+Shift+Z)"><Redo2 size={15} /></button>
                     <div className="w-px h-5 bg-gray-200 mx-0.5" />
-                    <button type="button" onClick={() => { activateWhiteboardTool('pen'); setWhiteboardPenVariant('highlighter'); showToast('Highlighter active'); }} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' && whiteboardPenVariant === 'highlighter' ? 'bg-yellow-100 text-yellow-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Highlighter"><Highlighter size={15} /></button>
-                    <div className="h-9 rounded-lg border border-gray-200 bg-gray-50 px-1.5 flex items-center gap-1">
+                    <button type="button" onClick={() => { activateWhiteboardTool('pen'); setWhiteboardPenVariant('highlighter'); showToast('Highlighter active'); }} className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'pen' && whiteboardPenVariant === 'highlighter' ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`} title="Highlighter"><Highlighter size={15} /></button>
+                    <div className="h-9 rounded-lg border border-gray-200 bg-gray-50/50 px-1.5 flex items-center gap-1">
                       <button type="button" onClick={() => setWhiteboardZoomLevel((prev) => Math.max(30, prev - 10))} className="h-7 w-7 rounded-md text-gray-600 hover:bg-white hover:text-gray-800 flex items-center justify-center" title="Zoom out">-</button>
                       <span className="min-w-[42px] text-center text-[13px] font-semibold text-gray-700 select-none">{whiteboardZoomLevel}%</span>
                       <button type="button" onClick={() => setWhiteboardZoomLevel((prev) => Math.min(200, prev + 10))} className="h-7 w-7 rounded-md text-gray-600 hover:bg-white hover:text-gray-800 flex items-center justify-center" title="Zoom in">+</button>
@@ -39399,19 +39399,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <button
                         type="button"
                         onClick={() => setWhiteboardTemplateMenuOpen((prev) => !prev)}
-                        className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTemplateMenuOpen ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                        className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTemplateMenuOpen ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                         title="Templates"
                       >
                         <LayoutGrid size={15} />
                       </button>
                       {whiteboardTemplateMenuOpen && (
                         <div className="absolute bottom-11 right-0 z-[360] rounded-xl border border-gray-200 bg-white shadow-lg p-2 w-[332px] max-h-[420px] overflow-y-auto thin-scrollbar">
-                          <div className="rounded-lg border border-violet-100 bg-violet-50/50 p-2 mb-2">
-                            <div className="text-[11px] font-semibold text-violet-700 mb-1">AI template generator</div>
+                          <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-2 mb-2">
+                            <div className="text-[11px] font-semibold text-slate-700 mb-1">AI template generator</div>
                             <textarea
                               value={whiteboardTemplatePrompt}
                               onChange={(event) => setWhiteboardTemplatePrompt(event.target.value)}
-                              className="w-full h-16 resize-none rounded-md border border-violet-200 bg-white px-2 py-1 text-[11px] text-gray-700 outline-none focus:border-violet-300"
+                              className="w-full h-16 resize-none rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-700 outline-none focus:border-gray-300"
                               placeholder="Describe customer input, use case, or desired structure..."
                             />
                             <input
@@ -39433,7 +39433,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <button
                                 type="button"
                                 onClick={generateAiWhiteboardTemplate}
-                                className="text-[10px] px-2 py-1 rounded-md bg-violet-600 text-white hover:bg-violet-700 inline-flex items-center gap-1"
+                                className="text-[10px] px-2 py-1 rounded-md bg-slate-900 text-white hover:bg-slate-800 inline-flex items-center gap-1 transition-colors"
                               >
                                 <Sparkles size={10} />
                                 Generate
@@ -39441,7 +39441,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <button
                                 type="button"
                                 onClick={saveCurrentWhiteboardAsTemplate}
-                                className="text-[10px] px-2 py-1 rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50"
+                                className="text-[10px] px-2 py-1 rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
                               >
                                 Save current
                               </button>
@@ -39468,7 +39468,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                       key={template.key}
                                       type="button"
                                       onClick={() => applyWhiteboardTemplate(template.key)}
-                                      className="w-full text-left p-2 rounded-lg border border-gray-200 hover:border-violet-200 hover:bg-violet-50"
+                                      className="w-full text-left p-2 rounded-lg border border-gray-200 hover:border-slate-350 hover:bg-slate-50"
                                     >
                                       <div className="mb-2 h-20 rounded-md bg-gray-100 p-2 flex items-end gap-1 overflow-hidden">
                                         {(template.preview || ['#c4b5fd', '#93c5fd', '#fcd34d', '#86efac']).map((swatch, index) => (
@@ -39489,7 +39489,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <button
                         type="button"
                         onClick={() => setWhiteboardAddMenuOpen((prev) => !prev)}
-                        className="h-9 w-9 rounded-lg bg-violet-600 text-white hover:bg-violet-700 flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.06)]"
+                        className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors shadow-sm ${whiteboardAddMenuOpen ? 'border border-violet-200 text-violet-700 bg-violet-50/30' : 'bg-violet-50 text-violet-700 hover:bg-violet-100/80 border border-violet-200/60 font-semibold'}`}
                         title="Add object"
                       >
                         <Plus size={15} />
@@ -39504,13 +39504,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             { label: 'Connector', icon: LinkIcon, action: () => { activateWhiteboardTool('link'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Comment', icon: MessageCircle, action: () => { activateWhiteboardTool('comment'); setWhiteboardAddMenuOpen(false); } },
                             { label: 'Task Card', icon: CheckSquare, action: () => { addWhiteboardWidget('task'); setWhiteboardAddMenuOpen(false); showToast('Task card added'); } },
-                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow 嚙碼 coming soon'); setWhiteboardAddMenuOpen(false); } },
+                            { label: 'AI Workflow', icon: Bot, action: () => { showToast('AI Workflow coming soon'); setWhiteboardAddMenuOpen(false); } },
                           ].map((item) => (
                             <button
                               key={item.label}
                               type="button"
                               onClick={item.action}
-                              className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-violet-50 hover:text-violet-700 inline-flex items-center gap-1.5"
+                              className="w-full text-left text-xs px-2 py-1.5 rounded-md hover:bg-violet-50/50 hover:text-violet-700 inline-flex items-center gap-1.5 transition-colors"
                             >
                               <item.icon size={12} />
                               {item.label}
@@ -39522,7 +39522,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       type="button"
                       onClick={() => resetWhiteboardCanvas()}
-                      className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center"
+                      className="h-9 w-9 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 flex items-center justify-center font-sans"
                       title="Clear board"
                     >
                       <Trash2 size={15} />
@@ -39534,7 +39534,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         activateWhiteboardTool('eraser');
                         setWhiteboardEraserMenuOpen(true);
                       }}
-                      className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'eraser' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                      className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === 'eraser' ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                       title="Eraser"
                     >
                       <Eraser size={15} />
@@ -39542,7 +39542,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       type="button"
                       onClick={() => activateWhiteboardTool('image')}
-                      className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardTool === 'image' ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                      className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardTool === 'image' ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                       title="Image"
                     >
                       <ImageIcon size={15} />
@@ -39550,7 +39550,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       type="button"
                       onClick={() => setWhiteboardMoreMenuOpen((prev) => !prev)}
-                      className={`h-9 w-9 rounded-lg flex items-center justify-center ${whiteboardMoreMenuOpen ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                      className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${whiteboardMoreMenuOpen ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                       title="More"
                     >
                       <MoreHorizontal size={15} />
@@ -39563,7 +39563,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           closeTransientMenus();
                           setWhiteboardExportMenuOpen(!whiteboardExportMenuOpen);
                         }}
-                        className={`h-9 px-2.5 rounded-lg flex items-center justify-center gap-1 text-[11px] font-semibold transition-colors ${whiteboardExportMenuOpen ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                        className={`h-9 px-2.5 rounded-lg flex items-center justify-center gap-1 text-[11px] font-semibold transition-colors ${whiteboardExportMenuOpen ? 'border border-violet-200 text-violet-700 bg-violet-50/30 shadow-sm' : 'border border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
                         title="Export options"
                       >
                         Export {whiteboardExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
