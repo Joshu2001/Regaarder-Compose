@@ -34,6 +34,7 @@ import { WebsocketProvider } from 'y-websocket';
 import { diff_match_patch as DiffMatchPatch } from 'diff-match-patch';
 import randomColor from 'randomcolor';// Inline attachment chip — avoids module-order TDZ in the production bundle
 import { exportCompose, exportSheets, exportDeck, exportWhiteboard } from './utils/exportUtils';
+import AnalyticsHubUI from './analytics/AnalyticsHubUI';
 function AIChatAttachmentChip({ file, onRemove }) {
   return (
     <span style={{
@@ -29542,9 +29543,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       type="button"
                       onClick={() => setProfileMenuOpen(prev => !prev)}
-                      className="w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850 flex items-center justify-center text-[11px] font-semibold text-white transition-all shadow-sm focus:outline-none"
+                      className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] hover:ring-2 hover:ring-slate-200 dark:hover:ring-zinc-700 flex items-center justify-center text-[11px] font-semibold transition-all shadow-sm focus:outline-none ${currentUser ? 'text-white' : 'text-slate-600 dark:text-zinc-350'}`}
                       style={{
-                        backgroundColor: currentUser ? '#10B981' : '#7C3AED',
+                        backgroundColor: currentUser ? '#10B981' : (isDarkMode ? '#27272a' : '#f1f5f9'),
                       }}
                       title={currentUser ? `Profile: ${currentUser.name}` : 'Sign In'}
                     >
@@ -29675,7 +29676,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 showToast(`${tab} tools ready`);
                               }
                             }}
-                            className={`px-3 py-1.5 rounded-lg border text-sm font-semibold transition-colors ${sheetToolbarTab === tab ? 'border-violet-500 text-violet-700 bg-transparent dark:border-violet-400 dark:text-violet-400' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
+                            className={`px-3 py-1.5 rounded-[6px] border text-sm font-semibold transition-colors ${sheetToolbarTab === tab ? 'bg-slate-100 text-slate-900 border-transparent dark:bg-zinc-800 dark:text-zinc-100' : 'border-transparent hover:bg-gray-100 text-[#374151] dark:text-[#a3a3a3] dark:hover:bg-[#1c1c1e]'}`}
                           >
                             {tab}
                           </button>
@@ -29766,6 +29767,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <button type="button" onClick={() => showToast('Loading Project Tracking...')} className="px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded">Project Tracking</button>
       </div>
     </div>
+  ) : sheetToolbarTab === 'Analyze' ? (
+    <AnalyticsHubUI 
+      activeSheetGrid={sheetGrids[activeSheetId]} 
+      activeSheetId={activeSheetId} 
+      updateSheetCell={updateSheetCell} 
+      showToast={showToast} 
+    />
   ) : (sheetToolbarTab === 'Data' && !hasImportedData) ? (
                         /* ── DATA TAB: OMNI-IMPORT PORTAL ─────────────────────── */
                         <div className="flex-1 overflow-y-auto thin-scrollbar bg-[#FAFAFC]">
@@ -29815,8 +29823,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <div className="p-16 flex flex-col items-center text-center gap-8">
                                 {/* Hero Icon */}
                                 <div className="relative">
-                                  <div className="w-16 h-16 rounded-2xl bg-violet-600 flex items-center justify-center shadow-sm">
-                                    <Cpu size={32} className="text-white" />
+                                  <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-200/60 dark:bg-zinc-900/60 dark:border-zinc-800 flex items-center justify-center shadow-sm">
+                                    <Cpu size={32} className="text-violet-600 dark:text-violet-400" />
                                   </div>
                                 </div>
 
@@ -29824,23 +29832,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <div>
                                   <h2 className="text-[24px] font-semibold text-slate-800 tracking-tight">What would you like to analyze?</h2>
                                   <p className="text-[14px] text-slate-500 mt-2 max-w-sm mx-auto">Drop any file or paste content — Regaarder converts it into structured, intelligent data.</p>
-                                  <div className="flex flex-col gap-1.5 mt-4 text-[13px] text-slate-500">
-                                    <span className="font-semibold text-slate-600">Try asking:</span>
-                                    <div className="flex flex-wrap items-center justify-center gap-2">
-                                      <button type="button" onClick={() => { setSheetsTitle('SOP Tracker'); setHasImportedData(true); showToast('AI generating tracker from SOP...'); }} className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors font-medium">"Turn this SOP into a tracker"</button>
-                                      <button type="button" onClick={() => { setSheetsTitle('PDF CRM'); setHasImportedData(true); showToast('AI generating CRM from PDF...'); }} className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors font-medium">"Create a CRM from this PDF"</button>
-                                    </div>
-                                  </div>
                                 </div>
 
                                 {/* Upload Area Dropzone */}
-                                <div className="w-full max-w-md mt-4 flex flex-col items-center gap-5 py-12 px-6 rounded-2xl border border-dashed border-violet-200 bg-violet-50/40 hover:bg-violet-50/60 transition-colors relative">
+                                <div className="w-full max-w-md mt-4 flex flex-col items-center gap-5 py-12 px-6 rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/30 hover:bg-slate-50/60 dark:border-zinc-800 dark:bg-zinc-900/10 dark:hover:bg-zinc-900/30 transition-colors relative">
                                   <Upload size={32} className="text-slate-400" />
                                   <div className="space-y-1">
                                     <p className="text-[15px] text-slate-600 font-medium">Drag and drop file here</p>
                                     <p className="text-[13px] text-slate-400">or</p>
                                   </div>
-                                  <label className="px-6 py-2.5 bg-violet-100 text-violet-700 text-[13px] font-medium rounded-xl cursor-pointer hover:bg-violet-200 transition-colors">
+                                  <label className="px-6 py-2.5 bg-slate-100 text-slate-800 text-[13px] font-medium rounded-xl cursor-pointer hover:bg-slate-200/80 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700/80 transition-colors border border-slate-200/30 dark:border-zinc-750/30">
                                     Browse for file
                                     <input type="file" multiple className="hidden" onChange={(e) => {
                                       const files = Array.from(e.target.files || []);
