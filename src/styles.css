@@ -1208,3 +1208,19 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+@keyframes floatingNavSlideRight {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+}
+
+.animate-floating-nav {
+  animation: floatingNavSlideRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

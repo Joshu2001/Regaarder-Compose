@@ -2877,6 +2877,7 @@ export default function App() {
     dependencyLinks: [],
   });
   const [isWhiteboardImmersive, setIsWhiteboardImmersive] = useState(false);
+  const [isHoverNavVisible, setIsHoverNavVisible] = useState(false);
   const [whiteboardCollaborationOpen, setWhiteboardCollaborationOpen] = useState(false);
   const [whiteboardShareAccess, setWhiteboardShareAccess] = useState('Editor');
   const [whiteboardCollaborators, setWhiteboardCollaborators] = useState([
@@ -5179,6 +5180,20 @@ export default function App() {
     { id: 2, title: 'Document saved locally', detail: 'Your latest draft is persisted', unread: false },
     { id: 3, title: 'AI assistant is active', detail: 'Ask about selected text anytime', unread: false },
   ]);
+
+  const getNotificationColorClass = (item) => {
+    const text = (item.title + ' ' + item.detail).toLowerCase();
+    if (text.includes('error') || text.includes('failed') || text.includes('blocked') || text.includes('offline')) {
+      return 'bg-red-500';
+    }
+    if (text.includes('warning') || text.includes('ready') || text.includes('conflict') || text.includes('attention')) {
+      return 'bg-amber-500';
+    }
+    if (text.includes('saved') || text.includes('active') || text.includes('online') || text.includes('success')) {
+      return 'bg-emerald-500';
+    }
+    return 'bg-yellow-400';
+  };
   const [sheetToolbarMenuOpen, setSheetToolbarMenuOpen] = useState(null);
   const [selectedSheetCell, setSelectedSheetCell] = useState({ row: 1, col: 1 });
   const [selectedSheetRange, setSelectedSheetRange] = useState(null);
@@ -29630,8 +29645,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       title="Notifications"
                     >
                       <Bell size={16} />
-                      {notifications.length > 0 && (
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214]"></span>
+                      {notifications.some(n => n.unread) && (
+                        <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#121214] ${
+                          (() => {
+                            const unreadList = notifications.filter(n => n.unread);
+                            const colors = unreadList.map(getNotificationColorClass);
+                            if (colors.includes('bg-red-500')) return 'bg-red-500';
+                            if (colors.includes('bg-amber-500')) return 'bg-amber-500';
+                            if (colors.includes('bg-emerald-500')) return 'bg-emerald-500';
+                            return 'bg-yellow-400';
+                          })()
+                        }`}></span>
                       )}
                     </button>
                     {notificationsOpen && (
@@ -29642,7 +29666,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <div key={item.id} className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200">{item.title}</div>
-                                {item.unread && <span className="mt-1 h-2 w-2 rounded-full bg-violet-500" />}
+                                {item.unread && <span className={`mt-1 h-2 w-2 rounded-full ${getNotificationColorClass(item)}`} />}
                               </div>
                               <div className="mt-0.5 text-[11px] text-slate-500 dark:text-zinc-400">{item.detail}</div>
                             </div>
@@ -36021,7 +36045,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* 1. Left Navigation Sidebar */}
       <div
         className={`flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200 ${roomState === 'active' && roomPanelMode === 'expanded' ? '' : 'border-r border-gray-100'}`}
-        style={{ width: (roomState === 'active' && roomPanelMode === 'expanded') ? '280px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        style={{ width: (activeRightTab === 'whiteboard') ? '0px' : (roomState === 'active' && roomPanelMode === 'expanded') ? '280px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
         {roomState === 'active' && roomPanelMode === 'expanded' ? renderRoomLeftSidebar() : showDocumentOutlineView ? (
           <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
@@ -36213,10 +36237,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="h-14 flex items-center justify-between px-6 border-b border-gray-100 shrink-0 select-none">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setLeftSidebarOpen((prev) => !prev)}
+              onClick={() => {
+                if (activeRightTab === 'whiteboard') {
+                  setIsHoverNavVisible((prev) => !prev);
+                } else {
+                  setLeftSidebarOpen((prev) => !prev);
+                }
+              }}
               className="text-gray-400 hover:text-gray-600"
+              title={activeRightTab === 'whiteboard' ? (isHoverNavVisible ? "Hide navigation" : "Show navigation") : (leftSidebarOpen ? "Hide sidebar" : "Show sidebar")}
             >
-              {leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+              {activeRightTab === 'whiteboard'
+                ? (isHoverNavVisible ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
+                : (leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
+              }
             </button>
             {isUnsavedDraftVisible && (
               <>
@@ -36336,9 +36370,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 onClick={() => setComposeProfileMenuOpen(prev => !prev)}
-                className="w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850 flex items-center justify-center text-[11px] font-semibold text-white transition-all shadow-sm focus:outline-none"
+                className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] font-semibold text-white transition-all shadow-sm focus:outline-none ${activeRightTab === 'whiteboard' ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850'}`}
                 style={{
-                  backgroundColor: currentUser ? '#10B981' : '#7C3AED',
+                  backgroundColor: activeRightTab === 'whiteboard' ? '#f97316' : (currentUser ? '#10B981' : '#7C3AED'),
                 }}
                 title={currentUser ? `Profile: ${currentUser?.name || ''}` : 'Sign In'}
               >
@@ -39945,6 +39979,91 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   )}
                 </div>
+                
+                {/* Hover Navigation Bar on the Left */}
+                <div
+                  onMouseEnter={() => setIsHoverNavVisible(true)}
+                  className="absolute left-0 top-0 bottom-0 w-3 z-[345]"
+                />
+
+                {isHoverNavVisible && (
+                  <div
+                    onMouseEnter={() => setIsHoverNavVisible(true)}
+                    onMouseLeave={() => setIsHoverNavVisible(false)}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-[350] rounded-2xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.08)] p-4 flex flex-col gap-4 w-[240px] animate-floating-nav select-none text-left"
+                  >
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Search Orb..." 
+                        className="w-full bg-gray-55/50 border border-gray-100 rounded-xl py-1.5 pl-9 pr-3 text-xs focus:outline-none focus:border-violet-300 focus:bg-white transition-all text-slate-800"
+                      />
+                    </div>
+
+                    <button
+                      onClick={openCreationPicker}
+                      className="w-full py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+                    >
+                      <Upload size={13} />
+                      <span>Upload</span>
+                    </button>
+
+                    <div className="flex flex-col gap-1">
+                      <button
+                        onClick={() => setActivePrimaryNav('my-orb')}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-xs rounded-xl transition-colors ${activePrimaryNav === 'my-orb' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-650 hover:bg-gray-50'}`}
+                      >
+                        <Database size={14} /> <span>My Orb</span>
+                      </button>
+                      <button
+                        onClick={() => setActivePrimaryNav('shared')}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-xs rounded-xl transition-colors ${activePrimaryNav === 'shared' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-650 hover:bg-gray-50'}`}
+                      >
+                        <Users size={14} /> <span>Shared with me</span>
+                      </button>
+                      <button
+                        onClick={() => setActivePrimaryNav('favorites')}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-xs rounded-xl transition-colors ${activePrimaryNav === 'favorites' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-650 hover:bg-gray-50'}`}
+                      >
+                        <Star size={14} /> <span>Favorites</span>
+                      </button>
+                      <button
+                        onClick={() => { setActivePrimaryNav('recent'); setRecentDocumentsModalOpen(true); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-xs rounded-xl transition-colors ${activePrimaryNav === 'recent' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-650 hover:bg-gray-50'}`}
+                      >
+                        <Clock size={14} /> <span>Recent</span>
+                      </button>
+                      <button
+                        onClick={() => setActivePrimaryNav('trash')}
+                        className={`w-full flex items-center gap-3 px-3 py-2 text-xs rounded-xl transition-colors ${activePrimaryNav === 'trash' ? 'bg-violet-50 text-violet-700 font-semibold' : 'text-gray-650 hover:bg-gray-50'}`}
+                      >
+                        <Trash size={14} /> <span>Trash</span>
+                      </button>
+                    </div>
+
+                    <div className="flex flex-col gap-1 border-t border-gray-100 pt-3">
+                      <div className="px-3 text-[9px] uppercase tracking-[0.11em] font-semibold text-gray-400 mb-1">Intelligence</div>
+                      <button className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-650 hover:bg-gray-50 rounded-xl transition-colors">
+                        <span className="flex items-center gap-3"><Sparkles size={14} /> AI Suggested</span>
+                        <span className="text-[9px] font-semibold bg-violet-100/80 text-violet-700 px-1.5 py-0.5 rounded-full">12</span>
+                      </button>
+                      <button className="w-full flex items-center justify-between px-3 py-2 text-xs text-gray-650 hover:bg-gray-50 rounded-xl transition-colors">
+                        <span className="flex items-center gap-3"><LinkIcon size={14} /> Related to me</span>
+                        <span className="text-[9px] font-semibold bg-violet-100/80 text-violet-700 px-1.5 py-0.5 rounded-full">8</span>
+                      </button>
+                    </div>
+
+                    <div className="border-t border-gray-100 pt-3 mt-auto">
+                      <button
+                        onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
+                        className="flex items-center gap-3 px-3 py-2 text-xs text-gray-500 hover:text-gray-800 w-full transition-colors rounded-xl hover:bg-gray-50"
+                      >
+                        <Settings size={14} /> <span>Settings</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
