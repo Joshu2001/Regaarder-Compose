@@ -1,0 +1,510 @@
+﻿commit f32a5fbcdeda859f1fef54d0f8d8a735e85c6610
+Author: Joshu2001 <jshsajous@gmail.com>
+Date:   Tue Jun 23 23:56:44 2026 +0800
+
+    Fix shape picker modal in sheets view and add Puppeteer test
+
+diff --git a/src/App.jsx b/src/App.jsx
+index 570e251..56d1377 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -26679,7 +26679,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
+                              <div 
+                                key={overlay.id}
+                                className="absolute z-[100] shadow-md flex items-center justify-center text-sm"
+-                               onClick={(e) => { e.stopPropagation(); }}
++                               onClick={(e) => {
++                                 e.stopPropagation();
++                                 if (overlay.type === 'rectangle') {
++                                   const rect = e.currentTarget.getBoundingClientRect();
++                                   setSheetShapeMenu({
++                                     open: true,
++                                     left: rect.left,
++                                     top: rect.bottom,
++                                     editingOverlayId: overlay.id,
++                                     anchorCell: null
++                                   });
++                                 }
++                               }}
+                                style={{
+                                  left, top, 
+                                  width: overlay.width, 
+@@ -27802,6 +27814,135 @@ if (productMode === 'deck' || productMode === 'sheets') {
+         );
+       })()}
+ 
++      {/* ?? Table Presets ?? */}
++      {productMode === 'sheets' && sheetTablePresetMenu.open && (
++        <div
++          ref={sheetTablePresetMenuRef}
++          className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
++          style={{ left: `${sheetTablePresetMenu.left}px`, top: `${sheetTablePresetMenu.top}px` }}
++          onMouseDown={e => e.stopPropagation()}
++        >
++          <div className="text-xs font-semibold text-gray-500 mb-2 px-1">Table Presets</div>
++          <div className="grid grid-cols-2 gap-2">
++            {Object.entries(TABLE_PRESETS).map(([key, preset]) => (
++              <button
++                key={key}
++                onClick={() => {
++                  setSheetGrids(prev => {
++                    const grid = prev[activeSheetId];
++                    if (!grid || !grid.tables) return prev;
++                    const newTables = grid.tables.map(t => t.id === sheetTablePresetMenu.tableId ? { ...t, presetStyle: key } : t);
++                    return { ...prev, [activeSheetId]: { ...grid, tables: newTables } };
++                  });
++                  setSheetTablePresetMenu(prev => ({ ...prev, open: false }));
++                }}
++                className="flex flex-col items-center p-2 hover:bg-slate-50 rounded border border-transparent hover:border-gray-200 transition-colors"
++              >
++                <div className="w-full h-8 rounded border mb-1" style={{ backgroundColor: preset.headerBg, borderColor: preset.border }} />
++                <span className="text-[10px] text-gray-600 capitalize">{key}</span>
++              </button>
++            ))}
++          </div>
++        </div>
++      )}
++
++      {productMode === 'sheets' && sheetShapeMenu.open && (
++        <div
++          ref={sheetShapeMenuRef}
++          className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden"
++          style={{
++            left: `${sheetShapeMenu.left}px`,
++            top: `${sheetShapeMenu.top}px`,
++            width: '280px',
++            maxHeight: '520px',
++            display: 'flex',
++            flexDirection: 'column',
++          }}
++          onMouseDown={e => e.stopPropagation()}
++        >
++          {/* Header */}
++          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
++            <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
++            <button
++              type="button"
++              className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
++              onClick={() => setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null })}
++            >
++              <X size={14} />
++            </button>
++          </div>
++
++          {/* Scrollable shape sections */}
++          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50">
++            {[
++              { label: 'Recently Used', shapes: recentlyUsedShapes.slice(0, 8) },
++              ...SHAPE_SECTIONS
++            ]
++            .filter(sec => sec.label !== 'Recently Used' || sec.shapes.length > 0)
++            .map((section) => (
++              <div key={section.label} className="mb-3">
++                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-0.5">
++                  {section.label}
++                </div>
++                <div className="flex flex-wrap gap-0.5">
++                  {section.shapes.map((shape) => {
++                    let svgContent = shape.svg;
++                    if (section.label === 'Recently Used') {
++                      svgContent = <rect x="2" y="4" width="12" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>;
++                      for (const sec of SHAPE_SECTIONS) {
++                        const found = sec.shapes.find(s => s.type === shape.type);
++                        if (found) { svgContent = found.svg; break; }
++                      }
++                    }
++                    
++                    return (
++                      <button
++                        key={shape.type}
++                        type="button"
++                        title={shape.label || shape.type}
++                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-violet-50 hover:text-violet-700 text-gray-600 transition-colors group"
++                        onClick={() => {
++                          setRecentlyUsedShapes(prev => [{ type: shape.type }, ...prev.filter(s => s.type !== shape.type)].slice(0, 8));
++                          if (sheetShapeMenu.editingOverlayId) {
++                            const updatedOverlays = (activeSheetGridRaw.overlays || []).map(o =>
++                              o.id === sheetShapeMenu.editingOverlayId ? { ...o, shapeType: shape.type } : o
++                            );
++                            updateSheetSettings(activeSheetId, { overlays: updatedOverlays });
++                          } else {
++                            const newOverlays = [...(activeSheetGridRaw.overlays || [])];
++                            const cellAnchor = sheetShapeMenu.anchorCell || { startRow: 1, startCol: 1 };
++                            newOverlays.push({
++                              id: 'overlay-' + Date.now(),
++                              type: 'rectangle',
++                              shapeType: shape.type,
++                              row: cellAnchor.startRow,
++                              col: cellAnchor.startCol,
++                              x: 60, y: 60, width: 120, height: 80,
++                              content: '', color: '#7C3AED'
++                            });
++                            updateSheetSettings(activeSheetId, { overlays: newOverlays });
++                          }
++                          setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
++                        }}
++                      >
++                        <svg
++                          viewBox="0 0 16 16"
++                          width="18"
++                          height="18"
++                          className="group-hover:scale-110 transition-transform"
++                        >
++                          {svgContent}
++                        </svg>
++                      </button>
++                    );
++                  })}
++                </div>
++              </div>
++            ))}
++          </div>
++        </div>
++      )}
++
+       </div>
+     );
+   }
+@@ -33727,127 +33868,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
+         );
+       })()}
+ 
+-      {/* ?? Sheet Shape Menu ?????????????????????????????????????? */}
+-      {productMode === 'sheets' && sheetTablePresetMenu.open && (
+-        <div
+-          ref={sheetTablePresetMenuRef}
+-          className="absolute z-[99999] bg-white rounded-xl shadow-2xl border border-gray-200 p-3 w-48 animate-in fade-in zoom-in-95"
+-          style={{ left: `${sheetTablePresetMenu.left}px`, top: `${sheetTablePresetMenu.top}px` }}
+-          onMouseDown={e => e.stopPropagation()}
+-        >
+-          <div className="text-xs font-semibold text-gray-500 mb-2 px-1">Table Presets</div>
+-          <div className="grid grid-cols-2 gap-2">
+-            {Object.entries(TABLE_PRESETS).map(([key, preset]) => (
+-              <button
+-                key={key}
+-                onClick={() => {
+-                  setSheetGrids(prev => {
+-                    const grid = prev[activeSheetId];
+-                    if (!grid || !grid.tables) return prev;
+-                    const newTables = grid.tables.map(t => t.id === sheetTablePresetMenu.tableId ? { ...t, presetStyle: key } : t);
+-                    return { ...prev, [activeSheetId]: { ...grid, tables: newTables } };
+-                  });
+-                  setSheetTablePresetMenu(prev => ({ ...prev, open: false }));
+-                }}
+-                className="flex flex-col items-center p-2 hover:bg-slate-50 rounded border border-transparent hover:border-gray-200 transition-colors"
+-              >
+-                <div className="w-full h-8 rounded border mb-1" style={{ backgroundColor: preset.headerBg, borderColor: preset.border }} />
+-                <span className="text-[10px] text-gray-600 capitalize">{key}</span>
+-              </button>
+-            ))}
+-          </div>
+-        </div>
+-      )}
+ 
+-      {productMode === 'sheets' && sheetShapeMenu.open && (
+-        <div
+-          ref={sheetShapeMenuRef}
+-          className="fixed z-[99999] bg-white rounded-2xl shadow-[0_24px_60px_-12px_rgba(15,23,42,0.35)] border border-gray-200 overflow-hidden"
+-          style={{
+-            left: `${sheetShapeMenu.left}px`,
+-            top: `${sheetShapeMenu.top}px`,
+-            width: '280px',
+-            maxHeight: '520px',
+-            display: 'flex',
+-            flexDirection: 'column',
+-          }}
+-          onMouseDown={e => e.stopPropagation()}
+-        >
+-          {/* Header */}
+-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white sticky top-0">
+-            <span className="text-[13px] font-semibold text-gray-800">Insert Shape</span>
+-            <button
+-              type="button"
+-              className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+-              onClick={() => setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null })}
+-            >
+-              <X size={14} />
+-            </button>
+-          </div>
+-
+-          {/* Scrollable shape sections */}
+-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50">
+-            {[
+-              { label: 'Recently Used', shapes: recentlyUsedShapes.slice(0, 8) },
+-              ...SHAPE_SECTIONS
+-            ]
+-            .filter(sec => sec.label !== 'Recently Used' || sec.shapes.length > 0)
+-            .map((section) => (
+-              <div key={section.label} className="mb-3">
+-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 px-0.5">
+-                  {section.label}
+-                </div>
+-                <div className="flex flex-wrap gap-0.5">
+-                  {section.shapes.map((shape) => {
+-                    let svgContent = shape.svg;
+-                    if (section.label === 'Recently Used') {
+-                      svgContent = <rect x="2" y="4" width="12" height="8" stroke="currentColor" strokeWidth="1.5" fill="none"/>;
+-                      for (const sec of SHAPE_SECTIONS) {
+-                        const found = sec.shapes.find(s => s.type === shape.type);
+-                        if (found) { svgContent = found.svg; break; }
+-                      }
+-                    }
+-                    
+-                    return (
+-                      <button
+-                        key={shape.type}
+-                        type="button"
+-                        title={shape.label || shape.type}
+-                        className="w-8 h-8 flex items-center justify-center rounded hover:bg-violet-50 hover:text-violet-700 text-gray-600 transition-colors group"
+-                        onClick={() => {
+-                          setRecentlyUsedShapes(prev => [{ type: shape.type }, ...prev.filter(s => s.type !== shape.type)].slice(0, 8));
+-                          const newOverlays = [...(activeSheetGridRaw.overlays || [])];
+-                          const cellAnchor = sheetShapeMenu.anchorCell || { startRow: 1, startCol: 1 };
+-                          newOverlays.push({
+-                            id: 'overlay-' + Date.now(),
+-                            type: 'rectangle',
+-                            shapeType: shape.type,
+-                            row: cellAnchor.startRow,
+-                            col: cellAnchor.startCol,
+-                            x: 60, y: 60, width: 120, height: 80,
+-                            content: '', color: '#7C3AED'
+-                          });
+-                          updateSheetSettings(activeSheetId, { overlays: newOverlays });
+-                          setSheetShapeMenu({ open: false, left: 0, top: 0, anchorCell: null });
+-                        }}
+-                      >
+-                        <svg
+-                          viewBox="0 0 16 16"
+-                          width="18"
+-                          height="18"
+-                          className="group-hover:scale-110 transition-transform"
+-                        >
+-                          {svgContent}
+-                        </svg>
+-                      </button>
+-                    );
+-                  })}
+-                </div>
+-              </div>
+-            ))}
+-          </div>
+-        </div>
+-      )}
+ 
+       {brandKitModalOpen && (
+         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+diff --git a/test_shape_picker.cjs b/test_shape_picker.cjs
+new file mode 100644
+index 0000000..8ae4028
+--- /dev/null
++++ b/test_shape_picker.cjs
+@@ -0,0 +1,209 @@
++const { spawn } = require('child_process');
++const puppeteer = require('puppeteer');
++
++// Run npm run dev and pass --host 127.0.0.1 to Vite
++const server = spawn('npm', ['run', 'dev', '--', '--host', '127.0.0.1'], { shell: true });
++let serverReady = false;
++let accumulatedStdout = '';
++const consoleErrors = [];
++
++server.stdout.on('data', async (d) => {
++  const output = d.toString();
++  accumulatedStdout += output;
++  console.log('SERVER:', output.trim());
++  
++  // Strip ANSI escape codes
++  const cleanOutput = accumulatedStdout.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
++  const match = cleanOutput.match(/(http:\/\/127\.0\.0\.1:\d+)/i);
++  
++  if (match && !serverReady) {
++    serverReady = true;
++    const url = match[1] + '/';
++    console.log('Server detected on 127.0.0.1! URL:', url, 'Starting Puppeteer...');
++    
++    try {
++      const browser = await puppeteer.launch({
++        headless: 'new',
++        args: ['--no-sandbox', '--disable-setuid-sandbox']
++      });
++      const page = await browser.newPage();
++      await page.setDefaultNavigationTimeout(60000);
++      
++      page.on('console', msg => {
++        const text = msg.text();
++        if (msg.type() === 'error') {
++          console.log('BROWSER ERROR LOG:', text);
++          // Ignore environmental warnings, resource load errors, and Yjs websocket/socket.io connection failures
++          const shouldIgnore = 
++            text.includes('WebSocket') || 
++            text.includes('connection') || 
++            text.includes('socket.io') || 
++            text.includes('Permissions policy') || 
++            text.includes('Failed to load resource') || 
++            text.includes('ERR_CONNECTION_REFUSED');
++            
++          if (!shouldIgnore) {
++            consoleErrors.push(text);
++          }
++        } else {
++          console.log('BROWSER LOG:', text);
++        }
++      });
++      
++      page.on('pageerror', err => {
++        const errText = err.toString();
++        console.log('BROWSER PAGE ERROR:', errText);
++        // Ignore environmental warnings, resource load errors, and Yjs websocket/socket.io connection failures
++        const shouldIgnore = 
++          errText.includes('WebSocket') || 
++          errText.includes('connection') || 
++          errText.includes('socket.io') || 
++          errText.includes('Permissions policy') || 
++          errText.includes('Failed to load resource') || 
++          errText.includes('ERR_CONNECTION_REFUSED');
++          
++        if (!shouldIgnore) {
++          consoleErrors.push(errText);
++        }
++      });
++      
++      console.log('Navigating to application landing page...');
++      await page.goto(url, { waitUntil: 'domcontentloaded' });
++      console.log('Page loaded. Waiting 5 seconds for initialization...');
++      await new Promise(r => setTimeout(r, 5000));
++      
++      // 1. Switch to sheets mode
++      const buttons = await page.$$('button');
++      let sheetsBtn = null;
++      for (const btn of buttons) {
++        const text = await page.evaluate(el => el.textContent, btn);
++        if (text && text.trim().toLowerCase() === 'sheet') {
++          sheetsBtn = btn;
++          break;
++        }
++      }
++      if (!sheetsBtn) {
++        throw new Error('Sheet button not found on landing page');
++      }
++      
++      console.log('Clicking Sheet button to switch to sheets mode...');
++      await sheetsBtn.click();
++      await new Promise(r => setTimeout(r, 3000));
++      
++      // 2. Open the shape picker modal
++      console.log('Waiting for grid cell inputs...');
++      await page.waitForSelector('input.cursor-cell');
++      const cellInputs = await page.$$('input.cursor-cell');
++      if (cellInputs.length === 0) {
++        throw new Error('No cell inputs found in sheets view');
++      }
++      
++      console.log('Clicking the first grid cell to focus it...');
++      await cellInputs[0].click();
++      await new Promise(r => setTimeout(r, 500));
++      
++      console.log('Typing "/" to open slash menu...');
++      await page.keyboard.type('/');
++      await new Promise(r => setTimeout(r, 1500));
++      
++      console.log('Waiting for slash menu option "Insert Shape"...');
++      await page.waitForSelector('.slash-menu-option');
++      const options = await page.$$('.slash-menu-option');
++      let insertShapeOption = null;
++      for (const opt of options) {
++        const text = await page.evaluate(el => el.textContent, opt);
++        if (text && text.includes('Insert Shape')) {
++          insertShapeOption = opt;
++          break;
++        }
++      }
++      if (!insertShapeOption) {
++        throw new Error('Insert Shape option not found in slash menu');
++      }
++      
++      console.log('Clicking "Insert Shape" to open shape picker modal...');
++      await insertShapeOption.click();
++      await new Promise(r => setTimeout(r, 1500));
++      
++      // 3. Insert a shape
++      console.log('Waiting for shape picker modal to be displayed...');
++      await page.waitForSelector('div.fixed.z-\\[99999\\]');
++      const modals = await page.$$('div.fixed.z-\\[99999\\]');
++      let shapeModal = null;
++      for (const m of modals) {
++        const text = await page.evaluate(el => el.textContent, m);
++        if (text && text.includes('Insert Shape')) {
++          shapeModal = m;
++          break;
++        }
++      }
++      if (!shapeModal) {
++        throw new Error('Shape picker modal not found in DOM');
++      }
++      
++      const shapeButtons = await shapeModal.$$('button[title]');
++      if (shapeButtons.length === 0) {
++        throw new Error('No shape buttons found inside shape picker modal');
++      }
++      
++      console.log('Clicking the first shape button to insert shape...');
++      await shapeButtons[0].click();
++      await new Promise(r => setTimeout(r, 1500));
++      
++      // 4. Click the shape overlay
++      console.log('Waiting for shape overlay to render...');
++      const overlaySelector = 'div.absolute.z-\\[100\\][style*="cursor: move"]';
++      await page.waitForSelector(overlaySelector);
++      const overlayDivs = await page.$$(overlaySelector);
++      if (overlayDivs.length === 0) {
++        throw new Error('Shape overlay was not created/rendered');
++      }
++      console.log(`Found ${overlayDivs.length} shape overlays.`);
++      
++      console.log('Clicking the shape overlay to reopen shape picker modal...');
++      await page.evaluate(el => el.click(), overlayDivs[0]);
++      await new Promise(r => setTimeout(r, 1500));
++      
++      // 5. Verify the shape picker modal successfully displays in the DOM
++      console.log('Checking if shape picker modal displays in the DOM...');
++      const reopenedModals = await page.$$('div.fixed.z-\\[99999\\]');
++      let shapeModalVisible = false;
++      for (const m of reopenedModals) {
++        const text = await page.evaluate(el => el.textContent, m);
++        if (text && text.includes('Insert Shape')) {
++          shapeModalVisible = true;
++          break;
++        }
++      }
++      
++      if (!shapeModalVisible) {
++        throw new Error('Shape picker modal did not display in the DOM after clicking the shape overlay');
++      }
++      console.log('SUCCESS: Shape picker modal is successfully displayed in the DOM!');
++      
++      if (consoleErrors.length > 0) {
++        throw new Error(`Console errors detected during run: ${consoleErrors.join('; ')}`);
++      }
++      console.log('SUCCESS: No console errors detected!');
++      
++      await browser.close();
++      console.log('Test completed successfully. Exiting.');
++      server.kill();
++      process.exit(0);
++    } catch (err) {
++      console.error('TEST FAILURE:', err);
++      server.kill();
++      process.exit(1);
++    }
++  }
++});
++
++server.stderr.on('data', d => console.error('SERVER ERR:', d.toString().trim()));
++
++setTimeout(() => {
++  if (!serverReady) {
++    console.log('Timeout waiting for dev server to start');
++    server.kill();
++    process.exit(1);
++  }
++}, 60000);
