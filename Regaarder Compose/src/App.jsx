@@ -24,7 +24,7 @@ import {
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
   , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi} from 'lucide-react';
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode} from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
@@ -1723,6 +1723,220 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
   );
 };
 
+const RoomInviteModal = ({ isOpen, onClose }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [invitedEmails, setInvitedEmails] = useState(new Set());
+  const [isCopied, setIsCopied] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [accessLevel, setAccessLevel] = useState('anyone');
+
+  if (!isOpen) return null;
+
+  const users = [
+    { name: 'Emma Chen', email: 'emma.chen@acme.com', avatar: 'https://i.pravatar.cc/150?u=emma' },
+    { name: 'Daniel Wong', email: 'daniel.wong@acme.com', avatar: 'https://i.pravatar.cc/150?u=daniel' },
+    { name: 'Sarah Kim', email: 'sarah.kim@acme.com', avatar: 'https://i.pravatar.cc/150?u=sarah' },
+  ];
+
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const toggleInvite = (email) => {
+    setInvitedEmails(prev => {
+      const next = new Set(prev);
+      if (next.has(email)) next.delete(email);
+      else next.add(email);
+      return next;
+    });
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[100000] bg-black/5 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="w-[360px] bg-white rounded-[24px] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
+          {/* Top Handle */}
+          <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4"></div>
+          
+          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">Invite people</h2>
+          
+          {/* Search */}
+          <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 mb-4 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-50 transition-all">
+            <Search size={14} className="text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search by name or email" 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-gray-400 text-gray-900"
+            />
+          </div>
+          
+          {/* Recently collaborated */}
+          <div className="mb-4 min-h-[140px]">
+            <h3 className="text-[11px] font-semibold text-gray-500 mb-2">Recently collaborated</h3>
+            {filteredUsers.length > 0 ? (
+              <div className="flex flex-col gap-3">
+                {filteredUsers.map((u, i) => {
+                  const isInvited = invitedEmails.has(u.email);
+                  return (
+                    <div key={i} className="flex items-center justify-between group">
+                      <div className="flex items-center gap-2.5">
+                        <div className="relative w-8 h-8">
+                          <img src={u.avatar} alt={u.name} className="w-full h-full rounded-full object-cover" />
+                          <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border-[1.5px] border-white rounded-full"></span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-medium text-gray-900 leading-tight">{u.name}</span>
+                          <span className="text-[11px] text-gray-500">{u.email}</span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => toggleInvite(u.email)}
+                        className={`px-4 py-1 rounded-full border font-medium text-[11px] transition-colors ${
+                          isInvited 
+                            ? 'bg-violet-50 border-violet-100 text-violet-600' 
+                            : 'border-gray-200 text-gray-600 hover:border-violet-200 hover:text-violet-600 hover:bg-violet-50/50'
+                        }`}
+                      >
+                        {isInvited ? 'Invited' : 'Invite'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="h-[120px] flex items-center justify-center text-sm text-gray-400">
+                No users found.
+              </div>
+            )}
+          </div>
+          
+          {/* Share room */}
+          <div className="mb-4">
+            <h3 className="text-[11px] font-semibold text-gray-500 mb-2">Share room</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={handleCopyLink} className="flex flex-col items-center justify-center border border-gray-100 bg-gray-50/50 rounded-xl p-3 gap-1.5 hover:bg-gray-50 transition-colors group relative">
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center mb-0.5 transition-colors ${isCopied ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-100 text-violet-600 group-hover:scale-110'}`}>
+                  {isCopied ? <Check size={12} strokeWidth={2.5} /> : <LinkIcon size={12} strokeWidth={2.5} />}
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[11px] font-semibold text-gray-900 leading-tight">{isCopied ? 'Copied!' : 'Copy link'}</span>
+                  <span className="text-[9px] text-gray-500 text-center leading-[1.1] mt-0.5">Anyone with<br/>the link can join</span>
+                </div>
+              </button>
+              <button onClick={() => alert('Email invitation opened')} className="flex flex-col items-center justify-center border border-gray-100 bg-gray-50/50 rounded-xl p-3 gap-1.5 hover:bg-gray-50 transition-colors group">
+                <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 mb-0.5 group-hover:scale-110 transition-transform">
+                  <Mail size={12} strokeWidth={2.5} />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[11px] font-semibold text-gray-900 leading-tight">Email invitation</span>
+                  <span className="text-[9px] text-gray-500 text-center leading-[1.1] mt-0.5">Send an email<br/>invitation</span>
+                </div>
+              </button>
+              <button onClick={() => setIsQrModalOpen(true)} className="flex flex-col items-center justify-center border border-gray-100 bg-gray-50/50 rounded-xl p-3 gap-1.5 hover:bg-gray-50 transition-colors group">
+                <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 mb-0.5 group-hover:scale-110 transition-transform">
+                  <QrCode size={12} strokeWidth={2.5} />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[11px] font-semibold text-gray-900 leading-tight">Show QR code</span>
+                  <span className="text-[9px] text-gray-500 text-center leading-[1.1] mt-0.5">Scan to join<br/>on mobile</span>
+                </div>
+              </button>
+            </div>
+          </div>
+          
+          {/* Room access */}
+          <div className="mb-4 relative">
+            <h3 className="text-[11px] font-semibold text-gray-500 mb-2">Room access</h3>
+            <button 
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full flex items-center justify-between border border-gray-200 rounded-xl p-2.5 hover:bg-gray-50 transition-colors bg-white relative z-10"
+            >
+              <div className="flex items-center gap-2.5">
+                <Globe size={16} className={accessLevel === 'anyone' ? 'text-violet-500' : 'text-gray-500'} />
+                <div className="flex flex-col items-start">
+                  <span className="text-[13px] font-medium text-gray-900 leading-tight">{accessLevel === 'anyone' ? 'Anyone with the link' : 'Restricted'}</span>
+                  <span className="text-[11px] text-gray-500">{accessLevel === 'anyone' ? 'Can join' : 'Only invited people'}</span>
+                </div>
+              </div>
+              <ChevronDown size={14} className={`text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isDropdownOpen && (
+              <>
+                <div className="fixed inset-0 z-0" onClick={() => setIsDropdownOpen(false)}></div>
+                <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-gray-100 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.08)] py-1.5 z-20 overflow-hidden transform origin-top animate-in fade-in slide-in-from-top-1">
+                  <button 
+                    onClick={() => { setAccessLevel('anyone'); setIsDropdownOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <Globe size={14} className={accessLevel === 'anyone' ? 'text-violet-600' : 'text-gray-400'} />
+                    <div className="flex flex-col flex-1">
+                      <span className={`text-[12px] font-medium leading-tight ${accessLevel === 'anyone' ? 'text-violet-600' : 'text-gray-900'}`}>Anyone with the link</span>
+                      <span className="text-[10px] text-gray-500">Can join without approval</span>
+                    </div>
+                    {accessLevel === 'anyone' && <Check size={14} className="text-violet-600" />}
+                  </button>
+                  <button 
+                    onClick={() => { setAccessLevel('restricted'); setIsDropdownOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-left"
+                  >
+                    <Lock size={14} className={accessLevel === 'restricted' ? 'text-violet-600' : 'text-gray-400'} />
+                    <div className="flex flex-col flex-1">
+                      <span className={`text-[12px] font-medium leading-tight ${accessLevel === 'restricted' ? 'text-violet-600' : 'text-gray-900'}`}>Restricted</span>
+                      <span className="text-[10px] text-gray-500">Only invited people can join</span>
+                    </div>
+                    {accessLevel === 'restricted' && <Check size={14} className="text-violet-600" />}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <button 
+            onClick={onClose}
+            className="w-full py-2.5 bg-violet-50 text-violet-600 text-[13px] font-semibold rounded-xl hover:bg-violet-100 active:bg-violet-200 transition-colors"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+
+      {/* QR Modal Overlay */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-[100001] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={() => setIsQrModalOpen(false)}>
+          <div className="bg-white rounded-[24px] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.12)] flex flex-col items-center animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <h3 className="text-[15px] font-semibold text-gray-900 mb-4">Scan to join room</h3>
+            <div className="w-48 h-48 bg-gray-50 rounded-[16px] border border-gray-100 flex items-center justify-center mb-6 overflow-hidden relative">
+              {/* Fake QR pattern */}
+              <div className="absolute inset-4 grid grid-cols-4 grid-rows-4 gap-1 opacity-20">
+                {Array.from({length: 16}).map((_, i) => (
+                  <div key={i} className={`bg-violet-900 rounded-sm ${i % 3 === 0 ? 'opacity-0' : ''}`}></div>
+                ))}
+              </div>
+              <QrCode size={100} className="text-gray-900 relative z-10 mix-blend-overlay opacity-80" strokeWidth={1} />
+            </div>
+            <button 
+              onClick={() => setIsQrModalOpen(false)}
+              className="px-6 py-2.5 bg-gray-100 text-gray-700 text-[13px] font-semibold rounded-xl hover:bg-gray-200 transition-colors w-full"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
 
 export default function App() {
   const [docBodyHtml, setDocBodyHtml] = useState('');
@@ -28037,7 +28251,7 @@ You can recommend task creations on the board.`;
         {/* Invite button */}
         <div className="p-4 border-t border-gray-50 shrink-0">
           <button 
-            onClick={() => setIsRoomInviteModalOpen?.(true) || alert('Invite dialog')}
+            onClick={() => setIsRoomInviteModalOpen(true)}
             className="w-full flex items-center justify-center gap-2 py-3 bg-violet-50/50 hover:bg-violet-50 text-violet-500 text-xs font-medium rounded-2xl transition-colors"
           >
             <UserPlus size={14} />
@@ -42893,6 +43107,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </div>
         </div>
       )}
+
+      {/* Invite Modal Overlay */}
+      <RoomInviteModal 
+        isOpen={isRoomInviteModalOpen} 
+        onClose={() => setIsRoomInviteModalOpen(false)} 
+      />
 
       {roomState === 'active' && mainView === 'document' && (
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
