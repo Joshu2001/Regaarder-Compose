@@ -42704,7 +42704,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-8 gap-6">
                 
                 {/* Main Video Container */}
-                <div className="flex-1 w-full max-w-[800px] max-h-[500px] min-h-[20vh] relative overflow-hidden rounded-[20px] bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink">
+                <div className="flex-1 w-full max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] relative overflow-hidden rounded-[24px] bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink">
                   <div className="absolute inset-0">
                     <img
                       src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1200"
@@ -42726,7 +42726,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
 
                 {/* Participant Thumbnail Strip */}
-                <div className="flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[800px]">
+                <div className="flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px]">
                   {[
                     { name: 'Alex Rivera',  img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300' },
                     { name: 'Jamie Patel', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300' },
