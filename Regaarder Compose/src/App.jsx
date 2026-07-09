@@ -43185,7 +43185,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 )}
               </div>
             </div>
-            </div>
             
             {/* Floating People Sidebar (Left) */}
             {isRoomLeftSidebarOpen && !isDistractionFreeMode && (
@@ -43300,6 +43299,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             </DraggablePanel>
           )}
+          </div>
         </div>
       )}
 
