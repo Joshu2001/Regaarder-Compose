@@ -1745,9 +1745,17 @@ const RoomInviteModal = ({ isOpen, onClose }) => {
   );
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
+    const inviteLink = `${window.location.origin}/room/join/xyz-123`;
+    navigator.clipboard.writeText(inviteLink);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleEmailInvite = () => {
+    const inviteLink = `${window.location.origin}/room/join/xyz-123`;
+    const subject = encodeURIComponent('Join my Room');
+    const body = encodeURIComponent(`Hi there,\n\nI'm inviting you to join my Room. Click the link below to access it:\n\n${inviteLink}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
   };
 
   const toggleInvite = (email) => {
@@ -1761,12 +1769,12 @@ const RoomInviteModal = ({ isOpen, onClose }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-[100000] bg-black/5 backdrop-blur-sm flex items-center justify-center p-4">
-        <div className="w-[360px] bg-white rounded-[24px] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
+      <div className="fixed inset-0 z-[100000] bg-black/5 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+        <div className="w-[360px] bg-white rounded-[24px] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.12)]" onClick={(e) => e.stopPropagation()}>
           {/* Top Handle */}
           <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4"></div>
           
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 text-center">Invite people</h2>
+          <h2 className="text-[15px] font-semibold text-gray-900 mb-4 text-center">Invite people</h2>
           
           {/* Search */}
           <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 mb-4 focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-50 transition-all">
@@ -1833,7 +1841,7 @@ const RoomInviteModal = ({ isOpen, onClose }) => {
                   <span className="text-[9px] text-gray-500 text-center leading-[1.1] mt-0.5">Anyone with<br/>the link can join</span>
                 </div>
               </button>
-              <button onClick={() => alert('Email invitation opened')} className="flex flex-col items-center justify-center border border-gray-100 bg-gray-50/50 rounded-xl p-3 gap-1.5 hover:bg-gray-50 transition-colors group">
+              <button onClick={handleEmailInvite} className="flex flex-col items-center justify-center border border-gray-100 bg-gray-50/50 rounded-xl p-3 gap-1.5 hover:bg-gray-50 transition-colors group">
                 <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 mb-0.5 group-hover:scale-110 transition-transform">
                   <Mail size={12} strokeWidth={2.5} />
                 </div>
@@ -1938,7 +1946,93 @@ const RoomInviteModal = ({ isOpen, onClose }) => {
   );
 };
 
+const DraggablePanel = ({ id, children, isDeleteZoneActive, onDelete, isHidden }) => {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef(null);
+
+  useEffect(() => {
+    if (isHidden) {
+      setPosition({ x: 0, y: 0 });
+    }
+  }, [isHidden]);
+
+  if (isHidden) return null;
+
+  const handlePointerDown = (e) => {
+    if (e.button !== 0 || e.target.closest('button, input, textarea, select, .no-drag')) return;
+    
+    setIsDragging(true);
+
+    const handlePointerMove = (moveEvent) => {
+      setPosition(prev => ({
+        x: prev.x + moveEvent.movementX,
+        y: prev.y + moveEvent.movementY
+      }));
+    };
+
+    const handlePointerUp = (upEvent) => {
+      setIsDragging(false);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      if (isDeleteZoneActive) {
+        // Broaden the dropzone detection area for easier dropping
+        const xPercent = (upEvent.clientX / window.innerWidth) * 100;
+        const yPercent = (upEvent.clientY / window.innerHeight) * 100;
+        if (xPercent > 25 && xPercent < 75 && yPercent > 60) {
+          onDelete(id);
+        }
+      }
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+  };
+
+  return React.cloneElement(children, {
+    ref: dragRef,
+    onPointerDown: (e) => {
+      handlePointerDown(e);
+      if (children.props.onPointerDown) children.props.onPointerDown(e);
+    },
+    style: {
+      ...children.props.style,
+      transform: `translate(${position.x}px, ${position.y}px) ${children.props.style?.transform || ''}`,
+      touchAction: 'none',
+      zIndex: isDragging ? 99999 : (children.props.style?.zIndex || 50),
+    },
+    className: `${children.props.className || ''} transition-shadow ${isDragging ? 'cursor-grabbing opacity-90 pointer-events-none' : 'cursor-grab'} ${isDeleteZoneActive && isDragging ? 'ring-2 ring-red-500' : ''}`
+  });
+};
+
 export default function App() {
+  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: 0, name: 'Sarah Chen', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330' });
+  const [videoParticipants, setVideoParticipants] = useState([
+    { id: 1, name: 'Alex Rivera', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d' },
+    { id: 2, name: 'Jamie Patel', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2' },
+    { id: 3, name: 'Taylor Kim', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9' },
+    { id: 4, name: 'Morgan Lee', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e' }
+  ]);
+  const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+  const [hiddenPanels, setHiddenPanels] = useState([]);
+  const [isDeleteZoneActive, setIsDeleteZoneActive] = useState(false);
+  const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key.toLowerCase() === 'x' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        setIsDeleteZoneActive(prev => !prev);
+      }
+      if (e.key.toLowerCase() === 'r' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        setHiddenPanels([]);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
   const [docBodyHtml, setDocBodyHtml] = useState('');
 
     useEffect(() => {
@@ -28410,7 +28504,11 @@ const renderRoomTopHeader = () => (
 
       {/* Right side options */}
       <div className="flex items-center gap-4">
-        <button className="p-2.5 rounded-2xl text-slate-300 hover:bg-slate-50 hover:text-slate-600 transition-colors" title="Security">
+        <button 
+          onClick={() => setIsDistractionFreeMode(!isDistractionFreeMode)}
+          className={`p-2.5 rounded-2xl transition-colors ${isDistractionFreeMode ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
+          title="Distraction Free Mode"
+        >
           <Shield size={16} />
         </button>
 
@@ -42918,128 +43016,158 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-8 gap-6">
                 
                 {/* Main Video Container */}
-                <div className="flex-1 w-full max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] relative overflow-hidden rounded-[24px] bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink">
+                <div className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 ${isVideoExpanded ? '!absolute !inset-4 !max-w-none !max-h-none z-0 rounded-[32px]' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}>
                   <div className="absolute inset-0">
                     <img
-                      src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1200"
-                      alt="Sarah Chen"
+                      src={`${activeVideoSpeaker.img}?w=1200`}
+                      alt={activeVideoSpeaker.name}
                       className="w-full h-full object-cover object-center"
                     />
                   </div>
-                  <button className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  <button 
+                    onClick={() => setIsVideoExpanded(!isVideoExpanded)}
+                    className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20"
+                  >
+                    {isVideoExpanded ? <Minimize2 size={16} /> : <Expand size={16} />}
                   </button>
-                  <div className="absolute bottom-6 left-6 flex items-center gap-3 bg-black/10 backdrop-blur-xl px-4 py-2 rounded-[20px] border border-white/5">
+                  <div className="absolute bottom-6 left-6 flex items-center gap-3 bg-black/10 backdrop-blur-xl px-4 py-2 rounded-[20px] border border-white/5 z-20">
                     <div className="flex items-baseline gap-[2.5px] h-3.5">
                       <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.8s_infinite_alternate]" style={{ height: '60%' }} />
                       <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.5s_infinite_alternate]" style={{ height: '100%' }} />
                       <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }} />
                     </div>
-                    <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">Sarah Chen</span>
+                    <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">{activeVideoSpeaker.name}</span>
                   </div>
                 </div>
 
                 {/* Participant Thumbnail Strip */}
-                <div className="flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px]">
-                  {[
-                    { name: 'Alex Rivera',  img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300' },
-                    { name: 'Jamie Patel', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300' },
-                    { name: 'Taylor Kim',  img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300' },
-                    { name: 'Morgan Lee',  img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300' },
-                    { name: '+3',          img: null },
-                  ].map((p, i) => (
-                    <div key={i} className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0">
-                      {p.img ? (
-                        <img src={p.img} alt={p.name} className="w-full h-full object-cover absolute inset-0" />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/40 to-white/10 shadow-inner">
-                          <span className="text-slate-700 text-[16px] font-medium drop-shadow-sm">{p.name}</span>
-                        </div>
-                      )}
-                      
-                      {/* Name blur overlay */}
-                      {p.img && (
+                {!isDistractionFreeMode && (
+                  <div className={`flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? 'mt-auto opacity-90 hover:opacity-100' : ''}`}>
+                    {videoParticipants.map((p, i) => (
+                      <div 
+                        key={p.id} 
+                        onClick={() => {
+                          const newParticipants = [...videoParticipants];
+                          newParticipants[i] = activeVideoSpeaker;
+                          setActiveVideoSpeaker(p);
+                          setVideoParticipants(newParticipants);
+                        }}
+                        className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all"
+                      >
+                        <img src={`${p.img}?w=300`} alt={p.name} className="w-full h-full object-cover absolute inset-0" />
+                        
+                        {/* Name blur overlay */}
                         <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
                           <div className="flex items-center justify-between w-full relative z-10">
                             <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{p.name}</span>
                             <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />
                           </div>
                         </div>
-                      )}
+                      </div>
+                    ))}
+                    
+                    {/* Plus 3 indicator */}
+                    <div className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0">
+                      <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/40 to-white/10 shadow-inner">
+                        <span className="text-slate-700 text-[16px] font-medium drop-shadow-sm">+3</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
 
                 {/* Bottom Control Section */}
-                <div className="flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto">
-                  
-                  {/* Toolbar */}
-                  <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
-                    <button
-                      onClick={toggleRoomMic}
-                      className="w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all text-violet-500 hover:bg-violet-50"
-                      title="Toggle mic"
-                    >
-                      {isRoomMicOn ? <Mic size={18} strokeWidth={1.5} /> : <MicOff size={18} strokeWidth={1.5} />}
-                    </button>
-                    <button
-                      onClick={toggleRoomCamera}
-                      className="w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all text-violet-500 hover:bg-violet-50"
-                      title="Toggle camera"
-                    >
-                      {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
-                    </button>
-                    <button
-                      onClick={() => handleMeetingShareOption?.('document')}
-                      className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
-                      title="Share screen"
-                    >
-                      <MonitorPlay size={18} strokeWidth={1.5} />
-                    </button>
-                    <button className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all" title="Room AI">
-                      <Sparkles size={18} strokeWidth={1.5} />
-                    </button>
-                    <button className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all" title="More">
-                      <MoreHorizontal size={18} strokeWidth={1.5} />
-                    </button>
-                    <button
-                      onClick={leaveRoom}
-                      className="w-[44px] h-[44px] rounded-full bg-[#F25A5A] hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-[0_8px_24px_rgba(242,90,90,0.3)] ml-2"
-                      title="Leave room"
-                    >
-                      <PhoneOff size={18} strokeWidth={1.5} />
-                    </button>
-                  </div>
+                {!isDistractionFreeMode && (
+                  <DraggablePanel 
+                    id="toolbar" 
+                    isHidden={hiddenPanels.includes('toolbar')} 
+                    isDeleteZoneActive={isDeleteZoneActive} 
+                    onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
+                  >
+                    <div className={`flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto relative z-10 transition-all duration-500 ${isVideoExpanded ? 'pb-4 opacity-90 hover:opacity-100' : ''}`}>
+                      
+                      {/* Toolbar */}
+                      <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
+                        <button
+                          onClick={toggleRoomMic}
+                          className="w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all text-violet-500 hover:bg-violet-50"
+                          title="Toggle mic"
+                        >
+                          {isRoomMicOn ? <Mic size={18} strokeWidth={1.5} /> : <MicOff size={18} strokeWidth={1.5} />}
+                        </button>
+                        <button
+                          onClick={toggleRoomCamera}
+                          className="w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all text-violet-500 hover:bg-violet-50"
+                          title="Toggle camera"
+                        >
+                          {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
+                        </button>
+                        <button
+                          onClick={() => handleMeetingShareOption?.('document')}
+                          className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
+                          title="Share screen"
+                        >
+                          <MonitorPlay size={18} strokeWidth={1.5} />
+                        </button>
+                        <button className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all" title="Room AI">
+                          <Sparkles size={18} strokeWidth={1.5} />
+                        </button>
+                        <button className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all" title="More">
+                          <MoreHorizontal size={18} strokeWidth={1.5} />
+                        </button>
+                        <button
+                          onClick={leaveRoom}
+                          className="w-[44px] h-[44px] rounded-full bg-[#F25A5A] hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-[0_8px_24px_rgba(242,90,90,0.3)] ml-2"
+                          title="Leave room"
+                        >
+                          <PhoneOff size={18} strokeWidth={1.5} />
+                        </button>
+                      </div>
 
-                  {/* Ask AI Bar */}
-                  <div className="flex items-center gap-4 bg-white/90 backdrop-blur-2xl rounded-[32px] px-8 py-4.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 w-full min-w-[540px] max-w-[580px]">
-                    <Sparkles size={18} strokeWidth={1.5} className="text-violet-400 shrink-0" />
-                    <span className="text-[14px] text-slate-400 flex-1 font-normal tracking-wide">Ask Room AI...</span>
-                    <button className="w-10 h-10 rounded-full bg-violet-50/80 text-violet-400 hover:bg-violet-100 flex items-center justify-center shrink-0 transition-colors border border-violet-100/50">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    </button>
-                  </div>
-                </div>
+                      {/* Ask AI Bar */}
+                      <div className="flex items-center gap-4 bg-white/90 backdrop-blur-2xl rounded-[32px] px-8 py-4.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 w-full min-w-[540px] max-w-[580px]">
+                        <Sparkles size={18} strokeWidth={1.5} className="text-violet-400 shrink-0" />
+                        <span className="text-[14px] text-slate-400 flex-1 font-normal tracking-wide">Ask Room AI...</span>
+                        <button className="w-10 h-10 rounded-full bg-violet-50/80 text-violet-400 hover:bg-violet-100 flex items-center justify-center shrink-0 transition-colors border border-violet-100/50">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </DraggablePanel>
+                )}
               </div>
             </div>
             </div>
             
             {/* Floating People Sidebar (Left) */}
-            {isRoomLeftSidebarOpen && (
-              <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ left: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', transform: `translate(${leftNavOffset.x}px, ${leftNavOffset.y}px)` }}>
-                {renderRoomLeftSidebar()}
-              </div>
+            {isRoomLeftSidebarOpen && !isDistractionFreeMode && (
+              <DraggablePanel 
+                id="people" 
+                isHidden={hiddenPanels.includes('people')} 
+                isDeleteZoneActive={isDeleteZoneActive} 
+                onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
+              >
+                <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ left: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px' }}>
+                  {renderRoomLeftSidebar()}
+                </div>
+              </DraggablePanel>
             )}
 
             {/* Floating Chat Sidebar (Right) */}
-            {isRoomRightSidebarOpen && (
-              <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '164px', width: '280px', height: 'calc(100vh - 240px)', maxHeight: '700px', transform: `translate(${rightNavOffset.x}px, ${rightNavOffset.y}px)` }}>
-                {renderRoomRightSidebar()}
-              </div>
+            {isRoomRightSidebarOpen && !isDistractionFreeMode && (
+              <DraggablePanel 
+                id="chat" 
+                isHidden={hiddenPanels.includes('chat')} 
+                isDeleteZoneActive={isDeleteZoneActive} 
+                onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
+              >
+                <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '164px', width: '280px', height: 'calc(100vh - 240px)', maxHeight: '700px' }}>
+                  {renderRoomRightSidebar()}
+                </div>
+              </DraggablePanel>
             )}
             
             {/* Left Floating Toggle (People) */}
-            {!isRoomLeftSidebarOpen && (
+            {!isRoomLeftSidebarOpen && !isDistractionFreeMode && (
               <div
                 className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
                 style={{ 
@@ -43074,7 +43202,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             )}
             
             {/* Right Floating Toggle (Chat) */}
-            {!isRoomRightSidebarOpen && (
+            {!isRoomRightSidebarOpen && !isDistractionFreeMode && (
               <div
                 className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
                 style={{ 
@@ -43105,6 +43233,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
             )}
           </div>
+          
+          {/* Dropzone for Deletion */}
+          {isDeleteZoneActive && (
+            <div className="fixed inset-x-0 bottom-12 z-[100000] flex justify-center pointer-events-none animate-in slide-in-from-bottom-10 fade-in duration-300">
+              <div className="bg-red-500/90 backdrop-blur-xl border-2 border-white text-white rounded-full w-24 h-24 flex flex-col items-center justify-center shadow-[0_16px_40px_rgba(220,38,38,0.4)]">
+                <Trash2 size={32} />
+                <span className="text-[10px] font-bold mt-1 uppercase tracking-wider opacity-90">Drop here</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
