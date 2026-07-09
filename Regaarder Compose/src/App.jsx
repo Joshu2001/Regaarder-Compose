@@ -43209,7 +43209,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 isDeleteZoneActive={isDeleteZoneActive} 
                 onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
               >
-                <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '164px', width: '280px', height: 'calc(100vh - 240px)', maxHeight: '700px' }}>
+                <div className="absolute pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '164px', width: '280px', height: 'calc(100vh - 240px)', maxHeight: '700px', zIndex: 40 }}>
                   {renderRoomRightSidebar()}
                 </div>
               </DraggablePanel>
