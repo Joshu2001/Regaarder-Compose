@@ -13,7 +13,7 @@ import {
   FileText, Trash, Settings, MoreHorizontal, MoreVertical,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, Pen, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
-  List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown, ChevronUp,
+  List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown, ChevronUp, Disc,
   Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, Shield, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
