@@ -2095,6 +2095,7 @@ export default function App() {
 
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
+  const [roomMaximized, setRoomMaximized] = useState(false);
   const [productMode, setProductMode] = useState('landing');
   const [aiPersona, setAiPersona] = useState(null);
   const [dmSearchQuery, setDmSearchQuery] = useState('');
@@ -4715,6 +4716,11 @@ export default function App() {
   const [isRoomFullscreen, setIsRoomFullscreen] = useState(false);
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
+
+  const [leftNavOffset, setLeftNavOffset] = useState({ x: 0, y: 0 });
+  const [rightNavOffset, setRightNavOffset] = useState({ x: 0, y: 0 });
+  const [navInteraction, setNavInteraction] = useState(null);
+
   const [meetingShareMenuAnchor, setMeetingShareMenuAnchor] = useState(null);
   const [isMeetingLinkInputOpen, setIsMeetingLinkInputOpen] = useState(false);
   const [meetingLinkDraft, setMeetingLinkDraft] = useState('');
@@ -8797,6 +8803,38 @@ export default function App() {
       window.removeEventListener('pointerup', handlePointerUp);
     };
   }, [roomStageInteraction, clampRoomStageFrame]);
+
+  useEffect(() => {
+    if (!navInteraction) {
+      return undefined;
+    }
+
+    const handlePointerMove = (event) => {
+      const deltaX = event.clientX - navInteraction.startX;
+      const deltaY = event.clientY - navInteraction.startY;
+      const newPos = {
+        x: navInteraction.origin.x + deltaX,
+        y: navInteraction.origin.y + deltaY
+      };
+
+      if (navInteraction.id === 'left') {
+        setLeftNavOffset(newPos);
+      } else if (navInteraction.id === 'right') {
+        setRightNavOffset(newPos);
+      }
+    };
+
+    const handlePointerUp = () => {
+      setNavInteraction(null);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [navInteraction]);
 
   const handleQuickAddSourceAction = async (sourceId) => {
     setIsQuickAddSourceMenuOpen(false);
@@ -18293,7 +18331,30 @@ Rules:
       setProductMode('compose');
       setLeftSidebarOpen(true);
     }
-    const shouldBeFullscreen = ['room'].includes(tabKey);
+    if (tabKey === 'room') {
+      if (roomState === 'active' && roomPanelMode === 'expanded') {
+        setRoomPanelMode('docked');
+        if (document.exitFullscreen && document.fullscreenElement) {
+          document.exitFullscreen().catch(()=>{});
+        }
+      } else {
+        if (roomState !== 'active') {
+          setRoomId(generateRoomCode());
+          setRoomState('active');
+        }
+        setRoomPanelMode('expanded');
+        setRoomMaximized(true);
+        setRightSidebarOpen(false);
+        setIsRoomFullscreen(true);
+        const docEl = document.documentElement;
+        const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+        if (requestFS && !document.fullscreenElement) {
+          requestFS.call(docEl).catch(()=>{});
+        }
+      }
+      return;
+    }
+    const shouldBeFullscreen = false; // We removed 'room' from here
     if (rightSidebarOpen && activeRightTab === tabKey) {
       setRightSidebarOpen(false);
       if (rightPanelMaximized) setRightPanelMaximized(false);
@@ -19323,6 +19384,7 @@ Rules:
   };
 
   const createRoomExperience = () => {
+    enterFullscreen();
     setCreationPickerOpen(false);
     setProductMode('room');
     setRightSidebarOpen(false);
@@ -27907,58 +27969,65 @@ You can recommend task creations on the board.`;
 
     return (
       <div className="flex flex-col h-full bg-white font-sans">
-        {/* Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-gray-100 shrink-0">
-          <span className="text-[16px] font-bold text-slate-900">People</span>
+        {/* Header (Draggable) */}
+        <div 
+          className="h-16 flex items-center justify-between px-6 border-b border-gray-50 shrink-0 cursor-move"
+          onPointerDown={(e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            setNavInteraction({ id: 'left', startX: e.clientX, startY: e.clientY, origin: leftNavOffset });
+          }}
+        >
+          <span className="text-[15px] font-medium text-slate-800 pointer-events-none">People</span>
           <button 
             onClick={() => setIsRoomLeftSidebarOpen(false)}
-            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+            className="p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Search Input */}
-        <div className="p-4 shrink-0">
-          <div className="relative flex items-center bg-[#F9FAFB] border border-gray-100/50 rounded-2xl px-3 py-2.5 shadow-[inset_0_2px_8px_rgba(0,0,0,0.01)] transition-colors focus-within:bg-white focus-within:border-gray-200">
+        <div className="p-5 shrink-0">
+          <div className="relative flex items-center bg-[#F9FAFB] border border-transparent rounded-2xl px-4 py-3 shadow-[inset_0_1px_4px_rgba(0,0,0,0.01)] transition-colors focus-within:bg-white focus-within:border-gray-100">
             <Search size={14} className="text-slate-300 mr-2 shrink-0" />
             <input 
               type="text" 
               placeholder="Search people" 
               value={peopleSearchQuery}
               onChange={(e) => setPeopleSearchQuery(e.target.value)}
-              className="w-full bg-transparent text-[13px] font-medium text-slate-700 placeholder:text-slate-400 outline-none border-none py-0.5"
+              className="w-full bg-transparent text-[13px] font-normal text-slate-700 placeholder:text-slate-300 outline-none border-none py-0.5"
             />
           </div>
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4 thin-scrollbar mt-2">
+        <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4 thin-scrollbar mt-1">
           {filtered.map((p, idx) => (
             <div key={idx} className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 transition-colors">
               <div className="flex items-center gap-4">
                 <img src={p.img} alt={p.name} className="w-9 h-9 rounded-full object-cover border border-slate-100/50 shrink-0 shadow-sm" />
                 <div className="text-left min-w-0">
-                  <div className="text-[13px] font-medium text-slate-700 leading-normal truncate">{p.name}</div>
-                  <div className={`text-[10px] leading-normal font-medium tracking-wide mt-0.5 ${p.state === 'speaking' ? 'text-[#7C3AED]' : 'text-slate-400'}`}>
+                  <div className="text-[13px] font-normal text-slate-700 leading-normal truncate">{p.name}</div>
+                  <div className={`text-[10px] leading-normal font-normal tracking-wide mt-0.5 ${p.state === 'speaking' ? 'text-violet-400 font-medium' : 'text-slate-400'}`}>
                     {p.sub}
                   </div>
                 </div>
               </div>
 
               {/* Status icon / mic indicator */}
-                      <div className="shrink-0 mr-1">
+              <div className="shrink-0 mr-1">
                 {p.state === 'speaking' ? (
                   // Waves sound icon
                   <div className="flex items-end gap-[2px] h-3.5 px-1">
-                    <span className="w-[2px] bg-[#7C3AED] rounded-full animate-[pulse_0.8s_infinite_alternate]" style={{ height: '60%' }}></span>
-                    <span className="w-[2px] bg-[#7C3AED] rounded-full animate-[pulse_0.5s_infinite_alternate]" style={{ height: '100%' }}></span>
-                    <span className="w-[2px] bg-[#7C3AED] rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }}></span>
+                    <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.8s_infinite_alternate]" style={{ height: '60%' }}></span>
+                    <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.5s_infinite_alternate]" style={{ height: '100%' }}></span>
+                    <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }}></span>
                   </div>
                 ) : p.activeMic ? (
-                  <Mic size={14} className="text-[#7C3AED]" />
+                  <Mic size={14} className="text-violet-400" />
                 ) : (
-                  <MicOff size={14} className="text-slate-300" />
+                  <MicOff size={14} className="text-slate-200" />
                 )}
               </div>
             </div>
@@ -27966,10 +28035,10 @@ You can recommend task creations on the board.`;
         </div>
 
         {/* Invite button */}
-        <div className="p-3 border-t border-gray-100 shrink-0">
+        <div className="p-4 border-t border-gray-50 shrink-0">
           <button 
             onClick={() => setIsRoomInviteModalOpen?.(true) || alert('Invite dialog')}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-[#F5F3FF] hover:bg-[#EDE9FE] text-[#7C3AED] text-xs font-bold rounded-xl transition-colors shadow-sm"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-violet-50/50 hover:bg-violet-50 text-violet-500 text-xs font-medium rounded-2xl transition-colors"
           >
             <UserPlus size={14} />
             <span>Invite people</span>
@@ -27981,9 +28050,16 @@ You can recommend task creations on the board.`;
 
   const renderRoomRightSidebar = () => (
     <div className="flex flex-col h-full bg-white font-sans">
-      {/* Chat Header */}
-      <div className="h-[72px] flex items-center justify-between px-6 border-b border-gray-50/80 shrink-0">
-        <span className="text-[15px] font-medium text-slate-800">Chat</span>
+      {/* Chat Header (Draggable) */}
+      <div 
+        className="h-[72px] flex items-center justify-between px-6 border-b border-gray-50/80 shrink-0 cursor-move"
+        onPointerDown={(e) => {
+          if (e.button !== 0) return;
+          e.preventDefault();
+          setNavInteraction({ id: 'right', startX: e.clientX, startY: e.clientY, origin: rightNavOffset });
+        }}
+      >
+        <span className="text-[15px] font-medium text-slate-800 pointer-events-none">Chat</span>
         <button onClick={() => setIsRoomRightSidebarOpen(false)} className="p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">
           <X size={16} />
         </button>
@@ -28006,37 +28082,37 @@ You can recommend task creations on the board.`;
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 thin-scrollbar">
+      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-7 thin-scrollbar">
 
         {/* Sarah Chen */}
         <div className="flex gap-3">
-          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" className="w-8 h-8 rounded-full object-cover shrink-0" alt="Sarah Chen" />
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" alt="Sarah Chen" />
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[13px] font-bold text-slate-900">Sarah Chen</span>
-              <span className="text-[11px] text-slate-400">10:24 AM</span>
+              <span className="text-[13px] font-semibold text-slate-800">Sarah Chen</span>
+              <span className="text-[11px] font-medium text-slate-400">10:24 AM</span>
             </div>
-            <p className="text-[13px] text-slate-700 leading-relaxed">Let's align on the new onboarding flow.</p>
+            <p className="text-[13px] font-normal text-slate-600 leading-relaxed">Let's align on the new onboarding flow.</p>
           </div>
         </div>
 
         {/* Alex Rivera */}
         <div className="flex gap-3">
-          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" className="w-8 h-8 rounded-full object-cover shrink-0" alt="Alex Rivera" />
+          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" alt="Alex Rivera" />
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[13px] font-bold text-slate-900">Alex Rivera</span>
-              <span className="text-[11px] text-slate-400">10:25 AM</span>
+              <span className="text-[13px] font-semibold text-slate-800">Alex Rivera</span>
+              <span className="text-[11px] font-medium text-slate-400">10:25 AM</span>
             </div>
-            <p className="text-[13px] text-slate-700 leading-relaxed mb-2">I've pulled the latest metrics here.</p>
+            <p className="text-[13px] font-normal text-slate-600 leading-relaxed mb-3">I've pulled the latest metrics here.</p>
             {/* PDF Attachment */}
-            <div className="flex items-center gap-2.5 p-3 bg-red-50 border border-red-100 rounded-xl max-w-[220px]">
-              <div className="w-9 h-9 rounded-lg bg-red-500 flex items-center justify-center shrink-0">
+            <div className="flex items-center gap-2.5 p-3 bg-red-50/50 border border-transparent rounded-xl max-w-[220px]">
+              <div className="w-9 h-9 rounded-lg bg-red-400 flex items-center justify-center shrink-0">
                 <span className="text-white text-[9px] font-black tracking-tight">PDF</span>
               </div>
               <div className="min-w-0">
-                <div className="text-[12px] font-semibold text-slate-800 truncate">onboarding-metrics.pdf</div>
-                <div className="text-[11px] text-slate-400">PDF · 2.4 MB</div>
+                <div className="text-[12px] font-medium text-slate-700 truncate">onboarding-metrics.pdf</div>
+                <div className="text-[11px] font-normal text-slate-400">PDF · 2.4 MB</div>
               </div>
             </div>
           </div>
@@ -28044,27 +28120,27 @@ You can recommend task creations on the board.`;
 
         {/* Jamie Patel */}
         <div className="flex gap-3">
-          <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100" className="w-8 h-8 rounded-full object-cover shrink-0" alt="Jamie Patel" />
+          <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100" className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" alt="Jamie Patel" />
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[13px] font-bold text-slate-900">Jamie Patel</span>
-              <span className="text-[11px] text-slate-400">10:25 AM</span>
+              <span className="text-[13px] font-semibold text-slate-800">Jamie Patel</span>
+              <span className="text-[11px] font-medium text-slate-400">10:25 AM</span>
             </div>
-            <p className="text-[13px] text-slate-700 leading-relaxed">Thanks! Reviewing now.</p>
+            <p className="text-[13px] font-normal text-slate-600 leading-relaxed">Thanks! Reviewing now.</p>
           </div>
         </div>
 
         {/* You – @Room AI message (violet highlight) */}
         <div className="flex gap-3">
-          <div className="w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center text-[11px] font-bold shrink-0">U</div>
+          <div className="w-8 h-8 rounded-full bg-violet-500 text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm">U</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[13px] font-bold text-slate-900">You</span>
-              <span className="text-[11px] text-slate-400">10:28 AM</span>
+              <span className="text-[13px] font-semibold text-slate-800">You</span>
+              <span className="text-[11px] font-medium text-slate-400">10:28 AM</span>
             </div>
-            <div className="bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5 inline-block">
-              <p className="text-[13px] text-violet-800 leading-relaxed">
-                <span className="font-semibold text-violet-600">@Room AI</span> summarize the key decisions from this meeting.
+            <div className="bg-violet-50/60 border border-transparent rounded-2xl px-4 py-3 inline-block shadow-sm">
+              <p className="text-[13px] font-normal text-violet-700 leading-relaxed">
+                <span className="font-semibold text-violet-500">@Room AI</span> summarize the key decisions from this meeting.
               </p>
             </div>
           </div>
@@ -28073,14 +28149,14 @@ You can recommend task creations on the board.`;
       </div>
 
       {/* Message Input */}
-      <div className="p-3 border-t border-gray-100 shrink-0 bg-white">
+      <div className="p-4 border-t border-gray-50 shrink-0 bg-white">
         <div className="relative flex items-center">
           <input
             type="text"
             placeholder="Message everyone..."
-            className="w-full bg-gray-50 border border-gray-200 rounded-[24px] py-3 pl-4 pr-12 text-[13px] text-slate-800 placeholder:text-slate-400 outline-none focus:border-violet-300 focus:bg-white transition-colors"
+            className="w-full bg-[#F9FAFB] border border-transparent rounded-[24px] py-3.5 pl-5 pr-12 text-[13px] text-slate-700 placeholder:text-slate-300 outline-none focus:bg-white focus:border-gray-100 transition-colors shadow-[inset_0_1px_4px_rgba(0,0,0,0.01)]"
           />
-          <button className="absolute right-2 w-8 h-8 rounded-full bg-white border border-gray-200 text-slate-400 flex items-center justify-center hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200 transition-all">
+          <button className="absolute right-2 w-9 h-9 rounded-full bg-white border border-transparent text-slate-300 flex items-center justify-center hover:bg-violet-50 hover:text-violet-500 transition-all shadow-sm">
             <Send size={14} />
           </button>
         </div>
@@ -28089,20 +28165,20 @@ You can recommend task creations on the board.`;
   );
   
 const renderRoomTopHeader = () => (
-    <div className="shrink-0 h-[80px] bg-transparent flex items-center justify-between px-10 z-10 pt-2">
+    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 z-10 pt-2">
       <div className="flex items-center gap-10">
         {/* Logo */}
         <div className="flex items-center gap-2.5 select-none">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="12" cy="12" r="3.5" fill="#7C3AED" />
-            <circle cx="12" cy="5.5" r="2.5" fill="#7C3AED" />
-            <circle cx="17.63" cy="8.75" r="2.5" fill="#7C3AED" />
-            <circle cx="17.63" cy="15.25" r="2.5" fill="#7C3AED" />
-            <circle cx="12" cy="18.5" r="2.5" fill="#7C3AED" />
-            <circle cx="6.37" cy="15.25" r="2.5" fill="#7C3AED" />
-            <circle cx="6.37" cy="8.75" r="2.5" fill="#7C3AED" />
+            <circle cx="12" cy="12" r="3.5" fill="#A78BFA" />
+            <circle cx="12" cy="5.5" r="2.5" fill="#A78BFA" />
+            <circle cx="17.63" cy="8.75" r="2.5" fill="#A78BFA" />
+            <circle cx="17.63" cy="15.25" r="2.5" fill="#A78BFA" />
+            <circle cx="12" cy="18.5" r="2.5" fill="#A78BFA" />
+            <circle cx="6.37" cy="15.25" r="2.5" fill="#A78BFA" />
+            <circle cx="6.37" cy="8.75" r="2.5" fill="#A78BFA" />
           </svg>
-          <span className="text-[18px] font-bold text-[#7C3AED] tracking-tight font-sans">Room</span>
+          <span className="text-[18px] font-medium text-violet-400 tracking-tight font-sans">Room</span>
         </div>
 
         {/* Product Sync dropdown */}
@@ -28111,7 +28187,7 @@ const renderRoomTopHeader = () => (
             Product Sync
             <ChevronDown size={14} className="text-slate-300" />
           </button>
-          <button className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-gray-100 hover:bg-slate-50 transition-colors text-[11px] font-medium text-slate-500 shadow-sm">
+          <button className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-gray-50 hover:bg-slate-50 transition-colors text-[11px] font-medium text-slate-500 shadow-sm">
             <Users size={11} className="text-slate-400" />
             <span>8</span>
           </button>
@@ -28129,6 +28205,26 @@ const renderRoomTopHeader = () => (
           <span className="w-1.5 h-1.5 rounded-full bg-[#EA4335] animate-pulse"></span>
           <span className="text-[11px] font-medium text-slate-600 tracking-wide pr-1">Recording</span>
         </div>
+
+        <button 
+          onClick={() => {
+            const nextMaximized = !roomMaximized;
+            setRoomMaximized(nextMaximized);
+            if (nextMaximized) {
+              if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(()=>{});
+              }
+            } else {
+              if (document.exitFullscreen && document.fullscreenElement) {
+                document.exitFullscreen().catch(()=>{});
+              }
+            }
+          }}
+          className="p-2.5 rounded-2xl text-slate-300 hover:bg-slate-50 hover:text-slate-600 transition-colors" 
+          title={roomMaximized ? "Exit full screen" : "Full screen"}
+        >
+          {roomMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+        </button>
 
         <button className="p-2.5 rounded-2xl text-slate-300 hover:bg-slate-50 hover:text-slate-600 transition-colors" title="More Options">
           <MoreHorizontal size={16} />
@@ -34977,6 +35073,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
   const handleWorkspaceModuleClick = (moduleName) => {
     if (focusedModule === moduleName) return;
 
+    if (moduleName === 'room') {
+      if (roomState !== 'active') {
+        setRoomId(generateRoomCode());
+        setRoomState('active');
+      }
+      setRoomPanelMode('expanded');
+      setRoomMaximized(true);
+      setRightSidebarOpen(false);
+      setIsRoomFullscreen(true);
+      
+      const docEl = document.documentElement;
+      const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+      if (requestFS && !document.fullscreenElement) {
+        requestFS.call(docEl).catch(()=>{});
+      }
+      return;
+    }
+
     setDockedModules((prev) => {
       const newDocked = prev.filter((m) => m !== moduleName && m !== focusedModule);
       return [focusedModule, ...newDocked];
@@ -37473,7 +37587,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             ) : (
               /* Premium Immersive Room Mode */
-              <div className="flex-1 relative flex flex-col h-full w-full p-6 select-none bg-[#F8F9FC] font-sans" onClick={(e) => e.stopPropagation()}>
+              <div 
+                className="flex-1 relative flex flex-col h-full w-full p-6 select-none bg-[#F8F9FC] font-sans cursor-pointer" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRoomMaximized(true);
+                  const docEl = document.documentElement;
+                  const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+                  if (requestFS && !document.fullscreenElement) {
+                    requestFS.call(docEl).catch(()=>{});
+                  }
+                }}
+              >
                 {/* Active Speaker Card (Sarah Chen) */}
                 <div className="flex-1 min-h-0 relative mb-4 rounded-[28px] overflow-hidden border border-slate-200/50 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.06)] bg-white flex flex-col justify-center">
                   <img 
@@ -42564,28 +42689,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Room Global Overlay (Squarish, rounded, floating, with sidebars and header inside) ── */}
       {roomState === 'active' && roomPanelMode === 'expanded' && (
-        <div className="fixed inset-0 z-[9999] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white via-[#F7F6F5] to-[#F0EFEF] flex flex-col items-center justify-center p-8 md:p-12 font-sans overflow-hidden">
+        <div className={`fixed inset-0 z-[9999] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden transition-all duration-500 ${isRoomFullscreen ? 'p-0' : 'px-4 py-2 md:px-16 md:py-4'}`}>
           {/* Subtle vignette/radial glow overlay */}
-          <div className="absolute inset-0 bg-black/[0.015] pointer-events-none" />
+          <div className="absolute inset-0 bg-black/[0.025] pointer-events-none" />
           
-          <div className="w-full max-w-[1640px] h-[94vh] bg-white/70 backdrop-blur-[60px] rounded-[40px] shadow-[0_24px_100px_rgba(0,0,0,0.06)] flex flex-col overflow-hidden relative border border-white/60">
-            {renderRoomTopHeader()}
+          <div className={`w-full h-full relative flex items-center justify-center max-w-[1640px] ${isRoomFullscreen ? 'max-w-none' : ''}`}>
+            <div className={`w-full h-full bg-white/70 backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] border border-white/60 ${isRoomFullscreen ? 'rounded-none border-none' : 'rounded-[40px]'}`}>
+              {renderRoomTopHeader()}
             
-            {/* The main workspace below the header */}
-            <div className="flex-1 relative overflow-hidden bg-transparent rounded-t-[40px]">
-              
-              {/* Floating People Sidebar (Left) */}
-              {isRoomLeftSidebarOpen && (
-                <div className="absolute top-8 left-8 w-[280px] max-h-[80vh] bg-white rounded-[32px] shadow-[0_20px_80px_rgba(0,0,0,0.05)] flex flex-col z-[100] overflow-hidden border border-slate-100/60">
-                  {renderRoomLeftSidebar()}
-                </div>
-              )}
+              {/* The main workspace below the header */}
+              <div className="flex-1 relative overflow-hidden bg-transparent rounded-t-[40px]">
 
               {/* Main Video Canvas Area */}
               <div className="absolute inset-0 flex flex-col items-center justify-between pointer-events-none p-8">
                 
                 {/* Main Video Container */}
-                <div className="flex-1 w-full max-w-[1050px] mt-2 relative overflow-hidden rounded-[36px] bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 mx-auto border border-black/10">
+                <div className="flex-1 w-full max-w-[1100px] mt-4 relative overflow-hidden rounded-[32px] bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.08)] pointer-events-auto transition-all duration-500 mx-auto border border-black/10 min-h-[30vh]">
                   <div className="absolute inset-0">
                     <img
                       src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1200"
@@ -42607,7 +42726,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
 
                 {/* Participant Thumbnail Strip */}
-                <div className="mt-10 mb-4 flex justify-center gap-6 shrink-0 pointer-events-auto w-full max-w-[1200px]">
+                <div className="mt-4 mb-4 flex justify-center gap-4 lg:gap-6 shrink-0 pointer-events-auto w-full max-w-[1300px]">
                   {[
                     { name: 'Alex Rivera',  img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300' },
                     { name: 'Jamie Patel', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300' },
@@ -42615,7 +42734,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     { name: 'Morgan Lee',  img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300' },
                     { name: '+3',          img: null },
                   ].map((p, i) => (
-                    <div key={i} className="relative w-[210px] h-[140px] rounded-[28px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group">
+                    <div key={i} className="relative w-[160px] h-[120px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group">
                       {p.img ? (
                         <img src={p.img} alt={p.name} className="w-full h-full object-cover absolute inset-0" />
                       ) : (
@@ -42638,99 +42757,118 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
 
                 {/* Bottom Control Section */}
-                <div className="flex flex-col items-center gap-4 mb-2 shrink-0 pointer-events-auto">
+                <div className="flex flex-col items-center gap-5 mb-2 shrink-0 pointer-events-auto">
                   
                   {/* Toolbar */}
-                  <div className="flex items-center gap-3 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3.5 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
+                  <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
                     <button
                       onClick={toggleRoomMic}
-                      className={`w-[52px] h-[52px] rounded-full flex items-center justify-center transition-all ${
-                        isRoomMicOn ? 'text-slate-500 hover:bg-slate-100/50' : 'bg-[#F25A5A] text-white hover:bg-red-500 shadow-[0_8px_24px_rgba(242,90,90,0.3)]'
-                      }`}
+                      className="w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all text-violet-500 hover:bg-violet-50"
                       title="Toggle mic"
                     >
-                      {isRoomMicOn ? <Mic size={20} strokeWidth={1.5} /> : <MicOff size={20} strokeWidth={1.5} />}
+                      {isRoomMicOn ? <Mic size={18} strokeWidth={1.5} /> : <MicOff size={18} strokeWidth={1.5} />}
                     </button>
                     <button
                       onClick={toggleRoomCamera}
-                      className={`w-[52px] h-[52px] rounded-full flex items-center justify-center transition-all ${
-                        isRoomCameraOn ? 'text-slate-500 hover:bg-slate-100/50' : 'bg-[#F25A5A] text-white hover:bg-red-500 shadow-[0_8px_24px_rgba(242,90,90,0.3)]'
-                      }`}
+                      className="w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all text-violet-500 hover:bg-violet-50"
                       title="Toggle camera"
                     >
-                      {isRoomCameraOn ? <Video size={20} strokeWidth={1.5} /> : <VideoOff size={20} strokeWidth={1.5} />}
+                      {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
                     </button>
                     <button
                       onClick={() => handleMeetingShareOption?.('document')}
-                      className="w-[52px] h-[52px] rounded-full text-slate-500 hover:bg-slate-100/50 flex items-center justify-center transition-all"
+                      className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
                       title="Share screen"
                     >
-                      <MonitorPlay size={20} strokeWidth={1.5} />
+                      <MonitorPlay size={18} strokeWidth={1.5} />
                     </button>
-                    <button className="w-[52px] h-[52px] rounded-full text-slate-500 hover:bg-slate-100/50 flex items-center justify-center transition-all" title="Room AI">
-                      <Sparkles size={20} strokeWidth={1.5} />
+                    <button className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all" title="Room AI">
+                      <Sparkles size={18} strokeWidth={1.5} />
                     </button>
-                    <button className="w-[52px] h-[52px] rounded-full text-slate-500 hover:bg-slate-100/50 flex items-center justify-center transition-all" title="More">
-                      <MoreHorizontal size={20} strokeWidth={1.5} />
+                    <button className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all" title="More">
+                      <MoreHorizontal size={18} strokeWidth={1.5} />
                     </button>
                     <button
                       onClick={leaveRoom}
-                      className="w-[52px] h-[52px] rounded-full bg-[#F25A5A] hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-[0_8px_24px_rgba(242,90,90,0.3)] ml-2"
+                      className="w-[44px] h-[44px] rounded-full bg-[#F25A5A] hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-[0_8px_24px_rgba(242,90,90,0.3)] ml-2"
                       title="Leave room"
                     >
-                      <PhoneOff size={20} strokeWidth={1.5} />
+                      <PhoneOff size={18} strokeWidth={1.5} />
                     </button>
                   </div>
 
                   {/* Ask AI Bar */}
-                  <div className="flex items-center gap-4 bg-white/90 backdrop-blur-2xl rounded-[32px] px-7 py-3.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 w-full min-w-[460px] max-w-[500px]">
+                  <div className="flex items-center gap-4 bg-white/90 backdrop-blur-2xl rounded-[32px] px-8 py-4.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 w-full min-w-[540px] max-w-[580px]">
                     <Sparkles size={18} strokeWidth={1.5} className="text-violet-400 shrink-0" />
                     <span className="text-[14px] text-slate-400 flex-1 font-normal tracking-wide">Ask Room AI...</span>
-                    <button className="w-9 h-9 rounded-full bg-violet-50/80 text-violet-500 hover:bg-violet-100 flex items-center justify-center shrink-0 transition-colors border border-violet-100/50">
+                    <button className="w-10 h-10 rounded-full bg-violet-50/80 text-violet-400 hover:bg-violet-100 flex items-center justify-center shrink-0 transition-colors border border-violet-100/50">
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                     </button>
                   </div>
                 </div>
               </div>
+            </div>
+            </div>
+            
+            {/* Floating People Sidebar (Left) */}
+            {isRoomLeftSidebarOpen && (
+              <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ left: '-32px', top: '84px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', transform: `translate(${leftNavOffset.x}px, ${leftNavOffset.y}px)` }}>
+                {renderRoomLeftSidebar()}
+              </div>
+            )}
 
-              {/* Floating Chat Sidebar (Right) */}
-              {isRoomRightSidebarOpen && (
-                <div className="absolute top-8 right-8 w-[320px] max-h-[75vh] bg-white rounded-[32px] shadow-[0_20px_80px_rgba(0,0,0,0.05)] flex flex-col z-[100] overflow-hidden border border-slate-100/60">
-                  {renderRoomRightSidebar()}
-                </div>
-              )}
-              
-              {/* Bottom Left Floating Toggles (Chat) */}
-              {!isRoomLeftSidebarOpen && (
+            {/* Floating Chat Sidebar (Right) */}
+            {isRoomRightSidebarOpen && (
+              <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '-32px', top: '84px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', transform: `translate(${rightNavOffset.x}px, ${rightNavOffset.y}px)` }}>
+                {renderRoomRightSidebar()}
+              </div>
+            )}
+            
+            {/* Left Floating Toggle (People) */}
+            <div
+              className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
+              style={{ 
+                left: '-72px', 
+                bottom: '48px',
+                transform: `translate(${leftNavOffset.x}px, ${leftNavOffset.y}px)`
+              }}
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                e.stopPropagation();
+                setNavInteraction({ id: 'left', startX: e.clientX, startY: e.clientY, origin: leftNavOffset });
+              }}
+            >
+              <div className="relative">
                 <button
-                  onClick={() => setIsRoomLeftSidebarOpen(true)}
-                  className="absolute bottom-12 left-12 w-[56px] h-[56px] rounded-full flex items-center justify-center bg-white/90 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.06)] border border-white/60 text-slate-400 hover:text-slate-600 transition-all z-[90] pointer-events-auto"
+                  onClick={() => setIsRoomLeftSidebarOpen(!isRoomLeftSidebarOpen)}
+                  className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] border border-violet-100/60 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-all cursor-pointer"
                 >
-                  <MessageSquare size={22} strokeWidth={1.5} />
+                  <Users size={20} strokeWidth={1.5} />
                 </button>
-              )}
-              
-              {/* Bottom Right Floating Toggles (People, Chat) */}
-              {(!isRoomRightSidebarOpen) && (
-                <div className="absolute bottom-12 right-12 flex items-center gap-4 z-[90] pointer-events-auto">
-                  <div className="relative">
-                    <button
-                      onClick={() => setIsRoomRightSidebarOpen(true)}
-                      className="w-[56px] h-[56px] rounded-full flex items-center justify-center bg-white/90 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.06)] border border-white/60 text-slate-400 hover:text-slate-600 transition-all"
-                    >
-                      <Users size={22} strokeWidth={1.5} />
-                    </button>
-                    <span className="absolute top-0 right-0 min-w-[20px] h-[20px] rounded-full bg-slate-800 text-white text-[10px] font-medium flex items-center justify-center px-1.5 shadow-sm">8</span>
-                  </div>
-                  <button
-                    onClick={() => setIsRoomRightSidebarOpen(true)}
-                    className="w-[56px] h-[56px] rounded-full flex items-center justify-center bg-white/90 backdrop-blur-xl shadow-[0_16px_40px_rgba(0,0,0,0.06)] border border-white/60 text-slate-400 hover:text-slate-600 transition-all"
-                  >
-                    <MessageSquare size={22} strokeWidth={1.5} />
-                  </button>
-                </div>
-              )}
-
+                <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] rounded-full bg-violet-500 text-white text-[10px] font-medium flex items-center justify-center px-1.5 shadow-sm pointer-events-none">8</span>
+              </div>
+            </div>
+            
+            {/* Right Floating Toggle (Chat) */}
+            <div
+              className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
+              style={{ 
+                right: '-72px', 
+                bottom: '48px',
+                transform: `translate(${rightNavOffset.x}px, ${rightNavOffset.y}px)`
+              }}
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                e.stopPropagation();
+                setNavInteraction({ id: 'right', startX: e.clientX, startY: e.clientY, origin: rightNavOffset });
+              }}
+            >
+              <button
+                onClick={() => setIsRoomRightSidebarOpen(!isRoomRightSidebarOpen)}
+                className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] border border-violet-100/60 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-all cursor-pointer"
+              >
+                <MessageSquare size={20} strokeWidth={1.5} />
+              </button>
             </div>
           </div>
         </div>
@@ -45303,56 +45441,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
-          <div 
-            className="pointer-events-none fixed z-[15000] flex items-center justify-center"
-            style={{
-              left: `${dictationAnchor.left}px`,
-              top: `${dictationAnchor.top}px`,
-              transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
-            }}
-          >
-            <div 
-              onPointerDown={(event) => {
-                if (event.target.tagName !== 'BUTTON' && !event.target.closest('button')) {
-                  beginPanelResize('dictation', event);
-                }
-              }}
-              className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-xl ${
-                isVoiceActive && voiceTarget === 'document' 
-                  ? 'rounded-2xl bg-violet-50/95 border-violet-400 outline outline-2 outline-violet-500/30 px-4 py-2.5 gap-3 shadow-[0_12px_40px_-15px_rgba(139,92,246,0.3)] min-w-[240px] max-w-[320px]' 
-                  : 'rounded-full bg-white/90 border-slate-200/80 p-1 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:border-violet-300/80'
-              }`}
-            >
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={async () => {
-                  await toggleVoiceRecording('document');
-                }}
-                className={`flex items-center justify-center rounded-full transition-all duration-300 ${
-                  isVoiceActive && voiceTarget === 'document'
-                    ? 'w-8 h-8 bg-violet-600 text-white shadow-[0_0_12px_rgba(124,58,237,0.5)] animate-pulse'
-                    : 'w-10 h-10 bg-slate-50 hover:bg-violet-50 text-slate-500 hover:text-violet-600'
-                }`}
-                title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice transcription' : 'Start voice transcription'}
-              >
-                <Mic size={isVoiceActive && voiceTarget === 'document' ? 16 : 18} />
-              </button>
 
-              {isVoiceActive && voiceTarget === 'document' ? (
-                <div className="flex-1 flex flex-col justify-center min-w-0 pr-1">
-                  <div className="text-[10px] font-bold text-violet-600 tracking-wider uppercase opacity-85">Dictation Active</div>
-                  <div className="text-[12px] font-medium text-slate-700 truncate leading-relaxed">
-                    {liveSpeechInterimText || 'Listening...'}
-                  </div>
-                </div>
-              ) : (
-                <span className="text-[11px] font-semibold text-slate-400 px-3 pr-4 pointer-events-none">Dictate</span>
-              )}
-            </div>
-          </div>
-        )}
 
 
       {/* Compose Pickers */}
