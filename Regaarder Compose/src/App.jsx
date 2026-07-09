@@ -42812,14 +42812,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
             
             {/* Floating People Sidebar (Left) */}
             {isRoomLeftSidebarOpen && (
-              <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ left: '-32px', top: '84px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', transform: `translate(${leftNavOffset.x}px, ${leftNavOffset.y}px)` }}>
+              <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ left: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', transform: `translate(${leftNavOffset.x}px, ${leftNavOffset.y}px)` }}>
                 {renderRoomLeftSidebar()}
               </div>
             )}
 
             {/* Floating Chat Sidebar (Right) */}
             {isRoomRightSidebarOpen && (
-              <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '-32px', top: '84px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px', transform: `translate(${rightNavOffset.x}px, ${rightNavOffset.y}px)` }}>
+              <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '164px', width: '280px', height: 'calc(100vh - 240px)', maxHeight: '700px', transform: `translate(${rightNavOffset.x}px, ${rightNavOffset.y}px)` }}>
                 {renderRoomRightSidebar()}
               </div>
             )}
@@ -42829,20 +42829,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div
                 className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
                 style={{ 
-                left: '-72px', 
+                left: '32px', 
                 bottom: '48px',
                 transform: `translate(${leftNavOffset.x}px, ${leftNavOffset.y}px)`
               }}
               onPointerDown={(e) => {
                 if (e.button !== 0) return;
                 e.stopPropagation();
+                e.currentTarget.dataset.dragStartX = e.clientX;
+                e.currentTarget.dataset.dragStartY = e.clientY;
                 setNavInteraction({ id: 'left', startX: e.clientX, startY: e.clientY, origin: leftNavOffset });
+              }}
+              onPointerUp={(e) => {
+                const startX = parseFloat(e.currentTarget.dataset.dragStartX || 0);
+                const startY = parseFloat(e.currentTarget.dataset.dragStartY || 0);
+                if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) {
+                  setIsRoomLeftSidebarOpen(true);
+                }
               }}
             >
               <div className="relative">
                 <button
-                  onClick={() => setIsRoomLeftSidebarOpen(!isRoomLeftSidebarOpen)}
-                  className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] border border-violet-100/60 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-all cursor-pointer"
+                  className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] border border-violet-100/60 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-all cursor-move pointer-events-none"
                 >
                   <Users size={20} strokeWidth={1.5} />
                 </button>
@@ -42856,19 +42864,27 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div
                 className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
                 style={{ 
-                right: '-72px', 
+                right: '32px', 
                 bottom: '48px',
                 transform: `translate(${rightNavOffset.x}px, ${rightNavOffset.y}px)`
               }}
               onPointerDown={(e) => {
                 if (e.button !== 0) return;
                 e.stopPropagation();
+                e.currentTarget.dataset.dragStartX = e.clientX;
+                e.currentTarget.dataset.dragStartY = e.clientY;
                 setNavInteraction({ id: 'right', startX: e.clientX, startY: e.clientY, origin: rightNavOffset });
+              }}
+              onPointerUp={(e) => {
+                const startX = parseFloat(e.currentTarget.dataset.dragStartX || 0);
+                const startY = parseFloat(e.currentTarget.dataset.dragStartY || 0);
+                if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) {
+                  setIsRoomRightSidebarOpen(true);
+                }
               }}
             >
               <button
-                onClick={() => setIsRoomRightSidebarOpen(!isRoomRightSidebarOpen)}
-                className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] border border-violet-100/60 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-all cursor-pointer"
+                className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] border border-violet-100/60 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-all cursor-move pointer-events-none"
               >
                 <MessageSquare size={20} strokeWidth={1.5} />
               </button>
