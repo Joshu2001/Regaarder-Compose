@@ -42689,12 +42689,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Room Global Overlay (Squarish, rounded, floating, with sidebars and header inside) ── */}
       {roomState === 'active' && roomPanelMode === 'expanded' && (
-        <div className={`fixed inset-0 z-[9999] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden transition-all duration-500 ${isRoomFullscreen ? 'p-0' : 'px-4 py-2 md:px-16 md:py-4'}`}>
+        <div className="fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden transition-all duration-500 p-2 md:p-4">
           {/* Subtle vignette/radial glow overlay */}
           <div className="absolute inset-0 bg-black/[0.025] pointer-events-none" />
           
-          <div className={`w-full h-full relative flex items-center justify-center max-w-[1640px] ${isRoomFullscreen ? 'max-w-none' : ''}`}>
-            <div className={`w-full h-full bg-white/70 backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] border border-white/60 ${isRoomFullscreen ? 'rounded-none border-none' : 'rounded-[40px]'}`}>
+          <div className="w-full h-full relative flex items-center justify-center max-w-[1640px]">
+            <div className="w-full h-full bg-white/70 backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] border border-white/60 rounded-[40px]">
               {renderRoomTopHeader()}
             
               {/* The main workspace below the header */}
@@ -42704,7 +42704,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="absolute inset-0 flex flex-col items-center justify-between pointer-events-none p-8">
                 
                 {/* Main Video Container */}
-                <div className="flex-1 w-full max-w-[1100px] mt-4 relative overflow-hidden rounded-[32px] bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.08)] pointer-events-auto transition-all duration-500 mx-auto border border-black/10 min-h-[30vh]">
+                <div className="flex-1 w-full max-w-[740px] mt-4 relative overflow-hidden rounded-[32px] bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.08)] pointer-events-auto transition-all duration-500 mx-auto border border-black/10 min-h-[30vh]">
                   <div className="absolute inset-0">
                     <img
                       src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1200"
@@ -42726,7 +42726,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
 
                 {/* Participant Thumbnail Strip */}
-                <div className="mt-4 mb-4 flex justify-center gap-4 lg:gap-6 shrink-0 pointer-events-auto w-full max-w-[1300px]">
+                <div className="mt-4 mb-4 flex justify-center gap-4 lg:gap-6 shrink-0 pointer-events-auto w-full max-w-[740px]">
                   {[
                     { name: 'Alex Rivera',  img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300' },
                     { name: 'Jamie Patel', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300' },
