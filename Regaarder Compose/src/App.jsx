@@ -28489,7 +28489,7 @@ You can recommend task creations on the board.`;
   );
   
 const renderRoomTopHeader = () => (
-    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 z-10 pt-2">
+    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative z-[100000] pt-2">
       <div className="flex items-center gap-10">
         {/* Logo */}
         <div className="flex items-center gap-2.5 select-none">
