@@ -1,0 +1,40 @@
+[
+  {
+    "id": "user_1783426910286",
+    "email": "test_1783426910189@example.com",
+    "name": "Testy Tester",
+    "passwordHash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "provider": "email",
+    "createdAt": "2026-07-07T12:21:50.286Z"
+  },
+  {
+    "id": "user_1783426910313",
+    "email": "google_1783426910310@example.com",
+    "name": "Google User",
+    "provider": "google",
+    "createdAt": "2026-07-07T12:21:50.313Z"
+  },
+  {
+    "id": "user_1783427472635",
+    "email": "test_40231@example.com",
+    "name": "Jane Doe",
+    "passwordHash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "provider": "email",
+    "createdAt": "2026-07-07T12:31:12.635Z"
+  },
+  {
+    "id": "user_1783427630062",
+    "email": "test_30028@example.com",
+    "name": "Jane Doe",
+    "passwordHash": "ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f",
+    "provider": "email",
+    "createdAt": "2026-07-07T12:33:50.062Z"
+  },
+  {
+    "id": "user_1783427630097",
+    "email": "google_test_user@example.com",
+    "name": "Google Test User",
+    "provider": "google",
+    "createdAt": "2026-07-07T12:33:50.097Z"
+  }
+]

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096",
+      "CI": ""
+    }
+  },
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/((?!assets/|favicon.ico|.*\\..*$).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

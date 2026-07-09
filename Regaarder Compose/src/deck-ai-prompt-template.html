@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elite Presentation Deck</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Urbanist:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #020617;
+    --bg-card: #0f172a;
+    --brand-primary: #6366f1;
+    --brand-secondary: #8b5cf6;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --radius-primary: 16px;
+    --radius-micro: 8px;
+    --font-heading: 'Urbanist', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    background-color: #000;
+  }
+
+  /* FIXED CANVAS METAPHOR */
+  .slide {
+    width: 1280px;
+    height: 720px;
+    background-color: var(--bg-deep);
+    color: var(--text-main);
+    font-family: var(--font-body);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-primary);
+    box-sizing: border-box;
+    margin: 40px auto; /* Centered in operator view */
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  /* HEADER LOCK */
+  .slide-header {
+    position: absolute;
+    top: 40px;
+    left: 60px;
+    right: 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+  }
+
+  .slide-header .company-logo {
+    font-family: var(--font-heading);
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--brand-primary);
+    letter-spacing: 0.05em;
+  }
+
+  .slide-header .slide-number {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* TEXT CONTRAST & TRACKING */
+  .ui-label {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--brand-secondary);
+    text-transform: uppercase;
+  }
+
+  /* LAYOUT BLUEPRINTS */
+
+  /* 1. Title Layout */
+  .title-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 100px;
+  }
+
+  .title-layout h1 {
+    font-size: 84px;
+    background: linear-gradient(135deg, var(--text-main), var(--text-muted));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 24px;
+  }
+
+  .title-layout p {
+    font-size: 24px;
+    max-width: 800px;
+  }
+
+  /* 2. Section Title Layout */
+  .section-title-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 120px;
+    position: relative;
+  }
+
+  .section-title-layout::before {
+    content: '';
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 120px;
+    background: linear-gradient(to bottom, var(--brand-primary), var(--brand-secondary));
+    border-radius: var(--radius-micro);
+  }
+
+  .section-title-layout h2 {
+    font-size: 64px;
+    margin-bottom: 16px;
+  }
+
+  .section-title-layout p {
+    font-size: 20px;
+    max-width: 600px;
+  }
+
+  /* 3. Two Column Layout */
+  .two-column {
+    display: flex;
+    padding: 120px 60px 60px 60px;
+    gap: 60px;
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  .two-column .col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .two-column h2 {
+    font-size: 48px;
+    margin-bottom: 24px;
+  }
+
+  .two-column p {
+    font-size: 20px;
+    margin-bottom: 24px;
+  }
+
+  .image-placeholder {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-primary);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-weight: 500;
+    border: 1px dashed rgba(148, 163, 184, 0.2);
+    overflow: hidden;
+  }
+
+  .image-placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* 4. Tiled Content Layout */
+  .tiled-content {
+    padding: 140px 60px 60px 60px;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tiled-content h2 {
+    font-size: 40px;
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    flex: 1;
+  }
+
+  .card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-primary);
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    background-color: rgba(99, 102, 241, 0.1);
+    color: var(--brand-primary);
+    border-radius: var(--radius-micro);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 24px;
+  }
+
+  .card h3 {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .card p {
+    font-size: 16px;
+  }
+
+  /* 5. Highlight Numbers Layout */
+  .highlight-numbers-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 100px;
+    text-align: center;
+  }
+
+  .highlight-numbers-layout .big-number {
+    font-family: var(--font-heading);
+    font-size: 160px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+
+  .highlight-numbers-layout h3 {
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+
+  .highlight-numbers-layout p {
+    font-size: 20px;
+    max-width: 600px;
+  }
+
+  /* 6. Table Layout */
+  .table-layout {
+    padding: 140px 60px 60px 60px;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .table-layout h2 {
+    font-size: 40px;
+    margin-bottom: 40px;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .data-table th {
+    text-align: left;
+    padding: 24px;
+    color: var(--brand-secondary);
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .data-table td {
+    padding: 24px;
+    color: var(--text-main);
+    font-size: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  /* 7. Timeline Layout */
+  .timeline-layout {
+    padding: 140px 60px 60px 60px;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .timeline-layout h2 {
+    font-size: 40px;
+    margin-bottom: 80px;
+    text-align: center;
+  }
+
+  .timeline-track {
+    position: relative;
+    height: 4px;
+    background-color: var(--bg-card);
+    border-radius: 2px;
+    display: flex;
+    justify-content: space-between;
+    margin: 0 40px;
+  }
+
+  .timeline-node {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    background-color: var(--brand-primary);
+    border-radius: 50%;
+    top: -10px;
+    box-shadow: 0 0 0 8px var(--bg-deep);
+  }
+
+  .timeline-content {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 280px;
+    max-width: calc(100vw / 4);
+    text-align: center;
+  }
+
+  .timeline-content h4 {
+    font-size: 20px;
+    margin-bottom: 8px;
+    color: var(--text-main);
+  }
+
+  .timeline-content p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* 8. Bleed Image Layout */
+  .bleed-image-layout {
+    display: flex;
+    height: 100%;
+  }
+
+  .bleed-image-layout .text-pane {
+    width: 50%;
+    padding: 120px 60px 60px 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .bleed-image-layout .image-pane {
+    width: 50%;
+    background-color: var(--bg-card);
+    overflow: hidden;
+  }
+
+  .bleed-image-layout img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .bleed-image-layout h2 {
+    font-size: 56px;
+    margin-bottom: 24px;
+  }
+
+  .bleed-image-layout p {
+    font-size: 20px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Slide 1: Title Layout -->
+  <div class="slide title-layout">
+    <div class="slide-header">
+      <div class="company-logo">[AI_COMPANY_LOGO]</div>
+      <div class="slide-number">01</div>
+    </div>
+    <div class="ui-label" style="margin-bottom: 24px;">[AI_CATEGORY_TAG]</div>
+    <h1>[AI_GENERATED_TITLE]</h1>
+    <p>[AI_GENERATED_SUBTITLE]</p>
+  </div>
+
+  <!-- Slide 2: Section Title Layout -->
+  <div class="slide section-title-layout">
+    <div class="slide-header">
+      <div class="company-logo">[AI_COMPANY_LOGO]</div>
+      <div class="slide-number">02</div>
+    </div>
+    <div class="ui-label" style="margin-bottom: 16px;">[AI_SECTION_TAG]</div>
+    <h2>[AI_SECTION_TITLE]</h2>
+    <p>[AI_SECTION_SUMMARY]</p>
+  </div>
+
+  <!-- Slide 3: Two Column Layout -->
+  <div class="slide two-column">
+    <div class="slide-header">
+      <div class="company-logo">[AI_COMPANY_LOGO]</div>
+      <div class="slide-number">03</div>
+    </div>
+    <div class="col">
+      <div class="ui-label" style="margin-bottom: 16px;">[AI_COLUMN_LABEL]</div>
+      <h2>[AI_COLUMN_TITLE]</h2>
+      <p>[AI_PARAGRAPH_1]</p>
+      <p>[AI_PARAGRAPH_2]</p>
+    </div>
+    <div class="col">
+      <div class="image-placeholder">
+        <img src="[AI_IMAGE_TOKEN]" alt="[AI_IMAGE_DESC]" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: Tiled Content Layout -->
+  <div class="slide tiled-content">
+    <div class="slide-header">
+      <div class="company-logo">[AI_COMPANY_LOGO]</div>
+      <div class="slide-number">04</div>
+    </div>
+    <h2>[AI_TILED_TITLE]</h2>
+    <div class="grid-container">
+      <div class="card">
+        <div class="card-icon">[AI_ICON_1]</div>
+        <h3>[AI_CARD_1_TITLE]</h3>
+        <p>[AI_CARD_1_DESC]</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">[AI_ICON_2]</div>
+        <h3>[AI_CARD_2_TITLE]</h3>
+        <p>[AI_CARD_2_DESC]</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">[AI_ICON_3]</div>
+        <h3>[AI_CARD_3_TITLE]</h3>
+        <p>[AI_CARD_3_DESC]</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: Highlight Numbers Layout -->
+  <div class="slide highlight-numbers-layout">
+    <div class="slide-header">
+      <div class="company-logo">[AI_COMPANY_LOGO]</div>
+      <div class="slide-number">05</div>
+    </div>
+    <div class="ui-label" style="margin-bottom: 16px;">[AI_METRIC_LABEL]</div>
+    <div class="big-number">[AI_BIG_NUMBER]</div>
+    <h3>[AI_METRIC_TITLE]</h3>
+    <p>[AI_METRIC_DESC]</p>
+  </div>
+
+  <!-- Slide 6: Table Layout -->
+  <div class="slide table-layout">
+    <div class="slide-header">
+      <div class="company-logo">[AI_COMPANY_LOGO]</div>
+      <div class="slide-number">06</div>
+    </div>
+    <h2>[AI_TABLE_TITLE]</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>[AI_TH_1]</th>
+          <th>[AI_TH_2]</th>
+          <th>[AI_TH_3]</th>
+          <th>[AI_TH_4]</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>[AI_TD_1_1]</td>
+          <td style="color: var(--brand-primary); font-weight: 600;">[AI_TD_1_2]</td>
+          <td>[AI_TD_1_3]</td>
+          <td>[AI_TD_1_4]</td>
+        </tr>
+        <tr>
+          <td>[AI_TD_2_1]</td>
+          <td style="color: var(--brand-primary); font-weight: 600;">[AI_TD_2_2]</td>
+          <td>[AI_TD_2_3]</td>
+          <td>[AI_TD_2_4]</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Slide 7: Timeline Layout -->
+  <div class="slide timeline-layout">
+    <div class="slide-header">
+      <div class="company-logo">[AI_COMPANY_LOGO]</div>
+      <div class="slide-number">07</div>
+    </div>
+    <h2>[AI_TIMELINE_TITLE]</h2>
+    <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+      <div class="timeline-track">
+        <div class="timeline-node">
+          <div class="timeline-content">
+            <div class="ui-label" style="margin-bottom: 8px;">[AI_NODE_1_LABEL]</div>
+            <h4>[AI_NODE_1_TITLE]</h4>
+            <p>[AI_NODE_1_DESC]</p>
+          </div>
+        </div>
+        <div class="timeline-node" style="background-color: var(--brand-secondary);">
+          <div class="timeline-content">
+            <div class="ui-label" style="margin-bottom: 8px;">[AI_NODE_2_LABEL]</div>
+            <h4>[AI_NODE_2_TITLE]</h4>
+            <p>[AI_NODE_2_DESC]</p>
+          </div>
+        </div>
+        <div class="timeline-node" style="background-color: var(--text-muted);">
+          <div class="timeline-content">
+            <div class="ui-label" style="margin-bottom: 8px;">[AI_NODE_3_LABEL]</div>
+            <h4>[AI_NODE_3_TITLE]</h4>
+            <p>[AI_NODE_3_DESC]</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 8: Bleed Image Layout -->
+  <div class="slide bleed-image-layout">
+    <div class="slide-header">
+      <div class="company-logo">[AI_COMPANY_LOGO]</div>
+      <div class="slide-number">08</div>
+    </div>
+    <div class="text-pane">
+      <div class="ui-label" style="margin-bottom: 16px;">[AI_BLEED_LABEL]</div>
+      <h2>[AI_BLEED_TITLE]</h2>
+      <p style="margin-bottom: 40px;">[AI_BLEED_DESC]</p>
+      <div class="ui-label">[AI_BLEED_CONTACT]</div>
+    </div>
+    <div class="image-pane">
+      <img src="[AI_IMAGE_TOKEN]" alt="[AI_IMAGE_DESC]" />
+    </div>
+  </div>
+
+</body>
+</html>
