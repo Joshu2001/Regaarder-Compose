@@ -1977,11 +1977,26 @@ const DraggablePanel = ({ id, children, isDeleteZoneActive, onDelete, isHidden }
       document.removeEventListener('pointerup', handlePointerUp);
 
       if (isDeleteZoneActive) {
-        // Broaden the dropzone detection area for easier dropping
-        const xPercent = (upEvent.clientX / window.innerWidth) * 100;
-        const yPercent = (upEvent.clientY / window.innerHeight) * 100;
-        if (xPercent > 25 && xPercent < 75 && yPercent > 60) {
-          onDelete(id);
+        const dropzone = document.getElementById('delete-dropzone');
+        if (dropzone) {
+          const rect = dropzone.getBoundingClientRect();
+          // Add a generous padding to the rect for easier dropping
+          const padding = 20;
+          if (
+            upEvent.clientX >= rect.left - padding &&
+            upEvent.clientX <= rect.right + padding &&
+            upEvent.clientY >= rect.top - padding &&
+            upEvent.clientY <= rect.bottom + padding
+          ) {
+            onDelete(id);
+          }
+        } else {
+          // Fallback if dropzone isn't rendered
+          const xPercent = (upEvent.clientX / window.innerWidth) * 100;
+          const yPercent = (upEvent.clientY / window.innerHeight) * 100;
+          if (xPercent > 25 && xPercent < 75 && yPercent > 60) {
+            onDelete(id);
+          }
         }
       }
     };
@@ -2018,6 +2033,7 @@ export default function App() {
   const [hiddenPanels, setHiddenPanels] = useState([]);
   const [isDeleteZoneActive, setIsDeleteZoneActive] = useState(false);
   const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -28538,9 +28554,42 @@ const renderRoomTopHeader = () => (
           {roomMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
         </button>
 
-        <button className="p-2.5 rounded-2xl text-slate-300 hover:bg-slate-50 hover:text-slate-600 transition-colors" title="More Options">
-          <MoreHorizontal size={16} />
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+            className={`p-2.5 rounded-2xl transition-colors ${isMoreMenuOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
+            title="More Options"
+          >
+            <MoreHorizontal size={16} />
+          </button>
+          
+          {/* More Options Dropdown */}
+          {isMoreMenuOpen && (
+            <div className="absolute top-[calc(100%+8px)] right-0 w-48 bg-white/95 backdrop-blur-xl rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.12)] border border-white/60 p-2 z-[100000]">
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+                <MessageSquare size={16} /> Captions
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+                <MonitorPlay size={16} /> Present
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+                <FileText size={16} /> Notes
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+                <Sparkles size={16} /> Summary
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+                <Calendar size={16} /> Calendar
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+                <Users size={16} /> Meetings
+              </button>
+              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+                <Disc size={16} /> Recording
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -43236,12 +43285,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
           
           {/* Dropzone for Deletion */}
           {isDeleteZoneActive && (
-            <div className="fixed inset-x-0 bottom-12 z-[100000] flex justify-center pointer-events-none animate-in slide-in-from-bottom-10 fade-in duration-300">
-              <div className="bg-red-500/90 backdrop-blur-xl border-2 border-white text-white rounded-full w-24 h-24 flex flex-col items-center justify-center shadow-[0_16px_40px_rgba(220,38,38,0.4)]">
-                <Trash2 size={32} />
-                <span className="text-[10px] font-bold mt-1 uppercase tracking-wider opacity-90">Drop here</span>
+            <DraggablePanel id="dropzone-panel" isHidden={false} isDeleteZoneActive={false} onDelete={() => {}}>
+              <div 
+                id="delete-dropzone"
+                className="fixed inset-x-0 bottom-12 z-[100000] flex justify-center pointer-events-none animate-in slide-in-from-bottom-10 fade-in duration-300"
+              >
+                <div 
+                  onClick={(e) => { e.stopPropagation(); setIsDeleteZoneActive(false); }}
+                  className="pointer-events-auto bg-red-500/90 backdrop-blur-xl border-2 border-white text-white rounded-full w-24 h-24 flex flex-col items-center justify-center shadow-[0_16px_40px_rgba(220,38,38,0.4)] cursor-pointer hover:bg-red-500 transition-colors"
+                >
+                  <Trash2 size={32} />
+                  <span className="text-[10px] font-bold mt-1 uppercase tracking-wider opacity-90">Drop here</span>
+                </div>
               </div>
-            </div>
+            </DraggablePanel>
           )}
         </div>
       )}
