@@ -28489,7 +28489,7 @@ You can recommend task creations on the board.`;
   );
   
 const renderRoomTopHeader = () => (
-    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative z-[100000] pt-2">
+    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative pt-2" style={{ zIndex: 999999 }}>
       <div className="flex items-center gap-10">
         {/* Logo */}
         <div className="flex items-center gap-2.5 select-none">
@@ -28565,7 +28565,7 @@ const renderRoomTopHeader = () => (
           
           {/* More Options Dropdown */}
           {isMoreMenuOpen && (
-            <div className="absolute top-[calc(100%+8px)] right-0 w-48 bg-white/95 backdrop-blur-xl rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.12)] border border-white/60 p-2 z-[100000]">
+            <div className="absolute top-[calc(100%+8px)] right-0 w-48 bg-white/95 backdrop-blur-xl rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.12)] border border-white/60 p-2" style={{ zIndex: 999999 }}>
               <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
                 <MessageSquare size={16} /> Captions
               </button>
