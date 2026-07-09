@@ -42701,10 +42701,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="flex-1 relative overflow-hidden bg-transparent rounded-t-[40px]">
 
               {/* Main Video Canvas Area */}
-              <div className="absolute inset-0 flex flex-col items-center justify-between pointer-events-none p-8">
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-8 gap-6">
                 
                 {/* Main Video Container */}
-                <div className="flex-1 w-full max-w-[740px] mt-4 relative overflow-hidden rounded-[32px] bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.08)] pointer-events-auto transition-all duration-500 mx-auto border border-black/10 min-h-[30vh]">
+                <div className="flex-1 w-full max-w-[800px] max-h-[500px] min-h-[20vh] relative overflow-hidden rounded-[20px] bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink">
                   <div className="absolute inset-0">
                     <img
                       src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1200"
@@ -42726,7 +42726,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
 
                 {/* Participant Thumbnail Strip */}
-                <div className="mt-4 mb-4 flex justify-center gap-4 lg:gap-6 shrink-0 pointer-events-auto w-full max-w-[740px]">
+                <div className="flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[800px]">
                   {[
                     { name: 'Alex Rivera',  img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300' },
                     { name: 'Jamie Patel', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300' },
@@ -42734,18 +42734,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     { name: 'Morgan Lee',  img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300' },
                     { name: '+3',          img: null },
                   ].map((p, i) => (
-                    <div key={i} className="relative w-[160px] h-[120px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group">
+                    <div key={i} className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0">
                       {p.img ? (
                         <img src={p.img} alt={p.name} className="w-full h-full object-cover absolute inset-0" />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center bg-slate-700/60 backdrop-blur-xl">
-                          <span className="text-white text-[15px] font-medium">{p.name}</span>
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/40 to-white/10 shadow-inner">
+                          <span className="text-slate-700 text-[16px] font-medium drop-shadow-sm">{p.name}</span>
                         </div>
                       )}
                       
                       {/* Name blur overlay */}
                       {p.img && (
-                        <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-black/50 to-transparent flex items-end p-4 backdrop-blur-[4px]">
+                        <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
                           <div className="flex items-center justify-between w-full relative z-10">
                             <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{p.name}</span>
                             <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />
@@ -42757,7 +42757,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
 
                 {/* Bottom Control Section */}
-                <div className="flex flex-col items-center gap-5 mb-2 shrink-0 pointer-events-auto">
+                <div className="flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto">
                   
                   {/* Toolbar */}
                   <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
@@ -42825,9 +42825,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
             )}
             
             {/* Left Floating Toggle (People) */}
-            <div
-              className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
-              style={{ 
+            {!isRoomLeftSidebarOpen && (
+              <div
+                className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
+                style={{ 
                 left: '-72px', 
                 bottom: '48px',
                 transform: `translate(${leftNavOffset.x}px, ${leftNavOffset.y}px)`
@@ -42848,11 +42849,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] rounded-full bg-violet-500 text-white text-[10px] font-medium flex items-center justify-center px-1.5 shadow-sm pointer-events-none">8</span>
               </div>
             </div>
+            )}
             
             {/* Right Floating Toggle (Chat) */}
-            <div
-              className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
-              style={{ 
+            {!isRoomRightSidebarOpen && (
+              <div
+                className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
+                style={{ 
                 right: '-72px', 
                 bottom: '48px',
                 transform: `translate(${rightNavOffset.x}px, ${rightNavOffset.y}px)`
@@ -42870,6 +42873,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <MessageSquare size={20} strokeWidth={1.5} />
               </button>
             </div>
+            )}
           </div>
         </div>
       )}
