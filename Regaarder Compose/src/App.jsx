@@ -2915,9 +2915,7 @@ const RecordingModal = ({ isOpen, onClose }) => {
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-full mt-8 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-medium transition-colors">
-            Start Recording
-          </button>
+          <button onClick={() => { onClose(); startRoomRecording(); }} className="w-full mt-8 py-3 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl font-medium transition-colors">Start Recording</button>
         </div>
       </div>
     </div>
@@ -3155,6 +3153,67 @@ export default function App() {
   const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(false);
+  const [isRoomRecording, setIsRoomRecording] = useState(false);
+  const roomMediaRecorderRef = useRef(null);
+  const localVideoRef = useRef(null);
+  const mainVideoRef = useRef(null);
+
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream, roomState]);
+
+  useEffect(() => {
+    if (mainVideoRef.current && screenShareStream) {
+      mainVideoRef.current.srcObject = screenShareStream;
+    } else if (mainVideoRef.current && localStream) {
+       // if we want to default main video to local stream for testing
+       // mainVideoRef.current.srcObject = localStream;
+    }
+  }, [screenShareStream, localStream, roomState]);
+
+  const startRoomRecording = async () => {
+    try {
+      let captureStream = null;
+      if (screenShareStream) {
+        captureStream = screenShareStream;
+      } else if (localStream) {
+        captureStream = localStream;
+      } else {
+         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+         captureStream = stream;
+      }
+      
+      if (!captureStream) return;
+      
+      const recorder = new MediaRecorder(captureStream);
+      const chunks = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Room-Recording.webm';
+        a.click();
+        setIsRoomRecording(false);
+      };
+      recorder.start(1000);
+      roomMediaRecorderRef.current = recorder;
+      setIsRoomRecording(true);
+      showToast('Recording started');
+    } catch (e) {
+      showToast('Recording failed: ' + e.message);
+    }
+  };
+
+  const stopRoomRecording = () => {
+    if (roomMediaRecorderRef.current && roomMediaRecorderRef.current.state === 'recording') {
+      roomMediaRecorderRef.current.stop();
+    }
+  };
+
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isMeetingsModalOpen, setIsMeetingsModalOpen] = useState(false);
@@ -29789,8 +29848,8 @@ const renderRoomTopHeader = () => (
         </button>
 
         {/* Recording pill */}
-        <div className="flex items-center gap-2 px-2.5 py-1 rounded-full border border-red-100/50 bg-red-50/10 shadow-sm">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#EA4335] animate-pulse"></span>
+        <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full border shadow-sm ${isRoomRecording ? 'border-emerald-100/50 bg-emerald-50/10' : 'border-slate-200 bg-white'}`}>
+          {isRoomRecording ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>}
           <span className="text-[11px] font-medium text-slate-600 tracking-wide pr-1">Recording</span>
         </div>
 
@@ -44126,17 +44185,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {/* Main Video Container */}
                 <div className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 ${isVideoExpanded ? '!absolute !inset-4 !max-w-none !max-h-none z-0 rounded-[32px]' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}>
                   <div className="absolute inset-0">
-                    <img
-                      src={`${activeVideoSpeaker.img}?w=1200`}
-                      alt={activeVideoSpeaker.name}
-                      className="w-full h-full object-cover object-center"
-                    />
+                    
+  {screenShareStream ? (
+    <video ref={mainVideoRef} autoPlay playsInline muted className="w-full h-full object-cover object-center" />
+  ) : (
+    <img src={`${activeVideoSpeaker.img}?w=1200`} alt={activeVideoSpeaker.name} className="w-full h-full object-cover object-center" />
+  )}
+
                   </div>
                   <button 
                     onClick={() => setIsVideoExpanded(!isVideoExpanded)}
                     className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20"
                   >
-                    {isVideoExpanded ? <Minimize2 size={16} /> : <Expand size={16} />}
+                    {isVideoExpanded ? <Minimize2 size={16} /> : <Maximize size={16} />}
                   </button>
                   <div className="absolute bottom-6 left-6 flex items-center gap-3 bg-black/10 backdrop-blur-xl px-4 py-2 rounded-[20px] border border-white/5 z-20">
                     <div className="flex items-baseline gap-[2.5px] h-3.5">
@@ -44163,7 +44224,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {/* Participant Thumbnail Strip */}
                 {!isDistractionFreeMode && (
                   <div className={`flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? 'mt-auto opacity-90 hover:opacity-100' : ''}`}>
-                    {videoParticipants.map((p, i) => (
+                    
+  <div className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all">
+    <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover absolute inset-0" />
+    <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
+      <div className="flex items-center justify-between w-full relative z-10">
+        <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">You</span>
+        {!isRoomMicOn && <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />}
+      </div>
+    </div>
+  </div>
+
+{videoParticipants.slice(1).map((p, i) => (
                       <div 
                         key={p.id} 
                         onClick={() => {
