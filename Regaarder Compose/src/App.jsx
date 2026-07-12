@@ -2042,6 +2042,7 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
   const [formatMenu, setFormatMenu] = React.useState({ open: false, top: 0, left: 0, node: null });
   const [selToolbar, setSelToolbar] = React.useState({ open: false, x: 0, y: 0, dropdown: null });
   const [fmt, setFmt] = React.useState({ bold: false, italic: false, underline: false, strike: false });
+  const [notesTranslateModal, setNotesTranslateModal] = React.useState({ open: false, x: 0, y: 0, text: '', range: null, language: 'Spanish', loading: false, dropdownOpen: false });
   const slashRef = React.useRef(null);
   const dragHideTimer = React.useRef(null);
 
@@ -2105,7 +2106,14 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
     else if (key === 'ol') document.execCommand('insertOrderedList', false, null);
     else if (key === 'divider') document.execCommand('insertHTML', false, wrapHtml('<hr style="border:none;border-top:2px solid #e2e8f0;margin:0" />'));
     else if (key === 'blockquote') document.execCommand('insertHTML', false, wrapHtml('<div class="callout-block" style="border-left:3px solid #8b5cf6;padding:8px 12px;background:#faf5ff;border-radius:0 6px 6px 0;margin:0;color:#4c1d95;font-style:italic;font-size:13px;line-height:1.5;">&nbsp;</div>'));
-    else if (key === 'translate') { alert('Translation is integrated directly into the main Compose AI assistant.'); }
+    else if (key === 'translate') {
+      const s = window.getSelection();
+      const text = s && s.rangeCount > 0 ? s.toString() : '';
+      let pos = { left: window.innerWidth / 2 - 150, bottom: window.innerHeight / 2 - 100 };
+      if (savedRange && !savedRange.collapsed) { pos = savedRange.getBoundingClientRect(); }
+      else if (slashMenu.savedRange) { pos = slashMenu.savedRange.getBoundingClientRect(); }
+      setNotesTranslateModal({ open: true, x: pos.left, y: pos.bottom + 8, text: text.trim(), range: savedRange || slashMenu.savedRange, language: 'Spanish', loading: false });
+    }
     else if (key === 'code') document.execCommand('insertHTML', false, wrapHtml('<div style="background:#1e293b;border-radius:8px;padding:12px 16px;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre-wrap;overflow-x:auto;outline:none;" contenteditable="true">// Code block</div>'));
     else if (key === 'h1') document.execCommand('formatBlock', false, 'H2');
     else if (key === 'h2') document.execCommand('formatBlock', false, 'H3');
@@ -2261,6 +2269,49 @@ const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
           ].map(sz => (
             <button key={sz.val} onPointerDown={(e) => { e.preventDefault(); document.execCommand('fontSize', false, sz.val); setSelToolbar(s => ({ ...s, dropdown: null })); }} className={`w-full text-center py-1.5 text-[13px] rounded-lg transition-all ${isDarkMode ? 'text-slate-200 hover:bg-slate-700/80' : 'text-slate-700 hover:bg-slate-100'}`}>{sz.label}</button>
           ))}
+        </div>
+      )}
+
+      {notesTranslateModal.open && (
+        <div className={`fixed z-[200003] w-64 rounded-[20px] border shadow-2xl p-3 flex flex-col gap-2.5 ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60' : 'bg-white/95 border-slate-200/80'} backdrop-blur-2xl`} style={{ left: Math.min(notesTranslateModal.x, window.innerWidth - 270), top: notesTranslateModal.y }} onPointerDown={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-1">
+            <div className={`text-[13px] font-bold tracking-tight ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>Translate to</div>
+            <button onPointerDown={(e) => { e.preventDefault(); setNotesTranslateModal({ open: false, x: 0, y: 0, text: '', range: null, language: 'Spanish', loading: false, dropdownOpen: false }); }} className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-slate-200' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'}`}><X size={14} strokeWidth={2.5} /></button>
+          </div>
+          <div className="relative">
+            <button 
+              onPointerDown={(e) => { e.preventDefault(); setNotesTranslateModal(s => ({ ...s, dropdownOpen: !s.dropdownOpen })); }}
+              className={`w-full text-[13px] font-medium p-2.5 rounded-xl border flex items-center justify-between transition-all ${isDarkMode ? 'bg-slate-700/50 border-slate-600 text-slate-200 hover:border-slate-500 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-300 shadow-sm'}`}
+            >
+              {notesTranslateModal.language || 'Spanish'}
+              <ChevronDown size={14} className={`transition-transform duration-200 ${notesTranslateModal.dropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {notesTranslateModal.dropdownOpen && (
+              <div className={`absolute top-full left-0 mt-1.5 w-full max-h-48 overflow-y-auto notes-scroller rounded-xl border shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-1 z-[200004] ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60 backdrop-blur-2xl' : 'bg-white/95 border-slate-200/80 backdrop-blur-2xl'}`}>
+                {['Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Italian', 'Russian', 'Arabic', 'Portuguese'].map(l => (
+                  <button key={l} onPointerDown={(e) => { e.preventDefault(); setNotesTranslateModal(s => ({ ...s, language: l, dropdownOpen: false })); }} className={`w-full text-left px-3 py-2 text-[13px] rounded-lg transition-all ${isDarkMode ? 'text-slate-200 hover:bg-slate-700/80' : 'text-slate-700 hover:bg-slate-100'} ${notesTranslateModal.language === l ? (isDarkMode ? 'bg-slate-700/80 font-bold' : 'bg-slate-100 font-bold') : 'font-medium'}`}>{l}</button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button 
+            onPointerDown={async (e) => {
+              e.preventDefault();
+              setNotesTranslateModal(s => ({ ...s, loading: true }));
+              await new Promise(r => setTimeout(r, 600));
+              if (notesTranslateModal.range) {
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(notesTranslateModal.range);
+                document.execCommand('insertText', false, `[${notesTranslateModal.language} translation: ${notesTranslateModal.text}]`);
+              }
+              setNotesTranslateModal({ open: false, x: 0, y: 0, text: '', range: null, language: 'Spanish', loading: false, dropdownOpen: false });
+            }}
+            className={`mt-1 w-full flex items-center justify-center py-2 rounded-xl text-white text-[13px] font-bold transition-all disabled:opacity-50 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500' : 'bg-slate-900 hover:bg-slate-800 shadow-md shadow-slate-900/10'}`}
+            disabled={notesTranslateModal.loading}
+          >
+            {notesTranslateModal.loading ? 'Translating...' : 'Translate'}
+          </button>
         </div>
       )}
 
