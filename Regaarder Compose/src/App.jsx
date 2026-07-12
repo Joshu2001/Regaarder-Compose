@@ -3148,6 +3148,22 @@ export default function App() {
     { id: 4, name: 'Morgan Lee', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e' }
   ]);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+
+  const toggleImmersiveFullscreen = () => {
+    const nextExpanded = !isVideoExpanded;
+    setIsVideoExpanded(nextExpanded);
+    setIsDistractionFreeMode(nextExpanded);
+    if (nextExpanded) {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(()=>{});
+      }
+    } else {
+      if (document.exitFullscreen && document.fullscreenElement) {
+        document.exitFullscreen().catch(()=>{});
+      }
+    }
+  };
+
   const [hiddenPanels, setHiddenPanels] = useState([]);
   const [isDeleteZoneActive, setIsDeleteZoneActive] = useState(false);
   const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
@@ -44186,7 +44202,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-8 gap-6">
                 
                 {/* Main Video Container */}
-                <div className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 ${isVideoExpanded ? '!absolute !inset-4 !max-w-none !max-h-none z-0 rounded-[32px]' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}>
+                <div onDoubleClick={toggleImmersiveFullscreen} className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}>
                   <div className="absolute inset-0">
                     
   {screenShareStream ? (
@@ -44197,7 +44213,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                   </div>
                   <button 
-                    onClick={() => setIsVideoExpanded(!isVideoExpanded)}
+                    onClick={toggleImmersiveFullscreen}
                     className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20"
                   >
                     {isVideoExpanded ? <Minimize2 size={16} /> : <Maximize size={16} />}
