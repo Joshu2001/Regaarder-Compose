@@ -29737,7 +29737,6 @@ const renderRoomTopHeader = () => (
                        <p className="text-xs text-slate-500 mb-3">{notif.date} at {notif.time}</p>
                        <div className="flex gap-2">
                          <button 
-                         <button 
                            onClick={async () => {
                              try {
                                const token = localStorage.getItem('rc.token');
