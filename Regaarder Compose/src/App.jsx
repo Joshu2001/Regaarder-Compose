@@ -6205,13 +6205,14 @@ export default function App() {
   }, [localStream, roomState]);
 
   useEffect(() => {
-    if (mainVideoRef.current && screenShareStream) {
-      mainVideoRef.current.srcObject = screenShareStream;
-    } else if (mainVideoRef.current && localStream) {
-       // if we want to default main video to local stream for testing
-       // mainVideoRef.current.srcObject = localStream;
+    if (mainVideoRef.current) {
+      if (screenShareStream) {
+        mainVideoRef.current.srcObject = screenShareStream;
+      } else {
+        mainVideoRef.current.srcObject = null;
+      }
     }
-  }, [screenShareStream, localStream, roomState]);
+  }, [screenShareStream, roomState]);
 
   const startRoomRecording = async () => {
     try {
@@ -29894,7 +29895,7 @@ const renderRoomTopHeader = () => (
                 <MessageSquare size={16} /> {isRoomCaptionsEnabled ? 'Disable Captions' : 'Captions'}
               </button>
               <button 
-                onClick={() => { setShareModalOpen(true); setIsMoreMenuOpen(false); }}
+                onClick={() => { toggleScreenShare(); setIsMoreMenuOpen(false); }}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
               >
                 <MonitorPlay size={16} /> Present
@@ -44228,7 +44229,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className={`flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? 'mt-auto opacity-90 hover:opacity-100' : ''}`}>
                     
   <div className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all">
-    <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover absolute inset-0" />
+    <video ref={localVideoRef} autoPlay playsInline muted className={`w-full h-full object-cover absolute inset-0 ${isRoomCameraOn ? '' : 'hidden'}`} />
     <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
       <div className="flex items-center justify-between w-full relative z-10">
         <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">You</span>
@@ -44296,7 +44297,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
                         </button>
                         <button
-                          onClick={() => handleMeetingShareOption?.('document')}
+                          onClick={toggleScreenShare}
                           className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
                           title="Share screen"
                         >
