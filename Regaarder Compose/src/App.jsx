@@ -13,7 +13,7 @@ import {
   FileText, Trash, Settings, MoreHorizontal, MoreVertical,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, Pen, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
-  List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown, ChevronUp, Disc,
+  List, ListOrdered, Bold, Italic, Underline, Strikethrough, Type, X, ChevronDown, ChevronUp, Disc,
   Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, Shield, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
@@ -23,7 +23,7 @@ import {
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
-  , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown
+  , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
 , Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode} from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
@@ -1182,7 +1182,7 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
   };
 
   return (
-    <div id="block-hover-menu" className="fixed z-[150] flex flex-col gap-2.5 p-3 bg-white border border-slate-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] text-left font-sans" 
+    <div id="block-hover-menu" className="fixed z-[100005] flex flex-col gap-2.5 p-3 bg-white border border-slate-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] text-left font-sans" 
          style={{ top: Math.max(10, rect.top - 65), left: rect.left + 24 }}
          onPointerDown={(e) => e.stopPropagation()}>
       
@@ -1303,7 +1303,7 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
     <span class="selected-val" style="margin-right:8px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${choices[0]}</span>
     <svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto;"><polyline points='6 9 12 15 18 9'></polyline></svg>
   </button>
-  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.08), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:9999; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
+  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.08), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:100005; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
     ${optionItems}
   </div>
 </div>`;
@@ -2021,98 +2021,348 @@ const DraggablePanel = ({ id, children, isDeleteZoneActive, onDelete, isHidden }
   });
 };
 
-const NotesModal = ({ isOpen, onClose }) => {
-  const [toolbarPos, setToolbarPos] = useState(null);
-  const [pos, setPos] = useState({ x: window.innerWidth / 2 - 200, y: 100 });
-  const [isDragging, setIsDragging] = useState(false);
+const NOTES_SLASH_OPTIONS = [
+  { key: 'h1', label: 'Title', desc: 'Large heading' },
+  { key: 'h2', label: 'Heading 1', desc: 'Medium heading' },
+  { key: 'h3', label: 'Heading 2', desc: 'Small heading' },
+  { key: 'p', label: 'Paragraph', desc: 'Plain body text' },
+  { key: 'ul', label: 'Bullet List', desc: 'Unordered list' },
+  { key: 'ol', label: 'Numbered List', desc: 'Ordered list' },
+  { key: 'blockquote', label: 'Quote', desc: 'Block quotation' },
+  { key: 'divider', label: 'Divider', desc: 'Horizontal rule' },
+  { key: 'code', label: 'Code Block', desc: 'Monospace code' },
+  { key: 'translate', label: 'Translate', desc: 'Translate text' }
+];
 
-  const handleSelection = () => {
-    const selection = window.getSelection();
-    if (selection && selection.toString().length > 0) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setToolbarPos({ top: rect.top - 40, left: rect.left + rect.width / 2 });
-    } else {
-      setToolbarPos(null);
+const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
+  const [pos, setPos] = React.useState({ x: window.innerWidth / 2 - 250, y: 80 });
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [slashMenu, setSlashMenu] = React.useState({ open: false, x: 0, y: 0, filter: '', activeIdx: 0, savedRange: null });
+  const [dragHandle, setDragHandle] = React.useState({ visible: false, top: 0, left: 0, node: null });
+  const [formatMenu, setFormatMenu] = React.useState({ open: false, top: 0, left: 0, node: null });
+  const [selToolbar, setSelToolbar] = React.useState({ open: false, x: 0, y: 0, dropdown: null });
+  const [fmt, setFmt] = React.useState({ bold: false, italic: false, underline: false, strike: false });
+  const slashRef = React.useRef(null);
+  const dragHideTimer = React.useRef(null);
+
+  React.useEffect(() => {
+    if (isOpen && notesCardRef && notesCardRef.current && notesCardRef.current.innerHTML.trim() === '') {
+      notesCardRef.current.innerHTML = '<p style="margin:4px 0"><br/></p>';
+    }
+  }, [isOpen, notesCardRef]);
+
+  React.useEffect(() => {
+    if (!slashMenu.open) return;
+    const handler = (e) => {
+      if (slashRef.current && !slashRef.current.contains(e.target)) {
+        setSlashMenu(s => ({ ...s, open: false }));
+      }
+    };
+    document.addEventListener('pointerdown', handler, true);
+    return () => document.removeEventListener('pointerdown', handler, true);
+  }, [slashMenu.open]);
+
+  const handleHeaderPointerDown = (e) => {
+    if (e.target.closest('.notes-no-drag')) return;
+    e.preventDefault();
+    setIsDragging(true);
+    const onMove = (me) => setPos(p => ({ x: p.x + me.movementX, y: p.y + me.movementY }));
+    const onUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  };
+
+  const execSlashCmd = (key) => {
+    const savedRange = slashMenu.savedRange;
+    setSlashMenu(s => ({ ...s, open: false, filter: '', activeIdx: 0 }));
+    if (!notesCardRef || !notesCardRef.current) return;
+    notesCardRef.current.focus();
+    if (savedRange) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedRange);
+        try {
+          const node = savedRange.startContainer;
+          const off = savedRange.startOffset;
+          if (node && node.nodeType === Node.TEXT_NODE && node.textContent.charAt(off) === '/') {
+            const dr = savedRange.cloneRange();
+            dr.setEnd(node, off + 1);
+            sel.removeAllRanges();
+            sel.addRange(dr);
+            document.execCommand('delete', false, null);
+          }
+        } catch (_) {}
+      }
+    }
+    const wrapHtml = (innerHtml) => `<div class="notes-block-wrapper relative group" style="margin:12px 0;"><div contenteditable="false" class="notes-block-delete absolute -top-2.5 -right-2.5 w-6 h-6 bg-white border border-slate-200/80 rounded-full shadow-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-all z-10 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 hover:scale-110 select-none" title="Delete block"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>${innerHtml}</div><p><br></p>`;
+
+    if (key === 'ul') document.execCommand('insertUnorderedList', false, null);
+    else if (key === 'ol') document.execCommand('insertOrderedList', false, null);
+    else if (key === 'divider') document.execCommand('insertHTML', false, wrapHtml('<hr style="border:none;border-top:2px solid #e2e8f0;margin:0" />'));
+    else if (key === 'blockquote') document.execCommand('insertHTML', false, wrapHtml('<div class="callout-block" style="border-left:3px solid #8b5cf6;padding:8px 12px;background:#faf5ff;border-radius:0 6px 6px 0;margin:0;color:#4c1d95;font-style:italic;font-size:13px;line-height:1.5;">&nbsp;</div>'));
+    else if (key === 'translate') { alert('Translation is integrated directly into the main Compose AI assistant.'); }
+    else if (key === 'code') document.execCommand('insertHTML', false, wrapHtml('<div style="background:#1e293b;border-radius:8px;padding:12px 16px;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre-wrap;overflow-x:auto;outline:none;" contenteditable="true">// Code block</div>'));
+    else if (key === 'h1') document.execCommand('formatBlock', false, 'H2');
+    else if (key === 'h2') document.execCommand('formatBlock', false, 'H3');
+    else if (key === 'h3') document.execCommand('formatBlock', false, 'H4');
+    else document.execCommand('formatBlock', false, 'p');
+  };
+
+  const handleNotesKeyDown = (e) => {
+    if (slashMenu.open) {
+      const opts = NOTES_SLASH_OPTIONS.filter(o => o.label.toLowerCase().includes(slashMenu.filter.toLowerCase()));
+      if (e.key === 'ArrowDown') { e.preventDefault(); setSlashMenu(s => ({ ...s, activeIdx: (s.activeIdx + 1) % Math.max(1, opts.length) })); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setSlashMenu(s => ({ ...s, activeIdx: (s.activeIdx - 1 + opts.length) % Math.max(1, opts.length) })); return; }
+      if (e.key === 'Enter') { e.preventDefault(); if (opts[slashMenu.activeIdx]) execSlashCmd(opts[slashMenu.activeIdx].key); return; }
+      if (e.key === 'Escape') { e.preventDefault(); setSlashMenu(s => ({ ...s, open: false })); return; }
+      if (e.key === 'Backspace') { e.preventDefault(); slashMenu.filter.length === 0 ? setSlashMenu(s => ({ ...s, open: false })) : setSlashMenu(s => ({ ...s, filter: s.filter.slice(0, -1), activeIdx: 0 })); return; }
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setSlashMenu(s => ({ ...s, filter: s.filter + e.key, activeIdx: 0 })); return; }
+    }
+    if (e.key === '/') {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        if (!range.collapsed) { e.preventDefault(); }
+        let rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          const dummy = document.createElement('span'); dummy.innerHTML = '&#8203;'; range.insertNode(dummy);
+          rect = dummy.getBoundingClientRect(); dummy.parentNode && dummy.parentNode.removeChild(dummy);
+        }
+        const menuH = 280;
+        const y = rect.bottom + menuH > window.innerHeight ? rect.top - menuH - 4 : rect.bottom + 4;
+        setSlashMenu({ open: true, x: Math.max(8, rect.left), y, filter: '', activeIdx: 0, savedRange: range.cloneRange() });
+      }
     }
   };
 
-  const execCmd = (cmd, val = null) => {
-    document.execCommand(cmd, false, val);
-    handleSelection();
+  const handleEditorMouseMove = (e) => {
+    if (dragHideTimer.current) { clearTimeout(dragHideTimer.current); dragHideTimer.current = null; }
+    const editor = notesCardRef && notesCardRef.current;
+    if (!editor) return;
+    let curr = e.target;
+    while (curr && curr !== editor) {
+      if (curr.nodeType === 1) {
+        const tag = curr.tagName.toUpperCase();
+        if (['P','DIV','LI','H1','H2','H3','H4','H5','H6','PRE','BLOCKQUOTE','TD','TH'].includes(tag)) {
+          const rect = curr.getBoundingClientRect();
+          setDragHandle({ visible: true, top: rect.top + window.scrollY, left: Math.max(pos.x + 4, rect.left - 28), node: curr });
+          return;
+        }
+      }
+      curr = curr.parentNode;
+    }
+    dragHideTimer.current = setTimeout(() => setDragHandle(d => ({ ...d, visible: false, node: null })), 300);
   };
 
-  const handlePointerDown = (e) => {
-    if (e.target.closest('.no-drag, input, textarea, select')) return;
-    setIsDragging(true);
-    const handlePointerMove = (moveEvent) => {
-      setPos(prev => ({
-        x: prev.x + moveEvent.movementX,
-        y: prev.y + moveEvent.movementY
-      }));
-    };
-    const handlePointerUp = () => {
-      setIsDragging(false);
-      document.removeEventListener('pointermove', handlePointerMove);
-      document.removeEventListener('pointerup', handlePointerUp);
-    };
-    document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', handlePointerUp);
+  const handleEditorMouseLeave = (e) => {
+    if (e.relatedTarget && (e.relatedTarget.closest && e.relatedTarget.closest('.notes-drag-handle, .notes-format-menu'))) return;
+    dragHideTimer.current = setTimeout(() => setDragHandle(d => ({ ...d, visible: false, node: null })), 300);
   };
+
+  const handleEditorMouseUp = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) { setSelToolbar({ open: false, x: 0, y: 0 }); return; }
+    const editor = notesCardRef && notesCardRef.current;
+    if (!editor || !editor.contains(sel.anchorNode)) return;
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    setFmt({ bold: document.queryCommandState('bold'), italic: document.queryCommandState('italic'), underline: document.queryCommandState('underline'), strike: document.queryCommandState('strikeThrough') });
+    const tw = 220;
+    const x = Math.min(Math.max(8, rect.left + rect.width / 2 - tw / 2), window.innerWidth - tw - 8);
+    const y = rect.top > 54 ? rect.top - 48 : rect.bottom + 8;
+    setSelToolbar({ open: true, x, y, dropdown: null });
+  };
+
+  const applyFmt = (cmd) => {
+    document.execCommand(cmd, false, null);
+    setFmt({ bold: document.queryCommandState('bold'), italic: document.queryCommandState('italic'), underline: document.queryCommandState('underline'), strike: document.queryCommandState('strikeThrough') });
+  };
+
+  const handleNotesClick = (e) => {
+    const delBtn = e.target.closest('.notes-block-delete');
+    if (delBtn) {
+      const wrapper = delBtn.closest('.notes-block-wrapper');
+      if (wrapper) wrapper.remove();
+    }
+  };
+
+  const changeBlockTag = (node, newTag) => {
+    if (!node || !node.parentNode) return;
+    const newEl = document.createElement(newTag);
+    for (let i = 0; i < node.attributes.length; i++) { const a = node.attributes[i]; newEl.setAttribute(a.name, a.value); }
+    newEl.innerHTML = node.innerHTML;
+    const sizes = { H1: '30px', H2: '24px', H3: '20px', H4: '17px' };
+    newEl.style.fontSize = sizes[newTag] || '';
+    node.parentNode.replaceChild(newEl, node);
+    setFormatMenu({ open: false, top: 0, left: 0, node: null });
+    setDragHandle(d => ({ ...d, visible: false, node: null }));
+  };
+
+  const filteredSlash = NOTES_SLASH_OPTIONS.filter(o => o.label.toLowerCase().includes(slashMenu.filter.toLowerCase()));
 
   if (!isOpen) return null;
+
   return (
-    <div 
-      className="fixed z-[100000] animate-in fade-in shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] rounded-2xl flex flex-col bg-white/70 backdrop-blur-xl border border-white/40"
-      style={{ width: '400px', height: '500px', left: pos.x, top: pos.y }}
-    >
-      <div 
-        className="flex items-center justify-between p-4 border-b border-white/30 bg-white/40 rounded-t-2xl cursor-grab active:cursor-grabbing"
-        onPointerDown={handlePointerDown}
-      >
-        <h2 className="text-[15px] font-semibold text-slate-800 flex items-center gap-2">
-          <FileText className="text-violet-500" size={16} /> Meeting Notes
-        </h2>
-        <div className="flex items-center gap-2 no-drag">
-          <button className="px-3 py-1 bg-violet-600/90 text-white rounded-[8px] text-[11px] font-semibold shadow-sm hover:bg-violet-700 transition-colors" onClick={() => alert('Notes saved to workspace.')}>Save to Docs</button>
-          <button className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/50 rounded-lg transition-colors" onClick={onClose}><X size={14} /></button>
-        </div>
-      </div>
-      
-      {toolbarPos && (
-        <div 
-          className="fixed z-[100001] flex items-center gap-1 bg-slate-900/90 backdrop-blur-md text-white px-2 py-1.5 rounded-xl shadow-xl animate-in fade-in slide-in-from-bottom-2 no-drag"
-          style={{ top: toolbarPos.top, left: toolbarPos.left, transform: 'translateX(-50%)' }}
-          onPointerDown={e => e.preventDefault()}
-        >
-          <button onClick={() => execCmd('bold')} className="p-1.5 hover:bg-white/20 rounded-lg font-bold text-xs w-7 text-center transition-colors">B</button>
-          <button onClick={() => execCmd('italic')} className="p-1.5 hover:bg-white/20 rounded-lg italic text-xs w-7 text-center transition-colors">I</button>
-          <button onClick={() => execCmd('underline')} className="p-1.5 hover:bg-white/20 rounded-lg underline text-xs w-7 text-center transition-colors">U</button>
-          <div className="w-px h-4 bg-white/20 mx-1"></div>
-          <button onClick={() => execCmd('formatBlock', 'H1')} className="p-1.5 hover:bg-white/20 rounded-lg text-xs font-semibold transition-colors">H1</button>
-          <button onClick={() => execCmd('formatBlock', 'H2')} className="p-1.5 hover:bg-white/20 rounded-lg text-xs font-semibold transition-colors">H2</button>
+    <>
+      {selToolbar.open && (
+        <div className="fixed z-[200001] flex items-center gap-1 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] px-2 py-1.5" style={{ left: selToolbar.x, top: selToolbar.y }} onPointerDown={e => e.preventDefault()}>
+          {[
+            { cmd: 'bold', label: 'B', style: { fontWeight: 'bold', fontFamily: 'serif', fontSize: 13 }, active: fmt.bold },
+            { cmd: 'italic', label: 'I', style: { fontStyle: 'italic', fontFamily: 'serif', fontSize: 13 }, active: fmt.italic },
+            { cmd: 'underline', label: 'U', style: { textDecoration: 'underline', fontSize: 13 }, active: fmt.underline },
+            { cmd: 'strikeThrough', label: 'S', style: { textDecoration: 'line-through', fontSize: 13 }, active: fmt.strike },
+          ].map(b => (
+            <button key={b.cmd} onClick={() => applyFmt(b.cmd)} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${b.active ? 'bg-slate-100 text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}><span style={b.style}>{b.label}</span></button>
+          ))}
+          <div className="w-px h-5 bg-slate-200/80 mx-1" />
+          <button 
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setSelToolbar(s => ({ ...s, dropdown: s.dropdown === 'font' ? null : 'font' })); }}
+            className={`px-2 h-8 flex items-center justify-center rounded-xl text-[12px] font-semibold transition-all ${selToolbar.dropdown === 'font' ? 'bg-slate-100 text-slate-900 shadow-sm border border-slate-200/50' : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            Font
+          </button>
+          <div className="w-px h-5 bg-slate-200/80 mx-1" />
+          <button 
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setSelToolbar(s => ({ ...s, dropdown: s.dropdown === 'size' ? null : 'size' })); }}
+            className={`px-2 h-8 flex items-center justify-center rounded-xl text-[12px] font-semibold transition-all ${selToolbar.dropdown === 'size' ? 'bg-slate-100 text-slate-900 shadow-sm border border-slate-200/50' : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            Size
+          </button>
+          <div className="w-px h-5 bg-slate-200/80 mx-1" />
+          <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); let targetNode = window.getSelection()?.anchorNode; if (targetNode?.nodeType === 3) targetNode = targetNode.parentNode; setFormatMenu({ open: !formatMenu.open, top: r.bottom + 6, left: r.left, node: targetNode }); }} className="px-2 h-8 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all text-[13px] font-bold tracking-tight">Aa</button>
+          <div className="w-px h-5 bg-slate-200/80 mx-1" />
+          <button onClick={() => { document.execCommand('removeFormat', false, null); setSelToolbar({ open: false, x: 0, y: 0, dropdown: null }); }} className="px-2 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all text-[11px] font-semibold tracking-tight">Tx</button>
         </div>
       )}
 
-      <div className="flex-1 p-5 overflow-y-auto no-drag">
-        <div 
-          contentEditable="true"
-          className="w-full min-h-full outline-none text-slate-800 text-[13px] leading-relaxed relative empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400"
-          data-placeholder="Type your meeting notes here... (Use '/' for commands)"
-          onMouseUp={handleSelection}
-          onKeyUp={handleSelection}
-          onKeyDown={(e) => {
-            if (e.key === '/') {
-              // mocked slash command
-              alert("Slash command mock");
-            }
-          }}
-        />
+      {selToolbar.open && selToolbar.dropdown === 'font' && (
+        <div className={`fixed z-[200002] w-48 max-h-64 overflow-y-auto notes-scroller rounded-xl border shadow-[0_12px_36px_rgba(0,0,0,0.15)] p-1.5 flex flex-col gap-0.5 ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60' : 'bg-white/95 border-slate-200/80'} backdrop-blur-2xl`} style={{ left: Math.min(selToolbar.x, window.innerWidth - 200), top: selToolbar.y + 44 }} onPointerDown={e => e.stopPropagation()}>
+          {['Inter', 'Manrope', 'Satoshi', 'General Sans', 'Plus Jakarta Sans', 'IBM Plex Sans', 'DM Sans', 'Public Sans', 'SF Pro Display', 'Helvetica Now', 'Aptos', 'Merriweather', 'Libre Baskerville', 'Playfair Display'].map(f => (
+            <button key={f} onPointerDown={(e) => { e.preventDefault(); document.execCommand('fontName', false, f); setSelToolbar(s => ({ ...s, dropdown: null })); }} className={`w-full text-left px-3 py-1.5 text-[13px] rounded-lg transition-all ${isDarkMode ? 'text-slate-200 hover:bg-slate-700/80' : 'text-slate-700 hover:bg-slate-100'}`} style={{ fontFamily: f }}>{f}</button>
+          ))}
+        </div>
+      )}
+
+      {selToolbar.open && selToolbar.dropdown === 'size' && (
+        <div className={`fixed z-[200002] w-28 max-h-64 overflow-y-auto notes-scroller rounded-xl border shadow-[0_12px_36px_rgba(0,0,0,0.15)] p-1.5 grid grid-cols-2 gap-1 ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60' : 'bg-white/95 border-slate-200/80'} backdrop-blur-2xl`} style={{ left: Math.min(selToolbar.x + 80, window.innerWidth - 120), top: selToolbar.y + 44 }} onPointerDown={e => e.stopPropagation()}>
+          {[
+            { val: 1, label: '10' },
+            { val: 2, label: '13' },
+            { val: 3, label: '16' },
+            { val: 4, label: '18' },
+            { val: 5, label: '24' },
+            { val: 6, label: '32' },
+            { val: 7, label: '48' }
+          ].map(sz => (
+            <button key={sz.val} onPointerDown={(e) => { e.preventDefault(); document.execCommand('fontSize', false, sz.val); setSelToolbar(s => ({ ...s, dropdown: null })); }} className={`w-full text-center py-1.5 text-[13px] rounded-lg transition-all ${isDarkMode ? 'text-slate-200 hover:bg-slate-700/80' : 'text-slate-700 hover:bg-slate-100'}`}>{sz.label}</button>
+          ))}
+        </div>
+      )}
+
+      {slashMenu.open && (
+        <div ref={slashRef} className={`fixed z-[200001] w-[240px] max-h-[260px] overflow-y-auto notes-scroller rounded-[20px] border p-2 flex flex-col gap-0.5 shadow-[0_12px_36px_rgba(0,0,0,0.15)] ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60 text-slate-100' : 'bg-white/95 border-slate-200/60 text-slate-800'} backdrop-blur-2xl`} style={{ left: Math.min(slashMenu.x + 16, window.innerWidth - 248), top: slashMenu.y }}>
+          {filteredSlash.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-slate-400 text-center font-medium">No results</div>
+          ) : filteredSlash.map((opt, idx) => (
+            <button key={opt.key} onPointerDown={e => { e.preventDefault(); execSlashCmd(opt.key); }} className={`w-full text-left px-3 py-2 rounded-[14px] text-sm transition-all flex flex-col gap-0.5 ${idx === slashMenu.activeIdx ? (isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100/80 text-slate-900 border-slate-200/40') : 'text-slate-600 hover:bg-slate-50/80 border border-transparent'}`}>
+              <span className="font-medium text-[13px]">{opt.label}</span>
+              <span className="text-[11px] text-slate-400 font-normal">{opt.desc}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {dragHandle.visible && dragHandle.node && (
+        <div
+          className="notes-drag-handle fixed z-[200001] cursor-pointer text-slate-300 hover:text-slate-500 hover:bg-slate-100/80 rounded flex items-center justify-center transition-all"
+          style={{ top: dragHandle.top + 2, left: dragHandle.left, width: 22, height: 22 }}
+          onMouseEnter={() => { if (dragHideTimer.current) { clearTimeout(dragHideTimer.current); dragHideTimer.current = null; } }}
+          onMouseLeave={() => { dragHideTimer.current = setTimeout(() => setDragHandle(d => ({ ...d, visible: false, node: null })), 300); }}
+          onClick={e => { e.preventDefault(); e.stopPropagation(); const r = dragHandle.node.getBoundingClientRect(); setFormatMenu({ open: !formatMenu.open, top: r.bottom + 6, left: r.left, node: dragHandle.node }); }}
+          title="Click to format block"
+        >
+          <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor">
+            <circle cx="3.5" cy="3" r="1.5"/><circle cx="8.5" cy="3" r="1.5"/>
+            <circle cx="3.5" cy="7" r="1.5"/><circle cx="8.5" cy="7" r="1.5"/>
+            <circle cx="3.5" cy="11" r="1.5"/><circle cx="8.5" cy="11" r="1.5"/>
+          </svg>
+        </div>
+      )}
+
+      {formatMenu.open && formatMenu.node && (
+        <>
+          <div className="fixed inset-0 z-[200000]" onPointerDown={() => setFormatMenu({ open: false, top: 0, left: 0, node: null })} />
+          <div className={`notes-format-menu fixed z-[200001] w-[220px] rounded-[20px] border p-3.5 shadow-[0_12px_36px_rgba(0,0,0,0.15)] flex flex-col gap-3 ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60 text-slate-100' : 'bg-white/95 border-slate-200/60 text-slate-800'} backdrop-blur-2xl`} style={{ top: Math.min(formatMenu.top, window.innerHeight - 250), left: Math.min(formatMenu.left + 24, window.innerWidth - 240) }} onPointerDown={e => e.stopPropagation()}>
+            <div className="grid grid-cols-5 gap-1.5">
+              {[{tag:'H1',label:<Type size={14} />,tip:'Title'},{tag:'H2',label:<Heading1 size={14} />,tip:'Heading 1'},{tag:'H3',label:<Heading2 size={14} />,tip:'Heading 2'},{tag:'H4',label:<Heading3 size={14} />,tip:'Heading 3'},{tag:'P',label:<AlignLeft size={14} />,tip:'Paragraph'}].map(item => {
+                const isActive = formatMenu.node && formatMenu.node.tagName === item.tag;
+                const activeClass = isDarkMode ? 'bg-slate-700 border-slate-600 text-white shadow-sm' : 'bg-slate-100 border-slate-200/80 text-slate-900 shadow-sm';
+                const inactiveClass = isDarkMode ? 'bg-transparent border-transparent hover:bg-slate-700/50 text-slate-400 hover:text-slate-200' : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-700';
+                return <button key={item.tag} title={item.tip} onClick={() => changeBlockTag(formatMenu.node, item.tag)} className={`h-8 rounded-xl text-xs font-semibold flex items-center justify-center transition-all border ${isActive ? activeClass : inactiveClass}`}>{item.label}</button>;
+              })}
+            </div>
+            <div className="h-px bg-slate-100" />
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { align: 'left', icon: <AlignLeft size={14} /> },
+                { align: 'center', icon: <AlignCenter size={14} /> },
+                { align: 'right', icon: <AlignRight size={14} /> },
+                { align: 'justify', icon: <AlignJustify size={14} /> }
+              ].map(({ align, icon }) => {
+                const isActive = (formatMenu.node && formatMenu.node.style && formatMenu.node.style.textAlign || 'left') === align;
+                const activeClass = isDarkMode ? 'bg-slate-700 border-slate-600 text-white shadow-sm' : 'bg-slate-100 border-slate-200/80 text-slate-900 shadow-sm';
+                const inactiveClass = isDarkMode ? 'bg-transparent border-transparent hover:bg-slate-700/50 text-slate-400 hover:text-slate-200' : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-700';
+                return <button key={align} title={`Align ${align}`} onClick={() => { if (formatMenu.node) formatMenu.node.style.textAlign = align; setFormatMenu(m => ({ ...m, open: false })); }} className={`h-8 rounded-xl flex items-center justify-center transition-all border ${isActive ? activeClass : inactiveClass}`}>{icon}</button>;
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="fixed z-[100000] animate-in fade-in shadow-[0_24px_80px_-12px_rgba(0,0,0,0.18)] rounded-[24px] flex flex-col bg-white/95 backdrop-blur-[32px] border border-slate-200/60" style={{ width: 500, height: 600, left: pos.x, top: pos.y }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/50 bg-white/40 rounded-t-[24px] cursor-grab active:cursor-grabbing select-none" onPointerDown={handleHeaderPointerDown}>
+          <h2 className="text-[14px] font-semibold text-slate-800 flex items-center gap-2.5 pointer-events-none tracking-tight">
+            <FileText size={16} className="text-violet-500" /> Meeting Notes
+          </h2>
+          <div className="flex items-center gap-3 notes-no-drag">
+            <button className="px-3.5 py-1.5 bg-white text-slate-600 border border-slate-200/80 rounded-xl text-[11px] font-medium shadow-sm hover:shadow-md hover:text-slate-800 transition-all" onClick={() => alert('Notes saved to workspace.')}>Save to Docs</button>
+            <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 rounded-xl transition-all" onClick={onClose}><X size={14} /></button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto notes-scroller group" id="notes-scroller">
+          <style>{`
+            .notes-scroller { scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color 0.2s; }
+            .notes-scroller:hover { scrollbar-color: rgba(148, 163, 184, 0.4) transparent; }
+            .notes-scroller::-webkit-scrollbar { width: 6px; }
+            .notes-scroller::-webkit-scrollbar-track { background: transparent; }
+            .notes-scroller::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; transition: background 0.2s; }
+            .notes-scroller:hover::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); }
+          `}</style>
+          <div className="min-h-full px-6 pt-5 pb-16">
+            <div
+              ref={notesCardRef}
+              contentEditable="true"
+              suppressContentEditableWarning
+              onClick={handleNotesClick}
+              onKeyDown={handleNotesKeyDown}
+              onMouseMove={handleEditorMouseMove}
+              onMouseLeave={handleEditorMouseLeave}
+              onMouseUp={handleEditorMouseUp}
+              onBlur={() => setSelToolbar({ open: false, x: 0, y: 0 })}
+              className={`w-full outline-none text-[15px] leading-[1.75] ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
+              data-placeholder="Type your notes here — use '/' for commands"
+            />
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
-
 const SummaryModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
   return (
@@ -5682,7 +5932,7 @@ export default function App() {
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
-  const selectionActionMenuEnabled = false;
+  const selectionActionMenuEnabled = true;
   const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [assistantAttachments, setAssistantAttachments] = useState([]);
@@ -6281,8 +6531,17 @@ export default function App() {
   const tableHoverTimeoutRef = useRef(null);
   const findWidgetRef = useRef(null);
   const documentCardRef = useRef(null);
+  const notesCardRef = useRef(null);
   const isSyncingFootersRef = useRef(false);
   const blankBodyRef = useRef(null);
+  
+  const getActiveEditorRoot = () => {
+    if (notesCardRef.current && notesCardRef.current.contains(document.activeElement)) {
+      return notesCardRef.current;
+    }
+    return blankBodyRef.current || documentCardRef.current;
+  };
+
   const pageOptionsMenuRef = useRef(null);
   const emojiControlsRef = useRef(null);
 
@@ -6292,14 +6551,14 @@ export default function App() {
   const dragHandleTimeoutRef = useRef(null);
   const findNearestBlockElement = (node) => {
     let curr = node;
-    while (curr && curr !== blankBodyRef.current) {
+    while (curr && curr !== blankBodyRef.current && curr !== notesCardRef.current) {
       if (curr.nodeType === 1) {
         const tag = curr.tagName.toUpperCase();
         if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'PRE', 'BLOCKQUOTE', 'TD', 'TH'].includes(tag)) {
           return curr;
         }
       }
-      if (curr.parentNode === blankBodyRef.current) {
+      if (curr.parentNode === blankBodyRef.current || curr.parentNode === notesCardRef.current) {
         return curr;
       }
       curr = curr.parentNode;
@@ -9466,7 +9725,7 @@ export default function App() {
   };
 
   const isRangeInsideEditor = (range) => {
-    if (!range || !documentCardRef.current) {
+    if (!range) {
       return false;
     }
 
@@ -9476,7 +9735,7 @@ export default function App() {
       return false;
     }
 
-    const bodyRoot = blankBodyRef.current || documentCardRef.current;
+    const bodyRoot = getActiveEditorRoot();
     return Boolean(bodyRoot && bodyRoot.contains(targetNode));
   };
   const stripMarkdownArtifacts = (value) => String(value || '')
@@ -9570,7 +9829,7 @@ export default function App() {
       return;
     }
 
-    if (!range || !documentCardRef.current) {
+    if (!range || (!documentCardRef.current && !notesCardRef.current)) {
       setSelectionActionMenu({ open: false, left: 0, top: 0 });
       return;
     }
@@ -10413,7 +10672,12 @@ export default function App() {
   useEffect(() => {
     const trackPointerOrigin = (event) => {
       pointerDownInPromptRef.current = Boolean(promptRootRef.current && promptRootRef.current.contains(event.target));
-      pointerDownInDocumentRef.current = Boolean(documentCardRef.current && documentCardRef.current.contains(event.target));
+      // Track pointer origin for BOTH the main compose editor and the Notes modal editor
+      // so that selection menus and floating toolbars work in both contexts.
+      pointerDownInDocumentRef.current = Boolean(
+        (documentCardRef.current && documentCardRef.current.contains(event.target)) ||
+        (notesCardRef.current && notesCardRef.current.contains(event.target))
+      );
     };
 
     window.addEventListener('pointerdown', trackPointerOrigin, true);
@@ -14795,7 +15059,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     if (key === 'import_equation') { setEquationModalOpen(true); return; }
     
     // CRITICAL: Focus the editor FIRST so all DOM commands work
-    blankBodyRef.current?.focus();
+    getActiveEditorRoot()?.focus();
     
     const selection = window.getSelection();
     let targetRange = savedRange;
@@ -14876,7 +15140,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           insertInlinePromptBox(key, selectedText);
         }
       } else {
-        const fullText = blankBodyRef.current ? blankBodyRef.current.innerText.trim() : '';
+        const fullText = getActiveEditorRoot() ? getActiveEditorRoot().innerText.trim() : '';
         if (key === 'proofread') {
           if (fullText) {
             const blockEl = findNearestBlockElement(targetRange?.commonAncestorContainer);
@@ -20671,7 +20935,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
 
     if (!range) {
-      blankBodyRef.current?.focus();
+      getActiveEditorRoot()?.focus();
       return;
     }
 
@@ -20725,8 +20989,9 @@ Respond with a JSON array of slide objects matching the schema.`;
         const parentElement = anchorNode.nodeType === Node.ELEMENT_NODE
           ? anchorNode
           : anchorNode.parentElement;
-        if (parentElement && documentCardRef.current?.contains(parentElement)) {
-          const isContainer = parentElement === blankBodyRef.current || 
+        const activeRoot = getActiveEditorRoot();
+        if (parentElement && activeRoot?.contains(parentElement)) {
+          const isContainer = parentElement === activeRoot || 
                               parentElement.tagName === 'P' || 
                               parentElement.tagName === 'DIV' || 
                               parentElement.tagName === 'TD' ||
@@ -20767,13 +21032,14 @@ Respond with a JSON array of slide objects matching the schema.`;
       if (selection.rangeCount) {
         savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
       }
-      if (blankBodyRef.current) {
+      if (getActiveEditorRoot() === blankBodyRef.current && blankBodyRef.current) {
         setDocBodyHtml(blankBodyRef.current.innerHTML);
       }
       return;
     }
 
-    blankBodyRef.current?.focus();
+    const activeRoot = getActiveEditorRoot();
+    activeRoot?.focus();
     if (range) {
       const selection = window.getSelection();
       selection.removeAllRanges();
@@ -20786,7 +21052,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
     }
 
-    if (blankBodyRef.current) {
+    if (activeRoot === blankBodyRef.current && blankBodyRef.current) {
       setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
 
@@ -35755,6 +36021,108 @@ if (productMode === 'deck' || productMode === 'sheets') {
     };
   };
 
+  const editorDragHandlers = {
+    onMouseMove: (e) => {
+      if (dragHandleTimeoutRef.current) clearTimeout(dragHandleTimeoutRef.current);
+      const block = findNearestBlockElement(e.target);
+      if (block) {
+        const rect = block.getBoundingClientRect();
+        setBlockDragHandle({
+          visible: true,
+          top: rect.top + window.scrollY,
+          left: Math.max(10, rect.left + window.scrollX - 28),
+          node: block
+        });
+      } else {
+        dragHandleTimeoutRef.current = setTimeout(() => {
+          setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+        }, 250);
+      }
+    },
+    onMouseLeave: (e) => {
+      if (e.relatedTarget && e.relatedTarget.closest('.block-drag-handle')) return;
+      dragHandleTimeoutRef.current = setTimeout(() => {
+        setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+      }, 250);
+    },
+    onDragOver: (e) => {
+      if (window.__draggedBlock) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        let targetBlock = findNearestBlockElement(e.target);
+        const editorRoot = getActiveEditorRoot();
+        if (!targetBlock && editorRoot && (e.target === editorRoot || editorRoot.contains(e.target))) {
+          const children = Array.from(editorRoot.children);
+          let closest = null;
+          let minDist = Infinity;
+          for (let child of children) {
+            const rect = child.getBoundingClientRect();
+            const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
+            if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+              closest = child; break;
+            }
+            if (dist < minDist) { minDist = dist; closest = child; }
+          }
+          targetBlock = closest;
+        }
+        if (targetBlock && targetBlock !== window.__draggedBlock) {
+          const rect = targetBlock.getBoundingClientRect();
+          if (e.clientY < rect.top + rect.height / 2) {
+            if (window.__draggedBlock.nextSibling !== targetBlock) {
+              targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
+            }
+          } else {
+            if (targetBlock.nextSibling !== window.__draggedBlock) {
+              targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
+            }
+          }
+        }
+      }
+    },
+    onDragLeave: (e) => {
+      // Borders are no longer used for drop target highlighting
+    },
+    onDrop: (e) => {
+      if (window.__draggedBlock) {
+        e.preventDefault();
+        let targetBlock = findNearestBlockElement(e.target);
+        const editorRoot = getActiveEditorRoot();
+        if (!targetBlock && editorRoot && (e.target === editorRoot || editorRoot.contains(e.target))) {
+          const children = Array.from(editorRoot.children);
+          let closest = null;
+          let minDist = Infinity;
+          for (let child of children) {
+            const rect = child.getBoundingClientRect();
+            const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
+            if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+              closest = child; break;
+            }
+            if (dist < minDist) { minDist = dist; closest = child; }
+          }
+          targetBlock = closest;
+        }
+
+        if (targetBlock && targetBlock !== window.__draggedBlock) {
+          const rect = targetBlock.getBoundingClientRect();
+          if (e.clientY < rect.top + rect.height / 2) {
+            if (window.__draggedBlock.nextSibling !== targetBlock) {
+              targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
+            }
+          } else {
+            if (targetBlock.nextSibling !== window.__draggedBlock) {
+              targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
+            }
+          }
+        }
+        
+        if (editorRoot === blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+        window.__draggedBlock.style.opacity = '1';
+        window.__draggedBlock = null;
+        setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+      }
+    }
+  };
+
   return (
     <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
       <div className="fixed inset-0 pointer-events-none z-[9999]">
@@ -36823,7 +37191,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {sharedReplayPanel}
 
-        {/* selectionActionMenu (Image 1) has been deleted as requested */}
+      {selectionActionMenuEnabled && selectionActionMenu.open && (
+        <div 
+          ref={selectionActionMenuRef}
+          className="fixed z-[100005] bg-white/80 backdrop-blur-md border border-gray-200/50 rounded-lg shadow-xl flex items-center p-1 gap-1"
+          style={{ top: selectionActionMenu.top, left: selectionActionMenu.left }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isBoldActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Bold size={14}/></button>
+          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isItalicActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Italic size={14}/></button>
+          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isUnderlineActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Underline size={14}/></button>
+          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isStrikeActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Strikethrough size={14}/></button>
+          <div className="w-px h-4 bg-gray-200/60 mx-1"></div>
+          <button onPointerDown={(e) => { 
+            e.preventDefault(); 
+            setAssistantQuickPrompt("Explain this text"); 
+            setChatInput("Explain this text");
+            setRightSidebarOpen(true); 
+            setActiveRightTab("assistant");
+            setSelectionActionMenu({ open: false, top: 0, left: 0 });
+          }} className="flex items-center gap-1.5 p-1.5 px-2 hover:bg-violet-50/80 text-violet-600 rounded text-xs font-medium transition-colors"><Sparkles size={14}/> Ask AI</button>
+        </div>
+      )}
       {imageToolbar.open && (
         <div className="image-toolbar-container absolute z-[250] bg-white border border-gray-200 rounded-lg shadow-xl p-2 flex gap-2 items-center" style={{ top: imageToolbar.top, left: imageToolbar.left }}>
           <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'sm')} className="p-1 hover:bg-slate-100 rounded" title="Small Width (30%)"><ImageIcon size={14}/></button>
@@ -42331,103 +42720,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }
                     }
                   }}
-                  onMouseMove={(e) => {
-                    if (dragHandleTimeoutRef.current) clearTimeout(dragHandleTimeoutRef.current);
-                    const block = findNearestBlockElement(e.target);
-                    if (block) {
-                      const rect = block.getBoundingClientRect();
-                      setBlockDragHandle({
-                        visible: true,
-                        top: rect.top + window.scrollY,
-                        left: Math.max(10, rect.left + window.scrollX - 28),
-                        node: block
-                      });
-                    } else {
-                      dragHandleTimeoutRef.current = setTimeout(() => {
-                        setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
-                      }, 250);
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (e.relatedTarget && e.relatedTarget.closest('.block-drag-handle')) return;
-                    dragHandleTimeoutRef.current = setTimeout(() => {
-                      setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
-                    }, 250);
-                  }}
-                  onDragOver={(e) => {
-                    if (window.__draggedBlock) {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = 'move';
-                      let targetBlock = findNearestBlockElement(e.target);
-                      if (!targetBlock && (e.target === blankBodyRef.current || blankBodyRef.current.contains(e.target))) {
-                        const children = Array.from(blankBodyRef.current.children);
-                        let closest = null;
-                        let minDist = Infinity;
-                        for (let child of children) {
-                          const rect = child.getBoundingClientRect();
-                          const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
-                          if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                            closest = child; break;
-                          }
-                          if (dist < minDist) { minDist = dist; closest = child; }
-                        }
-                        targetBlock = closest;
-                      }
-                      if (targetBlock && targetBlock !== window.__draggedBlock) {
-                        const rect = targetBlock.getBoundingClientRect();
-                        if (e.clientY < rect.top + rect.height / 2) {
-                          if (window.__draggedBlock.nextSibling !== targetBlock) {
-                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
-                          }
-                        } else {
-                          if (targetBlock.nextSibling !== window.__draggedBlock) {
-                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
-                          }
-                        }
-                      }
-                    }
-                  }}
-                  onDragLeave={(e) => {
-                    // Borders are no longer used for drop target highlighting
-                  }}
-                  onDrop={(e) => {
-                    if (window.__draggedBlock) {
-                      e.preventDefault();
-                      let targetBlock = findNearestBlockElement(e.target);
-                      if (!targetBlock && (e.target === blankBodyRef.current || blankBodyRef.current.contains(e.target))) {
-                        const children = Array.from(blankBodyRef.current.children);
-                        let closest = null;
-                        let minDist = Infinity;
-                        for (let child of children) {
-                          const rect = child.getBoundingClientRect();
-                          const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
-                          if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                            closest = child; break;
-                          }
-                          if (dist < minDist) { minDist = dist; closest = child; }
-                        }
-                        targetBlock = closest;
-                      }
-
-                      if (targetBlock && targetBlock !== window.__draggedBlock) {
-                        const rect = targetBlock.getBoundingClientRect();
-                        if (e.clientY < rect.top + rect.height / 2) {
-                          if (window.__draggedBlock.nextSibling !== targetBlock) {
-                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
-                          }
-                        } else {
-                          if (targetBlock.nextSibling !== window.__draggedBlock) {
-                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
-                          }
-                        }
-                      }
-                      
-                      if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
-                      window.__draggedBlock.style.opacity = '1';
-                      window.__draggedBlock = null;
-                      setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
-                    }
-                  }}
+                  {...editorDragHandlers}
                   dir="ltr"
                   data-doc-id={activeDocId || ''}
                   className="mb-4 min-h-[70vh] cursor-text outline-none text-sm text-gray-700 leading-relaxed"
@@ -45269,7 +45562,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
        {blockDragHandle.visible && blockDragHandle.node && (
         <div
-          className="block-drag-handle fixed z-[9000] cursor-pointer text-slate-300 hover:text-slate-500 hover:bg-slate-100 rounded flex items-center justify-center transition-colors p-0.5"
+          className="block-drag-handle fixed z-[100005] cursor-pointer text-slate-300 hover:text-slate-500 hover:bg-slate-100 rounded flex items-center justify-center transition-colors p-0.5"
           style={{ top: `${blockDragHandle.top + 2}px`, left: `${blockDragHandle.left}px` }}
           draggable="true"
           onMouseEnter={() => {
@@ -45399,14 +45692,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
         return (
           <>
             <div 
-              className="fixed inset-0 z-[8998]" 
+              className="fixed inset-0 z-[100004]" 
               onPointerDown={(e) => {
                 e.preventDefault();
                 setDragHandleMenu({ open: false, top: 0, left: 0, node: null });
               }} 
             />
             <div
-              className="fixed z-[8999] w-[240px] rounded-2xl border border-slate-200/40 bg-white/70 backdrop-blur-xl p-3 shadow-2xl flex flex-col gap-2.5 font-sans text-slate-800"
+              className="fixed z-[100005] w-[240px] rounded-2xl border border-slate-200/40 bg-white/70 backdrop-blur-xl p-3 shadow-2xl flex flex-col gap-2.5 font-sans text-slate-800"
               style={{ top: `${menuTop}px`, left: `${menuLeft}px` }}
               onPointerDown={(e) => e.stopPropagation()}
             >
@@ -46162,7 +46455,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {renderSharedShapePicker()}
       {renderAuthModal()}
       
-      <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} />
+      <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} notesCardRef={notesCardRef} isDarkMode={isDarkMode} />
+
       <SummaryModal isOpen={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} />
       <MeetingsModal isOpen={isMeetingsModalOpen} onClose={() => setIsMeetingsModalOpen(false)} />
       <RecordingModal isOpen={isRecordingModalOpen} onClose={() => setIsRecordingModalOpen(false)} />
