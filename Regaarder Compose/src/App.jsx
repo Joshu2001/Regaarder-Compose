@@ -2569,6 +2569,11 @@ const CalendarModal = ({ isOpen, onClose }) => {
   const [events, setEvents] = useState({ '2026-10-15': ['Product Launch'] });
   const [selectedDate, setSelectedDate] = useState(null);
   const [newEventTitle, setNewEventTitle] = useState('');
+  
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+  const [editingEventIndex, setEditingEventIndex] = useState(null);
+  const [editingEventTitle, setEditingEventTitle] = useState('');
+  const longPressTimer = useRef(null);
 
   if (!isOpen) return null;
   
@@ -2599,7 +2604,6 @@ const CalendarModal = ({ isOpen, onClose }) => {
       [dateStr]: [...(prev[dateStr] || []), newEventTitle]
     }));
     setNewEventTitle('');
-    setSelectedDate(null);
   };
 
   return (
@@ -2609,50 +2613,139 @@ const CalendarModal = ({ isOpen, onClose }) => {
           <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Calendar className="text-violet-500" size={24} /> Calendar</h2>
         </div>
         <div className="flex items-center justify-between mb-4">
-          <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500"><ChevronLeft size={20} /></button>
-          <div className="font-medium text-gray-700">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</div>
-          <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500"><ChevronRight size={20} /></button>
+          <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronLeft size={20} /></button>
+          <button onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)} className="font-medium text-gray-700 hover:bg-gray-100 px-4 py-1.5 rounded-xl flex items-center gap-2 transition-colors">
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            <ChevronDown size={14} className={`text-gray-400 transition-transform ${isMonthPickerOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronRight size={20} /></button>
         </div>
-        <div className="grid grid-cols-7 gap-2 mb-2">
-          {days.map(day => (
-            <div key={day} className="text-center text-xs font-medium text-gray-400">{day}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-2">
-          {blanks.map(blank => (
-            <div key={`blank-${blank}`} className="text-center p-2 text-sm text-gray-300"></div>
-          ))}
-          {dates.map(date => {
-            const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${date}`;
-            const hasEvents = events[dateStr] && events[dateStr].length > 0;
-            const isSelected = selectedDate === date;
-            return (
-              <div 
-                key={date} 
-                onClick={() => setSelectedDate(isSelected ? null : date)}
-                className={`relative text-center p-2 text-sm rounded-full cursor-pointer transition-colors flex items-center justify-center
-                  ${isSelected ? 'bg-violet-500 text-white font-medium shadow-md hover:bg-violet-600' : 'text-gray-700 hover:bg-gray-100'}`}
-              >
-                {date}
-                {hasEvents && !isSelected && (
-                  <div className="absolute bottom-1 w-1 h-1 bg-violet-500 rounded-full"></div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {selectedDate && (
+        
+        {!isMonthPickerOpen ? (
+          <>
+            <div className="grid grid-cols-7 gap-2 mb-2">
+              {days.map(day => (
+                <div key={day} className="text-center text-xs font-medium text-gray-400">{day}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-2">
+              {blanks.map(blank => (
+                <div key={`blank-${blank}`} className="text-center p-2 text-sm text-gray-300"></div>
+              ))}
+              {dates.map(date => {
+                const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${date}`;
+                const hasEvents = events[dateStr] && events[dateStr].length > 0;
+                const isSelected = selectedDate === date;
+                return (
+                  <div 
+                    key={date} 
+                    onClick={() => {
+                      setSelectedDate(isSelected ? null : date);
+                      setEditingEventIndex(null); // Reset edit state when changing date
+                    }}
+                    className={`relative text-center p-2 text-sm rounded-full cursor-pointer transition-colors flex items-center justify-center
+                      ${isSelected ? 'bg-violet-500 text-white font-medium shadow-md hover:bg-violet-600' : 'text-gray-700 hover:bg-gray-100'}`}
+                  >
+                    {date}
+                    {hasEvents && !isSelected && (
+                      <div className="absolute bottom-1 w-1 h-1 bg-violet-500 rounded-full"></div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="py-2 animate-in fade-in">
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {monthNames.map((m, i) => (
+                <button 
+                  key={m}
+                  onClick={() => { setCurrentDate(new Date(currentDate.getFullYear(), i, 1)); setIsMonthPickerOpen(false); }}
+                  className={`text-sm py-2 rounded-xl transition-all ${currentDate.getMonth() === i ? 'bg-violet-500 text-white font-medium shadow-md' : 'hover:bg-gray-50 text-gray-600'}`}
+                >
+                  {m.substring(0, 3)}
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-gray-100 pt-4 grid grid-cols-4 gap-2">
+              {Array.from({length: 12}, (_, i) => currentDate.getFullYear() - 5 + i).map(y => (
+                <button
+                  key={y}
+                  onClick={() => { setCurrentDate(new Date(y, currentDate.getMonth(), 1)); setIsMonthPickerOpen(false); }}
+                  className={`text-sm py-2 rounded-xl transition-all ${currentDate.getFullYear() === y ? 'bg-violet-100 text-violet-700 font-medium' : 'hover:bg-gray-50 text-gray-600'}`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedDate && !isMonthPickerOpen && (
           <div className="mt-6 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-bottom-2">
             <div className="text-sm font-medium text-gray-700 mb-2">
               Events for {monthNames[currentDate.getMonth()]} {selectedDate}
             </div>
             <div className="space-y-2 mb-3">
-              {events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`]?.map((ev, i) => (
-                <div key={i} className="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
-                  {ev}
-                </div>
-              ))}
+              {events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`]?.map((ev, i) => {
+                const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`;
+                
+                if (editingEventIndex === i) {
+                  return (
+                    <div key={i} className="flex flex-col gap-2 bg-violet-50 p-2.5 rounded-xl border border-violet-100">
+                      <input 
+                        type="text" 
+                        className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-violet-400 w-full"
+                        value={editingEventTitle}
+                        autoFocus
+                        onChange={(e) => setEditingEventTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const newEvents = [...events[dateStr]];
+                            newEvents[i] = editingEventTitle;
+                            setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
+                            setEditingEventIndex(null);
+                          }
+                        }}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => {
+                           const newEvents = events[dateStr].filter((_, idx) => idx !== i);
+                           setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
+                           setEditingEventIndex(null);
+                        }} className="text-xs px-2 py-1 rounded-md text-red-500 hover:bg-red-50 font-medium transition-colors">Delete</button>
+                        <button onClick={() => setEditingEventIndex(null)} className="text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-100 font-medium transition-colors">Cancel</button>
+                        <button onClick={() => {
+                           const newEvents = [...events[dateStr]];
+                           newEvents[i] = editingEventTitle;
+                           setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
+                           setEditingEventIndex(null);
+                        }} className="text-xs px-2 py-1 rounded-md bg-violet-500 text-white hover:bg-violet-600 font-medium transition-colors">Save</button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div 
+                    key={i} 
+                    className="group text-xs bg-violet-50 text-violet-700 px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-violet-100 transition-colors"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
+                    <span className="flex-1 truncate font-medium">{ev}</span>
+                    <button 
+                      onClick={() => {
+                        setEditingEventIndex(i);
+                        setEditingEventTitle(ev);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 text-violet-400 hover:text-violet-700 transition-all rounded-md hover:bg-violet-200/50"
+                    >
+                      <Pen size={14} />
+                    </button>
+                  </div>
+                );
+              })}
               {(!events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`] || events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`].length === 0) && (
                 <div className="text-xs text-gray-400 italic">No events</div>
               )}
