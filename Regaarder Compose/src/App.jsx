@@ -2416,101 +2416,460 @@ suppressContentEditableWarning
 };
 
 const SummaryModal = ({ isOpen, onClose }) => {
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [lang, setLang] = useState('EN');
+
   if (!isOpen) return null;
+
+  const getTranslatedText = (key) => {
+    if (lang === 'ES') {
+      return {
+        title: "Sincronización en vivo",
+        status: "Resumiendo activamente",
+        point1: "Estrategia de campaña del tercer trimestre finalizada; alineando métricas.",
+        point2: "Acción: Sarah finalizará la presentación de mañana.",
+        point3: "Bloqueo: El despliegue de la API retrasa a ingeniería."
+      }[key] || key;
+    }
+    if (lang === 'FR') {
+      return {
+        title: "Synchronisation en direct",
+        status: "Résumé actif",
+        point1: "Stratégie de campagne T3 finalisée ; alignement des métriques.",
+        point2: "Action : Sarah finalise la présentation de demain.",
+        point3: "Blocage : Le déploiement de l'API retarde l'ingénierie."
+      }[key] || key;
+    }
+    return {
+      title: "Live Sync",
+      status: "Actively summarizing",
+      point1: "Finalized Q3 campaign strategy; aligning on next-step metrics.",
+      point2: "Action: Sarah to finalize all-hands deck by tomorrow.",
+      point3: "Blocker: Backend API deployment holding up engineering."
+    }[key] || key;
+  };
+
   return (
     <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Sparkles className="text-violet-500" size={24} /> AI Summary</h2>
-        </div>
-        <div className="p-6">
-          <div className="bg-violet-50 text-violet-700 text-sm p-4 rounded-xl mb-4 flex gap-3">
-            <Sparkles size={20} className="shrink-0 mt-0.5" />
-            <p>Here is a quick summary of what was discussed so far. The AI is still listening and will update this summary.</p>
+      <div className="bg-white/[93%] backdrop-blur-[60px] border border-white/60 shadow-[0_32px_120px_rgba(0,0,0,0.04)] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]" onClick={e => {
+        e.stopPropagation();
+        if (isExportOpen) setIsExportOpen(false);
+        if (isLangOpen) setIsLangOpen(false);
+      }}>
+        <div className="flex items-center justify-between px-7 py-6 border-b border-white/40 shrink-0">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
+              <div className="relative flex h-3 w-3 items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+              </div>
+              {getTranslatedText('title')}
+            </h2>
+            <span className="text-[11px] font-medium text-violet-600 bg-violet-100/50 px-2.5 py-1 rounded-full border border-violet-200/50 uppercase tracking-wider">{getTranslatedText('status')}</span>
           </div>
-          <ul className="list-disc pl-5 text-gray-600 space-y-2">
-            <li>Reviewed last week's metrics and agreed on the next steps for the Q3 campaign.</li>
-            <li>Sarah to prepare the slides for tomorrow's all-hands.</li>
-            <li>Engineering team is blocked on the new API endpoints, awaiting backend deployment.</li>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsLangOpen(!isLangOpen); setIsExportOpen(false); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-xl transition-colors"
+              >
+                <Globe size={14} /> {lang}
+              </button>
+              {isLangOpen && (
+                <div className="absolute top-full right-0 mt-2 w-32 bg-white/[93%] backdrop-blur-xl border border-white/60 shadow-[0_16px_40px_rgba(0,0,0,0.1)] rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 z-50 p-1">
+                  {['EN', 'ES', 'FR'].map(l => (
+                    <button key={l} onClick={() => { setLang(l); setIsLangOpen(false); }} className={`w-full text-left px-3 py-2 text-sm font-medium rounded-xl transition-colors ${lang === l ? 'bg-violet-50 text-violet-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      {l === 'EN' ? 'English' : l === 'ES' ? 'Español' : 'Français'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="px-7 py-6 overflow-y-auto thin-scrollbar flex-1">
+          <ul className="space-y-5">
+            <li className="flex gap-3 items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 mt-2 shrink-0"></div>
+              <p className="text-[15px] leading-relaxed text-gray-700 font-medium">
+                {lang === 'EN' ? (
+                  <>Finalized Q3 campaign strategy; aligning on next-step metrics.</>
+                ) : (
+                  <>{getTranslatedText('point1')}</>
+                )}
+              </p>
+            </li>
+            <li className="flex gap-3 items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 mt-2 shrink-0"></div>
+              <p className="text-[15px] leading-relaxed text-gray-700 font-medium">
+                {lang === 'EN' ? (
+                  <><span className="text-gray-900 font-semibold">Action:</span> Sarah to finalize all-hands deck by tomorrow.</>
+                ) : (
+                  <>{getTranslatedText('point2')}</>
+                )}
+              </p>
+            </li>
+            <li className="flex gap-3 items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0"></div>
+              <p className="text-[15px] leading-relaxed text-gray-700 font-medium">
+                {lang === 'EN' ? (
+                  <><span className="text-gray-900 font-semibold">Blocker:</span> Backend API deployment holding up engineering.</>
+                ) : (
+                  <>{getTranslatedText('point3')}</>
+                )}
+              </p>
+            </li>
           </ul>
+        </div>
+        <div className="px-7 py-5 bg-gray-50/50 border-t border-white/40 flex items-center justify-end gap-3 shrink-0">
+          <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-white/80 rounded-xl transition-colors border border-transparent hover:border-gray-200">
+            Copy to Clipboard
+          </button>
+          <div className="relative">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setIsExportOpen(!isExportOpen); setIsLangOpen(false); }}
+              className="px-4 py-2 text-sm font-medium text-white bg-violet-500 hover:bg-violet-600 rounded-xl transition-colors shadow-sm flex items-center gap-2"
+            >
+              Export <ChevronDown size={16} className={`transition-transform ${isExportOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isExportOpen && (
+              <div className="absolute bottom-full right-0 mb-2 w-48 bg-white/90 backdrop-blur-xl border border-white/60 shadow-[0_16px_40px_rgba(0,0,0,0.1)] rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 z-50 p-1">
+                <button className="w-full text-left px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-600 rounded-xl transition-colors">
+                  Export to Compose
+                </button>
+                <button className="w-full text-left px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-600 rounded-xl transition-colors">
+                  Download as JSON
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-const MeetingsModal = ({ isOpen, onClose }) => {
+const MeetingsModal = ({ isOpen, onClose, globalEvents, setGlobalEvents, setInvites }) => {
   const [meetings, setMeetings] = useState([
-    { id: 1, title: 'Design Sync', time: 'Today, 2:00 PM - 3:00 PM' },
-    { id: 2, title: 'Weekly Engineering Standup', time: 'Tomorrow, 10:00 AM - 10:30 AM' }
+    { id: 1, title: 'Design Sync', date: '2026-10-16', time: '14:00', privacy: 'group', recurrence: 'none' },
+    { id: 2, title: 'Weekly Engineering Standup', date: '2026-10-17', time: '10:00', privacy: 'group', recurrence: 'weekly' }
   ]);
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [editDate, setEditDate] = useState('');
   const [editTime, setEditTime] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editLink, setEditLink] = useState('');
+  const [editPrivacy, setEditPrivacy] = useState('group'); // 'private' or 'group'
+  const [editRecurrence, setEditRecurrence] = useState('none');
+  const [editGuest, setEditGuest] = useState('');
+  const [editGuests, setEditGuests] = useState([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  const [isDictating, setIsDictating] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState([]);
 
   if (!isOpen) return null;
 
-  const handleSave = (id) => {
-    if (!editTitle.trim()) return;
-    if (id === 'new') {
-      setMeetings([...meetings, { id: Date.now(), title: editTitle, time: editTime || 'Time TBD' }]);
-    } else {
-      setMeetings(meetings.map(m => m.id === id ? { ...m, title: editTitle, time: editTime } : m));
+  const handleAddGuest = (e) => {
+    if (e.key === 'Enter' && editGuest.trim()) {
+      setEditGuests([...editGuests, editGuest.trim()]);
+      setEditGuest('');
     }
+  };
+
+  const removeGuest = (index) => {
+    setEditGuests(editGuests.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async (id) => {
+    if (!editTitle.trim()) return;
+    
+    let finalDate = editDate || new Date().toISOString().split('T')[0];
+    const meetingData = { 
+      id: id === 'new' ? Date.now() : id, 
+      title: editTitle, 
+      date: finalDate, 
+      time: editTime || '10:00',
+      description: editDescription,
+      link: editLink,
+      privacy: editPrivacy,
+      recurrence: editRecurrence,
+      guests: editGuests
+    };
+    
+    if (id === 'new') {
+      setMeetings([...meetings, meetingData]);
+      
+      try {
+        const token = localStorage.getItem('rc.token');
+        if (token) {
+          await fetch('http://localhost:3001/api/events', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(meetingData)
+          });
+          
+          if (editGuests.length > 0) {
+            alert(`Invitations sent to ${editGuests.join(', ')}`);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to save meeting to backend', err);
+      }
+    } else {
+      setMeetings(meetings.map(m => m.id === id ? meetingData : m));
+    }
+    
     setEditingId(null);
+    setAttachedFiles([]);
+    setShowAdvanced(false);
   };
 
   const startEdit = (meeting) => {
     setEditingId(meeting.id);
-    setEditTitle(meeting.title);
-    setEditTime(meeting.time);
+    setEditTitle(meeting.title || '');
+    setEditDate(meeting.date || '');
+    setEditTime(meeting.time || '');
+    setEditDescription(meeting.description || '');
+    setEditLink(meeting.link || '');
+    setEditPrivacy(meeting.privacy || 'group');
+    setEditRecurrence(meeting.recurrence || 'none');
+    setEditGuests(meeting.guests || []);
+    setShowAdvanced(!!(meeting.description || meeting.link || meeting.guests?.length > 0));
   };
 
   const startAdd = () => {
     setEditingId('new');
     setEditTitle('');
+    setEditDate('');
     setEditTime('');
+    setEditDescription('');
+    setEditLink('');
+    setEditPrivacy('group');
+    setEditRecurrence('none');
+    setEditGuests([]);
+    setShowAdvanced(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setAttachedFiles([...attachedFiles, ...Array.from(e.dataTransfer.files)]);
+    }
+  };
+
+  const handleScheduleViaAI = () => {
+    setIsAIProcessing(true);
+    setTimeout(() => {
+      setEditTitle("Design Sync extracted from document");
+      setEditDate("2026-10-20");
+      setEditTime("15:30");
+      setIsAIProcessing(false);
+    }, 1500);
   };
 
   return (
     <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Users className="text-violet-500" size={24} /> Upcoming Meetings</h2>
-          <button onClick={startAdd} className="p-2 rounded-full hover:bg-gray-100 text-gray-500 transition-colors" disabled={editingId !== null}>
-            <Plus size={20} />
-          </button>
+      <div className="relative w-full max-w-lg">
+        <div 
+          className="bg-white/[93%] backdrop-blur-[60px] border border-white/60 shadow-[0_32px_120px_rgba(0,0,0,0.04)] rounded-[32px] w-full overflow-hidden flex flex-col max-h-[85vh] relative" 
+          onClick={e => e.stopPropagation()}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
+        >
+
+        <div className="flex items-center justify-between px-7 py-6 border-b border-white/40 shrink-0">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
+            <Users className="text-violet-500" size={24} /> Upcoming Meetings
+          </h2>
+          <div className="flex gap-2 items-center">
+            <button onClick={startAdd} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 rounded-full transition-colors" disabled={editingId !== null}>
+              <Plus size={20} />
+            </button>
+          </div>
         </div>
-        <div className="p-4 space-y-2 max-h-[60vh] overflow-y-auto thin-scrollbar">
+
+        {isDragOver && (
+          <div className="absolute inset-0 z-50 bg-violet-500/10 backdrop-blur-sm flex flex-col items-center justify-center border-2 border-violet-500 border-dashed rounded-[32px] m-4">
+            <FilePlus2 className="text-violet-500 mb-2" size={32} />
+            <p className="text-violet-700 font-medium">Drop files to parse schedule</p>
+          </div>
+        )}
+
+        <div className="px-7 py-6 overflow-y-auto thin-scrollbar flex-1 space-y-4">
           {editingId === 'new' && (
-            <div className="p-4 border border-violet-200 bg-violet-50/50 rounded-2xl mb-4 animate-in fade-in slide-in-from-top-2">
-              <input type="text" placeholder="Meeting Title" className="w-full text-sm font-medium text-gray-800 bg-transparent outline-none mb-2 placeholder:text-gray-400" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus />
-              <input type="text" placeholder="Time (e.g. Tomorrow, 10:00 AM)" className="w-full text-sm text-gray-500 bg-transparent outline-none mb-3 placeholder:text-gray-400" value={editTime} onChange={e => setEditTime(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSave('new')} />
+            <div className="p-5 border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/50 rounded-3xl mb-4 animate-in fade-in zoom-in-95 relative">
+              <div className="absolute top-4 right-4 z-10">
+                <button 
+                  onClick={() => setIsDictating(!isDictating)}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all ${isDictating ? 'bg-red-500 text-white animate-pulse' : 'bg-white text-gray-500 hover:text-violet-600 border border-gray-200/50 hover:border-violet-200'}`}
+                  title="Dictate Meeting Details"
+                >
+                  <Mic size={18} />
+                </button>
+              </div>
+              <input type="text" placeholder={isDictating ? "Listening..." : "Meeting Title"} className="w-full text-base font-medium text-gray-800 bg-transparent outline-none mb-4 placeholder:text-gray-400 pr-12" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus />
+              
+              <div className="flex gap-3 mb-4">
+                 <input type="date" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                 <input type="time" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editTime} onChange={e => setEditTime(e.target.value)} />
+              </div>
+
+              <div className="mb-4">
+                <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs font-medium text-violet-600 flex items-center gap-1 hover:text-violet-700 transition-colors">
+                  {showAdvanced ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {showAdvanced ? "Hide Options" : "More Options"}
+                </button>
+              </div>
+
+              {showAdvanced && (
+                <div className="space-y-4 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex gap-3 items-start">
+                     <AlignLeft size={16} className="text-gray-400 mt-2.5 shrink-0"/>
+                     <textarea placeholder="Description" rows={2} className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300 resize-none" value={editDescription} onChange={e => setEditDescription(e.target.value)}></textarea>
+                  </div>
+                  <div className="flex gap-3 items-center">
+                     <LinkIcon size={16} className="text-gray-400 shrink-0"/>
+                     <input type="text" placeholder="Meeting Link (e.g. https://room.regaarder.com/sync)" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editLink} onChange={e => setEditLink(e.target.value)} />
+                  </div>
+                  <div className="flex gap-3 items-center">
+                     <Users size={16} className="text-gray-400 shrink-0"/>
+                     <div className="flex-1 flex flex-wrap gap-2 items-center bg-white/60 border border-gray-200/50 rounded-xl p-1.5 focus-within:border-violet-300">
+                        {editGuests.map((g, i) => (
+                           <span key={i} className="flex items-center gap-1 bg-violet-100/50 text-violet-700 px-2 py-0.5 rounded-md text-xs font-medium">
+                              {g}
+                              <button onClick={() => removeGuest(i)} className="hover:text-violet-900"><X size={12}/></button>
+                           </span>
+                        ))}
+                        <input type="text" placeholder={editGuests.length === 0 ? "Add guests (Press Enter)" : "Add more..."} className="flex-1 min-w-[120px] bg-transparent text-sm outline-none px-2 text-gray-700" value={editGuest} onChange={e => setEditGuest(e.target.value)} onKeyDown={handleAddGuest} />
+                     </div>
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    <div className="flex items-center gap-2 flex-1">
+                       <Clock size={16} className="text-gray-400 shrink-0"/>
+                       <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editRecurrence} onChange={e => setEditRecurrence(e.target.value)}>
+                         <option value="none">Does not repeat</option>
+                         <option value="daily">Daily</option>
+                         <option value="weekly">Weekly</option>
+                         <option value="monthly">Monthly</option>
+                       </select>
+                    </div>
+                    <div className="flex items-center gap-2 flex-1">
+                       {editPrivacy === 'private' ? <Lock size={16} className="text-gray-400 shrink-0"/> : <Users2 size={16} className="text-gray-400 shrink-0"/>}
+                       <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editPrivacy} onChange={e => setEditPrivacy(e.target.value)}>
+                         <option value="group">Visible to Group</option>
+                         <option value="private">Private</option>
+                       </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {attachedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {attachedFiles.map((f, i) => (
+                    <span key={i} className="px-2.5 py-1 bg-violet-100/50 text-violet-700 text-xs font-medium rounded-lg border border-violet-200/50 flex items-center gap-1">
+                      <FileSpreadsheet size={12}/> {f.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               <div className="flex gap-2">
-                <button onClick={() => handleSave('new')} className="flex-1 py-1.5 bg-violet-500 text-white text-xs font-medium rounded-lg hover:bg-violet-600 transition-colors">Add Meeting</button>
-                <button onClick={() => setEditingId(null)} className="flex-1 py-1.5 bg-white text-gray-600 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">Cancel</button>
+                <button onClick={() => handleSave('new')} className="flex-1 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors shadow-sm">Save Meeting</button>
+                <button onClick={() => {setEditingId(null); setAttachedFiles([]); setShowAdvanced(false);}} className="px-4 py-2 bg-white text-gray-600 text-sm font-medium rounded-xl border border-gray-200/50 hover:bg-gray-50 transition-colors">Cancel</button>
               </div>
             </div>
           )}
+
           {meetings.map(meeting => (
             editingId === meeting.id ? (
-              <div key={meeting.id} className="p-4 border border-violet-200 bg-violet-50/50 rounded-2xl transition-colors">
-                <input type="text" className="w-full text-sm font-medium text-gray-800 bg-transparent outline-none mb-2" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus />
-                <input type="text" className="w-full text-sm text-gray-500 bg-transparent outline-none mb-3" value={editTime} onChange={e => setEditTime(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSave(meeting.id)} />
+              <div key={meeting.id} className="p-5 border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/50 rounded-3xl transition-colors">
+                <input type="text" className="w-full text-base font-medium text-gray-800 bg-transparent outline-none mb-4" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus />
+                
+                <div className="flex gap-3 mb-4">
+                   <input type="date" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                   <input type="time" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editTime} onChange={e => setEditTime(e.target.value)} />
+                </div>
+                
+                <div className="mb-4">
+                  <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs font-medium text-violet-600 flex items-center gap-1 hover:text-violet-700 transition-colors">
+                    {showAdvanced ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {showAdvanced ? "Hide Options" : "More Options"}
+                  </button>
+                </div>
+
+                {showAdvanced && (
+                  <div className="space-y-4 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex gap-3 items-start">
+                       <AlignLeft size={16} className="text-gray-400 mt-2.5 shrink-0"/>
+                       <textarea placeholder="Description" rows={2} className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300 resize-none" value={editDescription} onChange={e => setEditDescription(e.target.value)}></textarea>
+                    </div>
+                    <div className="flex gap-3 items-center">
+                       <LinkIcon size={16} className="text-gray-400 shrink-0"/>
+                       <input type="text" placeholder="Meeting Link (e.g. https://room.regaarder.com/sync)" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editLink} onChange={e => setEditLink(e.target.value)} />
+                    </div>
+                    <div className="flex gap-3 items-center">
+                       <Users size={16} className="text-gray-400 shrink-0"/>
+                       <div className="flex-1 flex flex-wrap gap-2 items-center bg-white/60 border border-gray-200/50 rounded-xl p-1.5 focus-within:border-violet-300">
+                          {editGuests.map((g, i) => (
+                             <span key={i} className="flex items-center gap-1 bg-violet-100/50 text-violet-700 px-2 py-0.5 rounded-md text-xs font-medium">
+                                {g}
+                                <button onClick={() => removeGuest(i)} className="hover:text-violet-900"><X size={12}/></button>
+                             </span>
+                          ))}
+                          <input type="text" placeholder={editGuests.length === 0 ? "Add guests (Press Enter)" : "Add more..."} className="flex-1 min-w-[120px] bg-transparent text-sm outline-none px-2 text-gray-700" value={editGuest} onChange={e => setEditGuest(e.target.value)} onKeyDown={handleAddGuest} />
+                       </div>
+                    </div>
+                    <div className="flex gap-3 items-center">
+                      <div className="flex items-center gap-2 flex-1">
+                         <Clock size={16} className="text-gray-400 shrink-0"/>
+                         <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editRecurrence} onChange={e => setEditRecurrence(e.target.value)}>
+                           <option value="none">Does not repeat</option>
+                           <option value="daily">Daily</option>
+                           <option value="weekly">Weekly</option>
+                           <option value="monthly">Monthly</option>
+                         </select>
+                      </div>
+                      <div className="flex items-center gap-2 flex-1">
+                         {editPrivacy === 'private' ? <Lock size={16} className="text-gray-400 shrink-0"/> : <Users2 size={16} className="text-gray-400 shrink-0"/>}
+                         <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editPrivacy} onChange={e => setEditPrivacy(e.target.value)}>
+                           <option value="group">Visible to Group</option>
+                           <option value="private">Private</option>
+                         </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
-                  <button onClick={() => handleSave(meeting.id)} className="flex-1 py-1.5 bg-violet-500 text-white text-xs font-medium rounded-lg hover:bg-violet-600 transition-colors">Save</button>
-                  <button onClick={() => setEditingId(null)} className="flex-1 py-1.5 bg-white text-gray-600 text-xs font-medium rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">Cancel</button>
+                  <button onClick={() => handleSave(meeting.id)} className="flex-1 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors shadow-sm">Save Meeting</button>
+                  <button onClick={() => {setEditingId(null); setAttachedFiles([]); setShowAdvanced(false);}} className="px-4 py-2 bg-white text-gray-600 text-sm font-medium rounded-xl border border-gray-200/50 hover:bg-gray-50 transition-colors">Cancel</button>
                 </div>
               </div>
             ) : (
-              <div key={meeting.id} className="group p-4 border border-gray-100 rounded-2xl hover:bg-gray-50 transition-colors flex justify-between items-start cursor-pointer" onClick={() => startEdit(meeting)}>
-                <div>
-                  <div className="font-medium text-gray-800">{meeting.title}</div>
-                  <div className="text-sm text-gray-500 mt-1">{meeting.time}</div>
+              <div key={meeting.id} className="group p-5 border border-white/40 bg-gray-50/50 rounded-3xl hover:bg-white/80 transition-all shadow-sm hover:shadow-md flex justify-between items-center cursor-pointer" onClick={() => startEdit(meeting)}>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-500 font-semibold text-sm shrink-0">
+                    {meeting.date.split('-')[2] || '?'}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-800">{meeting.title}</div>
+                    <div className="text-sm text-gray-500 flex gap-2 items-center mt-1">
+                       <span>{meeting.time}</span>
+                    </div>
+                  </div>
                 </div>
                 <button 
                   onClick={(e) => { e.stopPropagation(); setMeetings(meetings.filter(m => m.id !== meeting.id)); }} 
-                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all shrink-0"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -2520,6 +2879,7 @@ const MeetingsModal = ({ isOpen, onClose }) => {
           {meetings.length === 0 && editingId !== 'new' && (
             <div className="text-center py-8 text-gray-400 text-sm">No upcoming meetings</div>
           )}
+        </div>
         </div>
       </div>
     </div>
@@ -2564,9 +2924,12 @@ const RecordingModal = ({ isOpen, onClose }) => {
   );
 };
 
-const CalendarModal = ({ isOpen, onClose }) => {
+const CalendarModal = ({ isOpen, onClose, globalEvents, setGlobalEvents }) => {
   const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1)); // October 2026
-  const [events, setEvents] = useState({ '2026-10-15': ['Product Launch'] });
+  const [localEvents, setLocalEvents] = useState({ '2026-10-15': [{ title: 'Product Launch', link: '' }] });
+  
+  const events = globalEvents || localEvents;
+  const setEvents = setGlobalEvents || setLocalEvents;
   const [selectedDate, setSelectedDate] = useState(null);
   const [newEventTitle, setNewEventTitle] = useState('');
   
@@ -2601,7 +2964,7 @@ const CalendarModal = ({ isOpen, onClose }) => {
     const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`;
     setEvents(prev => ({
       ...prev,
-      [dateStr]: [...(prev[dateStr] || []), newEventTitle]
+      [dateStr]: [...(prev[dateStr] || []), { title: newEventTitle, link: '' }]
     }));
     setNewEventTitle('');
   };
@@ -2703,7 +3066,7 @@ const CalendarModal = ({ isOpen, onClose }) => {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             const newEvents = [...events[dateStr]];
-                            newEvents[i] = editingEventTitle;
+                            newEvents[i] = typeof newEvents[i] === 'object' ? { ...newEvents[i], title: editingEventTitle } : editingEventTitle;
                             setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
                             setEditingEventIndex(null);
                           }
@@ -2718,7 +3081,7 @@ const CalendarModal = ({ isOpen, onClose }) => {
                         <button onClick={() => setEditingEventIndex(null)} className="text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-100 font-medium transition-colors">Cancel</button>
                         <button onClick={() => {
                            const newEvents = [...events[dateStr]];
-                           newEvents[i] = editingEventTitle;
+                           newEvents[i] = typeof newEvents[i] === 'object' ? { ...newEvents[i], title: editingEventTitle } : editingEventTitle;
                            setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
                            setEditingEventIndex(null);
                         }} className="text-xs px-2 py-1 rounded-md bg-violet-500 text-white hover:bg-violet-600 font-medium transition-colors">Save</button>
@@ -2730,19 +3093,26 @@ const CalendarModal = ({ isOpen, onClose }) => {
                 return (
                   <div 
                     key={i} 
-                    className="group text-xs bg-violet-50 text-violet-700 px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-violet-100 transition-colors"
+                    className="group text-xs bg-violet-50 text-violet-700 px-3 py-2 rounded-xl flex flex-col gap-1 hover:bg-violet-100 transition-colors"
                   >
-                    <div className="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
-                    <span className="flex-1 truncate font-medium">{ev}</span>
-                    <button 
-                      onClick={() => {
-                        setEditingEventIndex(i);
-                        setEditingEventTitle(ev);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-violet-400 hover:text-violet-700 transition-all rounded-md hover:bg-violet-200/50"
-                    >
-                      <Pen size={14} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
+                      <span className="flex-1 truncate font-medium">{ev.title || ev}</span>
+                      <button 
+                        onClick={() => {
+                          setEditingEventIndex(i);
+                          setEditingEventTitle(ev.title || ev);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-violet-400 hover:text-violet-700 transition-all rounded-md hover:bg-violet-200/50"
+                      >
+                        <Pen size={14} />
+                      </button>
+                    </div>
+                    {ev.link && (
+                      <a href={ev.link} target="_blank" rel="noreferrer" className="text-violet-500 flex items-center gap-1 hover:underline ml-3.5 w-fit">
+                        <LinkIcon size={12} /> Join Meeting
+                      </a>
+                    )}
                   </div>
                 );
               })}
@@ -2790,6 +3160,43 @@ export default function App() {
   const [isMeetingsModalOpen, setIsMeetingsModalOpen] = useState(false);
   const [isRecordingModalOpen, setIsRecordingModalOpen] = useState(false);
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [globalEvents, setGlobalEvents] = useState({ '2026-10-15': [{ title: 'Product Launch', link: 'https://room.regaarder.com/launch' }] });
+  const [invites, setInvites] = useState([]);
+  const [isInvitesOpen, setIsInvitesOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchBackendData = async () => {
+      const token = localStorage.getItem('rc.token');
+      if (!token) return;
+      
+      try {
+        const eventsRes = await fetch('http://localhost:3001/api/events', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (eventsRes.ok) {
+          const eventsData = await eventsRes.json();
+          if (Object.keys(eventsData).length > 0) {
+             setGlobalEvents(eventsData);
+          }
+        }
+
+        const invitesRes = await fetch('http://localhost:3001/api/invites', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (invitesRes.ok) {
+          const invitesData = await invitesRes.json();
+          setInvites(invitesData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch backend data', err);
+      }
+    };
+    fetchBackendData();
+    
+    // Poll for new invites and events every 5 seconds
+    const intervalId = setInterval(fetchBackendData, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -29305,6 +29712,75 @@ const renderRoomTopHeader = () => (
 
       {/* Right side options */}
       <div className="flex items-center gap-4">
+        <div className="relative">
+          <button 
+            onClick={() => setIsInvitesOpen(!isInvitesOpen)}
+            className={`p-2.5 rounded-2xl transition-colors relative ${isInvitesOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
+            title="Invites"
+          >
+            <Bell size={16} />
+            {invites.length > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+            )}
+          </button>
+          
+          {isInvitesOpen && (
+            <div className="absolute top-full right-0 mt-2 w-80 bg-white/90 backdrop-blur-xl border border-white/60 shadow-[0_16px_40px_rgba(0,0,0,0.08)] rounded-[24px] p-4 z-50 animate-in fade-in slide-in-from-top-2">
+              <h3 className="font-semibold text-slate-800 mb-3 px-2">Invites</h3>
+              {invites.length === 0 ? (
+                <div className="text-sm text-slate-400 text-center py-4">No new invites</div>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto thin-scrollbar pr-1">
+                  {invites.map(notif => (
+                    <div key={notif.id} className="p-3 bg-violet-50/50 rounded-2xl border border-violet-100/50">
+                       <p className="text-sm font-medium text-slate-800 mb-1">{notif.sender} invited you to <span className="font-semibold text-violet-600">{notif.title}</span></p>
+                       <p className="text-xs text-slate-500 mb-3">{notif.date} at {notif.time}</p>
+                       <div className="flex gap-2">
+                         <button 
+                         <button 
+                           onClick={async () => {
+                             try {
+                               const token = localStorage.getItem('rc.token');
+                               if (token) {
+                                 await fetch(`http://localhost:3001/api/invites/${notif.id}/accept`, {
+                                   method: 'POST',
+                                   headers: { 'Authorization': `Bearer ${token}` }
+                                 });
+                                 setInvites(invites.filter(n => n.id !== notif.id));
+                                 alert('Meeting accepted and added to your calendar!');
+                               }
+                             } catch (err) {
+                               console.error(err);
+                             }
+                           }}
+                           className="flex-1 py-1.5 bg-violet-500 text-white text-xs font-medium rounded-xl hover:bg-violet-600 transition-colors"
+                         >Accept</button>
+                         <button 
+                           onClick={async () => {
+                             try {
+                               const token = localStorage.getItem('rc.token');
+                               if (token) {
+                                 await fetch(`http://localhost:3001/api/invites/${notif.id}`, {
+                                   method: 'DELETE',
+                                   headers: { 'Authorization': `Bearer ${token}` }
+                                 });
+                                 setInvites(invites.filter(n => n.id !== notif.id));
+                               }
+                             } catch (err) {
+                               console.error(err);
+                             }
+                           }}
+                           className="flex-1 py-1.5 bg-white text-slate-600 text-xs font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+                         >Ignore</button>
+                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         <button 
           onClick={() => setIsDistractionFreeMode(!isDistractionFreeMode)}
           className={`p-2.5 rounded-2xl transition-colors ${isDistractionFreeMode ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
@@ -46741,9 +47217,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} notesCardRef={notesCardRef} isDarkMode={isDarkMode} />
 
       <SummaryModal isOpen={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} />
-      <MeetingsModal isOpen={isMeetingsModalOpen} onClose={() => setIsMeetingsModalOpen(false)} />
+      <MeetingsModal isOpen={isMeetingsModalOpen} onClose={() => setIsMeetingsModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} setInvites={setInvites} />
       <RecordingModal isOpen={isRecordingModalOpen} onClose={() => setIsRecordingModalOpen(false)} />
-      <CalendarModal isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} />
+      <CalendarModal isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} />
     </div>
   );
 }

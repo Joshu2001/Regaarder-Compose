@@ -10,6 +10,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -136,6 +138,139 @@ app.get('/api/auth/me', (req, res) => {
   }
 
   res.json({ user });
+});
+
+// --- SQLite Database Setup ---
+let db;
+(async () => {
+  db = await open({
+    filename: path.join(__dirname, 'database.sqlite'),
+    driver: sqlite3.Database
+  });
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT,
+      date TEXT,
+      title TEXT,
+      link TEXT,
+      time TEXT,
+      description TEXT,
+      privacy TEXT,
+      recurrence TEXT
+    );
+    CREATE TABLE IF NOT EXISTS invites (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT,
+      sender TEXT,
+      title TEXT,
+      date TEXT,
+      time TEXT,
+      status TEXT DEFAULT 'pending'
+    );
+  `);
+})();
+
+// Authentication middleware for Meetings/Invites
+const requireAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  const token = authHeader.split(' ')[1];
+  const user = activeSessions.get(token);
+  if (!user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  req.user = user;
+  next();
+};
+
+// --- Meetings / Events API ---
+app.get('/api/events', requireAuth, async (req, res) => {
+  try {
+    const events = await db.all('SELECT * FROM events WHERE user_id = ?', [req.user.id]);
+    
+    // Group events by date format: { 'YYYY-MM-DD': [{ title, link, ... }] }
+    const groupedEvents = {};
+    events.forEach(e => {
+      if (!groupedEvents[e.date]) groupedEvents[e.date] = [];
+      groupedEvents[e.date].push(e);
+    });
+    
+    res.json(groupedEvents);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/events', requireAuth, async (req, res) => {
+  const { date, title, link, time, description, privacy, recurrence, guests } = req.body;
+  if (!date || !title) return res.status(400).json({ error: 'Date and Title are required' });
+
+  try {
+    const result = await db.run(
+      'INSERT INTO events (user_id, date, title, link, time, description, privacy, recurrence) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [req.user.id, date, title, link || '', time || '', description || '', privacy || 'private', recurrence || 'none']
+    );
+    
+    // Simulate sending invites
+    if (guests && guests.length > 0) {
+      // In a real app we'd map guest emails to user_ids, but for now we'll just insert an invite for the current user 
+      // or a mock target so it shows up in their notifications if they invite themselves for testing
+      for (const guest of guests) {
+        // Here we just attach it to the current user so they can test it!
+        await db.run(
+          'INSERT INTO invites (user_id, sender, title, date, time) VALUES (?, ?, ?, ?, ?)',
+          [req.user.id, 'You (To: ' + guest + ')', title, date, time || '']
+        );
+      }
+    }
+    
+    res.status(201).json({ id: result.lastID, date, title, link, time, description, privacy, recurrence });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Invites API ---
+app.get('/api/invites', requireAuth, async (req, res) => {
+  try {
+    const invites = await db.all('SELECT * FROM invites WHERE user_id = ? AND status = ?', [req.user.id, 'pending']);
+    res.json(invites);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/invites/:id/accept', requireAuth, async (req, res) => {
+  try {
+    const invite = await db.get('SELECT * FROM invites WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    if (!invite) return res.status(404).json({ error: 'Invite not found' });
+    
+    // Create an event for the user
+    await db.run(
+      'INSERT INTO events (user_id, date, title, link, time) VALUES (?, ?, ?, ?, ?)',
+      [req.user.id, invite.date, invite.title, '', invite.time]
+    );
+    
+    // Mark as accepted (or delete it)
+    await db.run('DELETE FROM invites WHERE id = ?', [req.params.id]);
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/invites/:id', requireAuth, async (req, res) => {
+  try {
+    await db.run('DELETE FROM invites WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 const server = http.createServer(app);
