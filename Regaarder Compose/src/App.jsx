@@ -3153,67 +3153,6 @@ export default function App() {
   const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(false);
-  const [isRoomRecording, setIsRoomRecording] = useState(false);
-  const roomMediaRecorderRef = useRef(null);
-  const localVideoRef = useRef(null);
-  const mainVideoRef = useRef(null);
-
-  useEffect(() => {
-    if (localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [localStream, roomState]);
-
-  useEffect(() => {
-    if (mainVideoRef.current && screenShareStream) {
-      mainVideoRef.current.srcObject = screenShareStream;
-    } else if (mainVideoRef.current && localStream) {
-       // if we want to default main video to local stream for testing
-       // mainVideoRef.current.srcObject = localStream;
-    }
-  }, [screenShareStream, localStream, roomState]);
-
-  const startRoomRecording = async () => {
-    try {
-      let captureStream = null;
-      if (screenShareStream) {
-        captureStream = screenShareStream;
-      } else if (localStream) {
-        captureStream = localStream;
-      } else {
-         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-         captureStream = stream;
-      }
-      
-      if (!captureStream) return;
-      
-      const recorder = new MediaRecorder(captureStream);
-      const chunks = [];
-      recorder.ondataavailable = e => chunks.push(e.data);
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'Room-Recording.webm';
-        a.click();
-        setIsRoomRecording(false);
-      };
-      recorder.start(1000);
-      roomMediaRecorderRef.current = recorder;
-      setIsRoomRecording(true);
-      showToast('Recording started');
-    } catch (e) {
-      showToast('Recording failed: ' + e.message);
-    }
-  };
-
-  const stopRoomRecording = () => {
-    if (roomMediaRecorderRef.current && roomMediaRecorderRef.current.state === 'recording') {
-      roomMediaRecorderRef.current.stop();
-    }
-  };
-
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isMeetingsModalOpen, setIsMeetingsModalOpen] = useState(false);
@@ -6253,6 +6192,69 @@ export default function App() {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
+
+  const [isRoomRecording, setIsRoomRecording] = useState(false);
+  const roomMediaRecorderRef = useRef(null);
+  const localVideoRef = useRef(null);
+  const mainVideoRef = useRef(null);
+
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream, roomState]);
+
+  useEffect(() => {
+    if (mainVideoRef.current && screenShareStream) {
+      mainVideoRef.current.srcObject = screenShareStream;
+    } else if (mainVideoRef.current && localStream) {
+       // if we want to default main video to local stream for testing
+       // mainVideoRef.current.srcObject = localStream;
+    }
+  }, [screenShareStream, localStream, roomState]);
+
+  const startRoomRecording = async () => {
+    try {
+      let captureStream = null;
+      if (screenShareStream) {
+        captureStream = screenShareStream;
+      } else if (localStream) {
+        captureStream = localStream;
+      } else {
+         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+         captureStream = stream;
+      }
+      
+      if (!captureStream) return;
+      
+      const recorder = new MediaRecorder(captureStream);
+      const chunks = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Room-Recording.webm';
+        a.click();
+        setIsRoomRecording(false);
+      };
+      recorder.start(1000);
+      roomMediaRecorderRef.current = recorder;
+      setIsRoomRecording(true);
+      showToast('Recording started');
+    } catch (e) {
+      showToast('Recording failed: ' + e.message);
+    }
+  };
+
+  const stopRoomRecording = () => {
+    if (roomMediaRecorderRef.current && roomMediaRecorderRef.current.state === 'recording') {
+      roomMediaRecorderRef.current.stop();
+    }
+  };
+
+
   const [roomPanelMode, setRoomPanelMode] = useState('docked');
   const [activeRoomSidebarTab, setActiveRoomSidebarTab] = useState('chat');
   const [activeRoomChatTab, setActiveRoomChatTab] = useState('everyone');
