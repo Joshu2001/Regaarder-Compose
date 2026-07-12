@@ -44187,19 +44187,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Room Global Overlay (Squarish, rounded, floating, with sidebars and header inside) ── */}
       {roomState === 'active' && roomPanelMode === 'expanded' && (
-        <div className="fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden transition-all duration-500 p-2 md:p-4">
+        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden transition-all duration-500 ${isVideoExpanded ? 'p-0 bg-black' : 'p-2 md:p-4'}`}>
           {/* Subtle vignette/radial glow overlay */}
           <div className="absolute inset-0 bg-black/[0.025] pointer-events-none" />
           
-          <div className="w-full h-full relative flex items-center justify-center max-w-[1640px]">
-            <div className="w-full h-full bg-white/70 backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] border border-white/60 rounded-[40px]">
-              {renderRoomTopHeader()}
+          <div className={`w-full h-full relative flex items-center justify-center ${isVideoExpanded ? 'max-w-none bg-black' : 'max-w-[1640px]'}`}>
+            <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveFullscreen(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-white/70 border border-white/60 rounded-[40px]'}`}>
+              {!isVideoExpanded && renderRoomTopHeader()}
             
               {/* The main workspace below the header */}
-              <div className="flex-1 relative overflow-hidden bg-transparent rounded-t-[40px]">
+              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveFullscreen(); }} className={`flex-1 relative overflow-hidden bg-transparent ${isVideoExpanded ? 'rounded-none' : 'rounded-t-[40px]'}`}>
 
               {/* Main Video Canvas Area */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none p-8 gap-6">
+              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveFullscreen(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
                 
                 {/* Main Video Container */}
                 <div onDoubleClick={toggleImmersiveFullscreen} className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}>
