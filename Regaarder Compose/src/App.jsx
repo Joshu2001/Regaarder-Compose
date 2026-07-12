@@ -2022,16 +2022,92 @@ const DraggablePanel = ({ id, children, isDeleteZoneActive, onDelete, isHidden }
 };
 
 const NotesModal = ({ isOpen, onClose }) => {
+  const [toolbarPos, setToolbarPos] = useState(null);
+  const [pos, setPos] = useState({ x: window.innerWidth / 2 - 200, y: 100 });
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      setToolbarPos({ top: rect.top - 40, left: rect.left + rect.width / 2 });
+    } else {
+      setToolbarPos(null);
+    }
+  };
+
+  const execCmd = (cmd, val = null) => {
+    document.execCommand(cmd, false, val);
+    handleSelection();
+  };
+
+  const handlePointerDown = (e) => {
+    if (e.target.closest('.no-drag, input, textarea, select')) return;
+    setIsDragging(true);
+    const handlePointerMove = (moveEvent) => {
+      setPos(prev => ({
+        x: prev.x + moveEvent.movementX,
+        y: prev.y + moveEvent.movementY
+      }));
+    };
+    const handlePointerUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+    };
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+  };
+
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col h-[600px]" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><FileText className="text-violet-500" size={24} /> Meeting Notes</h2>
+    <div 
+      className="fixed z-[100000] animate-in fade-in shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] rounded-2xl flex flex-col bg-white/70 backdrop-blur-xl border border-white/40"
+      style={{ width: '400px', height: '500px', left: pos.x, top: pos.y }}
+    >
+      <div 
+        className="flex items-center justify-between p-4 border-b border-white/30 bg-white/40 rounded-t-2xl cursor-grab active:cursor-grabbing"
+        onPointerDown={handlePointerDown}
+      >
+        <h2 className="text-[15px] font-semibold text-slate-800 flex items-center gap-2">
+          <FileText className="text-violet-500" size={16} /> Meeting Notes
+        </h2>
+        <div className="flex items-center gap-2 no-drag">
+          <button className="px-3 py-1 bg-violet-600/90 text-white rounded-[8px] text-[11px] font-semibold shadow-sm hover:bg-violet-700 transition-colors" onClick={() => alert('Notes saved to workspace.')}>Save to Docs</button>
+          <button className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-white/50 rounded-lg transition-colors" onClick={onClose}><X size={14} /></button>
         </div>
-        <div className="flex-1 p-6">
-          <textarea className="w-full h-full resize-none outline-none text-gray-700 placeholder-gray-400" placeholder="Type your meeting notes here..." autoFocus />
+      </div>
+      
+      {toolbarPos && (
+        <div 
+          className="fixed z-[100001] flex items-center gap-1 bg-slate-900/90 backdrop-blur-md text-white px-2 py-1.5 rounded-xl shadow-xl animate-in fade-in slide-in-from-bottom-2 no-drag"
+          style={{ top: toolbarPos.top, left: toolbarPos.left, transform: 'translateX(-50%)' }}
+          onPointerDown={e => e.preventDefault()}
+        >
+          <button onClick={() => execCmd('bold')} className="p-1.5 hover:bg-white/20 rounded-lg font-bold text-xs w-7 text-center transition-colors">B</button>
+          <button onClick={() => execCmd('italic')} className="p-1.5 hover:bg-white/20 rounded-lg italic text-xs w-7 text-center transition-colors">I</button>
+          <button onClick={() => execCmd('underline')} className="p-1.5 hover:bg-white/20 rounded-lg underline text-xs w-7 text-center transition-colors">U</button>
+          <div className="w-px h-4 bg-white/20 mx-1"></div>
+          <button onClick={() => execCmd('formatBlock', 'H1')} className="p-1.5 hover:bg-white/20 rounded-lg text-xs font-semibold transition-colors">H1</button>
+          <button onClick={() => execCmd('formatBlock', 'H2')} className="p-1.5 hover:bg-white/20 rounded-lg text-xs font-semibold transition-colors">H2</button>
         </div>
+      )}
+
+      <div className="flex-1 p-5 overflow-y-auto no-drag">
+        <div 
+          contentEditable="true"
+          className="w-full min-h-full outline-none text-slate-800 text-[13px] leading-relaxed relative empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400"
+          data-placeholder="Type your meeting notes here... (Use '/' for commands)"
+          onMouseUp={handleSelection}
+          onKeyUp={handleSelection}
+          onKeyDown={(e) => {
+            if (e.key === '/') {
+              // mocked slash command
+              alert("Slash command mock");
+            }
+          }}
+        />
       </div>
     </div>
   );
@@ -9179,9 +9255,22 @@ export default function App() {
       }
     };
 
+    const handleGlobalDoubleClick = (e) => {
+      if (e.target.closest('input, textarea, [contenteditable="true"], .no-fullscreen-toggle')) return;
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(err => console.error(err));
+      } else {
+        if (appShellRef.current?.requestFullscreen) {
+          appShellRef.current.requestFullscreen().catch(err => console.error(err));
+        }
+      }
+    };
+
+    document.addEventListener('dblclick', handleGlobalDoubleClick);
     document.addEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
     window.addEventListener('focus', handleWindowFocus);
     return () => {
+      document.removeEventListener('dblclick', handleGlobalDoubleClick);
       document.removeEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
       window.removeEventListener('focus', handleWindowFocus);
     };
