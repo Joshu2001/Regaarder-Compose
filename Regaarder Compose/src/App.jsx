@@ -2021,6 +2021,147 @@ const DraggablePanel = ({ id, children, isDeleteZoneActive, onDelete, isHidden }
   });
 };
 
+const NotesModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col h-[600px]" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><FileText className="text-violet-500" size={24} /> Meeting Notes</h2>
+        </div>
+        <div className="flex-1 p-6">
+          <textarea className="w-full h-full resize-none outline-none text-gray-700 placeholder-gray-400" placeholder="Type your meeting notes here..." autoFocus />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SummaryModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Sparkles className="text-violet-500" size={24} /> AI Summary</h2>
+        </div>
+        <div className="p-6">
+          <div className="bg-violet-50 text-violet-700 text-sm p-4 rounded-xl mb-4 flex gap-3">
+            <Sparkles size={20} className="shrink-0 mt-0.5" />
+            <p>Here is a quick summary of what was discussed so far. The AI is still listening and will update this summary.</p>
+          </div>
+          <ul className="list-disc pl-5 text-gray-600 space-y-2">
+            <li>Reviewed last week's metrics and agreed on the next steps for the Q3 campaign.</li>
+            <li>Sarah to prepare the slides for tomorrow's all-hands.</li>
+            <li>Engineering team is blocked on the new API endpoints, awaiting backend deployment.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MeetingsModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Users className="text-violet-500" size={24} /> Upcoming Meetings</h2>
+        </div>
+        <div className="p-4 space-y-2">
+          <div onClick={onClose} className="p-4 border border-gray-100 rounded-2xl hover:bg-gray-50 cursor-pointer transition-colors">
+            <div className="font-medium text-gray-800">Design Sync</div>
+            <div className="text-sm text-gray-500 mt-1">Today, 2:00 PM - 3:00 PM</div>
+          </div>
+          <div onClick={onClose} className="p-4 border border-gray-100 rounded-2xl hover:bg-gray-50 cursor-pointer transition-colors">
+            <div className="font-medium text-gray-800">Weekly Engineering Standup</div>
+            <div className="text-sm text-gray-500 mt-1">Tomorrow, 10:00 AM - 10:30 AM</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RecordingModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Disc className="text-red-500" size={24} /> Recording Settings</h2>
+        </div>
+        <div className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-gray-800">Record Video & Audio</div>
+                <div className="text-sm text-gray-500">Capture the main stage and all participants</div>
+              </div>
+              <div onClick={onClose} className="w-12 h-6 bg-violet-500 rounded-full relative cursor-pointer">
+                <div className="absolute right-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-gray-800">Include Transcriptions</div>
+                <div className="text-sm text-gray-500">Save AI generated transcript with the recording</div>
+              </div>
+              <div onClick={onClose} className="w-12 h-6 bg-violet-500 rounded-full relative cursor-pointer">
+                <div className="absolute right-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-full mt-8 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-medium transition-colors">
+            Start Recording
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CalendarModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  
+  const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const dates = Array.from({ length: 31 }, (_, i) => i + 1);
+
+  return (
+    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Calendar className="text-violet-500" size={24} /> Calendar</h2>
+        </div>
+        <div className="mb-4 text-center font-medium text-gray-700">October 2026</div>
+        <div className="grid grid-cols-7 gap-2 mb-2">
+          {days.map(day => (
+            <div key={day} className="text-center text-xs font-medium text-gray-400">{day}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {/* Empty slots for starting day */}
+          <div className="text-center p-2 text-sm text-gray-300">27</div>
+          <div className="text-center p-2 text-sm text-gray-300">28</div>
+          <div className="text-center p-2 text-sm text-gray-300">29</div>
+          <div className="text-center p-2 text-sm text-gray-300">30</div>
+          
+          {dates.map(date => (
+            <div 
+              key={date} 
+              onClick={onClose}
+              className={`text-center p-2 text-sm rounded-full cursor-pointer transition-colors ${date === 15 ? 'bg-violet-500 text-white font-medium shadow-md hover:bg-violet-600' : 'text-gray-700 hover:bg-gray-100'}`}
+            >
+              {date}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: 0, name: 'Sarah Chen', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330' });
   const [videoParticipants, setVideoParticipants] = useState([
@@ -2034,6 +2175,12 @@ export default function App() {
   const [isDeleteZoneActive, setIsDeleteZoneActive] = useState(false);
   const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(false);
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isMeetingsModalOpen, setIsMeetingsModalOpen] = useState(false);
+  const [isRecordingModalOpen, setIsRecordingModalOpen] = useState(false);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -28566,25 +28713,46 @@ const renderRoomTopHeader = () => (
           {/* More Options Dropdown */}
           {isMoreMenuOpen && (
             <div className="absolute top-[calc(100%+8px)] right-0 w-48 bg-white/95 backdrop-blur-xl rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.12)] border border-white/60 p-2" style={{ zIndex: 999999 }}>
-              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
-                <MessageSquare size={16} /> Captions
+              <button 
+                onClick={() => { setIsRoomCaptionsEnabled(!isRoomCaptionsEnabled); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+              >
+                <MessageSquare size={16} /> {isRoomCaptionsEnabled ? 'Disable Captions' : 'Captions'}
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+              <button 
+                onClick={() => { setShareModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+              >
                 <MonitorPlay size={16} /> Present
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+              <button 
+                onClick={() => { setIsNotesModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+              >
                 <FileText size={16} /> Notes
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+              <button 
+                onClick={() => { setIsSummaryModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+              >
                 <Sparkles size={16} /> Summary
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+              <button 
+                onClick={() => { setIsCalendarModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+              >
                 <Calendar size={16} /> Calendar
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+              <button 
+                onClick={() => { setIsMeetingsModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+              >
                 <Users size={16} /> Meetings
               </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors">
+              <button 
+                onClick={() => { setIsRecordingModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+              >
                 <Disc size={16} /> Recording
               </button>
             </div>
@@ -43087,6 +43255,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                     <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">{activeVideoSpeaker.name}</span>
                   </div>
+
+                  {/* Captions Overlay */}
+                  {isRoomCaptionsEnabled && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none w-[80%] max-w-2xl px-4 flex flex-col items-center">
+                      <div className="bg-black/60 backdrop-blur-xl rounded-[20px] px-6 py-3 flex flex-col shadow-2xl border border-white/10">
+                        <div className="text-white text-[15px] font-medium text-center tracking-tight leading-relaxed">
+                          <span className="opacity-60 text-[13px] mr-2">Sarah Kim</span>
+                          Let's align on the new onboarding flow...
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Participant Thumbnail Strip */}
@@ -45892,6 +46072,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {renderSharedChartPicker()}
       {renderSharedShapePicker()}
       {renderAuthModal()}
+      
+      <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} />
+      <SummaryModal isOpen={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} />
+      <MeetingsModal isOpen={isMeetingsModalOpen} onClose={() => setIsMeetingsModalOpen(false)} />
+      <RecordingModal isOpen={isRecordingModalOpen} onClose={() => setIsRecordingModalOpen(false)} />
+      <CalendarModal isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} />
     </div>
   );
 }
