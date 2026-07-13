@@ -6523,21 +6523,44 @@ export default function App() {
   const [isRoomAILoading, setIsRoomAILoading] = useState(false);
   const [roomAIModal, setRoomAIModal] = useState({ isOpen: false, prompt: '', answer: '' });
 
-  const handleRoomAISubmit = (e) => {
+  const handleRoomAISubmit = async (e) => {
     e?.preventDefault();
     if (!roomAIPrompt.trim() || isRoomAILoading) return;
     
     setIsRoomAILoading(true);
-    // Simulate cognitive load
-    setTimeout(() => {
-      setRoomAIModal({
-        isOpen: true,
-        prompt: roomAIPrompt,
-        answer: "Based on the room context, the team is currently reviewing the onboarding flow. Sarah mentioned we need to align on the final steps before next week's product launch."
+    const userPromptText = roomAIPrompt;
+    setRoomAIPrompt(''); // Clear input early for better perceived performance
+    
+    try {
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: 'chat',
+          userPrompt: userPromptText,
+          systemPrompt: 'You are an expert AI meeting assistant in a live virtual room. Provide concise, helpful answers (1-3 sentences) based on general meeting context. Be polite and professional.'
+        })
       });
+      
+      const result = await response.json();
+      
+      if (result.ok && result.text) {
+        setRoomAIModal({
+          isOpen: true,
+          prompt: userPromptText,
+          answer: result.text.trim()
+        });
+      } else {
+        throw new Error(result.error || 'Failed to get a valid response from AI');
+      }
+    } catch (error) {
+      console.error('Room AI error:', error);
+      showToast('AI is currently unavailable. Please try again later.');
+      // Restore the user's prompt so they don't have to re-type it
+      setRoomAIPrompt(userPromptText);
+    } finally {
       setIsRoomAILoading(false);
-      setRoomAIPrompt('');
-    }, 1500);
+    }
   };
 
   useEffect(() => {
