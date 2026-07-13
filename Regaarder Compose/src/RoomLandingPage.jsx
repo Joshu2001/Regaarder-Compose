@@ -18,28 +18,26 @@ export default function RoomLandingPage({ onLaunch }) {
   };
 
   return (
-    <div className="flex h-full w-full bg-[#F0F2F5] p-4 text-slate-800 font-sans relative overflow-hidden">
-      
+    <div className="flex h-full w-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] p-8 gap-6 text-slate-800 font-sans relative overflow-hidden">
+      <div className="absolute inset-0 bg-black/[0.025] pointer-events-none z-0"></div>
+
       {/* Top Right Header Elements */}
-      <div className="absolute top-10 right-10 flex items-center gap-4 z-20">
+      <div className="absolute top-12 right-12 flex items-center gap-4 z-30">
         <div className="text-[15px] font-medium text-slate-600 mr-2 flex items-center gap-2">
           <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           <span className="w-1 h-1 rounded-full bg-slate-300"></span>
           <span>{currentTime.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
         </div>
-        <button className="w-9 h-9 rounded-full border border-slate-200/50 bg-white/60 backdrop-blur-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-violet-600 transition-colors shadow-sm">
+        <button className="w-10 h-10 rounded-full border border-white/60 bg-white/70 backdrop-blur-xl flex items-center justify-center text-slate-500 hover:bg-white hover:text-violet-600 transition-all shadow-[0_8px_20px_rgba(0,0,0,0.04)] hover:-translate-y-0.5">
           <Settings size={18} />
         </button>
-        <div className="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center font-semibold text-[15px] shadow-[0_2px_10px_rgba(139,92,246,0.3)] ring-2 ring-white cursor-pointer hover:bg-violet-700 transition-colors">
+        <div className="w-10 h-10 rounded-full bg-violet-600 text-white flex items-center justify-center font-semibold text-[15px] shadow-[0_8px_20px_rgba(139,92,246,0.3)] ring-2 ring-white/50 cursor-pointer hover:bg-violet-700 hover:-translate-y-0.5 transition-all">
           J
         </div>
       </div>
 
-      {/* Main Glassmorphic Container */}
-      <div className="flex w-full h-full bg-white rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden border border-white/40">
-        
-        {/* Sidebar */}
-        <aside className="w-[280px] shrink-0 bg-transparent flex flex-col z-10 p-6 border-r border-slate-100/50">
+      {/* Sidebar - Now a floating glassmorphic panel */}
+      <aside className="w-[280px] shrink-0 bg-white/70 backdrop-blur-[60px] border border-white/60 shadow-[0_32px_120px_rgba(0,0,0,0.04)] rounded-[32px] flex flex-col z-10 p-6 relative">
           {/* Header / Logo (Exact match to Room) */}
           <div className="flex items-center gap-2.5 mb-10 select-none cursor-default">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -90,8 +88,8 @@ export default function RoomLandingPage({ onLaunch }) {
           </div>
         </aside>
 
-        {/* Main Content Area */}
-        <main className="flex-1 flex flex-col relative bg-transparent">
+      {/* Main Content Area - Now its own floating glassmorphic container */}
+      <main className="flex-1 flex flex-col relative bg-white/70 backdrop-blur-[60px] border border-white/60 shadow-[0_32px_120px_rgba(0,0,0,0.04)] rounded-[40px] overflow-hidden z-10">
           <div className="flex-1 flex items-center justify-center p-12">
             <div className="max-w-4xl w-full flex flex-col md:flex-row items-center gap-20">
               
@@ -110,7 +108,7 @@ export default function RoomLandingPage({ onLaunch }) {
                   <div className="relative w-full sm:w-auto shrink-0">
                     <button 
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3.5 rounded-xl font-medium flex items-center justify-center gap-2.5 shadow-[0_4px_14px_0_rgba(139,92,246,0.39)] hover:shadow-[0_6px_20px_rgba(139,92,246,0.23)] hover:-translate-y-0.5 transition-all w-full text-[15px]"
+                      className="bg-violet-500/95 backdrop-blur-md hover:bg-violet-600 text-white px-6 py-4 rounded-full font-medium flex items-center justify-center gap-2.5 shadow-[0_8px_20px_rgba(139,92,246,0.25)] hover:shadow-[0_12px_24px_rgba(139,92,246,0.35)] hover:-translate-y-1 transition-all duration-300 w-full text-[15px]"
                     >
                       <Video size={18} />
                       New meeting
@@ -154,7 +152,7 @@ export default function RoomLandingPage({ onLaunch }) {
                       value={meetingCode}
                       onChange={(e) => setMeetingCode(e.target.value)}
                       placeholder="Enter a code or link"
-                      className="w-full pl-11 pr-20 py-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all font-medium text-[15px]"
+                      className="w-full pl-11 pr-20 py-4 rounded-full border border-white/60 bg-white/50 backdrop-blur-md shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 transition-all font-medium text-[15px]"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && meetingCode.trim().length > 0) {
                            handleLaunch();
@@ -195,7 +193,6 @@ export default function RoomLandingPage({ onLaunch }) {
             </div>
           </div>
         </main>
-      </div>
 
     </div>
   );

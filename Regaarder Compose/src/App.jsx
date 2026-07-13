@@ -6359,6 +6359,9 @@ export default function App() {
   }, []);
 
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isPostCallRatingOpen, setIsPostCallRatingOpen] = useState(false);
+  const [callRating, setCallRating] = useState(0);
+  const [callRatingHover, setCallRatingHover] = useState(0);
   const [mainView, setMainView] = useState('document');
   const [focusedModule, setFocusedModule] = useState('compose'); // 'compose', 'room', 'assistant', 'notes', 'whiteboard'
   const [dockedModules, setDockedModules] = useState([]);
@@ -6368,8 +6371,10 @@ export default function App() {
   const [joinCode, setJoinCode] = useState('');
   const [isRoomStartMenuOpen, setIsRoomStartMenuOpen] = useState(false);
   const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
-  const [isRoomMicOn, setIsRoomMicOn] = useState(true);
-  const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
+  // Start both as false — requestMediaPermissions() will set them to true once the
+  // browser grants access. This prevents the UI showing mic/camera as "on" with no stream.
+  const [isRoomMicOn, setIsRoomMicOn] = useState(false);
+  const [isRoomCameraOn, setIsRoomCameraOn] = useState(false);
   const isVideoOff = !isRoomCameraOn;
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
@@ -6441,6 +6446,11 @@ export default function App() {
   const [roomPanelMode, setRoomPanelMode] = useState('docked');
   const [activeRoomSidebarTab, setActiveRoomSidebarTab] = useState('chat');
   const [activeRoomChatTab, setActiveRoomChatTab] = useState('everyone');
+  const [roomParticipants, setRoomParticipants] = useState([]); // Real remote participants
+  // Real room chat state — starts empty so the empty-state UI is shown on join.
+  const [roomChatMessages, setRoomChatMessages] = useState([]);
+  const [roomChatInput, setRoomChatInput] = useState('');
+  const roomChatEndRef = useRef(null);
   const [isRoomLeftSidebarOpen, setIsRoomLeftSidebarOpen] = useState(true);
   const [isRoomRightSidebarOpen, setIsRoomRightSidebarOpen] = useState(true);
   const [peopleSearchQuery, setPeopleSearchQuery] = useState('');
@@ -20104,19 +20114,10 @@ Rules:
           document.exitFullscreen().catch(()=>{});
         }
       } else {
-        if (roomState !== 'active') {
-          setRoomId(generateRoomCode());
-          setRoomState('active');
-        }
-        setRoomPanelMode('expanded');
-        setRoomMaximized(true);
-        setRightSidebarOpen(false);
-        setIsRoomFullscreen(true);
-        const docEl = document.documentElement;
-        const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
-        if (requestFS && !document.fullscreenElement) {
-          requestFS.call(docEl).catch(()=>{});
-        }
+        // Use startMeetingNow() so requestMediaPermissions() is always called
+        // and the camera/mic permission prompt fires every time a meeting opens.
+        // startMeetingNow() already calls enterFullscreen() internally.
+        startMeetingNow(generateRoomCode());
       }
       return;
     }
@@ -20359,6 +20360,7 @@ Rules:
       setMediaError(true);
       setIsRoomCameraOn(false);
       setIsRoomMicOn(false);
+      setIsMicMuted(true);
       showToast('Camera/Mic is not supported in this browser.');
       return false;
     }
@@ -20370,15 +20372,18 @@ Rules:
       });
       setLocalStream(stream);
       setMediaError(false);
+      // Both states must be set together so all control bars are in sync.
       setIsRoomCameraOn(true);
       setIsRoomMicOn(true);
+      setIsMicMuted(false);
       return true;
     } catch (err) {
       console.warn('Media access denied or unavailable', err);
       setMediaError(true);
       setIsRoomCameraOn(false);
       setIsRoomMicOn(false);
-      showToast('Camera/Mic access denied. Please check browser permissions.');
+      setIsMicMuted(true);
+      showToast('Camera/Mic access denied. You can still join but mic/camera will be off.');
       return false;
     }
   };
@@ -20410,10 +20415,13 @@ Rules:
     setMeetingSummary(null);
     setMeetingStartedAt(Date.now());
     setMeetingDurationLabel('00:00');
-    
-    enterFullscreen();
+
+    // CRITICAL: Request camera/mic BEFORE entering fullscreen.
+    // Browsers block getUserMedia() permission prompts while in fullscreen mode,
+    // so we must obtain the stream first, then go fullscreen.
     await requestMediaPermissions();
-    
+    enterFullscreen();
+
     showToast(`Joined meeting: ${code}`);
   };
 
@@ -20535,6 +20543,20 @@ Rules:
   };
 
   const leaveRoom = () => {
+    // Stop all media streams immediately so camera/mic LED turns off.
+    stopMediaStream();
+    // Reset mic/camera UI state so they don't appear active after hanging up.
+    setIsRoomMicOn(false);
+    setIsRoomCameraOn(false);
+    setIsMicMuted(true);
+    // Show the post-call rating modal. The actual roomState transition to 'summary'
+    // (and navigation home) happens inside confirmLeaveRoom() once the user submits.
+    setCallRating(0);
+    setCallRatingHover(0);
+    setIsPostCallRatingOpen(true);
+  };
+
+  const confirmLeaveRoom = () => {
     const completedDuration = formatMeetingElapsed(meetingStartedAt);
     setMeetingSummary({
       roomCode: roomId,
@@ -20550,12 +20572,13 @@ Rules:
       ],
     });
     setMeetingDurationLabel(completedDuration);
-    setRoomState('summary');
+    setIsPostCallRatingOpen(false);
+    setRoomState('inactive');
     setActiveMeetingStageTab('room');
-    setMainView('document');
+    setMainView('room');
     setRoomPanelMode('docked');
-    stopMediaStream();
-    showToast('Left the meeting. AI generating summary...');
+    setFocusedModule('room');
+    showToast('Left the meeting. Thanks for your feedback!');
   };
 
   const handleCopyLink = async () => {
@@ -20641,33 +20664,36 @@ Rules:
   }, []);
 
   const toggleRoomCamera = async () => {
+    // Optimistically toggle the camera state immediately (like Zoom/Google Meet),
+    // so the UI responds instantly regardless of whether a real stream exists.
+    const nextOn = !isRoomCameraOn;
+    setIsRoomCameraOn(nextOn);
+    showToast(nextOn ? 'Camera on' : 'Camera off');
+
+    // If a real media stream is active, also enable/disable the actual video track.
     if (localStream && !mediaError) {
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
-        const nextEnabled = !videoTrack.enabled;
-        videoTrack.enabled = nextEnabled;
-        setIsRoomCameraOn(nextEnabled);
-      }
-    } else {
-      const granted = await requestMediaPermissions();
-      if (!granted) {
-        return;
+        videoTrack.enabled = nextOn;
       }
     }
   };
 
   const toggleRoomMic = async () => {
+    // Optimistically toggle the mic state immediately (like Zoom/Google Meet),
+    // so the UI responds instantly regardless of whether a real stream exists.
+    // Both isRoomMicOn and isMicMuted are kept in sync as inverses of each other
+    // because two different control bars reference each state.
+    const nextOn = !isRoomMicOn;
+    setIsRoomMicOn(nextOn);
+    setIsMicMuted(!nextOn);
+    showToast(nextOn ? 'Microphone unmuted' : 'Microphone muted');
+
+    // If a real media stream is active, also enable/disable the actual audio track.
     if (localStream && !mediaError) {
       const audioTrack = localStream.getAudioTracks()[0];
       if (audioTrack) {
-        const nextEnabled = !audioTrack.enabled;
-        audioTrack.enabled = nextEnabled;
-        setIsRoomMicOn(nextEnabled);
-      }
-    } else {
-      const granted = await requestMediaPermissions();
-      if (!granted) {
-        return;
+        audioTrack.enabled = nextOn;
       }
     }
   };
@@ -20698,7 +20724,8 @@ Rules:
       setIsScreenSharing(true);
       showToast('Screen sharing started');
     } catch (_err) {
-      showToast('Screen share permission denied or unavailable.');
+      // User cancelled or permission denied — silently ignore to avoid jarring error toasts.
+      showToast('Screen share cancelled.');
     }
   };
 
@@ -29719,25 +29746,24 @@ You can recommend task creations on the board.`;
 
               // --- ROOM UI COMPONENTS ---
   const renderRoomLeftSidebar = () => {
-    const participantsList = [
-      { name: 'You', sub: 'Host', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb', state: 'host', activeMic: true },
-      { name: 'Sarah Chen', sub: 'Speaking', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330', state: 'speaking', activeMic: true },
-      { name: 'Alex Rivera', sub: 'Listening', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d', state: 'listening' },
-      { name: 'Jamie Patel', sub: 'Listening', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2', state: 'listening' },
-      { name: 'Taylor Kim', sub: 'Listening', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb', state: 'listening' },
-      { name: 'Morgan Lee', sub: 'Listening', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e', state: 'listening' },
-      { name: 'Riley Zhang', sub: 'Listening', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9', state: 'listening' },
-      { name: 'Casey Nguyen', sub: 'Listening', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6', state: 'listening' },
-    ];
+    // Only the local user (You) is always present. Remote participants would be
+    // added here via WebRTC signalling in a real multi-user implementation.
+    const youEntry = {
+      name: 'You',
+      sub: isRoomCameraOn ? 'Camera on' : 'Camera off',
+      state: 'host',
+      activeMic: isRoomMicOn,
+    };
 
-    const filtered = participantsList.filter(p => 
+    const allParticipants = [youEntry, ...roomParticipants];
+    const filtered = allParticipants.filter(p =>
       p.name.toLowerCase().includes((peopleSearchQuery || '').toLowerCase())
     );
 
     return (
       <div className="flex flex-col h-full bg-white font-sans">
         {/* Header (Draggable) */}
-        <div 
+        <div
           className="h-16 flex items-center justify-between px-6 border-b border-gray-50 shrink-0 cursor-move"
           onPointerDown={(e) => {
             if (e.button !== 0) return;
@@ -29745,8 +29771,11 @@ You can recommend task creations on the board.`;
             setNavInteraction({ id: 'left', startX: e.clientX, startY: e.clientY, origin: leftNavOffset });
           }}
         >
-          <span className="text-[15px] font-medium text-slate-800 pointer-events-none">People</span>
-          <button 
+          <div className="flex items-center gap-2 pointer-events-none">
+            <span className="text-[15px] font-medium text-slate-800">People</span>
+            <span className="text-[11px] font-medium text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">{allParticipants.length}</span>
+          </div>
+          <button
             onClick={() => setIsRoomLeftSidebarOpen(false)}
             className="p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
           >
@@ -29758,9 +29787,9 @@ You can recommend task creations on the board.`;
         <div className="p-5 shrink-0">
           <div className="relative flex items-center bg-[#F9FAFB] border border-transparent rounded-2xl px-4 py-3 shadow-[inset_0_1px_4px_rgba(0,0,0,0.01)] transition-colors focus-within:bg-white focus-within:border-gray-100">
             <Search size={14} className="text-slate-300 mr-2 shrink-0" />
-            <input 
-              type="text" 
-              placeholder="Search people" 
+            <input
+              type="text"
+              placeholder="Search people"
               value={peopleSearchQuery}
               onChange={(e) => setPeopleSearchQuery(e.target.value)}
               className="w-full bg-transparent text-[13px] font-normal text-slate-700 placeholder:text-slate-300 outline-none border-none py-0.5"
@@ -29769,41 +29798,93 @@ You can recommend task creations on the board.`;
         </div>
 
         {/* List */}
-        <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4 thin-scrollbar mt-1">
-          {filtered.map((p, idx) => (
-            <div key={idx} className="flex items-center justify-between p-2 rounded-2xl hover:bg-slate-50 transition-colors">
-              <div className="flex items-center gap-4">
-                <img src={p.img} alt={p.name} className="w-9 h-9 rounded-full object-cover border border-slate-100/50 shrink-0 shadow-sm" />
-                <div className="text-left min-w-0">
-                  <div className="text-[13px] font-normal text-slate-700 leading-normal truncate">{p.name}</div>
-                  <div className={`text-[10px] leading-normal font-normal tracking-wide mt-0.5 ${p.state === 'speaking' ? 'text-violet-400 font-medium' : 'text-slate-400'}`}>
-                    {p.sub}
+        <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-1 thin-scrollbar">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 pb-8 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Users size={20} className="text-slate-300" />
+              </div>
+              <p className="text-[13px] font-medium text-slate-400">No results</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">Try a different name or clear the search.</p>
+            </div>
+          ) : (
+            filtered.map((p, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  {/* Avatar — live video thumbnail for "You" when camera is on */}
+                  {p.name === 'You' ? (
+                    <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 shadow-sm bg-slate-900 border border-slate-100/50">
+                      {isRoomCameraOn ? (
+                        <video
+                          ref={(node) => { if (node && localStream) node.srcObject = localStream; }}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-violet-500 flex items-center justify-center text-white text-[11px] font-bold">
+                          Y
+                        </div>
+                      )}
+                      {/* Host crown badge */}
+                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-violet-500 flex items-center justify-center border border-white">
+                        <span className="text-[6px] text-white font-bold">H</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-[11px] font-bold shrink-0 shadow-sm border border-slate-100/50">
+                      {p.name.charAt(0)}
+                    </div>
+                  )}
+                  <div className="text-left min-w-0">
+                    <div className="text-[13px] font-normal text-slate-700 leading-normal truncate">{p.name}</div>
+                    <div className={`text-[10px] leading-normal font-normal tracking-wide mt-0.5 ${p.state === 'speaking' ? 'text-violet-400 font-medium' : 'text-slate-400'}`}>
+                      {p.sub}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Status icon / mic indicator */}
-              <div className="shrink-0 mr-1">
-                {p.state === 'speaking' ? (
-                  // Waves sound icon
-                  <div className="flex items-end gap-[2px] h-3.5 px-1">
-                    <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.8s_infinite_alternate]" style={{ height: '60%' }}></span>
-                    <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.5s_infinite_alternate]" style={{ height: '100%' }}></span>
-                    <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }}></span>
-                  </div>
-                ) : p.activeMic ? (
-                  <Mic size={14} className="text-violet-400" />
-                ) : (
-                  <MicOff size={14} className="text-slate-200" />
-                )}
+                {/* Mic/speaking indicator */}
+                <div className="shrink-0 mr-1">
+                  {p.state === 'speaking' ? (
+                    <div className="flex items-end gap-[2px] h-3.5 px-1">
+                      <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.8s_infinite_alternate]" style={{ height: '60%' }} />
+                      <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.5s_infinite_alternate]" style={{ height: '100%' }} />
+                      <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }} />
+                    </div>
+                  ) : p.activeMic ? (
+                    <Mic size={14} className="text-violet-400" />
+                  ) : (
+                    <MicOff size={14} className="text-slate-200" />
+                  )}
+                </div>
               </div>
+            ))
+          )}
+
+          {/* "Waiting for others" nudge when only You is in the call */}
+          {roomParticipants.length === 0 && peopleSearchQuery === '' && (
+            <div className="flex flex-col items-center justify-center h-full gap-3 mt-12 text-center pb-6">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Users size={20} className="text-slate-300" />
+              </div>
+              <p className="text-[13px] font-medium text-slate-400">You're the only one here</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">Share the meeting link to invite others.</p>
+              <button
+                onClick={() => setIsRoomInviteModalOpen(true)}
+                className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <UserPlus size={12} />
+                Invite people
+              </button>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Invite button */}
         <div className="p-4 border-t border-gray-50 shrink-0">
-          <button 
+          <button
             onClick={() => setIsRoomInviteModalOpen(true)}
             className="w-full flex items-center justify-center gap-2 py-3 bg-violet-50/50 hover:bg-violet-50 text-violet-500 text-xs font-medium rounded-2xl transition-colors"
           >
@@ -29815,121 +29896,116 @@ You can recommend task creations on the board.`;
     );
   };
 
-  const renderRoomRightSidebar = () => (
-    <div className="flex flex-col h-full bg-white font-sans">
-      {/* Chat Header (Draggable) */}
-      <div 
-        className="h-[72px] flex items-center justify-between px-6 border-b border-gray-50/80 shrink-0 cursor-move"
-        onPointerDown={(e) => {
-          if (e.button !== 0) return;
-          e.preventDefault();
-          setNavInteraction({ id: 'right', startX: e.clientX, startY: e.clientY, origin: rightNavOffset });
-        }}
-      >
-        <span className="text-[15px] font-medium text-slate-800 pointer-events-none">Chat</span>
-        <button onClick={() => setIsRoomRightSidebarOpen(false)} className="p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">
-          <X size={16} />
-        </button>
-      </div>
 
-      {/* Everyone / Direct Tabs */}
-      <div className="flex items-center border-b border-gray-50/80 px-4 shrink-0">
-        <button
-          onClick={() => setActiveRoomChatTab?.('everyone')}
-          className={`px-4 py-3 text-[13px] font-medium transition-colors ${
-            (activeRoomChatTab !== 'direct') ? 'text-slate-800 border-b-2 border-slate-800' : 'text-slate-400 hover:text-slate-600'
-          }`}
-        >Everyone</button>
-        <button
-          onClick={() => setActiveRoomChatTab?.('direct')}
-          className={`px-4 py-3 text-[13px] font-medium transition-colors ${
-            activeRoomChatTab === 'direct' ? 'text-slate-800 border-b-2 border-slate-800' : 'text-slate-400 hover:text-slate-600'
-          }`}
-        >Direct messages</button>
-      </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-6 space-y-7 thin-scrollbar">
+  const renderRoomRightSidebar = () => {
+    const handleSendMessage = (e) => {
+      e.preventDefault();
+      if (!roomChatInput.trim()) return;
+      
+      const newMessage = {
+        id: Date.now(),
+        sender: 'You',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: roomChatInput,
+        isSelf: true
+      };
+      
+      setRoomChatMessages(prev => [...prev, newMessage]);
+      setRoomChatInput('');
+      
+      // Auto-scroll to bottom
+      setTimeout(() => {
+        roomChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    };
 
-        {/* Sarah Chen */}
-        <div className="flex gap-3">
-          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" alt="Sarah Chen" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[13px] font-semibold text-slate-800">Sarah Chen</span>
-              <span className="text-[11px] font-medium text-slate-400">10:24 AM</span>
-            </div>
-            <p className="text-[13px] font-normal text-slate-600 leading-relaxed">Let's align on the new onboarding flow.</p>
-          </div>
-        </div>
-
-        {/* Alex Rivera */}
-        <div className="flex gap-3">
-          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100" className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" alt="Alex Rivera" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[13px] font-semibold text-slate-800">Alex Rivera</span>
-              <span className="text-[11px] font-medium text-slate-400">10:25 AM</span>
-            </div>
-            <p className="text-[13px] font-normal text-slate-600 leading-relaxed mb-3">I've pulled the latest metrics here.</p>
-            {/* PDF Attachment */}
-            <div className="flex items-center gap-2.5 p-3 bg-red-50/50 border border-transparent rounded-xl max-w-[220px]">
-              <div className="w-9 h-9 rounded-lg bg-red-400 flex items-center justify-center shrink-0">
-                <span className="text-white text-[9px] font-black tracking-tight">PDF</span>
-              </div>
-              <div className="min-w-0">
-                <div className="text-[12px] font-medium text-slate-700 truncate">onboarding-metrics.pdf</div>
-                <div className="text-[11px] font-normal text-slate-400">PDF · 2.4 MB</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Jamie Patel */}
-        <div className="flex gap-3">
-          <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100" className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm" alt="Jamie Patel" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[13px] font-semibold text-slate-800">Jamie Patel</span>
-              <span className="text-[11px] font-medium text-slate-400">10:25 AM</span>
-            </div>
-            <p className="text-[13px] font-normal text-slate-600 leading-relaxed">Thanks! Reviewing now.</p>
-          </div>
-        </div>
-
-        {/* You – @Room AI message (violet highlight) */}
-        <div className="flex gap-3">
-          <div className="w-8 h-8 rounded-full bg-violet-500 text-white flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm">U</div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-[13px] font-semibold text-slate-800">You</span>
-              <span className="text-[11px] font-medium text-slate-400">10:28 AM</span>
-            </div>
-            <div className="bg-violet-50/60 border border-transparent rounded-2xl px-4 py-3 inline-block shadow-sm">
-              <p className="text-[13px] font-normal text-violet-700 leading-relaxed">
-                <span className="font-semibold text-violet-500">@Room AI</span> summarize the key decisions from this meeting.
-              </p>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Message Input */}
-      <div className="p-4 border-t border-gray-50 shrink-0 bg-white">
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            placeholder="Message everyone..."
-            className="w-full bg-[#F9FAFB] border border-transparent rounded-[24px] py-3.5 pl-5 pr-12 text-[13px] text-slate-700 placeholder:text-slate-300 outline-none focus:bg-white focus:border-gray-100 transition-colors shadow-[inset_0_1px_4px_rgba(0,0,0,0.01)]"
-          />
-          <button className="absolute right-2 w-9 h-9 rounded-full bg-white border border-transparent text-slate-300 flex items-center justify-center hover:bg-violet-50 hover:text-violet-500 transition-all shadow-sm">
-            <Send size={14} />
+    return (
+      <div className="flex flex-col h-full bg-white font-sans">
+        {/* Chat Header (Draggable) */}
+        <div 
+          className="h-[72px] flex items-center justify-between px-6 border-b border-gray-50/80 shrink-0 cursor-move"
+          onPointerDown={(e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            setNavInteraction({ id: 'right', startX: e.clientX, startY: e.clientY, origin: rightNavOffset });
+          }}
+        >
+          <span className="text-[15px] font-medium text-slate-800 pointer-events-none">Chat</span>
+          <button onClick={() => setIsRoomRightSidebarOpen(false)} className="p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">
+            <X size={16} />
           </button>
         </div>
+
+        {/* Everyone / Direct Tabs */}
+        <div className="flex items-center border-b border-gray-50/80 px-4 shrink-0">
+          <button
+            onClick={() => setActiveRoomChatTab?.('everyone')}
+            className={`px-4 py-3 text-[13px] font-medium transition-colors ${
+              (activeRoomChatTab !== 'direct') ? 'text-slate-800 border-b-2 border-slate-800' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >Everyone</button>
+          <button
+            onClick={() => setActiveRoomChatTab?.('direct')}
+            className={`px-4 py-3 text-[13px] font-medium transition-colors ${
+              activeRoomChatTab === 'direct' ? 'text-slate-800 border-b-2 border-slate-800' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >Direct messages</button>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-5 py-6 space-y-7 thin-scrollbar">
+          {roomChatMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <MessageSquare size={20} className="text-slate-300" />
+              </div>
+              <p className="text-[13px] font-medium text-slate-400">No messages yet</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">Start the conversation by sending a message.</p>
+            </div>
+          ) : (
+            roomChatMessages.map((msg) => (
+              <div key={msg.id} className={`flex gap-3 ${msg.isSelf ? 'flex-row-reverse' : ''}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm ${msg.isSelf ? 'bg-violet-500 text-white' : 'bg-slate-200 text-slate-500 border border-slate-100/50'}`}>
+                  {msg.isSelf ? 'Y' : msg.sender.charAt(0)}
+                </div>
+                <div className={`flex-1 min-w-0 flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex items-baseline gap-2 mb-1 ${msg.isSelf ? 'flex-row-reverse' : ''}`}>
+                    <span className="text-[13px] font-semibold text-slate-800">{msg.sender}</span>
+                    <span className="text-[11px] font-medium text-slate-400">{msg.time}</span>
+                  </div>
+                  <div className={`px-4 py-2.5 rounded-2xl inline-block max-w-[85%] ${msg.isSelf ? 'bg-violet-50 text-violet-700 rounded-tr-sm' : 'bg-slate-50 text-slate-600 rounded-tl-sm border border-slate-100/50'}`}>
+                    <p className="text-[13px] font-normal leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={roomChatEndRef} />
+        </div>
+
+        {/* Message Input */}
+        <div className="p-4 border-t border-gray-50 shrink-0 bg-white">
+          <form onSubmit={handleSendMessage} className="relative flex items-center">
+            <input
+              type="text"
+              value={roomChatInput}
+              onChange={(e) => setRoomChatInput(e.target.value)}
+              placeholder="Message everyone..."
+              className="w-full bg-[#F9FAFB] border border-transparent rounded-[24px] py-3.5 pl-5 pr-12 text-[13px] text-slate-700 placeholder:text-slate-300 outline-none focus:bg-white focus:border-gray-100 transition-colors shadow-[inset_0_1px_4px_rgba(0,0,0,0.01)]"
+            />
+            <button 
+              type="submit"
+              disabled={!roomChatInput.trim()}
+              className="absolute right-2 w-9 h-9 rounded-full bg-white border border-transparent text-slate-300 flex items-center justify-center hover:bg-violet-50 hover:text-violet-500 transition-all shadow-sm disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-slate-300"
+            >
+              <Send size={14} />
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
   
 const renderRoomTopHeader = () => (
     <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative pt-2" style={{ zIndex: 999999 }}>
@@ -29956,7 +30032,7 @@ const renderRoomTopHeader = () => (
           </button>
           <button className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-gray-50 hover:bg-slate-50 transition-colors text-[11px] font-medium text-slate-500 shadow-sm">
             <Users size={11} className="text-slate-400" />
-            <span>8</span>
+            <span>{1 + roomParticipants.length}</span>
           </button>
         </div>
       </div>
@@ -36723,18 +36799,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
     if (moduleName === 'room') {
       if (roomState !== 'active') {
-        setRoomId(generateRoomCode());
-        setRoomState('active');
-      }
-      setRoomPanelMode('expanded');
-      setRoomMaximized(true);
-      setRightSidebarOpen(false);
-      setIsRoomFullscreen(true);
-      
-      const docEl = document.documentElement;
-      const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
-      if (requestFS && !document.fullscreenElement) {
-        requestFS.call(docEl).catch(()=>{});
+        // Use startMeetingNow() so the browser permission prompt always fires.
+        startMeetingNow();
+      } else {
+        setRoomPanelMode('expanded');
+        setRoomMaximized(true);
+        setRightSidebarOpen(false);
+        setIsRoomFullscreen(true);
+        const docEl = document.documentElement;
+        const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+        if (requestFS && !document.fullscreenElement) {
+          requestFS.call(docEl).catch(()=>{});
+        }
       }
       return;
     }
@@ -39498,9 +39574,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {!isVideoOff ? <Video size={15} /> : <VideoOff size={15} />}
                     </button>
                     <button 
-                      onClick={() => setIsScreenSharing(!isScreenSharing)} 
+                      onClick={toggleScreenShare} 
                       className={`p-2.5 rounded-xl transition-all active:scale-95 ${isScreenSharing ? 'bg-[#7C3AED] text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-750'}`}
-                      title="Share screen"
+                      title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
                     >
                       <Tv size={15} />
                     </button>
@@ -44514,35 +44590,69 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
                         <button
                           onClick={toggleRoomMic}
-                          className="w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all text-violet-500 hover:bg-violet-50"
-                          title="Toggle mic"
+                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                            isRoomMicOn
+                              ? 'text-violet-500 hover:bg-violet-50'
+                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                          }`}
+                          title={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
+                          aria-label={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
+                          aria-pressed={!isRoomMicOn}
                         >
                           {isRoomMicOn ? <Mic size={18} strokeWidth={1.5} /> : <MicOff size={18} strokeWidth={1.5} />}
                         </button>
                         <button
                           onClick={toggleRoomCamera}
-                          className="w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all text-violet-500 hover:bg-violet-50"
-                          title="Toggle camera"
+                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                            isRoomCameraOn
+                              ? 'text-violet-500 hover:bg-violet-50'
+                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                          }`}
+                          title={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
+                          aria-label={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
+                          aria-pressed={!isRoomCameraOn}
                         >
                           {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
                         </button>
                         <button
                           onClick={toggleScreenShare}
-                          className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
-                          title="Share screen"
+                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                            isScreenSharing
+                              ? 'bg-[#7C3AED]/10 text-[#7C3AED] hover:bg-[#7C3AED]/20'
+                              : 'text-violet-500 hover:bg-violet-50'
+                          }`}
+                          title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
+                          aria-label={isScreenSharing ? 'Stop sharing screen' : 'Share screen'}
+                          aria-pressed={isScreenSharing}
                         >
                           <MonitorPlay size={18} strokeWidth={1.5} />
                         </button>
-                        <button className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all" title="Room AI">
+                        <button
+                          onClick={() => setIsRoomRightSidebarOpen((prev) => !prev)}
+                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                            isRoomRightSidebarOpen
+                              ? 'bg-[#7C3AED]/10 text-[#7C3AED] hover:bg-[#7C3AED]/20'
+                              : 'text-violet-500 hover:bg-violet-50'
+                          }`}
+                          title="Room AI assistant"
+                          aria-label="Toggle Room AI assistant"
+                          aria-pressed={isRoomRightSidebarOpen}
+                        >
                           <Sparkles size={18} strokeWidth={1.5} />
                         </button>
-                        <button className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all" title="More">
+                        <button
+                          onClick={() => setIsRoomStartMenuOpen((prev) => !prev)}
+                          className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
+                          title="More options"
+                          aria-label="More meeting options"
+                        >
                           <MoreHorizontal size={18} strokeWidth={1.5} />
                         </button>
                         <button
                           onClick={leaveRoom}
                           className="w-[44px] h-[44px] rounded-full bg-[#F25A5A] hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-[0_8px_24px_rgba(242,90,90,0.3)] ml-2"
                           title="Leave room"
+                          aria-label="Leave meeting"
                         >
                           <PhoneOff size={18} strokeWidth={1.5} />
                         </button>
@@ -44684,6 +44794,101 @@ if (productMode === 'deck' || productMode === 'sheets') {
         isOpen={isRoomInviteModalOpen} 
         onClose={() => setIsRoomInviteModalOpen(false)} 
       />
+
+      {/* ── Post-Call Rating Overlay ── */}
+      {isPostCallRatingOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-xl">
+          <div className="relative w-full max-w-md mx-4 bg-white/90 backdrop-blur-2xl rounded-[32px] shadow-[0_40px_120px_rgba(0,0,0,0.18)] border border-white/60 overflow-hidden">
+            {/* Top gradient accent */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-400 to-indigo-500 rounded-t-[32px]" />
+
+            <div className="px-10 pt-10 pb-8 flex flex-col items-center gap-6">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-[0_8px_24px_rgba(124,58,237,0.35)]">
+                <PhoneOff size={26} className="text-white" strokeWidth={1.5} />
+              </div>
+
+              {/* Heading */}
+              <div className="text-center">
+                <h2 className="text-[22px] font-semibold text-gray-900 tracking-tight">You left the meeting</h2>
+                <p className="text-[14px] text-gray-400 mt-1 font-normal">How was your experience?</p>
+              </div>
+
+              {/* Meeting stats */}
+              <div className="flex items-center gap-6 w-full justify-center">
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[20px] font-semibold text-gray-900">{meetingDurationLabel || '00:00'}</span>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Duration</span>
+                </div>
+                <div className="w-px h-8 bg-gray-200" />
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[20px] font-semibold text-gray-900">4</span>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Participants</span>
+                </div>
+                <div className="w-px h-8 bg-gray-200" />
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[20px] font-semibold text-gray-900">{roomId || '—'}</span>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Room</span>
+                </div>
+              </div>
+
+              {/* 5-Star Rating */}
+              <div className="flex flex-col items-center gap-3 w-full">
+                <p className="text-[13px] text-gray-500 font-medium">Rate the call quality</p>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onMouseEnter={() => setCallRatingHover(star)}
+                      onMouseLeave={() => setCallRatingHover(0)}
+                      onClick={() => {
+                        setCallRating(star);
+                        setTimeout(() => confirmLeaveRoom(), 200);
+                      }}
+                      className="transition-all duration-150 hover:scale-110 active:scale-95"
+                      aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                    >
+                      <svg
+                        width="36" height="36" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="1.5"
+                        strokeLinecap="round" strokeLinejoin="round"
+                        className={`transition-colors duration-100 ${
+                          star <= (callRatingHover || callRating)
+                            ? 'fill-amber-400 stroke-amber-400'
+                            : 'fill-transparent stroke-gray-300'
+                        }`}
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+                {callRating > 0 && (
+                  <p className="text-[12px] text-violet-500 font-medium animate-in fade-in duration-200">
+                    {callRating === 1 ? 'Sorry to hear that.' : callRating === 2 ? 'We\'ll improve.' : callRating === 3 ? 'Thanks for the feedback.' : callRating === 4 ? 'Glad it went well!' : '🎉 Perfect call!'}
+                  </p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-3 w-full mt-1">
+                <button
+                  onClick={confirmLeaveRoom}
+                  className="w-full h-12 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[15px] font-semibold shadow-[0_8px_24px_rgba(124,58,237,0.3)] hover:shadow-[0_12px_32px_rgba(124,58,237,0.4)] hover:from-violet-700 hover:to-purple-700 transition-all duration-200 active:scale-[0.98]"
+                >
+                  Return to Home
+                </button>
+                <button
+                  onClick={() => setIsPostCallRatingOpen(false)}
+                  className="w-full h-10 rounded-2xl text-gray-400 text-[13px] font-medium hover:text-gray-600 hover:bg-gray-50 transition-all duration-150"
+                >
+                  Cancel — Rejoin meeting
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {roomState === 'active' && mainView === 'document' && (
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
