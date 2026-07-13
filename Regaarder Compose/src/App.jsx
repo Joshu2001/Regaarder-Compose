@@ -28,6 +28,7 @@ import {
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
+import RoomLandingPage from './RoomLandingPage';
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -20410,11 +20411,8 @@ Rules:
     setMeetingStartedAt(Date.now());
     setMeetingDurationLabel('00:00');
     
-    const wasFullscreen = !!document.fullscreenElement;
+    enterFullscreen();
     await requestMediaPermissions();
-    if (wasFullscreen && !document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    }
     
     showToast(`Joined meeting: ${code}`);
   };
@@ -21150,6 +21148,7 @@ Rules:
 
   const createRoomExperience = () => {
     enterFullscreen();
+    setIsDocumentImmersive(true);
     setCreationPickerOpen(false);
     setProductMode('room');
     setRightSidebarOpen(false);
@@ -21237,8 +21236,9 @@ Rules:
     }
 
     if (target === 'room') {
+      enterFullscreen();
       setActivePrimaryNav('home');
-      createRoomExperience();
+      setProductMode('room-landing');
       return;
     }
 
@@ -37694,6 +37694,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
       ) : productMode === 'landing' ? (
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
           <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
+        </div>
+      ) : productMode === 'room-landing' ? (
+        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+          <RoomLandingPage onLaunch={(action) => {
+            if (action && action.name === 'Room') {
+              createRoomExperience();
+            }
+          }} />
         </div>
       ) : (
       <div className="flex-1 flex flex-col min-w-0 bg-white relative">
