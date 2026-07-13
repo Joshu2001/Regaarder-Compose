@@ -6555,9 +6555,12 @@ export default function App() {
       }
     } catch (error) {
       console.error('Room AI error:', error);
-      showToast('AI is currently unavailable. Please try again later.');
-      // Restore the user's prompt so they don't have to re-type it
-      setRoomAIPrompt(userPromptText);
+      // Show the panel with an error response instead of just a toast
+      setRoomAIModal({
+        isOpen: true,
+        prompt: userPromptText,
+        answer: "AI is currently unavailable. Please ensure the backend is running or try again later."
+      });
     } finally {
       setIsRoomAILoading(false);
     }
