@@ -3141,13 +3141,9 @@ const CalendarModal = ({ isOpen, onClose, globalEvents, setGlobalEvents }) => {
 
 
 export default function App() {
-  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: 0, name: 'Sarah Chen', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330' });
-  const [videoParticipants, setVideoParticipants] = useState([
-    { id: 1, name: 'Alex Rivera', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d' },
-    { id: 2, name: 'Jamie Patel', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2' },
-    { id: 3, name: 'Taylor Kim', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9' },
-    { id: 4, name: 'Morgan Lee', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e' }
-  ]);
+  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: 'you', name: 'You', isYou: true });
+  const [youTileSpeaker, setYouTileSpeaker] = useState(null);
+  const [videoParticipants, setVideoParticipants] = useState([]);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
   const [boundaryBounce, setBoundaryBounce] = useState(null);
   
@@ -29816,7 +29812,7 @@ You can recommend task creations on the board.`;
                     <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 shadow-sm bg-slate-900 border border-slate-100/50">
                       {isRoomCameraOn ? (
                         <video
-                          ref={(node) => { if (node && localStream) node.srcObject = localStream; }}
+                          ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }}
                           autoPlay
                           playsInline
                           muted
@@ -44482,6 +44478,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     
   {screenShareStream ? (
     <video ref={mainVideoRef} autoPlay playsInline muted className="w-full h-full object-cover object-center pointer-events-none" />
+  ) : activeVideoSpeaker.isYou ? (
+    <>
+      <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover object-center pointer-events-none ${isRoomCameraOn ? '' : 'hidden'}`} />
+      {!isRoomCameraOn && (
+        <div className="w-full h-full bg-slate-800 flex items-center justify-center absolute inset-0">
+          <div className="w-32 h-32 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 text-5xl font-bold">Y</div>
+        </div>
+      )}
+    </>
   ) : (
     <img src={`${activeVideoSpeaker.img}?w=1200`} alt={activeVideoSpeaker.name} className="w-full h-full object-cover object-center pointer-events-none" />
   )}
@@ -44531,20 +44536,40 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
 
                 {/* Participant Thumbnail Strip */}
-                {!isDistractionFreeMode && (
+                {(!isDistractionFreeMode && (videoParticipants.length > 0 || youTileSpeaker)) && (
                   <div className={`flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? 'mt-auto opacity-90 hover:opacity-100' : ''}`}>
                     
-  <div className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all">
-    <video ref={localVideoRef} autoPlay playsInline muted className={`w-full h-full object-cover absolute inset-0 ${isRoomCameraOn ? '' : 'hidden'}`} />
-    <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
-      <div className="flex items-center justify-between w-full relative z-10">
-        <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">You</span>
-        {!isRoomMicOn && <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />}
+  {youTileSpeaker && (
+    <div 
+      onClick={() => {
+        const prevActive = activeVideoSpeaker;
+        setActiveVideoSpeaker(youTileSpeaker);
+        setYouTileSpeaker(prevActive);
+      }}
+      className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all"
+    >
+      {youTileSpeaker.isYou ? (
+        <>
+          <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover absolute inset-0 ${isRoomCameraOn ? '' : 'hidden'}`} />
+          {!isRoomCameraOn && (
+            <div className="w-full h-full bg-slate-800 flex items-center justify-center absolute inset-0">
+              <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 text-xl font-bold">Y</div>
+            </div>
+          )}
+        </>
+      ) : (
+        <img src={`${youTileSpeaker.img}?w=300`} alt={youTileSpeaker.name} className="w-full h-full object-cover absolute inset-0" />
+      )}
+      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
+        <div className="flex items-center justify-between w-full relative z-10">
+          <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{youTileSpeaker.name}</span>
+          {(!isRoomMicOn && youTileSpeaker.isYou) && <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />}
+        </div>
       </div>
     </div>
-  </div>
+  )}
 
-{videoParticipants.slice(1).map((p, i) => (
+{videoParticipants.slice(0, 3).map((p, i) => (
                       <div 
                         key={p.id} 
                         onClick={() => {
@@ -44567,12 +44592,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     ))}
                     
-                    {/* Plus 3 indicator */}
-                    <div className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0">
-                      <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/40 to-white/10 shadow-inner">
-                        <span className="text-slate-700 text-[16px] font-medium drop-shadow-sm">+3</span>
-                      </div>
-                    </div>
+                    {videoParticipants.length > 3 && (
+                      <>
+                        {/* Plus 3 indicator */}
+                        <div className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0">
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/40 to-white/10 shadow-inner">
+                            <span className="text-slate-700 text-[16px] font-medium drop-shadow-sm">+{videoParticipants.length - 3}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 
