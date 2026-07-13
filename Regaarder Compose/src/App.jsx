@@ -6454,6 +6454,27 @@ export default function App() {
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
 
+  const [roomAIPrompt, setRoomAIPrompt] = useState('');
+  const [isRoomAILoading, setIsRoomAILoading] = useState(false);
+  const [roomAIModal, setRoomAIModal] = useState({ isOpen: false, prompt: '', answer: '' });
+
+  const handleRoomAISubmit = (e) => {
+    e?.preventDefault();
+    if (!roomAIPrompt.trim() || isRoomAILoading) return;
+    
+    setIsRoomAILoading(true);
+    // Simulate cognitive load
+    setTimeout(() => {
+      setRoomAIModal({
+        isOpen: true,
+        prompt: roomAIPrompt,
+        answer: "Based on the room context, the team is currently reviewing the onboarding flow. Sarah mentioned we need to align on the final steps before next week's product launch."
+      });
+      setIsRoomAILoading(false);
+      setRoomAIPrompt('');
+    }, 1500);
+  };
+
   const [leftNavOffset, setLeftNavOffset] = useState({ x: 0, y: 0 });
   const [rightNavOffset, setRightNavOffset] = useState({ x: 0, y: 0 });
   const [navInteraction, setNavInteraction] = useState(null);
@@ -29824,8 +29845,7 @@ You can recommend task creations on the board.`;
                         </div>
                       )}
                       {/* Host crown badge */}
-                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-violet-500 flex items-center justify-center border border-white">
-                        <span className="text-[6px] text-white font-bold">H</span>
+                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center">
                       </div>
                     </div>
                   ) : (
@@ -44514,11 +44534,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {isVideoExpanded ? <Minimize2 size={16} /> : <Maximize size={16} />}
                   </button>
                   <div className="absolute bottom-6 left-6 flex items-center gap-3 bg-black/10 backdrop-blur-xl px-4 py-2 rounded-[20px] border border-white/5 z-20">
-                    <div className="flex items-baseline gap-[2.5px] h-3.5">
-                      <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.8s_infinite_alternate]" style={{ height: '60%' }} />
-                      <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.5s_infinite_alternate]" style={{ height: '100%' }} />
-                      <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }} />
-                    </div>
+                    {(!isRoomMicOn && activeVideoSpeaker.isYou) ? (
+                      <div className="w-5 h-5 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+                        <MicOff size={12} strokeWidth={2} />
+                      </div>
+                    ) : (
+                      <div className="flex items-baseline gap-[2.5px] h-3.5">
+                        <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.8s_infinite_alternate]" style={{ height: '60%' }} />
+                        <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.5s_infinite_alternate]" style={{ height: '100%' }} />
+                        <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }} />
+                      </div>
+                    )}
                     <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">{activeVideoSpeaker.name}</span>
                   </div>
 
@@ -44657,19 +44683,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <MonitorPlay size={18} strokeWidth={1.5} />
                         </button>
                         <button
-                          onClick={() => setIsRoomRightSidebarOpen((prev) => !prev)}
-                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
-                            isRoomRightSidebarOpen
-                              ? 'bg-[#7C3AED]/10 text-[#7C3AED] hover:bg-[#7C3AED]/20'
-                              : 'text-violet-500 hover:bg-violet-50'
-                          }`}
-                          title="Room AI assistant"
-                          aria-label="Toggle Room AI assistant"
-                          aria-pressed={isRoomRightSidebarOpen}
-                        >
-                          <Sparkles size={18} strokeWidth={1.5} />
-                        </button>
-                        <button
                           onClick={() => setIsRoomStartMenuOpen((prev) => !prev)}
                           className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
                           title="More options"
@@ -44688,13 +44701,44 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
 
                       {/* Ask AI Bar */}
-                      <div className="flex items-center gap-4 bg-white/90 backdrop-blur-2xl rounded-[32px] px-8 py-4.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 w-full min-w-[540px] max-w-[580px]">
+                      <form onSubmit={handleRoomAISubmit} className="flex items-center gap-4 bg-white/90 backdrop-blur-2xl rounded-[32px] px-8 py-4.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 w-full min-w-[540px] max-w-[580px] relative transition-all focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:shadow-[0_8px_32px_rgba(124,58,237,0.1)] focus-within:border-violet-200">
+                        {roomAIModal.isOpen && (
+                          <div className="absolute bottom-full mb-4 left-0 right-0 bg-white/70 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_32px_100px_rgba(0,0,0,0.12)] border border-white flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300 pointer-events-auto">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[13px] font-medium text-violet-500 bg-violet-50 px-3 py-1 rounded-full">Prompt</span>
+                              <button type="button" onClick={() => setRoomAIModal({ isOpen: false, prompt: '', answer: '' })} className="text-slate-400 hover:text-slate-600 transition-colors">
+                                <X size={16} />
+                              </button>
+                            </div>
+                            <p className="text-[15px] text-slate-700 font-medium">{roomAIModal.prompt}</p>
+                            <div className="h-[1px] w-full bg-slate-100 my-1"></div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Sparkles size={14} className="text-violet-500" />
+                              <span className="text-[13px] font-medium text-slate-500">Room AI</span>
+                            </div>
+                            <p className="text-[15px] text-slate-600 leading-relaxed">{roomAIModal.answer}</p>
+                          </div>
+                        )}
                         <Sparkles size={18} strokeWidth={1.5} className="text-violet-400 shrink-0" />
-                        <span className="text-[14px] text-slate-400 flex-1 font-normal tracking-wide">Ask Room AI...</span>
-                        <button className="w-10 h-10 rounded-full bg-violet-50/80 text-violet-400 hover:bg-violet-100 flex items-center justify-center shrink-0 transition-colors border border-violet-100/50">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        <input 
+                          type="text"
+                          value={roomAIPrompt}
+                          onChange={(e) => setRoomAIPrompt(e.target.value)}
+                          placeholder="Ask Room AI..."
+                          className="text-[14px] text-slate-700 flex-1 font-normal tracking-wide bg-transparent outline-none placeholder:text-slate-400 pointer-events-auto"
+                        />
+                        <button 
+                          type="submit" 
+                          disabled={!roomAIPrompt.trim() || isRoomAILoading}
+                          className="w-10 h-10 rounded-full bg-violet-50/80 text-violet-500 hover:bg-violet-100 flex items-center justify-center shrink-0 transition-all border border-violet-100/50 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto active:scale-95"
+                        >
+                          {isRoomAILoading ? (
+                            <Loader2 size={16} strokeWidth={2.5} className="animate-spin" />
+                          ) : (
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                          )}
                         </button>
-                      </div>
+                      </form>
                     </div>
                   </DraggablePanel>
                 )}
