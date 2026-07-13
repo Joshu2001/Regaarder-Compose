@@ -3191,59 +3191,62 @@ export default function App() {
     }
   };
 
-  const handlePointerDown = (e) => {
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setSwipeStartX(e.clientX);
-    setSwipeCurrentX(e.clientX);
-    setIsSwiping(true);
-  };
+  const hoverHistoryRef = useRef([]);
+  const hoverDebounceRef = useRef(false);
 
   const handlePointerMove = (e) => {
-    if (!isSwiping || swipeStartX === null) return;
-    if (Math.abs(e.clientX - swipeCurrentX) < 8) return; 
-    
-    setSwipeCurrentX(e.clientX);
-    
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    const newId = swipeTrailIdRef.current++;
-    const particles = Array.from({length: 3}).map((_, i) => ({
-      id: `${newId}-${i}`,
-      x: x + (Math.random() - 0.5) * 40,
-      y: y + (Math.random() - 0.5) * 40,
-      size: Math.random() * 6 + 4
-    }));
-    
-    setSwipeTrails(prev => [...prev, ...particles]);
-    setTimeout(() => {
-      setSwipeTrails(prev => prev.filter(p => !particles.find(part => part.id === p.id)));
-    }, 800);
-  };
 
-  const handlePointerUp = (e) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    }
-    if (!isSwiping || swipeStartX === null) return;
-    setIsSwiping(false);
-    
-    const deltaX = swipeCurrentX - swipeStartX;
-    if (Math.abs(deltaX) > 30) {
-      if (deltaX > 0) {
-        handleSwipeParticipant('next');
-      } else {
-        handleSwipeParticipant('prev');
+    const now = Date.now();
+    // Maintain a history of the last 150ms of pointer moves
+    hoverHistoryRef.current.push({ x: e.clientX, time: now });
+    hoverHistoryRef.current = hoverHistoryRef.current.filter(point => now - point.time < 150);
+
+    if (!hoverDebounceRef.current && hoverHistoryRef.current.length > 1) {
+      const oldestPoint = hoverHistoryRef.current[0];
+      const deltaX = e.clientX - oldestPoint.x;
+      const deltaTime = now - oldestPoint.time;
+
+      // Check for high speed horizontal flick (e.g. > 150px in < 150ms)
+      // Speed = pixels per millisecond. 1px/ms = 1000px/s
+      if (deltaTime > 0 && Math.abs(deltaX) > 120 && (Math.abs(deltaX) / deltaTime) > 1.2) {
+        hoverDebounceRef.current = true;
+        
+        if (deltaX > 0) {
+          handleSwipeParticipant('next');
+        } else {
+          handleSwipeParticipant('prev');
+        }
+
+        const newId = swipeTrailIdRef.current++;
+        const particles = Array.from({length: 6}).map((_, i) => ({
+          id: `${newId}-${i}`,
+          x: x + (Math.random() - 0.5) * 60,
+          y: y + (Math.random() - 0.5) * 60,
+          size: Math.random() * 8 + 4
+        }));
+        
+        setSwipeTrails(prev => [...prev, ...particles]);
+        setTimeout(() => {
+          setSwipeTrails(prev => prev.filter(p => !particles.find(part => part.id === p.id)));
+        }, 800);
+
+        setTimeout(() => {
+          hoverDebounceRef.current = false;
+        }, 800); // Wait before allowing another flick
       }
     }
-    setSwipeStartX(null);
-    setSwipeCurrentX(null);
   };
 
-  const handlePointerLeave = (e) => {
-    if (isSwiping) handlePointerUp(e);
+  const handlePointerLeave = () => {
+    hoverHistoryRef.current = [];
   };
+    
+  // Removed duplicate trail setter
+
+  // Removed pointer up since flick doesn't require clicking
 
   const handleSwipeParticipant = (direction) => {
     const available = videoParticipants.slice(1);
@@ -44325,13 +44328,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 {/* Main Video Container */}
                 <div 
                   onDoubleClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }} 
-                  onPointerDown={handlePointerDown}
                   onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
                   onPointerLeave={handlePointerLeave}
-                  onDragStart={(e) => e.preventDefault()}
                   onWheel={handleWheel}
-                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none touch-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-grab active:cursor-grabbing' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px] cursor-grab active:cursor-grabbing'}`}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}
                 >
                   <div className="absolute inset-0">
                     
