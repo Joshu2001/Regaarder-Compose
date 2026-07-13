@@ -44725,7 +44725,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           value={roomAIPrompt}
                           onChange={(e) => setRoomAIPrompt(e.target.value)}
                           placeholder="Ask Room AI..."
-                          className="text-[14px] text-slate-700 flex-1 font-normal tracking-wide bg-transparent outline-none placeholder:text-slate-400 pointer-events-auto"
+                          className="text-[14px] text-slate-700 flex-1 font-normal tracking-wide bg-transparent border-none ring-0 focus:ring-0 p-0 m-0 outline-none placeholder:text-slate-400 pointer-events-auto"
                         />
                         <button 
                           type="submit" 
