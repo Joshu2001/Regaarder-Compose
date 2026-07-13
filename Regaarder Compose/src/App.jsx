@@ -3162,10 +3162,14 @@ export default function App() {
   };
 
   const toggleVideoFullscreen = () => {
-    if (!document.fullscreenElement) return;
     const nextExpanded = !isVideoExpanded;
     setIsVideoExpanded(nextExpanded);
     setIsDistractionFreeMode(nextExpanded);
+    if (nextExpanded) {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(()=>{});
+      }
+    }
   };
 
   const [hiddenPanels, setHiddenPanels] = useState([]);
@@ -44206,7 +44210,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
                 
                 {/* Main Video Container */}
-                <div onClick={toggleVideoFullscreen} className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}>
+                <div onDoubleClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }} className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}>
                   <div className="absolute inset-0">
                     
   {screenShareStream ? (
