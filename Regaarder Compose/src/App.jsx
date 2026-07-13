@@ -5746,7 +5746,8 @@ export default function App() {
   };
 
   const exportWhiteboardQuick = async (mode = 'png') => {
-    const target = whiteboardCanvasRef.current?.parentElement;
+    // Specifically target the canvas itself, ignoring external toolbars and menus in the parent element
+    const target = whiteboardCanvasRef.current;
     if (!target) {
       showToast('Whiteboard is not ready for export yet');
       return;
@@ -5758,6 +5759,7 @@ export default function App() {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
+        allowTaint: true,
       });
 
       const safeStamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -5787,8 +5789,9 @@ export default function App() {
       }
 
       showToast(mode === 'pdf' ? 'Whiteboard PDF exported' : 'Whiteboard snapshot saved');
-    } catch (_error) {
-      showToast('Whiteboard export failed');
+    } catch (error) {
+      console.error('Whiteboard export error:', error);
+      showToast(`Whiteboard export failed: ${error.message}`);
     }
   };
 
