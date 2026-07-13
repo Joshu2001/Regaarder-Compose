@@ -6549,6 +6549,19 @@ export default function App() {
     return () => document.removeEventListener('pointerdown', handleOutsideClick);
   }, [roomAIModal.isOpen]);
 
+  useEffect(() => {
+    if (!isRoomStartMenuOpen) return;
+    const handleOutsideClick = (e) => {
+      const menuContainer = document.querySelector('#room-more-options-menu');
+      const buttonContainer = document.querySelector('#room-more-options-button');
+      if (menuContainer && !menuContainer.contains(e.target) && buttonContainer && !buttonContainer.contains(e.target)) {
+        setIsRoomStartMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, [isRoomStartMenuOpen]);
+
   const [leftNavOffset, setLeftNavOffset] = useState({ x: 0, y: 0 });
   const [rightNavOffset, setRightNavOffset] = useState({ x: 0, y: 0 });
   const [navInteraction, setNavInteraction] = useState(null);
@@ -44791,14 +44804,42 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         >
                           <MonitorPlay size={18} strokeWidth={1.5} />
                         </button>
-                        <button
-                          onClick={() => setIsRoomStartMenuOpen((prev) => !prev)}
-                          className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
-                          title="More options"
-                          aria-label="More meeting options"
-                        >
-                          <MoreHorizontal size={18} strokeWidth={1.5} />
-                        </button>
+                        <div className="relative">
+                          <button
+                            id="room-more-options-button"
+                            onClick={() => setIsRoomStartMenuOpen((prev) => !prev)}
+                            className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
+                            title="More options"
+                            aria-label="More meeting options"
+                            aria-haspopup="menu"
+                            aria-expanded={isRoomStartMenuOpen}
+                          >
+                            <MoreHorizontal size={18} strokeWidth={1.5} />
+                          </button>
+                          {isRoomStartMenuOpen && (
+                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-56 bg-white/95 backdrop-blur-3xl border border-white/60 rounded-[24px] p-2 shadow-[0_32px_100px_rgba(0,0,0,0.12)] animate-in slide-in-from-bottom-2 fade-in duration-300 z-[50]">
+                              <div className="flex flex-col">
+                                <button onClick={() => { showToast('Audio & Video Settings opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
+                                  <Settings size={16} strokeWidth={2} className="shrink-0" /> Audio & Video
+                                </button>
+                                <button onClick={() => { showToast('Layout Options opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
+                                  <LayoutGrid size={16} strokeWidth={2} className="shrink-0" /> Change Layout
+                                </button>
+                                <button onClick={() => { showToast('Visual Effects opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
+                                  <Sparkles size={16} strokeWidth={2} className="shrink-0" /> Visual Effects
+                                </button>
+                                <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
+                                <button onClick={() => { showToast('Captions enabled'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
+                                  <MessageSquare size={16} strokeWidth={2} className="shrink-0" /> Turn on Captions
+                                </button>
+                                <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
+                                <button onClick={() => { showToast('Issue reporter opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-red-500 hover:bg-red-50/80 rounded-xl transition-colors w-full text-left">
+                                  <ShieldAlert size={16} strokeWidth={2} className="shrink-0" /> Report an Issue
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <button
                           onClick={leaveRoom}
                           className="w-[44px] h-[44px] rounded-full bg-[#F25A5A] hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-[0_8px_24px_rgba(242,90,90,0.3)] ml-2"
