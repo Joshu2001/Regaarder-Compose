@@ -6413,18 +6413,27 @@ export default function App() {
         recognition.interimResults = true;
         
         recognition.onstart = () => {
+           console.log('[Room Captions] SpeechRecognition started');
            setLiveCaption({ speaker: 'System', text: 'Listening...' });
         };
         
         recognition.onresult = (event) => {
-          const result = event.results[event.results.length - 1];
-          const text = result[0].transcript;
-          if (text) {
-             setLiveCaption({ speaker: 'You', text: text });
+          let text = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            text += event.results[i][0].transcript;
+          }
+          if (text.trim()) {
+             console.log('[Room Captions] Recognized:', text.trim());
+             setLiveCaption({ speaker: 'You', text: text.trim() });
           }
         };
 
-        recognition.onerror = (e) => console.log('Speech recognition error', e);
+        recognition.onerror = (e) => {
+          console.error('[Room Captions] Error:', e.error, e.message);
+          if (e.error === 'not-allowed' || e.error === 'audio-capture') {
+            setLiveCaption({ speaker: 'System', text: `Microphone issue: ${e.error}` });
+          }
+        };
         
         recognition.onend = () => {
           // If the user hasn't explicitly disabled captions or mic, seamlessly restart.
