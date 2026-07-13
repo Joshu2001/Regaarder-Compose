@@ -3148,9 +3148,27 @@ export default function App() {
     { id: 4, name: 'Morgan Lee', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e' }
   ]);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+  const [boundaryBounce, setBoundaryBounce] = useState(null);
+  
+  // Ref for boundary bounce timeout
+  const bounceTimeoutRef = useRef(null);
   const [swipeStartX, setSwipeStartX] = useState(null);
   const [swipeCurrentX, setSwipeCurrentX] = useState(null);
   const [isSwiping, setIsSwiping] = useState(false);
+  // Add Keyboard support for swiping when expanded
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isVideoExpanded) return;
+      if (e.key === 'ArrowRight') {
+        handleSwipeParticipant('next');
+      } else if (e.key === 'ArrowLeft') {
+        handleSwipeParticipant('prev');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isVideoExpanded, videoParticipants, activeVideoSpeaker]);
+
   const [swipeTrails, setSwipeTrails] = useState([]);
   const swipeTrailIdRef = useRef(0);
   const wheelDebounceRef = useRef(false);
@@ -3248,22 +3266,45 @@ export default function App() {
 
   // Removed pointer up since flick doesn't require clicking
 
+  const triggerBoundaryBounce = (direction) => {
+    setBoundaryBounce(direction);
+    if (bounceTimeoutRef.current) clearTimeout(bounceTimeoutRef.current);
+    bounceTimeoutRef.current = setTimeout(() => {
+      setBoundaryBounce(null);
+    }, 400); // 400ms is enough for a snappy apple-like rejection bounce
+  };
+
   const handleSwipeParticipant = (direction) => {
     const available = videoParticipants.slice(1);
-    if (available.length === 0) return;
     
     if (direction === 'next') {
-      const nextSpeaker = available[0];
-      const newAvailable = [...available.slice(1), activeVideoSpeaker];
-      setActiveVideoSpeaker(nextSpeaker);
-      setVideoParticipants([videoParticipants[0], ...newAvailable]);
+      // Check if we are at the end
+      if (activeVideoSpeaker.id === available[available.length - 1].id) {
+        triggerBoundaryBounce('right');
+        return;
+      }
+      
+      const currentIndex = available.findIndex(p => p.id === activeVideoSpeaker.id);
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < available.length) {
+        setActiveVideoSpeaker(available[nextIndex]);
+      }
     } else {
-      const prevSpeaker = available[available.length - 1];
-      const newAvailable = [activeVideoSpeaker, ...available.slice(0, available.length - 1)];
-      setActiveVideoSpeaker(prevSpeaker);
-      setVideoParticipants([videoParticipants[0], ...newAvailable]);
+      // Check if we are at the start
+      if (activeVideoSpeaker.id === available[0].id) {
+        triggerBoundaryBounce('left');
+        return;
+      }
+      
+      const currentIndex = available.findIndex(p => p.id === activeVideoSpeaker.id);
+      const prevIndex = currentIndex - 1;
+      if (prevIndex >= 0) {
+        setActiveVideoSpeaker(available[prevIndex]);
+      }
     }
   };
+    
+
 
   const toggleImmersiveLayout = () => {
     if (!document.fullscreenElement) {
@@ -44331,7 +44372,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   onPointerMove={handlePointerMove}
                   onPointerLeave={handlePointerLeave}
                   onWheel={handleWheel}
-                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px] cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
                 >
                   <div className="absolute inset-0">
                     
