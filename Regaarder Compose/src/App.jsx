@@ -6405,6 +6405,9 @@ export default function App() {
 
   useEffect(() => {
     // Only run if captions are enabled and mic is on.
+    let fallbackChunkTimeout;
+    let fallbackMediaRecorder;
+
     if (isRoomCaptionsEnabled && isRoomMicOn) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
@@ -6452,10 +6455,58 @@ export default function App() {
         
         recognitionRef.current = recognition;
         
+        // --- FALLBACK: MediaRecorder + Gemini ---
+        // Some browsers/OS environments (like Windows Chrome with certain mic setups)
+        // trigger SpeechRecognition.onstart but silently fail to capture audio.
+        // We run a 4-second chunker to Gemini in parallel to guarantee captions work.
+        if (localStream && localStream.getAudioTracks().length > 0) {
+          const startFallbackChunk = () => {
+             try {
+                fallbackMediaRecorder = new MediaRecorder(localStream);
+                fallbackMediaRecorder.ondataavailable = async (e) => {
+                  if (e.data.size > 500) {
+                     const reader = new FileReader();
+                     reader.onloadend = async () => {
+                        const base64Audio = reader.result.split(',')[1];
+                        try {
+                           const res = await fetch('/api/gemini', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ task: 'transcription', audio: base64Audio })
+                           });
+                           const result = await res.json();
+                           if (result.ok && result.text && result.text.trim()) {
+                              setLiveCaption({ speaker: 'You', text: result.text.trim() });
+                           }
+                        } catch (err) {
+                           console.error("Room Captions Gemini fallback failed", err);
+                        }
+                     };
+                     reader.readAsDataURL(e.data);
+                  }
+                };
+                fallbackMediaRecorder.start();
+                fallbackChunkTimeout = setTimeout(() => {
+                   try {
+                     if (fallbackMediaRecorder.state === 'recording') fallbackMediaRecorder.stop();
+                   } catch(e){}
+                   startFallbackChunk();
+                }, 4000);
+             } catch (err) {
+                console.error("Fallback recording error", err);
+             }
+          };
+          startFallbackChunk();
+        }
+
         return () => {
           if (recognitionRef.current) {
             recognitionRef.current.onend = null;
             recognitionRef.current.stop();
+          }
+          if (fallbackChunkTimeout) clearTimeout(fallbackChunkTimeout);
+          if (fallbackMediaRecorder && fallbackMediaRecorder.state === 'recording') {
+            try { fallbackMediaRecorder.stop(); } catch(e){}
           }
         };
       } else {
@@ -6469,7 +6520,7 @@ export default function App() {
       }
       setLiveCaption({ speaker: '', text: '' });
     }
-  }, [isRoomCaptionsEnabled, isRoomMicOn]);
+  }, [isRoomCaptionsEnabled, isRoomMicOn, localStream]);
 
   const startRoomRecording = async () => {
     try {
