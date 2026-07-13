@@ -2035,7 +2035,7 @@ const NOTES_SLASH_OPTIONS = [
 ];
 
 const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
-  const [pos, setPos] = React.useState({ x: window.innerWidth / 2 - 250, y: 80 });
+  const [pos, setPos] = React.useState({ x: 24, y: 80 });
   const [isDragging, setIsDragging] = React.useState(false);
   const [slashMenu, setSlashMenu] = React.useState({ open: false, x: 0, y: 0, filter: '', activeIdx: 0, savedRange: null });
   const [dragHandle, setDragHandle] = React.useState({ visible: false, top: 0, left: 0, node: null });
@@ -7518,6 +7518,8 @@ export default function App() {
   const docSearchPanelRef = useRef(null);
   const replaySpeedMenuRef = useRef(null);
   const notificationsPanelRef = useRef(null);
+  const moreMenuRef = useRef(null);
+  const invitesMenuRef = useRef(null);
   const appShellRef = useRef(null);
   const roomStageRef = useRef(null);
   const promptFileInputRef = useRef(null);
@@ -9290,6 +9292,12 @@ export default function App() {
       }
       if (notificationsPanelRef.current && !notificationsPanelRef.current.contains(event.target)) {
         setNotificationsOpen(false);
+      }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
+        setIsMoreMenuOpen(false);
+      }
+      if (invitesMenuRef.current && !invitesMenuRef.current.contains(event.target)) {
+        setIsInvitesOpen(false);
       }
       if (
         isPromptExpanded
@@ -29955,10 +29963,10 @@ const renderRoomTopHeader = () => (
 
       {/* Right side options */}
       <div className="flex items-center gap-4">
-        <div className="relative">
+        <div className="relative" ref={invitesMenuRef}>
           <button 
             onClick={() => setIsInvitesOpen(!isInvitesOpen)}
-            className={`p-2.5 rounded-2xl transition-colors relative ${isInvitesOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
+            className={`p-2.5 rounded-2xl relative ${isInvitesOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
             title="Invites"
           >
             <Bell size={16} />
@@ -30057,7 +30065,7 @@ const renderRoomTopHeader = () => (
           {roomMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
         </button>
 
-        <div className="relative">
+        <div className="relative" ref={moreMenuRef}>
           <button 
             onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
             className={`p-2.5 rounded-2xl transition-colors ${isMoreMenuOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
@@ -30071,43 +30079,43 @@ const renderRoomTopHeader = () => (
             <div className="absolute top-[calc(100%+8px)] right-0 w-48 bg-white/95 backdrop-blur-xl rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.12)] border border-white/60 p-2" style={{ zIndex: 999999 }}>
               <button 
                 onClick={() => { setIsRoomCaptionsEnabled(!isRoomCaptionsEnabled); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
                 <MessageSquare size={16} /> {isRoomCaptionsEnabled ? 'Disable Captions' : 'Captions'}
               </button>
               <button 
                 onClick={() => { toggleScreenShare(); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
                 <MonitorPlay size={16} /> Present
               </button>
               <button 
                 onClick={() => { setIsNotesModalOpen(true); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
                 <FileText size={16} /> Notes
               </button>
               <button 
                 onClick={() => { setIsSummaryModalOpen(true); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
                 <Sparkles size={16} /> Summary
               </button>
               <button 
                 onClick={() => { setIsCalendarModalOpen(true); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
                 <Calendar size={16} /> Calendar
               </button>
               <button 
                 onClick={() => { setIsMeetingsModalOpen(true); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
                 <Users size={16} /> Meetings
               </button>
               <button 
                 onClick={() => { setIsRecordingModalOpen(true); setIsMoreMenuOpen(false); }}
-                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px] transition-colors"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
               >
                 <Disc size={16} /> Recording
               </button>
@@ -31165,7 +31173,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600 dark:text-violet-400">Notifications</div>
                         <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
                           {notifications.map((item) => (
-                            <div key={item.id} className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20">
+                            <div 
+                              key={item.id} 
+                              onClick={() => setNotificationsOpen(false)}
+                              className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 cursor-pointer"
+                            >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200">{item.title}</div>
                                 {item.unread && <span className={`mt-1 h-2 w-2 rounded-full ${getNotificationColorClass(item)}`} />}
@@ -37920,7 +37932,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600 dark:text-violet-400">Notifications</div>
                   <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
                     {notifications.map((item) => (
-                      <div key={item.id} className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20">
+                      <div 
+                        key={item.id} 
+                        onClick={() => setNotificationsOpen(false)}
+                        className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 cursor-pointer"
+                      >
                         <div className="flex items-start justify-between gap-2">
                           <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200">{item.title}</div>
                           {item.unread && <span className="mt-1 h-2 w-2 rounded-full bg-violet-500" />}
