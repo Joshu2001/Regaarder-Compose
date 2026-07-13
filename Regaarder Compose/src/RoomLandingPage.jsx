@@ -1,10 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Video, Calendar, PlayCircle, Search, Keyboard, ChevronRight, Settings, Plus, Users, Hash
 } from "lucide-react";
 
 export default function RoomLandingPage({ onLaunch }) {
   const [meetingCode, setMeetingCode] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleLaunch = () => {
     onLaunch?.({ type: 'action', name: 'Room' });
@@ -13,7 +20,22 @@ export default function RoomLandingPage({ onLaunch }) {
   return (
     <div className="flex h-full w-full bg-[#F0F2F5] p-4 text-slate-800 font-sans relative overflow-hidden">
       
-      {/* Main Glassmorphic Container matching Image 2 */}
+      {/* Top Right Header Elements */}
+      <div className="absolute top-10 right-10 flex items-center gap-4 z-20">
+        <div className="text-[15px] font-medium text-slate-600 mr-2 flex items-center gap-2">
+          <span>{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+          <span>{currentTime.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+        </div>
+        <button className="w-9 h-9 rounded-full border border-slate-200/50 bg-white/60 backdrop-blur-md flex items-center justify-center text-slate-500 hover:bg-white hover:text-violet-600 transition-colors shadow-sm">
+          <Settings size={18} />
+        </button>
+        <div className="w-9 h-9 rounded-full bg-violet-600 text-white flex items-center justify-center font-semibold text-[15px] shadow-[0_2px_10px_rgba(139,92,246,0.3)] ring-2 ring-white cursor-pointer hover:bg-violet-700 transition-colors">
+          J
+        </div>
+      </div>
+
+      {/* Main Glassmorphic Container */}
       <div className="flex w-full h-full bg-white rounded-[32px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden border border-white/40">
         
         {/* Sidebar */}
@@ -84,14 +106,46 @@ export default function RoomLandingPage({ onLaunch }) {
                   </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row w-full gap-4 items-center">
-                  <button 
-                    onClick={handleLaunch}
-                    className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3.5 rounded-xl font-medium flex items-center justify-center gap-2.5 shadow-[0_4px_14px_0_rgba(139,92,246,0.39)] hover:shadow-[0_6px_20px_rgba(139,92,246,0.23)] hover:-translate-y-0.5 transition-all w-full sm:w-auto shrink-0 text-[15px]"
-                  >
-                    <Video size={18} />
-                    New meeting
-                  </button>
+                <div className="flex flex-col sm:flex-row w-full gap-4 items-center relative z-20">
+                  <div className="relative w-full sm:w-auto shrink-0">
+                    <button 
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="bg-violet-500 hover:bg-violet-600 text-white px-6 py-3.5 rounded-xl font-medium flex items-center justify-center gap-2.5 shadow-[0_4px_14px_0_rgba(139,92,246,0.39)] hover:shadow-[0_6px_20px_rgba(139,92,246,0.23)] hover:-translate-y-0.5 transition-all w-full text-[15px]"
+                    >
+                      <Video size={18} />
+                      New meeting
+                    </button>
+
+                    {isDropdownOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-white/90 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_12px_40px_rgb(0,0,0,0.12)] overflow-hidden z-20 animate-in fade-in slide-in-from-top-2 p-1.5 ring-1 ring-black/5">
+                          <button 
+                            onClick={() => { setIsDropdownOpen(false); onLaunch?.({ type: 'action', name: 'Room' }); }}
+                            className="w-full flex items-center gap-3 px-3 py-3 hover:bg-violet-50/80 rounded-xl text-left transition-colors group"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 group-hover:scale-110 transition-transform">
+                              <Plus size={16} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[14px] font-semibold text-slate-800">Start an instant meeting</span>
+                            </div>
+                          </button>
+                          <button 
+                            onClick={() => { setIsDropdownOpen(false); onLaunch?.({ type: 'schedule', name: 'Room' }); }}
+                            className="w-full flex items-center gap-3 px-3 py-3 hover:bg-violet-50/80 rounded-xl text-left transition-colors group mt-1"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 group-hover:scale-110 group-hover:bg-violet-100 group-hover:text-violet-600 transition-transform">
+                              <Calendar size={16} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-[14px] font-semibold text-slate-800">Schedule for later</span>
+                            </div>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
                   <div className="relative flex-1 max-w-[300px]">
                     <Keyboard size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -100,23 +154,23 @@ export default function RoomLandingPage({ onLaunch }) {
                       value={meetingCode}
                       onChange={(e) => setMeetingCode(e.target.value)}
                       placeholder="Enter a code or link"
-                      className="w-full pl-11 pr-4 py-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all font-medium text-[15px]"
+                      className="w-full pl-11 pr-20 py-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all font-medium text-[15px]"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && meetingCode.trim().length > 0) {
                            handleLaunch();
                         }
                       }}
                     />
+                    {meetingCode.trim().length > 0 && (
+                      <button 
+                        onClick={handleLaunch}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-violet-600 font-semibold hover:text-violet-700 hover:bg-violet-50 px-3 py-1.5 rounded-lg transition-colors text-[14px]"
+                      >
+                        Join
+                      </button>
+                    )}
                   </div>
 
-                  {meetingCode.trim().length > 0 && (
-                    <button 
-                      onClick={handleLaunch}
-                      className="text-violet-600 font-semibold hover:text-violet-700 px-2 transition-colors shrink-0 text-[15px]"
-                    >
-                      Join
-                    </button>
-                  )}
                 </div>
 
                 <div className="w-full pt-8 mt-4">
