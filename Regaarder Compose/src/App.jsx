@@ -3148,6 +3148,119 @@ export default function App() {
     { id: 4, name: 'Morgan Lee', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e' }
   ]);
   const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+  const [swipeStartX, setSwipeStartX] = useState(null);
+  const [swipeCurrentX, setSwipeCurrentX] = useState(null);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const [swipeTrails, setSwipeTrails] = useState([]);
+  const swipeTrailIdRef = useRef(0);
+  const wheelDebounceRef = useRef(false);
+
+  const handleWheel = (e) => {
+    
+    if (Math.abs(e.deltaX) > 30 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      if (wheelDebounceRef.current) return;
+      wheelDebounceRef.current = true;
+      
+      if (e.deltaX < 0) {
+        handleSwipeParticipant('next');
+      } else {
+        handleSwipeParticipant('prev');
+      }
+      
+      const rect = e.currentTarget.getBoundingClientRect();
+      const newId = swipeTrailIdRef.current++;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const directionOffset = e.deltaX < 0 ? -80 : 80;
+      
+      const particles = Array.from({length: 5}).map((_, i) => ({
+        id: `${newId}-wheel-${i}`,
+        x: cx + directionOffset + (Math.random() - 0.5) * 100,
+        y: cy + (Math.random() - 0.5) * 100,
+        size: Math.random() * 8 + 4
+      }));
+      
+      setSwipeTrails(prev => [...prev, ...particles]);
+      setTimeout(() => {
+        setSwipeTrails(prev => prev.filter(p => !particles.find(part => part.id === p.id)));
+      }, 800);
+      
+      setTimeout(() => {
+        wheelDebounceRef.current = false;
+      }, 600);
+    }
+  };
+
+  const handlePointerDown = (e) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setSwipeStartX(e.clientX);
+    setSwipeCurrentX(e.clientX);
+    setIsSwiping(true);
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isSwiping || swipeStartX === null) return;
+    if (Math.abs(e.clientX - swipeCurrentX) < 8) return; 
+    
+    setSwipeCurrentX(e.clientX);
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const newId = swipeTrailIdRef.current++;
+    const particles = Array.from({length: 3}).map((_, i) => ({
+      id: `${newId}-${i}`,
+      x: x + (Math.random() - 0.5) * 40,
+      y: y + (Math.random() - 0.5) * 40,
+      size: Math.random() * 6 + 4
+    }));
+    
+    setSwipeTrails(prev => [...prev, ...particles]);
+    setTimeout(() => {
+      setSwipeTrails(prev => prev.filter(p => !particles.find(part => part.id === p.id)));
+    }, 800);
+  };
+
+  const handlePointerUp = (e) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    if (!isSwiping || swipeStartX === null) return;
+    setIsSwiping(false);
+    
+    const deltaX = swipeCurrentX - swipeStartX;
+    if (Math.abs(deltaX) > 30) {
+      if (deltaX > 0) {
+        handleSwipeParticipant('next');
+      } else {
+        handleSwipeParticipant('prev');
+      }
+    }
+    setSwipeStartX(null);
+    setSwipeCurrentX(null);
+  };
+
+  const handlePointerLeave = (e) => {
+    if (isSwiping) handlePointerUp(e);
+  };
+
+  const handleSwipeParticipant = (direction) => {
+    const available = videoParticipants.slice(1);
+    if (available.length === 0) return;
+    
+    if (direction === 'next') {
+      const nextSpeaker = available[0];
+      const newAvailable = [...available.slice(1), activeVideoSpeaker];
+      setActiveVideoSpeaker(nextSpeaker);
+      setVideoParticipants([videoParticipants[0], ...newAvailable]);
+    } else {
+      const prevSpeaker = available[available.length - 1];
+      const newAvailable = [activeVideoSpeaker, ...available.slice(0, available.length - 1)];
+      setActiveVideoSpeaker(prevSpeaker);
+      setVideoParticipants([videoParticipants[0], ...newAvailable]);
+    }
+  };
 
   const toggleImmersiveLayout = () => {
     if (!document.fullscreenElement) {
@@ -44210,16 +44323,40 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
                 
                 {/* Main Video Container */}
-                <div onDoubleClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }} className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px]'}`}>
+                <div 
+                  onDoubleClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }} 
+                  onPointerDown={handlePointerDown}
+                  onPointerMove={handlePointerMove}
+                  onPointerUp={handlePointerUp}
+                  onPointerLeave={handlePointerLeave}
+                  onDragStart={(e) => e.preventDefault()}
+                  onWheel={handleWheel}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none touch-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-grab active:cursor-grabbing' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px] cursor-grab active:cursor-grabbing'}`}
+                >
                   <div className="absolute inset-0">
                     
   {screenShareStream ? (
-    <video ref={mainVideoRef} autoPlay playsInline muted className="w-full h-full object-cover object-center" />
+    <video ref={mainVideoRef} autoPlay playsInline muted className="w-full h-full object-cover object-center pointer-events-none" />
   ) : (
-    <img src={`${activeVideoSpeaker.img}?w=1200`} alt={activeVideoSpeaker.name} className="w-full h-full object-cover object-center" />
+    <img src={`${activeVideoSpeaker.img}?w=1200`} alt={activeVideoSpeaker.name} className="w-full h-full object-cover object-center pointer-events-none" />
   )}
 
                   </div>
+                  
+                  {/* Swipe Particle Trails */}
+                  {swipeTrails.map(trail => (
+                    <div 
+                      key={trail.id}
+                      className="absolute rounded-full bg-white pointer-events-none animate-ping z-50"
+                      style={{
+                        left: trail.x - trail.size/2,
+                        top: trail.y - trail.size/2,
+                        width: trail.size,
+                        height: trail.size,
+                        boxShadow: '0 0 12px 3px rgba(255,255,255,0.9)'
+                      }}
+                    />
+                  ))}
                   <button 
                     onClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }}
                     className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20"
