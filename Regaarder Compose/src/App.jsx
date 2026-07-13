@@ -3209,9 +3209,9 @@ export default function App() {
       const deltaX = e.clientX - oldestPoint.x;
       const deltaTime = now - oldestPoint.time;
 
-      // Check for high speed horizontal flick (e.g. > 150px in < 150ms)
+      // Check for high speed horizontal flick
       // Speed = pixels per millisecond. 1px/ms = 1000px/s
-      if (deltaTime > 0 && Math.abs(deltaX) > 120 && (Math.abs(deltaX) / deltaTime) > 1.2) {
+      if (deltaTime > 0 && Math.abs(deltaX) > 60 && (Math.abs(deltaX) / deltaTime) > 2.0) {
         hoverDebounceRef.current = true;
         
         if (deltaX > 0) {
