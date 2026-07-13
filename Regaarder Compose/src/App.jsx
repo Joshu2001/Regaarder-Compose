@@ -6397,6 +6397,68 @@ export default function App() {
     }
   }, [screenShareStream, roomState]);
 
+  const [liveCaption, setLiveCaption] = useState({ speaker: '', text: '' });
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    // Only run if captions are enabled and mic is on.
+    if (isRoomCaptionsEnabled && isRoomMicOn) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        
+        recognition.onstart = () => {
+           setLiveCaption({ speaker: 'System', text: 'Listening...' });
+        };
+        
+        recognition.onresult = (event) => {
+          const result = event.results[event.results.length - 1];
+          const text = result[0].transcript;
+          if (text) {
+             setLiveCaption({ speaker: 'You', text: text });
+          }
+        };
+
+        recognition.onerror = (e) => console.log('Speech recognition error', e);
+        
+        recognition.onend = () => {
+          // If the user hasn't explicitly disabled captions or mic, seamlessly restart.
+          if (isRoomCaptionsEnabled && isRoomMicOn && recognitionRef.current) {
+            try {
+              recognition.start();
+            } catch (e) {
+              console.log('Speech recognition restart error', e);
+            }
+          }
+        };
+        
+        try {
+          recognition.start();
+        } catch (e) {}
+        
+        recognitionRef.current = recognition;
+        
+        return () => {
+          if (recognitionRef.current) {
+            recognitionRef.current.onend = null;
+            recognitionRef.current.stop();
+          }
+        };
+      } else {
+        setLiveCaption({ speaker: 'System', text: 'Speech recognition is not supported in this browser.' });
+      }
+    } else {
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null;
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
+      setLiveCaption({ speaker: '', text: '' });
+    }
+  }, [isRoomCaptionsEnabled, isRoomMicOn]);
+
   const startRoomRecording = async () => {
     try {
       let captureStream = null;
@@ -6474,6 +6536,18 @@ export default function App() {
       setRoomAIPrompt('');
     }, 1500);
   };
+
+  useEffect(() => {
+    if (!roomAIModal.isOpen) return;
+    const handleOutsideClick = (e) => {
+      const form = e.target.closest('form');
+      if (!form || !form.querySelector('input[placeholder="Ask Room AI..."]')) {
+        setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, [roomAIModal.isOpen]);
 
   const [leftNavOffset, setLeftNavOffset] = useState({ x: 0, y: 0 });
   const [rightNavOffset, setRightNavOffset] = useState({ x: 0, y: 0 });
@@ -20373,6 +20447,9 @@ Rules:
   }, []);
 
   const requestMediaPermissions = async () => {
+    // If we already have a stream, do not override user's manual toggles (prevents camera turning on unexpectedly).
+    if (localStream) return true;
+
     if (!navigator?.mediaDevices?.getUserMedia) {
       setMediaError(true);
       setIsRoomCameraOn(false);
@@ -20387,10 +20464,17 @@ Rules:
         video: true,
         audio: true,
       });
+      
+      // Stop video immediately to prevent camera from turning on automatically
+      stream.getVideoTracks().forEach(track => {
+        track.stop();
+        stream.removeTrack(track);
+      });
+
       setLocalStream(stream);
       setMediaError(false);
       // Both states must be set together so all control bars are in sync.
-      setIsRoomCameraOn(true);
+      setIsRoomCameraOn(false);
       setIsRoomMicOn(true);
       setIsMicMuted(false);
       return true;
@@ -20681,17 +20765,35 @@ Rules:
   }, []);
 
   const toggleRoomCamera = async () => {
-    // Optimistically toggle the camera state immediately (like Zoom/Google Meet),
-    // so the UI responds instantly regardless of whether a real stream exists.
     const nextOn = !isRoomCameraOn;
     setIsRoomCameraOn(nextOn);
     showToast(nextOn ? 'Camera on' : 'Camera off');
 
-    // If a real media stream is active, also enable/disable the actual video track.
-    if (localStream && !mediaError) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = nextOn;
+    if (!nextOn) {
+      // Turn off camera completely to save privacy & hardware
+      if (localStream && !mediaError) {
+        localStream.getVideoTracks().forEach(track => {
+          track.stop();
+          localStream.removeTrack(track);
+        });
+        setLocalStream(new MediaStream(localStream.getTracks()));
+      }
+    } else {
+      // Re-request camera stream
+      if (!mediaError) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          if (localStream) {
+            const newVideoTrack = stream.getVideoTracks()[0];
+            localStream.addTrack(newVideoTrack);
+            setLocalStream(new MediaStream(localStream.getTracks()));
+          } else {
+            setLocalStream(stream);
+          }
+        } catch (e) {
+          console.error("Failed to re-enable camera", e);
+          setIsRoomCameraOn(false);
+        }
       }
     }
   };
@@ -20745,6 +20847,13 @@ Rules:
       showToast('Screen share cancelled.');
     }
   };
+
+  // Foolproof privacy: Ensure hardware is off if state is off.
+  useEffect(() => {
+    if (!isRoomCameraOn && localStream) {
+      localStream.getVideoTracks().forEach(t => t.stop());
+    }
+  }, [isRoomCameraOn, localStream]);
 
   useEffect(() => {
     if (roomState !== 'active' || !meetingStartedAt) {
@@ -44549,12 +44658,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
 
                   {/* Captions Overlay */}
-                  {isRoomCaptionsEnabled && (
+                  {isRoomCaptionsEnabled && liveCaption.text && (
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none w-[80%] max-w-2xl px-4 flex flex-col items-center">
                       <div className="bg-black/60 backdrop-blur-xl rounded-[20px] px-6 py-3 flex flex-col shadow-2xl border border-white/10">
                         <div className="text-white text-[15px] font-medium text-center tracking-tight leading-relaxed">
-                          <span className="opacity-60 text-[13px] mr-2">Sarah Kim</span>
-                          Let's align on the new onboarding flow...
+                          <span className="opacity-60 text-[13px] mr-2">{liveCaption.speaker}</span>
+                          {liveCaption.text}
                         </div>
                       </div>
                     </div>
@@ -44703,12 +44812,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {/* Ask AI Bar */}
                       <form onSubmit={handleRoomAISubmit} className="flex items-center gap-4 bg-white/90 backdrop-blur-2xl rounded-[32px] px-8 py-4.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 w-full min-w-[540px] max-w-[580px] relative transition-all focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:shadow-[0_8px_32px_rgba(124,58,237,0.1)] focus-within:border-violet-200">
                         {roomAIModal.isOpen && (
-                          <div className="absolute bottom-full mb-4 left-0 right-0 bg-white/70 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_32px_100px_rgba(0,0,0,0.12)] border border-white flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300 pointer-events-auto">
+                          <>
+                            <div className="absolute bottom-full mb-4 left-0 right-0 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_32px_100px_rgba(0,0,0,0.12)] border border-white flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300 pointer-events-auto z-[50]">
                             <div className="flex items-center justify-between">
                               <span className="text-[13px] font-medium text-violet-500 bg-violet-50 px-3 py-1 rounded-full">Prompt</span>
-                              <button type="button" onClick={() => setRoomAIModal({ isOpen: false, prompt: '', answer: '' })} className="text-slate-400 hover:text-slate-600 transition-colors">
-                                <X size={16} />
-                              </button>
                             </div>
                             <p className="text-[15px] text-slate-700 font-medium">{roomAIModal.prompt}</p>
                             <div className="h-[1px] w-full bg-slate-100 my-1"></div>
@@ -44718,6 +44825,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             </div>
                             <p className="text-[15px] text-slate-600 leading-relaxed">{roomAIModal.answer}</p>
                           </div>
+                          </>
                         )}
                         <Sparkles size={18} strokeWidth={1.5} className="text-violet-400 shrink-0" />
                         <input 
