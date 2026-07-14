@@ -238,7 +238,7 @@ export default function RoomLandingPage({ onLaunch }) {
                 <Shield size={16} />
               </button>
 
-              {/* Layout Sidebar Toggle (Behaves exactly as active meeting toggle) */}
+              {/* Layout Sidebar Toggle */}
               <button 
                 onClick={() => setIsActivityOpen(!isActivityOpen)}
                 className={`p-2.5 rounded-2xl transition-colors ${isActivityOpen ? 'bg-slate-100 text-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.02)]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
@@ -331,271 +331,279 @@ export default function RoomLandingPage({ onLaunch }) {
             {/* Middle Column (Main Content - Highly Polished Minimalist Viewport) */}
             <main className="flex-1 flex flex-col gap-8 overflow-y-auto px-4 thin-scrollbar pt-6 items-center transition-all duration-300">
               
-              {/* 1. Hero Greeting Area with Generous Spacing */}
-              <div className="text-center flex flex-col items-center max-w-xl mb-4">
-                <h1 className="text-[36px] font-semibold text-slate-900 tracking-tight leading-none mb-3">
-                  Good afternoon, Joshua
-                </h1>
-                <p className="text-[16px] text-slate-500 font-medium">
-                  Ready to collaborate?
-                </p>
-                <p className="text-[14px] text-slate-400 font-normal mt-1">
-                  Create a room or join one with a code.
-                </p>
-              </div>
-
-              {/* 2. Focused Action Buttons - Compact widths (200px) */}
-              <div className="flex gap-4 items-center justify-center shrink-0 w-full max-w-[420px] relative mb-2">
-                <div className="w-[200px] relative" ref={dropdownRef}>
-                  <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-3 rounded-2xl flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(124,58,237,0.15)] hover:shadow-[0_8px_20px_rgba(124,58,237,0.25)] transition-all text-[15px]"
-                  >
-                    <Plus size={16} /> New Room
-                  </button>
-
-                  {isDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-[240px] bg-white border border-slate-100 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] overflow-hidden z-30 p-1.5 animate-in fade-in slide-in-from-top-2">
-                      <button
-                        onClick={() => { setIsDropdownOpen(false); handleLaunch(); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-left transition-colors group"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-105 transition-transform">
-                          <Plus size={16} />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[14px] font-semibold text-slate-800">Start an instant meeting</span>
-                          <span className="text-[11px] text-slate-400">Launch a private Room session immediately</span>
-                        </div>
-                      </button>
-                      <button
-                        onClick={() => { setIsDropdownOpen(false); handleSchedule(); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-left transition-colors group mt-1"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 group-hover:scale-105 group-hover:bg-violet-50 group-hover:text-violet-600 transition-transform">
-                          <Calendar size={16} />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[14px] font-semibold text-slate-800">Schedule for later</span>
-                          <span className="text-[11px] text-slate-400">Create a future invite calendar link</span>
-                        </div>
-                      </button>
-                    </div>
-                  )}
+              {/* Unified Hero Group Header containing Greeting, CTAs, and integrated AI Input Box */}
+              <div className="w-full flex flex-col items-center shrink-0">
+                
+                {/* 1. Hero Greeting Area */}
+                <div className="text-center flex flex-col items-center max-w-xl mb-6">
+                  <h1 className="text-[36px] font-semibold text-slate-900 tracking-tight leading-none mb-3">
+                    Good afternoon, Joshua
+                  </h1>
+                  <p className="text-[16px] text-slate-500 font-medium">
+                    Ready to collaborate?
+                  </p>
+                  <p className="text-[14px] text-slate-400 font-normal mt-1">
+                    Create a room or join one with a code.
+                  </p>
                 </div>
 
-                <div className="w-[200px] relative">
-                  <input
-                    type="text"
-                    value={meetingCode}
-                    onChange={(e) => setMeetingCode(e.target.value)}
-                    placeholder="Join Room"
-                    className="w-full bg-white hover:bg-slate-50/50 border border-slate-200 text-slate-700 placeholder:text-slate-400 font-medium py-3 pl-11 pr-12 rounded-2xl text-[15px] focus:outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 transition-all text-center shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && meetingCode.trim().length > 0) {
-                        handleLaunch();
-                      }
-                    }}
-                  />
-                  <Keyboard size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                  {meetingCode.trim().length > 0 && (
+                {/* 2. Focused Action Buttons */}
+                <div className="flex gap-4 items-center justify-center w-full max-w-[420px] relative mb-6">
+                  <div className="w-[200px] relative" ref={dropdownRef}>
                     <button
-                      onClick={handleLaunch}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-violet-600 font-semibold hover:text-violet-700 hover:bg-violet-50 px-2.5 py-1 rounded-lg transition-colors text-[13px]"
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-3 rounded-2xl flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(124,58,237,0.15)] hover:shadow-[0_8px_20px_rgba(124,58,237,0.25)] transition-all text-[15px]"
                     >
-                      Join
+                      <Plus size={16} /> New Room
                     </button>
-                  )}
-                </div>
-              </div>
 
-              {/* 3. AI Search Prompt Input Bar & Response Card */}
-              <form onSubmit={handleAISubmit} className="w-full max-w-[560px] relative flex flex-col items-center mb-6">
-                <div className="w-full relative flex items-center">
-                  <input
-                    type="text"
-                    value={aiPrompt}
-                    onFocus={handleInputFocus}
-                    onClick={handleInputFocus}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Ask Room AI anything..."
-                    className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
-                  />
-                  <span className="absolute left-5 text-violet-500 text-[15px]">✦</span>
-                  <button type="submit" className="absolute right-2.5 w-9 h-9 bg-slate-50 text-violet-600 rounded-full flex items-center justify-center hover:bg-violet-50 transition-colors">
-                    <Send size={13} />
-                  </button>
-                </div>
-
-                {exportStatus && (
-                  <div className="absolute top-12 bg-slate-900 text-white text-[12px] font-semibold px-4.5 py-2 rounded-xl shadow-lg z-50 animate-in fade-in zoom-in-95 duration-200">
-                    {exportStatus}
-                  </div>
-                )}
-
-                {roomAIModal.isOpen && (roomAIModal.prompt || roomAIModal.answer) && (
-                  <div className="w-full mt-4 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_16px_48px_rgba(0,0,0,0.03)] border border-slate-100/80 flex flex-col gap-3 animate-in slide-in-from-top-2 fade-in duration-300 pointer-events-auto relative">
-                    
-                    {/* Top Action Toolbar */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Saved Interaction</span>
-                      
-                      <div className="flex items-center gap-2">
-                        {/* Export Button */}
-                        <div className="relative" ref={exportRef}>
-                          <button 
-                            type="button"
-                            onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors flex items-center gap-1 text-[12px] font-medium"
-                            title="Export Response"
-                          >
-                            <Download size={13} />
-                            <span>Export</span>
-                          </button>
-                          
-                          {isExportMenuOpen && (
-                            <div className="absolute bottom-full right-0 mb-1 w-44 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-bottom-1">
-                              <button 
-                                type="button" 
-                                onClick={() => handleExport("Shared Notes")}
-                                className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[12px] font-medium transition-colors"
-                              >
-                                Export to Shared Notes
-                              </button>
-                              <button 
-                                type="button" 
-                                onClick={() => handleExport("Clipboard")}
-                                className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[12px] font-medium transition-colors"
-                              >
-                                Copy to Clipboard
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Delete All Button */}
+                    {isDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-2 w-[240px] bg-white border border-slate-100 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] overflow-hidden z-30 p-1.5 animate-in fade-in slide-in-from-top-2">
                         <button
-                          type="button"
-                          onClick={handleDeleteAI}
-                          className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-red-500 transition-colors"
-                          title="Delete Chat"
+                          onClick={() => { setIsDropdownOpen(false); handleLaunch(); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-left transition-colors group"
                         >
-                          <Trash2 size={13} />
+                          <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-105 transition-transform">
+                            <Plus size={16} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[14px] font-semibold text-slate-800">Start an instant meeting</span>
+                            <span className="text-[11px] text-slate-400">Launch a private Room session immediately</span>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => { setIsDropdownOpen(false); handleSchedule(); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-left transition-colors group mt-1"
+                        >
+                          <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 group-hover:scale-105 group-hover:bg-violet-50 group-hover:text-violet-600 transition-transform">
+                            <Calendar size={16} />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[14px] font-semibold text-slate-800">Schedule for later</span>
+                            <span className="text-[11px] text-slate-400">Create a future invite calendar link</span>
+                          </div>
                         </button>
                       </div>
-                    </div>
+                    )}
+                  </div>
 
-                    {/* Prompt Section (Actions only show on hover) */}
-                    {roomAIModal.prompt && (
-                      <div className="flex flex-col gap-1 group relative">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-semibold text-violet-500 bg-violet-50 px-2 py-0.5 rounded-md">Prompt</span>
-                          
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {!isEditingPrompt ? (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => { setEditedPromptText(roomAIModal.prompt); setIsEditingPrompt(true); }}
-                                  className="text-[11px] font-medium text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                  <div className="w-[200px] relative">
+                    <input
+                      type="text"
+                      value={meetingCode}
+                      onChange={(e) => setMeetingCode(e.target.value)}
+                      placeholder="Join Room"
+                      className="w-full bg-white hover:bg-slate-50/50 border border-slate-200 text-slate-700 placeholder:text-slate-400 font-medium py-3 pl-11 pr-12 rounded-2xl text-[15px] focus:outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 transition-all text-center shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && meetingCode.trim().length > 0) {
+                          handleLaunch();
+                        }
+                      }}
+                    />
+                    <Keyboard size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                    {meetingCode.trim().length > 0 && (
+                      <button
+                        onClick={handleLaunch}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-violet-600 font-semibold hover:text-violet-700 hover:bg-violet-50 px-2.5 py-1 rounded-lg transition-colors text-[13px]"
+                      >
+                        Join
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. AI Search Prompt Input Bar & Response Card - Nested inside the hero column to group them tightly */}
+                <form onSubmit={handleAISubmit} className="w-full max-w-[560px] relative flex flex-col items-center">
+                  <div className="w-full relative flex items-center">
+                    <input
+                      type="text"
+                      value={aiPrompt}
+                      onFocus={handleInputFocus}
+                      onClick={handleInputFocus}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      placeholder="Ask Room AI anything..."
+                      className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
+                    />
+                    <span className="absolute left-5 text-violet-500 text-[15px]">✦</span>
+                    <button type="submit" className="absolute right-2.5 w-9 h-9 bg-slate-50 text-violet-600 rounded-full flex items-center justify-center hover:bg-violet-50 transition-colors">
+                      <Send size={13} />
+                    </button>
+                  </div>
+
+                  {exportStatus && (
+                    <div className="absolute top-12 bg-slate-900 text-white text-[12px] font-semibold px-4.5 py-2 rounded-xl shadow-lg z-50 animate-in fade-in zoom-in-95 duration-200">
+                      {exportStatus}
+                    </div>
+                  )}
+
+                  {roomAIModal.isOpen && (roomAIModal.prompt || roomAIModal.answer) && (
+                    <div className="w-full mt-4 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_16px_48px_rgba(0,0,0,0.03)] border border-slate-100/80 flex flex-col gap-3 animate-in slide-in-from-top-2 fade-in duration-300 pointer-events-auto relative text-left">
+                      
+                      {/* Top Action Toolbar */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Saved Interaction</span>
+                        
+                        <div className="flex items-center gap-2">
+                          {/* Export Button */}
+                          <div className="relative" ref={exportRef}>
+                            <button 
+                              type="button"
+                              onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors flex items-center gap-1 text-[12px] font-medium"
+                              title="Export Response"
+                            >
+                              <Download size={13} />
+                              <span>Export</span>
+                            </button>
+                            
+                            {isExportMenuOpen && (
+                              <div className="absolute bottom-full right-0 mb-1 w-44 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-bottom-1">
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleExport("Shared Notes")}
+                                  className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[12px] font-medium transition-colors"
                                 >
-                                  <Edit2 size={10} /> Edit
+                                  Export to Shared Notes
                                 </button>
-                                <button
-                                  type="button"
-                                  onClick={handleDeletePrompt}
-                                  className="text-[11px] font-medium text-red-400 hover:text-red-600 flex items-center gap-1"
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleExport("Clipboard")}
+                                  className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[12px] font-medium transition-colors"
                                 >
-                                  <Trash2 size={10} /> Delete
+                                  Copy to Clipboard
                                 </button>
-                              </>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={handleSavePrompt}
-                                className="text-[11px] font-semibold text-green-600 hover:text-green-700 flex items-center gap-1"
-                              >
-                                <Check size={11} /> Save
-                              </button>
+                              </div>
                             )}
                           </div>
+
+                          {/* Delete All Button */}
+                          <button
+                            type="button"
+                            onClick={handleDeleteAI}
+                            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-red-500 transition-colors"
+                            title="Delete Chat"
+                          >
+                            <Trash2 size={13} />
+                          </button>
                         </div>
-
-                        {isEditingPrompt ? (
-                          <input
-                            type="text"
-                            value={editedPromptText}
-                            onChange={(e) => setEditedPromptText(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-[14px] font-medium py-1.5 px-3 rounded-lg focus:outline-none focus:border-violet-300"
-                          />
-                        ) : (
-                          <p className="text-[14px] text-slate-700 font-medium px-1">{roomAIModal.prompt}</p>
-                        )}
                       </div>
-                    )}
 
-                    {roomAIModal.prompt && roomAIModal.answer && <div className="h-[1px] w-full bg-slate-100 my-0.5"></div>}
-
-                    {/* Answer Section (Actions only show on hover, and Edit only if AI is detected / no error) */}
-                    {roomAIModal.answer && (
-                      <div className="flex flex-col gap-1 group relative">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5">
-                            <Sparkles size={13} className="text-violet-500" />
-                            <span className="text-[11px] font-semibold text-slate-500">Room AI</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {!isEditingAnswer ? (
-                              <>
-                                {!isAIUnavailable && (
+                      {/* Prompt Section */}
+                      {roomAIModal.prompt && (
+                        <div className="flex flex-col gap-1 group relative">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-semibold text-violet-500 bg-violet-50 px-2 py-0.5 rounded-md">Prompt</span>
+                            
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {!isEditingPrompt ? (
+                                <>
                                   <button
                                     type="button"
-                                    onClick={() => { setEditedAnswerText(roomAIModal.answer); setIsEditingAnswer(true); }}
+                                    onClick={() => { setEditedPromptText(roomAIModal.prompt); setIsEditingPrompt(true); }}
                                     className="text-[11px] font-medium text-slate-400 hover:text-slate-600 flex items-center gap-1"
                                   >
                                     <Edit2 size={10} /> Edit
                                   </button>
-                                )}
+                                  <button
+                                    type="button"
+                                    onClick={handleDeletePrompt}
+                                    className="text-[11px] font-medium text-red-400 hover:text-red-600 flex items-center gap-1"
+                                  >
+                                    <Trash2 size={10} /> Delete
+                                  </button>
+                                </>
+                              ) : (
                                 <button
                                   type="button"
-                                  onClick={handleDeleteAnswer}
-                                  className="text-[11px] font-medium text-red-400 hover:text-red-600 flex items-center gap-1"
+                                  onClick={handleSavePrompt}
+                                  className="text-[11px] font-semibold text-green-600 hover:text-green-700 flex items-center gap-1"
                                 >
-                                  <Trash2 size={10} /> Delete
+                                  <Check size={11} /> Save
                                 </button>
-                              </>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={handleSaveAnswer}
-                                className="text-[11px] font-semibold text-green-600 hover:text-green-700 flex items-center gap-1"
-                              >
-                                <Check size={11} /> Save
-                              </button>
-                            )}
+                              )}
+                            </div>
                           </div>
+
+                          {isEditingPrompt ? (
+                            <input
+                              type="text"
+                              value={editedPromptText}
+                              onChange={(e) => setEditedPromptText(e.target.value)}
+                              className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-[14px] font-medium py-1.5 px-3 rounded-lg focus:outline-none focus:border-violet-300"
+                            />
+                          ) : (
+                            <p className="text-[14px] text-slate-700 font-medium px-1">{roomAIModal.prompt}</p>
+                          )}
                         </div>
+                      )}
 
-                        {isEditingAnswer ? (
-                          <textarea
-                            value={editedAnswerText}
-                            onChange={(e) => setEditedAnswerText(e.target.value)}
-                            rows={3}
-                            className="w-full bg-slate-50 border border-slate-200 text-slate-600 text-[14px] leading-relaxed p-2.5 rounded-lg focus:outline-none focus:border-violet-300 font-sans resize-none"
-                          />
-                        ) : (
-                          <p className="text-[14px] text-slate-600 leading-relaxed px-1 whitespace-pre-wrap">{roomAIModal.answer}</p>
-                        )}
-                      </div>
-                    )}
+                      {roomAIModal.prompt && roomAIModal.answer && <div className="h-[1px] w-full bg-slate-100 my-0.5"></div>}
 
-                  </div>
-                )}
-              </form>
+                      {/* Answer Section */}
+                      {roomAIModal.answer && (
+                        <div className="flex flex-col gap-1 group relative">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <Sparkles size={13} className="text-violet-500" />
+                              <span className="text-[11px] font-semibold text-slate-500">Room AI</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {!isEditingAnswer ? (
+                                <>
+                                  {!isAIUnavailable && (
+                                    <button
+                                      type="button"
+                                      onClick={() => { setEditedAnswerText(roomAIModal.answer); setIsEditingAnswer(true); }}
+                                      className="text-[11px] font-medium text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                                    >
+                                      <Edit2 size={10} /> Edit
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={handleDeleteAnswer}
+                                    className="text-[11px] font-medium text-red-400 hover:text-red-600 flex items-center gap-1"
+                                  >
+                                    <Trash2 size={10} /> Delete
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={handleSaveAnswer}
+                                  className="text-[11px] font-semibold text-green-600 hover:text-green-700 flex items-center gap-1"
+                                >
+                                  <Check size={11} /> Save
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {isEditingAnswer ? (
+                            <textarea
+                              value={editedAnswerText}
+                              onChange={(e) => setEditedAnswerText(e.target.value)}
+                              rows={3}
+                              className="w-full bg-slate-50 border border-slate-200 text-slate-600 text-[14px] leading-relaxed p-2.5 rounded-lg focus:outline-none focus:border-violet-300 font-sans resize-none"
+                            />
+                          ) : (
+                            <p className="text-[14px] text-slate-600 leading-relaxed px-1 whitespace-pre-wrap">{roomAIModal.answer}</p>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
+                  )}
+                </form>
+
+              </div>
+
+              {/* Spacing Divider */}
+              <div className="w-full max-w-[640px] h-[1px] bg-slate-100/50 shrink-0" />
 
               {/* 4. Upcoming Section */}
-              <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0">
+              <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0 text-left">
                 <h2 className="text-[14px] font-semibold text-slate-800 tracking-tight px-1">Upcoming Today</h2>
                 
                 <div className="bg-white border border-slate-100/80 rounded-2xl p-4 flex justify-between items-center shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
@@ -637,7 +645,7 @@ export default function RoomLandingPage({ onLaunch }) {
               </section>
 
               {/* 5. Recent Section */}
-              <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0">
+              <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0 text-left">
                 <h2 className="text-[14px] font-semibold text-slate-800 tracking-tight px-1">Recent</h2>
 
                 <div className="flex flex-col bg-white border border-slate-100/80 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
@@ -693,7 +701,7 @@ export default function RoomLandingPage({ onLaunch }) {
 
             </main>
 
-            {/* Right Floating Panel (Activity Feed) - Collapsible side panel with transitions */}
+            {/* Right Floating Panel (Activity Feed) */}
             <aside className={`shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6 transition-all duration-300 ${
               isActivityOpen 
                 ? 'w-[280px] opacity-100 visible' 
