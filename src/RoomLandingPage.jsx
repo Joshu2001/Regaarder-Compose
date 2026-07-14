@@ -18,10 +18,8 @@ export default function RoomLandingPage({ onLaunch }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isActivityOpen, setIsActivityOpen] = useState(true);
 
-  // Invites state matching meeting workspace (start with one invite, then empty state)
-  const [invites, setInvites] = useState([
-    { id: 1, sender: "John", title: "Product Sync", date: "Today", time: "4:00 PM" }
-  ]);
+  // Invites state matching meeting workspace (start with empty state)
+  const [invites, setInvites] = useState([]);
 
   // AI Response Interactive States
   const [isEditingPrompt, setIsEditingPrompt] = useState(false);
