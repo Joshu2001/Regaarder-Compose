@@ -16,6 +16,7 @@ export default function RoomLandingPage({ onLaunch }) {
   const [isInvitesOpen, setIsInvitesOpen] = useState(false);
   const [isDistractionFree, setIsDistractionFree] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isActivityOpen, setIsActivityOpen] = useState(true);
 
   // Invites state matching meeting workspace (start with one invite, then empty state)
   const [invites, setInvites] = useState([
@@ -236,6 +237,15 @@ export default function RoomLandingPage({ onLaunch }) {
               >
                 <Shield size={16} />
               </button>
+
+              {/* Layout Sidebar Toggle (Behaves exactly as active meeting toggle) */}
+              <button 
+                onClick={() => setIsActivityOpen(!isActivityOpen)}
+                className={`p-2.5 rounded-2xl transition-colors ${isActivityOpen ? 'bg-slate-100 text-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.02)]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                title="Toggle Activity panel"
+              >
+                <Layout size={16} />
+              </button>
               
               {/* User Dropdown */}
               <div className="flex items-center gap-2 pl-3 border-l border-slate-200 cursor-pointer relative" ref={profileRef} onClick={() => setIsProfileOpen(!isProfileOpen)}>
@@ -268,7 +278,7 @@ export default function RoomLandingPage({ onLaunch }) {
           {/* Workspace Body Frame */}
           <div className="flex-1 flex gap-6 px-10 pb-8 overflow-hidden relative">
             
-            {/* Left Floating Sidebar Navigation - Templates removed as in Image 2 */}
+            {/* Left Floating Sidebar Navigation */}
             <aside className="w-[260px] shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6">
               <nav className="flex-1 space-y-1">
                 {[
@@ -319,7 +329,7 @@ export default function RoomLandingPage({ onLaunch }) {
             </aside>
 
             {/* Middle Column (Main Content - Highly Polished Minimalist Viewport) */}
-            <main className="flex-1 flex flex-col gap-8 overflow-y-auto px-4 thin-scrollbar pt-6 items-center">
+            <main className="flex-1 flex flex-col gap-8 overflow-y-auto px-4 thin-scrollbar pt-6 items-center transition-all duration-300">
               
               {/* 1. Hero Greeting Area with Generous Spacing */}
               <div className="text-center flex flex-col items-center max-w-xl mb-4">
@@ -683,11 +693,18 @@ export default function RoomLandingPage({ onLaunch }) {
 
             </main>
 
-            {/* Right Floating Panel (Activity Feed) */}
-            <aside className="w-[280px] shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6">
+            {/* Right Floating Panel (Activity Feed) - Collapsible side panel with transitions */}
+            <aside className={`shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6 transition-all duration-300 ${
+              isActivityOpen 
+                ? 'w-[280px] opacity-100 visible' 
+                : 'w-0 opacity-0 invisible overflow-hidden p-0 border-none shadow-none'
+            }`}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[16px] font-semibold text-slate-800 tracking-tight">Activity</h2>
-                <button className="p-1 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+                <button 
+                  onClick={() => setIsActivityOpen(false)}
+                  className="p-1 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                >
                   <X size={16} />
                 </button>
               </div>
