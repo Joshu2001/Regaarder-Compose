@@ -244,7 +244,7 @@ export default function RoomLandingPage({ onLaunch }) {
               {/* 3. AI Search Prompt Input Bar & Response Card */}
               <form onSubmit={handleAISubmit} className="w-full max-w-[560px] relative flex flex-col items-center mb-6">
                 {roomAIModal.isOpen && (
-                  <div className="absolute bottom-full mb-4 left-0 right-0 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_32px_100px_rgba(0,0,0,0.12)] border border-white flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300 pointer-events-auto z-[50]">
+                  <div className="absolute top-full mt-2 left-0 right-0 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_32px_100px_rgba(0,0,0,0.12)] border border-white flex flex-col gap-3 animate-in slide-in-from-top-2 fade-in duration-300 pointer-events-auto z-[50]">
                     <div className="flex items-center justify-between">
                       <span className="text-[13px] font-medium text-violet-500 bg-violet-50 px-3 py-1 rounded-full">Prompt</span>
                     </div>
