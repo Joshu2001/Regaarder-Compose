@@ -217,18 +217,18 @@ export default function RoomLandingPage({ onLaunch }) {
                 </div>
               </div>
 
-              {/* 3. AI Search Prompt Input Bar Integrated in the Rhythm */}
+              {/* 3. AI Search Prompt Input Bar - Redesigned to be pill-shaped, bg-white, with circular send background */}
               <div className="w-full max-w-[560px] relative flex items-center mb-6">
                 <input
                   type="text"
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   placeholder="Ask Room AI anything..."
-                  className="w-full bg-slate-50 hover:bg-slate-100/70 focus:bg-slate-50 border border-slate-100/60 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-11 pr-12 rounded-2xl text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all"
+                  className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-4.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
                 />
-                <span className="absolute left-4 text-violet-500">✦</span>
-                <button className="absolute right-3 p-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-colors">
-                  <Send size={14} />
+                <span className="absolute left-5 text-violet-500 text-[15px]">✦</span>
+                <button className="absolute right-2.5 w-9 h-9 bg-slate-50 text-violet-600 rounded-full flex items-center justify-center hover:bg-violet-50 transition-colors">
+                  <Send size={13} />
                 </button>
               </div>
 
@@ -262,7 +262,7 @@ export default function RoomLandingPage({ onLaunch }) {
                     
                     <button
                       onClick={handleLaunch}
-                      className="px-4 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-[13px] font-semibold text-violet-600 rounded-xl transition-all"
+                      className="px-5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-[13px] font-semibold text-violet-600 rounded-full transition-all"
                     >
                       Join
                     </button>
@@ -274,18 +274,18 @@ export default function RoomLandingPage({ onLaunch }) {
                 </div>
               </section>
 
-              {/* 5. Recent Section (Clean list layout with subtle rows, no heavy card borders) */}
+              {/* 5. Recent Section - Updated colors on icons and tags */}
               <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0">
                 <h2 className="text-[14px] font-semibold text-slate-800 tracking-tight px-1">Recent</h2>
 
                 <div className="flex flex-col bg-white border border-slate-100/80 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
                   {[
-                    { name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true },
-                    { name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true }
+                    { name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true, color: "bg-emerald-50 text-emerald-500 border-emerald-100" },
+                    { name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true, color: "bg-blue-50 text-blue-500 border-blue-100" }
                   ].map((room, idx) => (
                     <div key={idx} className="flex justify-between items-center p-4 hover:bg-slate-50/50 transition-all cursor-pointer border-b border-slate-50 last:border-none">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 border border-slate-100">
+                        <div className={`w-8 h-8 rounded-xl ${room.color} flex items-center justify-center shrink-0 border`}>
                           <Users size={14} />
                         </div>
                         <div className="min-w-0">
@@ -297,13 +297,13 @@ export default function RoomLandingPage({ onLaunch }) {
                       <div className="flex items-center gap-4 shrink-0">
                         <div className="flex gap-2">
                           {room.recording && (
-                            <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
-                              <span className="w-1.2 h-1.2 rounded-full bg-red-400" />
+                            <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-red-50 text-red-500 border border-red-100">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                               Recording
                             </span>
                           )}
                           {room.ai && (
-                            <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
+                            <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-violet-50 text-violet-500 border border-violet-100">
                               ✦ AI Summary
                             </span>
                           )}
