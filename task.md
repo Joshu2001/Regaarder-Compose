@@ -24,3 +24,4 @@
 - `[x]` Normalize markdown code fences across all text generation models (Translate/Proofread)
 - `[x]` Test and build the application
 - `[x]` Commit and push to GitHub
+- `[x]` Polish Presentation Template Selection Modal card layout, color accents, icons, and Done action button

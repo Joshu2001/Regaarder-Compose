@@ -99,3 +99,33 @@ This walkthrough details the visual improvements, event-handler corrections, and
 
 ## 11. React Initialization Order Crash Fix
 - **Moving State Declarations Up**: Moved the initialization of `docBodyHtml` state via `useState` to the very top of the `App` component body (Line 1727). This resolves a runtime `ReferenceError: Cannot access 'docBodyHtml' before initialization` where early hooks/effects and helpers inside the component body accessed `docBodyHtml` before its legacy line location was reached.
+
+---
+
+## 12. Immersive Room UI & People Search Sidebar Polishing
+- **Premium Apple-Style Top Header**:
+  - Implemented custom flower SVG logo for Room brand identity.
+  - Added rounded dropdown button for active room mode selection (`Product Sync` with chevron) and a live participant headcount capsule.
+  - Added modern status options including a red animated recording indicator and clean contextual options buttons.
+- **Searchable People Sidebar**:
+  - Added a search input box that allows searching through current room participants in real-time.
+  - Integrated active speaker audio visualizer waves (fully styled using CSS pulse animations) and mute indicators next to participant names.
+- **Focused Immersive Canvas & User Grid**:
+  - Replaced the placeholder video stage layout with a large presenter card showing the active speaker/shared screen (Sarah Chen) with active speaker indicators.
+  - Constructed a horizontal slider showing feeds for other participants (including live camera support for the local user with active/mute microphone statuses).
+- **Floating Controls & AI Prompt Capsule**:
+  - Combined meeting actions into a floating slate-colored capsule sitting at the bottom of the video view, containing mic toggles, camera toggles, screen share indicators, split-screen editor return shortcuts, and end call options.
+  - Positioned a floating "Ask Room AI..." prompt capsule immediately below the controls that provides a direct path to the AI assistant.
+  - Added floating corner quick-toggles for the Left (People list) and Right (AI Assistant) sidebars.
+- **App Shell Cleanup**:
+  - Adjusted app shell padding and background colors when the Room view is active, removing the default white bottom bar to make room for floating controls.
+
+---
+
+## 13. Presentation Template Selection Modal Polish
+- **Premium Apple-Style Grids**:
+  - Restored proper color-accent background configurations matching each template type (e.g., violet, amber, emerald, blue, pink) for the initial presentation template cards.
+  - Added clean Lucide-react icons inside template selection grids rather than generic letters.
+  - Correctly positioned the top-edge gradient accent line on hover for cards.
+- **Done Action Button**:
+  - Added a premium, modern "Done" button at the bottom of the templates list inside the selection modal, consistent with Apple/Regaarder design language guidelines (using matching violet backgrounds, custom hover transitions, and rounded borders).

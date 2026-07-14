@@ -13,21 +13,22 @@ import {
   FileText, Trash, Settings, MoreHorizontal, MoreVertical,
   Mic, ArrowUp, MessageSquare, CheckSquare, Calendar, 
   File, User, PenTool, Pen, AlignLeft, AlignCenter, AlignRight, AlignJustify, 
-  List, ListOrdered, Bold, Italic, Underline, Type, X, ChevronDown, ChevronUp,
+  List, ListOrdered, Bold, Italic, Underline, Strikethrough, Type, X, ChevronDown, ChevronUp, Disc,
   Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
-  Send, ListTodo, ShieldAlert, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
+  Send, ListTodo, ShieldAlert, Shield, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
   UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
   FileEdit, CheckCircle2, Users2, Archive,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
   Hand, Eraser, MousePointer2, Bot, Highlighter, Table, Layers, Maximize, MessageSquareText, AtSign, GripVertical, Volume2, EyeOff, Eye, TrendingUp, LineChart, AlertCircle, BarChart2, PieChart,
   FileSpreadsheet, FolderOpen, Globe, GitMerge, ScanLine, Zap, ArrowDownToLine, Cpu, FilePlus2, LayoutTemplate
-  , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown
-, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi} from 'lucide-react';
+  , RotateCw, Unlock, BarChartHorizontal, Activity, GitBranch, Filter, Map as MapIcon, Network, LayoutDashboard, Radar, Waypoints, TrendingDown, Heading1, Heading2, Heading3
+, Film, Calculator, Sigma, SmilePlus, ListTree, Sigma as SigmaIcon, ImagePlus, Pi, Mail, QrCode} from 'lucide-react';
 import './thin-scrollbar.css';
 import MemoryDashboard from './MemoryDashboard';
 import RegaarderComposeLanding from './RegaarderComposeLanding';
+import RoomLandingPage from './RoomLandingPage';
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
@@ -35,6 +36,7 @@ import { diff_match_patch as DiffMatchPatch } from 'diff-match-patch';
 import randomColor from 'randomcolor';// Inline attachment chip — avoids module-order TDZ in the production bundle
 import { exportCompose, exportSheets, exportDeck, exportWhiteboard } from './utils/exportUtils';
 import AnalyticsHubUI from './analytics/AnalyticsHubUI';
+const API_BASE_URL = typeof window !== 'undefined' ? (window.location.protocol === 'https:' ? 'https://' : 'http://') + window.location.hostname + ':3001' : API_BASE_URL;
 function AIChatAttachmentChip({ file, onRemove }) {
   return (
     <span style={{
@@ -1182,7 +1184,7 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
   };
 
   return (
-    <div id="block-hover-menu" className="fixed z-[150] flex flex-col gap-2.5 p-3 bg-white border border-slate-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] text-left font-sans" 
+    <div id="block-hover-menu" className="fixed z-[100005] flex flex-col gap-2.5 p-3 bg-white border border-slate-200 rounded-lg shadow-[0_8px_24px_rgba(0,0,0,0.12)] text-left font-sans" 
          style={{ top: Math.max(10, rect.top - 65), left: rect.left + 24 }}
          onPointerDown={(e) => e.stopPropagation()}>
       
@@ -1303,7 +1305,7 @@ const BlockHoverMenu = ({ menu, setMenu, focusedTableCell, setFocusedTableCell, 
     <span class="selected-val" style="margin-right:8px; display:inline-block; text-align:left; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${choices[0]}</span>
     <svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24' style="flex-shrink:0; margin-left:auto;"><polyline points='6 9 12 15 18 9'></polyline></svg>
   </button>
-  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.08), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:9999; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
+  <div class="custom-doc-dropdown-menu" style="display:none; position:absolute; left:0; top:100%; margin-top:4px; background:#ffffff; border:1px solid #e6e3fb; border-radius:8px; box-shadow:0 10px 25px -5px rgba(76,29,149,0.08), 0 8px 16px -6px rgba(76,29,149,0.06); z-index:100005; min-width:130px; padding:4px; max-height:200px; overflow-y:auto; scrollbar-width:thin;">
     ${optionItems}
   </div>
 </div>`;
@@ -1698,7 +1700,7 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
           </div>
 
           {/* Grid */}
-          <div className="flex-1 p-8 overflow-y-auto bg-gray-50/30">
+          <div className="flex-1 p-8 overflow-y-auto no-scrollbar bg-gray-50/30">
             <div className="relative mb-8">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input type="text" placeholder="Search templates..." className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all shadow-sm" />
@@ -1707,7 +1709,6 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
             <div className="grid grid-cols-2 gap-6">
               {templates.map(t => (
                 <div key={t.id} onClick={() => { onSelect(t.id); onClose(); }} className="group relative bg-white border border-gray-200 rounded-2xl p-6 cursor-pointer hover:border-purple-300 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300 overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className={`w-12 h-12 rounded-xl ${t.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-sm`}>
                     <t.icon size={24} strokeWidth={2} />
                   </div>
@@ -1723,8 +1724,1686 @@ const TemplatePickerModal = ({ isOpen, onClose, onSelect }) => {
   );
 };
 
+const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [invitedEmails, setInvitedEmails] = useState(new Set());
+  const [isCopied, setIsCopied] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [accessLevel, setAccessLevel] = useState('anyone');
+
+  if (!isOpen) return null;
+
+  const users = [
+    { name: 'Emma Chen', email: 'emma.chen@acme.com', avatar: 'https://i.pravatar.cc/150?u=emma' },
+    { name: 'Daniel Wong', email: 'daniel.wong@acme.com', avatar: 'https://i.pravatar.cc/150?u=daniel' },
+    { name: 'Sarah Kim', email: 'sarah.kim@acme.com', avatar: 'https://i.pravatar.cc/150?u=sarah' },
+  ];
+
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleCopyLink = () => {
+    const code = (roomId || '').trim().replace(/\s+/g, '-').toLowerCase() || 'live-room';
+    const inviteLink = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(code)}`;
+    navigator.clipboard.writeText(inviteLink);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleEmailInvite = () => {
+    const code = (roomId || '').trim().replace(/\s+/g, '-').toLowerCase() || 'live-room';
+    const inviteLink = `${window.location.origin}${window.location.pathname}?room=${encodeURIComponent(code)}`;
+    const subject = encodeURIComponent('Join my Room');
+    const body = encodeURIComponent(`Hi there,\n\nI'm inviting you to join my Room. Click the link below to access it:\n\n${inviteLink}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+  const toggleInvite = (email) => {
+    setInvitedEmails(prev => {
+      const next = new Set(prev);
+      if (next.has(email)) next.delete(email);
+      else next.add(email);
+      return next;
+    });
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4" onClick={onClose}>
+        <div className="relative w-full max-w-md bg-white/90 backdrop-blur-2xl rounded-[32px] shadow-[0_40px_120px_rgba(0,0,0,0.18)] border border-white/60 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          {/* Top gradient accent */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-400 to-indigo-500" />
+          
+          <button 
+            onClick={onClose}
+            className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors p-1"
+          >
+            <X size={18} />
+          </button>
+
+          <div className="p-8 flex flex-col gap-6">
+            {/* Header */}
+            <div className="text-center">
+              <h2 className="text-[20px] font-semibold text-gray-900 tracking-tight">Invite people</h2>
+              <p className="text-[13px] text-gray-500 mt-1">Share access code or email your teammates</p>
+            </div>
+            
+            {/* Search */}
+            <div className="flex items-center gap-2.5 bg-gray-55/40 border border-gray-100 rounded-xl px-4 py-3 focus-within:bg-white focus-within:border-violet-500 focus-within:ring-4 focus-within:ring-violet-500/10 transition-all">
+              <Search size={16} className="text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search by name or email" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent text-[13px] outline-none placeholder:text-gray-400 text-gray-900 font-medium"
+              />
+            </div>
+            
+            {/* Recently collaborated */}
+            <div className="flex flex-col gap-3">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Recently collaborated</span>
+              <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1">
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((u, i) => {
+                    const isInvited = invitedEmails.has(u.email);
+                    return (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50/50 transition-colors group">
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-9 h-9">
+                            <img src={u.avatar} alt={u.name} className="w-full h-full rounded-full object-cover shadow-sm" />
+                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[13px] font-semibold text-gray-800 leading-tight">{u.name}</span>
+                            <span className="text-[11px] text-gray-500">{u.email}</span>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => toggleInvite(u.email)}
+                          className={`px-3.5 py-1.5 rounded-xl border text-[11px] font-semibold transition-all ${
+                            isInvited 
+                              ? 'bg-violet-50 border-violet-100 text-violet-600' 
+                              : 'bg-white border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 hover:shadow-sm'
+                          }`}
+                        >
+                          {isInvited ? 'Invited' : 'Invite'}
+                        </button>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="h-[100px] flex items-center justify-center text-sm text-gray-400">
+                    No users found.
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Room access */}
+            <div className="flex flex-col gap-2 relative">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Room access</span>
+              <button 
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="w-full flex items-center justify-between border border-gray-200 rounded-xl p-3 hover:bg-gray-55/30 transition-all bg-white shadow-sm relative z-10"
+              >
+                <div className="flex items-center gap-3">
+                  <Globe size={18} className={accessLevel === 'anyone' ? 'text-violet-500' : 'text-gray-500'} />
+                  <div className="flex flex-col items-start">
+                    <span className="text-[13px] font-semibold text-gray-800 leading-tight">
+                      {accessLevel === 'anyone' ? 'Anyone with the link' : 'Restricted'}
+                    </span>
+                    <span className="text-[11px] text-gray-500">
+                      {accessLevel === 'anyone' ? 'Can join directly' : 'Only invited people'}
+                    </span>
+                  </div>
+                </div>
+                <ChevronDown size={16} className={`text-gray-400 transition-transform duration-250 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {isDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-0" onClick={() => setIsDropdownOpen(false)}></div>
+                  <div className="absolute top-[calc(100%+4px)] left-0 w-full bg-white border border-gray-150 rounded-xl shadow-[0_16_40_rgba(0,0,0,0.1)] py-2 z-20 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <button 
+                      onClick={() => { setAccessLevel('anyone'); setIsDropdownOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <Globe size={16} className={accessLevel === 'anyone' ? 'text-violet-600' : 'text-gray-400'} />
+                      <div className="flex flex-col flex-1">
+                        <span className={`text-[12px] font-semibold leading-tight ${accessLevel === 'anyone' ? 'text-violet-600' : 'text-gray-800'}`}>Anyone with the link</span>
+                        <span className="text-[10px] text-gray-500">Can join without approval</span>
+                      </div>
+                      {accessLevel === 'anyone' && <Check size={16} className="text-violet-600" />}
+                    </button>
+                    <button 
+                      onClick={() => { setAccessLevel('restricted'); setIsDropdownOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <Lock size={16} className={accessLevel === 'restricted' ? 'text-violet-600' : 'text-gray-400'} />
+                      <div className="flex flex-col flex-1">
+                        <span className={`text-[12px] font-semibold leading-tight ${accessLevel === 'restricted' ? 'text-violet-600' : 'text-gray-800'}`}>Restricted</span>
+                        <span className="text-[10px] text-gray-500">Only invited people can join</span>
+                      </div>
+                      {accessLevel === 'restricted' && <Check size={16} className="text-violet-600" />}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Actions grid */}
+            <div className="grid grid-cols-3 gap-2">
+              <button onClick={handleCopyLink} className="flex flex-col items-center justify-center border border-gray-100 bg-gray-55/40 hover:bg-gray-50 hover:border-gray-200 rounded-2xl p-3 gap-1 hover:shadow-sm transition-all group relative">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isCopied ? 'bg-emerald-100 text-emerald-600' : 'bg-violet-50 text-violet-600 group-hover:scale-110'}`}>
+                  {isCopied ? <Check size={14} strokeWidth={2.5} /> : <LinkIcon size={14} strokeWidth={2.5} />}
+                </div>
+                <span className="text-[11px] font-semibold text-gray-700 mt-1">{isCopied ? 'Copied!' : 'Copy link'}</span>
+              </button>
+              <button onClick={handleEmailInvite} className="flex flex-col items-center justify-center border border-gray-100 bg-gray-55/40 hover:bg-gray-50 hover:border-gray-200 rounded-2xl p-3 gap-1 hover:shadow-sm transition-all group">
+                <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-110 transition-transform">
+                  <Mail size={14} strokeWidth={2.5} />
+                </div>
+                <span className="text-[11px] font-semibold text-gray-700 mt-1">Email</span>
+              </button>
+              <button onClick={() => setIsQrModalOpen(true)} className="flex flex-col items-center justify-center border border-gray-100 bg-gray-55/40 hover:bg-gray-50 hover:border-gray-200 rounded-2xl p-3 gap-1 hover:shadow-sm transition-all group">
+                <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-110 transition-transform">
+                  <QrCode size={14} strokeWidth={2.5} />
+                </div>
+                <span className="text-[11px] font-semibold text-gray-700 mt-1">QR Code</span>
+              </button>
+            </div>
+
+            <button 
+              onClick={onClose}
+              className="w-full py-3 bg-violet-600 text-white text-[13px] font-semibold rounded-2xl hover:bg-violet-700 active:bg-violet-850 shadow-md shadow-violet-600/10 hover:shadow-lg transition-all"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* QR Modal Overlay */}
+      {isQrModalOpen && (
+        <div className="fixed inset-0 z-[100001] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in" onClick={() => setIsQrModalOpen(false)}>
+          <div className="relative w-full max-w-sm bg-white/90 backdrop-blur-2xl rounded-[32px] p-8 shadow-[0_40px_120px_rgba(0,0,0,0.18)] border border-white/60 flex flex-col items-center animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-400 to-indigo-500 rounded-t-[32px]" />
+            <h3 className="text-[16px] font-semibold text-gray-900 mb-5">Scan to join room</h3>
+            <div className="w-48 h-48 bg-gray-55/30 rounded-[20px] border border-gray-100 flex items-center justify-center mb-6 overflow-hidden relative shadow-inner">
+              {/* Fake QR pattern */}
+              <div className="absolute inset-4 grid grid-cols-4 grid-rows-4 gap-1 opacity-20">
+                {Array.from({length: 16}).map((_, i) => (
+                  <div key={i} className={`bg-violet-900 rounded-sm ${i % 3 === 0 ? 'opacity-0' : ''}`}></div>
+                ))}
+              </div>
+              <QrCode size={100} className="text-gray-900 relative z-10 mix-blend-overlay opacity-80" strokeWidth={1} />
+            </div>
+            <button 
+              onClick={() => setIsQrModalOpen(false)}
+              className="w-full py-2.5 bg-gray-100 text-gray-700 text-[13px] font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+const DraggablePanel = ({ id, children, isDeleteZoneActive, onDelete, isHidden }) => {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef(null);
+
+  useEffect(() => {
+    if (isHidden) {
+      setPosition({ x: 0, y: 0 });
+    }
+  }, [isHidden]);
+
+  if (isHidden) return null;
+
+  const handlePointerDown = (e) => {
+    if (e.button !== 0 || e.target.closest('button, input, textarea, select, .no-drag')) return;
+    
+    setIsDragging(true);
+
+    const handlePointerMove = (moveEvent) => {
+      setPosition(prev => ({
+        x: prev.x + moveEvent.movementX,
+        y: prev.y + moveEvent.movementY
+      }));
+    };
+
+    const handlePointerUp = (upEvent) => {
+      setIsDragging(false);
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+
+      if (isDeleteZoneActive) {
+        const dropzone = document.getElementById('delete-dropzone');
+        if (dropzone) {
+          const rect = dropzone.getBoundingClientRect();
+          // Add a generous padding to the rect for easier dropping
+          const padding = 20;
+          if (
+            upEvent.clientX >= rect.left - padding &&
+            upEvent.clientX <= rect.right + padding &&
+            upEvent.clientY >= rect.top - padding &&
+            upEvent.clientY <= rect.bottom + padding
+          ) {
+            onDelete(id);
+          }
+        } else {
+          // Fallback if dropzone isn't rendered
+          const xPercent = (upEvent.clientX / window.innerWidth) * 100;
+          const yPercent = (upEvent.clientY / window.innerHeight) * 100;
+          if (xPercent > 25 && xPercent < 75 && yPercent > 60) {
+            onDelete(id);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+  };
+
+  return React.cloneElement(children, {
+    ref: dragRef,
+    onPointerDown: (e) => {
+      handlePointerDown(e);
+      if (children.props.onPointerDown) children.props.onPointerDown(e);
+    },
+    style: {
+      ...children.props.style,
+      transform: `translate(${position.x}px, ${position.y}px) ${children.props.style?.transform || ''}`,
+      touchAction: 'none',
+      zIndex: isDragging ? 99999 : (children.props.style?.zIndex || 50),
+    },
+    className: `${children.props.className || ''} transition-shadow ${isDragging ? 'cursor-grabbing opacity-90 pointer-events-none' : 'cursor-grab'} ${isDeleteZoneActive && isDragging ? 'ring-2 ring-red-500' : ''}`
+  });
+};
+
+const NOTES_SLASH_OPTIONS = [
+  { key: 'h1', label: 'Title', desc: 'Large heading' },
+  { key: 'h2', label: 'Heading 1', desc: 'Medium heading' },
+  { key: 'h3', label: 'Heading 2', desc: 'Small heading' },
+  { key: 'p', label: 'Paragraph', desc: 'Plain body text' },
+  { key: 'ul', label: 'Bullet List', desc: 'Unordered list' },
+  { key: 'ol', label: 'Numbered List', desc: 'Ordered list' },
+  { key: 'blockquote', label: 'Quote', desc: 'Block quotation' },
+  { key: 'divider', label: 'Divider', desc: 'Horizontal rule' },
+  { key: 'code', label: 'Code Block', desc: 'Monospace code' },
+  { key: 'translate', label: 'Translate', desc: 'Translate text' }
+];
+
+const NotesModal = ({ isOpen, onClose, notesCardRef, isDarkMode }) => {
+  const [pos, setPos] = React.useState({ x: 24, y: 80 });
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [slashMenu, setSlashMenu] = React.useState({ open: false, x: 0, y: 0, filter: '', activeIdx: 0, savedRange: null });
+  const [dragHandle, setDragHandle] = React.useState({ visible: false, top: 0, left: 0, node: null });
+  const [formatMenu, setFormatMenu] = React.useState({ open: false, top: 0, left: 0, node: null });
+  const [selToolbar, setSelToolbar] = React.useState({ open: false, x: 0, y: 0, dropdown: null });
+  const [fmt, setFmt] = React.useState({ bold: false, italic: false, underline: false, strike: false });
+  const [notesTranslateModal, setNotesTranslateModal] = React.useState({ open: false, x: 0, y: 0, text: '', range: null, language: 'Spanish', loading: false, dropdownOpen: false });
+  const slashRef = React.useRef(null);
+  const dragHideTimer = React.useRef(null);
+
+  React.useEffect(() => {
+    if (isOpen && notesCardRef && notesCardRef.current && notesCardRef.current.innerHTML.trim() === '') {
+      notesCardRef.current.innerHTML = '<p style="margin:4px 0"><br/></p>';
+    }
+  }, [isOpen, notesCardRef]);
+
+  React.useEffect(() => {
+    if (!slashMenu.open) return;
+    const handler = (e) => {
+      if (slashRef.current && !slashRef.current.contains(e.target)) {
+        setSlashMenu(s => ({ ...s, open: false }));
+      }
+    };
+    document.addEventListener('pointerdown', handler, true);
+    return () => document.removeEventListener('pointerdown', handler, true);
+  }, [slashMenu.open]);
+
+  const handleHeaderPointerDown = (e) => {
+    if (e.target.closest('.notes-no-drag')) return;
+    e.preventDefault();
+    setIsDragging(true);
+    const onMove = (me) => setPos(p => ({ x: p.x + me.movementX, y: p.y + me.movementY }));
+    const onUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  };
+
+  const execSlashCmd = (key) => {
+    const savedRange = slashMenu.savedRange;
+    setSlashMenu(s => ({ ...s, open: false, filter: '', activeIdx: 0 }));
+    if (!notesCardRef || !notesCardRef.current) return;
+    notesCardRef.current.focus();
+    if (savedRange) {
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(savedRange);
+        try {
+          const node = savedRange.startContainer;
+          const off = savedRange.startOffset;
+          if (node && node.nodeType === Node.TEXT_NODE && node.textContent.charAt(off) === '/') {
+            const dr = savedRange.cloneRange();
+            dr.setEnd(node, off + 1);
+            sel.removeAllRanges();
+            sel.addRange(dr);
+            document.execCommand('delete', false, null);
+          }
+        } catch (_) {}
+      }
+    }
+    const wrapHtml = (innerHtml) => `<div class="notes-block-wrapper relative group" style="margin:12px 0;"><div contenteditable="false" class="notes-block-delete absolute -top-2.5 -right-2.5 w-6 h-6 bg-white border border-slate-200/80 rounded-full shadow-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-all z-10 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 hover:scale-110 select-none" title="Delete block"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>${innerHtml}</div><p><br></p>`;
+
+    if (key === 'ul') document.execCommand('insertUnorderedList', false, null);
+    else if (key === 'ol') document.execCommand('insertOrderedList', false, null);
+    else if (key === 'divider') document.execCommand('insertHTML', false, wrapHtml('<hr style="border:none;border-top:2px solid #e2e8f0;margin:0" />'));
+    else if (key === 'blockquote') document.execCommand('insertHTML', false, wrapHtml('<div class="callout-block" style="border-left:3px solid #8b5cf6;padding:8px 12px;background:#faf5ff;border-radius:0 6px 6px 0;margin:0;color:#4c1d95;font-style:italic;font-size:13px;line-height:1.5;">&nbsp;</div>'));
+    else if (key === 'translate') {
+      const s = window.getSelection();
+      const text = s && s.rangeCount > 0 ? s.toString() : '';
+      let pos = { left: window.innerWidth / 2 - 150, bottom: window.innerHeight / 2 - 100 };
+      if (savedRange && !savedRange.collapsed) { pos = savedRange.getBoundingClientRect(); }
+      else if (slashMenu.savedRange) { pos = slashMenu.savedRange.getBoundingClientRect(); }
+      setNotesTranslateModal({ open: true, x: pos.left, y: pos.bottom + 8, text: text.trim(), range: savedRange || slashMenu.savedRange, language: 'Spanish', loading: false });
+    }
+    else if (key === 'code') document.execCommand('insertHTML', false, wrapHtml('<div style="background:#1e293b;border-radius:8px;padding:12px 16px;font-family:monospace;font-size:13px;color:#e2e8f0;white-space:pre-wrap;overflow-x:auto;outline:none;" contenteditable="true">// Code block</div>'));
+    else if (key === 'h1') document.execCommand('formatBlock', false, 'H2');
+    else if (key === 'h2') document.execCommand('formatBlock', false, 'H3');
+    else if (key === 'h3') document.execCommand('formatBlock', false, 'H4');
+    else document.execCommand('formatBlock', false, 'p');
+  };
+
+  const handleNotesKeyDown = (e) => {
+    if (slashMenu.open) {
+      const opts = NOTES_SLASH_OPTIONS.filter(o => o.label.toLowerCase().includes(slashMenu.filter.toLowerCase()));
+      if (e.key === 'ArrowDown') { e.preventDefault(); setSlashMenu(s => ({ ...s, activeIdx: (s.activeIdx + 1) % Math.max(1, opts.length) })); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); setSlashMenu(s => ({ ...s, activeIdx: (s.activeIdx - 1 + opts.length) % Math.max(1, opts.length) })); return; }
+      if (e.key === 'Enter') { e.preventDefault(); if (opts[slashMenu.activeIdx]) execSlashCmd(opts[slashMenu.activeIdx].key); return; }
+      if (e.key === 'Escape') { e.preventDefault(); setSlashMenu(s => ({ ...s, open: false })); return; }
+      if (e.key === 'Backspace') { e.preventDefault(); slashMenu.filter.length === 0 ? setSlashMenu(s => ({ ...s, open: false })) : setSlashMenu(s => ({ ...s, filter: s.filter.slice(0, -1), activeIdx: 0 })); return; }
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setSlashMenu(s => ({ ...s, filter: s.filter + e.key, activeIdx: 0 })); return; }
+    }
+    if (e.key === '/') {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        if (!range.collapsed) { e.preventDefault(); }
+        let rect = range.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          const dummy = document.createElement('span'); dummy.innerHTML = '&#8203;'; range.insertNode(dummy);
+          rect = dummy.getBoundingClientRect(); dummy.parentNode && dummy.parentNode.removeChild(dummy);
+        }
+        const menuH = 280;
+        const y = rect.bottom + menuH > window.innerHeight ? rect.top - menuH - 4 : rect.bottom + 4;
+        setSlashMenu({ open: true, x: Math.max(8, rect.left), y, filter: '', activeIdx: 0, savedRange: range.cloneRange() });
+      }
+    }
+  };
+
+  const handleEditorMouseMove = (e) => {
+    if (dragHideTimer.current) { clearTimeout(dragHideTimer.current); dragHideTimer.current = null; }
+    const editor = notesCardRef && notesCardRef.current;
+    if (!editor) return;
+    let curr = e.target;
+    while (curr && curr !== editor) {
+      if (curr.nodeType === 1) {
+        const tag = curr.tagName.toUpperCase();
+        if (['P','DIV','LI','H1','H2','H3','H4','H5','H6','PRE','BLOCKQUOTE','TD','TH'].includes(tag)) {
+          const rect = curr.getBoundingClientRect();
+          setDragHandle({ visible: true, top: rect.top + window.scrollY, left: Math.max(pos.x + 4, rect.left - 28), node: curr });
+          return;
+        }
+      }
+      curr = curr.parentNode;
+    }
+    dragHideTimer.current = setTimeout(() => setDragHandle(d => ({ ...d, visible: false, node: null })), 300);
+  };
+
+  const handleEditorMouseLeave = (e) => {
+    if (e.relatedTarget && (e.relatedTarget.closest && e.relatedTarget.closest('.notes-drag-handle, .notes-format-menu'))) return;
+    dragHideTimer.current = setTimeout(() => setDragHandle(d => ({ ...d, visible: false, node: null })), 300);
+  };
+
+  const handleEditorMouseUp = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) { setSelToolbar({ open: false, x: 0, y: 0 }); return; }
+    const editor = notesCardRef && notesCardRef.current;
+    if (!editor || !editor.contains(sel.anchorNode)) return;
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    setFmt({ bold: document.queryCommandState('bold'), italic: document.queryCommandState('italic'), underline: document.queryCommandState('underline'), strike: document.queryCommandState('strikeThrough') });
+    const tw = 220;
+    const x = Math.min(Math.max(8, rect.left + rect.width / 2 - tw / 2), window.innerWidth - tw - 8);
+    const y = rect.top > 54 ? rect.top - 48 : rect.bottom + 8;
+    setSelToolbar({ open: true, x, y, dropdown: null });
+  };
+
+  const applyFmt = (cmd) => {
+    document.execCommand(cmd, false, null);
+    setFmt({ bold: document.queryCommandState('bold'), italic: document.queryCommandState('italic'), underline: document.queryCommandState('underline'), strike: document.queryCommandState('strikeThrough') });
+  };
+
+  const handleNotesClick = (e) => {
+    const delBtn = e.target.closest('.notes-block-delete');
+    if (delBtn) {
+      const wrapper = delBtn.closest('.notes-block-wrapper');
+      if (wrapper) wrapper.remove();
+    }
+  };
+
+  const changeBlockTag = (node, newTag) => {
+    if (!node || !node.parentNode) return;
+    const newEl = document.createElement(newTag);
+    for (let i = 0; i < node.attributes.length; i++) { const a = node.attributes[i]; newEl.setAttribute(a.name, a.value); }
+    newEl.innerHTML = node.innerHTML;
+    const sizes = { H1: '30px', H2: '24px', H3: '20px', H4: '17px' };
+    newEl.style.fontSize = sizes[newTag] || '';
+    node.parentNode.replaceChild(newEl, node);
+    setFormatMenu({ open: false, top: 0, left: 0, node: null });
+    setDragHandle(d => ({ ...d, visible: false, node: null }));
+  };
+
+  const filteredSlash = NOTES_SLASH_OPTIONS.filter(o => o.label.toLowerCase().includes(slashMenu.filter.toLowerCase()));
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {selToolbar.open && (
+        <div className="fixed z-[200001] flex items-center gap-1 bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] px-2 py-1.5" style={{ left: selToolbar.x, top: selToolbar.y }} onPointerDown={e => e.preventDefault()}>
+          {[
+            { cmd: 'bold', label: 'B', style: { fontWeight: 'bold', fontFamily: 'serif', fontSize: 13 }, active: fmt.bold },
+            { cmd: 'italic', label: 'I', style: { fontStyle: 'italic', fontFamily: 'serif', fontSize: 13 }, active: fmt.italic },
+            { cmd: 'underline', label: 'U', style: { textDecoration: 'underline', fontSize: 13 }, active: fmt.underline },
+            { cmd: 'strikeThrough', label: 'S', style: { textDecoration: 'line-through', fontSize: 13 }, active: fmt.strike },
+          ].map(b => (
+            <button key={b.cmd} onClick={() => applyFmt(b.cmd)} className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${b.active ? 'bg-slate-100 text-slate-900 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}><span style={b.style}>{b.label}</span></button>
+          ))}
+          <div className="w-px h-5 bg-slate-200/80 mx-1" />
+          <button 
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setSelToolbar(s => ({ ...s, dropdown: s.dropdown === 'font' ? null : 'font' })); }}
+            className={`px-2 h-8 flex items-center justify-center rounded-xl text-[12px] font-semibold transition-all ${selToolbar.dropdown === 'font' ? 'bg-slate-100 text-slate-900 shadow-sm border border-slate-200/50' : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            Font
+          </button>
+          <div className="w-px h-5 bg-slate-200/80 mx-1" />
+          <button 
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setSelToolbar(s => ({ ...s, dropdown: s.dropdown === 'size' ? null : 'size' })); }}
+            className={`px-2 h-8 flex items-center justify-center rounded-xl text-[12px] font-semibold transition-all ${selToolbar.dropdown === 'size' ? 'bg-slate-100 text-slate-900 shadow-sm border border-slate-200/50' : 'bg-transparent border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            Size
+          </button>
+          <div className="w-px h-5 bg-slate-200/80 mx-1" />
+          <button onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); let targetNode = window.getSelection()?.anchorNode; if (targetNode?.nodeType === 3) targetNode = targetNode.parentNode; setFormatMenu({ open: !formatMenu.open, top: r.bottom + 6, left: r.left, node: targetNode }); }} className="px-2 h-8 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-800 transition-all text-[13px] font-bold tracking-tight">Aa</button>
+          <div className="w-px h-5 bg-slate-200/80 mx-1" />
+          <button onClick={() => { document.execCommand('removeFormat', false, null); setSelToolbar({ open: false, x: 0, y: 0, dropdown: null }); }} className="px-2 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-all text-[11px] font-semibold tracking-tight">Tx</button>
+        </div>
+      )}
+
+      {selToolbar.open && selToolbar.dropdown === 'font' && (
+        <div className={`fixed z-[200002] w-48 max-h-64 overflow-y-auto notes-scroller rounded-xl border shadow-[0_12px_36px_rgba(0,0,0,0.15)] p-1.5 flex flex-col gap-0.5 ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60' : 'bg-white/95 border-slate-200/80'} backdrop-blur-2xl`} style={{ left: Math.min(selToolbar.x, window.innerWidth - 200), top: selToolbar.y + 44 }} onPointerDown={e => e.stopPropagation()}>
+          {['Inter', 'Manrope', 'Satoshi', 'General Sans', 'Plus Jakarta Sans', 'IBM Plex Sans', 'DM Sans', 'Public Sans', 'SF Pro Display', 'Helvetica Now', 'Aptos', 'Merriweather', 'Libre Baskerville', 'Playfair Display'].map(f => (
+            <button key={f} onPointerDown={(e) => { e.preventDefault(); document.execCommand('fontName', false, f); setSelToolbar(s => ({ ...s, dropdown: null })); }} className={`w-full text-left px-3 py-1.5 text-[13px] rounded-lg transition-all ${isDarkMode ? 'text-slate-200 hover:bg-slate-700/80' : 'text-slate-700 hover:bg-slate-100'}`} style={{ fontFamily: f }}>{f}</button>
+          ))}
+        </div>
+      )}
+
+      {selToolbar.open && selToolbar.dropdown === 'size' && (
+        <div className={`fixed z-[200002] w-28 max-h-64 overflow-y-auto notes-scroller rounded-xl border shadow-[0_12px_36px_rgba(0,0,0,0.15)] p-1.5 grid grid-cols-2 gap-1 ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60' : 'bg-white/95 border-slate-200/80'} backdrop-blur-2xl`} style={{ left: Math.min(selToolbar.x + 80, window.innerWidth - 120), top: selToolbar.y + 44 }} onPointerDown={e => e.stopPropagation()}>
+          {[
+            { val: 1, label: '10' },
+            { val: 2, label: '13' },
+            { val: 3, label: '16' },
+            { val: 4, label: '18' },
+            { val: 5, label: '24' },
+            { val: 6, label: '32' },
+            { val: 7, label: '48' }
+          ].map(sz => (
+            <button key={sz.val} onPointerDown={(e) => { e.preventDefault(); document.execCommand('fontSize', false, sz.val); setSelToolbar(s => ({ ...s, dropdown: null })); }} className={`w-full text-center py-1.5 text-[13px] rounded-lg transition-all ${isDarkMode ? 'text-slate-200 hover:bg-slate-700/80' : 'text-slate-700 hover:bg-slate-100'}`}>{sz.label}</button>
+          ))}
+        </div>
+      )}
+
+      {notesTranslateModal.open && (
+        <div className={`fixed z-[200003] w-64 rounded-[20px] border shadow-2xl p-3 flex flex-col gap-2.5 ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60' : 'bg-white/95 border-slate-200/80'} backdrop-blur-2xl`} style={{ left: Math.min(notesTranslateModal.x, window.innerWidth - 270), top: notesTranslateModal.y }} onPointerDown={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-1">
+            <div className={`text-[13px] font-bold tracking-tight ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>Translate to</div>
+            <button onPointerDown={(e) => { e.preventDefault(); setNotesTranslateModal({ open: false, x: 0, y: 0, text: '', range: null, language: 'Spanish', loading: false, dropdownOpen: false }); }} className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${isDarkMode ? 'hover:bg-slate-700 text-slate-400 hover:text-slate-200' : 'hover:bg-slate-100 text-slate-400 hover:text-slate-600'}`}><X size={14} strokeWidth={2.5} /></button>
+          </div>
+          <div className="relative">
+            <button 
+              onPointerDown={(e) => { e.preventDefault(); setNotesTranslateModal(s => ({ ...s, dropdownOpen: !s.dropdownOpen })); }}
+              className={`w-full text-[13px] font-medium p-2.5 rounded-xl border flex items-center justify-between transition-all ${isDarkMode ? 'bg-slate-700/50 border-slate-600 text-slate-200 hover:border-slate-500 hover:bg-slate-700' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-300 shadow-sm'}`}
+            >
+              {notesTranslateModal.language || 'Spanish'}
+              <ChevronDown size={14} className={`transition-transform duration-200 ${notesTranslateModal.dropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {notesTranslateModal.dropdownOpen && (
+              <div className={`absolute top-full left-0 mt-1.5 w-full max-h-48 overflow-y-auto notes-scroller rounded-xl border shadow-[0_8px_30px_rgba(0,0,0,0.12)] p-1 z-[200004] ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60 backdrop-blur-2xl' : 'bg-white/95 border-slate-200/80 backdrop-blur-2xl'}`}>
+                {['Spanish', 'French', 'German', 'Japanese', 'Chinese', 'Italian', 'Russian', 'Arabic', 'Portuguese'].map(l => (
+                  <button key={l} onPointerDown={(e) => { e.preventDefault(); setNotesTranslateModal(s => ({ ...s, language: l, dropdownOpen: false })); }} className={`w-full text-left px-3 py-2 text-[13px] rounded-lg transition-all ${isDarkMode ? 'text-slate-200 hover:bg-slate-700/80' : 'text-slate-700 hover:bg-slate-100'} ${notesTranslateModal.language === l ? (isDarkMode ? 'bg-slate-700/80 font-bold' : 'bg-slate-100 font-bold') : 'font-medium'}`}>{l}</button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button 
+            onPointerDown={async (e) => {
+              e.preventDefault();
+              setNotesTranslateModal(s => ({ ...s, loading: true }));
+              await new Promise(r => setTimeout(r, 600));
+              if (notesTranslateModal.range) {
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(notesTranslateModal.range);
+                document.execCommand('insertText', false, `[${notesTranslateModal.language} translation: ${notesTranslateModal.text}]`);
+              }
+              setNotesTranslateModal({ open: false, x: 0, y: 0, text: '', range: null, language: 'Spanish', loading: false, dropdownOpen: false });
+            }}
+            className={`mt-1 w-full flex items-center justify-center py-2 rounded-xl text-white text-[13px] font-bold transition-all disabled:opacity-50 ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500' : 'bg-slate-900 hover:bg-slate-800 shadow-md shadow-slate-900/10'}`}
+            disabled={notesTranslateModal.loading}
+          >
+            {notesTranslateModal.loading ? 'Translating...' : 'Translate'}
+          </button>
+        </div>
+      )}
+
+      {slashMenu.open && (
+        <div ref={slashRef} className={`fixed z-[200001] w-[240px] max-h-[260px] overflow-y-auto notes-scroller rounded-[20px] border p-2 flex flex-col gap-0.5 shadow-[0_12px_36px_rgba(0,0,0,0.15)] ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60 text-slate-100' : 'bg-white/95 border-slate-200/60 text-slate-800'} backdrop-blur-2xl`} style={{ left: Math.min(slashMenu.x + 16, window.innerWidth - 248), top: slashMenu.y }}>
+          {filteredSlash.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-slate-400 text-center font-medium">No results</div>
+          ) : filteredSlash.map((opt, idx) => (
+            <button key={opt.key} onPointerDown={e => { e.preventDefault(); execSlashCmd(opt.key); }} className={`w-full text-left px-3 py-2 rounded-[14px] text-sm transition-all flex flex-col gap-0.5 ${idx === slashMenu.activeIdx ? (isDarkMode ? 'bg-slate-700 text-white border-slate-600' : 'bg-slate-100/80 text-slate-900 border-slate-200/40') : 'text-slate-600 hover:bg-slate-50/80 border border-transparent'}`}>
+              <span className="font-medium text-[13px]">{opt.label}</span>
+              <span className="text-[11px] text-slate-400 font-normal">{opt.desc}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {dragHandle.visible && dragHandle.node && (
+        <div
+          className="notes-drag-handle fixed z-[200001] cursor-pointer text-slate-300 hover:text-slate-500 hover:bg-slate-100/80 rounded flex items-center justify-center transition-all"
+          style={{ top: dragHandle.top + 2, left: dragHandle.left, width: 22, height: 22 }}
+          onMouseEnter={() => { if (dragHideTimer.current) { clearTimeout(dragHideTimer.current); dragHideTimer.current = null; } }}
+          onMouseLeave={() => { dragHideTimer.current = setTimeout(() => setDragHandle(d => ({ ...d, visible: false, node: null })), 300); }}
+          onClick={e => { e.preventDefault(); e.stopPropagation(); const r = dragHandle.node.getBoundingClientRect(); setFormatMenu({ open: !formatMenu.open, top: r.bottom + 6, left: r.left, node: dragHandle.node }); }}
+          title="Click to format block"
+        >
+          <svg width="12" height="14" viewBox="0 0 12 14" fill="currentColor">
+            <circle cx="3.5" cy="3" r="1.5"/><circle cx="8.5" cy="3" r="1.5"/>
+            <circle cx="3.5" cy="7" r="1.5"/><circle cx="8.5" cy="7" r="1.5"/>
+            <circle cx="3.5" cy="11" r="1.5"/><circle cx="8.5" cy="11" r="1.5"/>
+          </svg>
+        </div>
+      )}
+
+      {formatMenu.open && formatMenu.node && (
+        <>
+          <div className="fixed inset-0 z-[200000]" onPointerDown={() => setFormatMenu({ open: false, top: 0, left: 0, node: null })} />
+          <div className={`notes-format-menu fixed z-[200001] w-[220px] rounded-[20px] border p-3.5 shadow-[0_12px_36px_rgba(0,0,0,0.15)] flex flex-col gap-3 ${isDarkMode ? 'bg-slate-800/95 border-slate-700/60 text-slate-100' : 'bg-white/95 border-slate-200/60 text-slate-800'} backdrop-blur-2xl`} style={{ top: Math.min(formatMenu.top, window.innerHeight - 250), left: Math.min(formatMenu.left + 24, window.innerWidth - 240) }} onPointerDown={e => e.stopPropagation()}>
+            <div className="grid grid-cols-5 gap-1.5">
+              {[{tag:'H1',label:<Type size={14} />,tip:'Title'},{tag:'H2',label:<Heading1 size={14} />,tip:'Heading 1'},{tag:'H3',label:<Heading2 size={14} />,tip:'Heading 2'},{tag:'H4',label:<Heading3 size={14} />,tip:'Heading 3'},{tag:'P',label:<AlignLeft size={14} />,tip:'Paragraph'}].map(item => {
+                const isActive = formatMenu.node && formatMenu.node.tagName === item.tag;
+                const activeClass = isDarkMode ? 'bg-slate-700 border-slate-600 text-white shadow-sm' : 'bg-slate-100 border-slate-200/80 text-slate-900 shadow-sm';
+                const inactiveClass = isDarkMode ? 'bg-transparent border-transparent hover:bg-slate-700/50 text-slate-400 hover:text-slate-200' : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-700';
+                return <button key={item.tag} title={item.tip} onClick={() => changeBlockTag(formatMenu.node, item.tag)} className={`h-8 rounded-xl text-xs font-semibold flex items-center justify-center transition-all border ${isActive ? activeClass : inactiveClass}`}>{item.label}</button>;
+              })}
+            </div>
+            <div className="h-px bg-slate-100" />
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { align: 'left', icon: <AlignLeft size={14} /> },
+                { align: 'center', icon: <AlignCenter size={14} /> },
+                { align: 'right', icon: <AlignRight size={14} /> },
+                { align: 'justify', icon: <AlignJustify size={14} /> }
+              ].map(({ align, icon }) => {
+                const isActive = (formatMenu.node && formatMenu.node.style && formatMenu.node.style.textAlign || 'left') === align;
+                const activeClass = isDarkMode ? 'bg-slate-700 border-slate-600 text-white shadow-sm' : 'bg-slate-100 border-slate-200/80 text-slate-900 shadow-sm';
+                const inactiveClass = isDarkMode ? 'bg-transparent border-transparent hover:bg-slate-700/50 text-slate-400 hover:text-slate-200' : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-700';
+                return <button key={align} title={`Align ${align}`} onClick={() => { if (formatMenu.node) formatMenu.node.style.textAlign = align; setFormatMenu(m => ({ ...m, open: false })); }} className={`h-8 rounded-xl flex items-center justify-center transition-all border ${isActive ? activeClass : inactiveClass}`}>{icon}</button>;
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="fixed z-[100000] animate-in fade-in shadow-[0_24px_80px_-12px_rgba(0,0,0,0.18)] rounded-[24px] flex flex-col bg-white/95 backdrop-blur-[32px] border border-slate-200/60" style={{ width: 500, height: 600, left: pos.x, top: pos.y }}>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/50 bg-white/40 rounded-t-[24px] cursor-grab active:cursor-grabbing select-none" onPointerDown={handleHeaderPointerDown}>
+          <h2 className="text-[14px] font-semibold text-slate-800 flex items-center gap-2.5 pointer-events-none tracking-tight">
+            <FileText size={16} className="text-violet-500" /> Meeting Notes
+          </h2>
+          <div className="flex items-center gap-3 notes-no-drag">
+            <button className="px-3.5 py-1.5 bg-white text-slate-600 border border-slate-200/80 rounded-xl text-[11px] font-medium shadow-sm hover:shadow-md hover:text-slate-800 transition-all" onClick={() => alert('Notes saved to workspace.')}>Save to Docs</button>
+            <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100/80 rounded-xl transition-all" onClick={onClose}><X size={14} /></button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto notes-scroller group" id="notes-scroller">
+          <style>{`
+            .notes-scroller { scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color 0.2s; }
+            .notes-scroller:hover { scrollbar-color: rgba(148, 163, 184, 0.4) transparent; }
+            .notes-scroller::-webkit-scrollbar { width: 6px; }
+            .notes-scroller::-webkit-scrollbar-track { background: transparent; }
+            .notes-scroller::-webkit-scrollbar-thumb { background: transparent; border-radius: 10px; transition: background 0.2s; }
+            .notes-scroller:hover::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); }
+          `}</style>
+          <div className="min-h-full px-6 pt-5 pb-16">
+            <div
+              ref={notesCardRef}
+              contentEditable="true"
+suppressContentEditableWarning
+              onClick={handleNotesClick}
+              onKeyDown={handleNotesKeyDown}
+              onMouseMove={handleEditorMouseMove}
+              onMouseLeave={handleEditorMouseLeave}
+              onMouseUp={handleEditorMouseUp}
+              onBlur={() => setSelToolbar({ open: false, x: 0, y: 0 })}
+              className={`w-full outline-none text-[15px] leading-[1.75] ${isDarkMode ? 'text-slate-100' : 'text-slate-800'}`}
+              data-placeholder="Type your notes here — use '/' for commands"
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+const SummaryModal = ({ isOpen, onClose }) => {
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [lang, setLang] = useState('EN');
+
+  if (!isOpen) return null;
+
+  const getTranslatedText = (key) => {
+    if (lang === 'ES') {
+      return {
+        title: "Sincronización en vivo",
+        status: "Resumiendo activamente",
+        point1: "Estrategia de campaña del tercer trimestre finalizada; alineando métricas.",
+        point2: "Acción: Sarah finalizará la presentación de mañana.",
+        point3: "Bloqueo: El despliegue de la API retrasa a ingeniería."
+      }[key] || key;
+    }
+    if (lang === 'FR') {
+      return {
+        title: "Synchronisation en direct",
+        status: "Résumé actif",
+        point1: "Stratégie de campagne T3 finalisée ; alignement des métriques.",
+        point2: "Action : Sarah finalise la présentation de demain.",
+        point3: "Blocage : Le déploiement de l'API retarde l'ingénierie."
+      }[key] || key;
+    }
+    return {
+      title: "Live Sync",
+      status: "Actively summarizing",
+      point1: "Finalized Q3 campaign strategy; aligning on next-step metrics.",
+      point2: "Action: Sarah to finalize all-hands deck by tomorrow.",
+      point3: "Blocker: Backend API deployment holding up engineering."
+    }[key] || key;
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
+      <div className="bg-white/[93%] backdrop-blur-[60px] border border-white/60 shadow-[0_32px_120px_rgba(0,0,0,0.04)] rounded-[32px] w-full max-w-lg overflow-hidden flex flex-col max-h-[85vh]" onClick={e => {
+        e.stopPropagation();
+        if (isExportOpen) setIsExportOpen(false);
+        if (isLangOpen) setIsLangOpen(false);
+      }}>
+        <div className="flex items-center justify-between px-7 py-6 border-b border-white/40 shrink-0">
+          <div className="flex items-center gap-4">
+            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
+              <div className="relative flex h-3 w-3 items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+              </div>
+              {getTranslatedText('title')}
+            </h2>
+            <span className="text-[11px] font-medium text-violet-600 bg-violet-100/50 px-2.5 py-1 rounded-full border border-violet-200/50 uppercase tracking-wider">{getTranslatedText('status')}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsLangOpen(!isLangOpen); setIsExportOpen(false); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100/80 rounded-xl transition-colors"
+              >
+                <Globe size={14} /> {lang}
+              </button>
+              {isLangOpen && (
+                <div className="absolute top-full right-0 mt-2 w-32 bg-white/[93%] backdrop-blur-xl border border-white/60 shadow-[0_16px_40px_rgba(0,0,0,0.1)] rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 z-50 p-1">
+                  {['EN', 'ES', 'FR'].map(l => (
+                    <button key={l} onClick={() => { setLang(l); setIsLangOpen(false); }} className={`w-full text-left px-3 py-2 text-sm font-medium rounded-xl transition-colors ${lang === l ? 'bg-violet-50 text-violet-600' : 'text-gray-700 hover:bg-gray-50'}`}>
+                      {l === 'EN' ? 'English' : l === 'ES' ? 'Español' : 'Français'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="px-7 py-6 overflow-y-auto thin-scrollbar flex-1">
+          <ul className="space-y-5">
+            <li className="flex gap-3 items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 mt-2 shrink-0"></div>
+              <p className="text-[15px] leading-relaxed text-gray-700 font-medium">
+                {lang === 'EN' ? (
+                  <>Finalized Q3 campaign strategy; aligning on next-step metrics.</>
+                ) : (
+                  <>{getTranslatedText('point1')}</>
+                )}
+              </p>
+            </li>
+            <li className="flex gap-3 items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-400 mt-2 shrink-0"></div>
+              <p className="text-[15px] leading-relaxed text-gray-700 font-medium">
+                {lang === 'EN' ? (
+                  <><span className="text-gray-900 font-semibold">Action:</span> Sarah to finalize all-hands deck by tomorrow.</>
+                ) : (
+                  <>{getTranslatedText('point2')}</>
+                )}
+              </p>
+            </li>
+            <li className="flex gap-3 items-start">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0"></div>
+              <p className="text-[15px] leading-relaxed text-gray-700 font-medium">
+                {lang === 'EN' ? (
+                  <><span className="text-gray-900 font-semibold">Blocker:</span> Backend API deployment holding up engineering.</>
+                ) : (
+                  <>{getTranslatedText('point3')}</>
+                )}
+              </p>
+            </li>
+          </ul>
+        </div>
+        <div className="px-7 py-5 bg-gray-50/50 border-t border-white/40 flex items-center justify-end gap-3 shrink-0">
+          <button className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-white/80 rounded-xl transition-colors border border-transparent hover:border-gray-200">
+            Copy to Clipboard
+          </button>
+          <div className="relative">
+            <button 
+              onClick={(e) => { e.stopPropagation(); setIsExportOpen(!isExportOpen); setIsLangOpen(false); }}
+              className="px-4 py-2 text-sm font-medium text-white bg-violet-500 hover:bg-violet-600 rounded-xl transition-colors shadow-sm flex items-center gap-2"
+            >
+              Export <ChevronDown size={16} className={`transition-transform ${isExportOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isExportOpen && (
+              <div className="absolute bottom-full right-0 mb-2 w-48 bg-white/90 backdrop-blur-xl border border-white/60 shadow-[0_16px_40px_rgba(0,0,0,0.1)] rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 z-50 p-1">
+                <button className="w-full text-left px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-600 rounded-xl transition-colors">
+                  Export to Compose
+                </button>
+                <button className="w-full text-left px-3 py-2.5 text-sm font-medium text-gray-700 hover:bg-violet-50 hover:text-violet-600 rounded-xl transition-colors">
+                  Download as JSON
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MeetingsModal = ({ isOpen, onClose, globalEvents, setGlobalEvents, setInvites }) => {
+  const [meetings, setMeetings] = useState([
+    { id: 1, title: 'Design Sync', date: '2026-10-16', time: '14:00', privacy: 'group', recurrence: 'none' },
+    { id: 2, title: 'Weekly Engineering Standup', date: '2026-10-17', time: '10:00', privacy: 'group', recurrence: 'weekly' }
+  ]);
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editLink, setEditLink] = useState('');
+  const [editPrivacy, setEditPrivacy] = useState('group'); // 'private' or 'group'
+  const [editRecurrence, setEditRecurrence] = useState('none');
+  const [editGuest, setEditGuest] = useState('');
+  const [editGuests, setEditGuests] = useState([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  
+  const [isDictating, setIsDictating] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState([]);
+
+  if (!isOpen) return null;
+
+  const handleAddGuest = (e) => {
+    if (e.key === 'Enter' && editGuest.trim()) {
+      setEditGuests([...editGuests, editGuest.trim()]);
+      setEditGuest('');
+    }
+  };
+
+  const removeGuest = (index) => {
+    setEditGuests(editGuests.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async (id) => {
+    if (!editTitle.trim()) return;
+    
+    let finalDate = editDate || new Date().toISOString().split('T')[0];
+    const meetingData = { 
+      id: id === 'new' ? Date.now() : id, 
+      title: editTitle, 
+      date: finalDate, 
+      time: editTime || '10:00',
+      description: editDescription,
+      link: editLink,
+      privacy: editPrivacy,
+      recurrence: editRecurrence,
+      guests: editGuests
+    };
+    
+    if (id === 'new') {
+      setMeetings([...meetings, meetingData]);
+      
+      try {
+        const token = localStorage.getItem('rc.token');
+        if (token) {
+          await fetch(`${API_BASE_URL}/api/events`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` 
+            },
+            body: JSON.stringify(meetingData)
+          });
+          
+          if (editGuests.length > 0) {
+            alert(`Invitations sent to ${editGuests.join(', ')}`);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to save meeting to backend', err);
+      }
+    } else {
+      setMeetings(meetings.map(m => m.id === id ? meetingData : m));
+    }
+    
+    setEditingId(null);
+    setAttachedFiles([]);
+    setShowAdvanced(false);
+  };
+
+  const startEdit = (meeting) => {
+    setEditingId(meeting.id);
+    setEditTitle(meeting.title || '');
+    setEditDate(meeting.date || '');
+    setEditTime(meeting.time || '');
+    setEditDescription(meeting.description || '');
+    setEditLink(meeting.link || '');
+    setEditPrivacy(meeting.privacy || 'group');
+    setEditRecurrence(meeting.recurrence || 'none');
+    setEditGuests(meeting.guests || []);
+    setShowAdvanced(!!(meeting.description || meeting.link || meeting.guests?.length > 0));
+  };
+
+  const startAdd = () => {
+    setEditingId('new');
+    setEditTitle('');
+    setEditDate('');
+    setEditTime('');
+    setEditDescription('');
+    setEditLink('');
+    setEditPrivacy('group');
+    setEditRecurrence('none');
+    setEditGuests([]);
+    setShowAdvanced(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      setAttachedFiles([...attachedFiles, ...Array.from(e.dataTransfer.files)]);
+    }
+  };
+
+  const handleScheduleViaAI = () => {
+    setIsAIProcessing(true);
+    setTimeout(() => {
+      setEditTitle("Design Sync extracted from document");
+      setEditDate("2026-10-20");
+      setEditTime("15:30");
+      setIsAIProcessing(false);
+    }, 1500);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
+      <div className="relative w-full max-w-lg">
+        <div 
+          className="bg-white/[93%] backdrop-blur-[60px] border border-white/60 shadow-[0_32px_120px_rgba(0,0,0,0.04)] rounded-[32px] w-full overflow-hidden flex flex-col max-h-[85vh] relative" 
+          onClick={e => e.stopPropagation()}
+          onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+          onDragLeave={() => setIsDragOver(false)}
+          onDrop={handleDrop}
+        >
+
+        <div className="flex items-center justify-between px-7 py-6 border-b border-white/40 shrink-0">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-3">
+            <Users className="text-violet-500" size={24} /> Upcoming Meetings
+          </h2>
+          <div className="flex gap-2 items-center">
+            <button onClick={startAdd} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100/50 rounded-full transition-colors" disabled={editingId !== null}>
+              <Plus size={20} />
+            </button>
+          </div>
+        </div>
+
+        {isDragOver && (
+          <div className="absolute inset-0 z-50 bg-violet-500/10 backdrop-blur-sm flex flex-col items-center justify-center border-2 border-violet-500 border-dashed rounded-[32px] m-4">
+            <FilePlus2 className="text-violet-500 mb-2" size={32} />
+            <p className="text-violet-700 font-medium">Drop files to parse schedule</p>
+          </div>
+        )}
+
+        <div className="px-7 py-6 overflow-y-auto thin-scrollbar flex-1 space-y-4">
+          {editingId === 'new' && (
+            <div className="p-5 border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/50 rounded-3xl mb-4 animate-in fade-in zoom-in-95 relative">
+              <div className="absolute top-4 right-4 z-10">
+                <button 
+                  onClick={() => setIsDictating(!isDictating)}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all ${isDictating ? 'bg-red-500 text-white animate-pulse' : 'bg-white text-gray-500 hover:text-violet-600 border border-gray-200/50 hover:border-violet-200'}`}
+                  title="Dictate Meeting Details"
+                >
+                  <Mic size={18} />
+                </button>
+              </div>
+              <input type="text" placeholder={isDictating ? "Listening..." : "Meeting Title"} className="w-full text-base font-medium text-gray-800 bg-transparent outline-none mb-4 placeholder:text-gray-400 pr-12" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus />
+              
+              <div className="flex gap-3 mb-4">
+                 <input type="date" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                 <input type="time" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editTime} onChange={e => setEditTime(e.target.value)} />
+              </div>
+
+              <div className="mb-4">
+                <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs font-medium text-violet-600 flex items-center gap-1 hover:text-violet-700 transition-colors">
+                  {showAdvanced ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {showAdvanced ? "Hide Options" : "More Options"}
+                </button>
+              </div>
+
+              {showAdvanced && (
+                <div className="space-y-4 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex gap-3 items-start">
+                     <AlignLeft size={16} className="text-gray-400 mt-2.5 shrink-0"/>
+                     <textarea placeholder="Description" rows={2} className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300 resize-none" value={editDescription} onChange={e => setEditDescription(e.target.value)}></textarea>
+                  </div>
+                  <div className="flex gap-3 items-center">
+                     <LinkIcon size={16} className="text-gray-400 shrink-0"/>
+                     <input type="text" placeholder="Meeting Link (e.g. https://room.regaarder.com/sync)" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editLink} onChange={e => setEditLink(e.target.value)} />
+                  </div>
+                  <div className="flex gap-3 items-center">
+                     <Users size={16} className="text-gray-400 shrink-0"/>
+                     <div className="flex-1 flex flex-wrap gap-2 items-center bg-white/60 border border-gray-200/50 rounded-xl p-1.5 focus-within:border-violet-300">
+                        {editGuests.map((g, i) => (
+                           <span key={i} className="flex items-center gap-1 bg-violet-100/50 text-violet-700 px-2 py-0.5 rounded-md text-xs font-medium">
+                              {g}
+                              <button onClick={() => removeGuest(i)} className="hover:text-violet-900"><X size={12}/></button>
+                           </span>
+                        ))}
+                        <input type="text" placeholder={editGuests.length === 0 ? "Add guests (Press Enter)" : "Add more..."} className="flex-1 min-w-[120px] bg-transparent text-sm outline-none px-2 text-gray-700" value={editGuest} onChange={e => setEditGuest(e.target.value)} onKeyDown={handleAddGuest} />
+                     </div>
+                  </div>
+                  <div className="flex gap-3 items-center">
+                    <div className="flex items-center gap-2 flex-1">
+                       <Clock size={16} className="text-gray-400 shrink-0"/>
+                       <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editRecurrence} onChange={e => setEditRecurrence(e.target.value)}>
+                         <option value="none">Does not repeat</option>
+                         <option value="daily">Daily</option>
+                         <option value="weekly">Weekly</option>
+                         <option value="monthly">Monthly</option>
+                       </select>
+                    </div>
+                    <div className="flex items-center gap-2 flex-1">
+                       {editPrivacy === 'private' ? <Lock size={16} className="text-gray-400 shrink-0"/> : <Users2 size={16} className="text-gray-400 shrink-0"/>}
+                       <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editPrivacy} onChange={e => setEditPrivacy(e.target.value)}>
+                         <option value="group">Visible to Group</option>
+                         <option value="private">Private</option>
+                       </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {attachedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {attachedFiles.map((f, i) => (
+                    <span key={i} className="px-2.5 py-1 bg-violet-100/50 text-violet-700 text-xs font-medium rounded-lg border border-violet-200/50 flex items-center gap-1">
+                      <FileSpreadsheet size={12}/> {f.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                <button onClick={() => handleSave('new')} className="flex-1 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors shadow-sm">Save Meeting</button>
+                <button onClick={() => {setEditingId(null); setAttachedFiles([]); setShowAdvanced(false);}} className="px-4 py-2 bg-white text-gray-600 text-sm font-medium rounded-xl border border-gray-200/50 hover:bg-gray-50 transition-colors">Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {meetings.map(meeting => (
+            editingId === meeting.id ? (
+              <div key={meeting.id} className="p-5 border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white/50 rounded-3xl transition-colors">
+                <input type="text" className="w-full text-base font-medium text-gray-800 bg-transparent outline-none mb-4" value={editTitle} onChange={e => setEditTitle(e.target.value)} autoFocus />
+                
+                <div className="flex gap-3 mb-4">
+                   <input type="date" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editDate} onChange={e => setEditDate(e.target.value)} />
+                   <input type="time" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editTime} onChange={e => setEditTime(e.target.value)} />
+                </div>
+                
+                <div className="mb-4">
+                  <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-xs font-medium text-violet-600 flex items-center gap-1 hover:text-violet-700 transition-colors">
+                    {showAdvanced ? <ChevronUp size={14}/> : <ChevronDown size={14}/>} {showAdvanced ? "Hide Options" : "More Options"}
+                  </button>
+                </div>
+
+                {showAdvanced && (
+                  <div className="space-y-4 mb-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="flex gap-3 items-start">
+                       <AlignLeft size={16} className="text-gray-400 mt-2.5 shrink-0"/>
+                       <textarea placeholder="Description" rows={2} className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300 resize-none" value={editDescription} onChange={e => setEditDescription(e.target.value)}></textarea>
+                    </div>
+                    <div className="flex gap-3 items-center">
+                       <LinkIcon size={16} className="text-gray-400 shrink-0"/>
+                       <input type="text" placeholder="Meeting Link (e.g. https://room.regaarder.com/sync)" className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editLink} onChange={e => setEditLink(e.target.value)} />
+                    </div>
+                    <div className="flex gap-3 items-center">
+                       <Users size={16} className="text-gray-400 shrink-0"/>
+                       <div className="flex-1 flex flex-wrap gap-2 items-center bg-white/60 border border-gray-200/50 rounded-xl p-1.5 focus-within:border-violet-300">
+                          {editGuests.map((g, i) => (
+                             <span key={i} className="flex items-center gap-1 bg-violet-100/50 text-violet-700 px-2 py-0.5 rounded-md text-xs font-medium">
+                                {g}
+                                <button onClick={() => removeGuest(i)} className="hover:text-violet-900"><X size={12}/></button>
+                             </span>
+                          ))}
+                          <input type="text" placeholder={editGuests.length === 0 ? "Add guests (Press Enter)" : "Add more..."} className="flex-1 min-w-[120px] bg-transparent text-sm outline-none px-2 text-gray-700" value={editGuest} onChange={e => setEditGuest(e.target.value)} onKeyDown={handleAddGuest} />
+                       </div>
+                    </div>
+                    <div className="flex gap-3 items-center">
+                      <div className="flex items-center gap-2 flex-1">
+                         <Clock size={16} className="text-gray-400 shrink-0"/>
+                         <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editRecurrence} onChange={e => setEditRecurrence(e.target.value)}>
+                           <option value="none">Does not repeat</option>
+                           <option value="daily">Daily</option>
+                           <option value="weekly">Weekly</option>
+                           <option value="monthly">Monthly</option>
+                         </select>
+                      </div>
+                      <div className="flex items-center gap-2 flex-1">
+                         {editPrivacy === 'private' ? <Lock size={16} className="text-gray-400 shrink-0"/> : <Users2 size={16} className="text-gray-400 shrink-0"/>}
+                         <select className="flex-1 px-3 py-2 text-sm text-gray-700 bg-white/60 border border-gray-200/50 rounded-xl outline-none focus:border-violet-300" value={editPrivacy} onChange={e => setEditPrivacy(e.target.value)}>
+                           <option value="group">Visible to Group</option>
+                           <option value="private">Private</option>
+                         </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button onClick={() => handleSave(meeting.id)} className="flex-1 py-2 bg-violet-500 text-white text-sm font-medium rounded-xl hover:bg-violet-600 transition-colors shadow-sm">Save Meeting</button>
+                  <button onClick={() => {setEditingId(null); setAttachedFiles([]); setShowAdvanced(false);}} className="px-4 py-2 bg-white text-gray-600 text-sm font-medium rounded-xl border border-gray-200/50 hover:bg-gray-50 transition-colors">Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <div key={meeting.id} className="group p-5 border border-white/40 bg-gray-50/50 rounded-3xl hover:bg-white/80 transition-all shadow-sm hover:shadow-md flex justify-between items-center cursor-pointer" onClick={() => startEdit(meeting)}>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-violet-100 flex items-center justify-center text-violet-500 font-semibold text-sm shrink-0">
+                    {meeting.date.split('-')[2] || '?'}
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-800">{meeting.title}</div>
+                    <div className="text-sm text-gray-500 flex gap-2 items-center mt-1">
+                       <span>{meeting.time}</span>
+                    </div>
+                  </div>
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setMeetings(meetings.filter(m => m.id !== meeting.id)); }} 
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )
+          ))}
+          {meetings.length === 0 && editingId !== 'new' && (
+            <div className="text-center py-8 text-gray-400 text-sm">No upcoming meetings</div>
+          )}
+        </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RecordingModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Disc className="text-red-500" size={24} /> Recording Settings</h2>
+        </div>
+        <div className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-gray-800">Record Video & Audio</div>
+                <div className="text-sm text-gray-500">Capture the main stage and all participants</div>
+              </div>
+              <div onClick={onClose} className="w-12 h-6 bg-violet-500 rounded-full relative cursor-pointer">
+                <div className="absolute right-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium text-gray-800">Include Transcriptions</div>
+                <div className="text-sm text-gray-500">Save AI generated transcript with the recording</div>
+              </div>
+              <div onClick={onClose} className="w-12 h-6 bg-violet-500 rounded-full relative cursor-pointer">
+                <div className="absolute right-1 top-1 bg-white w-4 h-4 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => { onClose(); startRoomRecording(); }} className="w-full mt-8 py-3 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl font-medium transition-colors">Start Recording</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CalendarModal = ({ isOpen, onClose, globalEvents, setGlobalEvents }) => {
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 9, 1)); // October 2026
+  const [localEvents, setLocalEvents] = useState({ '2026-10-15': [{ title: 'Product Launch', link: '' }] });
+  
+  const events = globalEvents || localEvents;
+  const setEvents = setGlobalEvents || setLocalEvents;
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [newEventTitle, setNewEventTitle] = useState('');
+  
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = useState(false);
+  const [editingEventIndex, setEditingEventIndex] = useState(null);
+  const [editingEventTitle, setEditingEventTitle] = useState('');
+  const longPressTimer = useRef(null);
+
+  if (!isOpen) return null;
+  
+  const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  
+  const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+  const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth());
+  const firstDay = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth());
+  const blanks = Array.from({ length: firstDay }, (_, i) => i);
+  const dates = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+  const addEvent = () => {
+    if (!newEventTitle.trim() || !selectedDate) return;
+    const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`;
+    setEvents(prev => ({
+      ...prev,
+      [dateStr]: [...(prev[dateStr] || []), { title: newEventTitle, link: '' }]
+    }));
+    setNewEventTitle('');
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100000] bg-black/10 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in" onClick={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Calendar className="text-violet-500" size={24} /> Calendar</h2>
+        </div>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronLeft size={20} /></button>
+          <button onClick={() => setIsMonthPickerOpen(!isMonthPickerOpen)} className="font-medium text-gray-700 hover:bg-gray-100 px-4 py-1.5 rounded-xl flex items-center gap-2 transition-colors">
+            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+            <ChevronDown size={14} className={`text-gray-400 transition-transform ${isMonthPickerOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><ChevronRight size={20} /></button>
+        </div>
+        
+        {!isMonthPickerOpen ? (
+          <>
+            <div className="grid grid-cols-7 gap-2 mb-2">
+              {days.map(day => (
+                <div key={day} className="text-center text-xs font-medium text-gray-400">{day}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-2">
+              {blanks.map(blank => (
+                <div key={`blank-${blank}`} className="text-center p-2 text-sm text-gray-300"></div>
+              ))}
+              {dates.map(date => {
+                const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${date}`;
+                const hasEvents = events[dateStr] && events[dateStr].length > 0;
+                const isSelected = selectedDate === date;
+                return (
+                  <div 
+                    key={date} 
+                    onClick={() => {
+                      setSelectedDate(isSelected ? null : date);
+                      setEditingEventIndex(null); // Reset edit state when changing date
+                    }}
+                    className={`relative text-center p-2 text-sm rounded-full cursor-pointer transition-colors flex items-center justify-center
+                      ${isSelected ? 'bg-violet-500 text-white font-medium shadow-md hover:bg-violet-600' : 'text-gray-700 hover:bg-gray-100'}`}
+                  >
+                    {date}
+                    {hasEvents && !isSelected && (
+                      <div className="absolute bottom-1 w-1 h-1 bg-violet-500 rounded-full"></div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="py-2 animate-in fade-in">
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {monthNames.map((m, i) => (
+                <button 
+                  key={m}
+                  onClick={() => { setCurrentDate(new Date(currentDate.getFullYear(), i, 1)); setIsMonthPickerOpen(false); }}
+                  className={`text-sm py-2 rounded-xl transition-all ${currentDate.getMonth() === i ? 'bg-violet-500 text-white font-medium shadow-md' : 'hover:bg-gray-50 text-gray-600'}`}
+                >
+                  {m.substring(0, 3)}
+                </button>
+              ))}
+            </div>
+            <div className="border-t border-gray-100 pt-4 grid grid-cols-4 gap-2">
+              {Array.from({length: 12}, (_, i) => currentDate.getFullYear() - 5 + i).map(y => (
+                <button
+                  key={y}
+                  onClick={() => { setCurrentDate(new Date(y, currentDate.getMonth(), 1)); setIsMonthPickerOpen(false); }}
+                  className={`text-sm py-2 rounded-xl transition-all ${currentDate.getFullYear() === y ? 'bg-violet-100 text-violet-700 font-medium' : 'hover:bg-gray-50 text-gray-600'}`}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedDate && !isMonthPickerOpen && (
+          <div className="mt-6 pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-bottom-2">
+            <div className="text-sm font-medium text-gray-700 mb-2">
+              Events for {monthNames[currentDate.getMonth()]} {selectedDate}
+            </div>
+            <div className="space-y-2 mb-3">
+              {events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`]?.map((ev, i) => {
+                const dateStr = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`;
+                
+                if (editingEventIndex === i) {
+                  return (
+                    <div key={i} className="flex flex-col gap-2 bg-violet-50 p-2.5 rounded-xl border border-violet-100">
+                      <input 
+                        type="text" 
+                        className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-violet-400 w-full"
+                        value={editingEventTitle}
+                        autoFocus
+                        onChange={(e) => setEditingEventTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const newEvents = [...events[dateStr]];
+                            newEvents[i] = typeof newEvents[i] === 'object' ? { ...newEvents[i], title: editingEventTitle } : editingEventTitle;
+                            setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
+                            setEditingEventIndex(null);
+                          }
+                        }}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button onClick={() => {
+                           const newEvents = events[dateStr].filter((_, idx) => idx !== i);
+                           setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
+                           setEditingEventIndex(null);
+                        }} className="text-xs px-2 py-1 rounded-md text-red-500 hover:bg-red-50 font-medium transition-colors">Delete</button>
+                        <button onClick={() => setEditingEventIndex(null)} className="text-xs px-2 py-1 rounded-md text-gray-500 hover:bg-gray-100 font-medium transition-colors">Cancel</button>
+                        <button onClick={() => {
+                           const newEvents = [...events[dateStr]];
+                           newEvents[i] = typeof newEvents[i] === 'object' ? { ...newEvents[i], title: editingEventTitle } : editingEventTitle;
+                           setEvents(prev => ({ ...prev, [dateStr]: newEvents }));
+                           setEditingEventIndex(null);
+                        }} className="text-xs px-2 py-1 rounded-md bg-violet-500 text-white hover:bg-violet-600 font-medium transition-colors">Save</button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div 
+                    key={i} 
+                    className="group text-xs bg-violet-50 text-violet-700 px-3 py-2 rounded-xl flex flex-col gap-1 hover:bg-violet-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
+                      <span className="flex-1 truncate font-medium">{ev.title || ev}</span>
+                      <button 
+                        onClick={() => {
+                          setEditingEventIndex(i);
+                          setEditingEventTitle(ev.title || ev);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-violet-400 hover:text-violet-700 transition-all rounded-md hover:bg-violet-200/50"
+                      >
+                        <Pen size={14} />
+                      </button>
+                    </div>
+                    {ev.link && (
+                      <a href={ev.link} target="_blank" rel="noreferrer" className="text-violet-500 flex items-center gap-1 hover:underline ml-3.5 w-fit">
+                        <LinkIcon size={12} /> Join Meeting
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+              {(!events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`] || events[`${currentDate.getFullYear()}-${currentDate.getMonth() + 1}-${selectedDate}`].length === 0) && (
+                <div className="text-xs text-gray-400 italic">No events</div>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                placeholder="Add new event..." 
+                className="flex-1 text-xs border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-violet-500 transition-colors"
+                value={newEventTitle}
+                onChange={e => setNewEventTitle(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addEvent()}
+              />
+              <button onClick={addEvent} className="p-2 bg-violet-50 text-violet-600 rounded-xl hover:bg-violet-100 transition-colors">
+                <Plus size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 
 export default function App() {
+  const [guestUser] = useState(() => ({
+    name: `User ${Math.floor(100 + Math.random() * 900)}`,
+    color: randomColor({ luminosity: 'dark' }),
+    avatar: ''
+  }));
+  const [activeVideoSpeaker, setActiveVideoSpeaker] = useState({ id: 'you', name: 'You', isYou: true });
+  const [youTileSpeaker, setYouTileSpeaker] = useState(null);
+  const [videoParticipants, setVideoParticipants] = useState([]);
+  const [remoteStreams, setRemoteStreams] = useState({});
+  const pcsRef = useRef({});
+  const [isVideoExpanded, setIsVideoExpanded] = useState(false);
+  const [boundaryBounce, setBoundaryBounce] = useState(null);
+  
+  // Ref for boundary bounce timeout
+  const bounceTimeoutRef = useRef(null);
+  const [swipeStartX, setSwipeStartX] = useState(null);
+  const [swipeCurrentX, setSwipeCurrentX] = useState(null);
+  const [isSwiping, setIsSwiping] = useState(false);
+  // Add Keyboard support for swiping when expanded
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!isVideoExpanded) return;
+      if (e.key === 'ArrowRight') {
+        handleSwipeParticipant('next');
+      } else if (e.key === 'ArrowLeft') {
+        handleSwipeParticipant('prev');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isVideoExpanded, videoParticipants, activeVideoSpeaker]);
+
+  const [swipeTrails, setSwipeTrails] = useState([]);
+  const swipeTrailIdRef = useRef(0);
+  const wheelDebounceRef = useRef(false);
+
+  const handleWheel = (e) => {
+    
+    if (Math.abs(e.deltaX) > 30 && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      if (wheelDebounceRef.current) return;
+      wheelDebounceRef.current = true;
+      
+      if (e.deltaX < 0) {
+        handleSwipeParticipant('next');
+      } else {
+        handleSwipeParticipant('prev');
+      }
+      
+      const rect = e.currentTarget.getBoundingClientRect();
+      const newId = swipeTrailIdRef.current++;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const directionOffset = e.deltaX < 0 ? -80 : 80;
+      
+      const particles = Array.from({length: 5}).map((_, i) => ({
+        id: `${newId}-wheel-${i}`,
+        x: cx + directionOffset + (Math.random() - 0.5) * 100,
+        y: cy + (Math.random() - 0.5) * 100,
+        size: Math.random() * 8 + 4
+      }));
+      
+      setSwipeTrails(prev => [...prev, ...particles]);
+      setTimeout(() => {
+        setSwipeTrails(prev => prev.filter(p => !particles.find(part => part.id === p.id)));
+      }, 800);
+      
+      setTimeout(() => {
+        wheelDebounceRef.current = false;
+      }, 600);
+    }
+  };
+
+  const hoverHistoryRef = useRef([]);
+  const hoverDebounceRef = useRef(false);
+
+  const handlePointerMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const now = Date.now();
+    // Maintain a history of the last 150ms of pointer moves
+    hoverHistoryRef.current.push({ x: e.clientX, time: now });
+    hoverHistoryRef.current = hoverHistoryRef.current.filter(point => now - point.time < 150);
+
+    if (!hoverDebounceRef.current && hoverHistoryRef.current.length > 1) {
+      const oldestPoint = hoverHistoryRef.current[0];
+      const deltaX = e.clientX - oldestPoint.x;
+      const deltaTime = now - oldestPoint.time;
+
+      // Check for high speed horizontal flick
+      // Speed = pixels per millisecond. 1px/ms = 1000px/s
+      if (deltaTime > 0 && Math.abs(deltaX) > 60 && (Math.abs(deltaX) / deltaTime) > 2.0) {
+        hoverDebounceRef.current = true;
+        
+        if (deltaX > 0) {
+          handleSwipeParticipant('next');
+        } else {
+          handleSwipeParticipant('prev');
+        }
+
+        const newId = swipeTrailIdRef.current++;
+        const particles = Array.from({length: 6}).map((_, i) => ({
+          id: `${newId}-${i}`,
+          x: x + (Math.random() - 0.5) * 60,
+          y: y + (Math.random() - 0.5) * 60,
+          size: Math.random() * 8 + 4
+        }));
+        
+        setSwipeTrails(prev => [...prev, ...particles]);
+        setTimeout(() => {
+          setSwipeTrails(prev => prev.filter(p => !particles.find(part => part.id === p.id)));
+        }, 800);
+
+        setTimeout(() => {
+          hoverDebounceRef.current = false;
+        }, 800); // Wait before allowing another flick
+      }
+    }
+  };
+
+  const handlePointerLeave = () => {
+    hoverHistoryRef.current = [];
+  };
+    
+  // Removed duplicate trail setter
+
+  // Removed pointer up since flick doesn't require clicking
+
+  const triggerBoundaryBounce = (direction) => {
+    setBoundaryBounce(direction);
+    if (bounceTimeoutRef.current) clearTimeout(bounceTimeoutRef.current);
+    bounceTimeoutRef.current = setTimeout(() => {
+      setBoundaryBounce(null);
+    }, 400); // 400ms is enough for a snappy apple-like rejection bounce
+  };
+
+  const handleSwipeParticipant = (direction) => {
+    const available = videoParticipants.slice(1);
+    
+    if (direction === 'next') {
+      // Check if we are at the end
+      if (activeVideoSpeaker.id === available[available.length - 1].id) {
+        triggerBoundaryBounce('right');
+        return;
+      }
+      
+      const currentIndex = available.findIndex(p => p.id === activeVideoSpeaker.id);
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < available.length) {
+        setActiveVideoSpeaker(available[nextIndex]);
+      }
+    } else {
+      // Check if we are at the start
+      if (activeVideoSpeaker.id === available[0].id) {
+        triggerBoundaryBounce('left');
+        return;
+      }
+      
+      const currentIndex = available.findIndex(p => p.id === activeVideoSpeaker.id);
+      const prevIndex = currentIndex - 1;
+      if (prevIndex >= 0) {
+        setActiveVideoSpeaker(available[prevIndex]);
+      }
+    }
+  };
+    
+
+
+  const toggleImmersiveLayout = () => {
+    if (!document.fullscreenElement) {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(()=>{});
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(()=>{});
+      }
+    }
+  };
+
+  const toggleVideoFullscreen = () => {
+    const nextExpanded = !isVideoExpanded;
+    setIsVideoExpanded(nextExpanded);
+    setIsDistractionFreeMode(nextExpanded);
+    if (nextExpanded) {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(()=>{});
+      }
+    }
+  };
+
+  const [hiddenPanels, setHiddenPanels] = useState([]);
+  const [isDeleteZoneActive, setIsDeleteZoneActive] = useState(false);
+  const [isDistractionFreeMode, setIsDistractionFreeMode] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isRoomCaptionsEnabled, setIsRoomCaptionsEnabled] = useState(false);
+  const [isGeminiActive, setIsGeminiActive] = useState(true);
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isMeetingsModalOpen, setIsMeetingsModalOpen] = useState(false);
+  const [isRecordingModalOpen, setIsRecordingModalOpen] = useState(false);
+  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+  const [globalEvents, setGlobalEvents] = useState({ '2026-10-15': [{ title: 'Product Launch', link: 'https://room.regaarder.com/launch' }] });
+  const [invites, setInvites] = useState([]);
+  const [isInvitesOpen, setIsInvitesOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchBackendData = async () => {
+      const token = localStorage.getItem('rc.token');
+      if (!token) return;
+      
+      try {
+        const eventsRes = await fetch(`${API_BASE_URL}/api/events`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (eventsRes.ok) {
+          const eventsData = await eventsRes.json();
+          if (Object.keys(eventsData).length > 0) {
+             setGlobalEvents(eventsData);
+          }
+        }
+
+        const invitesRes = await fetch(`${API_BASE_URL}/api/invites`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (invitesRes.ok) {
+          const invitesData = await invitesRes.json();
+          setInvites(invitesData);
+        }
+      } catch (err) {
+        console.error('Failed to fetch backend data', err);
+      }
+    };
+    fetchBackendData();
+    
+    // Poll for new invites and events every 5 seconds
+    const intervalId = setInterval(fetchBackendData, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key.toLowerCase() === 'x' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        setIsDeleteZoneActive(prev => !prev);
+      }
+      if (e.key.toLowerCase() === 'r' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+        setHiddenPanels([]);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
   const [docBodyHtml, setDocBodyHtml] = useState('');
 
     useEffect(() => {
@@ -2095,6 +3774,7 @@ export default function App() {
 
   const [rightSidebarWidth, setRightSidebarWidth] = useState(340);
   const [rightPanelMaximized, setRightPanelMaximized] = useState(false);
+  const [roomMaximized, setRoomMaximized] = useState(false);
   const [productMode, setProductMode] = useState('landing');
   const [aiPersona, setAiPersona] = useState(null);
   const [dmSearchQuery, setDmSearchQuery] = useState('');
@@ -2125,10 +3805,15 @@ export default function App() {
   const [presPurpose, setPresPurpose] = useState('Investor Pitch');
 
   const socketRef = useRef(null);
+  const [socketId, setSocketId] = useState('');
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:3001');
+    socketRef.current = io(API_BASE_URL);
     
+    socketRef.current.on('connect', () => {
+      setSocketId(socketRef.current.id);
+    });
+
     socketRef.current.on('agent_state', (data) => {
        showToast(`Agent: ${data.state}`);
        setIsComposing(true);
@@ -2152,6 +3837,8 @@ export default function App() {
       if (socketRef.current) socketRef.current.disconnect();
     };
   }, []);
+
+
 
   const executeAgentAction = (action) => {
      if (action.action === 'replace_selection' || action.action === 'format_selection') {
@@ -2818,7 +4505,7 @@ export default function App() {
   const [deckSlidesData, setDeckSlidesData] = useState([
     { ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', presetKey: 'blank', footer: '' }
   ]);
-  const [activeRightTab, setActiveRightTab] = useState('chat'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
+  const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
   const [whiteboardTool, setWhiteboardTool] = useState('pen');
   const [whiteboardPenVariant, setWhiteboardPenVariant] = useState('felt-pen');
@@ -4082,7 +5769,8 @@ export default function App() {
   };
 
   const exportWhiteboardQuick = async (mode = 'png') => {
-    const target = whiteboardCanvasRef.current?.parentElement;
+    // Specifically target the canvas itself, ignoring external toolbars and menus in the parent element
+    const target = whiteboardCanvasRef.current;
     if (!target) {
       showToast('Whiteboard is not ready for export yet');
       return;
@@ -4094,6 +5782,7 @@ export default function App() {
         scale: 2,
         backgroundColor: '#ffffff',
         useCORS: true,
+        allowTaint: true,
       });
 
       const safeStamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -4123,8 +5812,9 @@ export default function App() {
       }
 
       showToast(mode === 'pdf' ? 'Whiteboard PDF exported' : 'Whiteboard snapshot saved');
-    } catch (_error) {
-      showToast('Whiteboard export failed');
+    } catch (error) {
+      console.error('Whiteboard export error:', error);
+      showToast(`Whiteboard export failed: ${error.message}`);
     }
   };
 
@@ -4691,26 +6381,540 @@ export default function App() {
   }, []);
 
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isPostCallRatingOpen, setIsPostCallRatingOpen] = useState(false);
+  const [callRating, setCallRating] = useState(0);
+  const [callRatingHover, setCallRatingHover] = useState(0);
   const [mainView, setMainView] = useState('document');
   const [focusedModule, setFocusedModule] = useState('compose'); // 'compose', 'room', 'assistant', 'notes', 'whiteboard'
   const [dockedModules, setDockedModules] = useState([]);
-  const [roomState, setRoomState] = useState('lobby');
+  const [roomState, setRoomState] = useState('inactive');
   const [roomMode, setRoomMode] = useState('meetings');
-  const [roomId, setRoomId] = useState('');
-  const [joinCode, setJoinCode] = useState('');
+  const [roomId, setRoomId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('room') || '';
+    }
+    return '';
+  });
+  const [joinCode, setJoinCode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('room') || '';
+    }
+    return '';
+  });
   const [isRoomStartMenuOpen, setIsRoomStartMenuOpen] = useState(false);
   const [isRoomInviteModalOpen, setIsRoomInviteModalOpen] = useState(false);
-  const [isRoomMicOn, setIsRoomMicOn] = useState(true);
-  const [isRoomCameraOn, setIsRoomCameraOn] = useState(true);
+  // Start both as false — requestMediaPermissions() will set them to true once the
+  // browser grants access. This prevents the UI showing mic/camera as "on" with no stream.
+  const [isRoomMicOn, setIsRoomMicOn] = useState(false);
+  const [isRoomCameraOn, setIsRoomCameraOn] = useState(false);
   const isVideoOff = !isRoomCameraOn;
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [localStream, setLocalStream] = useState(null);
   const [screenShareStream, setScreenShareStream] = useState(null);
-  const [roomPanelMode, setRoomPanelMode] = useState('expanded');
+
+  const [isRoomRecording, setIsRoomRecording] = useState(false);
+  const roomMediaRecorderRef = useRef(null);
+  const localVideoRef = useRef(null);
+  const mainVideoRef = useRef(null);
+
+  useEffect(() => {
+    if (localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream, roomState]);
+
+  useEffect(() => {
+    if (mainVideoRef.current) {
+      if (screenShareStream) {
+        mainVideoRef.current.srcObject = screenShareStream;
+      } else {
+        mainVideoRef.current.srcObject = null;
+      }
+    }
+  }, [screenShareStream, roomState]);
+
+  // WebRTC Peer Connection Lifecycle & Signaling
+  useEffect(() => {
+    if (roomState !== 'active' || !roomId || !socketRef.current || !socketId) {
+      // Clean up all Peer Connections
+      Object.keys(pcsRef.current).forEach(peerId => {
+        if (pcsRef.current[peerId]) {
+          pcsRef.current[peerId].close();
+        }
+      });
+      pcsRef.current = {};
+      setRemoteStreams({});
+      return undefined;
+    }
+
+    // Join the room for signaling
+    socketRef.current.emit('join-room', roomId);
+
+    const getOrCreatePC = (peerId, peerSocketId, isInitiator) => {
+      if (pcsRef.current[peerId]) {
+        return pcsRef.current[peerId];
+      }
+
+      console.log('Creating PeerConnection for:', peerId, 'Socket:', peerSocketId, 'isInitiator:', isInitiator);
+      const pc = new RTCPeerConnection({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate && socketRef.current) {
+          socketRef.current.emit('signal', {
+            to: peerSocketId,
+            signal: { type: 'candidate', candidate: event.candidate }
+          });
+        }
+      };
+
+      pc.ontrack = (event) => {
+        console.log('Received track from:', peerId, event.streams[0]);
+        setRemoteStreams(prev => ({
+          ...prev,
+          [peerId]: event.streams[0]
+        }));
+      };
+
+      // Add local tracks
+      if (localStream) {
+        localStream.getTracks().forEach(track => {
+          pc.addTrack(track, localStream);
+        });
+      }
+
+      if (isInitiator) {
+        pc.createOffer()
+          .then(offer => pc.setLocalDescription(offer))
+          .then(() => {
+            if (socketRef.current) {
+              socketRef.current.emit('signal', {
+                to: peerSocketId,
+                signal: { type: 'offer', sdp: pc.localDescription }
+              });
+            }
+          })
+          .catch(err => console.error('Error creating offer:', err));
+      }
+
+      pcsRef.current[peerId] = pc;
+      return pc;
+    };
+
+    // Instantiate connections for any active peer in videoParticipants list
+    videoParticipants.forEach(p => {
+      if (p.socketId && p.id && !pcsRef.current[p.id]) {
+        const isInitiator = socketId < p.socketId;
+        getOrCreatePC(p.id, p.socketId, isInitiator);
+      }
+    });
+
+    // Also handle youTileSpeaker if it contains a remote peer
+    if (youTileSpeaker && !youTileSpeaker.isYou && youTileSpeaker.socketId && !pcsRef.current[youTileSpeaker.id]) {
+      const isInitiator = socketId < youTileSpeaker.socketId;
+      getOrCreatePC(youTileSpeaker.id, youTileSpeaker.socketId, isInitiator);
+    }
+
+    // Clean up peer connections for users who left
+    Object.keys(pcsRef.current).forEach(peerId => {
+      const isStillPresent = videoParticipants.some(p => p.id === peerId) || (youTileSpeaker && youTileSpeaker.id === peerId);
+      if (!isStillPresent) {
+        console.log('Cleaning up connection for departed peer:', peerId);
+        if (pcsRef.current[peerId]) {
+          pcsRef.current[peerId].close();
+        }
+        delete pcsRef.current[peerId];
+        setRemoteStreams(prev => {
+          const next = { ...prev };
+          delete next[peerId];
+          return next;
+        });
+      }
+    });
+
+    // Signaling listener
+    const handleSignal = async (data) => {
+      const { from, signal } = data;
+      // Look up who this socketId belongs to in our list of online users
+      let foundPeer = videoParticipants.find(p => p.socketId === from);
+      if (!foundPeer && youTileSpeaker && youTileSpeaker.socketId === from) {
+        foundPeer = youTileSpeaker;
+      }
+
+      if (!foundPeer) return;
+
+      const pc = getOrCreatePC(foundPeer.id, from, false);
+
+      if (signal.type === 'offer') {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          if (socketRef.current) {
+            socketRef.current.emit('signal', {
+              to: from,
+              signal: { type: 'answer', sdp: pc.localDescription }
+            });
+          }
+        } catch (e) {
+          console.error('Error handling WebRTC offer:', e);
+        }
+      } else if (signal.type === 'answer') {
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+        } catch (e) {
+          console.error('Error handling WebRTC answer:', e);
+        }
+      } else if (signal.type === 'candidate') {
+        try {
+          await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+        } catch (e) {
+          console.error('Error adding WebRTC candidate:', e);
+        }
+      }
+    };
+
+    socketRef.current.on('signal', handleSignal);
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off('signal', handleSignal);
+      }
+    };
+  }, [roomState, roomId, socketId, localStream, videoParticipants, youTileSpeaker]);
+
+  const [liveCaption, setLiveCaption] = useState({ speaker: '', text: '' });
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    // Live Captions: opens its own independent mic stream via getUserMedia.
+    // This is fully decoupled from localStream/camera so it works even when
+    // camera is off. Native SpeechRecognition is unreliable on Windows Chrome,
+    // so we use MediaRecorder → Gemini transcription as the primary path.
+    if (!isRoomCaptionsEnabled || !isRoomMicOn) {
+      if (recognitionRef.current) {
+        recognitionRef.current.onend = null;
+        try { recognitionRef.current.stop(); } catch (_e) {}
+        recognitionRef.current = null;
+      }
+      setLiveCaption({ speaker: '', text: '' });
+      return;
+    }
+
+    let captionStream = null;
+    let captionRecorder = null;
+    let chunkTimer = null;
+    let destroyed = false;
+    let localRec = null;
+
+    const startLocalSpeechRecognition = () => {
+      if (destroyed) return;
+      const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRec) {
+        try {
+          const rec = new SpeechRec();
+          rec.continuous = false;
+          rec.interimResults = true;
+          rec.lang = resolveSpeechLocale(currentLanguage);
+          rec.onresult = (evt) => {
+            let final = '';
+            let interim = '';
+            for (let i = evt.resultIndex; i < evt.results.length; i++) {
+              const transcript = evt.results[i][0]?.transcript || '';
+              if (evt.results[i].isFinal) {
+                final += transcript;
+              } else {
+                interim += transcript;
+              }
+            }
+            const displayedText = final || interim;
+            if (displayedText.trim() && !destroyed) {
+              setLiveCaption({ speaker: 'You', text: displayedText.trim() });
+            }
+          };
+          rec.onerror = (event) => {
+            console.warn('[Room Captions] SpeechRecognition error:', event.error);
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
+              rec.onend = null;
+              if (!destroyed) {
+                setLiveCaption({ speaker: 'System', text: `Mic/Speech blocked (${event.error})` });
+              }
+            }
+          };
+          rec.onend = () => {
+            if (!destroyed && rec.onend) {
+              setTimeout(() => {
+                if (!destroyed && rec.onend) {
+                  try { rec.start(); } catch (_) {}
+                }
+              }, 100);
+            }
+          };
+          
+          try {
+            rec.start();
+          } catch (startError) {
+            const errName = String(startError?.name || '').toLowerCase();
+            if (errName.includes('invalidstate')) {
+              try { rec.stop(); } catch (_) {}
+              setTimeout(() => {
+                if (!destroyed) {
+                  try { rec.start(); } catch (_) {}
+                }
+              }, 120);
+            }
+          }
+          
+          localRec = rec;
+          recognitionRef.current = rec;
+        } catch (_e) {
+          // Keep default
+        }
+      } else {
+        const mockPhrases = ["Reviewing the document layout...", "The page looks clean.", "Applying template edits.", "Let's organize the next section."];
+        let phraseIdx = 0;
+        const interval = setInterval(() => {
+          if (!destroyed) {
+            setLiveCaption({ speaker: 'You', text: mockPhrases[phraseIdx % mockPhrases.length] });
+            phraseIdx++;
+          }
+        }, 5000);
+        return () => clearInterval(interval);
+      }
+    };
+
+    const startCaptionStream = async () => {
+      try {
+        setLiveCaption({ speaker: 'System', text: 'Listening...' });
+        
+        // Start native SpeechRecognition immediately for real-time interim results
+        startLocalSpeechRecognition();
+
+        if (!isGeminiActive) {
+          return;
+        }
+
+        if (localStream && localStream.getAudioTracks().length > 0) {
+          captionStream = new MediaStream([localStream.getAudioTracks()[0].clone()]);
+        } else {
+          captionStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        }
+        if (destroyed) {
+          captionStream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+
+        const startChunk = () => {
+          if (destroyed || !captionStream) return;
+          try {
+            captionRecorder = new MediaRecorder(captionStream);
+            captionRecorder.ondataavailable = async (evt) => {
+              if (evt.data.size < 500 || destroyed) return;
+              const mimeType = evt.data.type || 'audio/webm';
+              const reader = new FileReader();
+              reader.onloadend = async () => {
+                const base64Audio = reader.result.split(',')[1];
+                try {
+                  const res = await fetch('/api/gemini', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({
+                       task: 'transcription',
+                       userPrompt: 'Transcribe this audio accurately. If the audio is silent or contains no speech, respond with exactly: [SILENCE]',
+                       systemPrompt: 'You are an expert audio transcription tool. Output only clean text with proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE].',
+                       attachments: [{ name: 'audio.webm', mimeType: mimeType, data: base64Audio }]
+                     }),
+                  });
+                  if (!res.ok) {
+                    setIsGeminiActive(false);
+                    return;
+                  }
+                  const data = await res.json();
+                  if (!destroyed && data.ok && data.text?.trim() && !data.text.includes('[SILENCE]')) {
+                    setLiveCaption({ speaker: 'You', text: data.text.trim() });
+                  }
+                } catch (err) {
+                  console.error('[Room Captions] Gemini transcription error', err);
+                  setIsGeminiActive(false);
+                }
+              };
+              reader.readAsDataURL(evt.data);
+            };
+            captionRecorder.start();
+            chunkTimer = setTimeout(() => {
+              try {
+                if (captionRecorder?.state === 'recording') captionRecorder.stop();
+              } catch (_e) {}
+              if (!destroyed && isGeminiActive) startChunk();
+            }, 4000);
+          } catch (err) {
+            console.error('[Room Captions] MediaRecorder error', err);
+            setIsGeminiActive(false);
+          }
+        };
+
+        startChunk();
+      } catch (err) {
+        console.error('[Room Captions] getUserMedia error', err);
+      }
+    };
+
+    startCaptionStream();
+
+    return () => {
+      destroyed = true;
+      if (chunkTimer) clearTimeout(chunkTimer);
+      if (captionRecorder && captionRecorder.state === 'recording') {
+        try { captionRecorder.stop(); } catch (_e) {}
+      }
+      if (captionStream) {
+        captionStream.getTracks().forEach((t) => t.stop());
+      }
+      if (localRec) {
+        localRec.onend = null;
+        try { localRec.stop(); } catch (_e) {}
+      }
+    };
+  }, [isRoomCaptionsEnabled, isRoomMicOn, isGeminiActive]);
+
+  const startRoomRecording = async () => {
+    try {
+      let captureStream = null;
+      if (screenShareStream) {
+        captureStream = screenShareStream;
+      } else if (localStream) {
+        captureStream = localStream;
+      } else {
+         const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+         captureStream = stream;
+      }
+      
+      if (!captureStream) return;
+      
+      const clonedStream = captureStream.clone();
+      const recorder = new MediaRecorder(clonedStream);
+      const chunks = [];
+      recorder.ondataavailable = e => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Room-Recording.webm';
+        a.click();
+        setIsRoomRecording(false);
+        try {
+          clonedStream.getTracks().forEach(t => t.stop());
+        } catch (_e) {}
+      };
+      recorder.start(1000);
+      roomMediaRecorderRef.current = recorder;
+      setIsRoomRecording(true);
+      showToast('Recording started');
+    } catch (e) {
+      showToast('Recording failed: ' + e.message);
+    }
+  };
+
+  const stopRoomRecording = () => {
+    if (roomMediaRecorderRef.current && roomMediaRecorderRef.current.state === 'recording') {
+      roomMediaRecorderRef.current.stop();
+    }
+  };
+
+
+  const [roomPanelMode, setRoomPanelMode] = useState('docked');
   const [activeRoomSidebarTab, setActiveRoomSidebarTab] = useState('chat');
+  const [activeRoomChatTab, setActiveRoomChatTab] = useState('everyone');
+  const [roomParticipants, setRoomParticipants] = useState([]); // Real remote participants
+  // Real room chat state — starts empty so the empty-state UI is shown on join.
+  const [roomChatMessages, setRoomChatMessages] = useState([]);
+  const [roomChatInput, setRoomChatInput] = useState('');
+  const roomChatEndRef = useRef(null);
+  const [isRoomLeftSidebarOpen, setIsRoomLeftSidebarOpen] = useState(true);
+  const [isRoomRightSidebarOpen, setIsRoomRightSidebarOpen] = useState(true);
+  const [peopleSearchQuery, setPeopleSearchQuery] = useState('');
   const [isRoomFullscreen, setIsRoomFullscreen] = useState(false);
   const [roomStageFrame, setRoomStageFrame] = useState({ x: 56, y: 64, width: 1120, height: 720 });
   const [roomStageInteraction, setRoomStageInteraction] = useState(null);
+
+  const [roomAIPrompt, setRoomAIPrompt] = useState('');
+  const [isRoomAILoading, setIsRoomAILoading] = useState(false);
+  const [roomAIModal, setRoomAIModal] = useState({ isOpen: false, prompt: '', answer: '' });
+
+  const handleRoomAISubmit = async (e) => {
+    e?.preventDefault();
+    if (!roomAIPrompt.trim() || isRoomAILoading) return;
+    
+    setIsRoomAILoading(true);
+    const userPromptText = roomAIPrompt;
+    setRoomAIPrompt(''); // Clear input early for better perceived performance
+    
+    try {
+      const response = await fetch('/api/gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          task: 'chat',
+          userPrompt: userPromptText,
+          systemPrompt: 'You are an expert AI meeting assistant in a live virtual room. Provide concise, helpful answers (1-3 sentences) based on general meeting context. Be polite and professional.'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.ok && result.text) {
+        setRoomAIModal({
+          isOpen: true,
+          prompt: userPromptText,
+          answer: result.text.trim()
+        });
+      } else {
+        throw new Error(result.error || 'Failed to get a valid response from AI');
+      }
+    } catch (error) {
+      console.error('Room AI error:', error);
+      // Show the panel with an error response instead of just a toast
+      setRoomAIModal({
+        isOpen: true,
+        prompt: userPromptText,
+        answer: "AI is currently unavailable. Please ensure the backend is running or try again later."
+      });
+    } finally {
+      setIsRoomAILoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!roomAIModal.isOpen) return;
+    const handleOutsideClick = (e) => {
+      const form = e.target.closest('form');
+      if (!form || !form.querySelector('input[placeholder="Ask Room AI..."]')) {
+        setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, [roomAIModal.isOpen]);
+
+  useEffect(() => {
+    if (!isRoomStartMenuOpen) return;
+    const handleOutsideClick = (e) => {
+      const menuContainer = document.querySelector('#room-more-options-menu');
+      const buttonContainer = document.querySelector('#room-more-options-button');
+      if (menuContainer && !menuContainer.contains(e.target) && buttonContainer && !buttonContainer.contains(e.target)) {
+        setIsRoomStartMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
+  }, [isRoomStartMenuOpen]);
+
+  const [leftNavOffset, setLeftNavOffset] = useState({ x: 0, y: 0 });
+  const [rightNavOffset, setRightNavOffset] = useState({ x: 0, y: 0 });
+  const [navInteraction, setNavInteraction] = useState(null);
+
   const [meetingShareMenuAnchor, setMeetingShareMenuAnchor] = useState(null);
   const [isMeetingLinkInputOpen, setIsMeetingLinkInputOpen] = useState(false);
   const [meetingLinkDraft, setMeetingLinkDraft] = useState('');
@@ -5125,7 +7329,7 @@ export default function App() {
   const [isPromptMinimized, setIsPromptMinimized] = useState(false);
   const [selectedEditorText, setSelectedEditorText] = useState('');
   const [selectionActionMenu, setSelectionActionMenu] = useState({ open: false, left: 0, top: 0 });
-  const selectionActionMenuEnabled = false;
+  const selectionActionMenuEnabled = true;
   const [documentOutlineItems, setDocumentOutlineItems] = useState([]);
   const [promptAttachments, setPromptAttachments] = useState([]);
   const [assistantAttachments, setAssistantAttachments] = useState([]);
@@ -5724,8 +7928,17 @@ export default function App() {
   const tableHoverTimeoutRef = useRef(null);
   const findWidgetRef = useRef(null);
   const documentCardRef = useRef(null);
+  const notesCardRef = useRef(null);
   const isSyncingFootersRef = useRef(false);
   const blankBodyRef = useRef(null);
+  
+  const getActiveEditorRoot = () => {
+    if (notesCardRef.current && notesCardRef.current.contains(document.activeElement)) {
+      return notesCardRef.current;
+    }
+    return blankBodyRef.current || documentCardRef.current;
+  };
+
   const pageOptionsMenuRef = useRef(null);
   const emojiControlsRef = useRef(null);
 
@@ -5735,14 +7948,14 @@ export default function App() {
   const dragHandleTimeoutRef = useRef(null);
   const findNearestBlockElement = (node) => {
     let curr = node;
-    while (curr && curr !== blankBodyRef.current) {
+    while (curr && curr !== blankBodyRef.current && curr !== notesCardRef.current) {
       if (curr.nodeType === 1) {
         const tag = curr.tagName.toUpperCase();
         if (['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'PRE', 'BLOCKQUOTE', 'TD', 'TH'].includes(tag)) {
           return curr;
         }
       }
-      if (curr.parentNode === blankBodyRef.current) {
+      if (curr.parentNode === blankBodyRef.current || curr.parentNode === notesCardRef.current) {
         return curr;
       }
       curr = curr.parentNode;
@@ -5769,6 +7982,8 @@ export default function App() {
   const docSearchPanelRef = useRef(null);
   const replaySpeedMenuRef = useRef(null);
   const notificationsPanelRef = useRef(null);
+  const moreMenuRef = useRef(null);
+  const invitesMenuRef = useRef(null);
   const appShellRef = useRef(null);
   const roomStageRef = useRef(null);
   const promptFileInputRef = useRef(null);
@@ -5943,7 +8158,7 @@ export default function App() {
   useEffect(() => {
     const token = localStorage.getItem('rc.token');
     if (token) {
-      fetch('http://localhost:3001/api/auth/me', {
+      fetch(`${API_BASE_URL}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -5974,25 +8189,36 @@ export default function App() {
   useEffect(() => {
     if (providerRef.current?.awareness) {
       providerRef.current.awareness.setLocalStateField('user', {
-        name: currentUser ? currentUser.name : `User ${Math.floor(Math.random() * 1000)}`,
-        color: currentUser ? '#10B981' : '#7C3AED'
+        name: currentUser ? currentUser.name : guestUser.name,
+        color: currentUser ? '#10B981' : guestUser.color,
+        avatar: currentUser?.avatar || guestUser.avatar
       });
+      providerRef.current.awareness.setLocalStateField('roomId', roomId);
+      providerRef.current.awareness.setLocalStateField('isRoomMicOn', isRoomMicOn);
+      providerRef.current.awareness.setLocalStateField('isRoomCameraOn', isRoomCameraOn);
+      providerRef.current.awareness.setLocalStateField('socketId', socketId);
     }
-  }, [currentUser]);
+  }, [currentUser, roomId, isRoomMicOn, isRoomCameraOn, socketId, guestUser]);
   
   useEffect(() => {
     yDocRef.current = new Y.Doc();
     yTextRef.current = yDocRef.current.getText('docBodyHtml');
 
-    const wsUrl = 'ws://localhost:3001/yjs';
-    const roomName = `compose-room-${activeDocId || 'default'}`;
+    const wsHost = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+    const wsUrl = `ws://${wsHost}:3001/yjs`;
+    const roomName = roomId ? `compose-room-${roomId}` : `compose-room-${activeDocId || 'default'}`;
     providerRef.current = new WebsocketProvider(wsUrl, roomName, yDocRef.current);
 
     const awareness = providerRef.current.awareness;
     awareness.setLocalStateField('user', {
-      name: currentUser ? currentUser.name : `User ${Math.floor(Math.random() * 1000)}`,
-      color: currentUser ? '#10B981' : randomColor({ luminosity: 'dark' })
+      name: currentUser ? currentUser.name : guestUser.name,
+      color: currentUser ? '#10B981' : guestUser.color,
+      avatar: currentUser?.avatar || guestUser.avatar
     });
+    awareness.setLocalStateField('roomId', roomId);
+    awareness.setLocalStateField('isRoomMicOn', isRoomMicOn);
+    awareness.setLocalStateField('isRoomCameraOn', isRoomCameraOn);
+    awareness.setLocalStateField('socketId', socketId);
 
     awareness.on('change', () => {
       const states = awareness.getStates();
@@ -6054,7 +8280,70 @@ export default function App() {
       providerRef.current?.destroy();
       yDocRef.current?.destroy();
     };
-  }, [activeDocId]);
+  }, [activeDocId, roomId]);
+
+  // Synchronize meeting room video participants with Yjs awareness presence
+  useEffect(() => {
+    if (roomState !== 'active' || !roomId) {
+      setVideoParticipants([]);
+      setRoomParticipants([]);
+      setYouTileSpeaker(null);
+      setActiveVideoSpeaker({ id: 'you', name: 'You', isYou: true });
+      return;
+    }
+
+    const onlineOthers = [];
+    awarenessUsers.forEach((state, clientID) => {
+      if (clientID === providerRef.current?.awareness?.clientID) return;
+      
+      const clientRoomId = state.roomId;
+      if (!clientRoomId || clientRoomId === roomId) {
+        const u = state.user || {};
+        const userName = u.name || `User ${clientID}`;
+        onlineOthers.push({
+          id: `client-${clientID}`,
+          name: userName,
+          isYou: false,
+          img: u.avatar || '',
+          color: u.color || '#7C3AED',
+          isRoomMicOn: !!state.isRoomMicOn,
+          isRoomCameraOn: !!state.isRoomCameraOn,
+          socketId: state.socketId || '',
+        });
+      }
+    });
+
+    setRoomParticipants(() => {
+      return onlineOthers.map(o => ({
+        name: o.name,
+        sub: o.isRoomCameraOn ? 'Camera on' : 'Camera off',
+        state: 'idle',
+        activeMic: o.isRoomMicOn,
+      }));
+    });
+
+    setActiveVideoSpeaker((prevActive) => {
+      let nextActive = prevActive;
+      if (!prevActive.isYou && !onlineOthers.some(o => o.id === prevActive.id)) {
+        nextActive = { id: 'you', name: 'You', isYou: true };
+      }
+      
+      setVideoParticipants(() => {
+        const remainingOthers = onlineOthers.filter(o => o.id !== nextActive.id);
+        return remainingOthers;
+      });
+
+      setYouTileSpeaker(() => {
+        if (nextActive.isYou) {
+          return null;
+        } else {
+          return { id: 'you', name: 'You', isYou: true };
+        }
+      });
+
+      return nextActive;
+    });
+  }, [awarenessUsers, roomId, roomState]);
 
   useEffect(() => {
     if (!yTextRef.current || isLocalUpdateRef.current) return;
@@ -7542,6 +9831,12 @@ export default function App() {
       if (notificationsPanelRef.current && !notificationsPanelRef.current.contains(event.target)) {
         setNotificationsOpen(false);
       }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
+        setIsMoreMenuOpen(false);
+      }
+      if (invitesMenuRef.current && !invitesMenuRef.current.contains(event.target)) {
+        setIsInvitesOpen(false);
+      }
       if (
         isPromptExpanded
         && isPromptAutoVisible
@@ -8698,9 +10993,22 @@ export default function App() {
       }
     };
 
+    const handleGlobalDoubleClick = (e) => {
+      if (e.target.closest('input, textarea, [contenteditable="true"], .no-fullscreen-toggle')) return;
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(err => console.error(err));
+      } else {
+        if (appShellRef.current?.requestFullscreen) {
+          appShellRef.current.requestFullscreen().catch(err => console.error(err));
+        }
+      }
+    };
+
+    document.addEventListener('dblclick', handleGlobalDoubleClick);
     document.addEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
     window.addEventListener('focus', handleWindowFocus);
     return () => {
+      document.removeEventListener('dblclick', handleGlobalDoubleClick);
       document.removeEventListener('fullscreenchange', handleDocumentImmersiveFullscreen);
       window.removeEventListener('focus', handleWindowFocus);
     };
@@ -8794,6 +11102,38 @@ export default function App() {
     };
   }, [roomStageInteraction, clampRoomStageFrame]);
 
+  useEffect(() => {
+    if (!navInteraction) {
+      return undefined;
+    }
+
+    const handlePointerMove = (event) => {
+      const deltaX = event.clientX - navInteraction.startX;
+      const deltaY = event.clientY - navInteraction.startY;
+      const newPos = {
+        x: navInteraction.origin.x + deltaX,
+        y: navInteraction.origin.y + deltaY
+      };
+
+      if (navInteraction.id === 'left') {
+        setLeftNavOffset(newPos);
+      } else if (navInteraction.id === 'right') {
+        setRightNavOffset(newPos);
+      }
+    };
+
+    const handlePointerUp = () => {
+      setNavInteraction(null);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [navInteraction]);
+
   const handleQuickAddSourceAction = async (sourceId) => {
     setIsQuickAddSourceMenuOpen(false);
 
@@ -8864,7 +11204,7 @@ export default function App() {
   };
 
   const isRangeInsideEditor = (range) => {
-    if (!range || !documentCardRef.current) {
+    if (!range) {
       return false;
     }
 
@@ -8874,7 +11214,7 @@ export default function App() {
       return false;
     }
 
-    const bodyRoot = blankBodyRef.current || documentCardRef.current;
+    const bodyRoot = getActiveEditorRoot();
     return Boolean(bodyRoot && bodyRoot.contains(targetNode));
   };
   const stripMarkdownArtifacts = (value) => String(value || '')
@@ -8968,7 +11308,7 @@ export default function App() {
       return;
     }
 
-    if (!range || !documentCardRef.current) {
+    if (!range || (!documentCardRef.current && !notesCardRef.current)) {
       setSelectionActionMenu({ open: false, left: 0, top: 0 });
       return;
     }
@@ -9811,7 +12151,12 @@ export default function App() {
   useEffect(() => {
     const trackPointerOrigin = (event) => {
       pointerDownInPromptRef.current = Boolean(promptRootRef.current && promptRootRef.current.contains(event.target));
-      pointerDownInDocumentRef.current = Boolean(documentCardRef.current && documentCardRef.current.contains(event.target));
+      // Track pointer origin for BOTH the main compose editor and the Notes modal editor
+      // so that selection menus and floating toolbars work in both contexts.
+      pointerDownInDocumentRef.current = Boolean(
+        (documentCardRef.current && documentCardRef.current.contains(event.target)) ||
+        (notesCardRef.current && notesCardRef.current.contains(event.target))
+      );
     };
 
     window.addEventListener('pointerdown', trackPointerOrigin, true);
@@ -14193,7 +16538,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
     if (key === 'import_equation') { setEquationModalOpen(true); return; }
     
     // CRITICAL: Focus the editor FIRST so all DOM commands work
-    blankBodyRef.current?.focus();
+    getActiveEditorRoot()?.focus();
     
     const selection = window.getSelection();
     let targetRange = savedRange;
@@ -14274,7 +16619,7 @@ Generate the updated output according to the instruction. Preserve layout and ta
           insertInlinePromptBox(key, selectedText);
         }
       } else {
-        const fullText = blankBodyRef.current ? blankBodyRef.current.innerText.trim() : '';
+        const fullText = getActiveEditorRoot() ? getActiveEditorRoot().innerText.trim() : '';
         if (key === 'proofread') {
           if (fullText) {
             const blockEl = findNearestBlockElement(targetRange?.commonAncestorContainer);
@@ -18289,7 +20634,21 @@ Rules:
       setProductMode('compose');
       setLeftSidebarOpen(true);
     }
-    const shouldBeFullscreen = ['room'].includes(tabKey);
+    if (tabKey === 'room') {
+      if (roomState === 'active' && roomPanelMode === 'expanded') {
+        setRoomPanelMode('docked');
+        if (document.exitFullscreen && document.fullscreenElement) {
+          document.exitFullscreen().catch(()=>{});
+        }
+      } else {
+        // Use startMeetingNow() so requestMediaPermissions() is always called
+        // and the camera/mic permission prompt fires every time a meeting opens.
+        // startMeetingNow() already calls enterFullscreen() internally.
+        startMeetingNow(generateRoomCode());
+      }
+      return;
+    }
+    const shouldBeFullscreen = false; // We removed 'room' from here
     if (rightSidebarOpen && activeRightTab === tabKey) {
       setRightSidebarOpen(false);
       if (rightPanelMaximized) setRightPanelMaximized(false);
@@ -18524,10 +20883,14 @@ Rules:
   }, []);
 
   const requestMediaPermissions = async () => {
+    // If we already have a stream, do not override user's manual toggles (prevents camera turning on unexpectedly).
+    if (localStream) return true;
+
     if (!navigator?.mediaDevices?.getUserMedia) {
       setMediaError(true);
       setIsRoomCameraOn(false);
       setIsRoomMicOn(false);
+      setIsMicMuted(true);
       showToast('Camera/Mic is not supported in this browser.');
       return false;
     }
@@ -18537,17 +20900,27 @@ Rules:
         video: true,
         audio: true,
       });
+      
+      // Stop video immediately to prevent camera from turning on automatically
+      stream.getVideoTracks().forEach(track => {
+        track.stop();
+        stream.removeTrack(track);
+      });
+
       setLocalStream(stream);
       setMediaError(false);
-      setIsRoomCameraOn(true);
+      // Both states must be set together so all control bars are in sync.
+      setIsRoomCameraOn(false);
       setIsRoomMicOn(true);
+      setIsMicMuted(false);
       return true;
     } catch (err) {
       console.warn('Media access denied or unavailable', err);
       setMediaError(true);
       setIsRoomCameraOn(false);
       setIsRoomMicOn(false);
-      showToast('Camera/Mic access denied. Please check browser permissions.');
+      setIsMicMuted(true);
+      showToast('Camera/Mic access denied. You can still join but mic/camera will be off.');
       return false;
     }
   };
@@ -18575,16 +20948,17 @@ Rules:
     setActiveMeetingStageTab('room');
     setMainView('document');
     setRoomPanelMode('expanded');
+    setFocusedModule('room');
     setMeetingSummary(null);
     setMeetingStartedAt(Date.now());
     setMeetingDurationLabel('00:00');
-    
-    const wasFullscreen = !!document.fullscreenElement;
+
+    // CRITICAL: Request camera/mic BEFORE entering fullscreen.
+    // Browsers block getUserMedia() permission prompts while in fullscreen mode,
+    // so we must obtain the stream first, then go fullscreen.
     await requestMediaPermissions();
-    if (wasFullscreen && !document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    }
-    
+    enterFullscreen();
+
     showToast(`Joined meeting: ${code}`);
   };
 
@@ -18702,10 +21076,26 @@ Rules:
   };
 
   const joinRoom = async (code) => {
-    await openMeetingSetup(code);
+    setProductMode('room');
+    setIsDocumentImmersive(true);
+    await startMeetingNow(code);
   };
 
   const leaveRoom = () => {
+    // Stop all media streams immediately so camera/mic LED turns off.
+    stopMediaStream();
+    // Reset mic/camera UI state so they don't appear active after hanging up.
+    setIsRoomMicOn(false);
+    setIsRoomCameraOn(false);
+    setIsMicMuted(true);
+    // Show the post-call rating modal. The actual roomState transition to 'summary'
+    // (and navigation home) happens inside confirmLeaveRoom() once the user submits.
+    setCallRating(0);
+    setCallRatingHover(0);
+    setIsPostCallRatingOpen(true);
+  };
+
+  const confirmLeaveRoom = () => {
     const completedDuration = formatMeetingElapsed(meetingStartedAt);
     setMeetingSummary({
       roomCode: roomId,
@@ -18721,12 +21111,13 @@ Rules:
       ],
     });
     setMeetingDurationLabel(completedDuration);
-    setRoomState('summary');
+    setIsPostCallRatingOpen(false);
+    setRoomState('inactive');
     setActiveMeetingStageTab('room');
-    setMainView('document');
+    setMainView('room');
     setRoomPanelMode('docked');
-    stopMediaStream();
-    showToast('Left the meeting. AI generating summary...');
+    setFocusedModule('room');
+    showToast('Left the meeting. Thanks for your feedback!');
   };
 
   const handleCopyLink = async () => {
@@ -18812,33 +21203,54 @@ Rules:
   }, []);
 
   const toggleRoomCamera = async () => {
-    if (localStream && !mediaError) {
-      const videoTrack = localStream.getVideoTracks()[0];
-      if (videoTrack) {
-        const nextEnabled = !videoTrack.enabled;
-        videoTrack.enabled = nextEnabled;
-        setIsRoomCameraOn(nextEnabled);
+    const nextOn = !isRoomCameraOn;
+    setIsRoomCameraOn(nextOn);
+    showToast(nextOn ? 'Camera on' : 'Camera off');
+
+    if (!nextOn) {
+      // Turn off camera completely to save privacy & hardware
+      if (localStream && !mediaError) {
+        localStream.getVideoTracks().forEach(track => {
+          track.stop();
+          localStream.removeTrack(track);
+        });
+        setLocalStream(new MediaStream(localStream.getTracks()));
       }
     } else {
-      const granted = await requestMediaPermissions();
-      if (!granted) {
-        return;
+      // Re-request camera stream
+      if (!mediaError) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          if (localStream) {
+            const newVideoTrack = stream.getVideoTracks()[0];
+            localStream.addTrack(newVideoTrack);
+            setLocalStream(new MediaStream(localStream.getTracks()));
+          } else {
+            setLocalStream(stream);
+          }
+        } catch (e) {
+          console.error("Failed to re-enable camera", e);
+          setIsRoomCameraOn(false);
+        }
       }
     }
   };
 
   const toggleRoomMic = async () => {
+    // Optimistically toggle the mic state immediately (like Zoom/Google Meet),
+    // so the UI responds instantly regardless of whether a real stream exists.
+    // Both isRoomMicOn and isMicMuted are kept in sync as inverses of each other
+    // because two different control bars reference each state.
+    const nextOn = !isRoomMicOn;
+    setIsRoomMicOn(nextOn);
+    setIsMicMuted(!nextOn);
+    showToast(nextOn ? 'Microphone unmuted' : 'Microphone muted');
+
+    // If a real media stream is active, also enable/disable the actual audio track.
     if (localStream && !mediaError) {
       const audioTrack = localStream.getAudioTracks()[0];
       if (audioTrack) {
-        const nextEnabled = !audioTrack.enabled;
-        audioTrack.enabled = nextEnabled;
-        setIsRoomMicOn(nextEnabled);
-      }
-    } else {
-      const granted = await requestMediaPermissions();
-      if (!granted) {
-        return;
+        audioTrack.enabled = nextOn;
       }
     }
   };
@@ -18869,9 +21281,17 @@ Rules:
       setIsScreenSharing(true);
       showToast('Screen sharing started');
     } catch (_err) {
-      showToast('Screen share permission denied or unavailable.');
+      // User cancelled or permission denied — silently ignore to avoid jarring error toasts.
+      showToast('Screen share cancelled.');
     }
   };
+
+  // Foolproof privacy: Ensure hardware is off if state is off.
+  useEffect(() => {
+    if (!isRoomCameraOn && localStream) {
+      localStream.getVideoTracks().forEach(t => t.stop());
+    }
+  }, [isRoomCameraOn, localStream]);
 
   useEffect(() => {
     if (roomState !== 'active' || !meetingStartedAt) {
@@ -19318,12 +21738,13 @@ Rules:
   };
 
   const createRoomExperience = () => {
+    enterFullscreen();
+    setIsDocumentImmersive(true);
     setCreationPickerOpen(false);
     setProductMode('room');
     setRightSidebarOpen(false);
     setLeftSidebarOpen(false);
-    setRoomState('lobby');
-    showToast('Room dashboard ready');
+    startMeetingNow(generateRoomCode());
   };
 
   const createDmExperience = () => {
@@ -19406,8 +21827,9 @@ Rules:
     }
 
     if (target === 'room') {
+      enterFullscreen();
       setActivePrimaryNav('home');
-      createRoomExperience();
+      setProductMode('room-landing');
       return;
     }
 
@@ -20045,7 +22467,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
 
     if (!range) {
-      blankBodyRef.current?.focus();
+      getActiveEditorRoot()?.focus();
       return;
     }
 
@@ -20099,8 +22521,9 @@ Respond with a JSON array of slide objects matching the schema.`;
         const parentElement = anchorNode.nodeType === Node.ELEMENT_NODE
           ? anchorNode
           : anchorNode.parentElement;
-        if (parentElement && documentCardRef.current?.contains(parentElement)) {
-          const isContainer = parentElement === blankBodyRef.current || 
+        const activeRoot = getActiveEditorRoot();
+        if (parentElement && activeRoot?.contains(parentElement)) {
+          const isContainer = parentElement === activeRoot || 
                               parentElement.tagName === 'P' || 
                               parentElement.tagName === 'DIV' || 
                               parentElement.tagName === 'TD' ||
@@ -20141,13 +22564,14 @@ Respond with a JSON array of slide objects matching the schema.`;
       if (selection.rangeCount) {
         savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
       }
-      if (blankBodyRef.current) {
+      if (getActiveEditorRoot() === blankBodyRef.current && blankBodyRef.current) {
         setDocBodyHtml(blankBodyRef.current.innerHTML);
       }
       return;
     }
 
-    blankBodyRef.current?.focus();
+    const activeRoot = getActiveEditorRoot();
+    activeRoot?.focus();
     if (range) {
       const selection = window.getSelection();
       selection.removeAllRanges();
@@ -20160,7 +22584,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       savedSelectionRef.current = selection.getRangeAt(0).cloneRange();
     }
 
-    if (blankBodyRef.current) {
+    if (activeRoot === blankBodyRef.current && blankBodyRef.current) {
       setDocBodyHtml(blankBodyRef.current.innerHTML);
     }
 
@@ -24565,473 +26989,24 @@ Respond with a JSON array of slide objects matching the schema.`;
             </div>
           )}
 
-          {/* REGAARDER ROOM TAB */}
           {activeRightTab === 'room' && (
-            <div className="flex-1 flex flex-col min-h-0 bg-white animate-fade-in min-w-[340px] relative">
-
-              {/* STATE: LOBBY */}
-              {roomState === 'lobby' && (
-                <div className="flex-1 min-h-0 bg-[#f7f8fd] animate-fade-in flex flex-col relative overflow-y-auto thin-scrollbar">
-                  <div className="h-12 px-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2 text-slate-900">
-                      <span className="w-5 h-5 rounded-md bg-violet-100 text-violet-600 flex items-center justify-center">
-                        <MonitorPlay size={12} />
-                      </span>
-                      <span className="text-[16px] font-semibold leading-none">Room</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
-                        onClick={() => { setRightPanelMaximized((p) => !p); if (!rightSidebarOpen) setRightSidebarOpen(true); }}
-                        className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                      >
-                        {rightPanelMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setRightSidebarOpen(false); setRightPanelMaximized(false); }}
-                        className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                        aria-label="Close Room panel"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex-1 p-6 md:p-8 overflow-y-auto thin-scrollbar">
-                    <div className="max-w-[1000px] mx-auto">
-                      {/* Hero Banner */}
-                      <div className="relative w-full rounded-[24px] overflow-hidden bg-white border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-8 p-8 md:p-12 flex flex-col md:flex-row items-center justify-between min-h-[260px] gap-6">
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#f8f5ff] via-white to-[#fbfaff]"></div>
-                        
-                        <div className="relative z-10 w-full md:w-1/2 flex items-center justify-center">
-                          <div className="w-24 h-24 md:w-32 md:h-32 rounded-[24px] md:rounded-[32px] bg-white/60 backdrop-blur-xl shadow-[0_20px_40px_rgba(139,92,246,0.15)] border border-white/80 flex items-center justify-center relative">
-                            <div className="absolute inset-0 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-[24px] md:rounded-[32px] opacity-10"></div>
-                            <Video size={48} className="text-violet-600 drop-shadow-md" fill="currentColor" />
-                          </div>
-                        </div>
-
-                        <div className="relative z-10 w-full md:w-1/2 text-center md:text-left">
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 text-[13px] font-medium mb-3">
-                            Good afternoon, Joshua <span className="text-base leading-none">👋</span>
-                          </div>
-                          <h1 className="text-2xl md:text-[32px] font-bold text-slate-900 leading-tight mb-2 tracking-tight">Ready to collaborate?</h1>
-                          <p className="text-sm text-slate-500 mb-6 max-w-[340px] mx-auto md:mx-0 leading-relaxed">Start a room, join a meeting, or continue where you left off.</p>
-                          
-                          <div className="flex items-center justify-center md:justify-start gap-3">
-                            <button onClick={() => startMeetingNow(generateRoomCode())} className="px-5 py-3 rounded-xl bg-violet-600 text-white text-[13px] font-semibold hover:bg-violet-700 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                              <MonitorPlay size={16} />
-                              Start room
-                            </button>
-                            
-                            {isRoomStartMenuOpen ? (
-                              <div className="flex gap-2">
-                                <input
-                                  ref={roomJoinInputRef}
-                                  type="text"
-                                  value={joinCode}
-                                  onChange={(e) => setJoinCode(e.target.value)}
-                                  placeholder="Enter code"
-                                  className="rounded-xl border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 w-28 bg-white"
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && joinCode.trim()) openMeetingSetup(joinCode.trim());
-                                  }}
-                                />
-                                <button onClick={() => joinCode.trim() && openMeetingSetup(joinCode.trim())} className="px-3 py-2 rounded-xl bg-violet-50 text-violet-700 text-[13px] font-medium hover:bg-violet-100 transition-colors">Join</button>
-                              </div>
-                            ) : (
-                              <button onClick={() => setIsRoomStartMenuOpen(true)} className="px-5 py-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-[13px] font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2">
-                                <LinkIcon size={16} />
-                                Join room
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Content Grid */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
-                        {/* Upcoming Meetings */}
-                        <div className="bg-white rounded-[20px] border border-slate-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 flex flex-col h-full">
-                          <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-[15px] font-bold text-slate-900">Upcoming meetings</h3>
-                            <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">View calendar</button>
-                          </div>
-                          
-                          <div className="space-y-3 flex-1">
-                            {[
-                              { title: 'Beta Launch Kickoff', time: 'Thursday, May 15 • 10:00 AM', color: 'bg-violet-100 text-violet-600' },
-                              { title: 'Design System Review', time: 'Friday, May 16 • 2:00 PM', color: 'bg-fuchsia-100 text-fuchsia-600' },
-                              { title: 'Marketing Sync', time: 'Monday, May 19 • 11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
-                            ].map((mtg, i) => (
-                              <div key={i} className="group p-4 rounded-[16px] border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all flex items-start justify-between">
-                                <div className="flex gap-6">
-                                  <div className={`w-10 h-10 rounded-xl ${mtg.color} flex items-center justify-center shrink-0`}>
-                                    <Calendar size={18} />
-                                  </div>
-                                  <div>
-                                    <h4 className="text-[14px] font-bold text-slate-900 mb-1">{mtg.title}</h4>
-                                    <p className="text-[12px] text-slate-500 mb-2">{mtg.time}</p>
-                                    <div className="flex -space-x-2">
-                                      <img src="https://i.pravatar.cc/150?u=1" className="w-6 h-6 rounded-full border-2 border-white" />
-                                      <img src="https://i.pravatar.cc/150?u=2" className="w-6 h-6 rounded-full border-2 border-white" />
-                                      <img src="https://i.pravatar.cc/150?u=3" className="w-6 h-6 rounded-full border-2 border-white" />
-                                      <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[9px] font-medium text-slate-600">+1</div>
-                                    </div>
-                                  </div>
-                                </div>
-                                <button onClick={() => startMeetingNow(generateRoomCode())} className="px-4 py-1.5 rounded-lg bg-violet-50 text-violet-700 text-[12px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Join</button>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          <div className="pt-4 mt-4 border-t border-slate-100">
-                            <button className="w-full flex items-center justify-between text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                              <span>View full calendar</span>
-                              <ArrowRight size={14} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Recent Rooms */}
-                        <div className="bg-white rounded-[20px] border border-slate-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 flex flex-col h-full">
-                          <div className="flex items-center justify-between mb-5">
-                            <h3 className="text-[15px] font-bold text-slate-900">Recent rooms</h3>
-                            <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">See all</button>
-                          </div>
-                          
-                          <div className="space-y-3 flex-1">
-                            {[
-                              { title: 'Q2 Launch Strategy', time: 'May 12 • 2:30 PM' },
-                              { title: 'Product Review', time: 'May 9 • 11:00 AM' },
-                              { title: 'Investor Update', time: 'May 7 • 4:00 PM' },
-                              { title: 'Design Critique', time: 'May 5 • 10:30 AM' }
-                            ].map((room, i) => (
-                              <div key={i} className="group p-3 rounded-[16px] border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-between cursor-pointer" onClick={() => startMeetingNow(generateRoomCode())}>
-                                <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                                    <MonitorPlay size={18} />
-                                  </div>
-                                  <div>
-                                    <h4 className="text-[14px] font-bold text-slate-900 mb-0.5 group-hover:text-violet-700 transition-colors">{room.title}</h4>
-                                    <p className="text-[12px] text-slate-500">{room.time}</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <div className="flex -space-x-2">
-                                    <img src={`https://i.pravatar.cc/150?u=${i+10}`} className="w-6 h-6 rounded-full border-2 border-white" />
-                                    <img src={`https://i.pravatar.cc/150?u=${i+20}`} className="w-6 h-6 rounded-full border-2 border-white" />
-                                    <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[9px] font-medium text-slate-600">+{((i+2)%3)+1}</div>
-                                  </div>
-                                  <button className="p-1 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors">
-                                    <MoreHorizontal size={16} />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          <div className="pt-4 mt-2 border-t border-slate-100">
-                            <button className="w-full flex items-center justify-between text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                              <span>View all rooms</span>
-                              <ArrowRight size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {roomState === 'lobby' && isRoomInviteModalOpen && (
-                <div className="absolute z-40 top-[182px] left-4 right-4 flex justify-center">
-                  <div className="w-full max-w-[280px] rounded-2xl border border-gray-200 bg-white shadow-[0_24px_48px_-24px_rgba(15,23,42,0.5)] p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-[10px] font-semibold text-slate-900">People in the room</div>
-                      <button type="button" className="text-[10px] font-semibold text-violet-600 hover:text-violet-700">View all</button>
-                    </div>
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <img src={meetingParticipants[0]?.img} alt="You" className="w-6 h-6 rounded-full object-cover border border-white" />
-                          <div>
-                            <div className="text-[10px] font-semibold text-slate-800">You (Joshua)</div>
-                          </div>
-                        </div>
-                        <Mic size={12} className="text-violet-500" />
-                      </div>
-                      {meetingParticipants.slice(1).map((participant, index) => (
-                        <div key={`invite-${participant.name}`} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <img src={participant.img} alt={participant.name} className="w-6 h-6 rounded-full object-cover border border-white" />
-                            <div>
-                              <div className="text-[10px] font-semibold text-slate-800">{participant.name}</div>
-                              <div className="text-[9px] text-slate-400">{index === 0 ? '1m ago' : 'Active'}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await handleShareMeeting();
-                        setIsRoomInviteModalOpen(false);
-                      }}
-                      className="mt-3 w-full rounded-lg border border-violet-200 bg-violet-50 text-violet-700 text-[10px] font-semibold py-2 inline-flex items-center justify-center gap-1.5 hover:bg-violet-100"
-                    >
-                      <Sparkles size={12} /> Invite from team
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsRoomInviteModalOpen(false)}
-                      className="mt-2 w-full rounded-lg border border-gray-200 bg-white text-slate-600 text-[10px] font-semibold py-2 hover:bg-slate-50"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {roomState === 'ready' && (
-                <div className="flex-1 flex flex-col p-4 gap-4 animate-fade-in">
-                  <div className="rounded-2xl border border-gray-200 bg-white p-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-semibold uppercase tracking-wide text-violet-600">Ready to join</div>
-                      <div className="text-xs text-gray-700 font-mono truncate">{roomId}</div>
-                    </div>
-                    <button
-                      onClick={handleShareMeeting}
-                      className="px-2.5 py-1.5 rounded-lg text-xs border border-violet-200 text-violet-700 hover:bg-violet-50"
-                    >
-                      Share Link
-                    </button>
-                  </div>
-
-                  {mediaError && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center justify-between gap-3">
-                      <span>Camera or microphone access is blocked. Allow permissions to join with media.</span>
-                      <button onClick={requestMediaPermissions} className="shrink-0 px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold">Allow</button>
-                    </div>
-                  )}
-
-                  <div className="rounded-2xl overflow-hidden border border-gray-200 bg-slate-900 h-[220px] relative">
-                    <RoomStageFeed stream={localStream} placeholder="Camera preview" />
-                    <div className="absolute bottom-3 left-3 px-2 py-1 rounded-lg bg-black/45 text-white text-[11px]">You</div>
-                  </div>
-
-                  <div className="rounded-2xl border border-gray-200 bg-white p-3">
-                    <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 mb-2">Participants</div>
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
-                      <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-violet-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0 bg-gray-900">
-                        <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
-                        {!!isMicMuted && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
-                      </div>
-                      {meetingParticipants.map((participant) => (
-                        <div key={participant.name} className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0">
-                          <img src={participant.img} alt={participant.name} className="object-cover w-full h-full" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-auto rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-xl px-3 py-2 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${!isMicMuted ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle microphone">
-                        {!isMicMuted ? <Mic size={16} /> : <MicOff size={16} />}
-                      </button>
-                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${!isVideoOff ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`} title="Toggle camera">
-                        {!isVideoOff ? <Video size={16} /> : <VideoOff size={16} />}
-                      </button>
-                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100'}`} title="Toggle screen share">
-                        <MonitorPlay size={16} />
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setRoomState('lobby')}
-                        className="px-2.5 py-1.5 rounded-lg text-[11px] border border-gray-200 text-gray-700 hover:bg-gray-50"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={startMeetingNow}
-                        className="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-violet-600 text-white hover:bg-violet-700"
-                      >
-                        Join Now
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* STATE: ACTIVE ROOM (Sidebar Panel View) */}
-              {roomState === 'active' && (
-                <div className="flex-1 flex flex-col h-full animate-fade-in relative">
-
-                  {mediaError && (
-                    <div className="mx-4 mt-4 mb-1 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center justify-between gap-3">
-                      <span>Camera and microphone are blocked. Allow permissions to fully join.</span>
-                      <button onClick={requestMediaPermissions} className="shrink-0 px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold">Allow</button>
-                    </div>
-                  )}
-
-                  <div className="mx-4 mt-4 rounded-xl border border-gray-200 bg-white px-3 py-2 flex items-center gap-2">
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-600">Live</span>
-                    <span className="text-xs text-gray-600 font-mono">{meetingDurationLabel}</span>
-                    <div className="w-px h-4 bg-gray-200"></div>
-                    <input
-                      value={collaboratorInvite}
-                      onChange={(e) => setCollaboratorInvite(e.target.value)}
-                      placeholder="Invite collaborator"
-                      className="flex-1 min-w-0 text-xs text-gray-700 border-none focus:outline-none"
-                    />
-                    <button onClick={inviteCollaborator} className="px-2 py-1 text-[11px] rounded bg-violet-600 text-white hover:bg-violet-700">Invite</button>
-                    <button onClick={handleCopyLink} className="px-2 py-1 text-[11px] rounded border border-gray-200 text-gray-700 hover:bg-gray-50">Copy Link</button>
-                  </div>
-
-                  {mainView === 'document' && (
-                    <div className="flex flex-col border-b border-gray-100 bg-white">
-                      <div className="p-3 pb-2 flex justify-between items-center">
-                        <div>
-                          <div className="text-xs font-bold text-gray-900 truncate">Q2 Launch Strategy</div>
-                          <div className="text-[10px] text-gray-400 font-mono mt-0.5">{roomId}</div>
-                        </div>
-                        <button onClick={() => { setMainView('document'); setRoomPanelMode('expanded'); }} className="p-1.5 bg-violet-50 text-violet-600 rounded hover:bg-violet-100 transition-colors" title="Expand to Main View">
-                          <Maximize2 size={14} />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2 px-3 pb-3 overflow-x-auto no-scrollbar shrink-0">
-                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0 bg-gray-900">
-                          <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
-                          {!!isMicMuted && <div className="absolute bottom-1 right-1 bg-black/60 p-0.5 rounded-full"><MicOff size={8} className="text-red-400" /></div>}
-                        </div>
-                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden ring-2 ring-emerald-500 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0">
-                          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" alt="Sarah" className="object-cover w-full h-full" />
-                        </div>
-                        <div className="relative w-14 h-14 rounded-[10px] overflow-hidden border border-gray-200 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex-shrink-0">
-                          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" alt="Mike" className="object-cover w-full h-full grayscale-[20%]" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex-1 overflow-y-auto pb-24 space-y-5 px-4 pt-4 relative z-0">
-
-                    {mainView === 'room' && (
-                      <div 
-                        onClick={() => setMainView('document')}
-                        className="bg-white hover:bg-violet-50 text-slate-800 text-xs p-3 rounded-xl flex flex-col gap-2 border border-violet-100 mb-3 shadow-[0_4px_20px_rgba(124,58,237,0.05)] cursor-pointer transition-all hover:border-violet-300 group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-violet-700 flex items-center gap-1.5"><FileText size={14} /> Document minimized</span>
-                          <Maximize2 size={12} className="text-violet-400 group-hover:text-violet-600" />
-                        </div>
-                        <div className="text-[11px] text-slate-500 font-medium truncate">{docTitleDisplay}</div>
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-violet-600 uppercase tracking-wider">
-                        <Sparkles size={10} /> Live Context
-                      </div>
-                      <div className="bg-white border border-gray-100 rounded-xl p-3 text-xs text-gray-700 leading-relaxed shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
-                        Discussing the Q2 launch timelines. Sarah is presenting the new branding assets for final review before deployment.
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Decisions</div>
-                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-default">
-                        <div className="mt-0.5 bg-emerald-100 p-0.5 rounded text-emerald-600"><Check size={10} strokeWidth={3} /></div>
-                        <span className="text-xs text-gray-700">Beta launch officially locked for May 15th.</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center justify-between">
-                        Action Items <button className="text-violet-600 hover:text-violet-700 normal-case tracking-normal">Add</button>
-                      </div>
-                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
-                        <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
-                        <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Sarah to upload final assets to the shared drive by Friday.</span>
-                      </div>
-                      <div className="bg-white border border-gray-100 rounded-xl p-2.5 shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-start gap-2.5 hover:border-violet-200 transition-colors cursor-pointer group">
-                        <div className="mt-0.5 border border-gray-300 w-3.5 h-3.5 rounded flex items-center justify-center group-hover:border-violet-400 transition-colors"></div>
-                        <span className="text-xs text-gray-700 group-hover:text-violet-800 transition-colors">Alex to update the Compose AI prompt templates.</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {mainView === 'document' && (
-                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center gap-1.5 p-1.5 bg-white/80 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] z-10 w-max">
-                      <button onClick={toggleRoomMic} className={`p-2 rounded-xl transition-all ${!isMicMuted ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                        {!isMicMuted ? <Mic size={16} /> : <MicOff size={16} />}
-                      </button>
-                      <button onClick={toggleRoomCamera} className={`p-2 rounded-xl transition-all ${!isVideoOff ? 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                        {!isVideoOff ? <Video size={16} /> : <VideoOff size={16} />}
-                      </button>
-                      <button onClick={toggleScreenShare} className={`p-2 rounded-xl transition-all ${isScreenSharing ? 'bg-emerald-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-100'}`}>
-                        <MonitorPlay size={16} />
-                      </button>
-                      <div className="w-px h-5 bg-gray-200 mx-1"></div>
-                      <button onClick={leaveRoom} className="px-2.5 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-all shadow-[0_8px_30px_rgba(124,58,237,0.06)] flex items-center gap-1.5 font-medium text-[11px] border border-red-600 active:scale-95">
-                        <PhoneOff size={14} /> Leave
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* STATE: MEETING SUMMARY */}
-              {roomState === 'summary' && (
-                <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white animate-fade-in relative">
-                  <div className="text-center pb-6 border-b border-gray-100">
-                    <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
-                      <PhoneOff size={20} />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900 tracking-tight">Room Ended</h3>
-                    <p className="text-xs text-gray-500 mt-1">{meetingSummary?.roomCode || 'q2-launch'} - {meetingSummary?.durationLabel || meetingDurationLabel} duration</p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-violet-600 uppercase tracking-wider">
-                      <Sparkles size={14} /> AI Session Recap
-                    </div>
-
-                    <div className="bg-[#FAFAFC] border border-gray-100 rounded-2xl p-4 space-y-4">
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-800 mb-1">Key Decisions</h4>
-                        <ul className="text-xs text-gray-600 space-y-1.5 pl-4 list-disc marker:text-emerald-500">
-                          {(meetingSummary?.decisions || ['Beta launch officially locked for May 15th.', 'Marketing budget increased by 15% for initial push.']).map((decision) => (
-                            <li key={decision}>{decision}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="h-px w-full bg-gray-200/60"></div>
-                      <div>
-                        <h4 className="text-xs font-bold text-gray-800 mb-1">Action Items</h4>
-                        <ul className="text-xs text-gray-600 space-y-1.5 pl-4 list-disc marker:text-violet-400">
-                          {(meetingSummary?.actionItems || ['Sarah to upload final assets by Friday.', 'Alex to update Compose AI prompts.']).map((actionItem) => (
-                            <li key={actionItem}>{actionItem}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <button
-                      onClick={() => setRoomState('lobby')}
-                      className="w-full bg-gray-100 text-gray-700 border border-gray-200 rounded-xl py-3 text-sm font-bold hover:bg-gray-200 transition-all active:scale-[0.98]"
-                    >
-                      Back to Lobby
-                    </button>
-                  </div>
-                </div>
-              )}
-
+            <div className="flex-1 flex flex-col p-6 items-center justify-center text-center bg-[#FAFAFC] animate-fade-in">
+              <div className="w-12 h-12 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center mb-3 border border-violet-100 shadow-sm">
+                <MonitorPlay size={20} />
+              </div>
+              <h3 className="text-sm font-bold text-slate-800">Meeting Room</h3>
+              <p className="text-xs text-slate-500 max-w-[240px] mt-1.5 leading-relaxed">
+                The meeting room is currently active in the workspace stage view.
+              </p>
+              <button 
+                onClick={() => {
+                  setProductMode('room');
+                  setFocusedModule('room');
+                }}
+                className="mt-4 px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-semibold shadow-[0_4px_12px_rgba(124,58,237,0.15)] transition-all active:scale-95"
+              >
+                Show Room View
+              </button>
             </div>
           )}
 
@@ -25684,7 +27659,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       setRightSidebarOpen(true);
       setActiveRightTab(tabKey);
       if (tabKey === 'room') {
-        setRoomState((prev) => prev || 'lobby');
+        setRoomState((prev) => prev || 'active');
       }
       if (options.meetingStageTab) {
         setActiveMeetingStageTab(options.meetingStageTab);
@@ -28334,246 +30309,463 @@ You can recommend task creations on the board.`;
   // The landing mode now integrates with the main Compose view
 
               // --- ROOM UI COMPONENTS ---
-  const renderRoomLeftSidebar = () => (
-    <div className="flex-1 flex flex-col p-4 gap-3 overflow-y-auto thin-scrollbar">
-      {/* Host */}
-      <div className="relative rounded-[24px] overflow-hidden bg-gray-100 min-h-[136px] border border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
-        {isRoomCameraOn && localStream ? (
-          <LocalVideoFeed stream={localStream} isCameraOn={isRoomCameraOn} />
-        ) : (
-          <img src={meetingParticipants[0]?.img || "https://images.unsplash.com/photo-1534528741775-53994a69daeb"} className="w-full h-full object-cover" alt="Host" />
-        )}
-        <div className="absolute top-2 left-2 bg-yellow-400 text-[10px] font-bold px-2 py-0.5 rounded-full text-yellow-900 shadow-[0_8px_30px_rgba(124,58,237,0.06)]">Host</div>
-        <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur px-3 py-2 flex items-center justify-between border-t border-gray-200/50">
-          <div>
-            <div className="text-xs font-bold text-gray-900">Joshua Sajous</div>
-            <div className="text-[10px] font-semibold text-violet-600">Speaking</div>
-          </div>
-          <div className="w-4 h-4 text-violet-600"><Mic size={14} /></div>
-        </div>
-      </div>
-      
-      {/* Participants */}
-      {meetingParticipants.slice(1, 4).map((participant, index) => (
-        <div key={index} className="relative rounded-[24px] overflow-hidden bg-gray-100 min-h-[136px] border border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)]">
-          <img src={participant.img} className="w-full h-full object-cover" alt={participant.name} />
-          <div className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur px-3 py-2 flex items-center justify-between border-t border-gray-200/50">
-            <div className="text-xs font-bold text-gray-900">{participant.name}</div>
-            <div className="flex items-center gap-1.5 text-gray-400">
-              <MicOff size={14} />
-              <MoreHorizontal size={14} />
-            </div>
-          </div>
-        </div>
-      ))}
-      
-      {/* More Participants */}
-      <div className="rounded-2xl bg-violet-50 border border-violet-100 p-4 flex items-center justify-between cursor-pointer hover:bg-violet-100 transition-colors">
-        <div>
-          <div className="flex -space-x-2 mb-1.5">
-            <div className="w-7 h-7 rounded-full bg-violet-200 border-2 border-white flex items-center justify-center text-[10px] font-bold text-violet-700">+1</div>
-          </div>
-          <div className="text-xs font-semibold text-violet-900">1 more participant</div>
-        </div>
-        <ChevronRight size={16} className="text-violet-400" />
-      </div>
-    </div>
-  );
+  const renderRoomLeftSidebar = () => {
+    // Only the local user (You) is always present. Remote participants would be
+    // added here via WebRTC signalling in a real multi-user implementation.
+    const youEntry = {
+      name: 'You',
+      sub: isRoomCameraOn ? 'Camera on' : 'Camera off',
+      state: 'host',
+      activeMic: isRoomMicOn,
+    };
 
-  const renderRoomRightSidebar = () => (
-    <div className="flex flex-col h-full bg-[#FAFAFC]">
-      <div className="h-16 flex items-center justify-between px-5 border-b border-gray-200/80 bg-white shrink-0">
-        <div className="flex items-center gap-2 text-gray-900 font-bold">
-          <Sparkles size={16} className="text-violet-600" /> Room Assistant
-        </div>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
-        {/* Meeting Summary */}
-        <div className="bg-white rounded-[20px] border border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-400 to-fuchsia-400"></div>
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-1.5 text-violet-700 font-semibold text-xs">
-              <FileText size={14} /> Meeting summary
-            </div>
-            <Clock size={12} className="text-gray-400" />
+    const allParticipants = [youEntry, ...roomParticipants];
+    const filtered = allParticipants.filter(p =>
+      p.name.toLowerCase().includes((peopleSearchQuery || '').toLowerCase())
+    );
+
+    return (
+      <div className="flex flex-col h-full bg-white font-sans">
+        {/* Header (Draggable) */}
+        <div
+          className="h-16 flex items-center justify-between px-6 border-b border-gray-50 shrink-0 cursor-move"
+          onPointerDown={(e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            setNavInteraction({ id: 'left', startX: e.clientX, startY: e.clientY, origin: leftNavOffset });
+          }}
+        >
+          <div className="flex items-center gap-2 pointer-events-none">
+            <span className="text-[15px] font-medium text-slate-800">People</span>
+            <span className="text-[11px] font-medium text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">{allParticipants.length}</span>
           </div>
-          <div className="text-[10px] text-gray-500 mb-2">AI generated �E 2 min ago</div>
-          <div className="text-xs text-gray-700 leading-relaxed mb-3">
-            The team discussed Q3 priorities, focusing on collaboration, AI integration, templates, and mobile improvements.
-          </div>
-          <button className="w-full py-1.5 rounded-lg border border-violet-200 text-violet-700 text-xs font-semibold hover:bg-violet-50 transition-colors">
-            View full summary
+          <button
+            onClick={() => setIsRoomLeftSidebarOpen(false)}
+            className="p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors"
+          >
+            <X size={16} />
           </button>
         </div>
 
-        {/* Action Items */}
-        <div className="bg-white rounded-[20px] border border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6">
-          <div className="flex items-center gap-2 mb-3 text-gray-900 font-semibold text-xs">
-            <ListTodo size={14} className="text-violet-600" /> Action items <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-md text-[10px]">3</span>
+        {/* Search Input */}
+        <div className="p-5 shrink-0">
+          <div className="relative flex items-center bg-[#F9FAFB] border border-transparent rounded-2xl px-4 py-3 shadow-[inset_0_1px_4px_rgba(0,0,0,0.01)] transition-colors focus-within:bg-white focus-within:border-gray-100">
+            <Search size={14} className="text-slate-300 mr-2 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search people"
+              value={peopleSearchQuery}
+              onChange={(e) => setPeopleSearchQuery(e.target.value)}
+              className="w-full bg-transparent text-[13px] font-normal text-slate-700 placeholder:text-slate-300 outline-none border-none py-0.5"
+            />
           </div>
-          <div className="space-y-3">
-            {[
-              { text: "Alex to draft AI integration plan", due: "May 26", img: meetingParticipants[1]?.img },
-              { text: "Michelle to explore template ideas", due: "May 27", img: meetingParticipants[2]?.img },
-              { text: "Joshua to review mobile roadmap", due: "May 28", img: meetingParticipants[0]?.img },
-            ].map((task, i) => (
-              <div key={i} className="flex gap-2">
-                <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-300 mt-0.5 shrink-0"></div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-gray-800 font-medium truncate">{task.text}</div>
-                  <div className="text-[10px] text-gray-500">Due {task.due}</div>
-                </div>
-                <img src={task.img} className="w-5 h-5 rounded-full border border-white" alt="" />
+        </div>
+
+        {/* List */}
+        <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-1 thin-scrollbar">
+          {filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 pb-8 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Users size={20} className="text-slate-300" />
               </div>
-            ))}
-          </div>
-          <button className="w-full mt-3 py-1.5 text-center text-violet-600 text-xs font-semibold hover:underline">
-            All tasks in Room
+              <p className="text-[13px] font-medium text-slate-400">No results</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">Try a different name or clear the search.</p>
+            </div>
+          ) : (
+            filtered.map((p, idx) => (
+              <div key={idx} className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 transition-colors">
+                <div className="flex items-center gap-3">
+                  {/* Avatar — live video thumbnail for "You" when camera is on */}
+                  {p.name === 'You' ? (
+                    <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 shadow-sm bg-slate-900 border border-slate-100/50">
+                      {isRoomCameraOn ? (
+                        <video
+                          ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-violet-500 flex items-center justify-center text-white text-[11px] font-bold">
+                          Y
+                        </div>
+                      )}
+                      {/* Host crown badge */}
+                      <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center">
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-[11px] font-bold shrink-0 shadow-sm border border-slate-100/50">
+                      {p.name.charAt(0)}
+                    </div>
+                  )}
+                  <div className="text-left min-w-0">
+                    <div className="text-[13px] font-normal text-slate-700 leading-normal truncate">{p.name}</div>
+                    <div className={`text-[10px] leading-normal font-normal tracking-wide mt-0.5 ${p.state === 'speaking' ? 'text-violet-400 font-medium' : 'text-slate-400'}`}>
+                      {p.sub}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mic/speaking indicator */}
+                <div className="shrink-0 mr-1">
+                  {p.state === 'speaking' ? (
+                    <div className="flex items-end gap-[2px] h-3.5 px-1">
+                      <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.8s_infinite_alternate]" style={{ height: '60%' }} />
+                      <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.5s_infinite_alternate]" style={{ height: '100%' }} />
+                      <span className="w-[2px] bg-violet-400 rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }} />
+                    </div>
+                  ) : p.activeMic ? (
+                    <Mic size={14} className="text-violet-400" />
+                  ) : (
+                    <MicOff size={14} className="text-slate-200" />
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+
+          {/* "Waiting for others" nudge when only You is in the call */}
+          {roomParticipants.length === 0 && peopleSearchQuery === '' && (
+            <div className="flex flex-col items-center justify-center h-full gap-3 mt-12 text-center pb-6">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <Users size={20} className="text-slate-300" />
+              </div>
+              <p className="text-[13px] font-medium text-slate-400">You're the only one here</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">Share the meeting link to invite others.</p>
+              <button
+                onClick={() => setIsRoomInviteModalOpen(true)}
+                className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <UserPlus size={12} />
+                Invite people
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Invite button */}
+        <div className="p-4 border-t border-gray-50 shrink-0">
+          <button
+            onClick={() => setIsRoomInviteModalOpen(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 bg-violet-50/50 hover:bg-violet-50 text-violet-500 text-xs font-medium rounded-2xl transition-colors"
+          >
+            <UserPlus size={14} />
+            <span>Invite people</span>
           </button>
         </div>
       </div>
-      
-      {/* Tabs at bottom */}
-      <div className="shrink-0 bg-white border-t border-gray-200 flex flex-col h-1/3">
-        <div className="flex items-center border-b border-gray-200">
-          <div onClick={() => setActiveRoomSidebarTab('chat')} className={`px-4 py-3 text-[13px] font-semibold cursor-pointer ${activeRoomSidebarTab === 'chat' ? 'text-violet-700 border-b-[3px] border-violet-600' : 'text-slate-500 hover:text-slate-800'}`}>Chat</div>
-          <div onClick={() => setActiveRoomSidebarTab('notes')} className={`px-4 py-3 text-[13px] font-semibold cursor-pointer ${activeRoomSidebarTab === 'notes' ? 'text-violet-700 border-b-[3px] border-violet-600' : 'text-slate-500 hover:text-slate-800'}`}>Notes</div>
-          <div onClick={() => setActiveRoomSidebarTab('highlights')} className={`px-4 py-3 text-[13px] font-semibold cursor-pointer ${activeRoomSidebarTab === 'highlights' ? 'text-violet-700 border-b-[3px] border-violet-600' : 'text-slate-500 hover:text-slate-800'}`}>Highlights</div>
-        </div>
-        {activeRoomSidebarTab === 'chat' && (
-          <>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
-              <div className="flex gap-2.5">
-                <img src={meetingParticipants[0]?.img} className="w-6 h-6 rounded-full shrink-0" alt="" />
-                <div>
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-bold text-gray-900">Joshua</span>
-                    <span className="text-[10px] text-gray-400">9:40 AM</span>
-                  </div>
-                  <div className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded-xl rounded-tl-none border border-gray-100">
-                    Let's launch the new template system in September.
-                  </div>
-                  <div className="inline-flex mt-1 bg-violet-50 text-violet-700 px-1.5 py-0.5 rounded-full text-[10px] border border-violet-100">🙌 2</div>
-                </div>
-              </div>
-              <div className="flex gap-2.5">
-                <img src={meetingParticipants[2]?.img} className="w-6 h-6 rounded-full shrink-0" alt="" />
-                <div>
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-bold text-gray-900">Michelle</span>
-                    <span className="text-[10px] text-gray-400">9:41 AM</span>
-                  </div>
-                  <div className="text-xs text-gray-700 leading-relaxed bg-gray-50 p-2 rounded-xl rounded-tl-none border border-gray-100">
-                    Sounds good! I'll share some inspiration in the whiteboard.
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="p-3 bg-white border-t border-gray-100">
-              <div className="relative">
-                <input type="text" placeholder="Message everyone..." className="w-full bg-gray-50 border border-gray-200 rounded-[24px] py-0 pl-4 pr-12 text-[13px] outline-none focus:border-violet-300 min-h-[48px]" />
-                <button className="absolute right-2 top-2 w-8 h-8 rounded-full bg-violet-600 text-white flex items-center justify-center shadow-[0_8px_30px_rgba(124,58,237,0.06)] hover:bg-violet-700">
-                  <Send size={10} />
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-        
-        {activeRoomSidebarTab === 'notes' && (
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 mb-3">
-              <FileText size={24} />
-            </div>
-            <div className="text-sm font-semibold text-slate-800">No notes yet</div>
-            <div className="text-xs text-slate-500 mt-1">Take notes during the meeting to see them here.</div>
-          </div>
-        )}
-        
-        {activeRoomSidebarTab === 'highlights' && (
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 mb-3">
-              <Sparkles size={24} />
-            </div>
-            <div className="text-sm font-semibold text-slate-800">No highlights yet</div>
-            <div className="text-xs text-slate-500 mt-1">Important moments will be highlighted here automatically.</div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
+  };
 
+
+
+  const renderRoomRightSidebar = () => {
+    const handleSendMessage = (e) => {
+      e.preventDefault();
+      if (!roomChatInput.trim()) return;
+      
+      const newMessage = {
+        id: Date.now(),
+        sender: 'You',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        text: roomChatInput,
+        isSelf: true
+      };
+      
+      setRoomChatMessages(prev => [...prev, newMessage]);
+      setRoomChatInput('');
+      
+      // Auto-scroll to bottom
+      setTimeout(() => {
+        roomChatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    };
+
+    return (
+      <div className="flex flex-col h-full bg-white font-sans">
+        {/* Chat Header (Draggable) */}
+        <div 
+          className="h-[72px] flex items-center justify-between px-6 border-b border-gray-50/80 shrink-0 cursor-move"
+          onPointerDown={(e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            setNavInteraction({ id: 'right', startX: e.clientX, startY: e.clientY, origin: rightNavOffset });
+          }}
+        >
+          <span className="text-[15px] font-medium text-slate-800 pointer-events-none">Chat</span>
+          <button onClick={() => setIsRoomRightSidebarOpen(false)} className="p-2 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Everyone / Direct Tabs */}
+        <div className="flex items-center border-b border-gray-50/80 px-4 shrink-0">
+          <button
+            onClick={() => setActiveRoomChatTab?.('everyone')}
+            className={`px-4 py-3 text-[13px] font-medium transition-colors ${
+              (activeRoomChatTab !== 'direct') ? 'text-slate-800 border-b-2 border-slate-800' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >Everyone</button>
+          <button
+            onClick={() => setActiveRoomChatTab?.('direct')}
+            className={`px-4 py-3 text-[13px] font-medium transition-colors ${
+              activeRoomChatTab === 'direct' ? 'text-slate-800 border-b-2 border-slate-800' : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >Direct messages</button>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-5 py-6 space-y-7 thin-scrollbar">
+          {roomChatMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center">
+                <MessageSquare size={20} className="text-slate-300" />
+              </div>
+              <p className="text-[13px] font-medium text-slate-400">No messages yet</p>
+              <p className="text-[11px] text-slate-300 leading-relaxed max-w-[160px]">Start the conversation by sending a message.</p>
+            </div>
+          ) : (
+            roomChatMessages.map((msg) => (
+              <div key={msg.id} className={`flex gap-3 ${msg.isSelf ? 'flex-row-reverse' : ''}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 shadow-sm ${msg.isSelf ? 'bg-violet-500 text-white' : 'bg-slate-200 text-slate-500 border border-slate-100/50'}`}>
+                  {msg.isSelf ? 'Y' : msg.sender.charAt(0)}
+                </div>
+                <div className={`flex-1 min-w-0 flex flex-col ${msg.isSelf ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex items-baseline gap-2 mb-1 ${msg.isSelf ? 'flex-row-reverse' : ''}`}>
+                    <span className="text-[13px] font-semibold text-slate-800">{msg.sender}</span>
+                    <span className="text-[11px] font-medium text-slate-400">{msg.time}</span>
+                  </div>
+                  <div className={`px-4 py-2.5 rounded-2xl inline-block max-w-[85%] ${msg.isSelf ? 'bg-violet-50 text-violet-700 rounded-tr-sm' : 'bg-slate-50 text-slate-600 rounded-tl-sm border border-slate-100/50'}`}>
+                    <p className="text-[13px] font-normal leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+          <div ref={roomChatEndRef} />
+        </div>
+
+        {/* Message Input */}
+        <div className="p-4 border-t border-gray-50 shrink-0 bg-white">
+          <form onSubmit={handleSendMessage} className="relative flex items-center">
+            <input
+              type="text"
+              value={roomChatInput}
+              onChange={(e) => setRoomChatInput(e.target.value)}
+              placeholder="Message everyone..."
+              className="w-full bg-[#F9FAFB] border border-transparent rounded-[24px] py-3.5 pl-5 pr-12 text-[13px] text-slate-700 placeholder:text-slate-300 outline-none focus:bg-white focus:border-gray-100 transition-colors shadow-[inset_0_1px_4px_rgba(0,0,0,0.01)]"
+            />
+            <button 
+              type="submit"
+              disabled={!roomChatInput.trim()}
+              className="absolute right-2 w-9 h-9 rounded-full bg-white border border-transparent text-slate-300 flex items-center justify-center hover:bg-violet-50 hover:text-violet-500 transition-all shadow-sm disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-slate-300"
+            >
+              <Send size={14} />
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  };
   
 const renderRoomTopHeader = () => (
-    <div className="absolute top-0 left-0 right-0 h-[88px] bg-white border-b border-gray-200 flex items-center justify-between px-8 py-5 z-50">
-      <div className="flex items-center gap-4">
-        <div className="bg-violet-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-          Meeting Active
+    <div className="shrink-0 h-[90px] bg-transparent flex items-center justify-between px-10 relative pt-2" style={{ zIndex: 999999 }}>
+      <div className="flex items-center gap-10">
+        {/* Logo */}
+        <div className="flex items-center gap-2.5 select-none">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="3.5" fill="#A78BFA" />
+            <circle cx="12" cy="5.5" r="2.5" fill="#A78BFA" />
+            <circle cx="17.63" cy="8.75" r="2.5" fill="#A78BFA" />
+            <circle cx="17.63" cy="15.25" r="2.5" fill="#A78BFA" />
+            <circle cx="12" cy="18.5" r="2.5" fill="#A78BFA" />
+            <circle cx="6.37" cy="15.25" r="2.5" fill="#A78BFA" />
+            <circle cx="6.37" cy="8.75" r="2.5" fill="#A78BFA" />
+          </svg>
+          <span className="text-[18px] font-medium text-violet-400 tracking-tight font-sans">Room</span>
         </div>
-        <div className="text-slate-900 font-semibold text-[24px] leading-[32px] flex items-center gap-2">Product Strategy Meeting <ChevronDown size={18} className="text-slate-400" /></div>
+
+        {/* Product Sync dropdown */}
+        <div className="flex items-center gap-3">
+          <button className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-transparent hover:bg-slate-50 transition-colors text-[14px] font-medium text-slate-600">
+            Product Sync
+            <ChevronDown size={14} className="text-slate-300" />
+          </button>
+          <button className="flex items-center gap-1.5 px-2 py-1 rounded-full border border-gray-50 hover:bg-slate-50 transition-colors text-[11px] font-medium text-slate-500 shadow-sm">
+            <Users size={11} className="text-slate-400" />
+            <span>{1 + roomParticipants.length}</span>
+          </button>
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <button onClick={() => { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else if (document.exitFullscreen) { document.exitFullscreen(); } }} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors" title="Toggle Fullscreen">
-          <Expand size={20} />
+
+      {/* Right side options */}
+      <div className="flex items-center gap-4">
+        <div className="relative" ref={invitesMenuRef}>
+          <button 
+            onClick={() => setIsInvitesOpen(!isInvitesOpen)}
+            className={`p-2.5 rounded-2xl relative ${isInvitesOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
+            title="Invites"
+          >
+            <Bell size={16} />
+            {invites.length > 0 && (
+              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+            )}
+          </button>
+          
+          {isInvitesOpen && (
+            <div className="absolute top-full right-0 mt-2 w-80 bg-white/90 backdrop-blur-xl border border-white/60 shadow-[0_16px_40px_rgba(0,0,0,0.08)] rounded-[24px] p-4 z-50 animate-in fade-in slide-in-from-top-2">
+              <h3 className="font-semibold text-slate-800 mb-3 px-2">Invites</h3>
+              {invites.length === 0 ? (
+                <div className="text-sm text-slate-400 text-center py-4">No new invites</div>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto thin-scrollbar pr-1">
+                  {invites.map(notif => (
+                    <div key={notif.id} className="p-3 bg-violet-50/50 rounded-2xl border border-violet-100/50">
+                       <p className="text-sm font-medium text-slate-800 mb-1">{notif.sender} invited you to <span className="font-semibold text-violet-600">{notif.title}</span></p>
+                       <p className="text-xs text-slate-500 mb-3">{notif.date} at {notif.time}</p>
+                       <div className="flex gap-2">
+                         <button 
+                           onClick={async () => {
+                             try {
+                               const token = localStorage.getItem('rc.token');
+                               if (token) {
+                                 await fetch(`${API_BASE_URL}/api/invites/${notif.id}/accept`, {
+                                   method: 'POST',
+                                   headers: { 'Authorization': `Bearer ${token}` }
+                                 });
+                                 setInvites(invites.filter(n => n.id !== notif.id));
+                                 alert('Meeting accepted and added to your calendar!');
+                               }
+                             } catch (err) {
+                               console.error(err);
+                             }
+                           }}
+                           className="flex-1 py-1.5 bg-violet-500 text-white text-xs font-medium rounded-xl hover:bg-violet-600 transition-colors"
+                         >Accept</button>
+                         <button 
+                           onClick={async () => {
+                             try {
+                               const token = localStorage.getItem('rc.token');
+                               if (token) {
+                                 await fetch(`${API_BASE_URL}/api/invites/${notif.id}`, {
+                                   method: 'DELETE',
+                                   headers: { 'Authorization': `Bearer ${token}` }
+                                 });
+                                 setInvites(invites.filter(n => n.id !== notif.id));
+                               }
+                             } catch (err) {
+                               console.error(err);
+                             }
+                           }}
+                           className="flex-1 py-1.5 bg-white text-slate-600 text-xs font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+                         >Ignore</button>
+                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <button 
+          onClick={() => setIsDistractionFreeMode(!isDistractionFreeMode)}
+          className={`p-2.5 rounded-2xl transition-colors ${isDistractionFreeMode ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
+          title="Distraction Free Mode"
+        >
+          <Shield size={16} />
         </button>
+
+        {/* Recording pill */}
+        <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full border shadow-sm ${isRoomRecording ? 'border-emerald-100/50 bg-emerald-50/10' : 'border-slate-200 bg-white'}`}>
+          {isRoomRecording ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> : <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>}
+          <span className="text-[11px] font-medium text-slate-600 tracking-wide pr-1">Recording</span>
+        </div>
+
+        <button 
+          onClick={() => {
+            const nextMaximized = !roomMaximized;
+            setRoomMaximized(nextMaximized);
+            if (nextMaximized) {
+              if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(()=>{});
+              }
+            } else {
+              if (document.exitFullscreen && document.fullscreenElement) {
+                document.exitFullscreen().catch(()=>{});
+              }
+            }
+          }}
+          className="p-2.5 rounded-2xl text-slate-300 hover:bg-slate-50 hover:text-slate-600 transition-colors" 
+          title={roomMaximized ? "Exit full screen" : "Full screen"}
+        >
+          {roomMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+        </button>
+
+        <div className="relative" ref={moreMenuRef}>
+          <button 
+            onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+            className={`p-2.5 rounded-2xl transition-colors ${isMoreMenuOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
+            title="More Options"
+          >
+            <MoreHorizontal size={16} />
+          </button>
+          
+          {/* More Options Dropdown */}
+          {isMoreMenuOpen && (
+            <div className="absolute top-[calc(100%+8px)] right-0 w-48 bg-white/95 backdrop-blur-xl rounded-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.12)] border border-white/60 p-2" style={{ zIndex: 999999 }}>
+              <button 
+                onClick={() => { setIsRoomCaptionsEnabled(!isRoomCaptionsEnabled); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
+              >
+                <MessageSquare size={16} /> {isRoomCaptionsEnabled ? 'Disable Captions' : 'Captions'}
+              </button>
+              <button 
+                onClick={() => { toggleScreenShare(); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
+              >
+                <MonitorPlay size={16} /> Present
+              </button>
+              <button 
+                onClick={() => { setIsNotesModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
+              >
+                <FileText size={16} /> Notes
+              </button>
+              <button 
+                onClick={() => { setIsSummaryModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
+              >
+                <Sparkles size={16} /> Summary
+              </button>
+              <button 
+                onClick={() => { setIsCalendarModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
+              >
+                <Calendar size={16} /> Calendar
+              </button>
+              <button 
+                onClick={() => { setIsMeetingsModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
+              >
+                <Users size={16} /> Meetings
+              </button>
+              <button 
+                onClick={() => { setIsRecordingModalOpen(true); setIsMoreMenuOpen(false); }}
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-600 hover:text-violet-600 hover:bg-violet-50 rounded-[16px]"
+              >
+                <Disc size={16} /> Recording
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 
-  const renderRoomBottomBar = () => (
-    <div className="absolute bottom-0 left-0 right-0 h-[80px] bg-white border-t border-[rgba(124,58,237,0.08)] shadow-[0_8px_30px_rgba(124,58,237,0.06)] z-[500] flex items-center justify-between px-8">
-      
-      {/* Left */}
-      <div className="flex items-center gap-2">
-        <button className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
-          <div className="w-2 h-2 rounded-full border-2 border-gray-500"></div> Record
-        </button>
-        <button className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
-          <span className="font-bold border border-gray-400 rounded-sm px-1 text-[10px] leading-tight mt-0.5">CC</span> Captions
-        </button>
-      </div>
-      
-      {/* Center Controls */}
-      <div className="flex items-center gap-3">
-        <button onClick={toggleRoomMic} className={`flex items-center gap-2 px-4 h-[48px] rounded-[999px] text-sm font-semibold transition-colors ${!isMicMuted ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-          {!isMicMuted ? <Mic size={18} /> : <MicOff size={18} />} Mic <ChevronUp size={14} className="ml-1 opacity-50" />
-        </button>
-        
-        <button onClick={toggleRoomCamera} className={`flex items-center gap-2 px-4 h-[48px] rounded-[999px] text-sm font-semibold transition-colors ${!isVideoOff ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-          {!isVideoOff ? <Video size={18} /> : <VideoOff size={18} />} Camera <ChevronUp size={14} className="ml-1 opacity-50" />
-        </button>
-        
-        <button onClick={() => handleMeetingShareOption('document')} className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
-          <ArrowUp size={18} /> Present <ChevronUp size={14} className="ml-1 opacity-50" />
-        </button>
-
-        <button className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-1.5 rounded-md flex items-center gap-2 transition-all active:scale-95">
-          <Sparkles size={16} /> Room AI
-        </button>
-
-        <button className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
-          <FileText size={18} /> Notes
-        </button>
-
-        <button className="relative flex items-center gap-2 px-4 h-[48px] rounded-[999px] bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-colors">
-          <Users size={18} /> People
-          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-600 text-white text-[9px] font-bold flex items-center justify-center border border-white">5</div>
-        </button>
-      </div>
-      
-      {/* Right */}
-      <div className="flex items-center gap-3">
-        <button className="flex items-center gap-2 px-4 h-[48px] rounded-[999px] border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors">
-          <MoreHorizontal size={18} /> More
-        </button>
-        <button onClick={leaveRoom} className="flex items-center gap-2 px-5 h-[48px] rounded-[999px] bg-red-50 text-red-600 border border-red-100 text-sm font-bold hover:bg-red-100 transition-colors">
-          <PhoneOff size={18} /> Leave room
-        </button>
-      </div>
-    </div>
-  );
+  const renderRoomBottomBar = () => null;
   // --- END ROOM UI COMPONENTS ---
 
 
@@ -28856,7 +31048,7 @@ const renderRoomTopHeader = () => (
         ? { email: authEmail, password: authPassword }
         : { email: authEmail, password: authPassword, name: authName };
 
-      const res = await fetch(`http://localhost:3001${endpoint}`, {
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -28891,7 +31083,7 @@ const renderRoomTopHeader = () => (
     const mockName = provider === 'google' ? 'Google Developer' : 'Apple User';
 
     try {
-      const res = await fetch('http://localhost:3001/api/auth/social', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/social`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -29078,7 +31270,7 @@ const renderRoomTopHeader = () => (
 
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
-      <div ref={appShellRef} className={`flex h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex ${productMode === 'deck' ? 'flex-col' : ''} h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <div className="fixed inset-0 pointer-events-none z-[9999]">
           {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
@@ -29292,63 +31484,42 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
         {deckSlidesPanelOpen && (
-        <aside className="w-[220px] border-r border-gray-200 bg-[#f8f9fd] flex flex-col">
-          <div className="h-14 px-4 border-b border-gray-200 flex flex-col justify-center">
-            <div className="flex items-center justify-between gap-2">
-              <div>
-                <div 
-                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                  suppressContentEditableWarning
-                  className="text-sm font-semibold text-gray-800 outline-none focus:bg-white focus:ring-1 focus:ring-violet-200 rounded px-1 -mx-1"
-                >
-                  {isSheetsMode ? 'Sheets' : 'Narrative'}
-                </div>
-                {(!isSheetsMode || sheetsData.length > 1) && (
-                  <div 
-                    contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                    suppressContentEditableWarning
-                    className="text-[11px] text-gray-500 mt-0.5 outline-none focus:bg-white focus:ring-1 focus:ring-violet-200 rounded px-1 -mx-1"
-                  >
-                    {isSheetsMode ? 'Financial models' : 'Investor Pitch'}
-                  </div>
-                )}
+        <aside className="w-[240px] border-r border-gray-200 bg-[#f8f9fd] flex flex-col shrink-0">
+          {/* Top Sidebar Action */}
+          <div className="h-16 px-4 border-b border-gray-200 flex items-center justify-between shrink-0">
+            <button
+              type="button"
+              onClick={isSheetsMode ? addWorksheet : addDeckSlide}
+              className="w-full flex items-center justify-between px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm text-xs font-semibold text-slate-700 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Plus size={14} className="text-[#7C4DFF]" />
+                <span>New Slide</span>
               </div>
-            </div>
+              <ChevronDown size={12} className="text-gray-400" />
+            </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
+
+          {/* Slide List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
             {(isSheetsMode ? sheetsData : deckSlides).length === 0 && (
               <div className="rounded-xl border border-dashed border-gray-300 bg-white p-3 text-xs text-gray-500">
-                {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet. Create one to see a live preview.'}
+                {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet.'}
               </div>
             )}
             {(isSheetsMode ? sheetsData : deckSlides).map((item, index, collection) => {
               const isActive = isSheetsMode ? item.id === activeSheetId : item.id === activeDeckSlideId;
-              const currentSection = !isSheetsMode ? (item.section || inferDeckStorySection(item, index, collection.length)) : '';
-              const previousSection = !isSheetsMode && index > 0
-                ? (collection[index - 1].section || inferDeckStorySection(collection[index - 1], index - 1, collection.length))
-                : '';
-              const shouldShowSectionHeader = !isSheetsMode && (index === 0 || currentSection !== previousSection);
+              
               return (
-                <React.Fragment key={item.id}>
-                  {shouldShowSectionHeader && (
-                    <div className="pt-1 pb-0.5 px-1">
-                      <div className="inline-flex items-center rounded-full border border-violet-100 bg-violet-50/70 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-violet-700">
-                        {currentSection}
-                      </div>
-                    </div>
-                  )}
+                <div key={item.id} className="flex items-center gap-3">
+                  {/* Slide number */}
+                  <span className="text-xs font-bold text-gray-400 w-4 text-right">
+                    {index + 1}
+                  </span>
+                  
+                  {/* Thumbnail Card */}
                   <button
                     type="button"
-                    onContextMenu={(event) => {
-                      event.preventDefault();
-                      setPageContextMenu({
-                        open: true,
-                        x: event.clientX,
-                        y: event.clientY,
-                        itemId: item.id,
-                        isSheets: isSheetsMode,
-                      });
-                    }}
                     onClick={() => {
                       if (isSheetsMode) {
                         setActiveSheetId(item.id);
@@ -29357,36 +31528,43 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setActiveDeckSlideId(item.id);
                       }
                     }}
-                    className={`w-full relative rounded-xl p-2 text-left transition-colors ${isActive ? 'bg-violet-50' : 'bg-transparent hover:bg-gray-50/80'}`}
+                    className={`flex-1 relative rounded-[14px] overflow-hidden border border-gray-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] aspect-[16/9] transition-all ${
+                      isActive 
+                        ? 'outline outline-[2px] outline-[#7C4DFF] outline-offset-1 shadow-md' 
+                        : 'hover:border-gray-300'
+                    }`}
                   >
-                    {isActive && <div className="absolute left-0 top-3 bottom-3 w-[3px] bg-violet-500 rounded-r-full" />}
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-[108px] h-[61px] rounded-lg shrink-0 relative overflow-hidden border border-gray-200 bg-white shadow-sm">
-                        <img
-                          src={isSheetsMode
-                            ? (sheetSnapshotPreviews[item.id] || buildSheetPreviewDataUri(item))
-                            : (deckSnapshotPreviews[item.id] || buildDeckPreviewDataUri(item))}
-                          alt={isSheetsMode ? `Sheet preview ${item.title}` : `Slide preview ${item.title}`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                      </div>
-                      <div className="min-w-0 py-0.5">
-                        <div className="text-[10px] font-bold text-gray-400 mb-0.5">{String(item.id).padStart(2, '0')}</div>
-                        <div className="text-[11px] font-medium text-gray-700 leading-snug line-clamp-2">{item.title}</div>
-                      </div>
+                    <img
+                      src={isSheetsMode
+                        ? (sheetSnapshotPreviews[item.id] || buildSheetPreviewDataUri(item))
+                        : (deckSnapshotPreviews[item.id] || buildDeckPreviewDataUri(item))}
+                      alt={isSheetsMode ? `Sheet preview ${item.title}` : `Slide preview ${item.title}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    {/* Floating slide overlay text */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent flex flex-col justify-end p-2 opacity-0 hover:opacity-100 transition-opacity">
+                      <span className="text-[10px] text-white font-semibold truncate">{item.title}</span>
                     </div>
                   </button>
-                </React.Fragment>
+                </div>
               );
             })}
-            <button
-              type="button"
-              onClick={isSheetsMode ? addWorksheet : addDeckSlide}
-              className="w-full rounded-xl border border-dashed border-gray-300 py-2 text-xs font-medium text-gray-500 hover:border-violet-300 hover:text-violet-700"
-            >
-              {isSheetsMode ? '+ Add worksheet' : '+ New slide'}
-            </button>
+          </div>
+
+          {/* Bottom Sidebar Action */}
+          <div className="p-3 border-t border-gray-200 bg-white flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+              {isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? 'sheets' : 'slides'}
+            </div>
+            <div className="flex items-center gap-1 border border-gray-200 rounded-lg p-0.5 bg-gray-50">
+              <button type="button" className="p-1 rounded-md bg-white shadow-sm text-slate-700 hover:text-gray-900" title="Grid view">
+                <LayoutGrid size={13} />
+              </button>
+              <button type="button" className="p-1 rounded-md text-slate-400 hover:text-gray-600" title="List view">
+                <List size={13} />
+              </button>
+            </div>
           </div>
         </aside>
         )}
@@ -29437,51 +31615,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => setLeftSidebarOpen((prev) => !prev)}
-                    className={`p-1.5 rounded-md border transition-colors ${leftSidebarOpen ? 'text-violet-700 border-violet-200 bg-violet-50 hover:bg-violet-100' : 'text-gray-400 border-gray-200 hover:text-gray-700 hover:bg-gray-100'}`}
-                    title={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
-                    aria-label={leftSidebarOpen ? 'Hide Regaarder panel' : 'Show Regaarder panel'}
-                  >
-                    <Sidebar size={16} />
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#7C4DFF]" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
+                      <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span className="font-bold text-[18px] text-gray-900 tracking-tight">Deck</span>
+                  </div>
+                  <button type="button" onClick={() => showToast('Opening saved decks')} className="flex items-center gap-1 text-[13px] text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1.5 rounded-lg border border-gray-150 bg-white ml-3 transition-colors">
+                    <FolderOpen size={14} className="text-gray-500" />
+                    <span>Saved decks</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100"
-                    title={deckSlidesPanelOpen ? 'Hide slides panel' : 'Show slides panel'}
-                  >
-                    {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-                  </button>
-                  <div className="text-sm font-semibold text-gray-900 truncate">Regaarder Deck</div>
-                  {isEditingUnsavedDraftName ? (
-                    <input
-                      autoFocus
-                      type="text"
-                      value={deckTitle}
-                      onChange={(event) => setDeckTitle(event.target.value)}
-                      onBlur={() => setIsEditingUnsavedDraftName(false)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === 'Escape') {
-                          e.preventDefault();
-                          setIsEditingUnsavedDraftName(false);
-                        }
-                      }}
-                      className="text-sm text-gray-500 font-medium italic bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
-                      placeholder="Untitled deck"
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingUnsavedDraftName(true)}
-                      className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left truncate"
-                    >
-                      {deckTitle || 'Unsaved draft'}
-                    </button>
-                  )}
-                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 ml-4 hidden sm:flex">
-                    <Cloud size={14} /> {savedStatusLabel}
+                  <div className="flex items-center gap-1.5 text-[12px] font-semibold text-gray-400 ml-4 hidden sm:flex">
+                    <Cloud size={14} className="text-gray-400" />
+                    <span>Saved just now</span>
                   </div>
                 </>
               )}
@@ -29490,68 +31637,70 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <div className="flex items-center gap-1">
               {/* History Group */}
               <div className="flex items-center gap-0.5 px-2">
-                <button onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
-                <button onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
-                <button onClick={openReplayPanel} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`} title="History (Ctrl+H)"><Clock size={16} /></button>
-                {!isSheetsMode && (
-                  <button onClick={() => setShowDeckComments(s => !s)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${showDeckComments ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`} title="Comments"><MessageSquareText size={16} /></button>
-                )}
+                <button onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
+                <button onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Redo (Ctrl+Y)"><Redo2 size={16} /></button>
               </div>
 
-              <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-1"></div>
+              <div className="w-px h-5 bg-gray-200 mx-1"></div>
 
-              {/* Display Group */}
-              <div className="flex items-center gap-0.5 px-2">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2 pl-3">
                 <button
                   type="button"
-                  onClick={() => setIsDarkMode((prev) => !prev)}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
-                  title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                  onClick={handlePresentDeck}
+                  className="bg-white border border-gray-250 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 active:scale-95"
                 >
-                  {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                  <MonitorPlay size={14} /> Present
                 </button>
-                <button
-                  type="button"
-                  onClick={toggleDocumentImmersiveMode}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
-                  title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
-                >
-                  {isDocumentImmersive ? <Minimize2 size={16} /> : <Expand size={16} />}
-                </button>
-              </div>
-
-              <div className="w-px h-5 bg-gray-200 dark:bg-zinc-800 mx-1"></div>
-
-              {/* Collaboration Group */}
-              <div className="flex items-center gap-4 pl-3">
+                <div className="relative export-menu-container">
+                  <button
+                    onClick={() => {
+                      closeTransientMenus();
+                      setDeckExportMenuOpen(!deckExportMenuOpen);
+                    }}
+                    className="bg-white border border-gray-250 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-3 py-2 rounded-lg flex items-center gap-1 shadow-sm transition-all"
+                  >
+                    <span>Export</span> <ChevronDown size={12} />
+                  </button>
+                  {deckExportMenuOpen && (
+                    <div className="absolute right-0 top-11 z-[230] w-52 bg-white border border-slate-200 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-2 flex flex-col gap-1 font-sans">
+                      {['PPTX', 'PDF', 'Images'].map(fmt => (
+                        <button
+                          key={fmt}
+                          onClick={() => {
+                            showToast(`Exporting as ${fmt}...`);
+                            setDeckExportMenuOpen(false);
+                          }}
+                          className="w-full flex items-center justify-between text-xs p-2 rounded-lg text-slate-700 hover:bg-slate-50 transition-colors text-left font-medium"
+                        >
+                          {fmt}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={() => openShareModal(activeDocId || documents[0]?.id)}
-                  className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+                  className="bg-[#7C4DFF] hover:bg-[#6C3DF0] text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
                 >
                   <Users size={14} /> Share
                 </button>
-                <div className="flex items-center gap-4">
-                  {/* Remote Users Pile */}
-                  <div className="flex -space-x-1.5 mr-1">
-                    {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
-                      if (!userState.user) return null;
-                      const isMe = clientID === providerRef.current?.awareness?.clientID;
-                      if (isMe) return null; // Render me separately
-                      return (
-                        <div
-                          key={`remote-avatar-${idx}`}
-                          className="w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] shadow-sm flex items-center justify-center text-[11px] font-bold text-white relative group"
-                          style={{ backgroundColor: userState.user.color }}
-                        >
-                          {userState.user.name.charAt(0).toUpperCase()}
-                          <div className="absolute top-full mt-1 bg-black/85 backdrop-blur-md text-white text-[10px] py-1 px-2 rounded-lg opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none z-[500] transition-opacity shadow-md">
-                            {userState.user.name}
-                          </div>
-                        </div>
-                      );
-                    })}
+                
+                {/* User avatar, notification bell, settings */}
+                <div className="flex items-center gap-3 ml-2">
+                  <div className="w-8 h-8 rounded-full bg-[#7C4DFF] text-white font-semibold text-xs flex items-center justify-center shadow-sm select-none">
+                    U
                   </div>
+                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
+                    <Bell size={16} />
+                  </button>
+                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
+                    <Settings size={16} />
+                  </button>
+                </div>
+              </div>
+                </div>
 
                   {/* Local User Profile Avatar Button */}
                   <div className="relative" ref={profileMenuRef}>
@@ -29663,7 +31812,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600 dark:text-violet-400">Notifications</div>
                         <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
                           {notifications.map((item) => (
-                            <div key={item.id} className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20">
+                            <div 
+                              key={item.id} 
+                              onClick={() => setNotificationsOpen(false)}
+                              className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 cursor-pointer"
+                            >
                               <div className="flex items-start justify-between gap-2">
                                 <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200">{item.title}</div>
                                 {item.unread && <span className={`mt-1 h-2 w-2 rounded-full ${getNotificationColorClass(item)}`} />}
@@ -29675,9 +31828,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 )}
               </div>
-              </div>
-              </div>
-            </div>
           </header>
 
           <div className="flex-1 min-h-0 flex gap-4 p-4 relative">
@@ -30002,6 +32152,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         <button type="button" onClick={redoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Redo"><Redo2 size={15} /></button>
                         <button type="button" onClick={openReplayPanel} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Edit replay"><Clock size={15} /></button>
                       <button type="button" onClick={saveDocumentLocally} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600 transition-colors" title="Save"><Save size={15} /></button>
+                        <button
+                          id="compose-dictate-btn"
+                          type="button"
+                          onClick={() => toggleVoiceRecording('document')}
+                          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+                            isVoiceActive && voiceTarget === 'document'
+                              ? 'bg-violet-100 text-violet-600 shadow-[0_0_0_2px_rgba(139,92,246,0.3)] animate-pulse'
+                              : 'hover:bg-gray-100 text-gray-600'
+                          }`}
+                          title={isVoiceActive && voiceTarget === 'document' ? 'Stop dictation' : 'Dictate into document'}
+                        >
+                          <Mic size={15} />
+                        </button>
                       </div>
                       <div className="relative" ref={docSearchPanelRef}>
                         <button type="button" onClick={() => { closeTransientMenus(); setDocSearchPanelOpen((prev) => !prev); setDocSearchAutoPlay(false); }} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-gray-600'}`} title="Search"><Search size={15} /></button>
@@ -32510,6 +34673,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
 
+                      </>
+                    )}
                     <div className="h-10 px-4 border-t border-gray-200 bg-white flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3 overflow-x-auto thin-scrollbar">
                         {sheetsData.map((sheet) => (
@@ -32564,310 +34729,393 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           {isReadingAloud ? (
                             <div className="flex items-center gap-0.5 h-3.5 px-0.5">
                               <span className="w-0.5 h-2 bg-violet-600 animate-[bounce_0.8s_infinite_100ms] rounded-full"></span>
-                              <span className="w-0.5 h-3 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
-                              <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
+                              <span className="w-0.5 h-3 bg-violet-600 animate-[bounce_0.8s_infinite_200ms] rounded-full"></span>
+                              <span className="w-0.5 h-1.5 bg-violet-600 animate-[bounce_0.8s_infinite_300ms] rounded-full"></span>
                             </div>
                           ) : (
-                            <Volume2 size={14} />
+                            <Volume2 size={16} />
                           )}
                         </button>
-                        <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom out" onClick={() => setSheetZoomLevel(prev => Math.max(50, prev - 10))}>-</button>
-                        <span className="w-10 text-center">{sheetZoomLevel}%</span>
-                        <button className="hover:text-gray-800 p-1 rounded-lg hover:bg-gray-100 transition-colors" title="Zoom in" onClick={() => setSheetZoomLevel(prev => Math.min(200, prev + 10))}>+</button>
                       </div>
                     </div>
-                      </>
-                      )}
                   </div>
                 ) : (
-                  <div className="flex flex-col h-full bg-[#FAFAFC] overflow-hidden">
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                      <div className="h-16 flex items-center px-6 justify-between text-[13px] font-medium text-gray-600 shrink-0">
-                        <div className="flex items-center gap-3">
-                          <button type="button" onClick={addDeckSlide} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
-                            <Plus size={14} />
-                            <span>Add Slide</span>
-                          </button>
-                          
-                    <button type="button" onClick={handlePresentDeck} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
-                            <MonitorPlay size={14} />
-                            <span>Present</span>
-                          </button>
-                          <button type="button" onClick={() => { setActiveRightTab('properties'); setDeckContextRailTab('Template'); setRightSidebarOpen(true); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
-                            <LayoutTemplate size={14} />
-                            <span>Template</span>
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button type="button" onClick={() => { setActiveRightTab('properties'); setRightSidebarOpen(true); }} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white shadow-sm border border-gray-100 text-gray-700 hover:bg-gray-50 transition-colors font-semibold">
-                            <Settings size={14} />
-                            <span>Properties</span>
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start gap-8 relative">
+                  <div className="flex-1 flex overflow-hidden bg-[#F7F8FB] relative select-none">
+                    {/* Workspace background vignette effect overlay */}
+                    <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(240,242,247,0.8)_100%)] z-0" />
 
-                    {deckContextRailTab === 'Template' && (
-                      <div className="mt-3 rounded-2xl border border-violet-100 bg-gradient-to-br from-white via-violet-50/40 to-white p-3 shadow-[0_16px_30px_-24px_rgba(109,40,217,0.45)]">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <div className="text-xs font-semibold text-gray-900">Available Templates</div>
-                            <div className="text-[11px] text-gray-500">Apply to current slide or the whole deck.</div>
+                    <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+                      {/* Sub-header Toolbar */}
+                      <div className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
+                        <div className="flex items-center gap-3">
+                          {/* Active Presentation Selector */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => showToast('Opening document list')}
+                              className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 rounded-xl border border-gray-150 text-sm font-bold text-gray-800 transition-colors"
+                            >
+                              <span>Product Roadmap 2025</span>
+                              <ChevronDown size={14} className="text-gray-400" />
+                            </button>
                           </div>
                           <button
                             type="button"
-                            onClick={() => setDeckContextRailTab('Design')}
-                            className="text-[11px] px-2 py-1 rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-violet-300 hover:text-violet-700"
+                            onClick={addDeckSlide}
+                            className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 text-[#7C4DFF] transition-colors"
+                            title="Add slide"
                           >
-                            Back to Design
+                            <Plus size={16} />
                           </button>
+
+                          <div className="w-px h-5 bg-gray-200 mx-2"></div>
+
+                          {/* Toolbar Options */}
+                          <div className="flex items-center gap-1">
+                            {[
+                              { label: 'Theme', icon: Sparkles },
+                              { label: 'Layouts', icon: LayoutGrid },
+                              { label: 'Transition', icon: Layers },
+                              { label: 'Animation', icon: Wand2 },
+                              { label: 'Insert', icon: Plus },
+                              { label: 'AI', icon: Bot }
+                            ].map((btn) => (
+                              <button
+                                key={btn.label}
+                                type="button"
+                                onClick={() => {
+                                  if (btn.label === 'Theme' || btn.label === 'Layouts') {
+                                    setDeckContextRailTab(btn.label);
+                                  } else {
+                                    showToast(`${btn.label} tools ready`);
+                                  }
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                              >
+                                <btn.icon size={13} className="text-gray-400" />
+                                <span>{btn.label}</span>
+                                <ChevronDown size={10} className="text-gray-400" />
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {DECK_TEMPLATE_LIBRARY.map((template) => {
-                            const preset = DECK_DESIGN_PRESETS.find((item) => item.key === template.presetKey) || DECK_DESIGN_PRESETS[0];
-                            const selected = activeDeckSlide?.designPresetKey === template.presetKey
-                              && activeDeckSlide?.layoutStyle === template.layoutStyle;
-                            return (
-                              <div key={template.key} className={`rounded-xl border p-2.5 ${selected ? 'border-violet-300 bg-violet-50/60' : 'border-gray-200 bg-white'}`}>
-                                <div className={`h-16 rounded-lg ${preset.background} border border-white/20`} />
-                                <div className="mt-2 text-xs font-semibold text-gray-900">{template.label}</div>
-                                <div className="text-[11px] text-gray-500">{template.detail}</div>
-                                <div className="mt-1 text-[10px] text-gray-500">{template.layoutStyle} 繚 {template.motionCue}</div>
-                                <div className="mt-2 flex items-center gap-1.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => applyDeckTemplate(template, 'slide')}
-                                    className="px-2 py-1 rounded-lg text-[11px] border border-violet-200 bg-white text-violet-700 hover:bg-violet-50"
-                                  >
-                                    Apply Slide
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => applyDeckTemplate(template, 'deck')}
-                                    className="px-2 py-1 rounded-lg text-[11px] border border-gray-200 bg-white text-gray-700 hover:border-violet-300 hover:text-violet-700"
-                                  >
-                                    Apply Deck
-                                  </button>
-                                </div>
+                      </div>
+
+                      {/* Presentation Editor Main Workspace Canvas */}
+                      <div className="flex-1 overflow-y-auto p-8 flex flex-col justify-between items-center gap-6 min-h-0 relative">
+                        
+                        {/* Centered Presentation Canvas */}
+                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
+                          {/* 16:9 Canvas Slide with 32-40px rounded corners and ambient shadow */}
+                          <div 
+                            ref={deckCanvasPreviewRef}
+                            className="w-full aspect-[16/9] bg-white rounded-[32px] md:rounded-[40px] shadow-[0_24px_70px_-15px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[80px] md:p-[100px] select-text"
+                            style={{ 
+                              maxWidth: 'min(100%, calc(52vh * 16 / 9))', 
+                              transform: `scale(${deckZoomLevel / 100})`, 
+                              transformOrigin: 'center center', 
+                              transition: 'transform 140ms ease' 
+                            }}
+                          >
+                            {/* Layered mathematical vector spline wave */}
+                            <div className="absolute inset-0 pointer-events-none select-none z-0">
+                              <svg className="absolute bottom-0 right-0 w-[65%] h-[90%] overflow-visible" viewBox="0 0 900 650" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                  <linearGradient id="waveGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                    <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.01" />
+                                    <stop offset="30%" stopColor="#A78BFA" stopOpacity="0.08" />
+                                    <stop offset="70%" stopColor="#7C3AED" stopOpacity="0.18" />
+                                    <stop offset="100%" stopColor="#4C1D95" stopOpacity="0.32" />
+                                  </linearGradient>
+                                  <filter id="bloom" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="12" result="blur" />
+                                    <feMerge>
+                                      <feMergeNode in="blur" />
+                                      <feMergeNode in="SourceGraphic" />
+                                    </feMerge>
+                                  </filter>
+                                </defs>
+                                {/* Hundreds of ultra-thin overlapping Bézier curves */}
+                                {Array.from({ length: 140 }).map((_, i) => {
+                                  const ratio = i / 140;
+                                  const offset = ratio * 160;
+                                  const opacity = 0.012 + (1 - ratio) * 0.11;
+                                  const thickness = 0.35 + ratio * 1.1;
+                                  
+                                  const startX = 220 + offset * 1.4;
+                                  const startY = 650;
+                                  const cp1x = 380 + Math.sin(ratio * Math.PI) * 80;
+                                  const cp1y = 520 - ratio * 180;
+                                  const cp2x = 600 + Math.cos(ratio * Math.PI) * 100;
+                                  const cp2y = 280 - ratio * 110;
+                                  const endX = 950;
+                                  const endY = 300 + ratio * 210;
+                                  
+                                  const d = `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`;
+                                  
+                                  return (
+                                    <path
+                                      key={i}
+                                      d={d}
+                                      stroke="url(#waveGrad)"
+                                      strokeWidth={thickness}
+                                      opacity={opacity}
+                                      fill="none"
+                                    />
+                                  );
+                                })}
+                                {/* Luminous crest highlight line */}
+                                <path
+                                  d="M 250 650 C 420 420, 630 230, 950 330"
+                                  stroke="#FFFFFF"
+                                  strokeWidth="2.5"
+                                  opacity="0.9"
+                                  fill="none"
+                                  filter="url(#bloom)"
+                                />
+                                <path
+                                  d="M 250 650 C 420 420, 630 230, 950 330"
+                                  stroke="#E9D5FF"
+                                  strokeWidth="0.8"
+                                  opacity="0.95"
+                                  fill="none"
+                                />
+                              </svg>
+                            </div>
+
+                            {/* Slide Content Layout - Asymmetric Balance */}
+                            <div className="flex flex-col h-full justify-between relative z-10 pointer-events-none">
+                              {/* Logo / Brand Lockup */}
+                              <div className="flex items-center gap-2">
+                                <svg className="w-5 h-5 text-[#7C4DFF]" viewBox="0 0 24 24" fill="currentColor">
+                                  <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
+                                  <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                                </svg>
+                                <span className="font-bold text-[18px] text-gray-900 tracking-tight">Acme Inc.</span>
                               </div>
+
+                              {/* Title / Body */}
+                              <div className="flex-1 flex flex-col justify-center max-w-[55%] py-6">
+                                <h1
+                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                  suppressContentEditableWarning
+                                  onKeyDown={handleDeckKeyDown}
+                                  onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
+                                  className="text-[52px] leading-[1.15] font-extrabold text-gray-900 tracking-tight outline-none cursor-text pointer-events-auto"
+                                >
+                                  {resolvedDeckSlideDesign.headline}
+                                </h1>
+                                <p
+                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                  suppressContentEditableWarning
+                                  onKeyDown={handleDeckKeyDown}
+                                  onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
+                                  className="mt-4 text-gray-500 text-[18px] leading-relaxed font-normal outline-none cursor-text pointer-events-auto"
+                                >
+                                  {resolvedDeckSlideDesign.blurb}
+                                </p>
+                              </div>
+
+                              {/* Date & Divider Lockup */}
+                              <div className="flex flex-col gap-3">
+                                <div className="w-10 h-0.5 bg-[#7C4DFF] rounded" />
+                                <span className="text-xs font-semibold text-gray-400 tracking-wider uppercase">
+                                  May 20, 2025
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Floating bottom-right "Ask AI" pill inside the canvas bounds */}
+                            <button
+                              type="button"
+                              onClick={() => { setActiveRightTab('chat'); setRightSidebarOpen(true); }}
+                              className="absolute bottom-6 right-6 px-4 py-2 rounded-full border border-violet-100 bg-white/80 backdrop-blur-md shadow-sm flex items-center gap-1.5 text-xs font-semibold text-[#7C4DFF] hover:bg-white transition-all z-20 pointer-events-auto"
+                            >
+                              <Sparkles size={13} />
+                              <span>Ask AI</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Floating bottom actions (outside canvas) */}
+                        <div className="w-full flex items-center justify-between px-4 shrink-0 relative mt-2">
+                          {/* Circular magical purple button on the bottom left */}
+                          <button
+                            type="button"
+                            onClick={() => { setActiveRightTab('assistant'); setRightSidebarOpen(true); }}
+                            className="w-10 h-10 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-lg hover:bg-[#6C3DF0] hover:scale-105 active:scale-95 transition-all z-20"
+                          >
+                            <Sparkles size={18} />
+                          </button>
+
+                          {/* Horizontal mini carousel slider in the bottom center */}
+                          <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center gap-2 p-1.5 bg-white/60 backdrop-blur-md rounded-2xl border border-gray-150/40 shadow-sm max-w-[80%] overflow-x-auto no-scrollbar z-15">
+                            {deckSlides.map((slide, idx) => {
+                              const isSlideActive = slide.id === activeDeckSlideId;
+                              return (
+                                <button
+                                  key={slide.id}
+                                  type="button"
+                                  onClick={() => setActiveDeckSlideId(slide.id)}
+                                  className={`h-11 aspect-[16/9] rounded-lg border overflow-hidden bg-white shrink-0 transition-all ${
+                                    isSlideActive ? 'border-[#7C4DFF] ring-2 ring-[#7C4DFF]/15' : 'border-gray-200 hover:border-gray-300'
+                                  }`}
+                                >
+                                  <div className="w-full h-full relative p-1 bg-[#FAFAFC] flex flex-col justify-between">
+                                    <span className="text-[7px] font-bold text-gray-400">{idx + 1}</span>
+                                    <div className="w-full h-1.5 bg-gray-200 rounded-sm" />
+                                  </div>
+                                </button>
+                              );
+                            })}
+                            <button
+                              type="button"
+                              onClick={addDeckSlide}
+                              className="h-11 aspect-[16/9] rounded-lg border border-dashed border-gray-300 hover:border-[#7C4DFF] flex items-center justify-center shrink-0 text-gray-400 hover:text-[#7C4DFF] transition-colors"
+                            >
+                              <Plus size={14} />
+                            </button>
+                          </div>
+                        </div>
+
+                      </div>
+                    </div>
+
+                    {/* Right Inspector Panel */}
+                    <div className="w-[320px] border-l border-gray-200 bg-white flex flex-col shrink-0 z-30">
+                      {/* Tabs Header - Slightly rounded rectangles, NOT pill-shaped (as per custom rules) */}
+                      <div className="h-16 border-b border-gray-100 flex items-center px-4 shrink-0 bg-[#FAFAFC]">
+                        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-full">
+                          {['Design', 'Animate', 'Notes'].map((tab) => {
+                            const isTabActive = deckContextRailTab === tab;
+                            return (
+                              <button
+                                key={tab}
+                                type="button"
+                                onClick={() => setDeckContextRailTab(tab)}
+                                className={`flex-1 py-2 text-xs font-semibold rounded-lg text-center transition-all ${
+                                  isTabActive 
+                                    ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' 
+                                    : 'text-gray-500 hover:text-gray-800'
+                                }`}
+                              >
+                                {tab}
+                              </button>
                             );
                           })}
                         </div>
                       </div>
-                    )}
 
-                    <div className="flex w-full gap-4 relative items-start justify-center">
-                      <div ref={deckFullscreenWrapperRef} className={`flex flex-col items-center flex-1 min-w-0 ${isPresentingDeck ? 'h-full bg-[#10162f] justify-center fixed inset-0 z-50' : ''}`}>
-                        <div ref={deckCanvasPreviewRef} className={`deck-canvas-preview relative overflow-hidden w-full aspect-[16/9] mx-auto bg-[#10162f] group/canvas shrink-0 @container ${isPresentingDeck ? 'mt-0 rounded-none' : 'mt-2 shadow-[0_12px_40px_rgba(0,0,0,0.08)] rounded-[24px]'}`} style={{ maxWidth: isPresentingDeck ? 'min(100vw, calc((100vh - 140px) * 16 / 9))' : 'min(100%, calc(40vh * 16 / 9))', transform: isPresentingDeck ? 'scale(1)' : `scale(${deckZoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 140ms ease', marginBottom: isPresentingDeck ? 0 : `calc( ( ${deckZoomLevel / 100} - 1 ) * 100% * 9 / 16 )` }}>
-                          <div className={`absolute top-0 left-0 w-[1600px] h-[900px] origin-top-left ${resolvedDeckSlideDesign.preset.background} flex flex-col justify-between p-[80px] md:p-[120px]`} style={{ transform: 'scale(calc(100cqw / 1600))' }}>
-                            <div>
-                              <h1
-                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                suppressContentEditableWarning
-                                onKeyDown={handleDeckKeyDown}
-                                onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
-                                className={resolvedDeckSlideDesign.preset.key === 'blank' ? "text-[100px] leading-[1.1] font-medium text-black w-[1040px] max-w-full outline-none rounded-xl font-serif text-center border-2 border-dashed border-gray-300 hover:border-gray-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 px-8 py-4 bg-transparent" : "text-[100px] leading-[1.1] font-medium text-white w-[1040px] max-w-full outline-none rounded-xl focus:ring-4 focus:ring-white/40 font-serif"}
-                              >
-                                {resolvedDeckSlideDesign.headline}
-                              </h1>
-                              <p
-                                contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                suppressContentEditableWarning
-                                onKeyDown={handleDeckKeyDown}
-                                onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
-                                className={resolvedDeckSlideDesign.preset.key === 'blank' ? "mt-[40px] text-gray-800 text-[48px] leading-tight w-[1040px] max-w-full outline-none rounded-xl font-serif text-center border-2 border-dashed border-gray-300 hover:border-gray-400 focus:border-violet-500 focus:ring-4 focus:ring-violet-500/20 px-8 py-4 bg-transparent" : "mt-[40px] text-indigo-100/85 text-[48px] leading-tight w-[1040px] max-w-full outline-none rounded-xl focus:ring-4 focus:ring-white/30 font-serif"}
-                              >
-                                {resolvedDeckSlideDesign.blurb}
-                              </p>
-                            </div>
-  
-                            <div
-                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                              suppressContentEditableWarning
-                              onKeyDown={handleDeckKeyDown}
-                              onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'footer', event.currentTarget.textContent || '')}
-                              className={resolvedDeckSlideDesign.preset.key === 'blank' ? "text-[28px] text-gray-400 outline-none rounded-lg focus:ring-4 focus:ring-violet-500/20" : "text-[28px] text-indigo-100/80 outline-none rounded-lg focus:ring-4 focus:ring-white/20"}
-                            >
-                              {resolvedDeckSlideDesign.footer}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {showDeckComments && !isPresentingDeck && (
-                        <div className="w-[340px] shrink-0 bg-white rounded-[20px] shadow-[0_8px_30px_rgba(0,0,0,0.08)] border border-gray-100 flex flex-col overflow-hidden mt-2 animate-fade-in z-10 sticky top-4" style={{ height: 'min(400px, calc(50vh * 16 / 9))' }}>
-                          <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-white shrink-0">
-                            <h3 className="font-semibold text-gray-900 text-[14px]">Comments</h3>
-                            <button onClick={() => setShowDeckComments(false)} className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"><X size={16} /></button>
-                          </div>
-                          
-                          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#FAFAFA]">
-                            <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
-                              <div className="flex items-center gap-2 mb-1.5">
-                                <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-[9px] font-bold text-indigo-700">SC</div>
-                                <span className="text-[12px] font-medium text-gray-900">Sarah Chen</span>
-                                <span className="text-[11px] text-gray-400">2m ago</span>
-                              </div>
-                              <p className="text-[13px] text-gray-700 pl-7">Can we make the title stronger?</p>
-                            </div>
-                          </div>
-                          
-                          <div className="p-3 bg-white border-t border-gray-100 shrink-0">
-                            <div className="border border-gray-200 rounded-lg focus-within:border-violet-500 focus-within:ring-1 focus-within:ring-violet-500 p-2 transition-all bg-white">
-                              <textarea placeholder="Add a comment..." className="w-full text-[13px] outline-none bg-transparent mb-1 placeholder-gray-400 text-gray-800 resize-none min-h-[60px]" />
-                              
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1">
-                                  <button className="text-gray-400 hover:text-gray-700 transition-colors" title="Mention"><AtSign size={14} strokeWidth={2} /></button>
-                                  <button className="text-gray-400 hover:text-gray-700 transition-colors" title="Attach"><Paperclip size={14} strokeWidth={2} /></button>
+                      {/* Inspector Content */}
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
+                        {deckContextRailTab === 'Design' && (
+                          <>
+                            {/* Theme section */}
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Theme</span>
+                              <button type="button" className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-sm text-left">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-5 rounded bg-gradient-to-r from-violet-300 via-indigo-400 to-purple-500" />
+                                  <span className="text-xs font-semibold text-gray-700">Aurora</span>
                                 </div>
-                                <button className="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white text-[12px] font-semibold rounded-md transition-colors">
-                                  Comment
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Bottom Toolbar & Notes */}
-                      <div className={`mt-6 mb-8 flex items-center justify-between bg-white rounded-[24px] border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.06)] px-5 py-2.5 w-[95%] max-w-[1100px] relative z-[60] ${isPresentingDeck ? 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[100]' : ''}`}>
-                        <div className="flex items-center gap-6">
-                          <button 
-                            onClick={() => setShowDeckNotes(!showDeckNotes)} 
-                            className={`flex items-center gap-2 text-[13px] font-semibold transition-colors ${showDeckNotes ? 'text-violet-600' : 'text-gray-600 hover:text-gray-900'}`}
-                          >
-                            <FileText size={16} /> Notes
-                          </button>
-                          
-                          <div className="flex items-center gap-2 text-[13px] font-semibold text-gray-600">
-                            <Clock size={16} className={deckTimerActive ? 'text-red-500' : ''} />
-                            <span 
-                              className="w-10 text-center cursor-pointer hover:text-gray-900" 
-                              onClick={() => setDeckTimerActive(!deckTimerActive)}
-                            >
-                              {formatDeckTimer(deckTimerSeconds)}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center bg-violet-600 hover:bg-violet-700 rounded-[12px] text-white shadow-sm overflow-hidden transition-colors">
-                            <button onClick={handlePresentDeck} className="flex items-center gap-1.5 px-4 py-2 font-semibold text-[13px]">
-                              <Play size={14} fill="currentColor" /> Present
-                            </button>
-                            <div className="w-px h-6 bg-violet-500/50"></div>
-                            <button className="px-3 py-2 hover:bg-violet-800">
-                              <ChevronDown size={14} />
-                            </button>
-                          </div>
-                          <div className="w-px h-5 bg-gray-200 ml-1 mr-1"></div>
-                          <div className="relative export-menu-container">
-                            <button
-                              onClick={() => {
-                                closeTransientMenus();
-                                setDeckExportMenuOpen(!deckExportMenuOpen);
-                              }}
-                              className={`text-xs font-semibold px-2.5 py-1.5 rounded flex items-center gap-1 transition-colors ${deckExportMenuOpen ? 'bg-violet-50 text-violet-700' : 'hover:bg-gray-100 text-[#374151]'}`}
-                              title="Export options"
-                            >
-                              Export {deckExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                            </button>
-                            {deckExportMenuOpen && (
-                              <div className="absolute top-9 left-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
-                                <div className="flex flex-col gap-1.5">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
-                                  {[
-                                    { format: 'Deck', label: 'Deck', desc: 'Original' },
-                                    { format: 'PPTX', label: 'PPTX', desc: '.pptx' },
-                                    { format: 'PDF', label: 'PDF', desc: '.pdf' }
-                                  ].map(f => (
-                                    <button 
-                                      key={f.format}
-                                      disabled={isExporting}
-                                      onClick={async () => {
-                                        setIsExporting(true);
-                                        try {
-                                          await exportDeck(f.format, deckSlidesData, deckTitle || 'Deck_Presentation');
-                                          showToast('Exported as ' + f.format);
-                                        } catch (e) {
-                                          showToast('Export failed: ' + e.message);
-                                        } finally {
-                                          setIsExporting(false);
-                                          setDeckExportMenuOpen(false);
-                                        }
-                                      }}
-                                      className="w-full flex items-center justify-between text-xs py-1 rounded-lg text-slate-700 hover:text-violet-700 transition-colors text-left font-medium"
-                                    >
-                                      <span>{f.label}</span>
-                                      <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                                <div className="h-px bg-slate-100 w-full"></div>
-                                <div className="flex flex-col gap-2">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Convert to</span>
-                                  {[
-                                    { target: 'Compose', icon: FileText, color: 'text-blue-500 bg-blue-50/80' },
-                                    { target: 'Sheets', icon: FileSpreadsheet, color: 'text-emerald-500 bg-emerald-50' },
-                                    { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50' }
-                                  ].map(t => (
-                                    <button 
-                                      key={t.target}
-                                      disabled={isExporting}
-                                      onClick={() => {
-                                        setIsExporting(true);
-                                        setTimeout(() => { 
-                                          setIsExporting(false); 
-                                          setDeckExportMenuOpen(false); 
-                                          setProductMode(t.target.toLowerCase());
-                                          showToast('Converted to ' + t.target); 
-                                        }, 1500);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 p-1 text-xs rounded-lg hover:bg-slate-50 transition-colors font-semibold text-slate-700"
-                                    >
-                                      <div className={`p-1.5 rounded ${t.color}`}>
-                                        <t.icon size={13} />
-                                      </div>
-                                      {t.target}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-5 text-[13px] font-semibold text-gray-600">
-                          {(!isPresentingDeck && !deckToolbarExpanded) ? (
-                            <button onClick={() => setDeckToolbarExpanded(true)} className="flex items-center gap-1.5 hover:text-gray-900 transition-colors px-2 py-1 rounded hover:bg-gray-50 border border-gray-200">
-                              <MoreHorizontal size={16} /> More
-                            </button>
-                          ) : (
-                            <>
-                              <button onClick={() => setShowResizeModal(true)} className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
-                                <Square size={16} /> Resize
+                                <ChevronDown size={14} className="text-gray-400" />
                               </button>
-                              
-                              <div className="w-px h-5 bg-gray-200"></div>
-                              
-                              <div className="flex items-center gap-2 bg-gray-50/50 rounded-lg">
-                                <button onClick={() => setDeckZoomLevel(z => Math.max(z - 10, 10))} className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-900 transition-colors">
-                                  <Minus size={14} strokeWidth={2.5} />
-                                </button>
-                                <span className="w-12 text-center text-gray-900">{deckZoomLevel}%</span>
-                                <button onClick={() => setDeckZoomLevel(z => Math.min(z + 10, 200))} className="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-900 transition-colors">
-                                  <Plus size={14} strokeWidth={2.5} />
-                                </button>
-                              </div>
+                            </div>
 
-                              {!isPresentingDeck && (
-                                <button onClick={() => setDeckToolbarExpanded(false)} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-900 transition-colors" title="Less">
-                                  <X size={16} />
+                            {/* Layouts section */}
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Layouts</span>
+                              <button type="button" className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-sm text-left">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-5 rounded border border-gray-200 bg-white flex flex-col p-0.5 justify-between">
+                                    <div className="w-1/2 h-1 bg-gray-300 rounded-sm" />
+                                    <div className="w-1/3 h-0.5 bg-gray-200 rounded-sm" />
+                                  </div>
+                                  <span className="text-xs font-semibold text-gray-700">Title Slide</span>
+                                </div>
+                                <ChevronDown size={14} className="text-gray-400" />
+                              </button>
+                            </div>
+
+                            {/* Background section */}
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Background</span>
+                              <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-xl bg-white shadow-sm">
+                                <div className="w-5 h-5 rounded border border-gray-200 bg-white" />
+                                <input
+                                  type="text"
+                                  value="#FFFFFF"
+                                  readOnly
+                                  className="text-xs font-semibold text-gray-700 outline-none w-full"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Brand Kit section */}
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Brand Kit</span>
+                              <div className="flex items-center justify-between p-3 border border-gray-200 rounded-xl bg-white shadow-sm">
+                                <button className="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700">
+                                  Aa
                                 </button>
-                              )}
-                            </>
-                          )}
+                                <div className="flex items-center gap-1.5">
+                                  <div className="w-5 h-5 rounded-full bg-[#7C4DFF]" />
+                                  <div className="w-5 h-5 rounded-full bg-[#B085FF]" />
+                                  <div className="w-5 h-5 rounded-full bg-[#E8D5FF]" />
+                                  <ChevronDown size={12} className="text-gray-400 ml-1" />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* AI Suggestions section */}
+                            <div className="space-y-2 pt-2 border-t border-gray-100">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">AI Suggestions</span>
+                                <span className="bg-violet-50 text-[#7C4DFF] text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">New</span>
+                              </div>
+                              <div className="space-y-2">
+                                {[
+                                  { title: 'Improve this slide', desc: 'Enhance layout and visual hierarchy' },
+                                  { title: 'Shorten text', desc: 'Make it more concise' },
+                                  { title: 'Generate image', desc: 'Add relevant image to this slide' }
+                                ].map((sug) => (
+                                  <button
+                                    key={sug.title}
+                                    type="button"
+                                    onClick={() => showToast(`Executing: ${sug.title}`)}
+                                    className="w-full p-3.5 border border-gray-150 rounded-2xl bg-white hover:border-[#7C4DFF] hover:bg-violet-50/10 text-left transition-all group"
+                                  >
+                                    <div className="text-xs font-bold text-gray-800 group-hover:text-[#7C4DFF]">{sug.title}</div>
+                                    <div className="text-[11px] text-gray-500 mt-1">{sug.desc}</div>
+                                  </button>
+                                ))}
+                              </div>
+                              <button type="button" className="w-full text-center text-xs font-bold text-[#7C4DFF] hover:text-[#6C3DF0] py-2">
+                                View more
+                              </button>
+                            </div>
+                          </>
+                        )}
+
+                        {deckContextRailTab === 'Animate' && (
+                          <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <Wand2 size={36} className="text-gray-300 mb-3" />
+                            <span className="text-xs font-semibold text-gray-700">Slide Animations</span>
+                            <span className="text-[11px] text-gray-500 mt-1">Configure entrance effects and timings.</span>
+                          </div>
+                        )}
+
+                        {deckContextRailTab === 'Notes' && (
+                          <div className="space-y-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Presenter Notes</span>
+                            <textarea
+                              placeholder="Add speaker notes for this slide..."
+                              value={activeDeckSlide?.speakerNotes || ''}
+                              onChange={(e) => updateDeckSlideField(activeDeckSlide.id, 'speakerNotes', e.target.value)}
+                              className="w-full min-h-[200px] p-3 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none focus:border-[#7C4DFF] resize-none"
+                            />
+                          </div>
+                        )}
                           
                           <button onClick={handlePresentDeck} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-900 transition-colors" title="Fullscreen">
                             <Expand size={18} strokeWidth={2} />
@@ -32973,13 +35221,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
     </div>
   </div>
 )}
-                  </div>
-                </div>
+</div>
+)}
               </div>
-              )}
-              </div>
-            </section>
 
+          </section>
           </div>
         </main>
 
@@ -34898,255 +37144,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
     );
   }
 
-  if (productMode === 'room' && roomState !== 'active') {
-
-    return (
-      <div ref={appShellRef} className={`flex bg-[#FAFAFC] text-slate-800 overflow-hidden relative h-screen`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
-        
-        {/* Left Sidebar */}
-        <aside className="w-[240px] shrink-0 border-r border-slate-200/60 bg-[#FAFAFC] flex flex-col justify-between">
-          <div>
-            <div className="h-[60px] px-5 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center text-violet-700">
-                <MonitorPlay size={18} strokeWidth={2.5} />
-              </div>
-              <span className="text-[16px] font-bold text-slate-900 tracking-tight">Room</span>
-            </div>
-            
-            <div className="px-3 mt-4 space-y-1">
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl bg-violet-50 text-violet-700 font-semibold text-[13px] transition-colors">
-                <Home size={18} />
-                <span>Home</span>
-              </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-colors">
-                <Video size={18} />
-                <span>Meetings</span>
-              </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-colors">
-                <Calendar size={18} />
-                <span>Calendar</span>
-              </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-colors">
-                <MonitorPlay size={18} />
-                <span>Recordings</span>
-              </button>
-              <button className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-colors">
-                <Users size={18} />
-                <span>People</span>
-              </button>
-              <button onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 font-medium text-[13px] transition-colors">
-                <Settings size={18} />
-                <span>Settings</span>
-              </button>
-            </div>
-          </div>
-          
-          <div className="px-4 pb-6 flex flex-col gap-4">
-            <button className="w-full flex items-center justify-between group">
-              <div className="flex items-center gap-2">
-                <img src="https://i.pravatar.cc/150?u=joshua" alt="Joshua" className="w-9 h-9 rounded-full object-cover border border-slate-200" />
-                <div className="text-left">
-                  <div className="text-[13px] font-semibold text-slate-900 group-hover:text-violet-600 transition-colors">Joshua Regaarder</div>
-                  <div className="text-[11px] text-slate-500">joshua@regaarder.com</div>
-                </div>
-              </div>
-              <ChevronDown size={14} className="text-slate-400" />
-            </button>
-
-            <div className="bg-white/80 border border-violet-100 rounded-[16px] p-4 shadow-[0_8px_30px_rgba(124,58,237,0.06)] relative overflow-hidden backdrop-blur-sm">
-              <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600 mb-3">
-                <Sparkles size={14} />
-              </div>
-              <h4 className="text-[13px] font-bold text-slate-900 mb-1">Upgrade to Pro</h4>
-              <p className="text-[11px] text-slate-500 mb-3 leading-relaxed">Unlock unlimited rooms, cloud recordings, and more.</p>
-              <button className="w-full py-2 bg-violet-50 text-violet-700 text-[12px] font-semibold rounded-lg hover:bg-violet-100 transition-colors">
-                Upgrade now
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Dashboard */}
-        <main className="flex-1 overflow-y-auto thin-scrollbar relative p-6 md:p-10">
-          {/* Header Icons */}
-          <div className="absolute top-6 right-8 flex items-center gap-3">
-            <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-transparent hover:border-slate-200 transition-all">
-              <Bell size={16} />
-            </button>
-            <button className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white hover:shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-transparent hover:border-slate-200 transition-all">
-              <Calendar size={16} />
-            </button>
-          </div>
-
-          <div className="max-w-[1000px] mx-auto mt-6 text-left">
-            {/* Hero Banner */}
-            <div className="relative w-full rounded-[24px] overflow-hidden bg-[#f4effc] border border-violet-100/50 shadow-[0_8px_30px_rgba(124,58,237,0.06)] mb-8 p-10 flex items-center justify-between min-h-[280px]">
-              {/* Background styling for premium look */}
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-50/80 via-white/40 to-fuchsia-50/30"></div>
-              
-              {/* Curved wave lines */}
-              <svg className="absolute left-0 top-0 w-full h-full opacity-30 pointer-events-none" viewBox="0 0 800 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-                <path d="M-100,300 C150,200 350,0 600,-50" fill="none" stroke="url(#hero-grad)" strokeWidth="1.5" />
-                <path d="M-50,350 C200,250 400,50 650,0" fill="none" stroke="url(#hero-grad)" strokeWidth="1" />
-                <path d="M0,400 C250,300 450,100 700,50" fill="none" stroke="url(#hero-grad)" strokeWidth="1" />
-                <path d="M50,450 C300,350 500,150 750,100" fill="none" stroke="url(#hero-grad)" strokeWidth="1" />
-                <defs>
-                  <linearGradient id="hero-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.2" />
-                    <stop offset="50%" stopColor="#c084fc" stopOpacity="0.5" />
-                    <stop offset="100%" stopColor="#f0abfc" stopOpacity="0.2" />
-                  </linearGradient>
-                </defs>
-              </svg>
-              
-              <div className="relative z-10 w-1/2 flex items-center justify-center">
-                <div className="w-[180px] h-[180px] rounded-[48px] bg-white/40 backdrop-blur-2xl shadow-[0_30px_60px_rgba(139,92,246,0.12),inset_0_2px_4px_rgba(255,255,255,0.8),inset_0_-2px_4px_rgba(139,92,246,0.1)] border border-white/60 flex items-center justify-center relative transform -rotate-2 hover:rotate-0 transition-transform duration-500 group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/80 to-transparent rounded-[48px] opacity-80"></div>
-                  <div className="absolute inset-0 bg-gradient-to-tr from-violet-200/40 to-transparent rounded-[48px] opacity-60"></div>
-                  <div className="relative w-24 h-24 rounded-[28px] bg-gradient-to-br from-violet-400 to-violet-600 shadow-[0_15px_30px_rgba(124,58,237,0.3),inset_0_2px_4px_rgba(255,255,255,0.4)] flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
-                    <Video size={42} className="text-white drop-shadow-md" fill="currentColor" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative z-10 w-1/2 pl-4 pr-8">
-                <div className="absolute top-0 right-8 z-50">
-                  <button onClick={() => { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else if (document.exitFullscreen) { document.exitFullscreen(); } }} className="p-2.5 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors bg-white shadow-sm border border-gray-200" title="Toggle Fullscreen">
-                    <Expand size={20} />
-                  </button>
-                </div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-100/50 text-violet-700 text-[13px] font-medium mb-4 backdrop-blur-sm mt-8">
-                  Good afternoon, Joshua <span className="text-base leading-none">👋</span>
-                </div>
-                <h1 className="text-[36px] font-bold text-slate-900 leading-tight mb-3 tracking-tight">Ready to collaborate?</h1>
-                <p className="text-[15px] text-slate-600 mb-8 max-w-[340px] leading-relaxed">Start a room, join a meeting, or continue where you left off.</p>
-                
-                <div className="flex items-center gap-3">
-                  <button onClick={() => startMeetingNow(generateRoomCode())} className="px-6 py-3.5 rounded-xl bg-violet-600 text-white text-[14px] font-semibold hover:bg-violet-700 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
-                    <MonitorPlay size={18} />
-                    Start room
-                  </button>
-                  
-                  {isRoomStartMenuOpen ? (
-                    <div className="flex gap-2">
-                      <input
-                        ref={roomJoinInputRef}
-                        type="text"
-                        value={joinCode}
-                        onChange={(e) => setJoinCode(e.target.value)}
-                        placeholder="Enter code"
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-[13px] focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 w-28 bg-white"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && joinCode.trim()) openMeetingSetup(joinCode.trim());
-                        }}
-                      />
-                      <button onClick={() => joinCode.trim() && openMeetingSetup(joinCode.trim())} className="px-3 py-2 rounded-xl bg-violet-50 text-violet-700 text-[13px] font-medium hover:bg-violet-100 transition-colors">Join</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setIsRoomStartMenuOpen(true)} className="px-6 py-3.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-[14px] font-semibold hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2">
-                      <LinkIcon size={18} />
-                      Join room
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Upcoming Meetings */}
-              <div className="bg-white rounded-[20px] border border-slate-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 flex flex-col h-full">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-[15px] font-bold text-slate-900">Upcoming meetings</h3>
-                  <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">View calendar</button>
-                </div>
-                
-                <div className="space-y-3 flex-1">
-                  {[
-                    { title: 'Beta Launch Kickoff', time: 'Thursday, May 15 • 10:00 AM', color: 'bg-violet-100 text-violet-600' },
-                    { title: 'Design System Review', time: 'Friday, May 16 • 2:00 PM', color: 'bg-fuchsia-100 text-fuchsia-600' },
-                    { title: 'Marketing Sync', time: 'Monday, May 19 • 11:00 AM', color: 'bg-indigo-100 text-indigo-600' }
-                  ].map((mtg, i) => (
-                    <div key={i} className="group p-4 rounded-[16px] border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all flex items-start justify-between">
-                      <div className="flex gap-4">
-                        <div className={`w-10 h-10 rounded-xl ${mtg.color} flex items-center justify-center shrink-0`}>
-                          <Calendar size={18} />
-                        </div>
-                        <div>
-                          <h4 className="text-[14px] font-bold text-slate-900 mb-1">{mtg.title}</h4>
-                          <p className="text-[12px] text-slate-500 mb-2">{mtg.time}</p>
-                          <div className="flex -space-x-2">
-                            <img src="https://i.pravatar.cc/150?u=1" className="w-6 h-6 rounded-full border-2 border-white" />
-                            <img src="https://i.pravatar.cc/150?u=2" className="w-6 h-6 rounded-full border-2 border-white" />
-                            <img src="https://i.pravatar.cc/150?u=3" className="w-6 h-6 rounded-full border-2 border-white" />
-                            <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[9px] font-medium text-slate-600">+1</div>
-                          </div>
-                        </div>
-                      </div>
-                      <button onClick={() => startMeetingNow(generateRoomCode())} className="px-4 py-1.5 rounded-lg bg-violet-50 text-violet-700 text-[12px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Join</button>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="pt-4 mt-4 border-t border-slate-100">
-                  <button className="w-full flex items-center justify-between text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                    <span>View full calendar</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Recent Rooms */}
-              <div className="bg-white rounded-[20px] border border-slate-100 shadow-[0_8px_30px_rgba(124,58,237,0.06)] p-6 flex flex-col h-full">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-[15px] font-bold text-slate-900">Recent rooms</h3>
-                  <button className="text-[13px] font-medium text-violet-600 hover:text-violet-700">See all</button>
-                </div>
-                
-                <div className="space-y-3 flex-1">
-                  {[
-                    { title: 'Q2 Launch Strategy', time: 'May 12 • 2:30 PM' },
-                    { title: 'Product Review', time: 'May 9 • 11:00 AM' },
-                    { title: 'Investor Update', time: 'May 7 • 4:00 PM' },
-                    { title: 'Design Critique', time: 'May 5 • 10:30 AM' }
-                  ].map((room, i) => (
-                    <div key={i} className="group p-3 rounded-[16px] border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-between cursor-pointer" onClick={() => startMeetingNow(generateRoomCode())}>
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
-                          <MonitorPlay size={18} />
-                        </div>
-                        <div>
-                          <h4 className="text-[14px] font-bold text-slate-900 mb-0.5 group-hover:text-violet-700 transition-colors">{room.title}</h4>
-                          <p className="text-[12px] text-slate-500">{room.time}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex -space-x-2">
-                          <img src={`https://i.pravatar.cc/150?u=${i+10}`} className="w-6 h-6 rounded-full border-2 border-white" />
-                          <img src={`https://i.pravatar.cc/150?u=${i+20}`} className="w-6 h-6 rounded-full border-2 border-white" />
-                          <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[9px] font-medium text-slate-600">+{((i+2)%3)+1}</div>
-                        </div>
-                        <button className="p-1 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors">
-                          <MoreHorizontal size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                <div className="pt-4 mt-2 border-t border-slate-100">
-                  <button className="w-full flex items-center justify-between text-[13px] font-medium text-slate-600 hover:text-slate-900 transition-colors">
-                    <span>View all rooms</span>
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
 
   const renderDocumentOutlineContent = () => {
               const wordsCount = documentStats?.words || 0;
@@ -35376,6 +37373,24 @@ if (productMode === 'deck' || productMode === 'sheets') {
   const handleWorkspaceModuleClick = (moduleName) => {
     if (focusedModule === moduleName) return;
 
+    if (moduleName === 'room') {
+      if (roomState !== 'active') {
+        // Use startMeetingNow() so the browser permission prompt always fires.
+        startMeetingNow();
+      } else {
+        setRoomPanelMode('expanded');
+        setRoomMaximized(true);
+        setRightSidebarOpen(false);
+        setIsRoomFullscreen(true);
+        const docEl = document.documentElement;
+        const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+        if (requestFS && !document.fullscreenElement) {
+          requestFS.call(docEl).catch(()=>{});
+        }
+      }
+      return;
+    }
+
     setDockedModules((prev) => {
       const newDocked = prev.filter((m) => m !== moduleName && m !== focusedModule);
       return [focusedModule, ...newDocked];
@@ -35422,8 +37437,110 @@ if (productMode === 'deck' || productMode === 'sheets') {
     };
   };
 
+  const editorDragHandlers = {
+    onMouseMove: (e) => {
+      if (dragHandleTimeoutRef.current) clearTimeout(dragHandleTimeoutRef.current);
+      const block = findNearestBlockElement(e.target);
+      if (block) {
+        const rect = block.getBoundingClientRect();
+        setBlockDragHandle({
+          visible: true,
+          top: rect.top + window.scrollY,
+          left: Math.max(10, rect.left + window.scrollX - 28),
+          node: block
+        });
+      } else {
+        dragHandleTimeoutRef.current = setTimeout(() => {
+          setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+        }, 250);
+      }
+    },
+    onMouseLeave: (e) => {
+      if (e.relatedTarget && e.relatedTarget.closest('.block-drag-handle')) return;
+      dragHandleTimeoutRef.current = setTimeout(() => {
+        setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+      }, 250);
+    },
+    onDragOver: (e) => {
+      if (window.__draggedBlock) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        let targetBlock = findNearestBlockElement(e.target);
+        const editorRoot = getActiveEditorRoot();
+        if (!targetBlock && editorRoot && (e.target === editorRoot || editorRoot.contains(e.target))) {
+          const children = Array.from(editorRoot.children);
+          let closest = null;
+          let minDist = Infinity;
+          for (let child of children) {
+            const rect = child.getBoundingClientRect();
+            const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
+            if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+              closest = child; break;
+            }
+            if (dist < minDist) { minDist = dist; closest = child; }
+          }
+          targetBlock = closest;
+        }
+        if (targetBlock && targetBlock !== window.__draggedBlock) {
+          const rect = targetBlock.getBoundingClientRect();
+          if (e.clientY < rect.top + rect.height / 2) {
+            if (window.__draggedBlock.nextSibling !== targetBlock) {
+              targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
+            }
+          } else {
+            if (targetBlock.nextSibling !== window.__draggedBlock) {
+              targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
+            }
+          }
+        }
+      }
+    },
+    onDragLeave: (e) => {
+      // Borders are no longer used for drop target highlighting
+    },
+    onDrop: (e) => {
+      if (window.__draggedBlock) {
+        e.preventDefault();
+        let targetBlock = findNearestBlockElement(e.target);
+        const editorRoot = getActiveEditorRoot();
+        if (!targetBlock && editorRoot && (e.target === editorRoot || editorRoot.contains(e.target))) {
+          const children = Array.from(editorRoot.children);
+          let closest = null;
+          let minDist = Infinity;
+          for (let child of children) {
+            const rect = child.getBoundingClientRect();
+            const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
+            if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
+              closest = child; break;
+            }
+            if (dist < minDist) { minDist = dist; closest = child; }
+          }
+          targetBlock = closest;
+        }
+
+        if (targetBlock && targetBlock !== window.__draggedBlock) {
+          const rect = targetBlock.getBoundingClientRect();
+          if (e.clientY < rect.top + rect.height / 2) {
+            if (window.__draggedBlock.nextSibling !== targetBlock) {
+              targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
+            }
+          } else {
+            if (targetBlock.nextSibling !== window.__draggedBlock) {
+              targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
+            }
+          }
+        }
+        
+        if (editorRoot === blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
+        window.__draggedBlock.style.opacity = '1';
+        window.__draggedBlock = null;
+        setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
+      }
+    }
+  };
+
   return (
-    <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'} ${roomState === 'active' && roomPanelMode === 'expanded' ? 'pt-[72px] pb-[80px] bg-[#f3f5fb]' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+    <div ref={appShellRef} className={`flex bg-[#FDFDFD] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''} ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
       <div className="fixed inset-0 pointer-events-none z-[9999]">
         {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
           if (!userState.user || !userState.pointer) return null;
@@ -35455,8 +37572,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
           );
         })}
       </div>
-      {roomState === 'active' && roomPanelMode === 'expanded' && renderRoomTopHeader()}
-      {roomState === 'active' && roomPanelMode === 'expanded' && renderRoomBottomBar()}
       
       {/* Dynamic Toast System */}
       <style>{`
@@ -36044,10 +38159,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* 1. Left Navigation Sidebar */}
       <div
-        className={`flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200 ${roomState === 'active' && roomPanelMode === 'expanded' ? '' : 'border-r border-gray-100'}`}
-        style={{ width: (activeRightTab === 'whiteboard') ? '0px' : (roomState === 'active' && roomPanelMode === 'expanded') ? '280px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-white border-r border-gray-100"
+        style={{ width: (activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
-        {roomState === 'active' && roomPanelMode === 'expanded' ? renderRoomLeftSidebar() : showDocumentOutlineView ? (
+        {showDocumentOutlineView ? (
           <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
             <div 
               className="flex items-center gap-2 text-gray-900 font-semibold cursor-pointer hover:text-violet-600 transition-colors"
@@ -36226,12 +38341,26 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
       {/* 2. Main Editor Area */}
-      {productMode === 'landing' ? (
-        <div className={`flex-1 flex flex-col min-w-0 bg-white relative ${roomState === 'active' && roomPanelMode === 'expanded' ? 'm-4 rounded-2xl shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-200 overflow-hidden' : ''}`}>
+      {roomState === 'active' && roomPanelMode === 'expanded' ? (
+        <div className="flex-1 flex flex-col min-w-0 bg-[#F0F2F5] relative overflow-hidden" />
+      ) : productMode === 'landing' ? (
+        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
           <RegaarderComposeLanding onLaunch={openLandingWorkspace} />
         </div>
+      ) : productMode === 'room-landing' ? (
+        <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+          <RoomLandingPage onLaunch={(action) => {
+            if (action && action.name === 'Room') {
+              if (action.type === 'schedule') {
+                setIsScheduleSessionModalOpen(true);
+              } else {
+                createRoomExperience();
+              }
+            }
+          }} />
+        </div>
       ) : (
-      <div className={`flex-1 flex flex-col min-w-0 bg-white relative ${roomState === 'active' && roomPanelMode === 'expanded' ? 'm-4 rounded-2xl shadow-[0_8px_30px_rgba(124,58,237,0.06)] border border-gray-200 overflow-hidden' : ''}`}>
+      <div className="flex-1 flex flex-col min-w-0 bg-white relative">
         
         {/* Top Header */}
         <div className="h-14 flex items-center justify-between px-6 border-b border-gray-100 shrink-0 select-none">
@@ -36467,7 +38596,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   <div className="px-2 py-1.5 text-[11px] font-semibold tracking-[0.08em] uppercase text-violet-600 dark:text-violet-400">Notifications</div>
                   <div className="max-h-[260px] overflow-y-auto thin-scrollbar space-y-1 px-1 pb-1">
                     {notifications.map((item) => (
-                      <div key={item.id} className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20">
+                      <div 
+                        key={item.id} 
+                        onClick={() => setNotificationsOpen(false)}
+                        className="rounded-xl border border-slate-100 dark:border-zinc-850 px-3 py-2.5 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 cursor-pointer"
+                      >
                         <div className="flex items-start justify-between gap-2">
                           <div className="text-[12px] font-medium text-slate-800 dark:text-zinc-200">{item.title}</div>
                           {item.unread && <span className="mt-1 h-2 w-2 rounded-full bg-violet-500" />}
@@ -36490,7 +38623,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {sharedReplayPanel}
 
-        {/* selectionActionMenu (Image 1) has been deleted as requested */}
+      {selectionActionMenuEnabled && selectionActionMenu.open && (
+        <div 
+          ref={selectionActionMenuRef}
+          className="fixed z-[100005] bg-white/80 backdrop-blur-md border border-gray-200/50 rounded-lg shadow-xl flex items-center p-1 gap-1"
+          style={{ top: selectionActionMenu.top, left: selectionActionMenu.left }}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isBoldActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Bold size={14}/></button>
+          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isItalicActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Italic size={14}/></button>
+          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isUnderlineActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Underline size={14}/></button>
+          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`p-1.5 hover:bg-slate-100/80 rounded transition-colors ${isStrikeActive ? 'text-violet-600 bg-violet-50/80' : 'text-slate-700'}`}><Strikethrough size={14}/></button>
+          <div className="w-px h-4 bg-gray-200/60 mx-1"></div>
+          <button onPointerDown={(e) => { 
+            e.preventDefault(); 
+            setAssistantQuickPrompt("Explain this text"); 
+            setChatInput("Explain this text");
+            setRightSidebarOpen(true); 
+            setActiveRightTab("assistant");
+            setSelectionActionMenu({ open: false, top: 0, left: 0 });
+          }} className="flex items-center gap-1.5 p-1.5 px-2 hover:bg-violet-50/80 text-violet-600 rounded text-xs font-medium transition-colors"><Sparkles size={14}/> Ask AI</button>
+        </div>
+      )}
       {imageToolbar.open && (
         <div className="image-toolbar-container absolute z-[250] bg-white border border-gray-200 rounded-lg shadow-xl p-2 flex gap-2 items-center" style={{ top: imageToolbar.top, left: imageToolbar.left }}>
           <button onClick={() => window.resizeImageBlock(imageToolbar.node, 'sm')} className="p-1 hover:bg-slate-100 rounded" title="Small Width (30%)"><ImageIcon size={14}/></button>
@@ -37845,45 +39999,215 @@ if (productMode === 'deck' || productMode === 'sheets') {
         <div className="flex-1 relative w-full h-full overflow-hidden bg-[#F7F7F9]">
           
           <div 
-            className="bg-gray-900 flex flex-col overflow-hidden border border-gray-800 rounded-2xl shadow-xl z-50 cursor-pointer"
+            className={`flex flex-col overflow-hidden transition-all duration-300 ${focusedModule === 'room' ? 'bg-[#FAF9FF] h-full w-full' : 'bg-slate-900 border border-slate-800 shadow-xl z-50 cursor-pointer'}`}
             style={getWorkspaceModuleStyle('room')}
             onClick={() => handleWorkspaceModuleClick('room')}
           >
-             {/* Large focused video */}
-             <div className="flex-1 relative flex items-center justify-center p-4">
-                <div className="w-full h-full max-w-5xl max-h-[80vh] rounded-2xl overflow-hidden shadow-2xl border border-gray-800 bg-black relative group">
+            {focusedModule !== 'room' ? (
+              /* Docked preview mode */
+              <div className="flex-1 flex flex-col p-3 text-white relative group select-none">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">Meeting Live</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                </div>
+                <div className="flex-1 rounded-lg overflow-hidden bg-slate-800 relative flex items-center justify-center">
                   {isVideoOff ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-                      <div className="w-24 h-24 rounded-full bg-violet-600 flex items-center justify-center text-white text-3xl font-bold">
-                        J
-                      </div>
+                    <div className="text-center">
+                      <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center mx-auto text-sm font-bold text-white">J</div>
                     </div>
                   ) : (
                     <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
                   )}
-                  {!!isMicMuted && <div className="absolute top-4 right-4 bg-red-500/80 p-2 rounded-full backdrop-blur-sm"><MicOff size={16} className="text-white" /></div>}
-                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-lg text-white font-medium text-sm">
-                    Joshua (You)
+                  <div className="absolute bottom-1.5 left-1.5 bg-black/60 px-2 py-0.5 rounded text-[9px]">You</div>
+                </div>
+                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-xl">
+                  <span className="text-xs font-semibold bg-white text-slate-900 px-2.5 py-1 rounded-lg shadow">Focus Room</span>
+                </div>
+              </div>
+            ) : (
+              /* Premium Immersive Room Mode */
+              <div 
+                className="flex-1 relative flex flex-col h-full w-full p-6 select-none bg-[#F8F9FC] font-sans cursor-pointer" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRoomMaximized(true);
+                  const docEl = document.documentElement;
+                  const requestFS = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.msRequestFullscreen;
+                  if (requestFS && !document.fullscreenElement) {
+                    requestFS.call(docEl).catch(()=>{});
+                  }
+                }}
+              >
+                {/* Active Speaker Card (Sarah Chen) */}
+                <div className="flex-1 min-h-0 relative mb-4 rounded-[28px] overflow-hidden border border-slate-200/50 shadow-[0_16px_40px_-12px_rgba(0,0,0,0.06)] bg-white flex flex-col justify-center">
+                  <img 
+                    src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=1200" 
+                    alt="Sarah Chen" 
+                    className="w-full h-full object-cover" 
+                  />
+                  
+                  {/* Speaker Overlay details */}
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-900/85 backdrop-blur-md rounded-2xl border border-white/10 text-white shadow-lg">
+                      <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330" className="w-5 h-5 rounded-full object-cover" alt="" />
+                      <span className="text-xs font-bold">Sarah Chen</span>
+                      
+                      {/* Active Soundwave Animation */}
+                      <div className="flex items-end gap-[2px] h-3 px-1 ml-1">
+                        <span className="w-[1.5px] bg-[#a78bfa] rounded-full animate-[pulse_0.6s_infinite_alternate]" style={{ height: '50%' }}></span>
+                        <span className="w-[1.5px] bg-[#a78bfa] rounded-full animate-[pulse_0.4s_infinite_alternate]" style={{ height: '90%' }}></span>
+                        <span className="w-[1.5px] bg-[#a78bfa] rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }}></span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#7C3AED]/90 backdrop-blur-md rounded-xl text-white text-xs font-semibold shadow-lg border border-violet-400/20">
+                      <Tv size={12} className="animate-pulse" />
+                      <span>Presenting screen</span>
+                    </div>
                   </div>
                 </div>
-             </div>
-             
-             {/* Bottom Controls inside the room view */}
-             <div className="h-20 bg-gray-900/90 border-t border-gray-800 flex items-center justify-center gap-4 shrink-0 px-6">
-                <button onClick={toggleRoomMic} className={`p-3 rounded-full transition-all ${!isMicMuted ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-red-500 text-white hover:bg-red-600'}`}>
-                  {!isMicMuted ? <Mic size={20} /> : <MicOff size={20} />}
+
+                {/* Sub-grid of participants */}
+                <div className="flex gap-4 overflow-x-auto pb-2 shrink-0 justify-center select-none thin-scrollbar">
+                  {/* Card 1: You */}
+                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
+                    {!isVideoOff && localStream ? (
+                      <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
+                    ) : (
+                      <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-violet-650 flex items-center justify-center text-white text-xs font-bold">You</div>
+                      </div>
+                    )}
+                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">You</span>
+                      <span className={`p-1 rounded-lg border shadow-sm ${!isMicMuted ? 'bg-white text-slate-700' : 'bg-red-50 text-red-500'}`}>
+                        {!isMicMuted ? <Mic size={10} /> : <MicOff size={10} />}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Alex Rivera */}
+                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d" className="w-full h-full object-cover" alt="" />
+                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">Alex</span>
+                      <span className="p-1 rounded-lg border shadow-sm bg-red-50 text-red-500">
+                        <MicOff size={10} />
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Jamie Patel */}
+                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
+                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2" className="w-full h-full object-cover" alt="" />
+                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">Jamie</span>
+                      <span className="p-1 rounded-lg border shadow-sm bg-red-50 text-red-500">
+                        <MicOff size={10} />
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card 4: Taylor Kim */}
+                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb" className="w-full h-full object-cover" alt="" />
+                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">Taylor</span>
+                      <span className="p-1 rounded-lg border shadow-sm bg-red-50 text-red-500">
+                        <MicOff size={10} />
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card 5: Morgan Lee */}
+                  <div className="w-[140px] h-[92px] rounded-[18px] overflow-hidden relative border border-slate-200/80 bg-white shadow-sm shrink-0">
+                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e" className="w-full h-full object-cover" alt="" />
+                    <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-slate-800 bg-white/90 backdrop-blur px-2 py-0.5 rounded-lg border border-slate-100 shadow-sm">Morgan</span>
+                      <span className="p-1 rounded-lg border shadow-sm bg-red-50 text-red-500">
+                        <MicOff size={10} />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Floating Centered Bottom controls & AI Input */}
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-3 w-full max-w-sm pointer-events-none">
+                  {/* Floating Action Controls */}
+                  <div className="flex items-center gap-2 p-1.5 bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl shadow-xl pointer-events-auto">
+                    <button 
+                      onClick={toggleRoomMic} 
+                      className={`p-2.5 rounded-xl transition-all active:scale-95 ${!isMicMuted ? 'bg-slate-800 text-slate-200 hover:bg-slate-750' : 'bg-red-500 text-white'}`}
+                      title={!isMicMuted ? 'Mute microphone' : 'Unmute microphone'}
+                    >
+                      {!isMicMuted ? <Mic size={15} /> : <MicOff size={15} />}
+                    </button>
+                    <button 
+                      onClick={toggleRoomCamera} 
+                      className={`p-2.5 rounded-xl transition-all active:scale-95 ${!isVideoOff ? 'bg-slate-800 text-slate-200 hover:bg-slate-750' : 'bg-red-500 text-white'}`}
+                      title={!isVideoOff ? 'Turn off camera' : 'Turn on camera'}
+                    >
+                      {!isVideoOff ? <Video size={15} /> : <VideoOff size={15} />}
+                    </button>
+                    <button 
+                      onClick={toggleScreenShare} 
+                      className={`p-2.5 rounded-xl transition-all active:scale-95 ${isScreenSharing ? 'bg-[#7C3AED] text-white' : 'bg-slate-800 text-slate-200 hover:bg-slate-750'}`}
+                      title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
+                    >
+                      <Tv size={15} />
+                    </button>
+                    <button 
+                      onClick={() => handleWorkspaceModuleClick('compose')} 
+                      className="p-2.5 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-750 transition-all active:scale-95" 
+                      title="Show document split-screen"
+                    >
+                      <FileText size={15} />
+                    </button>
+                    <button 
+                      onClick={leaveRoom} 
+                      className="p-2.5 rounded-xl bg-[#EA4335] text-white hover:bg-red-600 transition-all active:scale-95" 
+                      title="Leave meeting"
+                    >
+                      <PhoneOff size={15} />
+                    </button>
+                  </div>
+
+                  {/* AI Prompt Capsule */}
+                  <div 
+                    onClick={() => {
+                      setRoomPanelMode('expanded');
+                      setIsRoomRightSidebarOpen(true);
+                    }}
+                    className="flex items-center bg-white/95 backdrop-blur border border-slate-200/80 px-3.5 py-2.5 rounded-[22px] w-full shadow-[0_12px_32px_rgba(0,0,0,0.06)] hover:border-violet-300 transition-all pointer-events-auto cursor-pointer"
+                  >
+                    <Sparkles size={14} className="text-violet-650 mr-2 shrink-0 animate-pulse" />
+                    <span className="text-xs text-slate-450 text-left flex-1 font-medium select-none">Ask Room AI...</span>
+                    <div className="w-5 h-5 rounded-full bg-violet-50 flex items-center justify-center text-[#7C3AED]">
+                      <ArrowUpRight size={12} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Left Corner: Toggle People Sidebar */}
+                <button 
+                  onClick={() => setIsRoomLeftSidebarOpen(!isRoomLeftSidebarOpen)}
+                  className="absolute bottom-6 left-6 z-20 p-3 rounded-2xl bg-white border border-slate-250 hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-all shadow-md active:scale-95 pointer-events-auto"
+                  title="Toggle participant list"
+                >
+                  <Users size={16} />
                 </button>
-                <button onClick={toggleRoomCamera} className={`p-3 rounded-full transition-all ${!isVideoOff ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-red-500 text-white hover:bg-red-600'}`}>
-                  {!isVideoOff ? <Video size={20} /> : <VideoOff size={20} />}
+
+                {/* Bottom Right Corner: Toggle AI Assistant Sidebar */}
+                <button 
+                  onClick={() => setIsRoomRightSidebarOpen(!isRoomRightSidebarOpen)}
+                  className="absolute bottom-6 right-6 z-20 p-3 rounded-2xl bg-white border border-slate-250 hover:bg-slate-50 text-slate-650 hover:text-slate-900 transition-all shadow-md active:scale-95 pointer-events-auto"
+                  title="Toggle room assistant"
+                >
+                  <Sparkles size={16} />
                 </button>
-                <button onClick={() => setMainView('document')} className="p-3 rounded-full bg-gray-800 text-white hover:bg-gray-700 transition-colors ml-4" title="Return to Document">
-                  <FileText size={20} />
-                </button>
-                <button onClick={leaveRoom} className="p-3 rounded-full bg-red-500 text-white hover:bg-red-600 transition-colors ml-2" title="Leave Room">
-                  <PhoneOff size={20} />
-                </button>
-             </div>
-           </div>
+              </div>
+            )}
+          </div>
 
         <div 
           className="flex-1 flex flex-col min-h-0 bg-[#f8f9fc] border border-gray-200 rounded-2xl shadow-xl overflow-hidden z-50 cursor-pointer"
@@ -41828,103 +44152,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }
                     }
                   }}
-                  onMouseMove={(e) => {
-                    if (dragHandleTimeoutRef.current) clearTimeout(dragHandleTimeoutRef.current);
-                    const block = findNearestBlockElement(e.target);
-                    if (block) {
-                      const rect = block.getBoundingClientRect();
-                      setBlockDragHandle({
-                        visible: true,
-                        top: rect.top + window.scrollY,
-                        left: Math.max(10, rect.left + window.scrollX - 28),
-                        node: block
-                      });
-                    } else {
-                      dragHandleTimeoutRef.current = setTimeout(() => {
-                        setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
-                      }, 250);
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (e.relatedTarget && e.relatedTarget.closest('.block-drag-handle')) return;
-                    dragHandleTimeoutRef.current = setTimeout(() => {
-                      setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
-                    }, 250);
-                  }}
-                  onDragOver={(e) => {
-                    if (window.__draggedBlock) {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = 'move';
-                      let targetBlock = findNearestBlockElement(e.target);
-                      if (!targetBlock && (e.target === blankBodyRef.current || blankBodyRef.current.contains(e.target))) {
-                        const children = Array.from(blankBodyRef.current.children);
-                        let closest = null;
-                        let minDist = Infinity;
-                        for (let child of children) {
-                          const rect = child.getBoundingClientRect();
-                          const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
-                          if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                            closest = child; break;
-                          }
-                          if (dist < minDist) { minDist = dist; closest = child; }
-                        }
-                        targetBlock = closest;
-                      }
-                      if (targetBlock && targetBlock !== window.__draggedBlock) {
-                        const rect = targetBlock.getBoundingClientRect();
-                        if (e.clientY < rect.top + rect.height / 2) {
-                          if (window.__draggedBlock.nextSibling !== targetBlock) {
-                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
-                          }
-                        } else {
-                          if (targetBlock.nextSibling !== window.__draggedBlock) {
-                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
-                          }
-                        }
-                      }
-                    }
-                  }}
-                  onDragLeave={(e) => {
-                    // Borders are no longer used for drop target highlighting
-                  }}
-                  onDrop={(e) => {
-                    if (window.__draggedBlock) {
-                      e.preventDefault();
-                      let targetBlock = findNearestBlockElement(e.target);
-                      if (!targetBlock && (e.target === blankBodyRef.current || blankBodyRef.current.contains(e.target))) {
-                        const children = Array.from(blankBodyRef.current.children);
-                        let closest = null;
-                        let minDist = Infinity;
-                        for (let child of children) {
-                          const rect = child.getBoundingClientRect();
-                          const dist = Math.min(Math.abs(e.clientY - rect.top), Math.abs(e.clientY - rect.bottom));
-                          if (e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                            closest = child; break;
-                          }
-                          if (dist < minDist) { minDist = dist; closest = child; }
-                        }
-                        targetBlock = closest;
-                      }
-
-                      if (targetBlock && targetBlock !== window.__draggedBlock) {
-                        const rect = targetBlock.getBoundingClientRect();
-                        if (e.clientY < rect.top + rect.height / 2) {
-                          if (window.__draggedBlock.nextSibling !== targetBlock) {
-                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock);
-                          }
-                        } else {
-                          if (targetBlock.nextSibling !== window.__draggedBlock) {
-                            targetBlock.parentNode.insertBefore(window.__draggedBlock, targetBlock.nextSibling);
-                          }
-                        }
-                      }
-                      
-                      if (blankBodyRef.current) setDocBodyHtml(blankBodyRef.current.innerHTML);
-                      window.__draggedBlock.style.opacity = '1';
-                      window.__draggedBlock = null;
-                      setBlockDragHandle(p => ({ ...p, visible: false, node: null }));
-                    }
-                  }}
+                  {...editorDragHandlers}
                   dir="ltr"
                   data-doc-id={activeDocId || ''}
                   className="mb-4 min-h-[70vh] cursor-text outline-none text-sm text-gray-700 leading-relaxed"
@@ -42800,11 +45028,641 @@ if (productMode === 'deck' || productMode === 'sheets') {
       </div>
       )}
 
-      {roomState === 'active' && roomPanelMode === 'expanded' ? (
-        <div className="flex flex-col bg-white shrink-0 overflow-hidden" style={{ width: '340px' }}>
-          {renderRoomRightSidebar()}
+      {roomState === 'active' && roomPanelMode === 'expanded' ? null : sharedRightPanels}
+
+      {/* ── Room Global Overlay (Squarish, rounded, floating, with sidebars and header inside) ── */}
+      {roomState === 'active' && roomPanelMode === 'expanded' && (
+        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden transition-all duration-500 ${isVideoExpanded ? 'p-0 bg-black' : 'p-2 md:p-4'}`}>
+          {/* Subtle vignette/radial glow overlay */}
+          <div className="absolute inset-0 bg-black/[0.025] pointer-events-none" />
+          
+          <div className={`w-full h-full relative flex items-center justify-center ${isVideoExpanded ? 'max-w-none bg-black' : 'max-w-[1640px]'}`}>
+            <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`w-full h-full backdrop-blur-[60px] flex flex-col overflow-hidden relative transition-all duration-500 shadow-[0_32px_120px_rgba(0,0,0,0.04)] ${isVideoExpanded ? 'bg-black border-transparent rounded-none' : 'bg-white/70 border border-white/60 rounded-[40px]'}`}>
+              {!isVideoExpanded && renderRoomTopHeader()}
+            
+              {/* The main workspace below the header */}
+              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`flex-1 relative overflow-hidden bg-transparent ${isVideoExpanded ? 'rounded-none' : 'rounded-t-[40px]'}`}>
+
+              {/* Main Video Canvas Area */}
+              <div onDoubleClick={(e) => { if (e.target === e.currentTarget) toggleImmersiveLayout(); }} className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-6 ${isVideoExpanded ? 'p-0' : 'p-8'}`}>
+                
+                {/* Main Video Container */}
+                <div 
+                  onDoubleClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }} 
+                  onPointerMove={handlePointerMove}
+                  onPointerLeave={handlePointerLeave}
+                  onWheel={handleWheel}
+                  className={`w-full relative overflow-hidden bg-gray-900 shadow-[0_32px_100px_rgba(0,0,0,0.12)] pointer-events-auto transition-all duration-500 border border-black/10 shrink flex-1 select-none ${isVideoExpanded ? '!absolute !inset-0 !max-w-none !max-h-none z-0 rounded-none cursor-default' : 'max-w-[580px] max-h-[480px] min-h-[20vh] aspect-[4/3] z-10 rounded-[24px] cursor-default'} ${boundaryBounce === 'left' ? '-translate-x-6' : boundaryBounce === 'right' ? 'translate-x-6' : 'translate-x-0'}`}
+                >
+                  <div className="absolute inset-0">
+                    
+  {screenShareStream ? (
+    <video ref={mainVideoRef} autoPlay playsInline muted className="w-full h-full object-cover object-center pointer-events-none" />
+  ) : activeVideoSpeaker.isYou ? (
+    <>
+      <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover object-center pointer-events-none ${isRoomCameraOn ? '' : 'hidden'}`} />
+      {!isRoomCameraOn && (
+        <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
+          <div 
+            className="w-32 h-32 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-5xl"
+            style={{
+              background: `linear-gradient(135deg, #10B981 0%, rgba(15, 23, 42, 0.6) 100%)`,
+              border: '1px solid rgba(255, 255, 255, 0.15)'
+            }}
+          >
+            Y
+          </div>
         </div>
-      ) : sharedRightPanels}
+      )}
+    </>
+  ) : (
+    <>
+      {!activeVideoSpeaker.isRoomCameraOn ? (
+        <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
+          <div 
+            className="w-32 h-32 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-5xl"
+            style={{
+              background: `linear-gradient(135deg, ${activeVideoSpeaker.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
+              border: '1px solid rgba(255, 255, 255, 0.15)'
+            }}
+          >
+            {(activeVideoSpeaker.name || 'U').charAt(0).toUpperCase()}
+          </div>
+        </div>
+      ) : (
+        <>
+          <video
+            ref={(node) => {
+              const stream = remoteStreams[activeVideoSpeaker.id];
+              if (node && stream && node.srcObject !== stream) {
+                node.srcObject = stream;
+              }
+            }}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover object-center pointer-events-none"
+          />
+          {!remoteStreams[activeVideoSpeaker.id] && (
+            <img src={activeVideoSpeaker.img ? `${activeVideoSpeaker.img}?w=1200` : `https://i.pravatar.cc/150?u=${encodeURIComponent(activeVideoSpeaker.name)}`} alt={activeVideoSpeaker.name} className="w-full h-full object-cover object-center pointer-events-none" />
+          )}
+        </>
+      )}
+    </>
+  )}
+
+                  </div>
+                  
+                  {/* Swipe Particle Trails */}
+                  {swipeTrails.map(trail => (
+                    <div 
+                      key={trail.id}
+                      className="absolute rounded-full bg-white pointer-events-none animate-ping z-50"
+                      style={{
+                        left: trail.x - trail.size/2,
+                        top: trail.y - trail.size/2,
+                        width: trail.size,
+                        height: trail.size,
+                        boxShadow: '0 0 12px 3px rgba(255,255,255,0.9)'
+                      }}
+                    />
+                  ))}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); toggleVideoFullscreen(); }}
+                    className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20"
+                  >
+                    {isVideoExpanded ? <Minimize2 size={16} /> : <Maximize size={16} />}
+                  </button>
+                  <div className="absolute bottom-6 left-6 flex items-center gap-3 bg-black/10 backdrop-blur-xl px-4 py-2 rounded-[20px] border border-white/5 z-20">
+                    {(!isRoomMicOn && activeVideoSpeaker.isYou) ? (
+                      <div className="w-5 h-5 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center shrink-0">
+                        <MicOff size={12} strokeWidth={2} />
+                      </div>
+                    ) : (
+                      <div className="flex items-baseline gap-[2.5px] h-3.5">
+                        <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.8s_infinite_alternate]" style={{ height: '60%' }} />
+                        <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.5s_infinite_alternate]" style={{ height: '100%' }} />
+                        <span className="w-[2.5px] bg-white rounded-full animate-[pulse_0.7s_infinite_alternate]" style={{ height: '40%' }} />
+                      </div>
+                    )}
+                    <span className="text-white text-[14px] font-medium drop-shadow-sm tracking-tight">{activeVideoSpeaker.name}</span>
+                  </div>
+
+                  {/* Captions Overlay */}
+                  {isRoomCaptionsEnabled && liveCaption.text && (
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none w-[80%] max-w-2xl px-4 flex flex-col items-center">
+                      <div className="bg-black/60 backdrop-blur-xl rounded-[20px] px-6 py-3 flex flex-col shadow-2xl border border-white/10">
+                        <div className="text-white text-[15px] font-medium text-center tracking-tight leading-relaxed flex items-center justify-center gap-2">
+                          <span 
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isGeminiActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} 
+                            title={isGeminiActive ? "AI Mode Active (Gemini)" : "Local Mode (Native Speech)"}
+                          />
+                          <span className="opacity-60 text-[13px] mr-2">{liveCaption.speaker}</span>
+                          {liveCaption.text}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Participant Thumbnail Strip */}
+                {(!isDistractionFreeMode && (videoParticipants.length > 0 || youTileSpeaker)) && (
+                  <div className={`flex justify-between gap-4 shrink-0 pointer-events-auto w-full max-w-[580px] relative z-10 transition-all duration-500 ${isVideoExpanded ? 'mt-auto opacity-90 hover:opacity-100' : ''}`}>
+                    
+  {youTileSpeaker && (
+    <div 
+      onClick={() => {
+        const prevActive = activeVideoSpeaker;
+        setActiveVideoSpeaker(youTileSpeaker);
+        setYouTileSpeaker(prevActive);
+      }}
+      className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all"
+    >
+      {youTileSpeaker.isYou ? (
+        <>
+          <video ref={(node) => { if (node && localStream && node.srcObject !== localStream) node.srcObject = localStream; }} autoPlay playsInline muted className={`w-full h-full object-cover absolute inset-0 ${isRoomCameraOn ? '' : 'hidden'}`} />
+          {!isRoomCameraOn && (
+            <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
+              <div 
+                className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-xl"
+                style={{
+                  background: `linear-gradient(135deg, #10B981 0%, rgba(15, 23, 42, 0.6) 100%)`,
+                  border: '1px solid rgba(255, 255, 255, 0.15)'
+                }}
+              >
+                Y
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {!youTileSpeaker.isRoomCameraOn ? (
+            <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
+              <div 
+                className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-xl"
+                style={{
+                  background: `linear-gradient(135deg, ${youTileSpeaker.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
+                  border: '1px solid rgba(255, 255, 255, 0.15)'
+                }}
+              >
+                {(youTileSpeaker.name || 'U').charAt(0).toUpperCase()}
+              </div>
+            </div>
+          ) : (
+            <>
+              <video
+                ref={(node) => {
+                  const stream = remoteStreams[youTileSpeaker.id];
+                  if (node && stream && node.srcObject !== stream) {
+                    node.srcObject = stream;
+                  }
+                }}
+                autoPlay
+                playsInline
+                className="w-full h-full object-cover absolute inset-0"
+              />
+              {!remoteStreams[youTileSpeaker.id] && (
+                <img src={youTileSpeaker.img ? `${youTileSpeaker.img}?w=300` : `https://i.pravatar.cc/150?u=${encodeURIComponent(youTileSpeaker.name)}`} alt={youTileSpeaker.name} className="w-full h-full object-cover absolute inset-0" />
+              )}
+            </>
+          )}
+        </>
+      )}
+      <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
+        <div className="flex items-center justify-between w-full relative z-10">
+          <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{youTileSpeaker.name}</span>
+          {((youTileSpeaker.isYou && !isRoomMicOn) || (!youTileSpeaker.isYou && !youTileSpeaker.isRoomMicOn)) && (
+            <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+
+{videoParticipants.slice(0, 3).map((p, i) => (
+                      <div 
+                        key={p.id} 
+                        onClick={() => {
+                          const newParticipants = [...videoParticipants];
+                          newParticipants[i] = activeVideoSpeaker;
+                          setActiveVideoSpeaker(p);
+                          setVideoParticipants(newParticipants);
+                        }}
+                        className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0 cursor-pointer hover:ring-2 ring-violet-400 ring-offset-2 ring-offset-[#F1F0EE] transition-all"
+                      >
+                        {!p.isRoomCameraOn ? (
+                          <div className="w-full h-full bg-slate-900 flex items-center justify-center absolute inset-0">
+                            <div 
+                              className="w-12 h-12 rounded-full flex items-center justify-center font-semibold text-white shadow-inner select-none transition-all duration-300 text-xl"
+                              style={{
+                                background: `linear-gradient(135deg, ${p.color || '#7C3AED'} 0%, rgba(15, 23, 42, 0.6) 100%)`,
+                                border: '1px solid rgba(255, 255, 255, 0.15)'
+                              }}
+                            >
+                              {(p.name || 'U').charAt(0).toUpperCase()}
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <video
+                              ref={(node) => {
+                                const stream = remoteStreams[p.id];
+                                if (node && stream && node.srcObject !== stream) {
+                                  node.srcObject = stream;
+                                }
+                              }}
+                              autoPlay
+                              playsInline
+                              className="w-full h-full object-cover absolute inset-0"
+                            />
+                            {!remoteStreams[p.id] && (
+                              <img src={p.img ? `${p.img}?w=300` : `https://i.pravatar.cc/150?u=${encodeURIComponent(p.name)}`} alt={p.name} className="w-full h-full object-cover absolute inset-0" />
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Name blur overlay */}
+                        <div className="absolute inset-x-0 bottom-0 h-[30%] bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
+                          <div className="flex items-center justify-between w-full relative z-10">
+                            <span className="text-white/95 text-[12px] font-medium truncate drop-shadow-sm">{p.name}</span>
+                            {!p.isRoomMicOn && <MicOff size={12} className="text-white/70 shrink-0 drop-shadow-sm" />}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {videoParticipants.length > 3 && (
+                      <>
+                        {/* Plus 3 indicator */}
+                        <div className="relative flex-1 aspect-[4/3] max-w-[150px] rounded-[24px] overflow-hidden bg-slate-800 shadow-[0_16px_40px_rgba(0,0,0,0.08)] border border-white/10 group shrink-0">
+                          <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-2xl border border-white/50 bg-gradient-to-br from-white/40 to-white/10 shadow-inner">
+                            <span className="text-slate-700 text-[16px] font-medium drop-shadow-sm">+{videoParticipants.length - 3}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Bottom Control Section */}
+                {!isDistractionFreeMode && (
+                  <DraggablePanel 
+                    id="toolbar" 
+                    isHidden={hiddenPanels.includes('toolbar')} 
+                    isDeleteZoneActive={isDeleteZoneActive} 
+                    onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
+                  >
+                    <div className={`flex flex-col items-center gap-4 mt-2 shrink-0 pointer-events-auto relative z-10 transition-all duration-500 ${isVideoExpanded ? 'pb-4 opacity-90 hover:opacity-100' : ''}`}>
+                      
+                      {/* Toolbar */}
+                      <div className="flex items-center gap-4 bg-white/80 backdrop-blur-2xl rounded-[32px] px-8 py-3 shadow-[0_24px_80px_rgba(0,0,0,0.05)] border border-white/60">
+                        <button
+                          onClick={toggleRoomMic}
+                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                            isRoomMicOn
+                              ? 'text-violet-500 hover:bg-violet-50'
+                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                          }`}
+                          title={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
+                          aria-label={isRoomMicOn ? 'Mute microphone' : 'Unmute microphone'}
+                          aria-pressed={!isRoomMicOn}
+                        >
+                          {isRoomMicOn ? <Mic size={18} strokeWidth={1.5} /> : <MicOff size={18} strokeWidth={1.5} />}
+                        </button>
+                        <button
+                          onClick={toggleRoomCamera}
+                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                            isRoomCameraOn
+                              ? 'text-violet-500 hover:bg-violet-50'
+                              : 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                          }`}
+                          title={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
+                          aria-label={isRoomCameraOn ? 'Turn off camera' : 'Turn on camera'}
+                          aria-pressed={!isRoomCameraOn}
+                        >
+                          {isRoomCameraOn ? <Video size={18} strokeWidth={1.5} /> : <VideoOff size={18} strokeWidth={1.5} />}
+                        </button>
+                        <button
+                          onClick={toggleScreenShare}
+                          className={`w-[44px] h-[44px] rounded-full flex items-center justify-center transition-all ${
+                            isScreenSharing
+                              ? 'bg-[#7C3AED]/10 text-[#7C3AED] hover:bg-[#7C3AED]/20'
+                              : 'text-violet-500 hover:bg-violet-50'
+                          }`}
+                          title={isScreenSharing ? 'Stop sharing' : 'Share screen'}
+                          aria-label={isScreenSharing ? 'Stop sharing screen' : 'Share screen'}
+                          aria-pressed={isScreenSharing}
+                        >
+                          <MonitorPlay size={18} strokeWidth={1.5} />
+                        </button>
+                        <div className="relative">
+                          <button
+                            id="room-more-options-button"
+                            onClick={() => setIsRoomStartMenuOpen((prev) => !prev)}
+                            className="w-[44px] h-[44px] rounded-full text-violet-500 hover:bg-violet-50 flex items-center justify-center transition-all"
+                            title="More options"
+                            aria-label="More meeting options"
+                            aria-haspopup="menu"
+                            aria-expanded={isRoomStartMenuOpen}
+                          >
+                            <MoreHorizontal size={18} strokeWidth={1.5} />
+                          </button>
+                          {isRoomStartMenuOpen && (
+                            <div id="room-more-options-menu" className="absolute bottom-full right-0 mb-4 w-56 bg-white/95 backdrop-blur-3xl border border-white/60 rounded-[24px] p-2 shadow-[0_32px_100px_rgba(0,0,0,0.12)] animate-in slide-in-from-bottom-2 fade-in duration-300 z-[50]">
+                              <div className="flex flex-col">
+                                <button onClick={() => { showToast('Audio & Video Settings opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
+                                  <Settings size={16} strokeWidth={2} className="shrink-0" /> Audio & Video
+                                </button>
+                                <button onClick={() => { showToast('Layout Options opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
+                                  <LayoutGrid size={16} strokeWidth={2} className="shrink-0" /> Change Layout
+                                </button>
+                                <button onClick={() => { showToast('Visual Effects opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
+                                  <Sparkles size={16} strokeWidth={2} className="shrink-0" /> Visual Effects
+                                </button>
+                                <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
+                                <button onClick={() => { showToast('Captions enabled'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-slate-700 hover:bg-slate-100/50 hover:text-violet-600 rounded-xl transition-colors w-full text-left">
+                                  <MessageSquare size={16} strokeWidth={2} className="shrink-0" /> Turn on Captions
+                                </button>
+                                <div className="h-[1px] w-full bg-slate-100/80 my-1"></div>
+                                <button onClick={() => { showToast('Issue reporter opened'); setIsRoomStartMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-[14px] font-medium text-red-500 hover:bg-red-50/80 rounded-xl transition-colors w-full text-left">
+                                  <ShieldAlert size={16} strokeWidth={2} className="shrink-0" /> Report an Issue
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={leaveRoom}
+                          className="w-[44px] h-[44px] rounded-full bg-[#F25A5A] hover:bg-red-500 text-white flex items-center justify-center transition-all shadow-[0_8px_24px_rgba(242,90,90,0.3)] ml-2"
+                          title="Leave room"
+                          aria-label="Leave meeting"
+                        >
+                          <PhoneOff size={18} strokeWidth={1.5} />
+                        </button>
+                      </div>
+
+                      {/* Ask AI Bar */}
+                      <form onSubmit={handleRoomAISubmit} className="flex items-center gap-4 bg-white/90 backdrop-blur-2xl rounded-[32px] px-8 py-4.5 shadow-[0_24px_80px_rgba(0,0,0,0.06)] border border-white/80 w-full min-w-[540px] max-w-[580px] relative transition-all focus-within:ring-2 focus-within:ring-violet-400/30 focus-within:shadow-[0_8px_32px_rgba(124,58,237,0.1)] focus-within:border-violet-200">
+                        {roomAIModal.isOpen && (
+                          <>
+                            <div className="absolute bottom-full mb-4 left-0 right-0 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_32px_100px_rgba(0,0,0,0.12)] border border-white flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300 pointer-events-auto z-[50]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[13px] font-medium text-violet-500 bg-violet-50 px-3 py-1 rounded-full">Prompt</span>
+                            </div>
+                            <p className="text-[15px] text-slate-700 font-medium">{roomAIModal.prompt}</p>
+                            <div className="h-[1px] w-full bg-slate-100 my-1"></div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Sparkles size={14} className="text-violet-500" />
+                              <span className="text-[13px] font-medium text-slate-500">Room AI</span>
+                            </div>
+                            <p className="text-[15px] text-slate-600 leading-relaxed">{roomAIModal.answer}</p>
+                          </div>
+                          </>
+                        )}
+                        <Sparkles size={18} strokeWidth={1.5} className="text-violet-400 shrink-0" />
+                        <input 
+                          type="text"
+                          value={roomAIPrompt}
+                          onChange={(e) => setRoomAIPrompt(e.target.value)}
+                          placeholder="Ask Room AI..."
+                          className="text-[14px] text-slate-700 flex-1 font-normal tracking-wide bg-transparent border-none ring-0 focus:ring-0 p-0 m-0 outline-none placeholder:text-slate-400 pointer-events-auto"
+                        />
+                        <button 
+                          type="submit" 
+                          disabled={!roomAIPrompt.trim() || isRoomAILoading}
+                          className="w-10 h-10 rounded-full bg-violet-50/80 text-violet-500 hover:bg-violet-100 flex items-center justify-center shrink-0 transition-all border border-violet-100/50 disabled:opacity-50 disabled:cursor-not-allowed pointer-events-auto active:scale-95"
+                        >
+                          {isRoomAILoading ? (
+                            <Loader2 size={16} strokeWidth={2.5} className="animate-spin" />
+                          ) : (
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                          )}
+                        </button>
+                      </form>
+                    </div>
+                  </DraggablePanel>
+                )}
+              </div>
+            </div>
+            
+            {/* Floating People Sidebar (Left) */}
+            {isRoomLeftSidebarOpen && !isDistractionFreeMode && (
+              <DraggablePanel 
+                id="people" 
+                isHidden={hiddenPanels.includes('people')} 
+                isDeleteZoneActive={isDeleteZoneActive} 
+                onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
+              >
+                <div className="absolute z-[99999] pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ left: '32px', top: '120px', width: '280px', height: 'calc(100vh - 200px)', maxHeight: '700px' }}>
+                  {renderRoomLeftSidebar()}
+                </div>
+              </DraggablePanel>
+            )}
+
+            {/* Floating Chat Sidebar (Right) */}
+            {isRoomRightSidebarOpen && !isDistractionFreeMode && (
+              <DraggablePanel 
+                id="chat" 
+                isHidden={hiddenPanels.includes('chat')} 
+                isDeleteZoneActive={isDeleteZoneActive} 
+                onDelete={(id) => setHiddenPanels(prev => [...prev, id])}
+              >
+                <div className="absolute pointer-events-auto shadow-[0_24px_80px_rgba(0,0,0,0.08)] bg-white rounded-[32px] overflow-hidden" style={{ right: '32px', top: '164px', width: '280px', height: 'calc(100vh - 240px)', maxHeight: '700px', zIndex: 40 }}>
+                  {renderRoomRightSidebar()}
+                </div>
+              </DraggablePanel>
+            )}
+            
+            {/* Left Floating Toggle (People) */}
+            {!isRoomLeftSidebarOpen && !isDistractionFreeMode && (
+              <div
+                className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
+                style={{ 
+                left: '32px', 
+                bottom: '48px',
+                transform: `translate(${leftNavOffset.x}px, ${leftNavOffset.y}px)`
+              }}
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                e.stopPropagation();
+                e.currentTarget.dataset.dragStartX = e.clientX;
+                e.currentTarget.dataset.dragStartY = e.clientY;
+                setNavInteraction({ id: 'left', startX: e.clientX, startY: e.clientY, origin: leftNavOffset });
+              }}
+              onPointerUp={(e) => {
+                const startX = parseFloat(e.currentTarget.dataset.dragStartX || 0);
+                const startY = parseFloat(e.currentTarget.dataset.dragStartY || 0);
+                if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) {
+                  setIsRoomLeftSidebarOpen(true);
+                }
+              }}
+            >
+              <div className="relative">
+                <button
+                  className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] border border-violet-100/60 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-all cursor-move pointer-events-none"
+                >
+                  <Users size={20} strokeWidth={1.5} />
+                </button>
+                <span className="absolute -top-1 -right-1 min-w-[20px] h-[20px] rounded-full bg-violet-500 text-white text-[10px] font-medium flex items-center justify-center px-1.5 shadow-sm pointer-events-none">8</span>
+              </div>
+            </div>
+            )}
+            
+            {/* Right Floating Toggle (Chat) */}
+            {!isRoomRightSidebarOpen && !isDistractionFreeMode && (
+              <div
+                className="absolute z-[99999] pointer-events-auto cursor-move transition-opacity opacity-100"
+                style={{ 
+                right: '32px', 
+                bottom: '48px',
+                transform: `translate(${rightNavOffset.x}px, ${rightNavOffset.y}px)`
+              }}
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                e.stopPropagation();
+                e.currentTarget.dataset.dragStartX = e.clientX;
+                e.currentTarget.dataset.dragStartY = e.clientY;
+                setNavInteraction({ id: 'right', startX: e.clientX, startY: e.clientY, origin: rightNavOffset });
+              }}
+              onPointerUp={(e) => {
+                const startX = parseFloat(e.currentTarget.dataset.dragStartX || 0);
+                const startY = parseFloat(e.currentTarget.dataset.dragStartY || 0);
+                if (Math.abs(e.clientX - startX) < 5 && Math.abs(e.clientY - startY) < 5) {
+                  setIsRoomRightSidebarOpen(true);
+                }
+              }}
+            >
+              <button
+                className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-white shadow-[0_16px_40px_rgba(0,0,0,0.12)] border border-violet-100/60 text-violet-500 hover:text-violet-600 hover:bg-violet-50 transition-all cursor-move pointer-events-none"
+              >
+                <MessageSquare size={20} strokeWidth={1.5} />
+              </button>
+            </div>
+            )}
+          </div>
+          
+          {/* Dropzone for Deletion */}
+          {isDeleteZoneActive && (
+            <DraggablePanel id="dropzone-panel" isHidden={false} isDeleteZoneActive={false} onDelete={() => {}}>
+              <div 
+                id="delete-dropzone"
+                className="fixed inset-x-0 bottom-12 z-[100000] flex justify-center pointer-events-none animate-in slide-in-from-bottom-10 fade-in duration-300"
+              >
+                <div 
+                  onClick={(e) => { e.stopPropagation(); setIsDeleteZoneActive(false); }}
+                  className="pointer-events-auto bg-red-500/90 backdrop-blur-xl border-2 border-white text-white rounded-full w-24 h-24 flex flex-col items-center justify-center shadow-[0_16px_40px_rgba(220,38,38,0.4)] cursor-pointer hover:bg-red-500 transition-colors"
+                >
+                  <Trash2 size={32} />
+                  <span className="text-[10px] font-bold mt-1 uppercase tracking-wider opacity-90">Drop here</span>
+                </div>
+              </div>
+            </DraggablePanel>
+          )}
+          </div>
+        </div>
+      )}
+
+      {/* Invite Modal Overlay */}
+      <RoomInviteModal 
+        isOpen={isRoomInviteModalOpen} 
+        onClose={() => setIsRoomInviteModalOpen(false)} 
+        roomId={roomId}
+      />
+
+      {/* ── Post-Call Rating Overlay ── */}
+      {isPostCallRatingOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-xl">
+          <div className="relative w-full max-w-md mx-4 bg-white/90 backdrop-blur-2xl rounded-[32px] shadow-[0_40px_120px_rgba(0,0,0,0.18)] border border-white/60 overflow-hidden">
+            {/* Top gradient accent */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-400 to-indigo-500 rounded-t-[32px]" />
+
+            <div className="px-10 pt-10 pb-8 flex flex-col items-center gap-6">
+              {/* Icon */}
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-[0_8px_24px_rgba(124,58,237,0.35)]">
+                <PhoneOff size={26} className="text-white" strokeWidth={1.5} />
+              </div>
+
+              {/* Heading */}
+              <div className="text-center">
+                <h2 className="text-[22px] font-semibold text-gray-900 tracking-tight">You left the meeting</h2>
+                <p className="text-[14px] text-gray-400 mt-1 font-normal">How was your experience?</p>
+              </div>
+
+              {/* Meeting stats */}
+              <div className="flex items-center gap-6 w-full justify-center">
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[20px] font-semibold text-gray-900">{meetingDurationLabel || '00:00'}</span>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Duration</span>
+                </div>
+                <div className="w-px h-8 bg-gray-200" />
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[20px] font-semibold text-gray-900">4</span>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Participants</span>
+                </div>
+                <div className="w-px h-8 bg-gray-200" />
+                <div className="flex flex-col items-center gap-0.5">
+                  <span className="text-[20px] font-semibold text-gray-900">{roomId || '—'}</span>
+                  <span className="text-[11px] text-gray-400 uppercase tracking-wider font-medium">Room</span>
+                </div>
+              </div>
+
+              {/* 5-Star Rating */}
+              <div className="flex flex-col items-center gap-3 w-full">
+                <p className="text-[13px] text-gray-500 font-medium">Rate the call quality</p>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      onMouseEnter={() => setCallRatingHover(star)}
+                      onMouseLeave={() => setCallRatingHover(0)}
+                      onClick={() => {
+                        setCallRating(star);
+                        setTimeout(() => confirmLeaveRoom(), 200);
+                      }}
+                      className="transition-all duration-150 hover:scale-110 active:scale-95"
+                      aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                    >
+                      <svg
+                        width="36" height="36" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="1.5"
+                        strokeLinecap="round" strokeLinejoin="round"
+                        className={`transition-colors duration-100 ${
+                          star <= (callRatingHover || callRating)
+                            ? 'fill-amber-400 stroke-amber-400'
+                            : 'fill-transparent stroke-gray-300'
+                        }`}
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    </button>
+                  ))}
+                </div>
+                {callRating > 0 && (
+                  <p className="text-[12px] text-violet-500 font-medium animate-in fade-in duration-200">
+                    {callRating === 1 ? 'Sorry to hear that.' : callRating === 2 ? 'We\'ll improve.' : callRating === 3 ? 'Thanks for the feedback.' : callRating === 4 ? 'Glad it went well!' : '🎉 Perfect call!'}
+                  </p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col gap-3 w-full mt-1">
+                <button
+                  onClick={confirmLeaveRoom}
+                  className="w-full h-12 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[15px] font-semibold shadow-[0_8px_24px_rgba(124,58,237,0.3)] hover:shadow-[0_12px_32px_rgba(124,58,237,0.4)] hover:from-violet-700 hover:to-purple-700 transition-all duration-200 active:scale-[0.98]"
+                >
+                  Return to Home
+                </button>
+                <button
+                  onClick={() => setIsPostCallRatingOpen(false)}
+                  className="w-full h-10 rounded-2xl text-gray-400 text-[13px] font-medium hover:text-gray-600 hover:bg-gray-50 transition-all duration-150"
+                >
+                  Cancel — Rejoin meeting
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {roomState === 'active' && mainView === 'document' && (
         <div className="fixed bottom-5 right-24 z-[320] rounded-2xl border border-violet-200 bg-white/95 backdrop-blur-md shadow-[0_18px_45px_rgba(76,29,149,0.25)] px-3 py-2 flex items-center gap-2">
@@ -44497,7 +47355,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
        {blockDragHandle.visible && blockDragHandle.node && (
         <div
-          className="block-drag-handle fixed z-[9000] cursor-pointer text-slate-300 hover:text-slate-500 hover:bg-slate-100 rounded flex items-center justify-center transition-colors p-0.5"
+          className="block-drag-handle fixed z-[100005] cursor-pointer text-slate-300 hover:text-slate-500 hover:bg-slate-100 rounded flex items-center justify-center transition-colors p-0.5"
           style={{ top: `${blockDragHandle.top + 2}px`, left: `${blockDragHandle.left}px` }}
           draggable="true"
           onMouseEnter={() => {
@@ -44627,14 +47485,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
         return (
           <>
             <div 
-              className="fixed inset-0 z-[8998]" 
+              className="fixed inset-0 z-[100004]" 
               onPointerDown={(e) => {
                 e.preventDefault();
                 setDragHandleMenu({ open: false, top: 0, left: 0, node: null });
               }} 
             />
             <div
-              className="fixed z-[8999] w-[240px] rounded-2xl border border-slate-200/40 bg-white/70 backdrop-blur-xl p-3 shadow-2xl flex flex-col gap-2.5 font-sans text-slate-800"
+              className="fixed z-[100005] w-[240px] rounded-2xl border border-slate-200/40 bg-white/70 backdrop-blur-xl p-3 shadow-2xl flex flex-col gap-2.5 font-sans text-slate-800"
               style={{ top: `${menuTop}px`, left: `${menuLeft}px` }}
               onPointerDown={(e) => e.stopPropagation()}
             >
@@ -45373,56 +48231,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
-          <div 
-            className="pointer-events-none fixed z-[15000] flex items-center justify-center"
-            style={{
-              left: `${dictationAnchor.left}px`,
-              top: `${dictationAnchor.top}px`,
-              transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
-            }}
-          >
-            <div 
-              onPointerDown={(event) => {
-                if (event.target.tagName !== 'BUTTON' && !event.target.closest('button')) {
-                  beginPanelResize('dictation', event);
-                }
-              }}
-              className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-xl ${
-                isVoiceActive && voiceTarget === 'document' 
-                  ? 'rounded-2xl bg-violet-50/95 border-violet-400 outline outline-2 outline-violet-500/30 px-4 py-2.5 gap-3 shadow-[0_12px_40px_-15px_rgba(139,92,246,0.3)] min-w-[240px] max-w-[320px]' 
-                  : 'rounded-full bg-white/90 border-slate-200/80 p-1 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:border-violet-300/80'
-              }`}
-            >
-              <button
-                type="button"
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={async () => {
-                  await toggleVoiceRecording('document');
-                }}
-                className={`flex items-center justify-center rounded-full transition-all duration-300 ${
-                  isVoiceActive && voiceTarget === 'document'
-                    ? 'w-8 h-8 bg-violet-600 text-white shadow-[0_0_12px_rgba(124,58,237,0.5)] animate-pulse'
-                    : 'w-10 h-10 bg-slate-50 hover:bg-violet-50 text-slate-500 hover:text-violet-600'
-                }`}
-                title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice transcription' : 'Start voice transcription'}
-              >
-                <Mic size={isVoiceActive && voiceTarget === 'document' ? 16 : 18} />
-              </button>
 
-              {isVoiceActive && voiceTarget === 'document' ? (
-                <div className="flex-1 flex flex-col justify-center min-w-0 pr-1">
-                  <div className="text-[10px] font-bold text-violet-600 tracking-wider uppercase opacity-85">Dictation Active</div>
-                  <div className="text-[12px] font-medium text-slate-700 truncate leading-relaxed">
-                    {liveSpeechInterimText || 'Listening...'}
-                  </div>
-                </div>
-              ) : (
-                <span className="text-[11px] font-semibold text-slate-400 px-3 pr-4 pointer-events-none">Dictate</span>
-              )}
-            </div>
-          </div>
-        )}
 
 
       {/* Compose Pickers */}
@@ -45438,6 +48247,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {renderSharedChartPicker()}
       {renderSharedShapePicker()}
       {renderAuthModal()}
+      
+      <NotesModal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} notesCardRef={notesCardRef} isDarkMode={isDarkMode} />
+
+      <SummaryModal isOpen={isSummaryModalOpen} onClose={() => setIsSummaryModalOpen(false)} />
+      <MeetingsModal isOpen={isMeetingsModalOpen} onClose={() => setIsMeetingsModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} setInvites={setInvites} />
+      <RecordingModal isOpen={isRecordingModalOpen} onClose={() => setIsRecordingModalOpen(false)} />
+      <CalendarModal isOpen={isCalendarModalOpen} onClose={() => setIsCalendarModalOpen(false)} globalEvents={globalEvents} setGlobalEvents={setGlobalEvents} />
     </div>
   );
 }
