@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Video, Calendar, PlayCircle, Settings, Plus, Users, Hash, Bell, Shield, ChevronDown,
-  MoreHorizontal, Clock, FileText, Layout, Home, X, Keyboard, Send
+  MoreHorizontal, Clock, FileText, Layout, Home, X, Keyboard, Send, Sparkles, Edit2, Trash2, Check, Download
 } from "lucide-react";
 
 export default function RoomLandingPage({ onLaunch }) {
@@ -17,9 +17,18 @@ export default function RoomLandingPage({ onLaunch }) {
   const [isDistractionFree, setIsDistractionFree] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  // AI Response Interactive States
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [isEditingAnswer, setIsEditingAnswer] = useState(false);
+  const [editedPromptText, setEditedPromptText] = useState("");
+  const [editedAnswerText, setEditedAnswerText] = useState("");
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const [exportStatus, setExportStatus] = useState("");
+
   const dropdownRef = useRef(null);
   const invitesRef = useRef(null);
   const profileRef = useRef(null);
+  const exportRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -38,18 +47,23 @@ export default function RoomLandingPage({ onLaunch }) {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setIsProfileOpen(false);
       }
+      if (exportRef.current && !exportRef.current.contains(event.target)) {
+        setIsExportMenuOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Dismiss Room AI response dropdown on click outside
+  // Dismiss Room AI response dropdown on click outside, but preserve the chat content
   useEffect(() => {
     if (!roomAIModal.isOpen) return;
     const handleOutsideClick = (e) => {
       const form = e.target.closest('form');
       if (!form || !form.querySelector('input[placeholder="Ask Room AI anything..."]')) {
-        setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
+        setRoomAIModal(prev => ({ ...prev, isOpen: false }));
+        setIsEditingPrompt(false);
+        setIsEditingAnswer(false);
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
@@ -73,6 +87,35 @@ export default function RoomLandingPage({ onLaunch }) {
       answer: "AI is currently unavailable. Please ensure the backend is running or try again later."
     });
     setAiPrompt(""); // Clears the input immediately for follow-up questions
+  };
+
+  const handleInputFocus = () => {
+    if (roomAIModal.prompt) {
+      setRoomAIModal(prev => ({ ...prev, isOpen: true }));
+    }
+  };
+
+  // Inline Actions for AI modal
+  const handleSavePrompt = () => {
+    setRoomAIModal(prev => ({ ...prev, prompt: editedPromptText }));
+    setIsEditingPrompt(false);
+  };
+
+  const handleSaveAnswer = () => {
+    setRoomAIModal(prev => ({ ...prev, answer: editedAnswerText }));
+    setIsEditingAnswer(false);
+  };
+
+  const handleDeleteAI = () => {
+    setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
+    setIsEditingPrompt(false);
+    setIsEditingAnswer(false);
+  };
+
+  const handleExport = (destination) => {
+    setExportStatus(`Exported to ${destination}!`);
+    setIsExportMenuOpen(false);
+    setTimeout(() => setExportStatus(""), 3000);
   };
 
   return (
@@ -100,28 +143,40 @@ export default function RoomLandingPage({ onLaunch }) {
               <span className="text-[18px] font-medium text-violet-400 tracking-tight font-sans">Room</span>
             </div>
 
-            {/* Right: Active Header Icons behaving exactly as when the meeting is on */}
+            {/* Right: Header Icons behaving exactly as when the meeting is on, with Apple aesthetics */}
             <div className="flex items-center gap-4 relative">
-              {/* Bell (Invites) */}
+              {/* Bell (Invites) - Apple aesthetic, no purple overuse, slate buttons */}
               <div className="relative" ref={invitesRef}>
                 <button 
                   onClick={() => setIsInvitesOpen(!isInvitesOpen)}
-                  className={`p-2.5 rounded-2xl transition-colors ${isInvitesOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                  className={`p-2.5 rounded-2xl transition-all duration-300 ${isInvitesOpen ? 'bg-slate-100 text-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.02)]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
                 >
                   <Bell size={16} />
-                  <span className="absolute top-2 right-2 w-2 h-2 bg-violet-500 rounded-full border border-white" />
+                  <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 bg-slate-400 rounded-full" />
                 </button>
 
                 {isInvitesOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-slate-100 shadow-[0_16px_40px_rgba(0,0,0,0.08)] rounded-[24px] p-4 z-50 animate-in fade-in slide-in-from-top-2">
-                    <h3 className="font-semibold text-slate-800 mb-3 px-2 text-[14px]">Invites</h3>
+                  <div className="absolute top-full right-0 mt-2 w-[340px] bg-white border border-slate-100/80 shadow-[0_16px_40px_rgba(0,0,0,0.06)] rounded-[24px] p-4.5 z-50 animate-in fade-in slide-in-from-top-2">
+                    <h3 className="font-semibold text-slate-800 mb-3 px-1 text-[13px] tracking-tight">Invites</h3>
                     <div className="space-y-2 max-h-64 overflow-y-auto thin-scrollbar pr-1">
-                      <div className="p-3 bg-violet-50/50 rounded-2xl border border-violet-100/50">
-                         <p className="text-xs font-medium text-slate-800 mb-1">John invited you to <span className="font-semibold text-violet-600">Product Sync</span></p>
-                         <p className="text-[10px] text-slate-500 mb-3">Today at 4:00 PM</p>
+                      <div className="p-3.5 bg-slate-50/50 rounded-2xl border border-slate-100">
+                         <p className="text-[13px] text-slate-700 leading-snug">
+                           John invited you to <span className="font-semibold text-slate-800">Product Sync</span>
+                         </p>
+                         <p className="text-[11px] text-slate-400 mt-1 mb-3.5">Today at 4:00 PM</p>
                          <div className="flex gap-2">
-                           <button onClick={() => setIsInvitesOpen(false)} className="flex-1 py-1.5 bg-violet-600 text-white text-[11px] font-medium rounded-xl hover:bg-violet-700 transition-colors">Accept</button>
-                           <button onClick={() => setIsInvitesOpen(false)} className="flex-1 py-1.5 bg-white text-slate-600 text-[11px] font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">Ignore</button>
+                           <button 
+                             onClick={() => setIsInvitesOpen(false)} 
+                             className="flex-1 py-2 bg-slate-900 text-white text-[12px] font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-[0_2px_6px_rgba(0,0,0,0.05)]"
+                           >
+                             Accept
+                           </button>
+                           <button 
+                             onClick={() => setIsInvitesOpen(false)} 
+                             className="flex-1 py-2 bg-white text-slate-600 text-[12px] font-semibold rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+                           >
+                             Ignore
+                           </button>
                          </div>
                       </div>
                     </div>
@@ -132,7 +187,7 @@ export default function RoomLandingPage({ onLaunch }) {
               {/* Shield (Distraction Free Mode / Security) */}
               <button 
                 onClick={() => setIsDistractionFree(!isDistractionFree)}
-                className={`p-2.5 rounded-2xl transition-colors ${isDistractionFree ? 'bg-violet-100 text-violet-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                className={`p-2.5 rounded-2xl transition-colors ${isDistractionFree ? 'bg-slate-100 text-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.02)]' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
                 title="Distraction Free Mode"
               >
                 <Shield size={16} />
@@ -301,12 +356,14 @@ export default function RoomLandingPage({ onLaunch }) {
                 </div>
               </div>
 
-              {/* 3. AI Search Prompt Input Bar & Response Card (Re-positioned below the input) */}
+              {/* 3. AI Search Prompt Input Bar & Response Card (Active saved chat with editing, delete, export) */}
               <form onSubmit={handleAISubmit} className="w-full max-w-[560px] relative flex flex-col items-center mb-6">
                 <div className="w-full relative flex items-center">
                   <input
                     type="text"
                     value={aiPrompt}
+                    onFocus={handleInputFocus}
+                    onClick={handleInputFocus}
                     onChange={(e) => setAiPrompt(e.target.value)}
                     placeholder="Ask Room AI anything..."
                     className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
@@ -317,18 +374,139 @@ export default function RoomLandingPage({ onLaunch }) {
                   </button>
                 </div>
 
+                {exportStatus && (
+                  <div className="absolute top-12 bg-slate-900 text-white text-[12px] font-semibold px-4.5 py-2 rounded-xl shadow-lg z-50 animate-in fade-in zoom-in-95 duration-200">
+                    {exportStatus}
+                  </div>
+                )}
+
                 {roomAIModal.isOpen && (
-                  <div className="w-full mt-4 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_16px_48px_rgba(0,0,0,0.03)] border border-slate-100/80 flex flex-col gap-3 animate-in slide-in-from-top-2 fade-in duration-300 pointer-events-auto">
+                  <div className="w-full mt-4 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_16px_48px_rgba(0,0,0,0.03)] border border-slate-100/80 flex flex-col gap-3 animate-in slide-in-from-top-2 fade-in duration-300 pointer-events-auto relative">
+                    
+                    {/* Top Action Toolbar */}
                     <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-medium text-violet-500 bg-violet-50 px-3 py-1 rounded-full">Prompt</span>
+                      <span className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Saved Interaction</span>
+                      
+                      <div className="flex items-center gap-2">
+                        {/* Export Button */}
+                        <div className="relative" ref={exportRef}>
+                          <button 
+                            type="button"
+                            onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors flex items-center gap-1 text-[12px] font-medium"
+                            title="Export Response"
+                          >
+                            <Download size={13} />
+                            <span>Export</span>
+                          </button>
+                          
+                          {isExportMenuOpen && (
+                            <div className="absolute bottom-full right-0 mb-1 w-44 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-bottom-1">
+                              <button 
+                                type="button" 
+                                onClick={() => handleExport("Shared Notes")}
+                                className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[12px] font-medium transition-colors"
+                              >
+                                Export to Shared Notes
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => handleExport("Clipboard")}
+                                className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[12px] font-medium transition-colors"
+                              >
+                                Copy to Clipboard
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          onClick={handleDeleteAI}
+                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                          title="Delete Chat"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-[15px] text-slate-700 font-medium">{roomAIModal.prompt}</p>
-                    <div className="h-[1px] w-full bg-slate-100 my-1"></div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[15px] text-violet-500">✦</span>
-                      <span className="text-[13px] font-medium text-slate-500">Room AI</span>
+
+                    {/* Prompt Section */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-violet-500 bg-violet-50 px-2 py-0.5 rounded-md">Prompt</span>
+                        {!isEditingPrompt ? (
+                          <button
+                            type="button"
+                            onClick={() => { setEditedPromptText(roomAIModal.prompt); setIsEditingPrompt(true); }}
+                            className="text-[11px] font-medium text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                          >
+                            <Edit2 size={10} /> Edit
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSavePrompt}
+                            className="text-[11px] font-semibold text-green-600 hover:text-green-700 flex items-center gap-1"
+                          >
+                            <Check size={11} /> Save
+                          </button>
+                        )}
+                      </div>
+
+                      {isEditingPrompt ? (
+                        <input
+                          type="text"
+                          value={editedPromptText}
+                          onChange={(e) => setEditedPromptText(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-[14px] font-medium py-1.5 px-3 rounded-lg focus:outline-none focus:border-violet-300"
+                        />
+                      ) : (
+                        <p className="text-[14px] text-slate-700 font-medium px-1">{roomAIModal.prompt}</p>
+                      )}
                     </div>
-                    <p className="text-[15px] text-slate-600 leading-relaxed">{roomAIModal.answer}</p>
+
+                    <div className="h-[1px] w-full bg-slate-100 my-0.5"></div>
+
+                    {/* Answer Section */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Sparkles size={13} className="text-violet-500" />
+                          <span className="text-[11px] font-semibold text-slate-500">Room AI</span>
+                        </div>
+                        {!isEditingAnswer ? (
+                          <button
+                            type="button"
+                            onClick={() => { setEditedAnswerText(roomAIModal.answer); setIsEditingAnswer(true); }}
+                            className="text-[11px] font-medium text-slate-400 hover:text-slate-600 flex items-center gap-1"
+                          >
+                            <Edit2 size={10} /> Edit
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSaveAnswer}
+                            className="text-[11px] font-semibold text-green-600 hover:text-green-700 flex items-center gap-1"
+                          >
+                            <Check size={11} /> Save
+                          </button>
+                        )}
+                      </div>
+
+                      {isEditingAnswer ? (
+                        <textarea
+                          value={editedAnswerText}
+                          onChange={(e) => setEditedAnswerText(e.target.value)}
+                          rows={3}
+                          className="w-full bg-slate-50 border border-slate-200 text-slate-600 text-[14px] leading-relaxed p-2.5 rounded-lg focus:outline-none focus:border-violet-300 font-sans resize-none"
+                        />
+                      ) : (
+                        <p className="text-[14px] text-slate-600 leading-relaxed px-1 whitespace-pre-wrap">{roomAIModal.answer}</p>
+                      )}
+                    </div>
+
                   </div>
                 )}
               </form>
