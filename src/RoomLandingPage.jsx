@@ -190,7 +190,9 @@ export default function RoomLandingPage({ onLaunch }) {
                     <h3 className="font-semibold text-slate-800 mb-3 px-1 text-[13px] tracking-tight">Invites</h3>
                     <div className="space-y-2 max-h-64 overflow-y-auto thin-scrollbar pr-1">
                       {invites.length === 0 ? (
-                        <div className="text-sm text-slate-400 text-center py-6">No new invites</div>
+                        <div className="bg-slate-50/70 rounded-2xl py-8 flex items-center justify-center text-[13px] text-slate-400/80 font-medium">
+                          No new invites
+                        </div>
                       ) : (
                         invites.map(notif => (
                           <div key={notif.id} className="p-3.5 bg-slate-50/50 rounded-2xl border border-slate-100">
