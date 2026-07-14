@@ -23177,6 +23177,69 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [productMode, selectedSheetRange, selectedSheetCell, activeSheetId]);
 
   useEffect(() => {
+    const handleArrowPageNavigation = (e) => {
+      const activeEl = document.activeElement;
+      if (activeEl) {
+        const tagName = activeEl.tagName.toLowerCase();
+        if (tagName === 'input' || tagName === 'textarea' || activeEl.isContentEditable || activeEl.closest('[contenteditable="true"]')) {
+          return;
+        }
+        if (activeEl.closest('.sheet-grid-container') || activeEl.closest('[data-sheet-grid="true"]')) {
+          return;
+        }
+      }
+
+      if (e.key === 'ArrowLeft') {
+        if (productMode === 'room' || productMode === 'room-landing') {
+          e.preventDefault();
+          setProductMode('landing');
+          setIsDocumentImmersive(false);
+          try {
+            if (document.exitFullscreen && document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {});
+            }
+          } catch (err) {}
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (productMode === 'landing') {
+          e.preventDefault();
+          enterFullscreen();
+          setIsDocumentImmersive(true);
+          setCreationPickerOpen(false);
+          setProductMode('room-landing');
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (productMode === 'landing') {
+          e.preventDefault();
+          createComposeExperience();
+        } else if (productMode === 'compose') {
+          e.preventDefault();
+          createSheetsExperience();
+        }
+      } else if (e.key === 'ArrowUp') {
+        if (productMode === 'sheets') {
+          e.preventDefault();
+          createComposeExperience();
+        } else if (productMode === 'compose') {
+          e.preventDefault();
+          setProductMode('landing');
+          setIsDocumentImmersive(false);
+          try {
+            if (document.exitFullscreen && document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {});
+            }
+          } catch (err) {}
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleArrowPageNavigation);
+    return () => {
+      window.removeEventListener('keydown', handleArrowPageNavigation);
+    };
+  }, [productMode]);
+
+  useEffect(() => {
     if (!draggingTable) return;
     const handleGlobalMouseMove = (e) => {
       const dx = e.clientX - draggingTable.initialMouseX;
@@ -32494,7 +32557,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
                     </div>
                     <div
-                      className="flex-1 overflow-auto thin-scrollbar relative bg-white"
+                      className="flex-1 overflow-auto thin-scrollbar relative bg-white sheet-grid-container"
+                      data-sheet-grid="true"
                       tabIndex={0}
                       onMouseUp={() => { sheetHeaderDragRef.current = { active: false, type: null, startIndex: null }; }}
                       onScroll={(e) => {

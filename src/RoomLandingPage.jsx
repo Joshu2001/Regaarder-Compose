@@ -84,7 +84,7 @@ export default function RoomLandingPage({ onLaunch }) {
           {/* Workspace Body Frame */}
           <div className="flex-1 flex gap-6 px-10 pb-8 overflow-hidden relative">
             
-            {/* Left Floating Sidebar Navigation - Clean solid white design matching active room panels */}
+            {/* Left Floating Sidebar Navigation */}
             <aside className="w-[260px] shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6">
               <nav className="flex-1 space-y-1">
                 {[
@@ -118,10 +118,10 @@ export default function RoomLandingPage({ onLaunch }) {
               </nav>
 
               {/* ROOM PRO promo card */}
-              <div className="mt-auto bg-violet-50/50 border border-violet-100/50 rounded-2xl p-4 flex flex-col gap-2">
+              <div className="mt-auto bg-violet-50/30 border border-violet-100/30 rounded-2xl p-4 flex flex-col gap-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Room</span>
-                  <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-600">Pro</span>
+                  <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-violet-100/80 text-violet-600">Pro</span>
                 </div>
                 <div className="text-[14px] font-semibold text-slate-800 leading-tight">
                   More power for your meetings
@@ -136,25 +136,25 @@ export default function RoomLandingPage({ onLaunch }) {
             </aside>
 
             {/* Middle Column (Main Content) */}
-            <main className="flex-1 flex flex-col gap-6 overflow-y-auto pr-2 thin-scrollbar pt-2">
+            <main className="flex-1 flex flex-col gap-8 overflow-y-auto pr-2 thin-scrollbar pt-2">
               
               {/* Quick Action Buttons */}
               <div className="flex gap-4 items-center shrink-0 relative">
                 <div className="flex-1 relative" ref={dropdownRef}>
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-3 rounded-2xl flex items-center justify-center gap-2 shadow-[0_8px_20px_rgba(124,58,237,0.25)] hover:shadow-[0_12px_24px_rgba(124,58,237,0.35)] transition-all text-[15px]"
+                    className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-3 rounded-2xl flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(124,58,237,0.15)] hover:shadow-[0_8px_20px_rgba(124,58,237,0.25)] transition-all text-[15px]"
                   >
                     <Plus size={16} /> New Room
                   </button>
 
                   {isDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-100 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.12)] overflow-hidden z-30 p-1.5 animate-in fade-in slide-in-from-top-2">
+                    <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-100 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] overflow-hidden z-30 p-1.5 animate-in fade-in slide-in-from-top-2">
                       <button
                         onClick={() => { setIsDropdownOpen(false); handleLaunch(); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-violet-50/50 rounded-xl text-left transition-colors group"
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-left transition-colors group"
                       >
-                        <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 group-hover:scale-105 transition-transform">
+                        <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-105 transition-transform">
                           <Plus size={16} />
                         </div>
                         <div className="flex flex-col">
@@ -164,9 +164,9 @@ export default function RoomLandingPage({ onLaunch }) {
                       </button>
                       <button
                         onClick={() => { setIsDropdownOpen(false); handleSchedule(); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-violet-50/50 rounded-xl text-left transition-colors group mt-1"
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-left transition-colors group mt-1"
                       >
-                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 group-hover:scale-105 group-hover:bg-violet-100 group-hover:text-violet-600 transition-transform">
+                        <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 group-hover:scale-105 group-hover:bg-violet-50 group-hover:text-violet-600 transition-transform">
                           <Calendar size={16} />
                         </div>
                         <div className="flex flex-col">
@@ -184,7 +184,7 @@ export default function RoomLandingPage({ onLaunch }) {
                     value={meetingCode}
                     onChange={(e) => setMeetingCode(e.target.value)}
                     placeholder="Join Room"
-                    className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 placeholder:text-slate-400 font-medium py-3 pl-11 pr-12 rounded-2xl text-[15px] focus:outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 transition-all text-center shadow-[0_2px_8px_rgba(0,0,0,0.02)]"
+                    className="w-full bg-white hover:bg-slate-50 border border-slate-100 text-slate-700 placeholder:text-slate-400 font-medium py-3 pl-11 pr-12 rounded-2xl text-[15px] focus:outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 transition-all text-center shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && meetingCode.trim().length > 0) {
                         handleLaunch();
@@ -204,9 +204,9 @@ export default function RoomLandingPage({ onLaunch }) {
               </div>
 
               {/* Recent Rooms */}
-              <section className="flex flex-col gap-3 shrink-0">
+              <section className="flex flex-col gap-4 shrink-0">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-[16px] font-semibold text-slate-800 tracking-tight">Recent Rooms</h2>
+                  <h2 className="text-[15px] font-medium text-slate-400 tracking-tight">Recent Rooms</h2>
                   <button className="text-[12px] font-medium text-slate-400 hover:text-violet-600 transition-colors flex items-center gap-0.5">
                     View all <ChevronDown size={14} className="-rotate-90" />
                   </button>
@@ -214,19 +214,20 @@ export default function RoomLandingPage({ onLaunch }) {
 
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true, color: "bg-blue-600" },
-                    { name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true, color: "bg-emerald-600" },
-                    { name: "Marketing Sync", time: "Jul 11", users: "6 participants", recording: true, ai: false, color: "bg-blue-600" }
+                    { name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true },
+                    { name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true },
+                    { name: "Marketing Sync", time: "Jul 11", users: "6 participants", recording: true, ai: false }
                   ].map((room, idx) => (
-                    <div key={idx} className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 hover:shadow-lg hover:border-slate-200 transition-all cursor-pointer relative group">
+                    <div key={idx} className="bg-white border border-slate-100/50 rounded-2xl p-4 flex flex-col gap-3 hover:shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all cursor-pointer relative group">
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-xl ${room.color} text-white flex items-center justify-center`}>
+                          {/* Neutral icon wrapper supporting Single-Accent Principle */}
+                          <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 border border-slate-100">
                             <Users size={14} />
                           </div>
-                          <div>
-                            <div className="text-[14px] font-semibold text-slate-800">{room.name}</div>
-                            <div className="text-[11px] text-slate-400">{room.time} • {room.users}</div>
+                          <div className="min-w-0">
+                            <div className="text-[14px] font-semibold text-slate-800 truncate leading-snug">{room.name}</div>
+                            <div className="text-[11px] text-slate-400 truncate mt-0.5">{room.time} • {room.users}</div>
                           </div>
                         </div>
                         <button className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors">
@@ -236,14 +237,14 @@ export default function RoomLandingPage({ onLaunch }) {
 
                       <div className="flex gap-2">
                         {room.recording && (
-                          <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-red-50 text-red-500">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                          <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
                             Recording
                           </span>
                         )}
                         {room.ai && (
-                          <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded bg-violet-50 text-violet-500">
-                            ✦ AI Summary
+                          <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
+                            ✦ Summary
                           </span>
                         )}
                       </div>
@@ -253,9 +254,9 @@ export default function RoomLandingPage({ onLaunch }) {
               </section>
 
               {/* Upcoming */}
-              <section className="flex flex-col gap-3 shrink-0">
+              <section className="flex flex-col gap-4 shrink-0">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-[16px] font-semibold text-slate-800 tracking-tight">Upcoming</h2>
+                  <h2 className="text-[15px] font-medium text-slate-400 tracking-tight">Upcoming</h2>
                   <button onClick={handleSchedule} className="text-[12px] font-medium text-slate-400 hover:text-violet-600 transition-colors flex items-center gap-0.5">
                     View calendar <ChevronDown size={14} className="-rotate-90" />
                   </button>
@@ -266,19 +267,20 @@ export default function RoomLandingPage({ onLaunch }) {
                     { title: "Marketing Review", time: "Today • 3:00 PM", duration: "30 min", avatars: ["J", "S", "M"], count: "+3" },
                     { title: "Sprint Planning", time: "Tomorrow • 10:00 AM", duration: "1 hr", avatars: ["R", "L", "T"], count: "+5" }
                   ].map((mtg, idx) => (
-                    <div key={idx} className="bg-white border border-slate-100 rounded-2xl p-4 flex justify-between items-center hover:shadow-lg hover:border-slate-200 transition-all cursor-pointer">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center">
+                    <div key={idx} className="bg-white border border-slate-100/50 rounded-2xl p-4 flex justify-between items-center hover:shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all cursor-pointer">
+                      <div className="flex items-center gap-4 min-w-0">
+                        {/* Neutral icon wrapper supporting Single-Accent Principle */}
+                        <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 border border-slate-100">
                           <Calendar size={18} />
                         </div>
-                        <div>
-                          <div className="text-[12px] text-slate-400 font-medium">{mtg.time}</div>
-                          <div className="text-[14px] font-semibold text-slate-800 leading-snug">{mtg.title}</div>
-                          <div className="text-[11px] text-slate-400 font-medium">{mtg.duration}</div>
+                        <div className="min-w-0">
+                          <div className="text-[11px] text-slate-400 font-medium truncate">{mtg.time}</div>
+                          <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate mt-0.5">{mtg.title}</div>
+                          <div className="text-[11px] text-slate-400 font-medium mt-0.5">{mtg.duration}</div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 shrink-0">
                         {/* Avatars */}
                         <div className="flex -space-x-2">
                           {mtg.avatars.map((av, avIdx) => (
@@ -286,7 +288,7 @@ export default function RoomLandingPage({ onLaunch }) {
                               {av}
                             </div>
                           ))}
-                          <div className="w-6 h-6 rounded-full bg-violet-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-violet-600 shadow-sm">
+                          <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-slate-500 shadow-sm">
                             {mtg.count}
                           </div>
                         </div>
@@ -302,7 +304,7 @@ export default function RoomLandingPage({ onLaunch }) {
 
             </main>
 
-            {/* Right Floating Panel (Activity Feed) - Clean solid white design matching active room panels */}
+            {/* Right Floating Panel (Activity Feed) */}
             <aside className="w-[280px] shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[16px] font-semibold text-slate-800 tracking-tight">Activity</h2>
@@ -314,11 +316,11 @@ export default function RoomLandingPage({ onLaunch }) {
               {/* Activity items list */}
               <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1 thin-scrollbar">
                 {[
-                  { text: "John shared a recording", project: "Product Sync", time: "2h ago", icon: <PlayCircle size={14} />, color: "bg-blue-50 text-blue-500" },
-                  { text: "AI summary ready", project: "Design Review", time: "3h ago", icon: <span>✦</span>, color: "bg-violet-50 text-violet-500" },
-                  { text: "Meeting starts in 15 min", project: "Marketing Review", time: "2:45 PM", icon: <Calendar size={14} />, color: "bg-amber-50 text-amber-500" },
-                  { text: "Transcript completed", project: "Product Sync", time: "Yesterday", icon: <Clock size={14} />, color: "bg-emerald-50 text-emerald-500" },
-                  { text: "Lisa shared meeting notes", project: "Sprint Planning", time: "Yesterday", icon: <FileText size={14} />, color: "bg-indigo-50 text-indigo-500" }
+                  { text: "John shared a recording", project: "Product Sync", time: "2h ago", icon: <PlayCircle size={14} />, color: "bg-slate-50 text-slate-500 border border-slate-100/50" },
+                  { text: "AI summary ready", project: "Design Review", time: "3h ago", icon: <span className="text-[12px]">✦</span>, color: "bg-slate-50 text-slate-500 border border-slate-100/50" },
+                  { text: "Meeting starts in 15 min", project: "Marketing Review", time: "2:45 PM", icon: <Calendar size={14} />, color: "bg-slate-50 text-slate-500 border border-slate-100/50" },
+                  { text: "Transcript completed", project: "Product Sync", time: "Yesterday", icon: <Clock size={14} />, color: "bg-slate-50 text-slate-500 border border-slate-100/50" },
+                  { text: "Lisa shared meeting notes", project: "Sprint Planning", time: "Yesterday", icon: <FileText size={14} />, color: "bg-slate-50 text-slate-500 border border-slate-100/50" }
                 ].map((activity, idx) => (
                   <div key={idx} className="flex gap-3 items-start hover:bg-slate-50/50 p-1.5 rounded-lg transition-colors cursor-pointer">
                     <div className={`w-8 h-8 rounded-xl ${activity.color} flex items-center justify-center shrink-0`}>
@@ -326,7 +328,7 @@ export default function RoomLandingPage({ onLaunch }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[12px] font-semibold text-slate-800 truncate leading-snug">{activity.text}</div>
-                      <div className="text-[11px] text-slate-400 font-medium">{activity.project}</div>
+                      <div className="text-[11px] text-slate-400 font-medium mt-0.5">{activity.project}</div>
                     </div>
                     <div className="text-[10px] text-slate-400 font-medium shrink-0 whitespace-nowrap pt-0.5">{activity.time}</div>
                   </div>

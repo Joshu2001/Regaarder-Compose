@@ -166,13 +166,31 @@ export default async function handler(req, res) {
   }
 
   const body = readBody(req);
+  const task = String(body?.task || '').toLowerCase();
+  
+  let attachments = normalizeAttachments(body?.attachments);
+  if (task === 'transcription' && body?.audio && attachments.length === 0) {
+    attachments = [{
+      name: 'audio.webm',
+      mimeType: 'audio/webm',
+      data: String(body.audio)
+    }];
+  }
+
   const legacyPrompt = buildLegacyComposePrompt(body);
   const isLegacyComposeMode = Boolean(legacyPrompt);
 
-  const userPrompt = String(body?.userPrompt || '').trim() || legacyPrompt || '';
-  const systemPrompt = String(body?.systemPrompt || '').trim() || (isLegacyComposeMode ? COMPOSE_AGENT_SYSTEM_PROMPT : '');
+  let userPrompt = String(body?.userPrompt || '').trim() || legacyPrompt || '';
+  if (!userPrompt && task === 'transcription') {
+    userPrompt = 'Transcribe this audio accurately. If the audio is silent or contains no speech, respond with exactly: [SILENCE]';
+  }
+
+  let systemPrompt = String(body?.systemPrompt || '').trim() || (isLegacyComposeMode ? COMPOSE_AGENT_SYSTEM_PROMPT : '');
+  if (!systemPrompt && task === 'transcription') {
+    systemPrompt = 'You are an expert audio transcription tool. Output only clean text with proper capitalization and punctuation. If there is no speech in the audio, respond with exactly: [SILENCE].';
+  }
+
   const schema = body?.schema || (isLegacyComposeMode ? COMPOSE_AGENT_SCHEMA : undefined);
-  const attachments = normalizeAttachments(body?.attachments);
 
   if (!userPrompt) {
     return res.status(400).json({ ok: false, error: 'Missing userPrompt' });
