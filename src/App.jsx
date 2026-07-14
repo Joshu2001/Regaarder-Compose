@@ -1772,17 +1772,10 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-xl flex items-center justify-center p-4" onClick={onClose}>
-        <div className="relative w-full max-w-md bg-white/90 backdrop-blur-2xl rounded-[32px] shadow-[0_40px_120px_rgba(0,0,0,0.18)] border border-white/60 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-          {/* Top gradient accent */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-purple-400 to-indigo-500" />
-          
-          <button 
-            onClick={onClose}
-            className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition-colors p-1"
-          >
-            <X size={18} />
-          </button>
+      <div className="fixed inset-0 z-[100000] bg-black/40 backdrop-blur-md flex items-center justify-center p-4" onClick={onClose}>
+        <div className="relative w-full max-w-md bg-white/95 backdrop-blur-2xl rounded-[32px] shadow-[0_32px_100px_rgba(0,0,0,0.12)] border border-white/80 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          {/* Top minimal solid line */}
+          <div className="absolute top-0 left-0 right-0 h-[2.5px] bg-violet-500/55" />
 
           <div className="p-8 flex flex-col gap-6">
             {/* Header */}
@@ -1792,7 +1785,7 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
             </div>
             
             {/* Search */}
-            <div className="flex items-center gap-2.5 bg-gray-55/40 border border-gray-100 rounded-xl px-4 py-3 focus-within:bg-white focus-within:border-violet-500 focus-within:ring-4 focus-within:ring-violet-500/10 transition-all">
+            <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 focus-within:bg-white focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-500/5 transition-all">
               <Search size={16} className="text-gray-400" />
               <input 
                 type="text" 
@@ -1806,7 +1799,7 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
             {/* Recently collaborated */}
             <div className="flex flex-col gap-3">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Recently collaborated</span>
-              <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1">
+              <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1 thin-scrollbar">
                 {filteredUsers.length > 0 ? (
                   filteredUsers.map((u, i) => {
                     const isInvited = invitedEmails.has(u.email);
