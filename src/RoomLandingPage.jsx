@@ -224,7 +224,7 @@ export default function RoomLandingPage({ onLaunch }) {
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   placeholder="Ask Room AI anything..."
-                  className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-4.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
+                  className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
                 />
                 <span className="absolute left-5 text-violet-500 text-[15px]">✦</span>
                 <button className="absolute right-2.5 w-9 h-9 bg-slate-50 text-violet-600 rounded-full flex items-center justify-center hover:bg-violet-50 transition-colors">
