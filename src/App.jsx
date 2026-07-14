@@ -1829,8 +1829,8 @@ const RoomInviteModal = ({ isOpen, onClose, roomId }) => {
                     );
                   })
                 ) : (
-                  <div className="h-[100px] flex items-center justify-center text-sm text-gray-400">
-                    No users found.
+                  <div className="bg-slate-50/70 rounded-2xl py-8 flex items-center justify-center text-[13px] text-slate-400/80 font-medium my-2">
+                    No users found
                   </div>
                 )}
               </div>
