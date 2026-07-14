@@ -11,18 +11,32 @@ export default function RoomLandingPage({ onLaunch }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [roomAIModal, setRoomAIModal] = useState({ isOpen: false, prompt: '', answer: '' });
+  
+  // Header Actions States
+  const [isInvitesOpen, setIsInvitesOpen] = useState(false);
+  const [isDistractionFree, setIsDistractionFree] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   const dropdownRef = useRef(null);
+  const invitesRef = useRef(null);
+  const profileRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
   }, []);
 
-  // Handle click outside to close dropdown
+  // Handle click outside to close dropdowns
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
+      }
+      if (invitesRef.current && !invitesRef.current.contains(event.target)) {
+        setIsInvitesOpen(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -58,6 +72,7 @@ export default function RoomLandingPage({ onLaunch }) {
       prompt: aiPrompt,
       answer: "AI is currently unavailable. Please ensure the backend is running or try again later."
     });
+    setAiPrompt(""); // Clears the input immediately for follow-up questions
   };
 
   return (
@@ -85,16 +100,46 @@ export default function RoomLandingPage({ onLaunch }) {
               <span className="text-[18px] font-medium text-violet-400 tracking-tight font-sans">Room</span>
             </div>
 
-            {/* Right: Actions & User Info */}
-            <div className="flex items-center gap-4">
-              <button className="p-2.5 rounded-2xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all">
-                <Bell size={16} />
-              </button>
-              <button className="p-2.5 rounded-2xl text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all">
+            {/* Right: Active Header Icons behaving exactly as when the meeting is on */}
+            <div className="flex items-center gap-4 relative">
+              {/* Bell (Invites) */}
+              <div className="relative" ref={invitesRef}>
+                <button 
+                  onClick={() => setIsInvitesOpen(!isInvitesOpen)}
+                  className={`p-2.5 rounded-2xl transition-colors ${isInvitesOpen ? 'bg-violet-100 text-violet-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                >
+                  <Bell size={16} />
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-violet-500 rounded-full border border-white" />
+                </button>
+
+                {isInvitesOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-80 bg-white border border-slate-100 shadow-[0_16px_40px_rgba(0,0,0,0.08)] rounded-[24px] p-4 z-50 animate-in fade-in slide-in-from-top-2">
+                    <h3 className="font-semibold text-slate-800 mb-3 px-2 text-[14px]">Invites</h3>
+                    <div className="space-y-2 max-h-64 overflow-y-auto thin-scrollbar pr-1">
+                      <div className="p-3 bg-violet-50/50 rounded-2xl border border-violet-100/50">
+                         <p className="text-xs font-medium text-slate-800 mb-1">John invited you to <span className="font-semibold text-violet-600">Product Sync</span></p>
+                         <p className="text-[10px] text-slate-500 mb-3">Today at 4:00 PM</p>
+                         <div className="flex gap-2">
+                           <button onClick={() => setIsInvitesOpen(false)} className="flex-1 py-1.5 bg-violet-600 text-white text-[11px] font-medium rounded-xl hover:bg-violet-700 transition-colors">Accept</button>
+                           <button onClick={() => setIsInvitesOpen(false)} className="flex-1 py-1.5 bg-white text-slate-600 text-[11px] font-medium rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors">Ignore</button>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Shield (Distraction Free Mode / Security) */}
+              <button 
+                onClick={() => setIsDistractionFree(!isDistractionFree)}
+                className={`p-2.5 rounded-2xl transition-colors ${isDistractionFree ? 'bg-violet-100 text-violet-600' : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'}`}
+                title="Distraction Free Mode"
+              >
                 <Shield size={16} />
               </button>
               
-              <div className="flex items-center gap-2 pl-3 border-l border-slate-200 cursor-pointer group">
+              {/* User Dropdown */}
+              <div className="flex items-center gap-2 pl-3 border-l border-slate-200 cursor-pointer relative" ref={profileRef} onClick={() => setIsProfileOpen(!isProfileOpen)}>
                 <div className="relative">
                   <div className="w-8 h-8 rounded-full bg-[#1e293b] text-white flex items-center justify-center font-semibold text-[14px]">
                     Y
@@ -102,6 +147,21 @@ export default function RoomLandingPage({ onLaunch }) {
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full" />
                 </div>
                 <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
+
+                {isProfileOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-48 bg-white border border-slate-100 shadow-[0_12px_32px_rgba(0,0,0,0.06)] rounded-[20px] p-2 z-50 animate-in fade-in slide-in-from-top-2">
+                    <button className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-xl text-slate-700 text-[13px] font-medium transition-colors">
+                      Profile Settings
+                    </button>
+                    <button className="w-full text-left px-4 py-2 hover:bg-slate-50 rounded-xl text-slate-700 text-[13px] font-medium transition-colors">
+                      Security & Keys
+                    </button>
+                    <div className="h-[1px] bg-slate-100 my-1" />
+                    <button className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-500 rounded-xl text-[13px] font-medium transition-colors">
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </header>
@@ -241,8 +301,22 @@ export default function RoomLandingPage({ onLaunch }) {
                 </div>
               </div>
 
-              {/* 3. AI Search Prompt Input Bar & Response Card */}
+              {/* 3. AI Search Prompt Input Bar & Response Card (Re-positioned below the input) */}
               <form onSubmit={handleAISubmit} className="w-full max-w-[560px] relative flex flex-col items-center mb-6">
+                <div className="w-full relative flex items-center">
+                  <input
+                    type="text"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Ask Room AI anything..."
+                    className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
+                  />
+                  <span className="absolute left-5 text-violet-500 text-[15px]">✦</span>
+                  <button type="submit" className="absolute right-2.5 w-9 h-9 bg-slate-50 text-violet-600 rounded-full flex items-center justify-center hover:bg-violet-50 transition-colors">
+                    <Send size={13} />
+                  </button>
+                </div>
+
                 {roomAIModal.isOpen && (
                   <div className="w-full mt-4 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_16px_48px_rgba(0,0,0,0.03)] border border-slate-100/80 flex flex-col gap-3 animate-in slide-in-from-top-2 fade-in duration-300 pointer-events-auto">
                     <div className="flex items-center justify-between">
@@ -257,20 +331,6 @@ export default function RoomLandingPage({ onLaunch }) {
                     <p className="text-[15px] text-slate-600 leading-relaxed">{roomAIModal.answer}</p>
                   </div>
                 )}
-                
-                <div className="w-full relative flex items-center">
-                  <input
-                    type="text"
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Ask Room AI anything..."
-                    className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
-                  />
-                  <span className="absolute left-5 text-violet-500 text-[15px]">✦</span>
-                  <button type="submit" className="absolute right-2.5 w-9 h-9 bg-slate-50 text-violet-600 rounded-full flex items-center justify-center hover:bg-violet-50 transition-colors">
-                    <Send size={13} />
-                  </button>
-                </div>
               </form>
 
               {/* 4. Upcoming Section */}
