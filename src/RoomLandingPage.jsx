@@ -358,29 +358,29 @@ export default function RoomLandingPage({ onLaunch }) {
                     </button>
 
                     {isDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-2 w-[240px] bg-white border border-slate-100 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] overflow-hidden z-30 p-1.5 animate-in fade-in slide-in-from-top-2">
+                      <div className="absolute top-full left-0 mt-3 w-[260px] bg-white/95 backdrop-blur-xl border border-slate-100 shadow-[0_32px_96px_rgba(0,0,0,0.12)] rounded-3xl overflow-hidden z-30 p-2 animate-in fade-in slide-in-from-top-2">
                         <button
                           onClick={() => { setIsDropdownOpen(false); handleLaunch(); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-left transition-colors group"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50/80 rounded-2xl text-left transition-colors group"
                         >
-                          <div className="w-8 h-8 rounded-full bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-105 transition-transform">
+                          <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 group-hover:scale-105 transition-transform shrink-0">
                             <Plus size={16} />
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-[14px] font-semibold text-slate-800">Start an instant meeting</span>
-                            <span className="text-[11px] text-slate-400">Launch a private Room session immediately</span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[13px] font-semibold text-slate-800 tracking-tight leading-snug">Start instant meeting</span>
+                            <span className="text-[10px] text-slate-400 mt-0.5 leading-normal truncate">Launch session immediately</span>
                           </div>
                         </button>
                         <button
                           onClick={() => { setIsDropdownOpen(false); handleSchedule(); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-left transition-colors group mt-1"
+                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50/80 rounded-2xl text-left transition-colors group mt-1"
                         >
-                          <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 group-hover:scale-105 group-hover:bg-violet-50 group-hover:text-violet-600 transition-transform">
+                          <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-500 group-hover:scale-105 group-hover:bg-violet-50 group-hover:text-violet-600 transition-transform shrink-0">
                             <Calendar size={16} />
                           </div>
-                          <div className="flex flex-col">
-                            <span className="text-[14px] font-semibold text-slate-800">Schedule for later</span>
-                            <span className="text-[11px] text-slate-400">Create a future invite calendar link</span>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[13px] font-semibold text-slate-800 tracking-tight leading-snug">Schedule for later</span>
+                            <span className="text-[10px] text-slate-400 mt-0.5 leading-normal truncate">Create invite calendar link</span>
                           </div>
                         </button>
                       </div>
