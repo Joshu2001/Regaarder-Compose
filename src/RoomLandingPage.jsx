@@ -10,6 +10,7 @@ export default function RoomLandingPage({ onLaunch }) {
   const [activeTab, setActiveTab] = useState("Home");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
+  const [roomAIModal, setRoomAIModal] = useState({ isOpen: false, prompt: '', answer: '' });
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -28,12 +29,35 @@ export default function RoomLandingPage({ onLaunch }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Dismiss Room AI response dropdown on click outside
+  useEffect(() => {
+    if (!roomAIModal.isOpen) return;
+    const handleOutsideClick = (e) => {
+      const form = e.target.closest('form');
+      if (!form || !form.querySelector('input[placeholder="Ask Room AI anything..."]')) {
+        setRoomAIModal({ isOpen: false, prompt: '', answer: '' });
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [roomAIModal.isOpen]);
+
   const handleLaunch = () => {
     onLaunch?.({ type: 'action', name: 'Room' });
   };
 
   const handleSchedule = () => {
     onLaunch?.({ type: 'schedule', name: 'Room' });
+  };
+
+  const handleAISubmit = (e) => {
+    e.preventDefault();
+    if (!aiPrompt.trim()) return;
+    setRoomAIModal({
+      isOpen: true,
+      prompt: aiPrompt,
+      answer: "AI is currently unavailable. Please ensure the backend is running or try again later."
+    });
   };
 
   return (
@@ -217,20 +241,37 @@ export default function RoomLandingPage({ onLaunch }) {
                 </div>
               </div>
 
-              {/* 3. AI Search Prompt Input Bar */}
-              <div className="w-full max-w-[560px] relative flex items-center mb-6">
-                <input
-                  type="text"
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  placeholder="Ask Room AI anything..."
-                  className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
-                />
-                <span className="absolute left-5 text-violet-500 text-[15px]">✦</span>
-                <button className="absolute right-2.5 w-9 h-9 bg-slate-50 text-violet-600 rounded-full flex items-center justify-center hover:bg-violet-50 transition-colors">
-                  <Send size={13} />
-                </button>
-              </div>
+              {/* 3. AI Search Prompt Input Bar & Response Card */}
+              <form onSubmit={handleAISubmit} className="w-full max-w-[560px] relative flex flex-col items-center mb-6">
+                {roomAIModal.isOpen && (
+                  <div className="absolute bottom-full mb-4 left-0 right-0 bg-white/95 backdrop-blur-3xl rounded-[24px] p-6 shadow-[0_32px_100px_rgba(0,0,0,0.12)] border border-white flex flex-col gap-3 animate-in slide-in-from-bottom-2 fade-in duration-300 pointer-events-auto z-[50]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-medium text-violet-500 bg-violet-50 px-3 py-1 rounded-full">Prompt</span>
+                    </div>
+                    <p className="text-[15px] text-slate-700 font-medium">{roomAIModal.prompt}</p>
+                    <div className="h-[1px] w-full bg-slate-100 my-1"></div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[15px] text-violet-500">✦</span>
+                      <span className="text-[13px] font-medium text-slate-500">Room AI</span>
+                    </div>
+                    <p className="text-[15px] text-slate-600 leading-relaxed">{roomAIModal.answer}</p>
+                  </div>
+                )}
+                
+                <div className="w-full relative flex items-center">
+                  <input
+                    type="text"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    placeholder="Ask Room AI anything..."
+                    className="w-full bg-white hover:bg-slate-50/50 border border-slate-100 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-12 pr-14 rounded-full text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all shadow-[0_8px_30px_rgba(0,0,0,0.015)]"
+                  />
+                  <span className="absolute left-5 text-violet-500 text-[15px]">✦</span>
+                  <button type="submit" className="absolute right-2.5 w-9 h-9 bg-slate-50 text-violet-600 rounded-full flex items-center justify-center hover:bg-violet-50 transition-colors">
+                    <Send size={13} />
+                  </button>
+                </div>
+              </form>
 
               {/* 4. Upcoming Section */}
               <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0">
@@ -331,7 +372,7 @@ export default function RoomLandingPage({ onLaunch }) {
 
             </main>
 
-            {/* Right Floating Panel (Activity Feed) - Restored correct icon background/text colors */}
+            {/* Right Floating Panel (Activity Feed) */}
             <aside className="w-[280px] shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[16px] font-semibold text-slate-800 tracking-tight">Activity</h2>
