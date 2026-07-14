@@ -217,7 +217,7 @@ export default function RoomLandingPage({ onLaunch }) {
                 </div>
               </div>
 
-              {/* 3. AI Search Prompt Input Bar - Redesigned to be pill-shaped, bg-white, with circular send background */}
+              {/* 3. AI Search Prompt Input Bar */}
               <div className="w-full max-w-[560px] relative flex items-center mb-6">
                 <input
                   type="text"
@@ -232,7 +232,7 @@ export default function RoomLandingPage({ onLaunch }) {
                 </button>
               </div>
 
-              {/* 4. Upcoming Section (Greater emphasis than Recent) */}
+              {/* 4. Upcoming Section */}
               <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0">
                 <h2 className="text-[14px] font-semibold text-slate-800 tracking-tight px-1">Upcoming Today</h2>
                 
@@ -274,7 +274,7 @@ export default function RoomLandingPage({ onLaunch }) {
                 </div>
               </section>
 
-              {/* 5. Recent Section - Updated colors on icons and tags */}
+              {/* 5. Recent Section */}
               <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0">
                 <h2 className="text-[14px] font-semibold text-slate-800 tracking-tight px-1">Recent</h2>
 
@@ -331,7 +331,7 @@ export default function RoomLandingPage({ onLaunch }) {
 
             </main>
 
-            {/* Right Floating Panel (Activity Feed) */}
+            {/* Right Floating Panel (Activity Feed) - Restored correct icon background/text colors */}
             <aside className="w-[280px] shrink-0 bg-white border border-slate-100 shadow-[0_16px_48px_rgba(0,0,0,0.03)] rounded-[32px] flex flex-col p-6">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-[16px] font-semibold text-slate-800 tracking-tight">Activity</h2>
@@ -343,11 +343,11 @@ export default function RoomLandingPage({ onLaunch }) {
               {/* Activity items list */}
               <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-1 thin-scrollbar">
                 {[
-                  { text: "John shared a recording", project: "Product Sync", time: "2h ago", icon: <PlayCircle size={14} />, color: "bg-slate-50 text-slate-500 border border-slate-100/50" },
-                  { text: "AI summary ready", project: "Design Review", time: "3h ago", icon: <span className="text-[12px]">✦</span>, color: "bg-slate-50 text-slate-500 border border-slate-100/50" },
-                  { text: "Meeting starts in 15 min", project: "Marketing Review", time: "2:45 PM", icon: <Calendar size={14} />, color: "bg-slate-50 text-slate-500 border border-slate-100/50" },
-                  { text: "Transcript completed", project: "Product Sync", time: "Yesterday", icon: <Clock size={14} />, color: "bg-slate-50 text-slate-500 border border-slate-100/50" },
-                  { text: "Lisa shared meeting notes", project: "Sprint Planning", time: "Yesterday", icon: <FileText size={14} />, color: "bg-slate-50 text-slate-500 border border-slate-100/50" }
+                  { text: "John shared a recording", project: "Product Sync", time: "2h ago", icon: <PlayCircle size={14} />, color: "bg-blue-50 text-blue-500" },
+                  { text: "AI summary ready", project: "Design Review", time: "3h ago", icon: <span className="text-[12px]">✦</span>, color: "bg-violet-50 text-violet-500" },
+                  { text: "Meeting starts in 15 min", project: "Marketing Review", time: "2:45 PM", icon: <Calendar size={14} />, color: "bg-amber-50 text-amber-500" },
+                  { text: "Transcript completed", project: "Product Sync", time: "Yesterday", icon: <Clock size={14} />, color: "bg-emerald-50 text-emerald-500" },
+                  { text: "Lisa shared meeting notes", project: "Sprint Planning", time: "Yesterday", icon: <FileText size={14} />, color: "bg-indigo-50 text-indigo-500" }
                 ].map((activity, idx) => (
                   <div key={idx} className="flex gap-3 items-start hover:bg-slate-50/50 p-1.5 rounded-lg transition-colors cursor-pointer">
                     <div className={`w-8 h-8 rounded-xl ${activity.color} flex items-center justify-center shrink-0`}>
