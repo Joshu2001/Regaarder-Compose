@@ -326,8 +326,8 @@ export default function RoomLandingPage({ onLaunch }) {
               </div>
             </aside>
 
-            {/* Middle Column (Main Content - Highly Polished Minimalist Viewport) */}
-            <main className="flex-1 flex flex-col gap-8 overflow-y-auto px-4 thin-scrollbar pt-6 items-center transition-all duration-300">
+            {/* Middle Column (Main Content - Centered vertically and horizontally for the empty list state) */}
+            <main className="flex-1 flex flex-col justify-center items-center gap-8 overflow-y-auto px-4 thin-scrollbar transition-all duration-300">
               
               {/* Unified Hero Group Header containing Greeting, CTAs, and integrated AI Input Box */}
               <div className="w-full flex flex-col items-center shrink-0">
@@ -410,7 +410,7 @@ export default function RoomLandingPage({ onLaunch }) {
                   </div>
                 </div>
 
-                {/* 3. AI Search Prompt Input Bar & Response Card - Nested inside the hero column to group them tightly */}
+                {/* 3. AI Search Prompt Input Bar & Response Card */}
                 <form onSubmit={handleAISubmit} className="w-full max-w-[560px] relative flex flex-col items-center">
                   <div className="w-full relative flex items-center">
                     <input
@@ -596,106 +596,6 @@ export default function RoomLandingPage({ onLaunch }) {
                 </form>
 
               </div>
-
-              {/* Spacing Divider */}
-              <div className="w-full max-w-[640px] h-[1px] bg-slate-100/50 shrink-0" />
-
-              {/* 4. Upcoming Section */}
-              <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0 text-left">
-                <h2 className="text-[14px] font-semibold text-slate-800 tracking-tight px-1">Upcoming Today</h2>
-                
-                <div className="bg-white border border-slate-100/80 rounded-2xl p-4 flex justify-between items-center shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0 border border-violet-100/30">
-                      <Calendar size={18} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate">Marketing Review</div>
-                      <div className="text-[12px] text-slate-400 font-medium mt-0.5">3:00 PM • 30 min</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4 shrink-0">
-                    {/* Avatars */}
-                    <div className="flex -space-x-1.5">
-                      {["J", "S", "M"].map((av, avIdx) => (
-                        <div key={avIdx} className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-slate-600 shadow-sm">
-                          {av}
-                        </div>
-                      ))}
-                      <div className="w-6 h-6 rounded-full bg-violet-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-violet-600 shadow-sm">
-                        +3
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={handleLaunch}
-                      className="px-5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-[13px] font-semibold text-violet-600 rounded-full transition-all"
-                    >
-                      Join
-                    </button>
-                    
-                    <button className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors">
-                      <MoreHorizontal size={14} />
-                    </button>
-                  </div>
-                </div>
-              </section>
-
-              {/* 5. Recent Section */}
-              <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0 text-left">
-                <h2 className="text-[14px] font-semibold text-slate-800 tracking-tight px-1">Recent</h2>
-
-                <div className="flex flex-col bg-white border border-slate-100/80 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
-                  {[
-                    { name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true, color: "bg-emerald-50 text-emerald-500 border-emerald-100" },
-                    { name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true, color: "bg-blue-50 text-blue-500 border-blue-100" }
-                  ].map((room, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-4 hover:bg-slate-50/50 transition-all cursor-pointer border-b border-slate-50 last:border-none">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-8 h-8 rounded-xl ${room.color} flex items-center justify-center shrink-0 border`}>
-                          <Users size={14} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[14px] font-semibold text-slate-800 truncate leading-snug">{room.name}</div>
-                          <div className="text-[11px] text-slate-400 truncate mt-0.5">{room.time} • {room.users}</div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 shrink-0">
-                        <div className="flex gap-2">
-                          {room.recording && (
-                            <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-red-50 text-red-500 border border-red-100">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                              Recording
-                            </span>
-                          )}
-                          {room.ai && (
-                            <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-violet-50 text-violet-500 border border-violet-100">
-                              ✦ AI Summary
-                            </span>
-                          )}
-                        </div>
-
-                        <button
-                          onClick={handleLaunch}
-                          className="text-[13px] font-semibold text-violet-600 hover:text-violet-700"
-                        >
-                          Resume
-                        </button>
-                        
-                        <button className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors">
-                          <MoreHorizontal size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <button className="text-[13px] font-medium text-slate-400 hover:text-violet-600 transition-colors flex items-center justify-center gap-0.5 mt-2">
-                  View all rooms →
-                </button>
-              </section>
 
             </main>
 
