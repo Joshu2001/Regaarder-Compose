@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Video, Calendar, PlayCircle, Settings, Plus, Users, Hash, Bell, Shield, ChevronDown,
-  MoreHorizontal, Clock, FileText, Layout, Home, X, Keyboard
+  MoreHorizontal, Clock, FileText, Layout, Home, X, Keyboard, Send
 } from "lucide-react";
 
 export default function RoomLandingPage({ onLaunch }) {
@@ -9,6 +9,7 @@ export default function RoomLandingPage({ onLaunch }) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState("Home");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -135,12 +136,25 @@ export default function RoomLandingPage({ onLaunch }) {
               </div>
             </aside>
 
-            {/* Middle Column (Main Content) */}
-            <main className="flex-1 flex flex-col gap-8 overflow-y-auto pr-2 thin-scrollbar pt-2">
+            {/* Middle Column (Main Content - Highly Polished Minimalist Viewport) */}
+            <main className="flex-1 flex flex-col gap-8 overflow-y-auto px-4 thin-scrollbar pt-6 items-center">
               
-              {/* Quick Action Buttons */}
-              <div className="flex gap-4 items-center shrink-0 relative">
-                <div className="flex-1 relative" ref={dropdownRef}>
+              {/* 1. Hero Greeting Area with Generous Spacing */}
+              <div className="text-center flex flex-col items-center max-w-xl mb-4">
+                <h1 className="text-[36px] font-semibold text-slate-900 tracking-tight leading-none mb-3">
+                  Good afternoon, Joshua
+                </h1>
+                <p className="text-[16px] text-slate-500 font-medium">
+                  Ready to collaborate?
+                </p>
+                <p className="text-[14px] text-slate-400 font-normal mt-1">
+                  Create a room or join one with a code.
+                </p>
+              </div>
+
+              {/* 2. Focused Action Buttons - Compact widths (200px) */}
+              <div className="flex gap-4 items-center justify-center shrink-0 w-full max-w-[420px] relative mb-2">
+                <div className="w-[200px] relative" ref={dropdownRef}>
                   <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="w-full bg-violet-600 hover:bg-violet-700 text-white font-medium py-3 rounded-2xl flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(124,58,237,0.15)] hover:shadow-[0_8px_20px_rgba(124,58,237,0.25)] transition-all text-[15px]"
@@ -149,7 +163,7 @@ export default function RoomLandingPage({ onLaunch }) {
                   </button>
 
                   {isDropdownOpen && (
-                    <div className="absolute top-full left-0 mt-2 w-full bg-white border border-slate-100 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] overflow-hidden z-30 p-1.5 animate-in fade-in slide-in-from-top-2">
+                    <div className="absolute top-full left-0 mt-2 w-[240px] bg-white border border-slate-100 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.06)] overflow-hidden z-30 p-1.5 animate-in fade-in slide-in-from-top-2">
                       <button
                         onClick={() => { setIsDropdownOpen(false); handleLaunch(); }}
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-slate-50 rounded-xl text-left transition-colors group"
@@ -178,13 +192,13 @@ export default function RoomLandingPage({ onLaunch }) {
                   )}
                 </div>
 
-                <div className="flex-1 relative">
+                <div className="w-[200px] relative">
                   <input
                     type="text"
                     value={meetingCode}
                     onChange={(e) => setMeetingCode(e.target.value)}
                     placeholder="Join Room"
-                    className="w-full bg-white hover:bg-slate-50 border border-slate-100 text-slate-700 placeholder:text-slate-400 font-medium py-3 pl-11 pr-12 rounded-2xl text-[15px] focus:outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 transition-all text-center shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
+                    className="w-full bg-white hover:bg-slate-50/50 border border-slate-200 text-slate-700 placeholder:text-slate-400 font-medium py-3 pl-11 pr-12 rounded-2xl text-[15px] focus:outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 transition-all text-center shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && meetingCode.trim().length > 0) {
                         handleLaunch();
@@ -203,95 +217,104 @@ export default function RoomLandingPage({ onLaunch }) {
                 </div>
               </div>
 
-              {/* Recent Rooms */}
-              <section className="flex flex-col gap-4 shrink-0">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[15px] font-medium text-slate-400 tracking-tight">Recent Rooms</h2>
-                  <button className="text-[12px] font-medium text-slate-400 hover:text-violet-600 transition-colors flex items-center gap-0.5">
-                    View all <ChevronDown size={14} className="-rotate-90" />
-                  </button>
-                </div>
+              {/* 3. AI Search Prompt Input Bar Integrated in the Rhythm */}
+              <div className="w-full max-w-[560px] relative flex items-center mb-6">
+                <input
+                  type="text"
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder="Ask Room AI anything..."
+                  className="w-full bg-slate-50 hover:bg-slate-100/70 focus:bg-slate-50 border border-slate-100/60 text-slate-800 placeholder:text-slate-400 font-medium py-3.5 pl-11 pr-12 rounded-2xl text-[14px] focus:outline-none focus:ring-2 focus:ring-violet-500/10 transition-all"
+                />
+                <span className="absolute left-4 text-violet-500">✦</span>
+                <button className="absolute right-3 p-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl transition-colors">
+                  <Send size={14} />
+                </button>
+              </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true },
-                    { name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true },
-                    { name: "Marketing Sync", time: "Jul 11", users: "6 participants", recording: true, ai: false }
-                  ].map((room, idx) => (
-                    <div key={idx} className="bg-white border border-slate-100/50 rounded-2xl p-4 flex flex-col gap-3 hover:shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all cursor-pointer relative group">
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                          {/* Neutral icon wrapper supporting Single-Accent Principle */}
-                          <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 border border-slate-100">
-                            <Users size={14} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-[14px] font-semibold text-slate-800 truncate leading-snug">{room.name}</div>
-                            <div className="text-[11px] text-slate-400 truncate mt-0.5">{room.time} • {room.users}</div>
-                          </div>
+              {/* 4. Upcoming Section (Greater emphasis than Recent) */}
+              <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0">
+                <h2 className="text-[14px] font-semibold text-slate-800 tracking-tight px-1">Upcoming Today</h2>
+                
+                <div className="bg-white border border-slate-100/80 rounded-2xl p-4 flex justify-between items-center shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0 border border-violet-100/30">
+                      <Calendar size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate">Marketing Review</div>
+                      <div className="text-[12px] text-slate-400 font-medium mt-0.5">3:00 PM • 30 min</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 shrink-0">
+                    {/* Avatars */}
+                    <div className="flex -space-x-1.5">
+                      {["J", "S", "M"].map((av, avIdx) => (
+                        <div key={avIdx} className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-slate-600 shadow-sm">
+                          {av}
                         </div>
-                        <button className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors">
-                          <MoreHorizontal size={14} />
-                        </button>
-                      </div>
-
-                      <div className="flex gap-2">
-                        {room.recording && (
-                          <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                            Recording
-                          </span>
-                        )}
-                        {room.ai && (
-                          <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
-                            ✦ Summary
-                          </span>
-                        )}
+                      ))}
+                      <div className="w-6 h-6 rounded-full bg-violet-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-violet-600 shadow-sm">
+                        +3
                       </div>
                     </div>
-                  ))}
+                    
+                    <button
+                      onClick={handleLaunch}
+                      className="px-4 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-[13px] font-semibold text-violet-600 rounded-xl transition-all"
+                    >
+                      Join
+                    </button>
+                    
+                    <button className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors">
+                      <MoreHorizontal size={14} />
+                    </button>
+                  </div>
                 </div>
               </section>
 
-              {/* Upcoming */}
-              <section className="flex flex-col gap-4 shrink-0">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-[15px] font-medium text-slate-400 tracking-tight">Upcoming</h2>
-                  <button onClick={handleSchedule} className="text-[12px] font-medium text-slate-400 hover:text-violet-600 transition-colors flex items-center gap-0.5">
-                    View calendar <ChevronDown size={14} className="-rotate-90" />
-                  </button>
-                </div>
+              {/* 5. Recent Section (Clean list layout with subtle rows, no heavy card borders) */}
+              <section className="w-full max-w-[640px] flex flex-col gap-3 shrink-0">
+                <h2 className="text-[14px] font-semibold text-slate-800 tracking-tight px-1">Recent</h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col bg-white border border-slate-100/80 rounded-2xl overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.015)]">
                   {[
-                    { title: "Marketing Review", time: "Today • 3:00 PM", duration: "30 min", avatars: ["J", "S", "M"], count: "+3" },
-                    { title: "Sprint Planning", time: "Tomorrow • 10:00 AM", duration: "1 hr", avatars: ["R", "L", "T"], count: "+5" }
-                  ].map((mtg, idx) => (
-                    <div key={idx} className="bg-white border border-slate-100/50 rounded-2xl p-4 flex justify-between items-center hover:shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-all cursor-pointer">
-                      <div className="flex items-center gap-4 min-w-0">
-                        {/* Neutral icon wrapper supporting Single-Accent Principle */}
-                        <div className="w-10 h-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 border border-slate-100">
-                          <Calendar size={18} />
+                    { name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true },
+                    { name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true }
+                  ].map((room, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-4 hover:bg-slate-50/50 transition-all cursor-pointer border-b border-slate-50 last:border-none">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center shrink-0 border border-slate-100">
+                          <Users size={14} />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[11px] text-slate-400 font-medium truncate">{mtg.time}</div>
-                          <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate mt-0.5">{mtg.title}</div>
-                          <div className="text-[11px] text-slate-400 font-medium mt-0.5">{mtg.duration}</div>
+                          <div className="text-[14px] font-semibold text-slate-800 truncate leading-snug">{room.name}</div>
+                          <div className="text-[11px] text-slate-400 truncate mt-0.5">{room.time} • {room.users}</div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
-                        {/* Avatars */}
-                        <div className="flex -space-x-2">
-                          {mtg.avatars.map((av, avIdx) => (
-                            <div key={avIdx} className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-slate-600 shadow-sm">
-                              {av}
-                            </div>
-                          ))}
-                          <div className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-slate-500 shadow-sm">
-                            {mtg.count}
-                          </div>
+                      <div className="flex items-center gap-4 shrink-0">
+                        <div className="flex gap-2">
+                          {room.recording && (
+                            <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
+                              <span className="w-1.2 h-1.2 rounded-full bg-red-400" />
+                              Recording
+                            </span>
+                          )}
+                          {room.ai && (
+                            <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-100">
+                              ✦ AI Summary
+                            </span>
+                          )}
                         </div>
+
+                        <button
+                          onClick={handleLaunch}
+                          className="text-[13px] font-semibold text-violet-600 hover:text-violet-700"
+                        >
+                          Resume
+                        </button>
                         
                         <button className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors">
                           <MoreHorizontal size={14} />
@@ -300,6 +323,10 @@ export default function RoomLandingPage({ onLaunch }) {
                     </div>
                   ))}
                 </div>
+
+                <button className="text-[13px] font-medium text-slate-400 hover:text-violet-600 transition-colors flex items-center justify-center gap-0.5 mt-2">
+                  View all rooms →
+                </button>
               </section>
 
             </main>
