@@ -29,10 +29,16 @@ export default function RoomLandingPage({ onLaunch }) {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [exportStatus, setExportStatus] = useState("");
 
+  // Upcoming & Recent 3-dot dropdown states
+  const [isUpcomingMenuOpen, setIsUpcomingMenuOpen] = useState(false);
+  const [activeRecentMenuIdx, setActiveRecentMenuIdx] = useState(null);
+
   const dropdownRef = useRef(null);
   const invitesRef = useRef(null);
   const profileRef = useRef(null);
   const exportRef = useRef(null);
+  const upcomingMenuRef = useRef(null);
+  const recentMenuRef = useRef(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -53,6 +59,12 @@ export default function RoomLandingPage({ onLaunch }) {
       }
       if (exportRef.current && !exportRef.current.contains(event.target)) {
         setIsExportMenuOpen(false);
+      }
+      if (upcomingMenuRef.current && !upcomingMenuRef.current.contains(event.target)) {
+        setIsUpcomingMenuOpen(false);
+      }
+      if (recentMenuRef.current && !recentMenuRef.current.contains(event.target)) {
+        setActiveRecentMenuIdx(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -664,9 +676,37 @@ export default function RoomLandingPage({ onLaunch }) {
                       Join
                     </button>
                     
-                    <button className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors">
-                      <MoreHorizontal size={14} />
-                    </button>
+                    <div className="relative" ref={upcomingMenuRef}>
+                      <button 
+                        onClick={() => setIsUpcomingMenuOpen(!isUpcomingMenuOpen)}
+                        className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+                      >
+                        <MoreHorizontal size={14} />
+                      </button>
+                      
+                      {isUpcomingMenuOpen && (
+                        <div className="absolute top-full right-0 mt-1 w-44 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-top-1">
+                          <button 
+                            onClick={() => { setIsUpcomingMenuOpen(false); handleLaunch(); }}
+                            className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
+                          >
+                            Join Room
+                          </button>
+                          <button 
+                            onClick={() => { setIsUpcomingMenuOpen(false); alert('Link copied to clipboard!'); }}
+                            className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
+                          >
+                            Copy Link
+                          </button>
+                          <button 
+                            onClick={() => { setIsUpcomingMenuOpen(false); alert('Meeting has been cancelled.'); }}
+                            className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg text-[11px] font-medium transition-colors"
+                          >
+                            Cancel Meeting
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </section>
@@ -713,9 +753,40 @@ export default function RoomLandingPage({ onLaunch }) {
                           Resume
                         </button>
                         
-                        <button className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors">
-                          <MoreHorizontal size={14} />
-                        </button>
+                        <div className="relative" ref={idx === activeRecentMenuIdx ? recentMenuRef : null}>
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setActiveRecentMenuIdx(activeRecentMenuIdx === idx ? null : idx); 
+                            }}
+                            className="p-1.5 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+                          >
+                            <MoreHorizontal size={14} />
+                          </button>
+                          
+                          {activeRecentMenuIdx === idx && (
+                            <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-top-1" onClick={(e) => e.stopPropagation()}>
+                              <button 
+                                onClick={() => { setActiveRecentMenuIdx(null); handleLaunch(); }}
+                                className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
+                              >
+                                Resume Session
+                              </button>
+                              <button 
+                                onClick={() => { setActiveRecentMenuIdx(null); alert('Showing summary of decisions and action items.'); }}
+                                className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
+                              >
+                                View Summary
+                              </button>
+                              <button 
+                                onClick={() => { setActiveRecentMenuIdx(null); alert('Room has been deleted.'); }}
+                                className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg text-[11px] font-medium transition-colors"
+                              >
+                                Delete Room
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
