@@ -379,7 +379,7 @@ export default function RoomLandingPage({ onLaunch }) {
                   <div className="flex-1 relative" ref={dropdownRef}>
                     <button
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-2xl flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(124,58,237,0.08)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.12)] hover:-translate-y-0.5 active:scale-[0.98] transition-all text-[14px]"
+                      className="w-full bg-violet-100/60 hover:bg-violet-100 text-violet-600 font-semibold py-3 rounded-xl flex items-center justify-center gap-2 border border-violet-200/20 shadow-[0_2px_8px_rgba(124,58,237,0.03)] hover:-translate-y-0.5 active:scale-[0.98] transition-all text-[14px]"
                     >
                       <Plus size={15} /> New Room
                     </button>
@@ -420,7 +420,7 @@ export default function RoomLandingPage({ onLaunch }) {
                       value={meetingCode}
                       onChange={(e) => setMeetingCode(e.target.value)}
                       placeholder="Join Room"
-                      className="w-full bg-slate-50/40 hover:bg-slate-100/40 border border-slate-200/70 text-slate-600 placeholder:text-slate-400 font-semibold py-3 pl-11 pr-12 rounded-2xl text-[14px] focus:outline-none focus:border-slate-300 focus:ring-4 focus:ring-slate-500/5 hover:-translate-y-0.5 active:scale-[0.99] transition-all text-center"
+                      className="w-full bg-slate-50/20 hover:bg-slate-50/40 border border-slate-200/50 text-slate-500 placeholder:text-slate-400 font-semibold py-3 pl-11 pr-12 rounded-xl text-[14px] focus:outline-none focus:border-slate-300 focus:ring-4 focus:ring-slate-500/5 hover:-translate-y-0.5 active:scale-[0.99] transition-all text-center shadow-[0_2px_8px_rgba(0,0,0,0.01)]"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && meetingCode.trim().length > 0) {
                           handleLaunch();
