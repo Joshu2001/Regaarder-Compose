@@ -21106,6 +21106,7 @@ Rules:
     setMeetingDurationLabel(completedDuration);
     setIsPostCallRatingOpen(false);
     setRoomState('inactive');
+    setProductMode('room-landing');
     setActiveMeetingStageTab('room');
     setMainView('room');
     setRoomPanelMode('docked');
