@@ -4,7 +4,7 @@ import {
   MoreHorizontal, Clock, FileText, Layout, Home, X, Keyboard, Send, Sparkles, Edit2, Trash2, Check, Download
 } from "lucide-react";
 
-export default function RoomLandingPage({ onLaunch }) {
+export default function RoomLandingPage({ onLaunch, showToast }) {
   const [meetingCode, setMeetingCode] = useState("");
   const [currentTime, setCurrentTime] = useState(new Date());
   const [activeTab, setActiveTab] = useState("Home");
@@ -216,7 +216,7 @@ export default function RoomLandingPage({ onLaunch }) {
                                  onClick={() => {
                                    setInvites(invites.filter(i => i.id !== notif.id));
                                    setIsInvitesOpen(false);
-                                   alert('Meeting accepted and added to your calendar!');
+                                   showToast?.('Meeting accepted and added to your calendar!');
                                  }} 
                                  className="flex-1 py-2 bg-slate-900 text-white text-[12px] font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-[0_2px_6px_rgba(0,0,0,0.05)]"
                                >
@@ -693,13 +693,13 @@ export default function RoomLandingPage({ onLaunch }) {
                             Join Room
                           </button>
                           <button 
-                            onClick={() => { setIsUpcomingMenuOpen(false); alert('Link copied to clipboard!'); }}
+                            onClick={() => { setIsUpcomingMenuOpen(false); showToast?.('Link copied to clipboard!'); }}
                             className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
                           >
                             Copy Link
                           </button>
                           <button 
-                            onClick={() => { setIsUpcomingMenuOpen(false); alert('Meeting has been cancelled.'); }}
+                            onClick={() => { setIsUpcomingMenuOpen(false); showToast?.('Meeting has been cancelled.'); }}
                             className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg text-[11px] font-medium transition-colors"
                           >
                             Cancel Meeting
@@ -773,13 +773,13 @@ export default function RoomLandingPage({ onLaunch }) {
                                 Resume Session
                               </button>
                               <button 
-                                onClick={() => { setActiveRecentMenuIdx(null); alert('Showing summary of decisions and action items.'); }}
+                                onClick={() => { setActiveRecentMenuIdx(null); showToast?.('Showing summary of decisions and action items.'); }}
                                 className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
                               >
                                 View Summary
                               </button>
                               <button 
-                                onClick={() => { setActiveRecentMenuIdx(null); alert('Room has been deleted.'); }}
+                                onClick={() => { setActiveRecentMenuIdx(null); showToast?.('Room has been deleted.'); }}
                                 className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg text-[11px] font-medium transition-colors"
                               >
                                 Delete Room

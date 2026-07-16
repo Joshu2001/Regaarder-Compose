@@ -38407,15 +38407,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       ) : productMode === 'room-landing' ? (
         <div className="flex-1 flex flex-col min-w-0 bg-white relative">
-          <RoomLandingPage onLaunch={(action) => {
-            if (action && action.name === 'Room') {
-              if (action.type === 'schedule') {
-                setIsScheduleSessionModalOpen(true);
-              } else {
-                createRoomExperience();
+          <RoomLandingPage 
+            showToast={showToast}
+            onLaunch={(action) => {
+              if (action && action.name === 'Room') {
+                if (action.type === 'schedule') {
+                  setIsScheduleSessionModalOpen(true);
+                } else {
+                  createRoomExperience();
+                }
               }
-            }
-          }} />
+            }} 
+          />
         </div>
       ) : (
       <div className="flex-1 flex flex-col min-w-0 bg-white relative">
