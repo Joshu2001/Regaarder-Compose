@@ -24361,7 +24361,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     const updateDictationAnchor = () => {
       const card = documentCardRef.current;
       if (!card) {
-        setDictationAnchor({ left: window.innerWidth - 150, top: window.innerHeight / 2 });
+        setDictationAnchor({ left: window.innerWidth - 150, top: window.innerHeight / 2 - 50 });
         return;
       }
 
@@ -24383,7 +24383,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       // Shift the widget 10px to the left to bring it closer to the document
       rightX -= 10;
       
-      const centerY = (visibleTop + visibleBottom) / 2;
+      const centerY = (visibleTop + visibleBottom) / 2 - 50;
 
       setDictationAnchor({ left: rightX, top: centerY });
     };
@@ -39227,7 +39227,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div
                 key={doc.id}
                 onClick={() => switchDocument(doc.id)}
-                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-violet-500/35 text-violet-700 dark:text-violet-400 outline outline-[1px] outline-violet-500/20 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
+                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-violet-200 text-violet-700 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
               >
                 {renamingDocId === doc.id ? (
                   <input
