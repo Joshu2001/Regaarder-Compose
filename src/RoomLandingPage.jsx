@@ -33,6 +33,15 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
   const [isUpcomingMenuOpen, setIsUpcomingMenuOpen] = useState(false);
   const [activeRecentMenuIdx, setActiveRecentMenuIdx] = useState(null);
 
+  // Dynamic Lists for Upcoming and Recent sections
+  const [upcomingMeetings, setUpcomingMeetings] = useState([
+    { id: "up-1", name: "Marketing Review", time: "3:00 PM • 30 min", avatars: ["J", "S", "M"], extraCount: 3 }
+  ]);
+  const [recentRooms, setRecentRooms] = useState([
+    { id: "rec-1", name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true, color: "bg-emerald-50 text-emerald-500 border-emerald-100" },
+    { id: "rec-2", name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true, color: "bg-blue-50 text-blue-550 border-blue-100" }
+  ]);
+
   const dropdownRef = useRef(null);
   const invitesRef = useRef(null);
   const profileRef = useRef(null);
@@ -645,152 +654,177 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
               <section className="w-full max-w-[600px] flex flex-col gap-3 shrink-0 text-left">
                 <h2 className="text-[13px] font-semibold text-slate-800 tracking-tight px-1">Upcoming Today</h2>
                 
-                <div className="bg-white border border-slate-100/80 rounded-2xl p-4 flex justify-between items-center shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:scale-[1.005] hover:shadow-[0_12px_32px_rgba(0,0,0,0.03)] transition-all duration-300">
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0 border border-violet-100/30">
-                      <Calendar size={18} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate">Marketing Review</div>
-                      <div className="text-[12px] text-slate-400 font-medium mt-0.5">3:00 PM • 30 min</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4 shrink-0">
-                    {/* Avatars */}
-                    <div className="flex -space-x-1.5">
-                      {["J", "S", "M"].map((av, avIdx) => (
-                        <div key={avIdx} className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-slate-600 shadow-sm">
-                          {av}
-                        </div>
-                      ))}
-                      <div className="w-6 h-6 rounded-full bg-violet-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-violet-600 shadow-sm">
-                        +3
-                      </div>
-                    </div>
-                    
-                    <button
-                      onClick={handleLaunch}
-                      className="px-5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-[13px] font-semibold text-violet-600 rounded-full hover:scale-105 active:scale-95 transition-all"
-                    >
-                      Join
-                    </button>
-                    
-                    <div className="relative" ref={upcomingMenuRef}>
-                      <button 
-                        onClick={() => setIsUpcomingMenuOpen(!isUpcomingMenuOpen)}
-                        className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors"
-                      >
-                        <MoreHorizontal size={14} />
-                      </button>
-                      
-                      {isUpcomingMenuOpen && (
-                        <div className="absolute top-full right-0 mt-1 w-44 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-top-1">
-                          <button 
-                            onClick={() => { setIsUpcomingMenuOpen(false); handleLaunch(); }}
-                            className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
-                          >
-                            Join Room
-                          </button>
-                          <button 
-                            onClick={() => { setIsUpcomingMenuOpen(false); showToast?.('Link copied to clipboard!'); }}
-                            className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
-                          >
-                            Copy Link
-                          </button>
-                          <button 
-                            onClick={() => { setIsUpcomingMenuOpen(false); showToast?.('Meeting has been cancelled.'); }}
-                            className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg text-[11px] font-medium transition-colors"
-                          >
-                            Cancel Meeting
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* 5. Recent Section - structured for breathing room and simplified metadata */}
-              <section className="w-full max-w-[600px] flex flex-col gap-3 shrink-0 text-left mt-6">
-                <h2 className="text-[13px] font-semibold text-slate-800 tracking-tight px-1">Recent</h2>
-
-                <div className="flex flex-col bg-white border border-slate-100/80 rounded-2xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.02)]">
-                  {[
-                    { name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true, color: "bg-emerald-50 text-emerald-500 border-emerald-100" },
-                    { name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true, color: "bg-blue-50 text-blue-500 border-blue-100" }
-                  ].map((room, idx) => (
-                    <div key={idx} className="flex justify-between items-center py-2.5 px-4 hover:bg-slate-50/50 transition-all cursor-pointer border-b border-slate-50 last:border-none group">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className={`w-8 h-8 rounded-xl ${room.color} flex items-center justify-center shrink-0 border`}>
-                          <Users size={14} />
+                {upcomingMeetings.length > 0 ? (
+                  upcomingMeetings.map((meeting) => (
+                    <div key={meeting.id} className="bg-white border border-slate-100/80 rounded-2xl p-4 flex justify-between items-center shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:scale-[1.005] hover:shadow-[0_12px_32px_rgba(0,0,0,0.03)] transition-all duration-300">
+                      <div className="flex items-center gap-4 min-w-0">
+                        <div className="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0 border border-violet-100/30">
+                          <Calendar size={18} />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-[13.5px] font-semibold text-slate-800 truncate leading-snug group-hover:text-violet-600 transition-colors">{room.name}</div>
-                          <div className="text-[11px] text-slate-400 truncate mt-0.5">{room.time}</div>
+                          <div className="text-[14px] font-semibold text-slate-800 leading-snug truncate">{meeting.name}</div>
+                          <div className="text-[12px] text-slate-400 font-medium mt-0.5">{meeting.time}</div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-4 shrink-0">
-                        <div className="flex gap-2">
-                          {room.recording && (
-                            <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-500 border border-red-100">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                              REC
-                            </span>
-                          )}
-                          {room.ai && (
-                            <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-50 text-violet-500 border border-violet-100">
-                              ✦ AI
-                            </span>
+                        {/* Avatars */}
+                        <div className="flex -space-x-1.5">
+                          {meeting.avatars.map((av, avIdx) => (
+                            <div key={avIdx} className="w-6 h-6 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-semibold text-slate-600 shadow-sm">
+                              {av}
+                            </div>
+                          ))}
+                          {meeting.extraCount > 0 && (
+                            <div className="w-6 h-6 rounded-full bg-violet-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-violet-600 shadow-sm">
+                              +{meeting.extraCount}
+                            </div>
                           )}
                         </div>
-
+                        
                         <button
                           onClick={handleLaunch}
-                          className="text-[12px] font-semibold text-violet-600 hover:text-violet-700 hover:scale-105 transition-transform"
+                          className="px-5 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 text-[13px] font-semibold text-violet-600 rounded-full hover:scale-105 active:scale-95 transition-all"
                         >
-                          Resume
+                          Join
                         </button>
                         
-                        <div className="relative" ref={idx === activeRecentMenuIdx ? recentMenuRef : null}>
+                        <div className="relative" ref={upcomingMenuRef}>
                           <button 
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              setActiveRecentMenuIdx(activeRecentMenuIdx === idx ? null : idx); 
-                            }}
-                            className="p-1.5 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+                            onClick={() => setIsUpcomingMenuOpen(!isUpcomingMenuOpen)}
+                            className="p-1 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors"
                           >
                             <MoreHorizontal size={14} />
                           </button>
                           
-                          {activeRecentMenuIdx === idx && (
-                            <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-top-1" onClick={(e) => e.stopPropagation()}>
+                          {isUpcomingMenuOpen && (
+                            <div className="absolute top-full right-0 mt-1 w-44 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-top-1">
                               <button 
-                                onClick={() => { setActiveRecentMenuIdx(null); handleLaunch(); }}
+                                onClick={() => { setIsUpcomingMenuOpen(false); handleLaunch(); }}
                                 className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
                               >
-                                Resume Session
+                                Join Room
                               </button>
                               <button 
-                                onClick={() => { setActiveRecentMenuIdx(null); showToast?.('Showing summary of decisions and action items.'); }}
+                                onClick={() => { setIsUpcomingMenuOpen(false); showToast?.('Link copied to clipboard!'); }}
                                 className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
                               >
-                                View Summary
+                                Copy Link
                               </button>
                               <button 
-                                onClick={() => { setActiveRecentMenuIdx(null); showToast?.('Room has been deleted.'); }}
+                                onClick={() => { 
+                                  setIsUpcomingMenuOpen(false); 
+                                  setUpcomingMeetings(upcomingMeetings.filter(m => m.id !== meeting.id));
+                                  showToast?.('Meeting has been cancelled.'); 
+                                }}
                                 className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg text-[11px] font-medium transition-colors"
                               >
-                                Delete Room
+                                Cancel Meeting
                               </button>
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  ))
+                ) : (
+                  <div className="w-full border border-dashed border-slate-200/80 rounded-2xl py-8 px-4 flex flex-col items-center justify-center text-center bg-slate-50/30">
+                    <Calendar size={20} className="text-slate-400 mb-2" />
+                    <span className="text-[13px] font-semibold text-slate-500">No meetings scheduled for today</span>
+                    <span className="text-[11px] text-slate-400 mt-0.5">Your calendar is completely clear.</span>
+                  </div>
+                )}
+              </section>
+
+              {/* 5. Recent Section - structured for breathing room and simplified metadata */}
+              <section className="w-full max-w-[600px] flex flex-col gap-3 shrink-0 text-left mt-6">
+                <h2 className="text-[13px] font-semibold text-slate-800 tracking-tight px-1">Recent</h2>
+
+                {recentRooms.length > 0 ? (
+                  <div className="flex flex-col bg-white border border-slate-100/80 rounded-2xl overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.02)]">
+                    {recentRooms.map((room, idx) => (
+                      <div key={room.id} className="flex justify-between items-center py-2.5 px-4 hover:bg-slate-50/50 transition-all cursor-pointer border-b border-slate-50 last:border-none group">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`w-8 h-8 rounded-xl ${room.color} flex items-center justify-center shrink-0 border`}>
+                            <Users size={14} />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[13.5px] font-semibold text-slate-800 truncate leading-snug group-hover:text-violet-600 transition-colors">{room.name}</div>
+                            <div className="text-[11px] text-slate-400 truncate mt-0.5">{room.time}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 shrink-0">
+                          <div className="flex gap-2">
+                            {room.recording && (
+                              <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-500 border border-red-100">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                REC
+                              </span>
+                            )}
+                            {room.ai && (
+                              <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-violet-50 text-violet-500 border border-violet-100">
+                                ✦ AI
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={handleLaunch}
+                            className="text-[12px] font-semibold text-violet-600 hover:text-violet-700 hover:scale-105 transition-transform"
+                          >
+                            Resume
+                          </button>
+                          
+                          <div className="relative" ref={idx === activeRecentMenuIdx ? recentMenuRef : null}>
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setActiveRecentMenuIdx(activeRecentMenuIdx === idx ? null : idx); 
+                              }}
+                              className="p-1.5 rounded-full text-slate-400 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+                            >
+                              <MoreHorizontal size={14} />
+                            </button>
+                            
+                            {activeRecentMenuIdx === idx && (
+                              <div className="absolute top-full right-0 mt-1 w-48 bg-white border border-slate-100 shadow-[0_12px_24px_rgba(0,0,0,0.08)] rounded-xl p-1 z-50 animate-in fade-in slide-in-from-top-1" onClick={(e) => e.stopPropagation()}>
+                                <button 
+                                  onClick={() => { setActiveRecentMenuIdx(null); handleLaunch(); }}
+                                  className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
+                                >
+                                  Resume Session
+                                </button>
+                                <button 
+                                  onClick={() => { setActiveRecentMenuIdx(null); showToast?.('Showing summary of decisions and action items.'); }}
+                                  className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg text-slate-700 text-[11px] font-medium transition-colors"
+                                >
+                                  View Summary
+                                </button>
+                                <button 
+                                  onClick={() => { 
+                                    setActiveRecentMenuIdx(null); 
+                                    setRecentRooms(recentRooms.filter(r => r.id !== room.id));
+                                    showToast?.('Room has been deleted.'); 
+                                  }}
+                                  className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg text-[11px] font-medium transition-colors"
+                                >
+                                  Delete Room
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="w-full border border-dashed border-slate-200/80 rounded-2xl py-8 px-4 flex flex-col items-center justify-center text-center bg-slate-50/30">
+                    <Users size={20} className="text-slate-400 mb-2" />
+                    <span className="text-[13px] font-semibold text-slate-500">No recent sessions</span>
+                    <span className="text-[11px] text-slate-400 mt-0.5">Your recently visited rooms will appear here.</span>
+                  </div>
+                )}
 
                 <button className="text-[12px] font-semibold text-slate-400 hover:text-violet-600 transition-colors flex items-center justify-center gap-0.5 mt-2">
                   View all rooms →
