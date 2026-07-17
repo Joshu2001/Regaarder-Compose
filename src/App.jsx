@@ -24981,14 +24981,14 @@ Respond with a JSON array of slide objects matching the schema.`;
 
       {/* 3. Right Sidebar (AI Assistant / Smart Chat / Tools) */}
       <div 
-        className={`border-l border-gray-100 flex flex-col bg-white shrink-0 transition-[width] duration-300 relative z-[260] ${
+        className={`border-l border-slate-200/50 flex flex-col bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shrink-0 transition-[width] duration-300 relative z-[260] ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
         style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }
       >
         {/* Sidebar Header Tabs */}
         {activeRightTab !== 'calendar' && activeRightTab !== 'room' && activeRightTab !== 'orb' && activeRightTab !== 'whiteboard' && (
-        <div className="h-14 flex items-center border-b border-gray-100 text-xs font-semibold select-none bg-[#FAFAFC] px-2">
+        <div className="h-14 flex items-center border-b border-slate-200/50 text-xs font-semibold select-none bg-transparent px-2">
           <div
             className="flex-1 min-w-0 overflow-x-auto no-scrollbar py-2"
             tabIndex={0}
@@ -25028,7 +25028,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               ))}
             </div>
           </div>
-          <div className="w-16 shrink-0 flex items-center justify-end border-l border-gray-100 gap-1 px-2">
+          <div className="w-16 shrink-0 flex items-center justify-end border-l border-slate-200/50 gap-1 px-2">
             <button
               type="button"
               title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
@@ -31889,8 +31889,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
           <div className="flex-1 min-h-0 flex gap-4 p-4 relative">
             {/* Floating button removed as per requirements */}
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative ${isSheetsMode ? 'bg-[#FAFAFC]' : ''}`}>
-              <div className={`flex flex-col h-full ${isSheetsMode ? 'w-full flex-1' : 'w-full flex-1'}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'}`}>
+              <div className={`flex flex-col h-full w-full flex-1 relative z-10`}>
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
                     <div className="px-4 py-3 border-b border-gray-200 dark:border-zinc-800 bg-white dark:bg-[#121214] flex items-center justify-between gap-4 text-[13px] font-medium tracking-wide text-[#374151]">
@@ -38421,10 +38421,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
           />
         </div>
       ) : (
-      <div className="flex-1 flex flex-col min-w-0 bg-white relative">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-50/30 dark:bg-zinc-950/20 backdrop-blur-[8px] relative z-10">
+        {!isSheetsMode && (
+          <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none opacity-[0.35]">
+            <div className="absolute -top-[15%] -left-[15%] w-[70%] h-[70%] rounded-full bg-blue-400/35 dark:bg-blue-900/20 mix-blend-multiply dark:mix-blend-screen filter blur-[110px]" />
+            <div className="absolute top-[20%] -right-[15%] w-[60%] h-[60%] rounded-full bg-purple-400/35 dark:bg-purple-900/20 mix-blend-multiply dark:mix-blend-screen filter blur-[110px]" />
+            <div className="absolute bottom-[5%] left-[15%] w-[80%] h-[80%] rounded-full bg-pink-400/30 dark:bg-pink-900/15 mix-blend-multiply dark:mix-blend-screen filter blur-[120px]" />
+          </div>
+        )}
         
         {/* Top Header */}
-        <div className="h-14 flex items-center justify-between px-6 border-b border-gray-100 shrink-0 select-none">
+        <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shrink-0 select-none">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -38517,6 +38524,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               >
                 <Save size={16} />
               </button>
+
             </div>
             <button
               onClick={() => openShareModal(activeDocId || documents[0]?.id)}
@@ -39208,7 +39216,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        <div className="h-10 border-b border-gray-100 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] relative z-[140] min-w-0">
+        <div className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md relative z-[140] min-w-0">
           {orderedDocuments.map((doc, docIndex) => {
             const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
               ? UNTITLED_WHITEBOARD_LABEL
@@ -39219,7 +39227,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div
                 key={doc.id}
                 onClick={() => switchDocument(doc.id)}
-                className={`relative shrink-0 px-2 py-1 rounded-md text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white border-violet-200 text-violet-700' : 'bg-transparent border-transparent text-gray-500 hover:bg-white hover:border-gray-200'}`}
+                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-violet-500/35 text-violet-700 dark:text-violet-400 outline outline-[1px] outline-violet-500/20 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
               >
                 {renamingDocId === doc.id ? (
                   <input
@@ -39297,7 +39305,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`h-12 border-b border-slate-200/50 flex items-center px-6 gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 bg-[#FAF9FF]/95 dark:bg-[#1c1b22]/95 backdrop-blur-[4px] shadow-[0_4px_12px_rgba(139,92,246,0.03)] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
@@ -39714,6 +39722,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button onClick={() => handleOpenLinkPopover()} className="hover:text-violet-600 text-gray-500" title="Insert Link">
               <LinkIcon size={14} />
             </button>
+
             <div
               className="relative text-style-menu-container"
               onMouseEnter={() => setIsTextStyleMenuHovered(true)}
@@ -43920,7 +43929,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {/* Page 1 Sheet Wrapper */}
             <div
               data-enterprise-page="true"
-              className="w-full mx-auto rounded-[24px] shadow-[0_4px_24px_-6px_rgba(15,23,42,0.08)] border transition-all relative"
+              className="w-full mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-zinc-800/50 transition-all relative"
               style={{
                 backgroundColor: 
                   docTheme === 'emerald' ? '#F0FDF4' :
@@ -44945,6 +44954,57 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
           </div>
 
+
+        {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
+          <div 
+            className="pointer-events-none fixed z-[15000] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
+            style={{
+              left: `${dictationAnchor.left}px`,
+              top: `${dictationAnchor.top}px`,
+              transform: `translate(calc(-50% + ${dictationOffset.x}px), calc(-50% + ${dictationOffset.y}px))`
+            }}
+          >
+            <div 
+              onPointerDown={(event) => {
+                if (event.target.tagName !== 'BUTTON' && !event.target.closest('button')) {
+                  beginPanelResize('dictation', event);
+                }
+              }}
+              className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-xl ${
+                isVoiceActive && voiceTarget === 'document' 
+                  ? 'rounded-2xl bg-violet-50/95 border-violet-400 outline outline-2 outline-violet-500/30 px-4 py-2.5 gap-3 shadow-[0_12px_40px_-15px_rgba(139,92,246,0.3)] min-w-[240px] max-w-[320px]' 
+                  : 'rounded-full bg-white/90 border-slate-200/80 p-1 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:border-violet-300/80'
+              }`}
+            >
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={async () => {
+                  await toggleVoiceRecording('document');
+                }}
+                className={`flex items-center justify-center rounded-full transition-all duration-300 ${
+                  isVoiceActive && voiceTarget === 'document'
+                    ? 'w-8 h-8 bg-violet-600 text-white shadow-[0_0_12px_rgba(124,58,237,0.5)] animate-pulse'
+                    : 'w-10 h-10 bg-slate-50 hover:bg-violet-50 text-slate-500 hover:text-violet-600'
+                }`}
+                title={isVoiceActive && voiceTarget === 'document' ? 'Stop voice transcription' : 'Start voice transcription'}
+              >
+                <Mic size={isVoiceActive && voiceTarget === 'document' ? 16 : 18} />
+              </button>
+
+              {isVoiceActive && voiceTarget === 'document' ? (
+                <div className="flex-1 flex flex-col justify-center min-w-0 pr-1">
+                  <div className="text-[10px] font-bold text-violet-600 tracking-wider uppercase opacity-85">Dictation Active</div>
+                  <div className="text-[12px] font-medium text-slate-700 truncate leading-relaxed">
+                    {liveSpeechInterimText || 'Listening...'}
+                  </div>
+                </div>
+              ) : (
+                <span className="text-[11px] font-semibold text-slate-400 px-3 pr-4 pointer-events-none">Dictate</span>
+              )}
+            </div>
+          </div>
+        )}
 
         {isPromptMinimized && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && !isScheduleSessionModalOpen && (
           <div
