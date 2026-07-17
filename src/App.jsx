@@ -24361,7 +24361,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     const updateDictationAnchor = () => {
       const card = documentCardRef.current;
       if (!card) {
-        setDictationAnchor({ left: window.innerWidth - 150, top: window.innerHeight / 2 - 50 });
+        setDictationAnchor({ left: window.innerWidth - 150, top: window.innerHeight / 2 - 100 });
         return;
       }
 
@@ -24383,7 +24383,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       // Shift the widget 10px to the left to bring it closer to the document
       rightX -= 10;
       
-      const centerY = (visibleTop + visibleBottom) / 2 - 50;
+      const centerY = (visibleTop + visibleBottom) / 2 - 100;
 
       setDictationAnchor({ left: rightX, top: centerY });
     };
