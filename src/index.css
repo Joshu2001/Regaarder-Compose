@@ -26,3 +26,20 @@
 .sheet-row-select-cursor {
   cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="black"><path d="M2 11h14.17l-3.59-3.59L14 6l6 6-6 6-1.41-1.41L16.17 13H2v-2z"/></svg>') 12 12, pointer;
 }
+
+@keyframes roomEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(20px);
+    filter: blur(15px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+.animate-room-entrance {
+  animation: roomEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

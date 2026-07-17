@@ -45093,7 +45093,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* ── Room Global Overlay (Squarish, rounded, floating, with sidebars and header inside) ── */}
       {roomState === 'active' && roomPanelMode === 'expanded' && (
-        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden transition-all duration-500 ${isVideoExpanded ? 'p-0 bg-black' : 'p-2 md:p-4'}`}>
+        <div className={`fixed inset-0 z-[9999] bg-[#F9F8F6] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#FFFDFB] via-[#F9F8F6] to-[#F1F0EE] flex flex-col items-center justify-center font-sans overflow-hidden animate-room-entrance ${isVideoExpanded ? 'p-0 bg-black' : 'p-2 md:p-4'}`}>
           {/* Subtle vignette/radial glow overlay */}
           <div className="absolute inset-0 bg-black/[0.025] pointer-events-none" />
           
