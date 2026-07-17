@@ -34,13 +34,8 @@ export default function RoomLandingPage({ onLaunch, showToast }) {
   const [activeRecentMenuIdx, setActiveRecentMenuIdx] = useState(null);
 
   // Dynamic Lists for Upcoming and Recent sections
-  const [upcomingMeetings, setUpcomingMeetings] = useState([
-    { id: "up-1", name: "Marketing Review", time: "3:00 PM • 30 min", avatars: ["J", "S", "M"], extraCount: 3 }
-  ]);
-  const [recentRooms, setRecentRooms] = useState([
-    { id: "rec-1", name: "Product Sync", time: "Yesterday", users: "8 participants", recording: true, ai: true, color: "bg-emerald-50 text-emerald-500 border-emerald-100" },
-    { id: "rec-2", name: "Design Review", time: "Today", users: "5 participants", recording: false, ai: true, color: "bg-blue-50 text-blue-550 border-blue-100" }
-  ]);
+  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
+  const [recentRooms, setRecentRooms] = useState([]);
 
   const dropdownRef = useRef(null);
   const invitesRef = useRef(null);
