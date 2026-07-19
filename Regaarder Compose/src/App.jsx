@@ -30684,6 +30684,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </aside>
         )}
 
+        <main className="flex-1 min-w-0 flex flex-col bg-[#f5f7fc]">
           <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative z-[210]">
             <div className="flex items-center gap-4 min-w-0">
               {/* App Switcher Button - smoothly discloses on parent hover */}
