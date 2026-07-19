@@ -44192,7 +44192,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       placeholder="Describe what you'd like to write..."
                       rows={1}
                       style={{ textAlign: alignMode }}
-                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-slate-400/80 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1"
+                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder:italic placeholder:text-slate-500/90 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1"
                     />
                     <button
                       type="submit"
