@@ -35148,7 +35148,21 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </div>
                         </div>
 
-                      </div>
+                      
+
+                      {/* Speaker Notes moved inside the canvas column to prevent layout squishing */}
+                      <div className="w-full max-w-[1100px] flex flex-col gap-2">
+                      {showDeckNotes && (
+                        <div className="mt-4 border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative shadow-sm">
+                          <textarea
+                            placeholder="Add speaker notes..."
+                            className="w-full resize-none outline-none text-sm text-gray-600 bg-transparent min-h-[60px]"
+                            rows={3}
+                          />
+                        </div>
+                      )}
+                    </div>
+</div>
                     </div>
 
                     {/* Right Inspector Panel */}
@@ -35293,19 +35307,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
                       </div>
 
-                      <div className="w-full max-w-[1100px] flex flex-col gap-2">
-                      {showDeckNotes && (
-                        <div className="mt-4 border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative shadow-sm">
-                          <textarea
-                            placeholder="Add speaker notes..."
-                            className="w-full resize-none outline-none text-sm text-gray-600 bg-transparent min-h-[60px]"
-                            rows={3}
-                          />
-                        </div>
-                      )}
-                    </div>
+                      
+</div>
+)}
 
-{showResizeModal && (
+            {/* Resize Modal moved outside the ternary to prevent canvas squishing and JSX syntax errors */}
+            {showResizeModal && (
   <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm">
     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -35391,8 +35398,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
     </div>
   </div>
 )}
-</div>
-)}
+
               </div>
 
           </section>
