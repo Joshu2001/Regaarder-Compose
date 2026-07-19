@@ -39337,9 +39337,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'));
               }}
-              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all border ${openDropdown === 'heading' ? 'border-violet-200 bg-violet-50/30' : 'border-transparent'}`}
+              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all border text-[13px] font-medium ${openDropdown === 'heading' ? 'border-violet-200 bg-violet-50/30 text-violet-700' : 'text-slate-600 hover:text-slate-900 border-transparent'}`}
             >
-              {editorHeading} <ChevronDown size={14} className="text-gray-400" />
+              {editorHeading} <ChevronDown size={14} className="text-slate-400" />
             </button>
             {openDropdown === 'heading' && (
               <div className="absolute top-9 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
@@ -39438,10 +39438,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
               }}
-              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all border ${openDropdown === 'page-number' ? 'border-violet-200 bg-violet-50/30' : 'border-transparent'}`}
+              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'page-number' ? 'border-violet-200 bg-violet-50/30 text-violet-700' : 'text-slate-600 hover:text-slate-900 border-transparent'}`}
               title="Page numbering"
             >
-              Page # <ChevronDown size={14} className="text-gray-400" />
+              Page # <ChevronDown size={14} className="text-slate-400" />
             </button>
             {openDropdown === 'page-number' && (
               <div className="absolute top-9 left-0 z-[230] w-52 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2 space-y-2">
@@ -39490,9 +39490,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
               }}
-              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all border ${openDropdown === 'font' ? 'border-violet-200 bg-violet-50/30' : 'border-transparent'}`}
+              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'font' ? 'border-violet-200 bg-violet-50/30 text-violet-700' : 'text-slate-600 hover:text-slate-900 border-transparent'}`}
             >
-              {editorFont} <ChevronDown size={14} className="text-gray-400" />
+              {editorFont} <ChevronDown size={14} className="text-slate-400" />
             </button>
             {openDropdown === 'font' && (
               <div className="absolute top-9 left-0 z-[230] w-48 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
@@ -39625,12 +39625,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-list-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium transition-all border ${listDropdownOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${listDropdownOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
               title="Lists (Ctrl+Shift+8)"
             >
-              <List size={15} className={isListActive ? 'text-violet-600' : ''} />
-              <span className="text-[12px]">Lists</span>
-              <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
+              <List size={14} className={isListActive ? 'text-violet-600' : 'text-slate-500'} />
+              <span>Lists</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             {listDropdownOpen && (
               <>
@@ -39661,12 +39661,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-insert-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium transition-all border ${insertDropdownOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${insertDropdownOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
               title="Insert Elements (Ctrl+/ or type /)"
             >
-              <Plus size={15} />
-              <span className="text-[12px]">Insert</span>
-              <ChevronDown size={11} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
+              <Plus size={14} className="text-slate-500" />
+              <span>Insert</span>
+              <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             {insertDropdownOpen && (
               <>
@@ -39819,10 +39819,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     closeTransientMenus();
                     setComposeExportMenuOpen(!composeExportMenuOpen);
                   }}
-                  className={`text-xs font-semibold px-2.5 py-1.5 rounded flex items-center gap-1 transition-all border ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-violet-50 hover:text-violet-700 border-transparent'}`}
+                  className={`text-[13px] font-medium px-2 py-1 rounded flex items-center gap-1 transition-all border ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
                   title="Export Compose options"
                 >
-                  Export {composeExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                  Export {composeExportMenuOpen ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
                 </button>
                 {composeExportMenuOpen && (
                   <div className="absolute top-9 right-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
