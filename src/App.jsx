@@ -38579,9 +38579,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 onClick={() => setComposeProfileMenuOpen(prev => !prev)}
-                className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all shadow-sm focus:outline-none ${activeRightTab === 'whiteboard' ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850'}`}
+                className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all shadow-sm focus:outline-none ${activeRightTab === 'whiteboard' ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-slate-300 dark:hover:ring-slate-800'}`}
                 style={{
-                  backgroundColor: activeRightTab === 'whiteboard' ? '#f97316' : (currentUser ? '#10B981' : '#7C3AED'),
+                  backgroundColor: activeRightTab === 'whiteboard' ? '#f97316' : (currentUser ? '#10B981' : '#64748B'),
                 }}
                 title={currentUser ? `Profile: ${currentUser?.name || ''}` : 'Sign In'}
               >
@@ -38703,7 +38703,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
             <button 
               onClick={() => handleMiniSidebarClick('assistant')}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/45 dark:text-violet-400' : 'bg-violet-50 text-violet-600 hover:bg-violet-100 dark:bg-violet-950/20 dark:text-violet-300 dark:hover:bg-violet-950/40'}`}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg border transition-all ${activeRightTab === 'assistant' && rightSidebarOpen ? 'bg-slate-100 border-slate-200 text-slate-900 shadow-sm dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-100' : 'bg-slate-50 text-slate-505 hover:bg-slate-100 hover:text-slate-850 border-transparent dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}
             >
               <Sparkles size={16} />
             </button>
@@ -39295,10 +39295,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </button>
                 {openDocMenuId === doc.id && (
                   <div className="absolute right-0 top-full mt-1 z-[230] w-36 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-1" data-doc-menu-root>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Rename</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Save</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">Share</button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('pin', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50">{doc.pinned ? 'Unpin' : 'Pin'}</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('rename', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Rename</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('save', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Save</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('share', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">Share</button>
+                    <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('pin', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-100">{doc.pinned ? 'Unpin' : 'Pin'}</button>
                     <div className="border-t border-gray-100 my-1"></div>
                     <button onClick={(e) => { e.stopPropagation(); handleDocumentAction('close', doc.id); }} className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-rose-50 text-rose-600">Close</button>
                   </div>
@@ -39337,7 +39337,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'));
               }}
-              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all border text-[13px] font-medium ${openDropdown === 'heading' ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all border text-[13px] font-medium ${openDropdown === 'heading' ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
             >
               {editorHeading} <ChevronDown size={14} className="text-slate-400" />
             </button>
@@ -39438,7 +39438,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
               }}
-              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'page-number' ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'page-number' ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
               title="Page numbering"
             >
               Page # <ChevronDown size={14} className="text-slate-400" />
@@ -39490,7 +39490,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
               }}
-              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'font' ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'font' ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
             >
               {editorFont} <ChevronDown size={14} className="text-slate-400" />
             </button>
@@ -39625,7 +39625,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-list-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${listDropdownOpen ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-650 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${listDropdownOpen ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-650 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
               title="Lists (Ctrl+Shift+8)"
             >
               <List size={14} className={isListActive ? 'text-violet-600' : 'text-slate-500'} />
@@ -39661,7 +39661,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-insert-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${insertDropdownOpen ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-655 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${insertDropdownOpen ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-655 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
               title="Insert Elements (Ctrl+/ or type /)"
             >
               <Plus size={14} className="text-slate-500" />
@@ -39819,7 +39819,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     closeTransientMenus();
                     setComposeExportMenuOpen(!composeExportMenuOpen);
                   }}
-                  className={`text-[13px] font-medium px-2 py-1 rounded flex items-center gap-1 transition-all border ${composeExportMenuOpen ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
+                  className={`text-[13px] font-medium px-2 py-1 rounded flex items-center gap-1 transition-all border ${composeExportMenuOpen ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
                   title="Export Compose options"
                 >
                   Export {composeExportMenuOpen ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
