@@ -38512,28 +38512,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
                 title="Undo (Ctrl+Z)"
               >
-                <Undo2 size={16} />
+                <Undo2 size={16} strokeWidth={1.5} />
               </button>
               <button
                 onClick={redoDocumentChange}
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
                 title="Redo (Ctrl+Y)"
               >
-                <Redo2 size={16} />
+                <Redo2 size={16} strokeWidth={1.5} />
               </button>
               <button
                 onClick={openReplayPanel}
                 className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${replayPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
                 title="Open edit replay"
               >
-                <Clock size={16} />
+                <Clock size={16} strokeWidth={1.5} />
               </button>
               <button
                 onClick={saveDocumentLocally}
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
                 title="Save locally (Ctrl+S)"
               >
-                <Save size={16} />
+                <Save size={16} strokeWidth={1.5} />
               </button>
 
             </div>
@@ -38541,7 +38541,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               onClick={() => openShareModal(activeDocId || documents[0]?.id)}
               className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
             >
-              <Users size={14} /> Share
+              <Users size={14} strokeWidth={1.5} /> Share
             </button>
             
             {/* Avatars */}
@@ -38571,7 +38571,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
               title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+              {isDarkMode ? <Sun size={16} strokeWidth={1.5} /> : <Moon size={16} strokeWidth={1.5} />}
             </button>
 
             {/* Local User Profile Avatar Button */}
@@ -39247,7 +39247,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div
                 key={doc.id}
                 onClick={() => switchDocument(doc.id)}
-                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-slate-200 text-slate-800 dark:text-zinc-100 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
+                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-slate-200 text-violet-600 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
               >
                 {renamingDocId === doc.id ? (
                   <input
@@ -39339,7 +39339,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }}
               className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all border text-[13px] font-medium ${openDropdown === 'heading' ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
             >
-              {editorHeading} <ChevronDown size={14} className="text-slate-400" />
+              {editorHeading} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
             </button>
             {openDropdown === 'heading' && (
               <div className="absolute top-9 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
@@ -39441,7 +39441,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'page-number' ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
               title="Page numbering"
             >
-              Page # <ChevronDown size={14} className="text-slate-400" />
+              Page # <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
             </button>
             {openDropdown === 'page-number' && (
               <div className="absolute top-9 left-0 z-[230] w-52 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2 space-y-2">
@@ -39492,7 +39492,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               }}
               className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'font' ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
             >
-              {editorFont} <ChevronDown size={14} className="text-slate-400" />
+              {editorFont} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
             </button>
             {openDropdown === 'font' && (
               <div className="absolute top-9 left-0 z-[230] w-48 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
@@ -39610,11 +39610,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
 
           <div className="flex items-center gap-1.5">
-            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={15} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'left' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
+            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={15} strokeWidth={1.5} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'left' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
             title="Align Left (Ctrl+Shift+L)" />
-            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={15} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'center' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
+            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={15} strokeWidth={1.5} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'center' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
             title="Align Center (Ctrl+Shift+E)" />
-            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={15} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'right' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
+            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={15} strokeWidth={1.5} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'right' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
             title="Align Right (Ctrl+Shift+R)" />
           </div>
           
@@ -39628,9 +39628,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${listDropdownOpen ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-650 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
               title="Lists (Ctrl+Shift+8)"
             >
-              <List size={14} className={isListActive ? 'text-violet-600' : 'text-slate-500'} />
+              <List size={14} strokeWidth={1.5} className={isListActive ? 'text-violet-600' : 'text-slate-500'} />
               <span>Lists</span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} strokeWidth={1.5} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             {listDropdownOpen && (
               <>
@@ -39664,9 +39664,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${insertDropdownOpen ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-655 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
               title="Insert Elements (Ctrl+/ or type /)"
             >
-              <Plus size={14} className="text-slate-500" />
+              <Plus size={14} strokeWidth={1.5} className="text-slate-500" />
               <span>Insert</span>
-              <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} strokeWidth={1.5} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             {insertDropdownOpen && (
               <>
@@ -39740,7 +39740,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`w-7 h-7 flex items-center justify-center underline text-[13px] rounded transition-all border ${isUnderlineActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Underline (Ctrl+U)">U</button>
             <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`w-7 h-7 flex items-center justify-center line-through text-[13px] rounded transition-all border ${isStrikeActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Strikethrough (Ctrl+Shift+X)">S</button>
             <button onPointerDown={(e) => { e.preventDefault(); handleOpenLinkPopover(); }} className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors" title="Insert Link (Ctrl+K)">
-              <LinkIcon size={13} />
+              <LinkIcon size={13} strokeWidth={1.5} />
             </button>
 
             <div
@@ -39753,7 +39753,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors"
                 title="Format options (Style & Colors)"
               >
-                <Type size={13} />
+                <Type size={13} strokeWidth={1.5} />
               </button>
               {textStyleMenuOpen && (
                 <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
@@ -39822,7 +39822,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   className={`text-[13px] font-medium px-2 py-1 rounded flex items-center gap-1 transition-all border ${composeExportMenuOpen ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
                   title="Export Compose options"
                 >
-                  Export {composeExportMenuOpen ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                  Export {composeExportMenuOpen ? <ChevronUp size={14} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />}
                 </button>
                 {composeExportMenuOpen && (
                   <div className="absolute top-9 right-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
