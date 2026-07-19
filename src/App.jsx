@@ -31363,7 +31363,7 @@ const renderRoomTopHeader = () => (
 
 if (productMode === 'deck' || productMode === 'sheets') {
     return (
-      <div ref={appShellRef} className={`flex ${productMode === 'deck' ? 'flex-col' : ''} h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
+      <div ref={appShellRef} className={`flex flex-col h-screen bg-[#f3f5fb] text-gray-800 overflow-hidden relative ${shouldHideScrollbarsForPrompt ? 'hide-side-scrollbar' : ''}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <div className="fixed inset-0 pointer-events-none z-[9999]">
           {Array.from(awarenessUsers.entries()).map(([clientID, userState], idx) => {
             if (!userState.user || !userState.pointer) return null;
@@ -31477,190 +31477,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
 
-
-        {!isSheetsMode && (
-        <aside
-          className="border-r border-gray-100/50 flex flex-col bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md shrink-0 select-none overflow-hidden transition-[width] duration-200"
-          style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
-        >
-          <div className="h-14 flex items-center justify-between px-4">
-            <div className="flex items-center gap-2 font-bold text-gray-900 text-lg">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-violet-600">
-                <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 12 10c3.1 0 5.89-1.41 1.77-5.5L12 13.5L8.5 17H6.5L12 11.5L17.5 17H15.5L12 13.5L15.5 10H19.5C21.1 12 22 14.4 22 12c0-5.523-4.477-10-10-10z" fill="currentColor" />
-              </svg>
-              <span className="tracking-tight text-gray-900">Regaarder Compose</span>
-            </div>
-          </div>
-
-          <div className="px-4 py-3">
-            <button
-              onClick={openCreationPicker}
-              className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 font-medium text-sm transition-colors active:scale-95"
-            >
-              <Plus size={16} />
-              New Composition
-            </button>
-          </div>
-
-          <div className="px-4 pb-2">
-            <div className="relative">
-              <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search compositions..."
-                className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
-              />
-              <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">K</span>
-            </div>
-          </div>
-
-          <div className="px-3 pb-2">
-            <div className="rounded-xl border border-violet-100 bg-white/80 p-2.5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
-                <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5">{Math.max(0, documentOutlineItems.length - 1)} Sections</span>
-              </div>
-              {documentOutlineItems.length > 1 ? (
-                <div className="max-h-40 overflow-y-auto pr-1 space-y-0.5 thin-scrollbar">
-                  {documentOutlineItems.map((item, index) => (
-                    <button
-                      key={`${item.id}-${index}`}
-                      type="button"
-                      onClick={() => jumpToOutlineItem(item)}
-                      className={`w-full text-left rounded-md py-1 text-xs transition-colors ${item.isTitle ? 'font-semibold text-gray-800 hover:bg-violet-50 px-2' : 'text-gray-600 hover:bg-gray-100'}`}
-                      style={item.isTitle ? undefined : { paddingLeft: `${10 + Math.max(0, item.level - 1) * 12}px`, paddingRight: '6px' }}
-                      title={item.label}
-                    >
-                      <span className="block truncate">{item.label}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-[11px] text-gray-500 px-1.5 py-2">Generate or format headings to populate the outline.</div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Home size={16} /> Home</button>
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><BookOpen size={16} /> Library</button>
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm bg-violet-50 text-violet-700 rounded-md transition-colors"><LayoutGrid size={16} /> Deck</button>
-            <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><div className="flex items-center gap-3"><Inbox size={16} /> Inbox</div><span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full font-medium">12</span></button>
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Star size={16} /> Starred</button>
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Users size={16} /> Shared</button>
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Database size={16} /> Memory</button>
-            <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors mb-4"><Trash size={16} /> Trash</button>
-
-            <div className="flex items-center justify-between px-2 py-2 mt-4">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspaces</span>
-              <button onClick={openCreateWorkspaceModal} className="text-gray-400 hover:text-gray-600"><Plus size={14} /></button>
-            </div>
-
-            <div className="space-y-1 pb-3">
-              {workspaces.map((workspace) => (
-                <button key={workspace.id} className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md font-medium transition-colors">
-                  <div className="flex items-center gap-3"><WorkspaceIcon letter={workspace.letter} colorClass={workspace.colorClass} /> {workspace.name}</div>
-                  <MoreHorizontal size={14} className="text-gray-400" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-4 border-t border-gray-100 bg-[#FAFAFC] flex items-center justify-between mt-auto">
-            <div className="text-[12px] font-medium text-gray-500">{isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? 'sheets' : 'slides'}</div>
-            <div className="flex items-center gap-1.5 text-[12px] font-medium text-gray-600">
-              <div className="w-2 h-2 rounded-full bg-violet-500"></div>
-              {isSheetsMode ? 'Sheet style' : 'Deck style'}
-            </div>
-          </div>
-        </aside>
-        )}
-
-        {deckSlidesPanelOpen && (
-        <aside className="w-[240px] border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
-          {/* Top Sidebar Action */}
-          <div className="h-16 px-4 border-b border-gray-200 flex items-center justify-between shrink-0">
-            <button
-              type="button"
-              onClick={isSheetsMode ? addWorksheet : addDeckSlide}
-              className="w-full flex items-center justify-between px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm text-xs font-semibold text-slate-700 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Plus size={14} className="text-[#7C4DFF]" />
-                <span>New Slide</span>
-              </div>
-              <ChevronDown size={12} className="text-gray-400" />
-            </button>
-          </div>
-
-          {/* Slide List */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
-            {(isSheetsMode ? sheetsData : deckSlides).length === 0 && (
-              <div className="rounded-xl border border-dashed border-gray-300 bg-white p-3 text-xs text-gray-500">
-                {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet.'}
-              </div>
-            )}
-            {(isSheetsMode ? sheetsData : deckSlides).map((item, index, collection) => {
-              const isActive = isSheetsMode ? item.id === activeSheetId : item.id === activeDeckSlideId;
-              
-              return (
-                <div key={item.id} className="flex items-center gap-3">
-                  {/* Slide number */}
-                  <span className="text-xs font-bold text-gray-400 w-4 text-right">
-                    {index + 1}
-                  </span>
-                  
-                  {/* Thumbnail Card */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isSheetsMode) {
-                        setActiveSheetId(item.id);
-                        setSheetsTitle(item.title);
-                      } else {
-                        setActiveDeckSlideId(item.id);
-                      }
-                    }}
-                    className={`flex-1 relative rounded-[14px] overflow-hidden border border-gray-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] aspect-[16/9] transition-all ${
-                      isActive 
-                        ? 'outline outline-[2px] outline-[#7C4DFF] outline-offset-1 shadow-md' 
-                        : 'hover:border-gray-300'
-                    }`}
-                  >
-                    <img
-                      src={isSheetsMode
-                        ? (sheetSnapshotPreviews[item.id] || buildSheetPreviewDataUri(item))
-                        : (deckSnapshotPreviews[item.id] || buildDeckPreviewDataUri(item))}
-                      alt={isSheetsMode ? `Sheet preview ${item.title}` : `Slide preview ${item.title}`}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    {/* Floating slide overlay text */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent flex flex-col justify-end p-2 opacity-0 hover:opacity-100 transition-opacity">
-                      <span className="text-[10px] text-white font-semibold truncate">{item.title}</span>
-                    </div>
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Bottom Sidebar Action */}
-          <div className="p-3 border-t border-gray-200 bg-white flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
-              {isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? 'sheets' : 'slides'}
-            </div>
-            <div className="flex items-center gap-1 border border-gray-200 rounded-lg p-0.5 bg-gray-50">
-              <button type="button" className="p-1 rounded-md bg-white shadow-sm text-slate-700 hover:text-gray-900" title="Grid view">
-                <LayoutGrid size={13} />
-              </button>
-              <button type="button" className="p-1 rounded-md text-slate-400 hover:text-gray-600" title="List view">
-                <List size={13} />
-              </button>
-            </div>
-          </div>
-        </aside>
-        )}
 
         <main className="flex-1 min-w-0 flex flex-col bg-[#f5f7fc]">
           <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative z-[210]">
@@ -31981,9 +31797,193 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </div>
           </header>
 
-          <div className="flex-1 min-h-0 flex gap-4 p-4 relative">
+          <div className="flex-1 min-h-0 flex relative">
+            {!isSheetsMode && (
+                    <aside
+                      className="border-r border-gray-100/50 flex flex-col bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md shrink-0 select-none overflow-hidden transition-[width] duration-200"
+                      style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
+                    >
+                      <div className="h-14 flex items-center justify-between px-4">
+                        <div className="flex items-center gap-2 font-bold text-gray-900 text-lg">
+                          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-violet-600">
+                            <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 12 10c3.1 0 5.89-1.41 1.77-5.5L12 13.5L8.5 17H6.5L12 11.5L17.5 17H15.5L12 13.5L15.5 10H19.5C21.1 12 22 14.4 22 12c0-5.523-4.477-10-10-10z" fill="currentColor" />
+                          </svg>
+                          <span className="tracking-tight text-gray-900">Regaarder Compose</span>
+                        </div>
+                      </div>
+            
+                      <div className="px-4 py-3">
+                        <button
+                          onClick={openCreationPicker}
+                          className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-2 flex items-center justify-center gap-2 font-medium text-sm transition-colors active:scale-95"
+                        >
+                          <Plus size={16} />
+                          New Composition
+                        </button>
+                      </div>
+            
+                      <div className="px-4 pb-2">
+                        <div className="relative">
+                          <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="Search compositions..."
+                            className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
+                          />
+                          <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">K</span>
+                        </div>
+                      </div>
+            
+                      <div className="px-3 pb-2">
+                        <div className="rounded-xl border border-violet-100 bg-white/80 p-2.5">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
+                            <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5">{Math.max(0, documentOutlineItems.length - 1)} Sections</span>
+                          </div>
+                          {documentOutlineItems.length > 1 ? (
+                            <div className="max-h-40 overflow-y-auto pr-1 space-y-0.5 thin-scrollbar">
+                              {documentOutlineItems.map((item, index) => (
+                                <button
+                                  key={`${item.id}-${index}`}
+                                  type="button"
+                                  onClick={() => jumpToOutlineItem(item)}
+                                  className={`w-full text-left rounded-md py-1 text-xs transition-colors ${item.isTitle ? 'font-semibold text-gray-800 hover:bg-violet-50 px-2' : 'text-gray-600 hover:bg-gray-100'}`}
+                                  style={item.isTitle ? undefined : { paddingLeft: `${10 + Math.max(0, item.level - 1) * 12}px`, paddingRight: '6px' }}
+                                  title={item.label}
+                                >
+                                  <span className="block truncate">{item.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-[11px] text-gray-500 px-1.5 py-2">Generate or format headings to populate the outline.</div>
+                          )}
+                        </div>
+                      </div>
+            
+                      <div className="flex-1 overflow-y-auto px-2 space-y-0.5">
+                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Home size={16} /> Home</button>
+                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><BookOpen size={16} /> Library</button>
+                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm bg-violet-50 text-violet-700 rounded-md transition-colors"><LayoutGrid size={16} /> Deck</button>
+                        <button className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><div className="flex items-center gap-3"><Inbox size={16} /> Inbox</div><span className="bg-gray-100 text-gray-500 text-xs px-1.5 py-0.5 rounded-full font-medium">12</span></button>
+                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Star size={16} /> Starred</button>
+                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Users size={16} /> Shared</button>
+                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors"><Database size={16} /> Memory</button>
+                        <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-md transition-colors mb-4"><Trash size={16} /> Trash</button>
+            
+                        <div className="flex items-center justify-between px-2 py-2 mt-4">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Workspaces</span>
+                          <button onClick={openCreateWorkspaceModal} className="text-gray-400 hover:text-gray-600"><Plus size={14} /></button>
+                        </div>
+            
+                        <div className="space-y-1 pb-3">
+                          {workspaces.map((workspace) => (
+                            <button key={workspace.id} className="w-full flex items-center justify-between px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md font-medium transition-colors">
+                              <div className="flex items-center gap-3"><WorkspaceIcon letter={workspace.letter} colorClass={workspace.colorClass} /> {workspace.name}</div>
+                              <MoreHorizontal size={14} className="text-gray-400" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+            
+                      <div className="p-4 border-t border-gray-100 bg-[#FAFAFC] flex items-center justify-between mt-auto">
+                        <div className="text-[12px] font-medium text-gray-500">{isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? 'sheets' : 'slides'}</div>
+                        <div className="flex items-center gap-1.5 text-[12px] font-medium text-gray-600">
+                          <div className="w-2 h-2 rounded-full bg-violet-500"></div>
+                          {isSheetsMode ? 'Sheet style' : 'Deck style'}
+                        </div>
+                      </div>
+                    </aside>
+                    )}
+
+            {deckSlidesPanelOpen && (
+                    <aside className="w-[240px] border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
+                      {/* Top Sidebar Action */}
+                      <div className="h-16 px-4 border-b border-gray-200 flex items-center justify-between shrink-0">
+                        <button
+                          type="button"
+                          onClick={isSheetsMode ? addWorksheet : addDeckSlide}
+                          className="w-full flex items-center justify-between px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm text-xs font-semibold text-slate-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Plus size={14} className="text-[#7C4DFF]" />
+                            <span>New Slide</span>
+                          </div>
+                          <ChevronDown size={12} className="text-gray-400" />
+                        </button>
+                      </div>
+            
+                      {/* Slide List */}
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
+                        {(isSheetsMode ? sheetsData : deckSlides).length === 0 && (
+                          <div className="rounded-xl border border-dashed border-gray-300 bg-white p-3 text-xs text-gray-500">
+                            {isSheetsMode ? 'No worksheets yet. Create one to see a live preview.' : 'No slides yet.'}
+                          </div>
+                        )}
+                        {(isSheetsMode ? sheetsData : deckSlides).map((item, index, collection) => {
+                          const isActive = isSheetsMode ? item.id === activeSheetId : item.id === activeDeckSlideId;
+                          
+                          return (
+                            <div key={item.id} className="flex items-center gap-3">
+                              {/* Slide number */}
+                              <span className="text-xs font-bold text-gray-400 w-4 text-right">
+                                {index + 1}
+                              </span>
+                              
+                              {/* Thumbnail Card */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isSheetsMode) {
+                                    setActiveSheetId(item.id);
+                                    setSheetsTitle(item.title);
+                                  } else {
+                                    setActiveDeckSlideId(item.id);
+                                  }
+                                }}
+                                className={`flex-1 relative rounded-[14px] overflow-hidden border border-gray-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.03)] aspect-[16/9] transition-all ${
+                                  isActive 
+                                    ? 'outline outline-[2px] outline-[#7C4DFF] outline-offset-1 shadow-md' 
+                                    : 'hover:border-gray-300'
+                                }`}
+                              >
+                                <img
+                                  src={isSheetsMode
+                                    ? (sheetSnapshotPreviews[item.id] || buildSheetPreviewDataUri(item))
+                                    : (deckSnapshotPreviews[item.id] || buildDeckPreviewDataUri(item))}
+                                  alt={isSheetsMode ? `Sheet preview ${item.title}` : `Slide preview ${item.title}`}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                                {/* Floating slide overlay text */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/25 to-transparent flex flex-col justify-end p-2 opacity-0 hover:opacity-100 transition-opacity">
+                                  <span className="text-[10px] text-white font-semibold truncate">{item.title}</span>
+                                </div>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+            
+                      {/* Bottom Sidebar Action */}
+                      <div className="p-3 border-t border-gray-200 bg-white flex items-center justify-between shrink-0">
+                        <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+                          {isSheetsMode ? sheetsData.length : deckSlidesData.length} {isSheetsMode ? 'sheets' : 'slides'}
+                        </div>
+                        <div className="flex items-center gap-1 border border-gray-200 rounded-lg p-0.5 bg-gray-50">
+                          <button type="button" className="p-1 rounded-md bg-white shadow-sm text-slate-700 hover:text-gray-900" title="Grid view">
+                            <LayoutGrid size={13} />
+                          </button>
+                          <button type="button" className="p-1 rounded-md text-slate-400 hover:text-gray-600" title="List view">
+                            <List size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </aside>
+                    )}
+
+            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative p-4 gap-4 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'}`}>
             {/* Floating button removed as per requirements */}
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'}`}>
               <div className={`flex flex-col h-full w-full flex-1 relative z-10`}>
                 {isSheetsMode ? (
                   <div ref={sheetCanvasPreviewRef} className="flex-1 overflow-hidden bg-transparent flex flex-col relative">
