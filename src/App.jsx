@@ -39247,7 +39247,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div
                 key={doc.id}
                 onClick={() => switchDocument(doc.id)}
-                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-violet-200 text-violet-700 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
+                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-slate-200 text-slate-800 dark:text-zinc-100 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
               >
                 {renamingDocId === doc.id ? (
                   <input
@@ -39266,7 +39266,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       }
                     }}
                     onBlur={() => commitRenameDocument(doc.id)}
-                    className="w-[160px] bg-white border border-violet-200 rounded px-1 py-0.5 text-xs outline-none"
+                    className="w-[160px] bg-white border border-slate-200 rounded px-1 py-0.5 text-xs outline-none"
                   />
                 ) : (
                   <span className="max-w-[160px] truncate">{doc.pinned ? 'Pinned: ' : ''}{label}</span>
@@ -39309,11 +39309,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <button
             type="button"
             onClick={createItemForCurrentContext}
-            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-violet-600 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
             title="Create new item"
             aria-label="Create new item"
           >
-            <Plus size={18} strokeWidth={2.4} />
+            <Plus size={14} strokeWidth={1.5} />
           </button>
         </div>
 
