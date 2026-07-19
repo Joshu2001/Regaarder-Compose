@@ -4366,6 +4366,26 @@ export default function App() {
       if (headerContextMenuRef.current && !headerContextMenuRef.current.contains(e.target)) {
         setHeaderContextMenu({ open: false, x: 0, y: 0, type: '', index: -1 });
       }
+
+      // Dismiss Compose Dropdowns on Outside Click/Tap
+      if (e.target && typeof e.target.closest === 'function') {
+        if (pageSizeDropdownOpen && !e.target.closest('.page-size-dropdown-container')) {
+          setPageSizeDropdownOpen(false);
+        }
+        if (pageMarginDropdownOpen && !e.target.closest('.page-margin-dropdown-container')) {
+          setPageMarginDropdownOpen(false);
+        }
+        if (docStateDropdownOpen && !e.target.closest('.doc-state-dropdown-container')) {
+          setDocStateDropdownOpen(false);
+        }
+        if (insertDropdownOpen && !e.target.closest('.compose-insert-dropdown-container')) {
+          setInsertDropdownOpen(false);
+        }
+        if (listDropdownOpen && !e.target.closest('.compose-list-dropdown-container')) {
+          setListDropdownOpen(false);
+        }
+      }
+
       if (e.target && typeof e.target.closest === 'function' && !e.target.closest('.absolute.z-\\[100\\]')) {
         setSelectedSheetOverlayId(null);
       }
@@ -4422,6 +4442,7 @@ export default function App() {
       }
     };
     document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('pointerdown', handleOutsideClick);
 
     const handleGlobalEscape = (e) => {
       if (e.key === 'Escape') {
@@ -4463,6 +4484,7 @@ export default function App() {
       delete window.showCreateEmojiForm;
       delete window.showSavedEmojisList;
       document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('pointerdown', handleOutsideClick);
       window.removeEventListener('keydown', handleGlobalEscape);
     };
   }, []);
@@ -31680,19 +31702,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setWorkspaceSwitcherOpen(false);
                               showToast(`Switched to ${item.label}`);
                             }}
-                            className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
+                            className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all relative ${
                               isCurrent
-                                ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
+                                ? 'bg-violet-500/10 dark:bg-violet-950/40'
                                 : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
                             }`}
                           >
-                            <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-                              <IconComponent size={14} />
+                            <div className={`shrink-0 mt-0.5 ${isCurrent ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400'}`}>
+                              <IconComponent size={15} />
                             </div>
                             <div className="flex flex-col min-w-0">
                               <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
                               <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
                             </div>
+                            {isCurrent && <span className="absolute right-1 top-2 bottom-2 w-[3px] rounded-full bg-violet-500" />}
                           </button>
                         );
                       })}
@@ -38503,7 +38526,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         
         {/* Top Header */}
-        <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shrink-0 select-none group/header relative z-[210]">
+        <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[210]">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -38559,19 +38582,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             setWorkspaceSwitcherOpen(false);
                             showToast(`Switched to ${item.label}`);
                           }}
-                          className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
+                          className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all relative ${
                             isCurrent
-                              ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
+                              ? 'bg-violet-500/10 dark:bg-violet-950/40'
                               : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
                           }`}
                         >
-                          <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
-                            <IconComponent size={14} />
+                          <div className={`shrink-0 mt-0.5 ${isCurrent ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-zinc-400'}`}>
+                            <IconComponent size={15} />
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
                             <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
                           </div>
+                          {isCurrent && <span className="absolute right-1 top-2 bottom-2 w-[3px] rounded-full bg-violet-500" />}
                         </button>
                       );
                     })}
@@ -39444,7 +39468,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`h-12 border-b border-slate-200/50 flex items-center px-6 gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 bg-[#FAF9FF]/95 dark:bg-[#1c1b22]/95 backdrop-blur-[4px] shadow-[0_1px_3px_rgba(15,23,42,0.01)] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`h-12 border-b border-slate-200/50 flex items-center px-6 gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 bg-[#FAF9FF] dark:bg-[#1c1b22] shadow-[0_1px_3px_rgba(15,23,42,0.01)] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
@@ -42616,7 +42640,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             }`}>
               
               {/* Size & Orientation Dropdown */}
-              <div className="relative">
+              <div className="relative page-size-dropdown-container">
                 <button
                   type="button"
                   onClick={() => setPageSizeDropdownOpen(!pageSizeDropdownOpen)}
@@ -42665,7 +42689,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
 
               {/* Margin Dropdown */}
-              <div className="relative">
+              <div className="relative page-margin-dropdown-container">
                 <button
                   type="button"
                   onClick={() => setPageMarginDropdownOpen(!pageMarginDropdownOpen)}

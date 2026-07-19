@@ -37756,7 +37756,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       <div className="flex-1 flex flex-col min-w-0 bg-white relative">
         
         {/* Top Header */}
-        <div className="h-14 flex items-center justify-between px-6 border-b border-gray-100 shrink-0 select-none group/header relative z-[210]">
+        <div className="h-14 flex items-center justify-between px-6 border-b border-gray-100 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[210]">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -38683,7 +38683,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`h-12 border-b border-gray-100 flex items-center px-6 gap-4 text-sm text-gray-600 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 bg-[#FAF9FF] dark:bg-[#1c1b22] shadow-[0_1px_3px_rgba(15,23,42,0.01)] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
