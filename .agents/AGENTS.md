@@ -40,6 +40,11 @@ Avoid monolithic blocks, band-aid fixes, or summarized placeholders. Treat this 
 ### Structural Requirements
 - **Navigation Tabs:** Active and inactive tab items must be styled as slightly rounded rectangles. Under no circumstances should tabs be rendered as "pill-shaped" or completely elliptical elements. Maintain sharp, premium corner radiuses instead of organic curves.
 
+### Text and Icon Sizing Alignment
+- **Unified Sizing & Weight:** Text and adjacent icons (such as in dropdown triggers or ribbon buttons) must be unified in weight and size. Use a consistent font size and weight (e.g., `text-[13px] font-medium`) paired with matching optical icon sizes (e.g., `size={14}`) so that the icon stroke thickness matches the font's stroke.
+- **Hover Scale Prohibition:** Do not scale, expand, or zoom text or icons on hover. Keep layouts stable to prevent jitter; indicate interactive states using subtle translucent background changes (e.g., `bg-violet-50/30` or `bg-slate-50`) or soft opacity transitions.
+
+
 
 
 ## 4. Interaction Workflow & Context Aware Processing
