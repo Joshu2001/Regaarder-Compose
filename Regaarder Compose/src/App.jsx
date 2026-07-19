@@ -17,7 +17,7 @@ import {
   Layout, LayoutGrid, Lock, BookOpen, Scissors, Expand, Check, Wand2, Presentation,
   AlertTriangle, MonitorPlay, MessageCircle, FileQuestion,
   Send, ListTodo, ShieldAlert, Shield, ArrowRight, Loader2, Move, Upload, Database, KeyRound, Video, VideoOff, MicOff, Phone, PhoneOff,
-  UserPlus, Link2 as LinkIcon, Link, Clock, Maximize2, Minimize2, Sidebar, Image as ImageIcon,
+  UserPlus, Link2 as LinkIcon, Link, Clock, Minimize2, Sidebar, Image as ImageIcon,
   FileEdit, CheckCircle2, Users2, Archive,
   Undo2, Redo2, Save, RefreshCcw, Trash2, ThumbsUp, ThumbsDown, MessageSquarePlus, Play, Pause, Paperclip, Moon, Sun, MoveLeft, MoveRight, Minus, Smile,
   Square, Circle, Diamond, Triangle, Shapes, StickyNote,
@@ -24136,7 +24136,7 @@ Respond with a JSON array of slide objects matching the schema.`;
               onClick={() => { setRightPanelMaximized((p) => !p); if (!rightSidebarOpen) setRightSidebarOpen(true); }}
               className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-all duration-200"
             >
-              {rightPanelMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              {rightPanelMaximized ? <Minimize2 size={14} /> : <Maximize size={14} />}
             </button>
             <button
               type="button"
@@ -24938,7 +24938,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                           className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                           title={rightPanelMaximized ? 'Restore panel' : 'Expand panel'}
                         >
-                          {rightPanelMaximized ? <Minimize2 size={16} strokeWidth={2.5} /> : <Maximize2 size={16} strokeWidth={2.5} />}
+                          {rightPanelMaximized ? <Minimize2 size={16} strokeWidth={2.5} /> : <Maximize size={16} strokeWidth={2.5} />}
                         </button>
                         <button 
                           type="submit" 
@@ -27807,7 +27807,7 @@ You can recommend task creations on the board.`;
                   title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
                   aria-label={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
                 >
-                  {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
+                  {isDocumentImmersive ? <Minimize2 size={14} /> : <Maximize size={14} />}
                 </button>
                 <button type="button" onClick={() => showToast('Huddle starting flow coming next')} className="text-slate-400 hover:text-slate-600"><Video size={16} /></button>
                 <button type="button" onClick={() => showToast('Member list opened')} className="text-slate-400 hover:text-slate-600"><Users size={16} /></button>
@@ -29103,7 +29103,7 @@ You can recommend task creations on the board.`;
                 title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
                 aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
-                {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
+                {isDocumentImmersive ? <Minimize2 size={14} /> : <Maximize size={14} />}
               </button>
               <button type="button" onClick={() => showToast('Notifications opened')} className="h-10 w-10 rounded-xl border border-slate-200 bg-white text-slate-500 hover:text-slate-700"><Bell size={14} className="mx-auto" /></button>
             </div>
@@ -29812,7 +29812,7 @@ const renderRoomTopHeader = () => (
           className="p-2.5 rounded-2xl text-slate-300 hover:bg-slate-50 hover:text-slate-600 transition-colors" 
           title={roomMaximized ? "Exit full screen" : "Full screen"}
         >
-          {roomMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          {roomMaximized ? <Minimize2 size={16} /> : <Maximize size={16} />}
         </button>
 
         <div className="relative">
@@ -34212,7 +34212,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         )}
                           
                           <button onClick={handlePresentDeck} className="p-1 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-gray-900 transition-colors" title="Fullscreen">
-                            <Expand size={18} strokeWidth={2} />
+                            <Maximize size={18} strokeWidth={2} />
                           </button>
                         </div>
                       </div>
@@ -36352,7 +36352,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div className="relative z-10 w-1/2 pl-4 pr-8">
                 <div className="absolute top-0 right-8 z-50">
                   <button onClick={() => { if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(()=>{}); } else if (document.exitFullscreen) { document.exitFullscreen(); } }} className="p-2.5 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors bg-white shadow-sm border border-gray-200" title="Toggle Fullscreen">
-                    <Expand size={20} />
+                    <Maximize size={20} />
                   </button>
                 </div>
                 <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-100/50 text-violet-700 text-[13px] font-medium mb-4 backdrop-blur-sm mt-8">
@@ -39135,7 +39135,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             className={`p-1.5 rounded-md transition-all ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:text-gray-900 hover:bg-gray-100'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
             title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
           >
-            {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
+            {isDocumentImmersive ? <Minimize2 size={14} /> : <Maximize size={14} />}
           </button>
 
           
@@ -39573,7 +39573,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       className={`h-8 w-8 rounded-lg border flex items-center justify-center ${isWhiteboardImmersive ? 'border-violet-200 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
                       title={isWhiteboardImmersive ? 'Collapse whiteboard' : 'Expand whiteboard'}
                     >
-                      {isWhiteboardImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
+                      {isWhiteboardImmersive ? <Minimize2 size={14} /> : <Maximize size={14} />}
                     </button>
                     <button
                       onClick={() => {
@@ -43223,7 +43223,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {renderWatermark(0)}
             {true && (
               <div 
-                className="absolute top-6 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-1.5 flex justify-between select-none"
+                className="absolute top-6 text-[10px] font-semibold uppercase tracking-wider text-gray-400 border-b border-gray-100 pb-1.5 flex justify-between select-none doc-header-chrome print-no-border"
                 style={{ 
                   left: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px', 
                   right: docMargins === 'narrow' ? '24px' : docMargins === 'wide' ? '64px' : '48px' 
@@ -43257,7 +43257,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 )}
                 
                 {/* State Badge with Dropdown */}
-                <div className="relative">
+                <div className="relative print-hide">
                   <button
                     type="button"
                     onClick={() => {
@@ -43282,7 +43282,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   {docStateDropdownOpen && (
                     <>
                       <div className="fixed inset-0 z-[290]" onClick={() => setDocStateDropdownOpen(false)} />
-                      <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white border border-slate-200 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
+                      <div className="absolute right-0 top-full mt-1.5 z-[300] bg-white/85 backdrop-blur-md border border-slate-200/50 rounded-2xl p-2 shadow-2xl w-56 text-left normal-case tracking-normal">
                         <div className="px-3 py-2 text-[12px] font-semibold uppercase tracking-widest text-slate-500 font-[system-ui]">Document State</div>
                       {[
                         { key: 'draft', label: 'Draft', desc: 'Actively being written', color: 'hover:bg-slate-100/80 text-slate-900 font-medium text-sm tracking-tight', icon: <FileEdit size={12} className="stroke-[2]" /> },
@@ -43444,7 +43444,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 <div
                   ref={blankBodyRef}
-                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter' && docState !== 'ready' && docState !== 'archived'}
                   suppressContentEditableWarning
                   onKeyDown={handleEditorKeyDown}
                   onInput={(e) => normalizeEditableDirection(e.currentTarget)}
@@ -44190,7 +44190,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       value={floatingPrompt}
                       onChange={(e) => setFloatingPrompt(e.target.value)}
                       onInput={(e) => autoResizeTextarea(e.currentTarget, 120)}
-                      placeholder="Ask Compose AI to write, edit, or summarize..."
+                      placeholder="Describe what you'd like to write..."
                       rows={1}
                       style={{ textAlign: alignMode }}
                       className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder-slate-400/80 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1"
@@ -44386,7 +44386,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     onClick={() => setIsVideoExpanded(!isVideoExpanded)}
                     className="absolute top-5 right-5 w-10 h-10 rounded-full bg-black/20 text-white flex items-center justify-center hover:bg-black/40 transition-all backdrop-blur-lg border border-white/10 z-20"
                   >
-                    {isVideoExpanded ? <Minimize2 size={16} /> : <Expand size={16} />}
+                    {isVideoExpanded ? <Minimize2 size={16} /> : <Maximize size={16} />}
                   </button>
                   <div className="absolute bottom-6 left-6 flex items-center gap-3 bg-black/10 backdrop-blur-xl px-4 py-2 rounded-[20px] border border-white/5 z-20">
                     <div className="flex items-baseline gap-[2.5px] h-3.5">

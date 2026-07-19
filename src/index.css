@@ -43,3 +43,22 @@
 .animate-room-entrance {
   animation: roomEntrance 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+@media print {
+  .print-hide {
+    display: none !important;
+  }
+  .print-no-border {
+    border-bottom: none !important;
+  }
+}
+
+.doc-header-chrome {
+  transition: opacity 0.3s ease, border-color 0.3s ease;
+}
+[data-enterprise-page="true"]:focus-within .doc-header-chrome {
+  opacity: 0.15;
+}
+[data-enterprise-page="true"]:focus-within .doc-header-chrome:hover {
+  opacity: 1;
+}

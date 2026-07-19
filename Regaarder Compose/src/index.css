@@ -26,3 +26,22 @@
 .sheet-row-select-cursor {
   cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="black"><path d="M2 11h14.17l-3.59-3.59L14 6l6 6-6 6-1.41-1.41L16.17 13H2v-2z"/></svg>') 12 12, pointer;
 }
+
+@media print {
+  .print-hide {
+    display: none !important;
+  }
+  .print-no-border {
+    border-bottom: none !important;
+  }
+}
+
+.doc-header-chrome {
+  transition: opacity 0.3s ease, border-color 0.3s ease;
+}
+[data-enterprise-page="true"]:focus-within .doc-header-chrome {
+  opacity: 0.15;
+}
+[data-enterprise-page="true"]:focus-within .doc-header-chrome:hover {
+  opacity: 1;
+}
