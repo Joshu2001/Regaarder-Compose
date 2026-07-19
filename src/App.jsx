@@ -4344,6 +4344,9 @@ export default function App() {
     };
 
     const handleOutsideClick = (e) => {
+      if (workspaceSwitcherRef.current && !workspaceSwitcherRef.current.contains(e.target)) {
+        setWorkspaceSwitcherOpen(false);
+      }
       if (profileMenuRef.current && !profileMenuRef.current.contains(e.target)) {
         setProfileMenuOpen(false);
       }
@@ -8129,7 +8132,8 @@ export default function App() {
   const profileMenuRef = useRef(null);
   const composeProfileMenuRef = useRef(null);
   const [composeProfileMenuOpen, setComposeProfileMenuOpen] = useState(false);
-  
+  const workspaceSwitcherRef = useRef(null);
+  const [workspaceSwitcherOpen, setWorkspaceSwitcherOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const stored = localStorage.getItem('rc.user');
@@ -31636,9 +31640,66 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </aside>
         )}
 
-        <main className="flex-1 min-w-0 flex flex-col bg-[#f5f7fc]">
-          <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between">
+          <header className="h-14 px-5 border-b border-gray-200 bg-white flex items-center justify-between group/header relative z-[210]">
             <div className="flex items-center gap-4 min-w-0">
+              {/* App Switcher Button - smoothly discloses on parent hover */}
+              <div ref={workspaceSwitcherRef} className="relative z-[200] flex items-center">
+                <button
+                  type="button"
+                  onClick={() => setWorkspaceSwitcherOpen(!workspaceSwitcherOpen)}
+                  onPointerDown={(e) => e.preventDefault()}
+                  className="flex items-center justify-center w-0 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-all duration-200 opacity-0 scale-90 group-hover/header:opacity-100 group-hover/header:w-7 group-hover/header:scale-100 overflow-hidden shrink-0"
+                  title="Switch Workspace App"
+                >
+                  <LayoutGrid size={15} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {workspaceSwitcherOpen && (
+                  <div className="absolute left-0 top-9 w-60 rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 backdrop-blur-md shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 font-sans animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Workspace Apps
+                    </div>
+                    <div className="flex flex-col gap-0.5 mt-1">
+                      {[
+                        { mode: 'landing', label: 'Workspace Home', desc: 'Dashboard & Templates', icon: Home },
+                        { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
+                        { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
+                        { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
+                        { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
+                      ].map((item) => {
+                        const IconComponent = item.icon;
+                        const isCurrent = productMode === item.mode;
+                        return (
+                          <button
+                            key={item.mode}
+                            type="button"
+                            onClick={() => {
+                              setProductMode(item.mode);
+                              setWorkspaceSwitcherOpen(false);
+                              showToast(`Switched to ${item.label}`);
+                            }}
+                            className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
+                              isCurrent
+                                ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
+                                : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
+                            }`}
+                          >
+                            <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                              <IconComponent size={14} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
+                              <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {isSheetsMode ? (
                 <>
                   <button
@@ -38441,7 +38502,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         
         {/* Top Header */}
-        <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shrink-0 select-none">
+        <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shrink-0 select-none group/header relative z-[210]">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -38451,7 +38512,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   setLeftSidebarOpen((prev) => !prev);
                 }
               }}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 shrink-0"
               title={activeRightTab === 'whiteboard' ? (isHoverNavVisible ? "Hide navigation" : "Show navigation") : (leftSidebarOpen ? "Hide sidebar" : "Show sidebar")}
             >
               {activeRightTab === 'whiteboard'
@@ -38459,6 +38520,64 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 : (leftSidebarOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />)
               }
             </button>
+
+            {/* App Switcher Button - smoothly discloses on parent hover */}
+            <div ref={workspaceSwitcherRef} className="relative z-[200] flex items-center">
+              <button
+                type="button"
+                onClick={() => setWorkspaceSwitcherOpen(!workspaceSwitcherOpen)}
+                onPointerDown={(e) => e.preventDefault()}
+                className="flex items-center justify-center w-0 h-7 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 transition-all duration-200 opacity-0 scale-90 group-hover/header:opacity-100 group-hover/header:w-7 group-hover/header:scale-100 overflow-hidden shrink-0"
+                title="Switch Workspace App"
+              >
+                <LayoutGrid size={15} />
+              </button>
+
+              {/* Dropdown Menu */}
+              {workspaceSwitcherOpen && (
+                <div className="absolute left-0 top-9 w-60 rounded-xl border border-slate-200/80 bg-white/95 dark:bg-[#1c1c1e]/95 dark:border-zinc-800 backdrop-blur-md shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-2 font-sans animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Workspace Apps
+                  </div>
+                  <div className="flex flex-col gap-0.5 mt-1">
+                    {[
+                      { mode: 'landing', label: 'Workspace Home', desc: 'Dashboard & Templates', icon: Home },
+                      { mode: 'compose', label: 'Compose Docs', desc: 'Collaborative Document Editor', icon: FileText },
+                      { mode: 'sheets', label: 'Compose Sheets', desc: 'Data Analytics & Spreadsheets', icon: Table },
+                      { mode: 'deck', label: 'Compose Decks', desc: 'Interactive Slideshow Presentations', icon: MonitorPlay },
+                      { mode: 'room', label: 'Compose Room', desc: 'Video & Collaboration Room', icon: Users }
+                    ].map((item) => {
+                      const IconComponent = item.icon;
+                      const isCurrent = productMode === item.mode;
+                      return (
+                        <button
+                          key={item.mode}
+                          type="button"
+                          onClick={() => {
+                            setProductMode(item.mode);
+                            setWorkspaceSwitcherOpen(false);
+                            showToast(`Switched to ${item.label}`);
+                          }}
+                          className={`w-full flex items-start gap-3 p-2 rounded-lg text-left transition-all ${
+                            isCurrent
+                              ? 'outline outline-[1.5px] outline-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
+                              : 'hover:bg-slate-50 dark:hover:bg-zinc-800'
+                          }`}
+                        >
+                          <div className={`p-1 rounded-md shrink-0 ${isCurrent ? 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                            <IconComponent size={14} />
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-[12px] font-semibold text-slate-800 dark:text-zinc-200 leading-tight">{item.label}</span>
+                            <span className="text-[10px] text-slate-500 dark:text-zinc-400 leading-tight mt-0.5">{item.desc}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
             {isUnsavedDraftVisible && (
               <>
                 {isEditingUnsavedDraftName ? (
