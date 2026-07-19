@@ -24081,7 +24081,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       <div 
-        className={`border-l border-gray-100 flex flex-col bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md shrink-0 transition-[width] duration-300 relative z-[260] ${
+        className={`border-l border-gray-100 flex flex-col bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shrink-0 transition-[width] duration-300 relative z-[260] ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
         style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }

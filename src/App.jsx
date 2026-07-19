@@ -24991,7 +24991,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       )}
 
       <div 
-        className={`border-l border-slate-200/50 flex flex-col bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md shrink-0 transition-[width] duration-300 relative z-[260] ${
+        className={`border-l border-slate-200/50 flex flex-col bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md shrink-0 transition-[width] duration-300 relative z-[260] ${
           productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? '' : 'w-0 overflow-hidden border-l-0'
         }`}
         style={ productMode !== 'landing' && rightSidebarOpen && !shareModalOpen ? ( rightPanelMaximized ? { width: '100vw', position: 'fixed', top: 0, right: 0, height: '100vh', zIndex: 1200 } : { width: `${rightSidebarWidth}px` } ) : { width: '0px' } }
@@ -39235,7 +39235,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        <div className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md relative z-[140] min-w-0">
+        <div className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0">
           {orderedDocuments.map((doc, docIndex) => {
             const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
               ? UNTITLED_WHITEBOARD_LABEL
