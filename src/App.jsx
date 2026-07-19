@@ -31785,8 +31785,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </>
               )}
             </div>
-            
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1">
               {/* History Group */}
               <div className="flex items-center gap-0.5 px-2">
                 <button onClick={undoDocumentChange} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Undo (Ctrl+Z)"><Undo2 size={16} /></button>
@@ -31838,19 +31838,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 >
                   <Users size={14} /> Share
                 </button>
-                
-                {/* User avatar, notification bell, settings */}
-                <div className="flex items-center gap-3 ml-2">
-                  <div className="w-8 h-8 rounded-full bg-[#7C4DFF] text-white font-semibold text-xs flex items-center justify-center leading-none shadow-sm select-none">
-                    U
-                  </div>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
-                    <Bell size={16} />
-                  </button>
-                  <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
-                    <Settings size={16} />
-                  </button>
-                </div>
+
               </div>
                 </div>
 
@@ -31980,6 +31968,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   </div>
                 )}
               </div>
+
+              {/* Settings Button */}
+              <button
+                type="button"
+                onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 transition-colors"
+                title="Settings"
+              >
+                <Settings size={16} />
+              </button>
+            </div>
           </header>
 
           <div className="flex-1 min-h-0 flex gap-4 p-4 relative">
@@ -34959,17 +34958,34 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         
                         {/* Centered Presentation Canvas */}
                         <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
-                          {/* 16:9 Canvas Slide with 32-40px rounded corners and ambient shadow */}
-                          <div 
-                            ref={deckCanvasPreviewRef}
-                            className="w-full aspect-[16/9] bg-white rounded-[32px] md:rounded-[40px] shadow-[0_24px_70px_-15px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[80px] md:p-[100px] select-text"
-                            style={{ 
-                              maxWidth: 'min(100%, calc(52vh * 16 / 9))', 
-                              transform: `scale(${deckZoomLevel / 100})`, 
-                              transformOrigin: 'center center', 
-                              transition: 'transform 140ms ease' 
-                            }}
-                          >
+                          {!activeDeckSlide ? (
+                            <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border border-gray-150 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-sm z-10">
+                              <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center text-[#7C4DFF] mb-4">
+                                <Plus size={24} />
+                              </div>
+                              <h3 className="text-sm font-bold text-gray-800">No Slide Selected</h3>
+                              <p className="text-xs text-gray-400 mt-2 max-w-xs leading-relaxed">
+                                Create or select a slide from the sidebar to start designing your presentation deck.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={addDeckSlide}
+                                className="mt-5 bg-[#7C4DFF] hover:bg-[#6C3DF0] text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
+                              >
+                                <Plus size={14} /> Add Slide
+                              </button>
+                            </div>
+                          ) : (
+                            <div 
+                              ref={deckCanvasPreviewRef}
+                              className="w-full aspect-[16/9] bg-white rounded-[32px] md:rounded-[40px] shadow-[0_24px_70px_-15px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[80px] md:p-[100px] select-text"
+                              style={{ 
+                                maxWidth: 'min(100%, calc(52vh * 16 / 9))', 
+                                transform: `scale(${deckZoomLevel / 100})`, 
+                                transformOrigin: 'center center', 
+                                transition: 'transform 140ms ease' 
+                              }}
+                            >
                             {/* Layered mathematical vector spline wave */}
                             <div className="absolute inset-0 pointer-events-none select-none z-0">
                               <svg className="absolute bottom-0 right-0 w-[65%] h-[90%] overflow-visible" viewBox="0 0 900 650" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -35053,7 +35069,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                   suppressContentEditableWarning
                                   onKeyDown={handleDeckKeyDown}
-                                  onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'headline', event.currentTarget.textContent || '')}
+                                  onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
                                   className="text-[52px] leading-[1.15] font-extrabold text-gray-900 tracking-tight outline-none cursor-text pointer-events-auto"
                                 >
                                   {resolvedDeckSlideDesign.headline}
@@ -35062,7 +35078,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                   suppressContentEditableWarning
                                   onKeyDown={handleDeckKeyDown}
-                                  onBlur={(event) => updateDeckSlideField(activeDeckSlide.id, 'blurb', event.currentTarget.textContent || '')}
+                                  onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
                                   className="mt-4 text-gray-500 text-[18px] leading-relaxed font-normal outline-none cursor-text pointer-events-auto"
                                 >
                                   {resolvedDeckSlideDesign.blurb}
@@ -35088,6 +35104,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               <span>Ask AI</span>
                             </button>
                           </div>
+                          )}
                         </div>
 
                         {/* Floating bottom actions (outside canvas) */}
@@ -35264,7 +35281,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <textarea
                               placeholder="Add speaker notes for this slide..."
                               value={activeDeckSlide?.speakerNotes || ''}
-                              onChange={(e) => updateDeckSlideField(activeDeckSlide.id, 'speakerNotes', e.target.value)}
+                              onChange={(e) => updateDeckSlideField(activeDeckSlide?.id, 'speakerNotes', e.target.value)}
                               className="w-full min-h-[200px] p-3 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none focus:border-[#7C4DFF] resize-none"
                             />
                           </div>
