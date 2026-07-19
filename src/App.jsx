@@ -28401,7 +28401,7 @@ You can recommend task creations on the board.`;
           </div>
         )}
 
-        <aside className="w-[250px] shrink-0 border-r border-slate-200/70 bg-[#fbfafc] flex flex-col">
+        <aside className="w-[250px] shrink-0 border-r border-slate-200/50 bg-[#fbfafc]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col">
           <div className="px-4 py-3 border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="text-[19px] font-semibold text-slate-900">Regaarder</div>
@@ -29206,7 +29206,7 @@ You can recommend task creations on the board.`;
           </section>
 
           {activeDmParentMessage && (
-            <aside className="w-[320px] shrink-0 border-r border-gray-200 bg-white flex flex-col">
+            <aside className="w-[320px] shrink-0 border-r border-gray-200/50 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col">
               <div className="h-12 px-3 border-b border-gray-200 flex items-center justify-between">
                 <div className="text-sm font-semibold text-slate-800">Thread</div>
                 <button
@@ -29264,7 +29264,7 @@ You can recommend task creations on the board.`;
           )}
 
           {dmProjectPanelOpen && (
-          <aside className="w-[360px] shrink-0 bg-[#fbfafc] p-4 overflow-y-auto thin-scrollbar border-l border-slate-200/70">
+          <aside className="w-[360px] shrink-0 bg-[#fbfafc]/75 dark:bg-zinc-900/75 backdrop-blur-md p-4 overflow-y-auto thin-scrollbar border-l border-slate-200/50">
             <div className="rounded-2xl border border-slate-200 bg-white p-4 mb-3">
               <div className="flex items-start justify-between">
                 <div>
@@ -29921,7 +29921,7 @@ You can recommend task creations on the board.`;
     return (
       <div ref={appShellRef} className={`flex bg-[#f5f6fb] text-slate-800 overflow-hidden relative ${isDocumentImmersive ? 'fixed inset-0 z-[9999] h-screen w-screen' : 'h-screen'}`} style={{ fontFamily: resolveFontFamily(editorFont) }}>
         <style>{`@keyframes manageenFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-        <aside className={`${isDocumentImmersive ? 'hidden' : 'w-[220px]'} shrink-0 border-r border-slate-200 bg-white flex flex-col`}>
+        <aside className={`${isDocumentImmersive ? 'hidden' : 'w-[220px]'} shrink-0 border-r border-slate-200/50 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col`}>
           <div className="px-5 h-16 border-b border-slate-100 flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-violet-600 text-white text-sm font-bold flex items-center justify-center">M</div>
             <div className="text-[22px] font-semibold tracking-tight text-slate-900">Manageen</div>
@@ -31455,7 +31455,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {!isSheetsMode && (
         <aside
-          className="border-r border-gray-100 flex flex-col bg-[#FAFAFC] shrink-0 select-none overflow-hidden transition-[width] duration-200"
+          className="border-r border-gray-100/50 flex flex-col bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md shrink-0 select-none overflow-hidden transition-[width] duration-200"
           style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
         >
           <div className="h-14 flex items-center justify-between px-4">
@@ -31552,7 +31552,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
         {deckSlidesPanelOpen && (
-        <aside className="w-[240px] border-r border-gray-200 bg-[#f8f9fd] flex flex-col shrink-0">
+        <aside className="w-[240px] border-r border-gray-200/50 bg-[#f8f9fd]/75 dark:bg-zinc-900/75 backdrop-blur-md flex flex-col shrink-0">
           {/* Top Sidebar Action */}
           <div className="h-16 px-4 border-b border-gray-200 flex items-center justify-between shrink-0">
             <button
