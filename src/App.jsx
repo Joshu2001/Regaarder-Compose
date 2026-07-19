@@ -31982,7 +31982,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </aside>
                     )}
 
-            <section className={`flex-1 min-w-0 flex flex-col overflow-y-auto thin-scrollbar relative p-4 gap-4 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'}`}>
+            <section className={`flex-1 min-w-0 flex flex-col overflow-hidden relative p-4 gap-4 ${isSheetsMode ? 'bg-[#FAFAFC]' : 'bg-transparent'}`}>
             {/* Floating button removed as per requirements */}
               <div className={`flex flex-col h-full w-full flex-1 relative z-10`}>
                 {isSheetsMode ? (
@@ -34892,7 +34892,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex-1 flex overflow-hidden bg-[#F7F8FB] relative select-none">
+                  <div className="w-full h-full flex-1 flex overflow-hidden bg-[#F7F8FB] relative select-none">
                     {/* Workspace background vignette effect overlay */}
                     <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(240,242,247,0.8)_100%)] z-0" />
 
