@@ -7373,7 +7373,7 @@ export default function App() {
   const [relativeNow, setRelativeNow] = useState(Date.now());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Replay link ready to share', detail: 'Copy and send to collaborators', unread: true },
+    { id: 1, title: 'Replay link ready to share', detail: 'Copy and send to collaborators', unread: false },
     { id: 2, title: 'Document saved locally', detail: 'Your latest draft is persisted', unread: false },
     { id: 3, title: 'AI assistant is active', detail: 'Ask about selected text anytime', unread: false },
   ]);
@@ -12750,6 +12750,17 @@ export default function App() {
     }
     setToastMessage(msg);
     setToastCallback(() => callback);
+    if (msg) {
+      setNotifications(prev => [
+        {
+          id: Date.now() + Math.random(),
+          title: msg,
+          detail: `System Event at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`,
+          unread: false
+        },
+        ...prev
+      ].slice(0, 50));
+    }
     toastTimerRef.current = setTimeout(() => {
       setToastMessage('');
       setToastCallback(null);
@@ -24361,7 +24372,7 @@ Respond with a JSON array of slide objects matching the schema.`;
     const updateDictationAnchor = () => {
       const card = documentCardRef.current;
       if (!card) {
-        setDictationAnchor({ left: window.innerWidth - 150, top: window.innerHeight / 2 - 100 });
+        setDictationAnchor({ left: window.innerWidth - 150, top: window.innerHeight / 2 - 125 });
         return;
       }
 
@@ -24383,7 +24394,7 @@ Respond with a JSON array of slide objects matching the schema.`;
       // Shift the widget 10px to the left to bring it closer to the document
       rightX -= 10;
       
-      const centerY = (visibleTop + visibleBottom) / 2 - 100;
+      const centerY = (visibleTop + visibleBottom) / 2 - 125;
 
       setDictationAnchor({ left: rightX, top: centerY });
     };
@@ -27402,7 +27413,7 @@ Respond with a JSON array of slide objects matching the schema.`;
         return (
           <>
             {/* ── Sidebar shell ─────────────────────────────────────────── */}
-            <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[74px] translate-x-[64px] hover:translate-x-0 opacity-20 hover:opacity-100 border-l border-slate-200/50 bg-[#FAFAFC]/90 backdrop-blur-xl flex-col items-center py-4 gap-1 select-none overflow-y-auto overflow-x-visible thin-scrollbar transition-all duration-300 ease-in-out shadow-[-10px_0_30px_rgba(0,0,0,0.03)]`}>
+            <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[74px] translate-x-[64px] hover:translate-x-0 opacity-20 hover:opacity-100 border-l border-slate-200 bg-[#FAFAFC] flex-col items-center py-4 gap-1 select-none overflow-y-auto overflow-x-visible thin-scrollbar transition-all duration-300 ease-in-out shadow-[-10px_0_30px_rgba(0,0,0,0.03)]`}>
 
               {/* ── Slot 1: Home (always fixed) ─── */}
               <div className="relative mb-5">
@@ -28702,7 +28713,7 @@ You can recommend task creations on the board.`;
                 <button
                   type="button"
                   onClick={toggleDocumentImmersiveMode}
-                  className={`p-1.5 rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
+                  className={`p-1.5 rounded-md transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
                   title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
                   aria-label={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
                 >
@@ -29998,7 +30009,7 @@ You can recommend task creations on the board.`;
               <button
                 type="button"
                 onClick={toggleDocumentImmersiveMode}
-                className={`p-1.5 rounded-md transition-colors ${isDocumentImmersive ? 'bg-violet-100 text-violet-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+                className={`p-1.5 rounded-md transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'}`}
                 title={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
                 aria-label={isDocumentImmersive ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
@@ -30755,7 +30766,7 @@ const renderRoomTopHeader = () => (
               }
             }
           }}
-          className="p-2.5 rounded-2xl text-slate-300 hover:bg-slate-50 hover:text-slate-600 transition-colors" 
+          className={`p-2.5 rounded-2xl transition-all border border-transparent ${roomMaximized ? 'bg-violet-50 text-violet-600 border-violet-200/60 outline outline-[1.5px] outline-violet-500/45 shadow-sm' : 'text-slate-300 hover:bg-slate-50 hover:text-slate-600'}`} 
           title={roomMaximized ? "Exit full screen" : "Full screen"}
         >
           {roomMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -31746,7 +31757,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 
                 {/* User avatar, notification bell, settings */}
                 <div className="flex items-center gap-3 ml-2">
-                  <div className="w-8 h-8 rounded-full bg-[#7C4DFF] text-white font-semibold text-xs flex items-center justify-center shadow-sm select-none">
+                  <div className="w-8 h-8 rounded-full bg-[#7C4DFF] text-white font-semibold text-xs flex items-center justify-center leading-none shadow-sm select-none">
                     U
                   </div>
                   <button className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
@@ -31764,7 +31775,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <button
                       type="button"
                       onClick={() => setProfileMenuOpen(prev => !prev)}
-                      className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] hover:ring-2 hover:ring-slate-200 dark:hover:ring-zinc-700 flex items-center justify-center text-[11px] font-semibold transition-all shadow-sm focus:outline-none ${currentUser ? 'text-white' : 'text-slate-600 dark:text-zinc-350'}`}
+                      className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] hover:ring-2 hover:ring-slate-200 dark:hover:ring-zinc-700 flex items-center justify-center text-[11px] leading-none font-semibold transition-all shadow-sm focus:outline-none ${currentUser ? 'text-white' : 'text-slate-600 dark:text-zinc-350'}`}
                       style={{
                         backgroundColor: currentUser ? '#10B981' : (isDarkMode ? '#27272a' : '#f1f5f9'),
                       }}
@@ -38568,7 +38579,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <button
                 type="button"
                 onClick={() => setComposeProfileMenuOpen(prev => !prev)}
-                className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] font-semibold text-white transition-all shadow-sm focus:outline-none ${activeRightTab === 'whiteboard' ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850'}`}
+                className={`w-7 h-7 rounded-full border-2 border-white dark:border-[#121214] flex items-center justify-center text-[11px] leading-none font-semibold text-white transition-all shadow-sm focus:outline-none ${activeRightTab === 'whiteboard' ? 'hover:ring-2 hover:ring-orange-300 dark:hover:ring-orange-850' : 'hover:ring-2 hover:ring-violet-300 dark:hover:ring-violet-850'}`}
                 style={{
                   backgroundColor: activeRightTab === 'whiteboard' ? '#f97316' : (currentUser ? '#10B981' : '#7C3AED'),
                 }}
@@ -38655,9 +38666,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10 relative transition-colors"
                 title="Notifications"
               >
-                <Bell size={16} />
-                {notifications.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-[#121214]"></span>
+                <Bell size={16} strokeWidth={1.5} />
+                {notifications.some(n => n.unread) && (
+                  <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-white dark:ring-[#121214] ${
+                    (() => {
+                      const unreadList = notifications.filter(n => n.unread);
+                      const colors = unreadList.map(getNotificationColorClass);
+                      if (colors.includes('bg-red-500')) return 'bg-red-500';
+                      if (colors.includes('bg-amber-500')) return 'bg-amber-500';
+                      if (colors.includes('bg-emerald-500')) return 'bg-emerald-500';
+                      return 'bg-yellow-400';
+                    })()
+                  }`}></span>
                 )}
               </button>
               {notificationsOpen && (
@@ -39317,7 +39337,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'));
               }}
-              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all ${openDropdown === 'heading' ? 'outline outline-[1.5px] outline-violet-500/40 bg-violet-50/30' : ''}`}
+              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all border ${openDropdown === 'heading' ? 'border-violet-200 bg-violet-50/30' : 'border-transparent'}`}
             >
               {editorHeading} <ChevronDown size={14} className="text-gray-400" />
             </button>
@@ -39418,10 +39438,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
               }}
-              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded text-xs whitespace-nowrap transition-all ${openDropdown === 'page-number' ? 'outline outline-[1.5px] outline-violet-500/40 bg-violet-50/30' : ''}`}
+              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all border ${openDropdown === 'page-number' ? 'border-violet-200 bg-violet-50/30' : 'border-transparent'}`}
               title="Page numbering"
             >
-              Page # <ChevronDown size={13} className="text-gray-400" />
+              Page # <ChevronDown size={14} className="text-gray-400" />
             </button>
             {openDropdown === 'page-number' && (
               <div className="absolute top-9 left-0 z-[230] w-52 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2 space-y-2">
@@ -39470,7 +39490,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
               }}
-              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all ${openDropdown === 'font' ? 'outline outline-[1.5px] outline-violet-500/40 bg-violet-50/30' : ''}`}
+              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all border ${openDropdown === 'font' ? 'border-violet-200 bg-violet-50/30' : 'border-transparent'}`}
             >
               {editorFont} <ChevronDown size={14} className="text-gray-400" />
             </button>
@@ -39590,11 +39610,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
 
           <div className="flex items-center gap-3">
-            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all ${alignMode === 'left' ? 'text-violet-700 bg-violet-50 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'} cursor-pointer`}
+            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all border ${alignMode === 'left' ? 'text-violet-700 bg-violet-50 border-violet-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'} cursor-pointer`}
             title="Align Left (Ctrl+Shift+L)" />
-            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all ${alignMode === 'center' ? 'text-violet-700 bg-violet-50 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'} cursor-pointer`}
+            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all border ${alignMode === 'center' ? 'text-violet-700 bg-violet-50 border-violet-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'} cursor-pointer`}
             title="Align Center (Ctrl+Shift+E)" />
-            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all ${alignMode === 'right' ? 'text-violet-700 bg-violet-50 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'} cursor-pointer`}
+            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all border ${alignMode === 'right' ? 'text-violet-700 bg-violet-50 border-violet-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'} cursor-pointer`}
             title="Align Right (Ctrl+Shift+R)" />
           </div>
           
@@ -39605,7 +39625,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-list-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium transition-all ${listDropdownOpen ? 'bg-violet-50 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium transition-all border ${listDropdownOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
               title="Lists (Ctrl+Shift+8)"
             >
               <List size={15} className={isListActive ? 'text-violet-600' : ''} />
@@ -39641,7 +39661,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-insert-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium transition-all ${insertDropdownOpen ? 'bg-violet-50 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[13px] font-medium transition-all border ${insertDropdownOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
               title="Insert Elements (Ctrl+/ or type /)"
             >
               <Plus size={15} />
@@ -39799,7 +39819,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     closeTransientMenus();
                     setComposeExportMenuOpen(!composeExportMenuOpen);
                   }}
-                  className={`text-xs font-semibold px-2.5 py-1.5 rounded flex items-center gap-1 transition-all ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-600 hover:bg-violet-50 hover:text-violet-700'}`}
+                  className={`text-xs font-semibold px-2.5 py-1.5 rounded flex items-center gap-1 transition-all border ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-violet-50 hover:text-violet-700 border-transparent'}`}
                   title="Export Compose options"
                 >
                   Export {composeExportMenuOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -39875,7 +39895,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 <button
             type="button"
             onClick={toggleDocumentImmersiveMode}
-            className={`p-1.5 rounded-md transition-all ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 outline outline-[1.5px] outline-violet-500/45' : 'text-slate-500 hover:text-gray-900 hover:bg-gray-100'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
+            className={`p-1.5 rounded-md transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200' : 'text-slate-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
             title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
           >
             {isDocumentImmersive ? <Minimize2 size={14} /> : <Expand size={14} />}
@@ -39892,7 +39912,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 setDocSearchPanelOpen((prev) => !prev);
                 setDocSearchAutoPlay(false);
               }}
-              className={`w-7.5 h-7.5 p-1.5 rounded-md transition-all ${docSearchPanelOpen ? 'text-violet-700 bg-violet-50 outline outline-[1.5px] outline-violet-500/45' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+              className={`w-7.5 h-7.5 p-1.5 rounded-md transition-all border ${docSearchPanelOpen ? 'text-violet-700 bg-violet-50 border-violet-200' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'}`}
               title="Find & Replace (Ctrl+F)"
             >
               <Search size={15} />
