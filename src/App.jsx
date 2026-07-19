@@ -6248,7 +6248,7 @@ export default function App() {
       container.innerHTML = `
         <div class="inline-comment-header flex items-center justify-between mb-1.5">
           <div class="flex items-center gap-1.5">
-            <div class="w-5 h-5 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-bold">U</div>
+            <div class="w-5 h-5 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center text-[10px] font-bold border border-slate-200/50">U</div>
             <span class="text-[11px] font-bold text-gray-800">User</span>
           </div>
           <div class="flex items-center gap-1">
@@ -27139,7 +27139,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 pt-4 pb-3">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 text-white text-[11px] font-bold">O</span>
+                    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 text-[11px] font-bold border border-slate-200/50">O</span>
                     <span className="text-[22px] leading-none font-bold tracking-tight text-slate-900">Orb</span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -37002,7 +37002,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 onPointerDown={handleCommentDrag}
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-semibold shadow-sm">U</div>
+                  <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center text-[10px] font-semibold border border-slate-200/50 shadow-sm">U</div>
                   <div>
                     <span className="text-[12px] font-semibold text-slate-800">You</span>
                     <span className="text-[10px] text-slate-400 ml-1.5">· Just now</span>
@@ -39325,7 +39325,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`h-12 border-b border-slate-200/50 flex items-center px-6 gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 bg-[#FAF9FF]/95 dark:bg-[#1c1b22]/95 backdrop-blur-[4px] shadow-[0_4px_12px_rgba(139,92,246,0.03)] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`h-12 border-b border-slate-200/50 flex items-center px-6 gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 bg-[#FAF9FF]/95 dark:bg-[#1c1b22]/95 backdrop-blur-[4px] shadow-[0_1px_3px_rgba(15,23,42,0.01)] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
@@ -39337,7 +39337,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'));
               }}
-              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all border text-[13px] font-medium ${openDropdown === 'heading' ? 'border-violet-200 bg-violet-50/30 text-violet-700' : 'text-slate-600 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all border text-[13px] font-medium ${openDropdown === 'heading' ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
             >
               {editorHeading} <ChevronDown size={14} className="text-slate-400" />
             </button>
@@ -39347,9 +39347,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   value={headingSearch}
                   onChange={(e) => setHeadingSearch(e.target.value)}
                   placeholder="Search heading"
-                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-violet-400"
+                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
                 />
-                <div className="max-h-40 overflow-y-auto">
+                <div className="max-h-40 overflow-y-auto thin-scrollbar">
                   {headingOptions
                     .filter((option) => option.toLowerCase().includes(headingSearch.toLowerCase()))
                     .map((option) => (
@@ -39417,7 +39417,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           }
                           setOpenDropdown(null);
                         }}
-                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
+                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
                       >
                         <span className={headingMeta[option]?.previewClass || 'text-xs'}>{option}</span>
                       </button>
@@ -39438,7 +39438,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
               }}
-              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'page-number' ? 'border-violet-200 bg-violet-50/30 text-violet-700' : 'text-slate-600 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'page-number' ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
               title="Page numbering"
             >
               Page # <ChevronDown size={14} className="text-slate-400" />
@@ -39490,7 +39490,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
               }}
-              className={`flex items-center gap-1 hover:bg-gray-50 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'font' ? 'border-violet-200 bg-violet-50/30 text-violet-700' : 'text-slate-600 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'font' ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
             >
               {editorFont} <ChevronDown size={14} className="text-slate-400" />
             </button>
@@ -39500,9 +39500,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   value={fontSearch}
                   onChange={(e) => setFontSearch(e.target.value)}
                   placeholder="Search font"
-                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-violet-400"
+                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
                 />
-                <div className="max-h-40 overflow-y-auto">
+                <div className="max-h-40 overflow-y-auto thin-scrollbar">
                   {fontOptions
                     .filter((option) => option.toLowerCase().includes(fontSearch.toLowerCase()))
                     .sort((a, b) => a.localeCompare(b))
@@ -39514,7 +39514,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           applyFormatCommand('fontName', option);
                           setOpenDropdown(null);
                         }}
-                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
+                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
                         style={{ fontFamily: resolveFontFamily(option) }}
                       >
                         {option}
@@ -39571,9 +39571,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   value={sizeSearch}
                   onChange={(e) => setSizeSearch(e.target.value)}
                   placeholder="Search"
-                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-violet-400"
+                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
                 />
-                <div className="max-h-40 overflow-y-auto">
+                <div className="max-h-40 overflow-y-auto thin-scrollbar">
                   {sizeOptions
                     .filter((option) => String(option).includes(sizeSearch.trim()))
                     .map((option) => (
@@ -39597,7 +39597,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           applyFormatCommand('fontSize', String(option));
                           setOpenDropdown(null);
                         }}
-                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-violet-50"
+                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
                       >
                         {option}
                       </button>
@@ -39609,12 +39609,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
           
           <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
 
-          <div className="flex items-center gap-3">
-            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all border ${alignMode === 'left' ? 'text-violet-700 bg-violet-50 border-violet-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'} cursor-pointer`}
+          <div className="flex items-center gap-1.5">
+            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={15} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'left' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
             title="Align Left (Ctrl+Shift+L)" />
-            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all border ${alignMode === 'center' ? 'text-violet-700 bg-violet-50 border-violet-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'} cursor-pointer`}
+            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={15} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'center' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
             title="Align Center (Ctrl+Shift+E)" />
-            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} className={`w-7 h-7 p-1.5 rounded-md transition-all border ${alignMode === 'right' ? 'text-violet-700 bg-violet-50 border-violet-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'} cursor-pointer`}
+            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={15} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'right' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
             title="Align Right (Ctrl+Shift+R)" />
           </div>
           
@@ -39625,7 +39625,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-list-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${listDropdownOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${listDropdownOpen ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-650 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
               title="Lists (Ctrl+Shift+8)"
             >
               <List size={14} className={isListActive ? 'text-violet-600' : 'text-slate-500'} />
@@ -39661,7 +39661,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-insert-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${insertDropdownOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${insertDropdownOpen ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-655 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
               title="Insert Elements (Ctrl+/ or type /)"
             >
               <Plus size={14} className="text-slate-500" />
@@ -39671,7 +39671,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {insertDropdownOpen && (
               <>
                 <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
-                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: 'min(480px, calc(100vh - 120px))', scrollbarWidth: 'thin', scrollbarColor: '#c7d2fe transparent' }}>
+                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto thin-scrollbar" style={{ maxHeight: 'min(480px, calc(100vh - 120px))' }}>
                   <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
                   <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
                     <ImageIcon size={14} className="text-slate-500" />
@@ -39734,13 +39734,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
           
           <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
 
-          <div className="flex items-center gap-4">
-            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`font-bold hover:text-gray-900 ${isBoldActive ? 'text-violet-600' : ''}`}>B</button>
-            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`italic font-serif hover:text-gray-900 ${isItalicActive ? 'text-violet-600' : ''}`}>I</button>
-            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`underline hover:text-gray-900 ${isUnderlineActive ? 'text-violet-600' : ''}`}>U</button>
-            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`line-through hover:text-gray-900 ${isStrikeActive ? 'text-violet-600' : ''}`}>S</button>
-            <button onClick={() => handleOpenLinkPopover()} className="hover:text-violet-600 text-gray-500" title="Insert Link">
-              <LinkIcon size={14} />
+          <div className="flex items-center gap-1">
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`w-7 h-7 flex items-center justify-center font-bold text-[13px] rounded transition-all border ${isBoldActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Bold (Ctrl+B)">B</button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`w-7 h-7 flex items-center justify-center italic font-serif text-[13px] rounded transition-all border ${isItalicActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Italic (Ctrl+I)">I</button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`w-7 h-7 flex items-center justify-center underline text-[13px] rounded transition-all border ${isUnderlineActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Underline (Ctrl+U)">U</button>
+            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`w-7 h-7 flex items-center justify-center line-through text-[13px] rounded transition-all border ${isStrikeActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Strikethrough (Ctrl+Shift+X)">S</button>
+            <button onPointerDown={(e) => { e.preventDefault(); handleOpenLinkPopover(); }} className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors" title="Insert Link (Ctrl+K)">
+              <LinkIcon size={13} />
             </button>
 
             <div
@@ -39750,18 +39750,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
             >
               <button
                 onPointerDown={(e) => { e.preventDefault(); setTextStyleMenuOpen((prev) => !prev); }}
-                className="flex items-center gap-1.5 hover:text-gray-900 cursor-pointer pl-0.5"
+                className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors"
                 title="Format options (Style & Colors)"
               >
-                <Type size={14} /> <ChevronDown size={12} className="text-gray-400" />
+                <Type size={13} />
               </button>
               {textStyleMenuOpen && (
                 <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
                   <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1">Block Style</span>
-                    <button onClick={() => { applyFormatCommand('formatBlock', 'P'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-[#f5f3ff] hover:text-[#7c3aed]">Body Text</button>
-                    <button onClick={() => { applyFormatCommand('formatBlock', 'BLOCKQUOTE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-[#f5f3ff] hover:text-[#7c3aed]">Quote Block</button>
-                    <button onClick={() => { applyFormatCommand('formatBlock', 'PRE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-[#f5f3ff] hover:text-[#7c3aed]">Code Block</button>
+                    <button onClick={() => { applyFormatCommand('formatBlock', 'P'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-slate-50 hover:text-slate-900">Body Text</button>
+                    <button onClick={() => { applyFormatCommand('formatBlock', 'BLOCKQUOTE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-slate-50 hover:text-slate-900">Quote Block</button>
+                    <button onClick={() => { applyFormatCommand('formatBlock', 'PRE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-slate-50 hover:text-slate-900">Code Block</button>
                   </div>
                   
                   <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
@@ -39819,7 +39819,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     closeTransientMenus();
                     setComposeExportMenuOpen(!composeExportMenuOpen);
                   }}
-                  className={`text-[13px] font-medium px-2 py-1 rounded flex items-center gap-1 transition-all border ${composeExportMenuOpen ? 'bg-violet-50 text-violet-700 border-violet-200' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-transparent'}`}
+                  className={`text-[13px] font-medium px-2 py-1 rounded flex items-center gap-1 transition-all border ${composeExportMenuOpen ? 'border-slate-200/80 bg-white/80 dark:bg-zinc-800/80 text-slate-900 dark:text-zinc-100 shadow-[0_1px_3px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
                   title="Export Compose options"
                 >
                   Export {composeExportMenuOpen ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
@@ -40103,7 +40103,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <div className="flex-1 rounded-lg overflow-hidden bg-slate-800 relative flex items-center justify-center">
                   {isVideoOff ? (
                     <div className="text-center">
-                      <div className="w-10 h-10 rounded-full bg-violet-600 flex items-center justify-center mx-auto text-sm font-bold text-white">J</div>
+                      <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 flex items-center justify-center mx-auto text-sm font-bold border border-slate-300/40">J</div>
                     </div>
                   ) : (
                     <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
@@ -40165,7 +40165,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <LocalVideoFeed stream={localStream} isCameraOn={!isVideoOff} />
                     ) : (
                       <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                        <div className="w-8 h-8 rounded-full bg-violet-650 flex items-center justify-center text-white text-xs font-bold">You</div>
+                        <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-200 flex items-center justify-center text-xs font-bold border border-slate-300/40">You</div>
                       </div>
                     )}
                     <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
@@ -47288,7 +47288,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 onPointerDown={handleCommentDrag}
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-violet-600 text-white flex items-center justify-center text-[10px] font-semibold shadow-sm">U</div>
+                  <div className="w-7 h-7 rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 flex items-center justify-center text-[10px] font-semibold border border-slate-200/50 shadow-sm">U</div>
                   <div>
                     <span className="text-[12px] font-semibold text-slate-800">You</span>
                     <span className="text-[10px] text-slate-400 ml-1.5">· Just now</span>
