@@ -23755,26 +23755,71 @@ Respond with a JSON array of slide objects matching the schema.`;
   const addDeckSlide = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
     const nextId = (deckSlides[deckSlides.length - 1]?.id || 0) + 1;
-    const preset = DECK_DESIGN_PRESETS[(nextId - 1) % DECK_DESIGN_PRESETS.length] || DECK_DESIGN_PRESETS[0];
+    
+    const slideArchetypes = [
+      {
+        title: 'Agenda',
+        headline: 'Agenda & Key Objectives',
+        blurb: '• Product Vision & Core Pillars\n• Market Opportunity & Competitive Moat\n• Strategic Execution Roadmap\n• Financial Projections & Metrics\n• Next Steps & Discussion',
+        subtitle: 'Presentation outline',
+        designPresetKey: 'aurora-split',
+        accent: 'from-indigo-500 to-violet-500',
+      },
+      {
+        title: 'Market Opportunity',
+        headline: 'Market Opportunity',
+        blurb: 'Addressing a $120B total addressable market with 45% YoY expansion across enterprise workspace intelligence.',
+        subtitle: 'Growth & TAM projection',
+        designPresetKey: 'mint-depth',
+        accent: 'from-emerald-500 to-teal-500',
+      },
+      {
+        title: 'Our Strategy',
+        headline: 'Our Core Strategy',
+        blurb: 'Focus on Apple-tier executive UI design, integrate proactive AI agent architecture, and scale global team collaboration.',
+        subtitle: 'Strategic pillars',
+        designPresetKey: 'sunset-grid',
+        accent: 'from-amber-500 to-orange-500',
+      },
+      {
+        title: 'Roadmap Timeline',
+        headline: 'Roadmap Timeline',
+        blurb: 'Q1: Core Platform & Engine → Q2: Beta Rollout → Q3: Global Expansion → Q4: Ecosystem Scale',
+        subtitle: 'Execution milestones',
+        designPresetKey: 'aurora-split',
+        accent: 'from-sky-500 to-indigo-500',
+      },
+      {
+        title: 'Thank You',
+        headline: 'Thank You',
+        blurb: 'Building the future together. Open for questions & discussion.',
+        subtitle: 'Closing remarks',
+        designPresetKey: 'blank',
+        accent: 'from-violet-600 to-indigo-700',
+      }
+    ];
+
+    const archetype = slideArchetypes[(nextId - 2) % slideArchetypes.length] || slideArchetypes[0];
+
     const newSlide = {
       id: nextId,
-      title: `Slide ${nextId}`,
-      subtitle: 'New talking point',
-      accent: 'from-violet-500 to-indigo-600',
-      designPresetKey: 'blank',
-      headline: 'Click to add title',
-      blurb: 'Click to add subtitle',
+      title: archetype.title,
+      subtitle: archetype.subtitle,
+      accent: archetype.accent,
+      designPresetKey: archetype.designPresetKey,
+      headline: archetype.headline,
+      blurb: archetype.blurb,
       visualType: 'hero statement',
       layoutStyle: 'cinematic split',
       motionCue: 'Soft fade and stagger reveal',
       keyMetric: '',
       speakerNotes: '',
-      section: inferDeckStorySection({ title: `Slide ${nextId}` }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
-      footer: 'Original design 繚 Editable',
+      section: inferDeckStorySection({ title: archetype.title }, nextId - 1, Math.max(deckSlides.length + 1, 1)),
+      footer: 'Original design • Editable',
     };
     setDeckSlidesData((prev) => [...prev, newSlide]);
     setActiveDeckSlideId(nextId);
-    showToast(`Slide ${nextId} created`);
+    showToast(`Slide ${nextId} (${newSlide.title}) created`);
   };
   const addWorksheet = () => {
     if (currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') return;
@@ -34897,30 +34942,28 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(240,242,247,0.8)_100%)] z-0" />
 
                     <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
-                      {/* Sub-header Toolbar */}
-                      <div className="h-14 border-b border-gray-200 bg-white flex items-center justify-between px-6 shrink-0 shadow-sm z-20">
-                        <div className="flex items-center gap-3">
+                      {/* Floating Sub-header Toolbar */}
+                      <div className="py-2.5 px-6 flex justify-center shrink-0 z-20">
+                        <div className="bg-white/95 backdrop-blur-md border border-gray-200/80 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-4 py-1.5 flex items-center gap-3 max-w-full overflow-x-auto no-scrollbar">
                           {/* Active Presentation Selector */}
-                          <div className="relative">
-                            <button
-                              type="button"
-                              onClick={() => showToast('Opening document list')}
-                              className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 rounded-xl border border-gray-150 text-sm font-bold text-gray-800 transition-colors"
-                            >
-                              <span>Product Roadmap 2025</span>
-                              <ChevronDown size={14} className="text-gray-400" />
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => showToast('Opening document list')}
+                            className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-100/80 rounded-xl border border-gray-150 text-xs font-bold text-gray-800 transition-colors whitespace-nowrap"
+                          >
+                            <span>Product Roadmap 2025</span>
+                            <ChevronDown size={13} className="text-gray-400 shrink-0" />
+                          </button>
                           <button
                             type="button"
                             onClick={addDeckSlide}
-                            className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-50 text-[#7C4DFF] transition-colors"
+                            className="w-7 h-7 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-gray-100/80 text-[#7C4DFF] transition-colors shrink-0"
                             title="Add slide"
                           >
-                            <Plus size={16} />
+                            <Plus size={15} />
                           </button>
 
-                          <div className="w-px h-5 bg-gray-200 mx-2"></div>
+                          <div className="w-px h-4 bg-gray-200 shrink-0 mx-0.5"></div>
 
                           {/* Toolbar Options */}
                           <div className="flex items-center gap-1">
@@ -34942,11 +34985,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     showToast(`${btn.label} tools ready`);
                                   }
                                 }}
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 rounded-lg transition-colors whitespace-nowrap"
                               >
-                                <btn.icon size={13} className="text-gray-400" />
+                                <btn.icon size={13} className="text-gray-400 shrink-0" />
                                 <span>{btn.label}</span>
-                                <ChevronDown size={10} className="text-gray-400" />
+                                <ChevronDown size={10} className="text-gray-400 shrink-0" />
                               </button>
                             ))}
                           </div>
@@ -34954,10 +34997,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
 
                       {/* Presentation Editor Main Workspace Canvas */}
-                      <div className="flex-1 overflow-y-auto p-8 flex flex-col justify-between items-center gap-6 min-h-0 relative">
+                      <div className="flex-1 flex flex-col justify-center items-center p-4 min-h-0 relative overflow-hidden">
                         
                         {/* Centered Presentation Canvas */}
-                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
+                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0 py-2">
                           {!activeDeckSlide ? (
                             <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border border-gray-150 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-sm z-10">
                               <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center text-[#7C4DFF] mb-4">
@@ -34978,9 +35021,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           ) : (
                             <div 
                               ref={deckCanvasPreviewRef}
-                              className="w-full aspect-[16/9] bg-white rounded-[32px] md:rounded-[40px] shadow-[0_24px_70px_-15px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[80px] md:p-[100px] select-text"
+                              className="w-full aspect-[16/9] bg-white rounded-[32px] md:rounded-[40px] shadow-[0_24px_70px_-15px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[60px] md:p-[80px] select-text"
                               style={{ 
-                                maxWidth: 'min(100%, calc(52vh * 16 / 9))', 
+                                maxWidth: 'min(100%, calc(48vh * 16 / 9))', 
+                                maxHeight: '48vh',
                                 transform: `scale(${deckZoomLevel / 100})`, 
                                 transformOrigin: 'center center', 
                                 transition: 'transform 140ms ease' 
@@ -35064,13 +35108,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </div>
 
                               {/* Title / Body */}
-                              <div className="flex-1 flex flex-col justify-center max-w-[55%] py-6">
+                              <div className="flex-1 flex flex-col justify-center max-w-[65%] py-4">
                                 <h1
                                   contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
                                   suppressContentEditableWarning
                                   onKeyDown={handleDeckKeyDown}
                                   onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
-                                  className="text-[52px] leading-[1.15] font-extrabold text-gray-900 tracking-tight outline-none cursor-text pointer-events-auto"
+                                  className="text-[44px] leading-[1.15] font-extrabold text-gray-900 tracking-tight outline-none cursor-text pointer-events-auto"
                                 >
                                   {resolvedDeckSlideDesign.headline}
                                 </h1>
@@ -35079,14 +35123,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   suppressContentEditableWarning
                                   onKeyDown={handleDeckKeyDown}
                                   onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
-                                  className="mt-4 text-gray-500 text-[18px] leading-relaxed font-normal outline-none cursor-text pointer-events-auto"
+                                  className="mt-3 text-gray-500 text-[16px] leading-relaxed font-normal outline-none cursor-text pointer-events-auto whitespace-pre-line"
                                 >
                                   {resolvedDeckSlideDesign.blurb}
                                 </p>
                               </div>
 
                               {/* Date & Divider Lockup */}
-                              <div className="flex flex-col gap-3">
+                              <div className="flex flex-col gap-2">
                                 <div className="w-10 h-0.5 bg-[#7C4DFF] rounded" />
                                 <span className="text-xs font-semibold text-gray-400 tracking-wider uppercase">
                                   May 20, 2025
@@ -35108,52 +35152,138 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
 
                         {/* Floating bottom actions (outside canvas) */}
-                        <div className="w-full flex items-center justify-between px-4 shrink-0 relative mt-2">
-                          {/* Circular magical purple button on the bottom left */}
-                          <button
-                            type="button"
-                            onClick={() => { setActiveRightTab('assistant'); setRightSidebarOpen(true); }}
-                            className="w-10 h-10 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-lg hover:bg-[#6C3DF0] hover:scale-105 active:scale-95 transition-all z-20"
-                          >
-                            <Sparkles size={18} />
-                          </button>
-
-                          {/* Horizontal mini carousel slider in the bottom center */}
-                          <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center gap-2 p-1.5 bg-white/60 backdrop-blur-md rounded-2xl border border-gray-150/40 shadow-sm max-w-[80%] overflow-x-auto no-scrollbar z-15">
-                            {deckSlides.map((slide, idx) => {
-                              const isSlideActive = slide.id === activeDeckSlideId;
-                              return (
-                                <button
-                                  key={slide.id}
-                                  type="button"
-                                  onClick={() => setActiveDeckSlideId(slide.id)}
-                                  className={`h-11 aspect-[16/9] rounded-lg border overflow-hidden bg-white shrink-0 transition-all ${
-                                    isSlideActive ? 'border-[#7C4DFF] ring-2 ring-[#7C4DFF]/15' : 'border-gray-200 hover:border-gray-300'
-                                  }`}
-                                >
-                                  <div className="w-full h-full relative p-1 bg-[#FAFAFC] flex flex-col justify-between">
-                                    <span className="text-[7px] font-bold text-gray-400">{idx + 1}</span>
-                                    <div className="w-full h-1.5 bg-gray-200 rounded-sm" />
-                                  </div>
-                                </button>
-                              );
-                            })}
+                        <div className="w-full flex flex-col items-center shrink-0 relative mt-2 gap-2">
+                          <div className="w-full flex items-center justify-between px-4 relative">
+                            {/* Circular magical purple button on the bottom left */}
                             <button
                               type="button"
-                              onClick={addDeckSlide}
-                              className="h-11 aspect-[16/9] rounded-lg border border-dashed border-gray-300 hover:border-[#7C4DFF] flex items-center justify-center shrink-0 text-gray-400 hover:text-[#7C4DFF] transition-colors"
+                              onClick={() => { setActiveRightTab('assistant'); setRightSidebarOpen(true); }}
+                              className="w-10 h-10 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-lg hover:bg-[#6C3DF0] hover:scale-105 active:scale-95 transition-all z-20"
                             >
-                              <Plus size={14} />
+                              <Sparkles size={18} />
                             </button>
+
+                            {/* Horizontal mini carousel slider in the bottom center */}
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center gap-2 p-1.5 bg-white/60 backdrop-blur-md rounded-2xl border border-gray-150/40 shadow-sm max-w-[80%] overflow-x-auto no-scrollbar z-15">
+                              {deckSlides.map((slide, idx) => {
+                                const isSlideActive = slide.id === activeDeckSlideId;
+                                return (
+                                  <button
+                                    key={slide.id}
+                                    type="button"
+                                    onClick={() => setActiveDeckSlideId(slide.id)}
+                                    className={`h-11 aspect-[16/9] rounded-lg border overflow-hidden bg-white shrink-0 transition-all ${
+                                      isSlideActive ? 'border-[#7C4DFF] ring-2 ring-[#7C4DFF]/15' : 'border-gray-200 hover:border-gray-300'
+                                    }`}
+                                  >
+                                    <div className="w-full h-full relative p-1 bg-[#FAFAFC] flex flex-col justify-between">
+                                      <span className="text-[7px] font-bold text-gray-400">{idx + 1}</span>
+                                      <div className="w-full h-1.5 bg-gray-200 rounded-sm" />
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                              <button
+                                type="button"
+                                onClick={addDeckSlide}
+                                className="h-11 aspect-[16/9] rounded-lg border border-dashed border-gray-300 hover:border-[#7C4DFF] flex items-center justify-center shrink-0 text-gray-400 hover:text-[#7C4DFF] transition-colors"
+                              >
+                                <Plus size={14} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Floating bottom toolbar matching reference Image 2 */}
+                          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-3 py-1 flex items-center gap-2 text-xs font-semibold text-gray-700 z-20 mt-1">
+                            <button
+                              type="button"
+                              onClick={() => showToast('Editing slide mode active')}
+                              className="flex items-center gap-1 bg-violet-50 text-[#7C4DFF] font-bold px-3 py-1 rounded-xl border border-violet-100 transition-all active:scale-95"
+                            >
+                              <Plus size={12} />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeckContextRailTab('Outline')}
+                              className="px-2.5 py-1 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 transition-colors"
+                            >
+                              Outline
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => showToast('Opening Storyboard')}
+                              className="px-2.5 py-1 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 transition-colors"
+                            >
+                              Storyboard
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handlePresentDeck}
+                              className="px-2.5 py-1 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 transition-colors"
+                            >
+                              Presenter
+                            </button>
+
+                            <div className="w-px h-4 bg-gray-200 mx-1"></div>
+
+                            {/* Zoom controls */}
+                            <div className="flex items-center gap-1 text-gray-500">
+                              <button
+                                type="button"
+                                onClick={() => setDeckZoomLevel((prev) => Math.max(50, prev - 10))}
+                                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                title="Zoom out"
+                              >
+                                -
+                              </button>
+                              <span className="text-[11px] font-bold w-10 text-center">{deckZoomLevel}%</span>
+                              <button
+                                type="button"
+                                onClick={() => setDeckZoomLevel((prev) => Math.min(150, prev + 10))}
+                                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                title="Zoom in"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            <div className="w-px h-4 bg-gray-200 mx-1"></div>
+
+                            <button
+                              type="button"
+                              onClick={() => setShowDeckNotes((prev) => !prev)}
+                              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl transition-all ${
+                                showDeckNotes ? 'bg-violet-100 text-[#7C4DFF] font-bold' : 'hover:bg-gray-100/80 text-gray-600'
+                              }`}
+                            >
+                              <FileText size={13} />
+                              <span>Notes</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => showToast('Duration settings')}
+                              className="flex items-center gap-1 px-2.5 py-1 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 transition-colors"
+                            >
+                              <Clock size={13} />
+                              <span>Duration</span>
+                            </button>
+                          </div>
+
+                          {/* Bottom Status Bar */}
+                          <div className="w-full px-6 flex items-center justify-between text-[11px] font-medium text-gray-400 pt-0.5">
+                            <div>Slide {deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1} of {deckSlides.length}</div>
+                            <div className="flex items-center gap-3">
+                              <span>English (US)</span>
+                              <span>•</span>
+                              <span>All changes saved</span>
+                            </div>
                           </div>
                         </div>
 
-                      
-
-                      {/* Speaker Notes moved inside the canvas column to prevent layout squishing */}
-                      <div className="w-full max-w-[1100px] flex flex-col gap-2">
                       {showDeckNotes && (
-                        <div className="mt-4 border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative shadow-sm">
+                        <div className="w-full max-w-[1100px] px-4 mt-2 border border-gray-200 rounded-xl bg-white p-3 flex items-start gap-2 relative shadow-sm z-20">
                           <textarea
                             placeholder="Add speaker notes..."
                             className="w-full resize-none outline-none text-sm text-gray-600 bg-transparent min-h-[60px]"
@@ -35161,7 +35291,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           />
                         </div>
                       )}
-                    </div>
 </div>
                     </div>
 
