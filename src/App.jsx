@@ -35043,7 +35043,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 width: 'calc(min(calc(100vh - 310px), 50vh) * 16 / 9)',
                                 maxWidth: '100%',
                                 maxHeight: '100%',
-                                transform: `scale(${deckZoomLevel / 100}) translateY(-60px)`, 
+                                transform: `scale(${deckZoomLevel / 100}) translateY(-30px)`, 
                                 transformOrigin: 'center center', 
                                 transition: 'transform 140ms ease' 
                               }}
