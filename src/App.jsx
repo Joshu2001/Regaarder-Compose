@@ -213,7 +213,115 @@ const DECK_DESIGN_PRESETS = [
     background: 'bg-[radial-gradient(circle_at_75%_75%,rgba(20,184,166,0.30)_0%,rgba(15,23,42,0)_38%),radial-gradient(circle_at_25%_20%,rgba(16,185,129,0.28)_0%,rgba(2,6,23,0)_44%),linear-gradient(150deg,#020617_0%,#0f172a_50%,#134e4a_100%)]',
     badge: 'Mint Depth',
   },
+  {
+    key: 'midnight-slate',
+    background: 'bg-gradient-to-br from-slate-900 via-slate-800 to-zinc-950',
+    badge: 'Midnight Dark',
+  },
+  {
+    key: 'cyberpunk-neon',
+    background: 'bg-[radial-gradient(circle_at_80%_20%,rgba(217,70,239,0.35)_0%,rgba(15,23,42,0)_40%),radial-gradient(circle_at_20%_80%,rgba(6,182,212,0.35)_0%,rgba(15,23,42,0)_40%),linear-gradient(135deg,#0f172a_0%,#1e1b4b_100%)]',
+    badge: 'Cyberpunk Neon',
+  },
 ];
+
+const DECK_THEME_OPTIONS = [
+  { key: 'aurora-split', name: 'Aurora', gradient: 'bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-500' },
+  { key: 'sunset-grid', name: 'Sunset Glow', gradient: 'bg-gradient-to-r from-amber-400 via-rose-500 to-purple-600' },
+  { key: 'mint-depth', name: 'Mint Depth', gradient: 'bg-gradient-to-r from-emerald-400 via-teal-500 to-cyan-600' },
+  { key: 'midnight-slate', name: 'Midnight Dark', gradient: 'bg-gradient-to-r from-slate-700 via-slate-800 to-slate-950' },
+  { key: 'blank', name: 'Clean Light', gradient: 'bg-gradient-to-r from-slate-100 via-slate-200 to-gray-300' },
+  { key: 'cyberpunk-neon', name: 'Cyberpunk', gradient: 'bg-gradient-to-r from-fuchsia-500 via-purple-600 to-cyan-400' }
+];
+
+const DECK_LAYOUT_OPTIONS = [
+  { 
+    key: 'Title Slide', 
+    name: 'Title Slide',
+    desc: 'Headline & subtitle cover',
+    visualType: 'hero statement',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col p-0.5 justify-between shrink-0">
+        <div className="w-1/2 h-1 bg-violet-500 rounded-xs" />
+        <div className="w-1/3 h-0.5 bg-gray-300 rounded-xs" />
+      </div>
+    )
+  },
+  { 
+    key: 'Cinematic Split', 
+    name: 'Cinematic Split',
+    desc: 'Side-by-side hero text & visual',
+    visualType: 'split visual',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex gap-0.5 p-0.5 shrink-0">
+        <div className="w-1/2 h-full bg-violet-50 rounded-xs flex flex-col gap-0.5 p-0.5 justify-center">
+          <div className="w-full h-0.5 bg-violet-400 rounded-xs" />
+          <div className="w-2/3 h-0.5 bg-gray-300 rounded-xs" />
+        </div>
+        <div className="w-1/2 h-full bg-violet-200 rounded-xs" />
+      </div>
+    )
+  },
+  { 
+    key: 'Key Metric', 
+    name: 'Key Metric',
+    desc: 'Bold data callout & label',
+    visualType: 'data-backed narrative',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col items-center justify-center p-0.5 shrink-0">
+        <span className="text-[7px] font-black text-violet-600 leading-none">94%</span>
+        <div className="w-3/4 h-0.5 bg-gray-300 rounded-xs mt-0.5" />
+      </div>
+    )
+  },
+  { 
+    key: 'Quote Slide', 
+    name: 'Quote Slide',
+    desc: 'Impactful blockquote statement',
+    visualType: 'minimal signal',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex items-center justify-center p-0.5 shrink-0">
+        <span className="text-[10px] font-serif text-violet-500 leading-none">“ ”</span>
+      </div>
+    )
+  },
+  { 
+    key: 'Feature Grid', 
+    name: 'Feature Grid',
+    desc: 'Multi-column grid showcase',
+    visualType: 'feature grid',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-200 bg-white grid grid-cols-2 gap-0.5 p-0.5 shrink-0">
+        <div className="bg-violet-200 rounded-xs" />
+        <div className="bg-gray-200 rounded-xs" />
+        <div className="bg-gray-200 rounded-xs" />
+        <div className="bg-violet-200 rounded-xs" />
+      </div>
+    )
+  },
+  { 
+    key: 'Text & List', 
+    name: 'Text & List',
+    desc: 'Structured bullet narrative',
+    visualType: 'bullet narrative',
+    icon: (
+      <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col gap-0.5 p-0.5 justify-center shrink-0">
+        <div className="flex items-center gap-0.5"><div className="w-0.5 h-0.5 rounded-full bg-violet-500"/><div className="w-full h-0.5 bg-gray-300 rounded-xs"/></div>
+        <div className="flex items-center gap-0.5"><div className="w-0.5 h-0.5 rounded-full bg-violet-500"/><div className="w-3/4 h-0.5 bg-gray-300 rounded-xs"/></div>
+        <div className="flex items-center gap-0.5"><div className="w-0.5 h-0.5 rounded-full bg-violet-500"/><div className="w-1/2 h-0.5 bg-gray-300 rounded-xs"/></div>
+      </div>
+    )
+  }
+];
+
+const DECK_BRAND_KITS = [
+  { name: 'Regaarder Aurora', colors: ['#7C4DFF', '#B085FF', '#E8D5FF'], font: 'SF Pro / Inter' },
+  { name: 'Oceanic Trust', colors: ['#1E40AF', '#3B82F6', '#DBEAFE'], font: 'Inter' },
+  { name: 'Emerald Growth', colors: ['#047857', '#10B981', '#D1FAE5'], font: 'Outfit' },
+  { name: 'Sunset Warmth', colors: ['#BE123C', '#FB7185', '#FFE4E6'], font: 'Plus Jakarta' },
+  { name: 'Executive Obsidian', colors: ['#0F172A', '#38BDF8', '#E2E8F0'], font: 'Georgia' }
+];
+
 
 const DECK_TEMPLATE_LIBRARY = [
   {
@@ -4521,6 +4629,14 @@ export default function App() {
   const [deckToolbarFont, setDeckToolbarFont] = useState('Manrope');
   const [deckToolbarMenuOpen, setDeckToolbarMenuOpen] = useState(false);
   const [deckContextRailTab, setDeckContextRailTab] = useState('Design');
+  const [deckThemeDropdownOpen, setDeckThemeDropdownOpen] = useState(false);
+  const [deckLayoutDropdownOpen, setDeckLayoutDropdownOpen] = useState(false);
+  const [deckBrandKitDropdownOpen, setDeckBrandKitDropdownOpen] = useState(false);
+  const [deckBgColorPickerOpen, setDeckBgColorPickerOpen] = useState(false);
+  const [deckAiSuggestionsExpanded, setDeckAiSuggestionsExpanded] = useState(false);
+  const [deckAnimationPreset, setDeckAnimationPreset] = useState('Soft fade and stagger reveal');
+  const [deckAnimationSpeed, setDeckAnimationSpeed] = useState('0.5s');
+  const [selectedBrandKit, setSelectedBrandKit] = useState(DECK_BRAND_KITS[0]);
   const [deckSlidesData, setDeckSlidesData] = useState([
     { ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', presetKey: 'blank', footer: '' }
   ]);
@@ -23551,7 +23667,8 @@ Respond with a JSON array of slide objects matching the schema.`;
         footer: 'May 15, 2026',
       };
     }
-    const preset = DECK_DESIGN_PRESETS.find((item) => item.key === activeDeckSlide.designPresetKey)
+    const presetKey = activeDeckSlide.designPresetKey || activeDeckSlide.presetKey;
+    const preset = DECK_DESIGN_PRESETS.find((item) => item.key === presetKey)
       || DECK_DESIGN_PRESETS[(Math.max(0, activeDeckSlide.id - 1)) % DECK_DESIGN_PRESETS.length]
       || fallback;
 
@@ -23706,7 +23823,17 @@ Respond with a JSON array of slide objects matching the schema.`;
   }, [activeSheetGridRaw]);
   const isSheetsMode = productMode === 'sheets';
   const updateDeckSlideField = (slideId, field, value) => {
-    setDeckSlidesData((prev) => prev.map((slide) => (slide.id === slideId ? { ...slide, [field]: value } : slide)));
+    setDeckSlidesData((prev) => prev.map((slide) => {
+      if (slide.id !== slideId) return slide;
+      const updated = { ...slide, [field]: value };
+      if (field === 'designPresetKey') {
+        updated.presetKey = value;
+      }
+      if (field === 'presetKey') {
+        updated.designPresetKey = value;
+      }
+      return updated;
+    }));
   };
 
   const generateOriginalDeckDesign = () => {
@@ -35234,137 +35361,222 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </button>
                             </div>
                           ) : (
-                            <div 
-                              ref={deckCanvasPreviewRef}
-                              className="aspect-[16/9] bg-white rounded-[24px] md:rounded-[36px] shadow-[0_20px_50px_-10px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[40px] md:p-[60px] select-text mx-auto my-auto"
-                              style={{ 
-                                height: 'min(calc(100vh - 310px), 50vh)',
-                                width: 'calc(min(calc(100vh - 310px), 50vh) * 16 / 9)',
-                                maxWidth: '100%',
-                                maxHeight: '100%',
-                                transform: `scale(${deckZoomLevel / 100}) translateY(10px)`, 
-                                transformOrigin: 'center center', 
-                                transition: 'transform 140ms ease' 
-                              }}
-                            >
-                            {/* Layered mathematical vector spline wave */}
-                            <div className="absolute inset-0 pointer-events-none select-none z-0">
-                              <svg className="absolute bottom-0 right-0 w-[65%] h-[90%] overflow-visible" viewBox="0 0 900 650" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <defs>
-                                  <linearGradient id="waveGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                                    <stop offset="0%" stopColor="#C4B5FD" stopOpacity="0.01" />
-                                    <stop offset="30%" stopColor="#A78BFA" stopOpacity="0.08" />
-                                    <stop offset="70%" stopColor="#7C3AED" stopOpacity="0.18" />
-                                    <stop offset="100%" stopColor="#4C1D95" stopOpacity="0.32" />
-                                  </linearGradient>
-                                  <filter id="bloom" x="-20%" y="-20%" width="140%" height="140%">
-                                    <feGaussianBlur stdDeviation="12" result="blur" />
-                                    <feMerge>
-                                      <feMergeNode in="blur" />
-                                      <feMergeNode in="SourceGraphic" />
-                                    </feMerge>
-                                  </filter>
-                                </defs>
-                                {/* Hundreds of ultra-thin overlapping Bézier curves */}
-                                {Array.from({ length: 140 }).map((_, i) => {
-                                  const ratio = i / 140;
-                                  const offset = ratio * 160;
-                                  const opacity = 0.012 + (1 - ratio) * 0.11;
-                                  const thickness = 0.35 + ratio * 1.1;
-                                  
-                                  const startX = 220 + offset * 1.4;
-                                  const startY = 650;
-                                  const cp1x = 380 + Math.sin(ratio * Math.PI) * 80;
-                                  const cp1y = 520 - ratio * 180;
-                                  const cp2x = 600 + Math.cos(ratio * Math.PI) * 100;
-                                  const cp2y = 280 - ratio * 110;
-                                  const endX = 950;
-                                  const endY = 300 + ratio * 210;
-                                  
-                                  const d = `M ${startX} ${startY} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${endX} ${endY}`;
-                                  
-                                  return (
-                                    <path
-                                      key={i}
-                                      d={d}
-                                      stroke="url(#waveGrad)"
-                                      strokeWidth={thickness}
-                                      opacity={opacity}
-                                      fill="none"
-                                    />
-                                  );
-                                })}
-                                {/* Luminous crest highlight line */}
-                                <path
-                                  d="M 250 650 C 420 420, 630 230, 950 330"
-                                  stroke="#FFFFFF"
-                                  strokeWidth="2.5"
-                                  opacity="0.9"
-                                  fill="none"
-                                  filter="url(#bloom)"
-                                />
-                                <path
-                                  d="M 250 650 C 420 420, 630 230, 950 330"
-                                  stroke="#E9D5FF"
-                                  strokeWidth="0.8"
-                                  opacity="0.95"
-                                  fill="none"
-                                />
-                              </svg>
-                            </div>
+                            (() => {
+                              const customBg = activeDeckSlide?.backgroundColor;
+                              const activePresetKey = activeDeckSlide?.designPresetKey || activeDeckSlide?.presetKey;
+                              const currentPresetObj = DECK_DESIGN_PRESETS.find(p => p.key === activePresetKey) || DECK_DESIGN_PRESETS[0];
+                              const isDarkTheme = !customBg && ['midnight-slate', 'cyberpunk-neon', 'mint-depth', 'sunset-grid', 'aurora-split'].includes(currentPresetObj.key);
+                              const brandColor = selectedBrandKit?.colors?.[0] || '#7C4DFF';
+                              const layout = activeDeckSlide?.layoutStyle || 'Title Slide';
 
-                            {/* Slide Content Layout - Asymmetric Balance */}
-                            <div className="flex flex-col h-full justify-between relative z-10 pointer-events-none">
-                              {/* Logo / Brand Lockup */}
-                              <div className="flex items-center gap-2">
-                                <svg className="w-5 h-5 text-[#7C4DFF]" viewBox="0 0 24 24" fill="currentColor">
-                                  <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
-                                  <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
-                                <span className="font-bold text-[18px] text-gray-900 tracking-tight">Acme Inc.</span>
-                              </div>
-
-                              {/* Title / Body */}
-                              <div className="flex-1 flex flex-col justify-center max-w-[65%] py-4">
-                                <h1
-                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                  suppressContentEditableWarning
-                                  onKeyDown={handleDeckKeyDown}
-                                  onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
-                                  className="text-[44px] leading-[1.15] font-extrabold text-gray-900 tracking-tight outline-none cursor-text pointer-events-auto"
+                              return (
+                                <div 
+                                  ref={deckCanvasPreviewRef}
+                                  className={`aspect-[16/9] ${customBg ? '' : (currentPresetObj.background || 'bg-white')} rounded-[24px] md:rounded-[36px] shadow-[0_20px_50px_-10px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[32px] md:p-[48px] select-text mx-auto my-auto transition-all duration-300`}
+                                  style={{ 
+                                    height: 'min(calc(100vh - 310px), 50vh)',
+                                    width: 'calc(min(calc(100vh - 310px), 50vh) * 16 / 9)',
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
+                                    transform: `scale(${deckZoomLevel / 100}) translateY(10px)`, 
+                                    transformOrigin: 'center center', 
+                                    transition: 'transform 140ms ease, background-color 300ms ease',
+                                    backgroundColor: customBg || undefined,
+                                    fontFamily: selectedBrandKit?.font || 'inherit'
+                                  }}
                                 >
-                                  {resolvedDeckSlideDesign.headline}
-                                </h1>
-                                <p
-                                  contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
-                                  suppressContentEditableWarning
-                                  onKeyDown={handleDeckKeyDown}
-                                  onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
-                                  className="mt-3 text-gray-500 text-[16px] leading-relaxed font-normal outline-none cursor-text pointer-events-auto whitespace-pre-line"
-                                >
-                                  {resolvedDeckSlideDesign.blurb}
-                                </p>
-                              </div>
+                                  {/* Background spline wave decoration */}
+                                  <div className="absolute inset-0 pointer-events-none select-none z-0 opacity-60">
+                                    <svg className="absolute bottom-0 right-0 w-[65%] h-[90%] overflow-visible" viewBox="0 0 900 650" fill="none">
+                                      <defs>
+                                        <linearGradient id="waveGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                                          <stop offset="0%" stopColor={brandColor} stopOpacity="0.02" />
+                                          <stop offset="50%" stopColor={brandColor} stopOpacity="0.12" />
+                                          <stop offset="100%" stopColor={brandColor} stopOpacity="0.25" />
+                                        </linearGradient>
+                                      </defs>
+                                      {Array.from({ length: 60 }).map((_, i) => {
+                                        const ratio = i / 60;
+                                        const offset = ratio * 160;
+                                        const opacity = 0.02 + (1 - ratio) * 0.12;
+                                        const thickness = 0.4 + ratio * 1.2;
+                                        const d = `M ${220 + offset * 1.4} 650 C ${380 + Math.sin(ratio * Math.PI) * 80} ${520 - ratio * 180}, ${600 + Math.cos(ratio * Math.PI) * 100} ${280 - ratio * 110}, 950 ${300 + ratio * 210}`;
+                                        return (
+                                          <path key={i} d={d} stroke="url(#waveGrad)" strokeWidth={thickness} opacity={opacity} fill="none" />
+                                        );
+                                      })}
+                                    </svg>
+                                  </div>
 
-                              {/* Date & Divider Lockup */}
-                              <div className="flex flex-col gap-2">
-                                <div className="w-10 h-0.5 bg-[#7C4DFF] rounded" />
-                                <span className="text-xs font-semibold text-gray-400 tracking-wider uppercase">
-                                  May 20, 2025
-                                </span>
-                              </div>
-                            </div>
+                                  {/* Main Slide Content */}
+                                  <div className="flex flex-col h-full justify-between relative z-10 pointer-events-none">
+                                    {/* Header Lockup */}
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <svg className="w-5 h-5" style={{ color: brandColor }} viewBox="0 0 24 24" fill="currentColor">
+                                          <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
+                                          <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                                        </svg>
+                                        <span className={`font-bold text-[16px] tracking-tight ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}>Acme Inc.</span>
+                                      </div>
+                                      <span className={`text-[10px] uppercase font-bold tracking-widest px-2.5 py-1 rounded-full border ${
+                                        isDarkTheme ? 'border-white/20 text-white/80 bg-white/10' : 'border-gray-200 text-gray-500 bg-gray-50'
+                                      }`}>
+                                        {activeDeckSlide?.section || 'Slide'}
+                                      </span>
+                                    </div>
 
-                            {/* Floating bottom-right "Ask AI" pill inside the canvas bounds */}
-                            <button
-                              type="button"
-                              onClick={() => { setActiveRightTab('chat'); setRightSidebarOpen(true); }}
-                              className="absolute bottom-6 right-6 px-4 py-2 rounded-full border border-violet-100 bg-white/80 backdrop-blur-md shadow-sm flex items-center gap-1.5 text-xs font-semibold text-[#7C4DFF] hover:bg-white transition-all z-20 pointer-events-auto"
-                            >
-                              <Sparkles size={13} />
-                              <span>Ask AI</span>
-                            </button>
-                          </div>
+                                    {/* Dynamic Layout Content */}
+                                    <div className="flex-1 flex flex-col justify-center py-4">
+                                      {layout === 'Key Metric' ? (
+                                        <div className="flex flex-col gap-2 pointer-events-auto">
+                                          <span className="text-[64px] font-black tracking-tight leading-none" style={{ color: brandColor }}>
+                                            {activeDeckSlide?.keyMetric || '94%'}
+                                          </span>
+                                          <h1 
+                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                            suppressContentEditableWarning
+                                            onKeyDown={handleDeckKeyDown}
+                                            onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
+                                            className={`text-[28px] leading-snug font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
+                                          >
+                                            {resolvedDeckSlideDesign.headline}
+                                          </h1>
+                                          <p 
+                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                            suppressContentEditableWarning
+                                            onKeyDown={handleDeckKeyDown}
+                                            onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
+                                            className={`text-[14px] leading-relaxed max-w-[80%] outline-none ${isDarkTheme ? 'text-slate-300' : 'text-gray-500'}`}
+                                          >
+                                            {resolvedDeckSlideDesign.blurb}
+                                          </p>
+                                        </div>
+                                      ) : layout === 'Quote Slide' ? (
+                                        <div className="flex flex-col gap-3 max-w-[85%] mx-auto text-center pointer-events-auto items-center">
+                                          <span className="text-[48px] font-serif leading-none" style={{ color: brandColor }}>“</span>
+                                          <h1 
+                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                            suppressContentEditableWarning
+                                            onKeyDown={handleDeckKeyDown}
+                                            onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
+                                            className={`text-[28px] italic leading-relaxed font-semibold outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
+                                          >
+                                            {resolvedDeckSlideDesign.headline}
+                                          </h1>
+                                          <p 
+                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                            suppressContentEditableWarning
+                                            onKeyDown={handleDeckKeyDown}
+                                            onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
+                                            className={`text-[13px] font-bold uppercase tracking-wider outline-none ${isDarkTheme ? 'text-slate-400' : 'text-gray-400'}`}
+                                          >
+                                            — {resolvedDeckSlideDesign.blurb}
+                                          </p>
+                                        </div>
+                                      ) : layout === 'Cinematic Split' ? (
+                                        <div className="grid grid-cols-2 gap-6 items-center pointer-events-auto">
+                                          <div className="flex flex-col justify-center">
+                                            <h1
+                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                              suppressContentEditableWarning
+                                              onKeyDown={handleDeckKeyDown}
+                                              onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
+                                              className={`text-[32px] leading-tight font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
+                                            >
+                                              {resolvedDeckSlideDesign.headline}
+                                            </h1>
+                                            <p
+                                              contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                              suppressContentEditableWarning
+                                              onKeyDown={handleDeckKeyDown}
+                                              onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
+                                              className={`mt-2 text-[14px] leading-relaxed font-normal outline-none ${isDarkTheme ? 'text-slate-300' : 'text-gray-500'}`}
+                                            >
+                                              {resolvedDeckSlideDesign.blurb}
+                                            </p>
+                                          </div>
+                                          <div className={`aspect-[4/3] rounded-2xl border flex flex-col items-center justify-center p-4 shadow-sm ${
+                                            isDarkTheme ? 'bg-white/10 border-white/20 text-white' : 'bg-violet-50/80 border-violet-100 text-violet-900'
+                                          }`}>
+                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-xs" style={{ backgroundColor: brandColor, color: '#FFFFFF' }}>
+                                              <Sparkles size={20} />
+                                            </div>
+                                            <span className="text-xs font-bold">{resolvedDeckSlideDesign.visualType || 'Visual Stage'}</span>
+                                            <span className="text-[10px] opacity-75 mt-0.5">Interactive Concept</span>
+                                          </div>
+                                        </div>
+                                      ) : layout === 'Text & List' ? (
+                                        <div className="flex flex-col gap-3 max-w-[85%] pointer-events-auto">
+                                          <h1
+                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                            suppressContentEditableWarning
+                                            onKeyDown={handleDeckKeyDown}
+                                            onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
+                                            className={`text-[32px] leading-tight font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
+                                          >
+                                            {resolvedDeckSlideDesign.headline}
+                                          </h1>
+                                          <div className="space-y-2 mt-1">
+                                            {(resolvedDeckSlideDesign.blurb || '').split('\n').filter(Boolean).map((line, idx) => (
+                                              <div key={idx} className="flex items-start gap-2.5 text-xs font-medium">
+                                                <div className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 mt-0.5" style={{ backgroundColor: brandColor }}>
+                                                  {idx + 1}
+                                                </div>
+                                                <span className={isDarkTheme ? 'text-slate-200' : 'text-gray-700'}>{line}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        /* Title Slide default */
+                                        <div className="flex flex-col justify-center max-w-[70%] pointer-events-auto">
+                                          <h1
+                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                            suppressContentEditableWarning
+                                            onKeyDown={handleDeckKeyDown}
+                                            onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'headline', event.currentTarget.textContent || '')}
+                                            className={`text-[40px] leading-[1.15] font-extrabold tracking-tight outline-none ${isDarkTheme ? 'text-white' : 'text-gray-900'}`}
+                                          >
+                                            {resolvedDeckSlideDesign.headline}
+                                          </h1>
+                                          <p
+                                            contentEditable={currentAccessLevel !== 'viewer' && currentAccessLevel !== 'commenter'}
+                                            suppressContentEditableWarning
+                                            onKeyDown={handleDeckKeyDown}
+                                            onBlur={(event) => updateDeckSlideField(activeDeckSlide?.id, 'blurb', event.currentTarget.textContent || '')}
+                                            className={`mt-3 text-[15px] leading-relaxed font-normal outline-none ${isDarkTheme ? 'text-slate-300' : 'text-gray-500'}`}
+                                          >
+                                            {resolvedDeckSlideDesign.blurb}
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Date & Divider Lockup */}
+                                    <div className="flex items-center justify-between pointer-events-auto pt-2">
+                                      <div className="flex flex-col gap-1.5">
+                                        <div className="w-10 h-0.5 rounded" style={{ backgroundColor: brandColor }} />
+                                        <span className={`text-[11px] font-semibold tracking-wider uppercase ${isDarkTheme ? 'text-white/60' : 'text-gray-400'}`}>
+                                          May 20, 2025
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Floating bottom-right "Ask AI" pill inside the canvas bounds */}
+                                  <button
+                                    type="button"
+                                    onClick={() => { setActiveRightTab('chat'); setRightSidebarOpen(true); }}
+                                    className="absolute bottom-6 right-6 px-4 py-2 rounded-full border bg-white/80 backdrop-blur-md shadow-sm flex items-center gap-1.5 text-xs font-semibold hover:bg-white transition-all z-20 pointer-events-auto"
+                                    style={{ color: brandColor, borderColor: `${brandColor}33` }}
+                                  >
+                                    <Sparkles size={13} />
+                                    <span>Ask AI</span>
+                                  </button>
+                                </div>
+                              );
+                            })()
                           )}
                         </div>
 
@@ -35541,60 +35753,264 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         {deckContextRailTab === 'Design' && (
                           <>
                             {/* Theme section */}
-                            <div className="space-y-1">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Theme</span>
-                              <button type="button" className="w-full flex items-center justify-between p-2 rounded-xl border border-gray-200/90 bg-white hover:bg-gray-50/80 transition-colors shadow-xs text-left">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-7 h-5 rounded bg-gradient-to-r from-violet-400 via-indigo-500 to-purple-500" />
-                                  <span className="text-xs font-semibold text-gray-800">Aurora</span>
+                            {(() => {
+                              const currentPresetKey = activeDeckSlide?.designPresetKey || 'aurora-split';
+                              const currentThemeObj = DECK_THEME_OPTIONS.find((t) => t.key === currentPresetKey) || DECK_THEME_OPTIONS[0];
+                              return (
+                                <div className="space-y-1 relative">
+                                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Theme</span>
+                                  <button 
+                                    type="button" 
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      setDeckThemeDropdownOpen(!deckThemeDropdownOpen);
+                                      setDeckLayoutDropdownOpen(false);
+                                      setDeckBrandKitDropdownOpen(false);
+                                      setDeckBgColorPickerOpen(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between p-2 rounded-xl border bg-white hover:bg-gray-50/80 transition-all shadow-xs text-left ${
+                                      deckThemeDropdownOpen ? 'border-violet-500 ring-2 ring-violet-500/20 outline-none' : 'border-gray-200/90'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className={`w-7 h-5 rounded ${currentThemeObj.gradient}`} />
+                                      <span className="text-xs font-semibold text-gray-800">{currentThemeObj.name}</span>
+                                    </div>
+                                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${deckThemeDropdownOpen ? 'rotate-180 text-violet-600' : ''}`} />
+                                  </button>
+
+                                  {deckThemeDropdownOpen && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                      {DECK_THEME_OPTIONS.map((t) => {
+                                        const isSelected = currentPresetKey === t.key;
+                                        return (
+                                          <button
+                                            key={t.key}
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              updateDeckSlideField(activeDeckSlide?.id, 'designPresetKey', t.key);
+                                              setDeckThemeDropdownOpen(false);
+                                              showToast(`Applied ${t.name} Theme`);
+                                            }}
+                                            className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
+                                              isSelected ? 'bg-violet-50 text-violet-700 font-semibold ring-1 ring-violet-200' : 'hover:bg-gray-50 text-gray-700'
+                                            }`}
+                                          >
+                                            <div className="flex items-center gap-2">
+                                              <div className={`w-6 h-4 rounded ${t.gradient}`} />
+                                              <span className="text-xs">{t.name}</span>
+                                            </div>
+                                            {isSelected && <Check size={14} className="text-violet-600" />}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
-                                <ChevronDown size={14} className="text-gray-400" />
-                              </button>
-                            </div>
+                              );
+                            })()}
 
                             {/* Layouts section */}
-                            <div className="space-y-1">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Layouts</span>
-                              <button type="button" className="w-full flex items-center justify-between p-2 rounded-xl border border-gray-200/90 bg-white hover:bg-gray-50/80 transition-colors shadow-xs text-left">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col p-0.5 justify-between">
-                                    <div className="w-1/2 h-1 bg-gray-300 rounded-sm" />
-                                    <div className="w-1/3 h-0.5 bg-gray-200 rounded-sm" />
-                                  </div>
-                                  <span className="text-xs font-semibold text-gray-800">Title Slide</span>
+                            {(() => {
+                              const currentLayoutKey = activeDeckSlide?.layoutStyle || 'Title Slide';
+                              const currentLayoutObj = DECK_LAYOUT_OPTIONS.find((l) => l.key === currentLayoutKey) || DECK_LAYOUT_OPTIONS[0];
+                              return (
+                                <div className="space-y-1 relative">
+                                  <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Layouts</span>
+                                  <button 
+                                    type="button" 
+                                    onPointerDown={(e) => {
+                                      e.preventDefault();
+                                      setDeckLayoutDropdownOpen(!deckLayoutDropdownOpen);
+                                      setDeckThemeDropdownOpen(false);
+                                      setDeckBrandKitDropdownOpen(false);
+                                      setDeckBgColorPickerOpen(false);
+                                    }}
+                                    className={`w-full flex items-center justify-between p-2 rounded-xl border bg-white hover:bg-gray-50/80 transition-all shadow-xs text-left ${
+                                      deckLayoutDropdownOpen ? 'border-violet-500 ring-2 ring-violet-500/20 outline-none' : 'border-gray-200/90'
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {currentLayoutObj.icon}
+                                      <span className="text-xs font-semibold text-gray-800">{currentLayoutObj.name}</span>
+                                    </div>
+                                    <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${deckLayoutDropdownOpen ? 'rotate-180 text-violet-600' : ''}`} />
+                                  </button>
+
+                                  {deckLayoutDropdownOpen && (
+                                    <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-1.5 space-y-1 max-h-[240px] overflow-y-auto thin-scrollbar animate-in fade-in slide-in-from-top-1 duration-150">
+                                      {DECK_LAYOUT_OPTIONS.map((l) => {
+                                        const isSelected = currentLayoutKey === l.key;
+                                        return (
+                                          <button
+                                            key={l.key}
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              updateDeckSlideField(activeDeckSlide?.id, 'layoutStyle', l.key);
+                                              updateDeckSlideField(activeDeckSlide?.id, 'visualType', l.visualType);
+                                              setDeckLayoutDropdownOpen(false);
+                                              showToast(`Selected Layout: ${l.name}`);
+                                            }}
+                                            className={`w-full flex items-start gap-2 p-2 rounded-lg text-left transition-colors ${
+                                              isSelected ? 'bg-violet-50 text-violet-700 font-semibold ring-1 ring-violet-200' : 'hover:bg-gray-50 text-gray-700'
+                                            }`}
+                                          >
+                                            <div className="shrink-0 mt-0.5">{l.icon}</div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="text-xs leading-tight">{l.name}</div>
+                                              <div className="text-[10px] text-gray-400 truncate mt-0.5">{l.desc}</div>
+                                            </div>
+                                            {isSelected && <Check size={14} className="text-violet-600 shrink-0 mt-0.5" />}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
-                                <ChevronDown size={14} className="text-gray-400" />
-                              </button>
-                            </div>
+                              );
+                            })()}
 
                             {/* Background section */}
-                            <div className="space-y-1">
+                            <div className="space-y-1 relative">
                               <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Background</span>
-                              <div className="flex items-center gap-2 p-2 border border-gray-200/90 rounded-xl bg-white shadow-xs">
-                                <div className="w-4 h-4 rounded border border-gray-200 bg-white" />
+                              <div className={`flex items-center gap-2 p-2 border rounded-xl bg-white shadow-xs transition-all ${
+                                deckBgColorPickerOpen ? 'border-violet-500 ring-2 ring-violet-500/20' : 'border-gray-200/90'
+                              }`}>
+                                <button
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    setDeckBgColorPickerOpen(!deckBgColorPickerOpen);
+                                    setDeckThemeDropdownOpen(false);
+                                    setDeckLayoutDropdownOpen(false);
+                                    setDeckBrandKitDropdownOpen(false);
+                                  }}
+                                  className="w-5 h-5 rounded border border-gray-200 shadow-xs cursor-pointer shrink-0 transition-transform hover:scale-105 active:scale-95"
+                                  style={{ backgroundColor: activeDeckSlide?.backgroundColor || '#FFFFFF' }}
+                                  title="Click to pick slide background color"
+                                />
                                 <input
                                   type="text"
-                                  value="#FFFFFF"
-                                  readOnly
-                                  className="text-xs font-semibold text-gray-800 outline-none w-full"
+                                  value={activeDeckSlide?.backgroundColor || '#FFFFFF'}
+                                  onChange={(e) => updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', e.target.value)}
+                                  className="text-xs font-semibold text-gray-800 outline-none w-full uppercase"
+                                  placeholder="#FFFFFF"
                                 />
+                                {deckBgColorPickerOpen && (
+                                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-2.5 animate-in fade-in slide-in-from-top-1 duration-150 space-y-2">
+                                    <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Quick Palette</div>
+                                    <div className="grid grid-cols-6 gap-1.5">
+                                      {['#FFFFFF', '#F8FAFC', '#F1F5F9', '#FAF5FF', '#ECFDF5', '#FFFBEB', '#0F172A', '#1E1B4B', '#312E81', '#134E4A', '#831843', '#4C1D95'].map((colorHex) => (
+                                        <button
+                                          key={colorHex}
+                                          type="button"
+                                          onPointerDown={(e) => {
+                                            e.preventDefault();
+                                            updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', colorHex);
+                                            setDeckBgColorPickerOpen(false);
+                                            showToast(`Background set to ${colorHex}`);
+                                          }}
+                                          className="w-6 h-6 rounded-lg border border-gray-200 shadow-xs hover:scale-110 transition-transform"
+                                          style={{ backgroundColor: colorHex }}
+                                        />
+                                      ))}
+                                    </div>
+                                    <div className="pt-1 flex items-center justify-between border-t border-gray-100">
+                                      <span className="text-[10px] text-gray-500 font-medium">Custom Color:</span>
+                                      <input
+                                        type="color"
+                                        value={activeDeckSlide?.backgroundColor || '#FFFFFF'}
+                                        onChange={(e) => updateDeckSlideField(activeDeckSlide?.id, 'backgroundColor', e.target.value)}
+                                        className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
 
                             {/* Brand Kit section */}
-                            <div className="space-y-1">
+                            <div className="space-y-1 relative">
                               <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Brand Kit</span>
-                              <div className="flex items-center justify-between p-2 border border-gray-200/90 rounded-xl bg-white shadow-xs">
-                                <button className="px-2 py-0.5 bg-gray-50 hover:bg-gray-100 rounded-md border border-gray-200 text-xs font-semibold text-gray-700">
+                              <div 
+                                onPointerDown={(e) => {
+                                  if (e.target.closest('.brand-kit-modal-btn')) return;
+                                  e.preventDefault();
+                                  setDeckBrandKitDropdownOpen(!deckBrandKitDropdownOpen);
+                                  setDeckThemeDropdownOpen(false);
+                                  setDeckLayoutDropdownOpen(false);
+                                  setDeckBgColorPickerOpen(false);
+                                }}
+                                className={`flex items-center justify-between p-2 border rounded-xl bg-white shadow-xs cursor-pointer hover:bg-gray-50/80 transition-all ${
+                                  deckBrandKitDropdownOpen ? 'border-violet-500 ring-2 ring-violet-500/20' : 'border-gray-200/90'
+                                }`}
+                              >
+                                <button 
+                                  type="button"
+                                  onPointerDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setShowBrandKitModal(true);
+                                  }}
+                                  className="brand-kit-modal-btn px-2 py-0.5 bg-gray-50 hover:bg-gray-100 rounded-md border border-gray-200 text-xs font-semibold text-gray-700 transition-colors"
+                                  title="Configure Font & Brand Specs"
+                                >
                                   Aa
                                 </button>
                                 <div className="flex items-center gap-1.5">
-                                  <div className="w-4 h-4 rounded-full bg-[#7C4DFF]" />
-                                  <div className="w-4 h-4 rounded-full bg-[#B085FF]" />
-                                  <div className="w-4 h-4 rounded-full bg-[#E8D5FF]" />
-                                  <ChevronDown size={12} className="text-gray-400 ml-1" />
+                                  {selectedBrandKit.colors.map((c, i) => (
+                                    <div key={i} className="w-4 h-4 rounded-full shadow-xs border border-white" style={{ backgroundColor: c }} />
+                                  ))}
+                                  <ChevronDown size={12} className={`text-gray-400 ml-1 transition-transform duration-200 ${deckBrandKitDropdownOpen ? 'rotate-180 text-violet-600' : ''}`} />
                                 </div>
                               </div>
+
+                              {deckBrandKitDropdownOpen && (
+                                <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                  {DECK_BRAND_KITS.map((bk) => {
+                                    const isSelected = selectedBrandKit.name === bk.name;
+                                    return (
+                                      <button
+                                        key={bk.name}
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                          e.preventDefault();
+                                          setSelectedBrandKit(bk);
+                                          setDeckBrandKitDropdownOpen(false);
+                                          showToast(`Applied ${bk.name} Brand Kit`);
+                                        }}
+                                        className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition-colors ${
+                                          isSelected ? 'bg-violet-50 text-violet-700 font-semibold ring-1 ring-violet-200' : 'hover:bg-gray-50 text-gray-700'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs font-medium">{bk.name}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          {bk.colors.map((c, idx) => (
+                                            <div key={idx} className="w-3 h-3 rounded-full border border-white" style={{ backgroundColor: c }} />
+                                          ))}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                  <div className="pt-1 border-t border-gray-100">
+                                    <button
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setDeckBrandKitDropdownOpen(false);
+                                        setShowBrandKitModal(true);
+                                      }}
+                                      className="w-full text-center text-xs font-semibold text-violet-600 hover:text-violet-700 py-1"
+                                    >
+                                      Edit Brand Kit Settings...
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
 
                             {/* AI Suggestions section */}
@@ -35605,44 +36021,156 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               </div>
                               <div className="space-y-1.5">
                                 {[
-                                  { title: 'Improve this slide', desc: 'Enhance layout and visual hierarchy' },
-                                  { title: 'Shorten text', desc: 'Make it more concise' },
-                                  { title: 'Generate image', desc: 'Add relevant image to this slide' }
+                                  { 
+                                    title: 'Improve this slide', 
+                                    desc: 'Enhance layout and visual hierarchy',
+                                    action: () => generateOriginalDeckDesign()
+                                  },
+                                  { 
+                                    title: 'Shorten text', 
+                                    desc: 'Make it more concise',
+                                    action: () => {
+                                      if (!activeDeckSlide?.id) return;
+                                      const head = (activeDeckSlide.headline || 'Key Concept').split(' ').slice(0, 5).join(' ') + '...';
+                                      const body = (activeDeckSlide.blurb || 'Summary text').split(' ').slice(0, 10).join(' ') + '.';
+                                      updateDeckSlideField(activeDeckSlide.id, 'headline', head);
+                                      updateDeckSlideField(activeDeckSlide.id, 'blurb', body);
+                                      showToast('Shortened text for maximum impact.');
+                                    }
+                                  },
+                                  { 
+                                    title: 'Generate image', 
+                                    desc: 'Add relevant image to this slide',
+                                    action: () => {
+                                      updateDeckSlideField(activeDeckSlide?.id, 'visualType', 'hero image visual');
+                                      showToast('Generating AI visual background for slide...');
+                                    }
+                                  },
+                                  ...(deckAiSuggestionsExpanded ? [
+                                    {
+                                      title: 'Highlight key metric',
+                                      desc: 'Insert bold data callout',
+                                      action: () => {
+                                        updateDeckSlideField(activeDeckSlide?.id, 'headline', '98% Customer Satisfaction');
+                                        updateDeckSlideField(activeDeckSlide?.id, 'blurb', 'Based on recent Q2 survey of over 10,000 active workspace users.');
+                                        showToast('Inserted metric highlight card.');
+                                      }
+                                    },
+                                    {
+                                      title: 'Auto-synthesize speaker notes',
+                                      desc: 'Draft presenter narrative script',
+                                      action: () => {
+                                        const notes = `Key takeaway for Slide ${activeDeckSlide?.id || 1}: Focus on customer value, emphasize speed and AI efficiency.`;
+                                        updateDeckSlideField(activeDeckSlide?.id, 'speakerNotes', notes);
+                                        showToast('Generated speaker notes.');
+                                      }
+                                    }
+                                  ] : [])
                                 ].map((sug) => (
                                   <button
                                     key={sug.title}
                                     type="button"
-                                    onClick={() => showToast(`Executing: ${sug.title}`)}
-                                    className="w-full p-2.5 border border-gray-200/80 rounded-xl bg-white hover:border-[#7C4DFF] hover:bg-violet-50/10 text-left transition-all group shadow-xs"
+                                    onClick={sug.action}
+                                    className="w-full p-2.5 border border-gray-200/80 rounded-xl bg-white hover:border-[#7C4DFF] hover:bg-violet-50/10 text-left transition-all group shadow-xs active:scale-[0.99]"
                                   >
                                     <div className="text-xs font-semibold text-gray-800 group-hover:text-[#7C4DFF]">{sug.title}</div>
                                     <div className="text-[10px] text-gray-400 mt-0.5">{sug.desc}</div>
                                   </button>
                                 ))}
                               </div>
-                              <button type="button" className="w-full text-center text-xs font-semibold text-gray-600 border border-gray-200/80 rounded-xl py-1.5 hover:bg-gray-50 hover:text-gray-900 transition-colors mt-2">
-                                View more
+                              <button 
+                                type="button" 
+                                onClick={() => setDeckAiSuggestionsExpanded(!deckAiSuggestionsExpanded)}
+                                className="w-full text-center text-xs font-semibold text-gray-600 border border-gray-200/80 rounded-xl py-1.5 hover:bg-gray-50 hover:text-gray-900 transition-colors mt-2"
+                              >
+                                {deckAiSuggestionsExpanded ? 'Show less' : 'View more'}
                               </button>
                             </div>
                           </>
                         )}
 
                         {deckContextRailTab === 'Animate' && (
-                          <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <Wand2 size={36} className="text-gray-300 mb-3" />
-                            <span className="text-xs font-semibold text-gray-700">Slide Animations</span>
-                            <span className="text-[11px] text-gray-500 mt-1">Configure entrance effects and timings.</span>
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Entrance Animation</span>
+                              <select
+                                value={activeDeckSlide?.motionCue || deckAnimationPreset}
+                                onChange={(e) => {
+                                  setDeckAnimationPreset(e.target.value);
+                                  updateDeckSlideField(activeDeckSlide?.id, 'motionCue', e.target.value);
+                                  showToast(`Set entrance to: ${e.target.value}`);
+                                }}
+                                className="w-full p-2 rounded-xl border border-gray-200 bg-white text-xs font-semibold text-gray-800 outline-none focus:border-violet-500 cursor-pointer"
+                              >
+                                <option value="Soft fade and stagger reveal">Soft Fade & Stagger</option>
+                                <option value="Slide in from left">Slide Right Entrance</option>
+                                <option value="Slow scale and zoom-in">Zoom & Scale</option>
+                                <option value="Progressive metric reveal">Progressive Metric Reveal</option>
+                                <option value="Gentle crossfade">Gentle Crossfade</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-1">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Duration</span>
+                              <div className="flex gap-1.5">
+                                {['0.3s', '0.5s', '0.8s', '1.2s'].map((speed) => (
+                                  <button
+                                    key={speed}
+                                    type="button"
+                                    onClick={() => {
+                                      setDeckAnimationSpeed(speed);
+                                      showToast(`Animation speed set to ${speed}`);
+                                    }}
+                                    className={`flex-1 py-1 text-xs font-semibold rounded-lg border transition-all ${
+                                      deckAnimationSpeed === speed 
+                                        ? 'bg-violet-50 border-violet-500 text-violet-700 shadow-xs ring-1 ring-violet-200' 
+                                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                    }`}
+                                  >
+                                    {speed}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="pt-2 border-t border-gray-100">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const currentCue = activeDeckSlide?.motionCue || deckAnimationPreset;
+                                  setDeckSlidesData((prev) => prev.map((s) => ({ ...s, motionCue: currentCue })));
+                                  showToast(`Applied animation "${currentCue}" to all slides.`);
+                                }}
+                                className="w-full py-2 bg-[#7C4DFF] hover:bg-[#6C3DF0] text-white text-xs font-semibold rounded-xl shadow-xs transition-all active:scale-95"
+                              >
+                                Apply Animation to All Slides
+                              </button>
+                            </div>
                           </div>
                         )}
 
                         {deckContextRailTab === 'Notes' && (
                           <div className="space-y-2">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Presenter Notes</span>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Presenter Notes</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!activeDeckSlide?.id) return;
+                                  const autoNotes = `• Start with strong hook regarding ${activeDeckSlide.headline || 'the slide goal'}.\n• Highlight key value driver: ${activeDeckSlide.blurb || 'core details'}.\n• Transition seamlessly to next section.`;
+                                  updateDeckSlideField(activeDeckSlide.id, 'speakerNotes', autoNotes);
+                                  showToast('Auto-generated presenter script notes.');
+                                }}
+                                className="text-[10px] font-semibold text-[#7C4DFF] hover:text-[#6C3DF0] flex items-center gap-1"
+                              >
+                                <Sparkles size={11} /> Auto-Generate
+                              </button>
+                            </div>
                             <textarea
                               placeholder="Add speaker notes for this slide..."
                               value={activeDeckSlide?.speakerNotes || ''}
                               onChange={(e) => updateDeckSlideField(activeDeckSlide?.id, 'speakerNotes', e.target.value)}
-                              className="w-full min-h-[200px] p-3 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none focus:border-[#7C4DFF] resize-none"
+                              className="w-full min-h-[180px] p-3 border border-gray-200 rounded-xl text-xs font-medium text-gray-700 outline-none focus:border-[#7C4DFF] resize-none"
                             />
                           </div>
                         )}
