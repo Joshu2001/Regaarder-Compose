@@ -35987,7 +35987,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                   Aa
                                 </button>
                                 <div className="flex items-center gap-1.5">
-                                  {selectedBrandKit.colors.map((c, i) => (
+                                  {(selectedBrandKit?.colors || []).map((c, i) => (
                                     <div key={i} className="w-4 h-4 rounded-full shadow-xs border border-white" style={{ backgroundColor: c }} />
                                   ))}
                                   <ChevronDown size={12} className={`text-gray-400 ml-1 transition-transform duration-200 ${deckBrandKitDropdownOpen ? 'rotate-180 text-violet-600' : ''}`} />
@@ -35997,7 +35997,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               {deckBrandKitDropdownOpen && (
                                 <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-xl border border-gray-200 shadow-xl p-1.5 space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
                                   {DECK_BRAND_KITS.map((bk) => {
-                                    const isSelected = selectedBrandKit.name === bk.name;
+                                    const isSelected = selectedBrandKit?.name === bk.name;
                                     return (
                                       <button
                                         key={bk.name}
