@@ -35015,8 +35015,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {/* Presentation Editor Main Workspace Canvas */}
                       <div className="flex-1 flex flex-col justify-start items-center p-3 min-h-0 relative overflow-hidden">
                         
-                        {/* Centered Presentation Canvas - Shifted up */}
-                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0 -mt-20 md:-mt-28">
+                        {/* Centered Presentation Canvas */}
+                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0 mt-0">
                           {!activeDeckSlide ? (
                             <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border border-gray-150 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-sm z-10">
                               <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center text-[#7C4DFF] mb-4">
@@ -35043,7 +35043,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 width: 'calc(min(calc(100vh - 310px), 50vh) * 16 / 9)',
                                 maxWidth: '100%',
                                 maxHeight: '100%',
-                                transform: `scale(${deckZoomLevel / 100}) translateY(-30px)`, 
+                                transform: `scale(${deckZoomLevel / 100}) translateY(10px)`, 
                                 transformOrigin: 'center center', 
                                 transition: 'transform 140ms ease' 
                               }}
