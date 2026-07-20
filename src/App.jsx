@@ -31855,6 +31855,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           </svg>
                           <span className="tracking-tight text-gray-900">Regaarder Compose</span>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => setLeftSidebarOpen(false)}
+                          className="p-1.5 hover:bg-gray-200/60 text-gray-400 hover:text-gray-700 rounded-lg transition-colors"
+                          title="Hide sidebar"
+                        >
+                          <ChevronLeft size={18} />
+                        </button>
                       </div>
             
                       <div className="px-4 py-3">
@@ -34945,6 +34953,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {/* Floating Sub-header Toolbar */}
                       <div className="py-2.5 px-6 flex justify-center shrink-0 z-20">
                         <div className="bg-white/95 backdrop-blur-md border border-gray-200/80 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-4 py-1.5 flex items-center gap-3 max-w-full overflow-x-auto no-scrollbar">
+                          {/* Sidebar Toggle Chevron */}
+                          <button
+                            type="button"
+                            onClick={() => setLeftSidebarOpen((prev) => !prev)}
+                            className="p-1.5 hover:bg-gray-100/80 rounded-xl text-gray-500 hover:text-gray-800 transition-colors shrink-0"
+                            title={leftSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+                          >
+                            {leftSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                          </button>
+                          <div className="w-px h-4 bg-gray-200 shrink-0 mx-0.5"></div>
+
                           {/* Active Presentation Selector */}
                           <button
                             type="button"
@@ -35000,7 +35019,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       <div className="flex-1 flex flex-col justify-start items-center p-3 min-h-0 relative overflow-hidden">
                         
                         {/* Centered Presentation Canvas - Shifted up */}
-                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0 -mt-14 md:-mt-20">
+                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0 -mt-20 md:-mt-28">
                           {!activeDeckSlide ? (
                             <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border border-gray-150 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-sm z-10">
                               <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center text-[#7C4DFF] mb-4">
@@ -35027,7 +35046,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 width: 'calc(min(calc(100vh - 310px), 50vh) * 16 / 9)',
                                 maxWidth: '100%',
                                 maxHeight: '100%',
-                                transform: `scale(${deckZoomLevel / 100}) translateY(-30px)`, 
+                                transform: `scale(${deckZoomLevel / 100}) translateY(-60px)`, 
                                 transformOrigin: 'center center', 
                                 transition: 'transform 140ms ease' 
                               }}
