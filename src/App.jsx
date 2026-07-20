@@ -31628,14 +31628,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </>
               ) : (
                 <>
+                  <button
+                    type="button"
+                    onClick={() => setLeftSidebarOpen((prev) => !prev)}
+                    className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg text-gray-500 hover:text-gray-800 transition-colors shrink-0 mr-1"
+                    title={leftSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+                  >
+                    {leftSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                  </button>
                   <div className="flex items-center gap-2">
                     <svg className="w-5 h-5 text-[#7C4DFF]" viewBox="0 0 24 24" fill="currentColor">
                       <rect x="4" y="4" width="16" height="16" rx="4" transform="rotate(45 12 12)" />
                       <path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
                     </svg>
-                    <span className="font-bold text-[18px] text-gray-900 tracking-tight">Deck</span>
+                    <span className="font-bold text-[16px] text-gray-900 tracking-tight">Deck</span>
                   </div>
-                  <button type="button" onClick={() => showToast('Opening saved decks')} className="flex items-center gap-1 text-[13px] text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1.5 rounded-lg border border-gray-150 bg-white ml-3 transition-colors">
+                  <button type="button" onClick={() => showToast('Opening saved decks')} className="flex items-center gap-1 text-[12px] text-gray-600 hover:text-gray-900 font-medium px-2.5 py-1.5 rounded-lg border border-gray-150 bg-white ml-3 transition-colors">
                     <FolderOpen size={14} className="text-gray-500" />
                     <span>Saved decks</span>
                   </button>
@@ -34953,17 +34961,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       {/* Floating Sub-header Toolbar */}
                       <div className="py-2.5 px-6 flex justify-center shrink-0 z-20">
                         <div className="bg-white/95 backdrop-blur-md border border-gray-200/80 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-4 py-1.5 flex items-center gap-3 max-w-full overflow-x-auto no-scrollbar">
-                          {/* Sidebar Toggle Chevron */}
-                          <button
-                            type="button"
-                            onClick={() => setLeftSidebarOpen((prev) => !prev)}
-                            className="p-1.5 hover:bg-gray-100/80 rounded-xl text-gray-500 hover:text-gray-800 transition-colors shrink-0"
-                            title={leftSidebarOpen ? "Hide sidebar" : "Show sidebar"}
-                          >
-                            {leftSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-                          </button>
-                          <div className="w-px h-4 bg-gray-200 shrink-0 mx-0.5"></div>
-
                           {/* Active Presentation Selector */}
                           <button
                             type="button"
@@ -35315,11 +35312,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
 </div>
                     </div>
 
-                    {/* Right Inspector Panel */}
-                    <div className="w-[320px] border-l border-gray-200 bg-white flex flex-col shrink-0 z-30">
-                      {/* Tabs Header - Slightly rounded rectangles, NOT pill-shaped (as per custom rules) */}
-                      <div className="h-16 border-b border-gray-100 flex items-center px-4 shrink-0 bg-[#FAFAFC]">
-                        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-full">
+                    {/* Right Inspector Panel - Floating Card Pixel-Perfect to Reference Image 2 */}
+                    <div className="w-[270px] my-3 mr-3 rounded-2xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] flex flex-col shrink-0 z-30 overflow-hidden relative max-h-[calc(100vh-140px)]">
+                      {/* Tabs Header - Segmented control floating header */}
+                      <div className="p-3 pb-2 shrink-0 bg-white border-b border-gray-100">
+                        <div className="flex gap-1 bg-gray-100/80 p-1 rounded-xl w-full border border-gray-200/40">
                           {['Design', 'Animate', 'Notes'].map((tab) => {
                             const isTabActive = deckContextRailTab === tab;
                             return (
@@ -35327,9 +35324,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 key={tab}
                                 type="button"
                                 onClick={() => setDeckContextRailTab(tab)}
-                                className={`flex-1 py-2 text-xs font-semibold rounded-lg text-center transition-all ${
+                                className={`flex-1 py-1.5 text-xs font-semibold rounded-lg text-center transition-all ${
                                   isTabActive 
-                                    ? 'bg-white text-gray-900 shadow-sm border border-gray-200/50' 
+                                    ? 'bg-white text-violet-700 shadow-sm border border-gray-200/50' 
                                     : 'text-gray-500 hover:text-gray-800'
                                 }`}
                               >
@@ -35341,61 +35338,61 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
 
                       {/* Inspector Content */}
-                      <div className="flex-1 overflow-y-auto p-4 space-y-4 thin-scrollbar">
+                      <div className="flex-1 overflow-y-auto p-3 space-y-3 thin-scrollbar">
                         {deckContextRailTab === 'Design' && (
                           <>
                             {/* Theme section */}
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Theme</span>
-                              <button type="button" className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-sm text-left">
+                            <div className="space-y-1">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Theme</span>
+                              <button type="button" className="w-full flex items-center justify-between p-2 rounded-xl border border-gray-200/90 bg-white hover:bg-gray-50/80 transition-colors shadow-xs text-left">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-8 h-5 rounded bg-gradient-to-r from-violet-300 via-indigo-400 to-purple-500" />
-                                  <span className="text-xs font-semibold text-gray-700">Aurora</span>
+                                  <div className="w-7 h-5 rounded bg-gradient-to-r from-violet-400 via-indigo-500 to-purple-500" />
+                                  <span className="text-xs font-semibold text-gray-800">Aurora</span>
                                 </div>
                                 <ChevronDown size={14} className="text-gray-400" />
                               </button>
                             </div>
 
                             {/* Layouts section */}
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Layouts</span>
-                              <button type="button" className="w-full flex items-center justify-between p-3 border border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors shadow-sm text-left">
+                            <div className="space-y-1">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Layouts</span>
+                              <button type="button" className="w-full flex items-center justify-between p-2 rounded-xl border border-gray-200/90 bg-white hover:bg-gray-50/80 transition-colors shadow-xs text-left">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-8 h-5 rounded border border-gray-200 bg-white flex flex-col p-0.5 justify-between">
+                                  <div className="w-7 h-5 rounded border border-gray-200 bg-white flex flex-col p-0.5 justify-between">
                                     <div className="w-1/2 h-1 bg-gray-300 rounded-sm" />
                                     <div className="w-1/3 h-0.5 bg-gray-200 rounded-sm" />
                                   </div>
-                                  <span className="text-xs font-semibold text-gray-700">Title Slide</span>
+                                  <span className="text-xs font-semibold text-gray-800">Title Slide</span>
                                 </div>
                                 <ChevronDown size={14} className="text-gray-400" />
                               </button>
                             </div>
 
                             {/* Background section */}
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Background</span>
-                              <div className="flex items-center gap-2 p-3 border border-gray-200 rounded-xl bg-white shadow-sm">
-                                <div className="w-5 h-5 rounded border border-gray-200 bg-white" />
+                            <div className="space-y-1">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Background</span>
+                              <div className="flex items-center gap-2 p-2 border border-gray-200/90 rounded-xl bg-white shadow-xs">
+                                <div className="w-4 h-4 rounded border border-gray-200 bg-white" />
                                 <input
                                   type="text"
                                   value="#FFFFFF"
                                   readOnly
-                                  className="text-xs font-semibold text-gray-700 outline-none w-full"
+                                  className="text-xs font-semibold text-gray-800 outline-none w-full"
                                 />
                               </div>
                             </div>
 
                             {/* Brand Kit section */}
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Brand Kit</span>
-                              <div className="flex items-center justify-between p-3 border border-gray-200 rounded-xl bg-white shadow-sm">
-                                <button className="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700">
+                            <div className="space-y-1">
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Brand Kit</span>
+                              <div className="flex items-center justify-between p-2 border border-gray-200/90 rounded-xl bg-white shadow-xs">
+                                <button className="px-2 py-0.5 bg-gray-50 hover:bg-gray-100 rounded-md border border-gray-200 text-xs font-semibold text-gray-700">
                                   Aa
                                 </button>
                                 <div className="flex items-center gap-1.5">
-                                  <div className="w-5 h-5 rounded-full bg-[#7C4DFF]" />
-                                  <div className="w-5 h-5 rounded-full bg-[#B085FF]" />
-                                  <div className="w-5 h-5 rounded-full bg-[#E8D5FF]" />
+                                  <div className="w-4 h-4 rounded-full bg-[#7C4DFF]" />
+                                  <div className="w-4 h-4 rounded-full bg-[#B085FF]" />
+                                  <div className="w-4 h-4 rounded-full bg-[#E8D5FF]" />
                                   <ChevronDown size={12} className="text-gray-400 ml-1" />
                                 </div>
                               </div>
@@ -35404,10 +35401,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             {/* AI Suggestions section */}
                             <div className="space-y-2 pt-2 border-t border-gray-100">
                               <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">AI Suggestions</span>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">AI Suggestions</span>
                                 <span className="bg-violet-50 text-[#7C4DFF] text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">New</span>
                               </div>
-                              <div className="space-y-2">
+                              <div className="space-y-1.5">
                                 {[
                                   { title: 'Improve this slide', desc: 'Enhance layout and visual hierarchy' },
                                   { title: 'Shorten text', desc: 'Make it more concise' },
@@ -35417,14 +35414,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                     key={sug.title}
                                     type="button"
                                     onClick={() => showToast(`Executing: ${sug.title}`)}
-                                    className="w-full p-3.5 border border-gray-150 rounded-2xl bg-white hover:border-[#7C4DFF] hover:bg-violet-50/10 text-left transition-all group"
+                                    className="w-full p-2.5 border border-gray-200/80 rounded-xl bg-white hover:border-[#7C4DFF] hover:bg-violet-50/10 text-left transition-all group shadow-xs"
                                   >
-                                    <div className="text-xs font-bold text-gray-800 group-hover:text-[#7C4DFF]">{sug.title}</div>
-                                    <div className="text-[11px] text-gray-500 mt-1">{sug.desc}</div>
+                                    <div className="text-xs font-semibold text-gray-800 group-hover:text-[#7C4DFF]">{sug.title}</div>
+                                    <div className="text-[10px] text-gray-400 mt-0.5">{sug.desc}</div>
                                   </button>
                                 ))}
                               </div>
-                              <button type="button" className="w-full text-center text-xs font-bold text-[#7C4DFF] hover:text-[#6C3DF0] py-2">
+                              <button type="button" className="w-full text-center text-xs font-semibold text-gray-600 border border-gray-200/80 rounded-xl py-1.5 hover:bg-gray-50 hover:text-gray-900 transition-colors mt-2">
                                 View more
                               </button>
                             </div>
