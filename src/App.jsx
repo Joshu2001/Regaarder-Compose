@@ -34997,10 +34997,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       </div>
 
                       {/* Presentation Editor Main Workspace Canvas */}
-                      <div className="flex-1 flex flex-col justify-center items-center p-4 min-h-0 relative overflow-hidden">
+                      <div className="flex-1 flex flex-col justify-between items-center p-3 min-h-0 relative overflow-hidden">
                         
                         {/* Centered Presentation Canvas */}
-                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0 py-2">
+                        <div className="w-full flex-1 flex items-center justify-center relative min-h-0 my-auto">
                           {!activeDeckSlide ? (
                             <div className="flex flex-col items-center justify-center p-12 text-center bg-white rounded-3xl border border-gray-150 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-sm z-10">
                               <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center text-[#7C4DFF] mb-4">
@@ -35021,10 +35021,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           ) : (
                             <div 
                               ref={deckCanvasPreviewRef}
-                              className="w-full aspect-[16/9] bg-white rounded-[32px] md:rounded-[40px] shadow-[0_24px_70px_-15px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[60px] md:p-[80px] select-text"
+                              className="aspect-[16/9] bg-white rounded-[24px] md:rounded-[36px] shadow-[0_20px_50px_-10px_rgba(15,23,42,0.12)] border border-gray-150 relative overflow-hidden flex flex-col justify-between p-[40px] md:p-[60px] select-text mx-auto my-auto"
                               style={{ 
-                                maxWidth: 'min(100%, calc(48vh * 16 / 9))', 
-                                maxHeight: '48vh',
+                                height: 'min(calc(100vh - 310px), 50vh)',
+                                width: 'calc(min(calc(100vh - 310px), 50vh) * 16 / 9)',
+                                maxWidth: '100%',
+                                maxHeight: '100%',
                                 transform: `scale(${deckZoomLevel / 100})`, 
                                 transformOrigin: 'center center', 
                                 transition: 'transform 140ms ease' 
