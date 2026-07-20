@@ -20799,7 +20799,6 @@ Rules:
     }
   };
 
-  // More panel: dismiss on outside click using a single global listener targeting the sidebar container
   useEffect(() => {
     if (!morePanelOpen) return;
     const handleOutsideClick = (e) => {
@@ -20811,6 +20810,13 @@ Rules:
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [morePanelOpen]);
+
+  useEffect(() => {
+    if (!deckActiveToolbarMenu) return;
+    const handleOutsideClick = () => setDeckActiveToolbarMenu(null);
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [deckActiveToolbarMenu]);
 
   // Ensure only one of the left or right side panels is open at a time.
   useEffect(() => {
@@ -35011,16 +35017,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     {/* Workspace background vignette effect overlay */}
                     <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(240,242,247,0.8)_100%)] z-0" />
 
-                    <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+                    <div className="flex-1 flex flex-col min-w-0 relative z-10">
                       {/* Floating Sub-header Toolbar */}
-                      <div className="py-2.5 px-6 flex justify-center shrink-0 z-20">
-                        <div className="bg-white/95 backdrop-blur-md border border-gray-200/80 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-4 py-1.5 flex items-center gap-3 max-w-full relative">
+                      <div className="py-2.5 px-6 flex justify-center shrink-0 z-30 relative">
+                        <div className="bg-white/95 backdrop-blur-md border border-gray-200/80 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-4 py-1.5 flex items-center gap-3 max-w-full relative z-30">
                           {/* Active Presentation Title Selector */}
-                          <div className="relative">
+                          <div className="relative z-40">
                             <button
                               type="button"
-                              onClick={() => setDeckActiveToolbarMenu(deckActiveToolbarMenu === 'title' ? null : 'title')}
-                              onPointerDown={(e) => e.preventDefault()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeckActiveToolbarMenu((prev) => (prev === 'title' ? null : 'title'));
+                              }}
                               className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all whitespace-nowrap ${
                                 deckActiveToolbarMenu === 'title' 
                                   ? 'bg-violet-50 border-violet-200 text-[#7C4DFF]' 
@@ -35028,12 +35036,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               }`}
                             >
                               <span>{activeDeckTitle}</span>
-                              <ChevronDown size={13} className={`text-gray-400 shrink-0 transition-transform ${deckActiveToolbarMenu === 'title' ? 'rotate-180' : ''}`} />
+                              <ChevronDown size={13} className={`text-gray-400 shrink-0 transition-transform ${deckActiveToolbarMenu === 'title' ? 'rotate-180 text-[#7C4DFF]' : ''}`} />
                             </button>
 
                             {deckActiveToolbarMenu === 'title' && (
-                              <div className="absolute left-0 top-10 w-56 bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-xl p-1.5 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Decks</div>
+                              <div 
+                                onClick={(e) => e.stopPropagation()}
+                                className="absolute left-0 top-10 w-60 bg-white border border-gray-200 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.12)] p-2 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+                              >
+                                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Presentations</div>
                                 {[
                                   'Product Roadmap 2025',
                                   'Q3 Executive Pitch',
@@ -35085,7 +35096,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <div className="w-px h-4 bg-gray-200 shrink-0 mx-0.5"></div>
 
                           {/* Interactive Floating Toolbar Options with Dropdowns */}
-                          <div className="flex items-center gap-1 relative">
+                          <div className="flex items-center gap-1 relative z-40">
                             {[
                               { 
                                 label: 'Theme', 
@@ -35146,24 +35157,20 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             ].map((btn) => {
                               const isOpen = deckActiveToolbarMenu === btn.label;
                               return (
-                                <div key={btn.label} className="relative">
+                                <div key={btn.label} className="relative z-40">
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      if (isOpen) {
-                                        setDeckActiveToolbarMenu(null);
-                                      } else {
-                                        setDeckActiveToolbarMenu(btn.label);
-                                        if (btn.label === 'Theme' || btn.label === 'Layouts') {
-                                          setRightSidebarOpen(true);
-                                          setDeckContextRailTab('Design');
-                                        } else if (btn.label === 'Transition' || btn.label === 'Animation') {
-                                          setRightSidebarOpen(true);
-                                          setDeckContextRailTab('Animate');
-                                        }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeckActiveToolbarMenu((prev) => (prev === btn.label ? null : btn.label));
+                                      if (btn.label === 'Theme' || btn.label === 'Layouts') {
+                                        setRightSidebarOpen(true);
+                                        setDeckContextRailTab('Design');
+                                      } else if (btn.label === 'Transition' || btn.label === 'Animation') {
+                                        setRightSidebarOpen(true);
+                                        setDeckContextRailTab('Animate');
                                       }
                                     }}
-                                    onPointerDown={(e) => e.preventDefault()}
                                     className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap ${
                                       isOpen 
                                         ? 'bg-violet-100 text-[#7C4DFF]' 
@@ -35177,7 +35184,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
                                   {/* Dropdown Menu */}
                                   {isOpen && (
-                                    <div className="absolute left-0 top-9 w-48 bg-white/95 backdrop-blur-md border border-gray-200 rounded-xl shadow-xl p-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                                    <div 
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="absolute left-0 top-9 w-52 bg-white border border-gray-200 rounded-xl shadow-[0_10px_35px_rgba(0,0,0,0.12)] p-1.5 z-[999] animate-in fade-in slide-in-from-top-1 duration-150"
+                                    >
                                       <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">{btn.label} Options</div>
                                       {btn.menuItems.map((item) => (
                                         <button
