@@ -44461,7 +44461,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {/* Page 1 Sheet Wrapper */}
             <div
               data-enterprise-page="true"
-              className="w-full mx-auto rounded-[24px] shadow-[0_20px_60px_-15px_rgba(15,23,42,0.08),0_4px_16px_-4px_rgba(15,23,42,0.03)] border border-slate-200/70 dark:border-zinc-800/70 transition-all relative hover:shadow-[0_24px_70px_-15px_rgba(15,23,42,0.1)]"
+              className="w-full mx-auto rounded-[24px] shadow-[0_16px_48px_-16px_rgba(15,23,42,0.12)] border border-slate-200/50 dark:border-zinc-800/50 transition-all relative"
               style={{
                 backgroundColor: 
                   docTheme === 'emerald' ? '#F0FDF4' :
@@ -45395,7 +45395,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ))}
                     </div>
                   )}
-                  <div className="relative backdrop-blur-xl bg-white/85 dark:bg-slate-900/85 border border-slate-200/70 dark:border-white/15 hover:border-violet-300/80 focus-within:border-violet-400 focus-within:ring-4 focus-within:ring-violet-500/10 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.08),0_4px_16px_rgba(0,0,0,0.03)] rounded-2xl px-3.5 py-2 flex items-center gap-2.5 w-full transition-all duration-300">
+                  <div className="relative bg-white border border-gray-100 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300">
                     <button
                       type="button"
                       onClick={() => {
@@ -45485,6 +45485,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
         )}
           </div>
+
+
         {!isComposing && !rightSidebarOpen && !shouldHideDictationOverlay && !isDictationHiddenByGesture && activeRightTab !== 'calendar' && activeRightTab !== 'whiteboard' && productMode !== 'landing' && !(leftSidebarOpen && showDocumentOutlineView) && (
           <div 
             className="pointer-events-none fixed z-[15000] flex items-center justify-center animate-in fade-in zoom-in-95 duration-200"
@@ -45602,10 +45604,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
         {/* Bottom Status Bar */}
         {activeRightTab !== 'whiteboard' && (
-        <div className="h-10 border-t border-slate-200/60 flex items-center justify-between px-6 text-xs text-slate-500 bg-white/90 backdrop-blur-md shrink-0 select-none shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-          <div className="flex items-center gap-5">
+        <div className="h-10 border-t border-gray-100 flex items-center justify-between px-6 text-xs text-gray-500 bg-white shrink-0 select-none">
+          <div className="flex items-center gap-6">
             <span title="Real-time document stats">{documentStats.words} words - {documentStats.characters} characters</span>
-            <div className="h-3.5 w-[1px] bg-slate-200/80" />
             <div className="relative">
               <button
                 data-language-menu-root
@@ -45635,10 +45636,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
               )}
             </div>
-            <div className="h-3.5 w-[1px] bg-slate-200/80" />
             <button
               onClick={() => setIsFocusMode((prev) => !prev)}
-              className={`px-2 py-1 rounded transition-colors ${isFocusMode ? 'bg-violet-100 text-violet-700 outline outline-1 outline-violet-500/30 font-medium' : 'hover:bg-gray-50 hover:text-gray-700'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
+              className={`px-2 py-1 rounded transition-colors ${isFocusMode ? 'bg-violet-100 text-violet-700' : 'hover:bg-gray-50 hover:text-gray-700'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
               title="Toggle focus mode"
             >
               {isFocusMode ? 'Exit Focus Mode' : 'Focus Mode'}
