@@ -23650,15 +23650,15 @@ Respond with a JSON array of slide objects matching the schema.`;
         const isLocked = Boolean(cellFormat.isLocked || cellFormat.locked);
 
         if (typeof cell === 'string') {
-          const raw = cell.trim();
+          let raw = cell.trim();
           if (!raw) return cell;
 
-          // 1. Explicit formula starting with '='
-          if (raw.startsWith('=')) {
+          // 1. Explicit formula starting with '=' or '+' (e.g. '=1+1', '= 1+1', '+1+1', '+ 1+1')
+          if (raw.startsWith('=') || (raw.startsWith('+') && raw.length > 1 && !/^\+\d{1,4}[-\/]\d{1,2}/.test(raw))) {
             let expr = raw.substring(1).trim();
             if (expr.endsWith('=')) expr = expr.slice(0, -1).trim();
             const result = parser.parse(expr);
-            return result.error ? result.error : result.result;
+            return (!result.error && result.result !== null && typeof result.result !== 'undefined') ? result.result : (result.error || cell);
           }
 
           // 2. Trailing equal like '1+1='
@@ -23671,18 +23671,17 @@ Respond with a JSON array of slide objects matching the schema.`;
             }
           }
 
-          // 3. Implicit formula calculation without leading '='
-          // DO NOT perform implicit calculation if the user locked the cell
+          // 3. Implicit formula calculation without leading '=' or '+' (when cell is unlocked)
+          // Exclude dates (e.g. 2026-07-20) and phone numbers
           if (!isLocked && 
               !/^\d{1,4}[-\/]\d{1,2}[-\/]\d{1,4}$/.test(raw) && 
-              !/^\d{3,4}-\d{3,4}-\d{4}$/.test(raw) && 
-              (isNaN(raw) || raw.includes('+') || raw.includes('*') || raw.includes('/'))) {
+              !/^\d{3,4}-\d{3,4}-\d{4}$/.test(raw)) {
             
+            const hasOperators = /[\+\-\*\/\^\%]/.test(raw);
             const isFn = /^[A-Z]{2,}\s*\(.*?\)$/i.test(raw);
-            const isCellRefMath = /^[A-Z]{1,3}\d+\s*[\+\-\*\/\^\%]\s*.+$/i.test(raw) || /^.+\s*[\+\-\*\/\^\%]\s*[A-Z]{1,3}\d+$/i.test(raw);
-            const isBasicMath = /^[\d\.\s\(\)]+[\+\*\/\^\%][\d\.\s\(\)\+\-\*\/\^\%]+$/.test(raw) || /^[\d\.\s\(\)]+\s*-\s*[\d\.\s\(\)]+$/.test(raw);
+            const isMathExpr = isNaN(raw) && (hasOperators || isFn);
 
-            if (isFn || isCellRefMath || isBasicMath) {
+            if (isMathExpr) {
               const result = parser.parse(raw);
               if (!result.error && result.result !== null && typeof result.result !== 'undefined') {
                 return result.result;
@@ -34770,20 +34769,22 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                           textAlign: computedFormat.align || undefined,
                                           ...customTextStyle
                                         }}
-                                        value={cellValue}
+                                        value={editingCellKey === cellKey ? editingCellValue : cellValue}
                                         onFocus={() => { 
                                           if (multiSelectedCells && multiSelectedCells.length > 0) return;
                                           setSelectedSheetCell({ row: num, col: colIndex + 1 });
                                           setSelectedSheetRange({ startRow: num, startCol: colIndex + 1, endRow: num, endCol: colIndex + 1 });
                                           setSheetSelectionMode('cell');
                                           setSelectedGridColumn(null);
-                                          // Seed the local edit buffer from the persisted grid value
                                           const persistedVal = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '';
+                                          setEditingCellValue(persistedVal);
+                                        }}
+                                        onDoubleClick={() => {
                                           setEditingCellKey(cellKey);
+                                          const persistedVal = activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '';
                                           setEditingCellValue(persistedVal);
                                         }}
                                         onBlur={() => {
-                                          // Commit buffered value to grid state on blur
                                           if (editingCellKey === cellKey) {
                                             updateSheetCell(activeSheetId, rowIndex, colIndex, editingCellValue);
                                             setEditingCellKey(null);
