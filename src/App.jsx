@@ -35581,109 +35581,121 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         </div>
 
                         {/* Floating bottom actions (outside canvas) */}
-                        <div className="w-full flex flex-col items-center shrink-0 relative mt-2 gap-2">
-                          <div className="w-full flex items-center justify-between px-4 relative">
+                        <div className="w-full flex flex-col items-center shrink-0 relative mt-2 gap-2 pb-1">
+                          {/* Main Row: Bottom-left AI button + Center Carousel */}
+                          <div className="w-full flex items-end justify-between px-4 relative min-h-[52px]">
                             {/* Circular magical purple button on the bottom left */}
                             <button
                               type="button"
                               onClick={() => { setActiveRightTab('assistant'); setRightSidebarOpen(true); }}
-                              className="w-10 h-10 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-lg hover:bg-[#6C3DF0] hover:scale-105 active:scale-95 transition-all z-20"
+                              className="w-11 h-11 rounded-full bg-[#7C4DFF] text-white flex items-center justify-center shadow-[0_8px_25px_rgba(124,77,255,0.35)] hover:bg-[#6C3DF0] hover:scale-105 active:scale-95 transition-all z-20 shrink-0 mb-1"
+                              title="Open AI Assistant"
                             >
                               <Sparkles size={18} />
                             </button>
 
                             {/* Horizontal mini carousel slider in the bottom center */}
-                            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center gap-2 p-1.5 bg-white/60 backdrop-blur-md rounded-2xl border border-gray-150/40 shadow-sm max-w-[80%] overflow-x-auto no-scrollbar z-15">
+                            <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex items-center gap-2 p-1.5 bg-white/70 backdrop-blur-md rounded-2xl border border-gray-200/60 shadow-sm max-w-[85%] overflow-x-auto no-scrollbar z-15">
                               {deckSlides.map((slide, idx) => {
                                 const isSlideActive = slide.id === activeDeckSlideId;
                                 return (
-                                  <button
-                                    key={slide.id}
-                                    type="button"
-                                    onClick={() => setActiveDeckSlideId(slide.id)}
-                                    className={`h-11 aspect-[16/9] rounded-lg border overflow-hidden bg-white shrink-0 transition-all ${
-                                      isSlideActive ? 'border-[#7C4DFF] ring-2 ring-[#7C4DFF]/15' : 'border-gray-200 hover:border-gray-300'
-                                    }`}
-                                  >
-                                    <div className="w-full h-full relative p-1 bg-[#FAFAFC] flex flex-col justify-between">
-                                      <span className="text-[7px] font-bold text-gray-400">{idx + 1}</span>
-                                      <div className="w-full h-1.5 bg-gray-200 rounded-sm" />
-                                    </div>
-                                  </button>
+                                  <div key={slide.id} className="flex flex-col items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveDeckSlideId(slide.id)}
+                                      className={`h-11 aspect-[16/9] rounded-xl border overflow-hidden bg-white shrink-0 transition-all ${
+                                        isSlideActive 
+                                          ? 'border-2 border-[#7C4DFF] ring-2 ring-[#7C4DFF]/15 shadow-md scale-105' 
+                                          : 'border-gray-200 hover:border-gray-300 opacity-80 hover:opacity-100'
+                                      }`}
+                                    >
+                                      <div className="w-full h-full relative p-1 bg-[#FAFAFC] flex flex-col justify-between">
+                                        <div className="w-full h-1 bg-gray-200 rounded-sm" />
+                                        <div className="w-2/3 h-1 bg-violet-200 rounded-sm" />
+                                      </div>
+                                    </button>
+                                    <span className={`text-[10px] font-bold ${isSlideActive ? 'text-[#7C4DFF]' : 'text-gray-400'}`}>
+                                      {idx + 1}
+                                    </span>
+                                  </div>
                                 );
                               })}
-                              <button
-                                type="button"
-                                onClick={addDeckSlide}
-                                className="h-11 aspect-[16/9] rounded-lg border border-dashed border-gray-300 hover:border-[#7C4DFF] flex items-center justify-center shrink-0 text-gray-400 hover:text-[#7C4DFF] transition-colors"
-                              >
-                                <Plus size={14} />
-                              </button>
+                              <div className="flex flex-col items-center gap-1 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={addDeckSlide}
+                                  className="h-11 aspect-[16/9] rounded-xl border border-dashed border-gray-300 hover:border-[#7C4DFF] flex items-center justify-center shrink-0 text-gray-400 hover:text-[#7C4DFF] bg-white/50 hover:bg-white transition-all"
+                                  title="Add new slide"
+                                >
+                                  <Plus size={16} />
+                                </button>
+                                <span className="text-[10px] font-bold text-transparent">+</span>
+                              </div>
                             </div>
                           </div>
 
                           {/* Floating bottom toolbar matching reference Image 2 */}
-                          <div className="bg-white/90 backdrop-blur-md rounded-2xl border border-gray-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-3 py-1 flex items-center gap-2 text-xs font-semibold text-gray-700 z-20 mt-1">
+                          <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.04)] px-3 py-1 flex items-center gap-2 text-xs font-semibold text-gray-700 z-20 mt-1">
                             <button
                               type="button"
                               onClick={() => showToast('Editing slide mode active')}
-                              className="flex items-center gap-1 bg-violet-50 text-[#7C4DFF] font-bold px-3 py-1 rounded-xl border border-violet-100 transition-all active:scale-95"
+                              className="flex items-center gap-1.5 bg-violet-100/80 text-[#7C4DFF] font-bold px-3 py-1.5 rounded-xl border border-violet-200/50 transition-all active:scale-95"
                             >
-                              <Plus size={12} />
+                              <Plus size={13} />
                               <span>Edit</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => setDeckContextRailTab('Outline')}
-                              className="px-2.5 py-1 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 transition-colors"
+                              className="px-3 py-1.5 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-colors"
                             >
                               Outline
                             </button>
                             <button
                               type="button"
                               onClick={() => showToast('Opening Storyboard')}
-                              className="px-2.5 py-1 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 transition-colors"
+                              className="px-3 py-1.5 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-colors"
                             >
                               Storyboard
                             </button>
                             <button
                               type="button"
                               onClick={handlePresentDeck}
-                              className="px-2.5 py-1 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 transition-colors"
+                              className="px-3 py-1.5 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-colors"
                             >
                               Presenter
                             </button>
 
-                            <div className="w-px h-4 bg-gray-200 mx-1"></div>
+                            <div className="w-px h-4 bg-gray-200 mx-1" />
 
                             {/* Zoom controls */}
-                            <div className="flex items-center gap-1 text-gray-500">
+                            <div className="flex items-center gap-1.5 text-gray-500">
                               <button
                                 type="button"
                                 onClick={() => setDeckZoomLevel((prev) => Math.max(50, prev - 10))}
-                                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded-md transition-colors font-bold text-sm"
                                 title="Zoom out"
                               >
                                 -
                               </button>
-                              <span className="text-[11px] font-bold w-10 text-center">{deckZoomLevel}%</span>
+                              <span className="text-[11px] font-bold w-9 text-center text-gray-700">{deckZoomLevel}%</span>
                               <button
                                 type="button"
                                 onClick={() => setDeckZoomLevel((prev) => Math.min(150, prev + 10))}
-                                className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                                className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded-md transition-colors font-bold text-sm"
                                 title="Zoom in"
                               >
                                 +
                               </button>
                             </div>
 
-                            <div className="w-px h-4 bg-gray-200 mx-1"></div>
+                            <div className="w-px h-4 bg-gray-200 mx-1" />
 
                             <button
                               type="button"
                               onClick={() => setShowDeckNotes((prev) => !prev)}
-                              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl transition-all ${
-                                showDeckNotes ? 'bg-violet-100 text-[#7C4DFF] font-bold' : 'hover:bg-gray-100/80 text-gray-600'
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all ${
+                                showDeckNotes ? 'bg-violet-100 text-[#7C4DFF] font-bold' : 'hover:bg-gray-100/80 text-gray-600 hover:text-gray-900'
                               }`}
                             >
                               <FileText size={13} />
@@ -35693,20 +35705,35 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             <button
                               type="button"
                               onClick={() => showToast('Duration settings')}
-                              className="flex items-center gap-1 px-2.5 py-1 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 transition-colors"
+                              className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-gray-100/80 rounded-xl font-medium text-gray-600 hover:text-gray-900 transition-colors"
                             >
                               <Clock size={13} />
                               <span>Duration</span>
                             </button>
                           </div>
 
-                          {/* Bottom Status Bar */}
-                          <div className="w-full px-6 flex items-center justify-between text-[11px] font-medium text-gray-400 pt-0.5">
-                            <div>Slide {deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1} of {deckSlides.length}</div>
-                            <div className="flex items-center gap-3">
-                              <span>English (US)</span>
-                              <span>•</span>
+                          {/* Bottom Status Bar matching Image 2 */}
+                          <div className="w-full px-6 flex items-center justify-between text-[11px] font-medium text-gray-400 pt-1 border-t border-gray-150/50">
+                            <div className="flex items-center gap-4">
+                              <span>Slide {deckSlides.findIndex(s => s.id === activeDeckSlideId) + 1} of {deckSlides.length}</span>
+                              <button type="button" className="flex items-center gap-1 hover:text-gray-600 transition-colors">
+                                <span>English (US)</span>
+                                <ChevronDown size={11} />
+                              </button>
+                              <span className="text-gray-300">•</span>
                               <span>All changes saved</span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <button type="button" className="hover:text-gray-600 transition-colors" title="More options">
+                                <MoreHorizontal size={14} />
+                              </button>
+                              <div className="w-20 h-1 bg-gray-200 rounded-full relative flex items-center cursor-pointer">
+                                <div className="w-2.5 h-2.5 rounded-full bg-[#7C4DFF] absolute left-1/2 -translate-x-1/2 shadow-xs" />
+                              </div>
+                              <button type="button" className="hover:text-gray-600 transition-colors" title="Toggle Fullscreen">
+                                <Maximize2 size={13} />
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -35720,8 +35747,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           />
                         </div>
                       )}
-</div>
                     </div>
+                  </div>
 
                     {/* Right Inspector Panel - Floating Card Pixel-Perfect to Reference Image 2 */}
                     <div className="w-[270px] my-3 mr-3 rounded-2xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] flex flex-col shrink-0 z-30 overflow-hidden relative max-h-[calc(100vh-140px)]">
