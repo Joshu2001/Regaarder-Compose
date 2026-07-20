@@ -31630,11 +31630,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <>
                   <button
                     type="button"
-                    onClick={() => setLeftSidebarOpen((prev) => !prev)}
+                    onClick={() => setDeckSlidesPanelOpen((prev) => !prev)}
                     className="p-1.5 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg text-gray-500 hover:text-gray-800 transition-colors shrink-0 mr-1"
-                    title={leftSidebarOpen ? "Hide sidebar" : "Show sidebar"}
+                    title={deckSlidesPanelOpen ? "Hide slides sidebar" : "Show slides sidebar"}
                   >
-                    {leftSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                    {deckSlidesPanelOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
                   </button>
                   <div className="flex items-center gap-2">
                     <svg className="w-5 h-5 text-[#7C4DFF]" viewBox="0 0 24 24" fill="currentColor">
@@ -31851,7 +31851,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </header>
 
           <div className="flex-1 min-h-0 flex relative">
-            {!isSheetsMode && (
+            {!isSheetsMode && productMode !== 'deck' && (
                     <aside
                       className="border-r border-gray-100/50 flex flex-col bg-[#FAFAFC]/75 dark:bg-zinc-900/75 backdrop-blur-md shrink-0 select-none overflow-hidden transition-[width] duration-200"
                       style={{ width: leftSidebarOpen ? `${leftSidebarWidth}px` : '0px' }}
