@@ -23646,9 +23646,49 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     const evaluatedCells = (activeSheetGridRaw.cells || []).map((row, r) => 
       (row || []).map((cell, c) => {
-        if (typeof cell === 'string' && cell.startsWith('=')) {
-          const result = parser.parse(cell.substring(1));
-          return result.error ? result.error : result.result;
+        const cellFormat = activeSheetGridRaw.formats?.[r]?.[c] || {};
+        const isLocked = Boolean(cellFormat.isLocked || cellFormat.locked);
+
+        if (typeof cell === 'string') {
+          const raw = cell.trim();
+          if (!raw) return cell;
+
+          // 1. Explicit formula starting with '='
+          if (raw.startsWith('=')) {
+            let expr = raw.substring(1).trim();
+            if (expr.endsWith('=')) expr = expr.slice(0, -1).trim();
+            const result = parser.parse(expr);
+            return result.error ? result.error : result.result;
+          }
+
+          // 2. Trailing equal like '1+1='
+          if (raw.endsWith('=') && raw.length > 1) {
+            if (isLocked) return cell;
+            const expr = raw.slice(0, -1).trim();
+            const result = parser.parse(expr);
+            if (!result.error && result.result !== null && typeof result.result !== 'undefined') {
+              return result.result;
+            }
+          }
+
+          // 3. Implicit formula calculation without leading '='
+          // DO NOT perform implicit calculation if the user locked the cell
+          if (!isLocked && 
+              !/^\d{1,4}[-\/]\d{1,2}[-\/]\d{1,4}$/.test(raw) && 
+              !/^\d{3,4}-\d{3,4}-\d{4}$/.test(raw) && 
+              (isNaN(raw) || raw.includes('+') || raw.includes('*') || raw.includes('/'))) {
+            
+            const isFn = /^[A-Z]{2,}\s*\(.*?\)$/i.test(raw);
+            const isCellRefMath = /^[A-Z]{1,3}\d+\s*[\+\-\*\/\^\%]\s*.+$/i.test(raw) || /^.+\s*[\+\-\*\/\^\%]\s*[A-Z]{1,3}\d+$/i.test(raw);
+            const isBasicMath = /^[\d\.\s\(\)]+[\+\*\/\^\%][\d\.\s\(\)\+\-\*\/\^\%]+$/.test(raw) || /^[\d\.\s\(\)]+\s*-\s*[\d\.\s\(\)]+$/.test(raw);
+
+            if (isFn || isCellRefMath || isBasicMath) {
+              const result = parser.parse(raw);
+              if (!result.error && result.result !== null && typeof result.result !== 'undefined') {
+                return result.result;
+              }
+            }
+          }
         }
         return cell;
       })
@@ -32621,7 +32661,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                            `${toColumnLabel(Math.min(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.min(selectedSheetRange.startRow, selectedSheetRange.endRow)}:${toColumnLabel(Math.max(selectedSheetRange.startCol, selectedSheetRange.endCol) - 1)}${Math.max(selectedSheetRange.startRow, selectedSheetRange.endRow)}` :
                          `${toColumnLabel(Math.max(0, selectedSheetCell.col - 1))}${selectedSheetCell.row}`}
                       </div>
-                      <span className="text-gray-400">fx</span>
+                      <span 
+                        className="text-gray-400 font-mono cursor-pointer hover:text-violet-600 font-bold transition-colors select-none"
+                        title="Tap to insert formula (=)"
+                        onClick={() => {
+                          const currentVal = activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || '';
+                          const valStr = String(currentVal);
+                          if (!valStr.startsWith('=')) {
+                            updateSheetCell(activeSheetId, selectedSheetCell.row - 1, selectedSheetCell.col - 1, '=' + valStr);
+                          }
+                        }}
+                      >
+                        fx
+                      </span>
                                             <input
                         type="text"
                         value={activeSheetGridRaw.cells?.[selectedSheetCell.row - 1]?.[selectedSheetCell.col - 1] || ''}
@@ -34329,7 +34381,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 // Fall back to grid data when not editing.
                                 const cellValue = isEditingThisCell
                                   ? editingCellValue
-                                  : (isSelected ? (activeSheetGridRaw.cells?.[rowIndex]?.[colIndex] || '') : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], computedFormat));
+                                  : formatCellValue(activeSheetGrid.cells?.[rowIndex]?.[colIndex], computedFormat);
 
                                 const hasComment = comments.some(c => c.targetId === activeSheetId && c.metadata?.row === num && c.metadata?.col === colIndex + 1);
 
