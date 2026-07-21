@@ -2576,7 +2576,7 @@ const SummaryModal = ({ isOpen, onClose }) => {
               </div>
               {getTranslatedText('title')}
             </h2>
-            <span className="text-[11px] font-medium text-violet-600 bg-violet-100/50 px-2.5 py-1 rounded-full border border-violet-200/50 uppercase tracking-wider">{getTranslatedText('status')}</span>
+            <span className="text-[11px] font-medium text-violet-600 bg-violet-100/40 px-2.5 py-1 rounded-full uppercase tracking-wider">{getTranslatedText('status')}</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
@@ -4638,7 +4638,7 @@ export default function App() {
   const [deckAnimationSpeed, setDeckAnimationSpeed] = useState('0.5s');
   const [selectedBrandKit, setSelectedBrandKit] = useState(DECK_BRAND_KITS[0]);
   const [deckSlidesData, setDeckSlidesData] = useState([
-    { ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', presetKey: 'blank', footer: '' }
+    { id: 1, section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', designPresetKey: 'blank', presetKey: 'blank', accent: 'from-indigo-500 to-violet-500', visualType: 'hero statement', layoutStyle: 'Title Slide', motionCue: 'Soft fade and stagger reveal', keyMetric: '', speakerNotes: '', footer: '' }
   ]);
   const [activeRightTab, setActiveRightTab] = useState('room'); // 'chat' | 'assistant' | 'whiteboard' | 'tasks' | 'calendar' | 'room' | 'memory'
   const [whiteboardAssistantTab, setWhiteboardAssistantTab] = useState('ask');
@@ -21680,7 +21680,7 @@ Rules:
     setCreationPickerOpen(false);
     setProductMode('deck');
     setDeckTitle('Untitled deck');
-    setDeckSlidesData([{ ...createTitleSlide(1), section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', presetKey: 'blank', footer: '' }]);
+    setDeckSlidesData([{ id: 1, section: 'Opening', title: 'Title Slide', headline: 'Click to add title', blurb: 'Click to add subtitle', designPresetKey: 'blank', presetKey: 'blank', accent: 'from-indigo-500 to-violet-500', visualType: 'hero statement', layoutStyle: 'Title Slide', motionCue: 'Soft fade and stagger reveal', keyMetric: '', speakerNotes: '', footer: '' }]);
     setActiveDeckSlideId(1);
     setDeckZoomLevel(100);
     setDeckToolbarFont('Inter');
@@ -21689,7 +21689,6 @@ Rules:
     setDeckPromptInput('');
     setDeckPromptMinimized(false);
     setDeckPromptChips(['Turn this into investor tone', 'Generate competitor comparison slide', 'Make this more visual', 'Reduce to 8 slides', 'Simplify for students']);
-    setDeckCustomChip('');
     setDeckSlidesPanelOpen(true);
     setRightSidebarOpen(false);
     setActiveRightTab('assistant');
@@ -21706,7 +21705,6 @@ Rules:
     setDeckPromptInput('');
     setDeckPromptMinimized(false);
     setDeckPromptChips(['Analyze this data', 'Create pivot table', 'Forecast next quarter', 'Find anomalies', 'Compare to last year']);
-    setDeckCustomChip('');
     setDeckSlidesPanelOpen(false);
     setRightSidebarOpen(false);
     setSheetToolbarTab('Data');
@@ -35732,7 +35730,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                                 <div className="w-2.5 h-2.5 rounded-full bg-[#7C4DFF] absolute left-1/2 -translate-x-1/2 shadow-xs" />
                               </div>
                               <button type="button" className="hover:text-gray-600 transition-colors" title="Toggle Fullscreen">
-                                <Maximize2 size={13} />
+                                <Maximize size={13} />
                               </button>
                             </div>
                           </div>
@@ -36358,7 +36356,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       if (pageContextMenu.isSheets) {
                         setSheetsData(prev => prev.map(s => s.id === pageContextMenu.itemId ? { ...s, title: e.target.value } : s));
                       } else {
-                        setDeckSlides(prev => prev.map(s => s.id === pageContextMenu.itemId ? { ...s, title: e.target.value } : s));
+                        setDeckSlidesData(prev => prev.map(s => s.id === pageContextMenu.itemId ? { ...s, title: e.target.value } : s));
                       }
                     }}
                     placeholder={pageContextMenu.isSheets ? 'Add worksheet title' : 'Add page title'}
@@ -38386,7 +38384,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                             onClick={() => {
                               setOutlineTreeData([{ id: `sec-${Date.now()}`, title: 'New Section', progress: 0, completed: false, subsections: [], expanded: false }]);
                             }} 
-                            className="text-[11.5px] font-semibold text-violet-700 bg-violet-50/30 border border-dashed border-violet-200/80 hover:bg-violet-50 hover:border-violet-300 px-5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1 cursor-pointer select-none"
+                            className="text-[11.5px] font-semibold text-violet-700 bg-violet-50/30 border border-violet-200/80 hover:bg-violet-50 hover:border-violet-300 px-5 py-2 rounded-xl transition-all shadow-sm flex items-center gap-1 cursor-pointer select-none"
                             style={{ fontFamily: editorFont }}
                           >
                             + Add Section
@@ -38405,7 +38403,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                               setEditingOutlineId(newId);
                               setEditingOutlineText('Untitled');
                             }}
-                            className="flex-1 py-2 rounded-xl border border-dashed border-slate-200 hover:border-violet-400/80 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-650 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                            className="flex-1 py-2 rounded-xl border border-slate-200 hover:border-violet-400/80 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-650 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
                             style={{ fontFamily: editorFont }}
                           >
                             + Add Section
@@ -38436,7 +38434,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           onClick={() => {
                             insertEnterprisePage();
                           }}
-                          className="w-full py-2.5 mt-2 rounded-xl border border-dashed border-slate-200 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                          className="w-full py-2.5 mt-2 rounded-xl border border-slate-200 hover:border-violet-400 bg-[#FAFAFC] hover:bg-violet-50/20 text-slate-500 hover:text-violet-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
                           style={{ fontFamily: editorFont }}
                         >
                           + New page
@@ -40314,7 +40312,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <div
                 key={doc.id}
                 onClick={() => switchDocument(doc.id)}
-                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-white dark:bg-zinc-800 border-slate-200 text-violet-600 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
+                className={`relative shrink-0 px-2.5 py-1 rounded-[6px] text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer ${isActive ? 'bg-slate-100 dark:bg-zinc-800 border-violet-200 text-violet-600 dark:text-violet-400 shadow-sm' : 'bg-transparent border-transparent text-gray-500 hover:bg-white/60 dark:hover:bg-zinc-800/60 hover:border-gray-200'}`}
               >
                 {renamingDocId === doc.id ? (
                   <input
@@ -46147,7 +46145,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                   window.addEventListener('pointermove', handleMove);
                   window.addEventListener('pointerup', handleUp);
                 }}
-                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_12px_30px_-10px_rgba(124,58,237,0.7)] hover:bg-violet-700 transition-all cursor-move touch-none"
+                className="h-12 w-12 rounded-full bg-violet-600 text-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] hover:bg-violet-700 transition-all cursor-move touch-none"
                 title="Open AI prompt or drag to move"
               >
                 <PenTool size={18} className="mx-auto" />
