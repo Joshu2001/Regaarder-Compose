@@ -39416,18 +39416,32 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
       {/* Document Outline — fixed overlay panel, floats above canvas at z-[260] */}
       {showDocumentOutlineView && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
-        <div
-          className="fixed top-[106px] left-0 h-[calc(100vh-106px)] z-[260] flex flex-col bg-white/96 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_40px_-8px_rgba(0,0,0,0.14)] select-none"
-          style={{ width: `${leftSidebarWidth}px` }}
-        >
-          {/* Panel Header */}
-          <div className="px-4 pt-5 pb-3 border-b border-gray-100/80 shrink-0">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
-                <FileText size={13} className="text-violet-600" />
+        <>
+          {/* Invisible backdrop — tapping outside dismisses the overlay */}
+          <div
+            className="fixed inset-0 z-[259]"
+            onClick={() => { setActiveDocView('default'); setIsFocusMode(false); }}
+            aria-label="Close Document Outline"
+          />
+          <div
+            className="fixed top-[106px] left-0 h-[calc(100vh-106px)] z-[260] flex flex-col bg-white/96 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_40px_-8px_rgba(0,0,0,0.14)] select-none"
+            style={{ width: `${leftSidebarWidth}px` }}
+          >
+            {/* Panel Header */}
+            <div className="px-4 pt-5 pb-3 border-b border-gray-100/80 shrink-0">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
+                  <FileText size={13} className="text-violet-600" />
+                </div>
+                <span className="text-[13px] font-semibold text-gray-900 tracking-tight">Document Outline</span>
+                <button
+                  onClick={() => { setActiveDocView('default'); setIsFocusMode(false); }}
+                  className="ml-auto w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  aria-label="Close outline"
+                >
+                  <X size={13} />
+                </button>
               </div>
-              <span className="text-[13px] font-semibold text-gray-900 tracking-tight">Document Outline</span>
-            </div>
             <div
               className={`text-[11px] truncate outline-none cursor-text w-full hover:bg-slate-50 rounded px-1.5 -mx-1.5 py-1 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:outline-none ${
                 docTitle ? 'text-gray-600 font-medium' : 'text-gray-400 italic'
@@ -39464,8 +39478,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
               <Settings size={15} /> Settings
             </button>
           </div>
-        </div>
+          </div>
+        </>
       )}
+
+
 
       {leftSidebarOpen && (
         <div
