@@ -39238,12 +39238,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
         />
       )}
 
-      {/* 1. Left Navigation Sidebar */}
+      {/* 1. Left Navigation Sidebar — collapses to 0 when Document Outline is overlaying */}
       <div
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-white border-r border-gray-100"
-        style={{ width: (activeRightTab === 'whiteboard') ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        style={{ width: (activeRightTab === 'whiteboard' || showDocumentOutlineView) ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
-        {showDocumentOutlineView ? (
+        {/* Show document outline header only in sidebar when NOT in outline view */}
+        {!showDocumentOutlineView && (
           <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
             <div 
               className="flex items-center gap-2 text-gray-900 font-semibold cursor-pointer hover:text-violet-600 transition-colors"
@@ -39277,8 +39278,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
               {docTitle || 'Untitled Document'}
             </div>
           </div>
-        ) : (
+        )}
+        {!showDocumentOutlineView && (
           <>
+
             <div className="h-16 flex items-center justify-between px-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-500 text-white flex items-center justify-center shadow-[0_12px_24px_-14px_rgba(139,92,246,0.95)]">
@@ -39305,9 +39308,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 onMouseLeave={() => setIsFormattingDropdownHovered(false)}
               >
                 <Search size={14} className="absolute left-2.5 top-2 text-gray-400" />
-                <input 
-                  type="text" 
-                  placeholder="Search Orb..." 
+                <input
+                  type="text"
+                  placeholder="Search Orb..."
                   className="w-full bg-white border border-gray-200 rounded-md py-1.5 pl-8 pr-2 text-sm focus:outline-none focus:border-violet-300"
                 />
                 <span className="absolute right-2.5 top-1.5 text-xs text-gray-400 border border-gray-200 rounded px-1">Ctrl K</span>
@@ -39317,9 +39320,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
 
         {/* Main Nav Links */}
-        {showDocumentOutlineView && roomState !== 'active' ? (
-          renderDocumentOutlineContent()
-        ) : !showDocumentOutlineView ? (
+        {!showDocumentOutlineView ? (
           <div className="flex-1 overflow-y-auto px-3 space-y-4 thin-scrollbar">
             <div className="space-y-0.5">
               <button
@@ -39412,6 +39413,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </button>
         </div>
       </div>
+
+      {/* Document Outline — fixed overlay panel, floats above canvas at z-[260] */}
+      {showDocumentOutlineView && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
+        <div
+          className="fixed top-0 left-0 h-full z-[260] flex flex-col bg-white/96 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_40px_-8px_rgba(0,0,0,0.14)] select-none"
+          style={{ width: `${leftSidebarWidth}px` }}
+        >
+          {/* Panel Header */}
+          <div className="px-4 pt-5 pb-3 border-b border-gray-100/80 shrink-0">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
+                <FileText size={13} className="text-violet-600" />
+              </div>
+              <span className="text-[13px] font-semibold text-gray-900 tracking-tight">Document Outline</span>
+            </div>
+            <div
+              className={`text-[11px] truncate outline-none cursor-text w-full hover:bg-slate-50 rounded px-1.5 -mx-1.5 py-1 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:outline-none ${
+                docTitle ? 'text-gray-600 font-medium' : 'text-gray-400 italic'
+              }`}
+              title={docTitle || 'Untitled Document'}
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={(e) => {
+                const nextTitle = e.target.textContent.trim() || 'Untitled Document';
+                setDocTitle(nextTitle);
+                if (activeDocId) {
+                  setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+              }}
+            >
+              {docTitle || 'Untitled Document'}
+            </div>
+          </div>
+
+          {/* Outline Content */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            {renderDocumentOutlineContent()}
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-gray-100 bg-[#FAFAFC]/80 shrink-0">
+            <button
+              onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
+              className="flex items-center gap-3 text-sm text-gray-500 hover:text-gray-900 w-full transition-colors"
+            >
+              <Settings size={15} /> Settings
+            </button>
+          </div>
+        </div>
+      )}
 
       {leftSidebarOpen && (
         <div
@@ -41389,7 +41443,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div
             ref={documentScrollContainerRef}
             onScroll={handleEditorScroll}
-            className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 transition-opacity duration-300 opacity-100"
+            className="flex-1 overflow-y-auto thin-scrollbar relative bg-[#F7F7F9] p-6 md:p-8 pt-14 md:pt-14 transition-opacity duration-300 opacity-100"
           >
           {activeRightTab === 'whiteboard' && (
             <div className={`absolute inset-0 ${isWhiteboardImmersive ? 'z-[340] p-0 bg-white' : isWhiteboardFloatingUiOpen ? 'z-[320] p-6 md:p-8 bg-[#F7F7F9]' : 'z-30 p-6 md:p-8 bg-[#F7F7F9]'}`}>
