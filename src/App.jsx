@@ -40311,10 +40311,15 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
+        {/* Document Tab Strip - Auto-reveals when mouse is outside editor */}
         <div
           onMouseEnter={() => setIsTopHeaderHovered(true)}
           onMouseLeave={() => setIsTopHeaderHovered(false)}
-          className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0"
+          className={`border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0 transition-all duration-300 ease-out ${
+            isTopHeaderHovered
+              ? 'h-10 opacity-100 translate-y-0 pointer-events-auto'
+              : 'h-0 opacity-0 -translate-y-2 pointer-events-none overflow-hidden border-none py-0'
+          }`}
         >
           {orderedDocuments.map((doc, docIndex) => {
             const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
@@ -40396,7 +40401,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </button>
         </div>
 
-        {/* Formatting Ribbon */}
+        {/* Formatting Ribbon - PERMANENTLY VISIBLE, dynamically shifts top position */}
         <div
           ref={formattingMenuRef}
           onMouseEnter={() => setIsTopHeaderHovered(true)}
@@ -40406,11 +40411,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`absolute top-[106px] left-[50%] -translate-x-[50%] flex justify-center items-center h-[42px] px-3 gap-2 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] bg-white/85 backdrop-blur-2xl border border-white/60 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] rounded-2xl transition-all duration-300 ease-out hover:bg-white/95 hover:shadow-[0_16px_44px_-8px_rgba(0,0,0,0.16)] ${
-            (isTopHeaderHovered || isFormattingDropdownHovered || openDropdown || listDropdownOpen || insertDropdownOpen)
-              ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
-              : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
-          } ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`absolute ${isTopHeaderHovered ? 'top-[106px]' : 'top-[64px]'} left-[50%] -translate-x-[50%] flex justify-center items-center h-[42px] px-3 gap-2 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] bg-white/85 backdrop-blur-2xl border border-white/60 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] rounded-2xl transition-all duration-300 ease-out hover:bg-white/95 hover:shadow-[0_16px_44px_-8px_rgba(0,0,0,0.16)] ${
+            activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''
+          } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
