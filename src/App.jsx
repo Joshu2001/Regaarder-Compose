@@ -45093,11 +45093,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setDocStateDropdownOpen(!docStateDropdownOpen);
                       }
                     }}
-                    className={`text-sm font-medium border rounded-lg px-2.5 py-1 cursor-pointer select-none transition-all duration-200 capitalize flex items-center gap-1.5 hover:shadow-sm ${
-                      docState === 'draft' ? 'bg-violet-50 hover:bg-violet-100/80 text-violet-700 border-violet-250' :
-                      docState === 'ready' ? 'bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border-emerald-250' :
-                      docState === 'review' ? 'bg-blue-50 hover:bg-blue-100/80 text-blue-700 border-blue-250' :
-                      'bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-250'
+                    className={`text-sm font-medium rounded-lg px-2.5 py-1 cursor-pointer select-none transition-all duration-200 capitalize flex items-center gap-1.5 hover:shadow-sm ${
+                      docState === 'draft' ? 'bg-violet-100/40 hover:bg-violet-100/60 text-violet-700' :
+                      docState === 'ready' ? 'bg-emerald-100/40 hover:bg-emerald-100/60 text-emerald-700' :
+                      docState === 'review' ? 'bg-blue-100/40 hover:bg-blue-100/60 text-blue-700' :
+                      'bg-slate-100/40 hover:bg-slate-100/60 text-slate-600'
                     } ${currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter' ? 'pointer-events-none opacity-80 cursor-default' : ''}`}
                   >
                     {docState === 'draft' && <FileEdit size={14} className="stroke-[2]" />}
