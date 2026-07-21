@@ -8589,6 +8589,7 @@ export default function App() {
   const [isExporting, setIsExporting] = useState(false);
   const [activeDocView, setActiveDocView] = useState('document');
   const [isFormattingDropdownHovered, setIsFormattingDropdownHovered] = useState(false);
+  const [isTopHeaderHovered, setIsTopHeaderHovered] = useState(false);
   const [isTextStyleMenuHovered, setIsTextStyleMenuHovered] = useState(false);
 
   const [editorHeading, setEditorHeading] = useState('Heading 1');
@@ -39453,7 +39454,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
         )}
         
         {/* Top Header */}
-        <div className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[210]">
+        <div
+          onMouseEnter={() => setIsTopHeaderHovered(true)}
+          onMouseLeave={() => setIsTopHeaderHovered(false)}
+          className="h-14 flex items-center justify-between px-6 border-b border-slate-200/50 bg-white dark:bg-zinc-900 shrink-0 select-none group/header relative z-[210]"
+        >
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -40306,7 +40311,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       )}
 
-        <div className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0">
+        <div
+          onMouseEnter={() => setIsTopHeaderHovered(true)}
+          onMouseLeave={() => setIsTopHeaderHovered(false)}
+          className="h-10 border-b border-slate-200/50 px-4 flex items-center gap-2 overflow-x-auto no-scrollbar bg-[#FAFAFC] dark:bg-zinc-900 relative z-[140] min-w-0"
+        >
           {orderedDocuments.map((doc, docIndex) => {
             const label = activeRightTab === 'whiteboard' && activeDocId === doc.id
               ? UNTITLED_WHITEBOARD_LABEL
@@ -40390,12 +40399,18 @@ if (productMode === 'deck' || productMode === 'sheets') {
         {/* Formatting Ribbon */}
         <div
           ref={formattingMenuRef}
+          onMouseEnter={() => setIsTopHeaderHovered(true)}
+          onMouseLeave={() => setIsTopHeaderHovered(false)}
           onMouseDown={(event) => {
             if (event.target.closest('button')) {
               event.preventDefault();
             }
           }}
-          className={`absolute top-[106px] left-[50%] -translate-x-[50%] flex justify-center items-center h-[42px] px-3 gap-2 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] bg-white/85 backdrop-blur-2xl border border-white/60 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] rounded-2xl transition-all duration-300 ease-out hover:bg-white/95 hover:shadow-[0_16px_44px_-8px_rgba(0,0,0,0.16)] hover:scale-[1.005] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`absolute top-[106px] left-[50%] -translate-x-[50%] flex justify-center items-center h-[42px] px-3 gap-2 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] bg-white/85 backdrop-blur-2xl border border-white/60 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] rounded-2xl transition-all duration-300 ease-out hover:bg-white/95 hover:shadow-[0_16px_44px_-8px_rgba(0,0,0,0.16)] ${
+            (isTopHeaderHovered || isFormattingDropdownHovered || openDropdown || listDropdownOpen || insertDropdownOpen)
+              ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto'
+              : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
+          } ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
