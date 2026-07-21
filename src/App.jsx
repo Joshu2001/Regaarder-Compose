@@ -40395,7 +40395,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`absolute top-[52px] left-[50%] -translate-x-[50%] flex justify-center items-center h-[42px] px-3 gap-2 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)] rounded-2xl transition-all duration-300 ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`absolute top-[106px] left-[50%] -translate-x-[50%] flex justify-center items-center h-[42px] px-3 gap-2 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] bg-white/85 backdrop-blur-2xl border border-white/60 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] rounded-2xl transition-all duration-300 ease-out hover:bg-white/95 hover:shadow-[0_16px_44px_-8px_rgba(0,0,0,0.16)] hover:scale-[1.005] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
