@@ -39417,7 +39417,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Document Outline — fixed overlay panel, floats above canvas at z-[260] */}
       {showDocumentOutlineView && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
         <div
-          className="fixed top-0 left-0 h-full z-[260] flex flex-col bg-white/96 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_40px_-8px_rgba(0,0,0,0.14)] select-none"
+          className="fixed top-[106px] left-0 h-[calc(100vh-106px)] z-[260] flex flex-col bg-white/96 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_40px_-8px_rgba(0,0,0,0.14)] select-none"
           style={{ width: `${leftSidebarWidth}px` }}
         >
           {/* Panel Header */}
