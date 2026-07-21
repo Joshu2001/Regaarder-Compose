@@ -27587,22 +27587,17 @@ Respond with a JSON array of slide objects matching the schema.`;
           { key: 'files',      label: 'Files',      icon: File },
         ];
 
-        // Keys currently visible in the sidebar (pinned + dynamic slots)
         const visibleKeys = new Set(['chat', 'assistant', ...dynamicSlots]);
 
-        // Items shown in the More panel: non-pinned, not currently in a dynamic slot,
-        // and passing any conditional check
         const moreItems = ALL_FEATURES.filter(f =>
           !f.pinned && !visibleKeys.has(f.key) && (f.conditional !== false)
         );
 
-        // Helper: determine if a given tabKey is currently "active" (panel open + tab matches)
         const isActive = (key) => {
           if (key === 'dm') return productMode === 'dm';
           return activeRightTab === key && rightSidebarOpen;
         };
 
-        // Unified icon button renderer — used for both fixed and dynamic slots
         const renderNavIcon = (feature, opts = {}) => {
           const { icon: Icon, key, label } = feature;
           const active = isActive(key);
@@ -27626,27 +27621,29 @@ Respond with a JSON array of slide objects matching the schema.`;
               onClick={handleClick}
               className="group flex flex-col items-center gap-1 cursor-pointer select-none"
               style={opts.style}
+              title={label}
             >
               <div className={`p-2.5 rounded-xl transition-all duration-300 ease-out border relative ${
                 active
                   ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]'
                   : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
               }`}>
-                <Icon size={20} strokeWidth={2} />
-                {/* Assist: pulsing dot when text is selected */}
+                <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+                {active && (
+                  <span className="absolute -right-1 -top-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
+                  </span>
+                )}
                 {isAssist && selectedEditorText && (
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-violet-500 animate-pulse border border-white" />
                 )}
-                {/* Comments: unresolved count badge */}
                 {isComments && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-violet-500 text-white flex items-center justify-center text-[8px] font-bold border border-white">
                     {comments.filter(c => !c.resolved).length}
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] font-medium transition-colors ${
-                active ? 'text-violet-600 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-              }`}>{label}</span>
             </div>
           );
         };
@@ -27654,18 +27651,18 @@ Respond with a JSON array of slide objects matching the schema.`;
         return (
           <>
             {/* ── Sidebar shell ─────────────────────────────────────────── */}
-            <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[74px] translate-x-[64px] hover:translate-x-0 opacity-20 hover:opacity-100 border-l border-slate-200 bg-[#FAFAFC] flex-col items-center py-4 gap-1 select-none overflow-y-auto overflow-x-visible thin-scrollbar transition-all duration-300 ease-in-out shadow-[-10px_0_30px_rgba(0,0,0,0.03)]`}>
+            <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[52px] translate-x-[48px] hover:translate-x-0 opacity-20 hover:opacity-100 border-l border-slate-200 bg-[#FAFAFC] flex-col items-center py-4 gap-2 select-none overflow-y-auto overflow-x-visible thin-scrollbar transition-all duration-300 ease-in-out shadow-[-10px_0_30px_rgba(0,0,0,0.03)]`}>
 
               {/* ── Slot 1: Home (always fixed) ─── */}
               <div className="relative mb-5">
                 <div
                   className="group flex flex-col items-center gap-1 cursor-pointer select-none"
                   onClick={() => setProductMode('landing')}
+                  title="Home"
                 >
                   <div className="p-2.5 rounded-xl border border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700 transition-all duration-200">
                     <Home size={20} strokeWidth={2} />
                   </div>
-                  <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-600 transition-colors">Home</span>
                 </div>
 
                 {/* Workspace launcher popover */}
@@ -39232,6 +39229,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
       )}
 
 
+      {/* Left Sidebar Invisible Hover Trigger */}
+      {!leftSidebarOpen && productMode !== 'landing' && activeRightTab !== 'whiteboard' && (
+        <div 
+          className="absolute left-0 top-0 h-full w-[6px] z-[900]"
+          onMouseEnter={() => setLeftSidebarOpen(true)}
+        />
+      )}
+
       {/* 1. Left Navigation Sidebar */}
       <div
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-white border-r border-gray-100"
@@ -40390,7 +40395,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`h-12 border-b border-slate-200/50 flex items-center px-6 gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none relative z-[130] min-w-0 bg-[#FAF9FF] dark:bg-[#1c1b22] shadow-[0_1px_3px_rgba(15,23,42,0.01)] ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          className={`absolute top-[52px] left-[50%] -translate-x-[50%] flex justify-center items-center h-[42px] px-3 gap-2 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)] rounded-2xl transition-all duration-300 ${activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''} ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
           <div
             className="relative"
@@ -40402,12 +40407,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'));
               }}
-              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap shrink-0 transition-all border text-[13px] font-medium ${openDropdown === 'heading' ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'heading' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
             >
               {editorHeading} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
             </button>
             {openDropdown === 'heading' && (
-              <div className="absolute top-9 left-0 z-[230] w-44 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
+              <div className="absolute top-full left-0 mt-2 z-[230] w-44 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
                 <input
                   value={headingSearch}
                   onChange={(e) => setHeadingSearch(e.target.value)}
@@ -40503,13 +40508,13 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
               }}
-              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'page-number' ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'page-number' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
               title="Page numbering"
             >
               Page # <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
             </button>
             {openDropdown === 'page-number' && (
-              <div className="absolute top-9 left-0 z-[230] w-52 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2 space-y-2">
+              <div className="absolute top-full left-0 mt-2 z-[230] w-52 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2 space-y-2">
                 <button
                   type="button"
                   onClick={() => setShowPageNumbers((prev) => !prev)}
@@ -40555,12 +40560,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
               }}
-              className={`flex items-center gap-1 px-2 py-1 rounded whitespace-nowrap transition-all border text-[13px] font-medium ${openDropdown === 'font' ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'font' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
             >
               {editorFont} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
             </button>
             {openDropdown === 'font' && (
-              <div className="absolute top-9 left-0 z-[230] w-48 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
+              <div className="absolute top-full left-0 mt-2 z-[230] w-48 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
                 <input
                   value={fontSearch}
                   onChange={(e) => setFontSearch(e.target.value)}
@@ -40593,7 +40598,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
 
           <div
-            className="relative flex items-center gap-1"
+            className={`relative flex items-center gap-0.5 px-1 py-1 rounded-xl transition-all duration-300 ease-out border ${openDropdown === 'size' ? 'bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent hover:border-slate-200/40 hover:bg-slate-50/60 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
             onMouseEnter={() => setIsFormattingDropdownHovered(true)}
             onMouseLeave={() => setIsFormattingDropdownHovered(false)}
           >
@@ -40620,18 +40625,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 
                 applyFormatCommand('fontSize', String(nextSize));
               }}
-              className="w-14 bg-transparent border border-transparent hover:border-gray-200 rounded px-1 py-0.5 focus:outline-none"
+              className="w-10 bg-transparent border-none text-[13px] font-medium text-slate-600 focus:text-slate-900 text-center focus:outline-none"
             />
             <button
               onClick={() => {
                 closeTransientMenus();
                 setOpenDropdown((prev) => (prev === 'size' ? null : 'size'));
               }}
+              className="px-1 hover:text-slate-900"
             >
-              <ChevronDown size={14} className="text-gray-400" />
+              <ChevronDown size={14} className="text-gray-400 hover:text-slate-700 transition-colors" />
             </button>
             {openDropdown === 'size' && (
-              <div className="absolute top-9 left-0 z-[230] w-32 bg-white isolate border border-gray-200 rounded-lg shadow-2xl ring-1 ring-black/5 p-2">
+              <div className="absolute top-full left-0 mt-2 z-[230] w-32 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
                 <input
                   value={sizeSearch}
                   onChange={(e) => setSizeSearch(e.target.value)}
@@ -40674,12 +40680,12 @@ if (productMode === 'deck' || productMode === 'sheets') {
           
           <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
 
-          <div className="flex items-center gap-1.5">
-            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={15} strokeWidth={1.5} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'left' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
+          <div className="flex items-center gap-1">
+            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} strokeWidth={1.5} className={`w-8 h-8 p-1.5 rounded-xl transition-all duration-300 ease-out border cursor-pointer ${alignMode === 'left' ? 'text-slate-900 bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-500 hover:bg-slate-50/60 hover:text-slate-900 hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] border-transparent'}`}
             title="Align Left (Ctrl+Shift+L)" />
-            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={15} strokeWidth={1.5} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'center' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
+            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} strokeWidth={1.5} className={`w-8 h-8 p-1.5 rounded-xl transition-all duration-300 ease-out border cursor-pointer ${alignMode === 'center' ? 'text-slate-900 bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-500 hover:bg-slate-50/60 hover:text-slate-900 hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] border-transparent'}`}
             title="Align Center (Ctrl+Shift+E)" />
-            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={15} strokeWidth={1.5} className={`w-7 h-7 p-1.5 rounded transition-all border cursor-pointer ${alignMode === 'right' ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`}
+            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} strokeWidth={1.5} className={`w-8 h-8 p-1.5 rounded-xl transition-all duration-300 ease-out border cursor-pointer ${alignMode === 'right' ? 'text-slate-900 bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-500 hover:bg-slate-50/60 hover:text-slate-900 hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] border-transparent'}`}
             title="Align Right (Ctrl+Shift+R)" />
           </div>
           
@@ -40690,7 +40696,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-list-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${listDropdownOpen ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-650 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-300 ease-out border ${listDropdownOpen ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-650 hover:bg-slate-50/60 hover:text-slate-900 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
               title="Lists (Ctrl+Shift+8)"
             >
               <List size={14} strokeWidth={1.5} className={isListActive ? 'text-violet-600' : 'text-slate-500'} />
@@ -40726,7 +40732,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             <button
               id="compose-insert-btn"
               onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-md text-[13px] font-medium transition-all border ${insertDropdownOpen ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-655 dark:text-zinc-350 hover:bg-white/50 hover:text-slate-900 border-transparent'}`}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-300 ease-out border ${insertDropdownOpen ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-655 hover:bg-slate-50/60 hover:text-slate-900 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
               title="Insert Elements (Ctrl+/ or type /)"
             >
               <Plus size={14} strokeWidth={1.5} className="text-slate-500" />
@@ -45948,7 +45954,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       ))}
                     </div>
                   )}
-                  <div className="relative bg-white border border-gray-100 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300">
+                  <div className="relative bg-white/70 backdrop-blur-xl border border-white/40 hover:border-violet-200 hover:shadow-[0_12px_45px_-12px_rgba(139,92,246,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] focus-within:border-violet-300 focus-within:ring-2 focus-within:ring-violet-500/10 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] rounded-2xl px-3 py-2 flex items-center gap-2 w-full transition-all duration-300">
                     <button
                       type="button"
                       onClick={() => {
@@ -46058,7 +46064,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               className={`pointer-events-auto flex items-center transition-all duration-500 ease-out select-none border backdrop-blur-xl ${
                 isVoiceActive && voiceTarget === 'document' 
                   ? 'rounded-2xl bg-violet-50/95 border-violet-400 outline outline-2 outline-violet-500/30 px-4 py-2.5 gap-3 shadow-[0_12px_40px_-15px_rgba(139,92,246,0.3)] min-w-[240px] max-w-[320px]' 
-                  : 'rounded-full bg-white/90 border-slate-200/80 p-1 shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:border-violet-300/80'
+                  : 'rounded-full bg-white/80 border-white/40 p-1 shadow-[0_4px_24px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.8)] hover:border-violet-300/80'
               }`}
             >
               <button
