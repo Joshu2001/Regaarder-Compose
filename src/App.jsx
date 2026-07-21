@@ -39414,7 +39414,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       </div>
 
-      {/* Document Outline — fixed overlay panel, floats above canvas at z-[260] */}
+      {/* Document Outline — floating island panel, floats gracefully above canvas at z-[260] */}
       {showDocumentOutlineView && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
         <>
           {/* Invisible backdrop — tapping outside dismisses the overlay */}
@@ -39424,63 +39424,64 @@ if (productMode === 'deck' || productMode === 'sheets') {
             aria-label="Close Document Outline"
           />
           <div
-            className="fixed top-[106px] left-0 h-[calc(100vh-106px)] z-[260] flex flex-col bg-white/96 backdrop-blur-xl border-r border-slate-200/60 shadow-[4px_0_40px_-8px_rgba(0,0,0,0.14)] select-none"
-            style={{ width: `${leftSidebarWidth}px` }}
+            className="fixed top-[120px] left-6 bottom-6 z-[260] flex flex-col bg-white/90 backdrop-blur-2xl border border-slate-200/50 rounded-2xl shadow-[0_24px_50px_-12px_rgba(15,23,42,0.18),0_0_1px_rgba(0,0,0,0.08)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
+            style={{ width: `${Math.max(280, leftSidebarWidth)}px` }}
           >
             {/* Panel Header */}
-            <div className="px-4 pt-5 pb-3 border-b border-gray-100/80 shrink-0">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-lg bg-violet-50 border border-violet-100 flex items-center justify-center shrink-0">
+            <div className="px-5 pt-5 pb-3.5 border-b border-slate-100 shrink-0 bg-slate-50/40">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-7 h-7 rounded-xl bg-violet-100/70 border border-violet-200/50 flex items-center justify-center shrink-0 shadow-sm">
                   <FileText size={13} className="text-violet-600" />
                 </div>
-                <span className="text-[13px] font-semibold text-gray-900 tracking-tight">Document Outline</span>
+                <span className="text-[13px] font-semibold text-slate-800 tracking-tight">Document Outline</span>
                 <button
                   onClick={() => { setActiveDocView('default'); setIsFocusMode(false); }}
-                  className="ml-auto w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  className="ml-auto w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 transition-colors"
                   aria-label="Close outline"
                 >
                   <X size={13} />
                 </button>
               </div>
-            <div
-              className={`text-[11px] truncate outline-none cursor-text w-full hover:bg-slate-50 rounded px-1.5 -mx-1.5 py-1 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:outline-none ${
-                docTitle ? 'text-gray-600 font-medium' : 'text-gray-400 italic'
-              }`}
-              title={docTitle || 'Untitled Document'}
-              contentEditable
-              suppressContentEditableWarning
-              onBlur={(e) => {
-                const nextTitle = e.target.textContent.trim() || 'Untitled Document';
-                setDocTitle(nextTitle);
-                if (activeDocId) {
-                  setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
-              }}
-            >
-              {docTitle || 'Untitled Document'}
+              <div
+                className={`text-[11px] truncate outline-none cursor-text w-full hover:bg-white/80 rounded-lg px-2 -mx-1 py-1 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:outline-none shadow-none focus:shadow-sm ${
+                  docTitle ? 'text-slate-600 font-medium' : 'text-slate-400 italic'
+                }`}
+                title={docTitle || 'Untitled Document'}
+                contentEditable
+                suppressContentEditableWarning
+                onBlur={(e) => {
+                  const nextTitle = e.target.textContent.trim() || 'Untitled Document';
+                  setDocTitle(nextTitle);
+                  if (activeDocId) {
+                    setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+                }}
+              >
+                {docTitle || 'Untitled Document'}
+              </div>
             </div>
-          </div>
 
-          {/* Outline Content */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            {renderDocumentOutlineContent()}
-          </div>
+            {/* Outline Content */}
+            <div className="flex-1 min-h-0 overflow-y-auto px-1 py-2">
+              {renderDocumentOutlineContent()}
+            </div>
 
-          {/* Footer */}
-          <div className="p-4 border-t border-gray-100 bg-[#FAFAFC]/80 shrink-0">
-            <button
-              onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
-              className="flex items-center gap-3 text-sm text-gray-500 hover:text-gray-900 w-full transition-colors"
-            >
-              <Settings size={15} /> Settings
-            </button>
-          </div>
+            {/* Footer */}
+            <div className="p-3.5 border-t border-slate-100 bg-slate-50/50 shrink-0">
+              <button
+                onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
+                className="flex items-center gap-2.5 text-xs font-medium text-slate-500 hover:text-slate-900 w-full px-2 py-1.5 rounded-lg hover:bg-slate-200/50 transition-colors"
+              >
+                <Settings size={14} /> Settings
+              </button>
+            </div>
           </div>
         </>
       )}
+
 
 
 
