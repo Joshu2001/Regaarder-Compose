@@ -12303,7 +12303,8 @@ export default function App() {
   const documentOutlineDrawerRef = useRef(null);
 
   useEffect(() => {
-    if (!showDocumentOutlineView || !leftSidebarOpen) return;
+    const isOutlineActive = (isFocusMode || activeDocView === 'document') && activeRightTab !== 'whiteboard';
+    if (!isOutlineActive || !leftSidebarOpen) return;
 
     const handleTapOutside = (event) => {
       if (documentOutlineDrawerRef.current && !documentOutlineDrawerRef.current.contains(event.target)) {
@@ -12322,7 +12323,7 @@ export default function App() {
       clearTimeout(timer);
       document.removeEventListener('pointerdown', handleTapOutside);
     };
-  }, [showDocumentOutlineView, leftSidebarOpen]);
+  }, [isFocusMode, activeDocView, activeRightTab, leftSidebarOpen]);
 
   useEffect(() => {
     const handleScrollResize = () => {
