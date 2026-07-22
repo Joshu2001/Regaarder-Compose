@@ -40685,7 +40685,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </button>
         </div>
 
-        {/* Formatting Ribbon - dual floating island capsules */}
+        {/* Formatting Ribbon - matches editor paper length and position */}
         <div
           ref={formattingMenuRef}
           onMouseDown={(event) => {
@@ -40693,12 +40693,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`absolute top-[106px] left-[calc(50%-45px)] -translate-x-[50%] flex items-center gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] ${
+          className={`absolute top-[106px] left-1/2 -translate-x-1/2 flex items-center justify-between text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] ${
             activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''
           } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
+          style={{
+            width: '100%',
+            maxWidth: `${pageOrientation === 'landscape' ? (docPageSize === 'letter' ? 1056 : docPageSize === 'legal' ? 1296 : 1123) : (docPageSize === 'letter' ? 816 : docPageSize === 'legal' ? 816 : 794)}px`,
+          }}
         >
           {/* Island 1: Typography, Formatting & Insertion Toolbar */}
-          <div className="flex items-center h-[42px] px-3.5 gap-3 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)] max-w-[760px]">
+          <div className="w-full flex items-center justify-between h-[42px] px-3.5 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)]">
             {/* Group 1: Typography Structure */}
             <div className="flex items-center gap-1.5">
               <div
