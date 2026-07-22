@@ -40702,7 +40702,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           }}
         >
           {/* Island 1: Typography, Formatting & Insertion Toolbar */}
-          <div className="w-full flex items-center justify-between h-[42px] px-3.5 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)]">
+          <div className="flex-1 flex items-center justify-between h-[42px] px-3.5 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)]">
             {/* Group 1: Typography Structure */}
             <div className="flex items-center gap-1.5">
               <div
@@ -41116,21 +41116,19 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 )}
               </div>
             </div>
-
-            <div className="w-px h-4 bg-slate-200/60 mx-0.5 shrink-0"></div>
-
-            {/* Group 5: View Modes */}
-            <div className="flex items-center">
-              <button
-                type="button"
-                onClick={toggleDocumentImmersiveMode}
-                className={`w-7.5 h-7.5 flex items-center justify-center rounded-xl transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200 shadow-sm' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40'}`}
-                title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
-              >
-                {isDocumentImmersive ? <Minimize2 size={14} strokeWidth={1.5} /> : <Maximize size={14} strokeWidth={1.5} />}
-              </button>
-            </div>
           </div>
+
+          {/* Standalone Fullscreen Capsule (Outside Island 1) */}
+          <button
+            type="button"
+            onClick={toggleDocumentImmersiveMode}
+            className={`w-[42px] h-[42px] shrink-0 flex items-center justify-center rounded-2xl transition-all bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)] ${
+              isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200 shadow-sm' : 'text-slate-500 hover:text-slate-900'
+            }`}
+            title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
+          >
+            {isDocumentImmersive ? <Minimize2 size={15} strokeWidth={1.5} /> : <Maximize size={15} strokeWidth={1.5} />}
+          </button>
 
           {/* Island 2: Inline Formatting Capsule (Shown ONLY when text is highlighted/selected) */}
           {Boolean(selectedEditorText && selectedEditorText.trim().length > 0) && (
