@@ -27636,20 +27636,20 @@ Respond with a JSON array of slide objects matching the schema.`;
             <div
               key={opts.animKey || key}
               onClick={handleClick}
-              className="group flex flex-col items-center gap-1 cursor-pointer select-none"
+              className={`group/item flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer select-none transition-all duration-200 w-full ${
+                active
+                  ? 'bg-violet-50/90 dark:bg-violet-950/50 border border-violet-200/80 dark:border-violet-800/80 text-violet-600 dark:text-violet-400 shadow-[0_2px_8px_-3px_rgba(124,58,237,0.14)] font-medium'
+                  : 'bg-transparent border border-transparent text-slate-400 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-700 dark:hover:text-zinc-200'
+              }`}
               style={opts.style}
               title={label}
             >
-              <div className={`p-2.5 rounded-xl transition-all duration-300 ease-out border relative ${
-                active
-                  ? 'bg-violet-50/80 border-violet-100 text-violet-600 shadow-[0_2px_8px_-4px_rgba(124,58,237,0.16)]'
-                  : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-              }`}>
-                <Icon size={20} strokeWidth={active ? 2.5 : 2} />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 relative">
+                <Icon size={19} strokeWidth={active ? 2.3 : 1.8} />
                 {active && (
-                  <span className="absolute -right-1 -top-1 flex h-3 w-3">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-2.5 w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-violet-500"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-500"></span>
                   </span>
                 )}
                 {isAssist && selectedEditorText && (
@@ -27661,6 +27661,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </span>
                 )}
               </div>
+              <span className="text-[12.5px] font-medium whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-all duration-300 ease-out text-slate-700 dark:text-zinc-200">
+                {label}
+              </span>
             </div>
           );
         };
@@ -27668,18 +27671,21 @@ Respond with a JSON array of slide objects matching the schema.`;
         return (
           <>
             {/* ── Sidebar shell ─────────────────────────────────────────── */}
-            <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[52px] translate-x-[48px] hover:translate-x-0 opacity-20 hover:opacity-100 border-l border-slate-200 bg-[#FAFAFC] flex-col items-center py-4 gap-2 select-none overflow-y-auto overflow-x-visible thin-scrollbar transition-all duration-300 ease-in-out shadow-[-10px_0_30px_rgba(0,0,0,0.03)]`}>
+            <div className={`${productMode === 'landing' ? 'hidden' : 'flex'} fixed right-0 top-0 h-full z-[300] w-[56px] hover:w-[165px] group/sidebar border-l border-slate-200/70 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl flex-col items-start px-2 py-4 gap-2.5 select-none overflow-y-auto overflow-x-hidden thin-scrollbar transition-all duration-300 ease-out shadow-[-6px_0_25px_rgba(0,0,0,0.03)]`}>
 
               {/* ── Slot 1: Home (always fixed) ─── */}
-              <div className="relative mb-5">
+              <div className="relative mb-1 w-full">
                 <div
-                  className="group flex flex-col items-center gap-1 cursor-pointer select-none"
+                  className="group/item flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer select-none border border-transparent text-slate-400 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-700 dark:hover:text-zinc-200 transition-all duration-200 w-full"
                   onClick={() => setProductMode('landing')}
                   title="Home"
                 >
-                  <div className="p-2.5 rounded-xl border border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700 transition-all duration-200">
-                    <Home size={20} strokeWidth={2} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+                    <Home size={19} strokeWidth={1.8} />
                   </div>
+                  <span className="text-[12.5px] font-medium whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-all duration-300 ease-out text-slate-700 dark:text-zinc-200">
+                    Home
+                  </span>
                 </div>
 
                 {/* Workspace launcher popover */}
@@ -27715,34 +27721,33 @@ Respond with a JSON array of slide objects matching the schema.`;
               </div>
 
               {/* ── Slot 2: Chat (always fixed) ─── */}
-              <div className="mb-1">{renderNavIcon({ key: 'chat', label: 'Chat', icon: MessageCircle })}</div>
+              <div className="w-full">{renderNavIcon({ key: 'chat', label: 'Chat', icon: MessageCircle })}</div>
 
               {/* ── Slot 3: Assist (always fixed) ─── */}
-              <div className="mb-5">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: Wand2 })}</div>
+              <div className="w-full mb-1">{renderNavIcon({ key: 'assistant', label: 'Assist', icon: Wand2 })}</div>
 
               {/* ── Slots 4–5: Dynamic (usage-promoted, animated on key change) ─── */}
               {dynamicSlots.map((slotKey, idx) => {
                 const feature = ALL_FEATURES.find(f => f.key === slotKey);
                 if (!feature) return null;
-                // React uses `key` to detect a slot change and plays the CSS animation
                 return (
                   <div
                     key={`dynamic-${idx}-${slotKey}`}
-                    className="mb-1 animate-in fade-in zoom-in-90 duration-300 ease-out"
+                    className="w-full animate-in fade-in zoom-in-90 duration-300 ease-out"
                   >
                     {renderNavIcon(feature)}
                   </div>
                 );
               })}
 
-              {/* ── One icon-height gap before More ─── */}
-              <div className="h-[52px]" aria-hidden="true" />
+              {/* ── Spacer gap before More ─── */}
+              <div className="flex-1 min-h-[12px]" aria-hidden="true" />
 
               {/* ── Inline expanded icons (shown when More is tapped) ─── */}
               {morePanelOpen && moreItems.map(feature => (
                 <div
                   key={`more-${feature.key}`}
-                  className="mb-1 animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
+                  className="w-full animate-in fade-in slide-in-from-bottom-2 duration-200 ease-out"
                 >
                   {renderNavIcon(feature)}
                 </div>
@@ -27751,18 +27756,19 @@ Respond with a JSON array of slide objects matching the schema.`;
               {/* ── More button ─── */}
               <div
                 onClick={() => setMorePanelOpen(prev => !prev)}
-                className="group flex flex-col items-center gap-1 cursor-pointer select-none"
-              >
-                <div className={`p-2.5 rounded-xl transition-all duration-200 border ${
+                className={`group/item flex items-center gap-3 px-2.5 py-2 rounded-xl cursor-pointer select-none transition-all duration-200 w-full ${
                   morePanelOpen
-                    ? 'bg-slate-100/80 border-slate-200 text-slate-700'
-                    : 'bg-transparent border-transparent text-slate-400 group-hover:bg-slate-100/60 group-hover:text-slate-700'
-                }`}>
-                  <MoreHorizontal size={20} strokeWidth={2} />
+                    ? 'bg-slate-100/90 dark:bg-zinc-800/90 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 font-medium'
+                    : 'bg-transparent border border-transparent text-slate-400 dark:text-zinc-400 hover:bg-slate-100/80 dark:hover:bg-zinc-800/80 hover:text-slate-700 dark:hover:text-zinc-200'
+                }`}
+                title="More"
+              >
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0">
+                  <MoreHorizontal size={19} strokeWidth={1.8} />
                 </div>
-                <span className={`text-[10px] font-medium transition-colors ${
-                  morePanelOpen ? 'text-slate-700 font-semibold' : 'text-slate-400 group-hover:text-slate-600'
-                }`}>More</span>
+                <span className="text-[12.5px] font-medium whitespace-nowrap opacity-0 group-hover/sidebar:opacity-100 transition-all duration-300 ease-out text-slate-700 dark:text-zinc-200">
+                  More
+                </span>
               </div>
             </div>
           </>
