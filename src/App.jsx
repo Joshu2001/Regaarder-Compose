@@ -12309,7 +12309,6 @@ export default function App() {
     const handleTapOutside = (event) => {
       if (documentOutlineDrawerRef.current && !documentOutlineDrawerRef.current.contains(event.target)) {
         // Tap / click outside dismisses the document outline panel
-        setActiveDocView('default');
         setIsFocusMode(false);
         setLeftSidebarOpen(false);
       }
@@ -39234,42 +39233,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-white border-r border-gray-100"
         style={{ width: (activeRightTab === 'whiteboard' || showDocumentOutlineView) ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
-        {/* Show document outline header only in sidebar when NOT in outline view */}
-        {!showDocumentOutlineView && (
-          <div className="px-4 py-4 border-b border-gray-100 bg-white/80">
-            <div 
-              className="flex items-center gap-2 text-gray-900 font-semibold cursor-pointer hover:text-violet-600 transition-colors"
-              onClick={() => setRecentDocumentsModalOpen(true)}
-              title="Open Recent Documents"
-            >
-              <FileText size={16} className="text-violet-600" />
-              <span>Document Outline</span>
-            </div>
-            <div 
-              className={`mt-2 text-[11px] truncate outline-none cursor-text w-full hover:bg-slate-50 hover:text-gray-800 rounded px-1 -mx-1 py-0.5 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:text-gray-900 focus:outline-none ${
-                docTitle ? 'text-gray-700 font-medium' : 'text-gray-400 italic'
-              }`} 
-              title={docTitle || 'Untitled Document'}
-              contentEditable
-              suppressContentEditableWarning
-              onBlur={(e) => {
-                const nextTitle = e.target.textContent.trim() || 'Untitled Document';
-                setDocTitle(nextTitle);
-                if (activeDocId) {
-                  setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  e.target.blur();
-                }
-              }}
-            >
-              {docTitle || 'Untitled Document'}
-            </div>
-          </div>
-        )}
         {!showDocumentOutlineView && (
           <>
 
