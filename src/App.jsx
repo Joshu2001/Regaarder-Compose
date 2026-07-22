@@ -39622,7 +39622,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                         setUnsavedDraftNameInput('');
                       }
                     }}
-                    className="text-sm text-gray-500 font-medium italic bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
+                    className="text-sm text-gray-700 font-medium bg-white border border-violet-200 rounded px-2 py-0.5 min-w-[180px] outline-none focus:border-violet-400"
                     placeholder="Rename draft"
                   />
                 ) : (
@@ -39630,7 +39630,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     type="button"
                     onClick={() => setIsTopDraftTitleExpanded((prev) => !prev)}
                     onDoubleClick={beginUnsavedDraftRename}
-                    className="text-sm text-gray-400 font-medium italic hover:text-gray-600 px-1 py-0.5 rounded min-w-[110px] text-left"
+                    className="text-sm text-slate-600 font-medium hover:text-slate-900 px-1 py-0.5 rounded min-w-[110px] text-left transition-colors"
                     title={activeDraftDisplayTitle}
                   >
                     {(() => {
@@ -46103,7 +46103,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                       placeholder="Describe what you'd like to write..."
                       rows={1}
                       style={{ textAlign: alignMode }}
-                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-700 placeholder:italic placeholder:text-slate-500/90 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1"
+                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 placeholder:text-slate-400 py-1.5 resize-none overflow-hidden min-h-[32px] flex items-center mt-1 font-normal tracking-normal"
                     />
                     <button
                       type="submit"
