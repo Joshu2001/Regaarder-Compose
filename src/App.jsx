@@ -40693,7 +40693,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`absolute top-[106px] left-[50%] -translate-x-[50%] flex items-center gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] ${
+          className={`absolute top-[106px] left-[calc(50%-45px)] -translate-x-[50%] flex items-center gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] ${
             activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''
           } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
