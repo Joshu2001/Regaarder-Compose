@@ -38218,42 +38218,16 @@ if (productMode === 'deck' || productMode === 'sheets') {
                     <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-semibold tracking-[0.12em] text-violet-700 uppercase">Document Outline</span>
-                          <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 border border-violet-100 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
-                            {outlineTreeData.length} Sections
+                          <span className="text-[10px] font-semibold tracking-[0.12em] text-slate-400 dark:text-zinc-500 uppercase">Structure</span>
+                          <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-800/60 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
+                            {outlineTreeData.length} {outlineTreeData.length === 1 ? 'Section' : 'Sections'}
                           </span>
                         </div>
-                        <div className="text-[10.5px] text-slate-400 font-medium">
+                        <div className="text-[10.5px] text-slate-400 dark:text-zinc-500 font-medium">
                           {minRead} min read &bull; {wordsCount} words
                         </div>
                       </div>
-                      
-                      <div className="rounded-xl bg-[#FAFAFC] border border-gray-100 px-3 py-2">
-                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">DOCUMENT TITLE</div>
-                        <div 
-                          className={`text-xs font-bold truncate mt-0.5 outline-none cursor-text hover:bg-white hover:shadow-sm rounded px-1 -mx-1 py-0.5 transition-all border border-transparent focus:border-violet-200 focus:bg-white focus:outline-none ${
-                            docTitle ? 'text-gray-955' : 'text-gray-400 font-normal italic'
-                          }`} 
-                          title={docTitle || 'Untitled Document'}
-                          contentEditable
-                          suppressContentEditableWarning
-                          onBlur={(e) => {
-                            const nextTitle = e.target.textContent.trim() || 'Untitled Document';
-                            setDocTitle(nextTitle);
-                            if (activeDocId) {
-                              setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              e.target.blur();
-                            }
-                          }}
-                        >
-                          {docTitle || 'Untitled Document'}
-                        </div>
-                      </div>
+
 
                       {outlineTreeData.length > 0 ? (
                         <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
@@ -38367,7 +38341,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                           <div className="w-10 h-10 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mb-3">
                             <Menu size={18} className="text-slate-400" />
                           </div>
-                          <p className="text-[13px] font-bold text-slate-700 mb-1">Outline is empty</p>
+                          <p className="text-[12.5px] font-semibold text-slate-700 dark:text-zinc-200 mb-1">No sections created</p>
                           <p className="text-[11px] text-slate-400 mb-5 leading-relaxed max-w-[200px]">Paste content containing headings to auto-populate outline.</p>
                           <button 
                             type="button" 
@@ -39416,7 +39390,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             aria-label="Close Document Outline"
           />
           <div
-            className="fixed top-[110px] left-5 bottom-4 z-[280] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-[0_24px_50px_-12px_rgba(15,23,42,0.18),0_0_1px_rgba(0,0,0,0.08)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
+            className="fixed top-[106px] left-5 bottom-4 z-[280] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-[0_24px_50px_-12px_rgba(15,23,42,0.18),0_0_1px_rgba(0,0,0,0.08)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
             style={{ width: `${Math.max(280, leftSidebarWidth)}px` }}
           >
             {/* Panel Header */}
@@ -49545,8 +49519,4 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
 
-// Sheets implementation synced
-
-// Triggering Vercel deployment
-
- 
+// Triggering HMR refresh: 2026-07-23T00:03:45+08:00
