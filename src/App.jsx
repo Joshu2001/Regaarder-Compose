@@ -39672,6 +39672,59 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </button>
 
             </div>
+            {/* Export Dropdown Button in Top Header */}
+            {productMode === 'compose' && (
+              <div className="relative export-menu-container">
+                <button
+                  onClick={() => {
+                    closeTransientMenus();
+                    setComposeExportMenuOpen(!composeExportMenuOpen);
+                  }}
+                  className={`text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all border ${composeExportMenuOpen ? 'border-slate-300 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-sm' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 border-slate-200/80 bg-white dark:bg-zinc-800 dark:border-zinc-700'}`}
+                  title="Export Document"
+                >
+                  <Download size={14} strokeWidth={1.5} className="text-slate-500" />
+                  <span>Export</span>
+                  {composeExportMenuOpen ? <ChevronUp size={13} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={13} strokeWidth={1.5} className="text-slate-400" />}
+                </button>
+                {composeExportMenuOpen && (
+                  <div className="absolute top-10 right-0 z-[370] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.15)] p-3.5 flex flex-col gap-3 font-sans animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
+                      {[
+                        { format: 'Compose', label: 'Compose', desc: 'Original' },
+                        { format: 'Word', label: 'Word', desc: '.docx' },
+                        { format: 'Docs', label: 'Docs', desc: 'Cloud' },
+                        { format: 'PDF', label: 'PDF', desc: '.pdf' },
+                        { format: 'Markdown', label: 'Markdown', desc: '.md' }
+                      ].map(f => (
+                        <button 
+                          key={f.format}
+                          disabled={isExporting}
+                          onClick={async () => {
+                            setIsExporting(true);
+                            try {
+                              await exportCompose(f.format, blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
+                              showToast('Exported as ' + f.format);
+                            } catch (e) {
+                              showToast('Export failed: ' + e.message);
+                            } finally {
+                              setIsExporting(false);
+                              setComposeExportMenuOpen(false);
+                            }
+                          }}
+                          className="w-full flex items-center justify-between text-xs py-1.5 px-2 rounded-lg text-slate-700 hover:bg-violet-50 hover:text-violet-700 transition-colors text-left font-medium"
+                        >
+                          <span>{f.label}</span>
+                          <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <button
               onClick={() => openShareModal(activeDocId || documents[0]?.id)}
               className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
@@ -40465,523 +40518,449 @@ if (productMode === 'deck' || productMode === 'sheets') {
             activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''
           } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
-          {/* Island 1: Typography & Insertion Controls */}
-          <div className="flex items-center h-[42px] px-3.5 gap-1.5 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)]">
-            <div
-              className="relative"
-            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
-            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
-          >
-            <button
-              onClick={() => {
-                closeTransientMenus();
-                setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'));
-              }}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'heading' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
-            >
-              {editorHeading} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
-            </button>
-            {openDropdown === 'heading' && (
-              <div className="absolute top-full left-0 mt-2 z-[230] w-44 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
-                <input
-                  value={headingSearch}
-                  onChange={(e) => setHeadingSearch(e.target.value)}
-                  placeholder="Search heading"
-                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
-                />
-                <div className="max-h-40 overflow-y-auto thin-scrollbar">
-                  {headingOptions
-                    .filter((option) => option.toLowerCase().includes(headingSearch.toLowerCase()))
-                    .map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => {
-                          const nextHeading = headingMeta[option] || headingMeta.Paragraph;
-                          setEditorHeading(option);
-                          
-                          const range = getEditorSelectionRange();
-                          const ancestor = range?.commonAncestorContainer;
-                          const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-                          setActiveFontSize(nextHeading.size);
-                          
-                          const blockEl = findNearestBlockElement(targetNode);
-                          if (blockEl) {
-                            const newTag = nextHeading.tag;
-                            const doc = blockEl.ownerDocument;
-                            const newEl = doc.createElement(newTag);
-                            for (let i = 0; i < blockEl.attributes.length; i++) {
-                              const attr = blockEl.attributes[i];
-                              newEl.setAttribute(attr.name, attr.value);
-                            }
-                            newEl.innerHTML = blockEl.innerHTML;
-                            newEl.style.fontSize = `${nextHeading.size}px`;
-                            
-                            if (newTag === 'H1') {
-                              const titleCaseTextNodes = (element) => {
-                                const walker = element.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-                                let textNode;
-                                const nodesToConvert = [];
-                                while (textNode = walker.nextNode()) {
-                                  nodesToConvert.push(textNode);
-                                }
-                                nodesToConvert.forEach(nd => {
-                                  nd.nodeValue = toAcademicTitleCase(nd.nodeValue);
-                                });
-                              };
-                              titleCaseTextNodes(newEl);
-                            }
-                            
-                            // Clear internal child font sizes so they inherit correctly
-                            const children = newEl.querySelectorAll('*');
-                            children.forEach(child => {
-                              if (child.style) {
-                                child.style.fontSize = '';
-                              }
-                            });
-                            
-                            blockEl.parentNode.replaceChild(newEl, blockEl);
-                            if (blankBodyRef.current) {
-                              setDocBodyHtml(blankBodyRef.current.innerHTML);
-                            }
-                            
-                            // Restore selection
-                            const newRange = doc.createRange();
-                            newRange.selectNodeContents(newEl);
-                            const sel = window.getSelection();
-                            sel.removeAllRanges();
-                            sel.addRange(newRange);
-                            savedSelectionRef.current = newRange.cloneRange();
-                          } else {
-                            applyFormatCommand('formatBlock', nextHeading.tag);
-                            applyFormatCommand('fontSize', String(nextHeading.size));
-                          }
-                          setOpenDropdown(null);
-                        }}
-                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
-                      >
-                        <span className={headingMeta[option]?.previewClass || 'text-xs'}>{option}</span>
-                      </button>
-                    ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div
-            className="relative"
-            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
-            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
-          >
-            <button
-              type="button"
-              onClick={() => {
-                closeTransientMenus();
-                setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
-              }}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'page-number' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
-              title="Page numbering"
-            >
-              Page # <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
-            </button>
-            {openDropdown === 'page-number' && (
-              <div className="absolute top-full left-0 mt-2 z-[230] w-52 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2 space-y-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPageNumbers((prev) => !prev)}
-                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                >
-                  {showPageNumbers ? 'Hide page numbers' : 'Show page numbers'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowPageNumberOnFirstPage((prev) => !prev)}
-                  className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
-                >
-                  {showPageNumberOnFirstPage ? 'Hide on first page' : 'Show on first page'}
-                </button>
-                <div className="border-t border-gray-100 pt-1">
-                  <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-gray-400">Position</div>
-                  <div className="grid grid-cols-3 gap-1 px-1 pb-1">
-                    {['left', 'center', 'right'].map((position) => (
-                      <button
-                        key={position}
-                        type="button"
-                        onClick={() => setPageNumberPosition(position)}
-                        className={`text-[11px] rounded px-2 py-1 border ${pageNumberPosition === position ? 'bg-violet-50 border-violet-200 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                      >
-                        {position}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
-
-          <div
-            className="relative"
-            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
-            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
-          >
-            <button
-              onClick={() => {
-                closeTransientMenus();
-                setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
-              }}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'font' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
-            >
-              {editorFont} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
-            </button>
-            {openDropdown === 'font' && (
-              <div className="absolute top-full left-0 mt-2 z-[230] w-48 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
-                <input
-                  value={fontSearch}
-                  onChange={(e) => setFontSearch(e.target.value)}
-                  placeholder="Search font"
-                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
-                />
-                <div className="max-h-40 overflow-y-auto thin-scrollbar">
-                  {fontOptions
-                    .filter((option) => option.toLowerCase().includes(fontSearch.toLowerCase()))
-                    .sort((a, b) => a.localeCompare(b))
-                    .map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => {
-                          setEditorFont(option);
-                          applyFormatCommand('fontName', option);
-                          setOpenDropdown(null);
-                        }}
-                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
-                        style={{ fontFamily: resolveFontFamily(option) }}
-                      >
-                        {option}
-                      </button>
-                    ))}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
-
-          <div
-            className={`relative flex items-center gap-0.5 px-1 py-1 rounded-xl transition-all duration-300 ease-out border ${openDropdown === 'size' ? 'bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent hover:border-slate-200/40 hover:bg-slate-50/60 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
-            onMouseEnter={() => setIsFormattingDropdownHovered(true)}
-            onMouseLeave={() => setIsFormattingDropdownHovered(false)}
-          >
-            <input
-              type="number"
-              min={10}
-              max={72}
-              value={activeFontSize}
-              onChange={(e) => {
-                const nextSize = Number(e.target.value) || 14;
-                setActiveFontSize(nextSize);
-                
-                const range = getEditorSelectionRange();
-                const ancestor = range?.commonAncestorContainer;
-                const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-                const isTitle = false;
-                const isSubtitle = false;
-                
-                if (isTitle) {
-                  setEditorSize(nextSize);
-                } else if (isSubtitle) {
-                  setSubtitleSize(nextSize);
-                }
-                
-                applyFormatCommand('fontSize', String(nextSize));
-              }}
-              className="w-10 bg-transparent border-none text-[13px] font-medium text-slate-600 focus:text-slate-900 text-center focus:outline-none"
-            />
-            <button
-              onClick={() => {
-                closeTransientMenus();
-                setOpenDropdown((prev) => (prev === 'size' ? null : 'size'));
-              }}
-              className="px-1 hover:text-slate-900"
-            >
-              <ChevronDown size={14} className="text-gray-400 hover:text-slate-700 transition-colors" />
-            </button>
-            {openDropdown === 'size' && (
-              <div className="absolute top-full left-0 mt-2 z-[230] w-32 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
-                <input
-                  value={sizeSearch}
-                  onChange={(e) => setSizeSearch(e.target.value)}
-                  placeholder="Search"
-                  className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
-                />
-                <div className="max-h-40 overflow-y-auto thin-scrollbar">
-                  {sizeOptions
-                    .filter((option) => String(option).includes(sizeSearch.trim()))
-                    .map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => {
-                          setActiveFontSize(option);
-                          
-                          const range = getEditorSelectionRange();
-                          const ancestor = range?.commonAncestorContainer;
-                          const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
-                          const isTitle = false;
-                           const isSubtitle = false;
-                          
-                          if (isTitle) {
-                            setEditorSize(option);
-                          } else if (isSubtitle) {
-                            setSubtitleSize(option);
-                          }
-                          
-                          applyFormatCommand('fontSize', String(option));
-                          setOpenDropdown(null);
-                        }}
-                        className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
-                      >
-                        {option}
-                      </button>
-                    ))}
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
-
-          <div className="flex items-center gap-1">
-            <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} strokeWidth={1.5} className={`w-8 h-8 p-1.5 rounded-xl transition-all duration-300 ease-out border cursor-pointer ${alignMode === 'left' ? 'text-slate-900 bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-500 hover:bg-slate-50/60 hover:text-slate-900 hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] border-transparent'}`}
-            title="Align Left (Ctrl+Shift+L)" />
-            <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} strokeWidth={1.5} className={`w-8 h-8 p-1.5 rounded-xl transition-all duration-300 ease-out border cursor-pointer ${alignMode === 'center' ? 'text-slate-900 bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-500 hover:bg-slate-50/60 hover:text-slate-900 hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] border-transparent'}`}
-            title="Align Center (Ctrl+Shift+E)" />
-            <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} strokeWidth={1.5} className={`w-8 h-8 p-1.5 rounded-xl transition-all duration-300 ease-out border cursor-pointer ${alignMode === 'right' ? 'text-slate-900 bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-500 hover:bg-slate-50/60 hover:text-slate-900 hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] border-transparent'}`}
-            title="Align Right (Ctrl+Shift+R)" />
-          </div>
-          
-          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
-
-          {/* Consolidated Lists Dropdown */}
-          <div className="relative">
-            <button
-              id="compose-list-btn"
-              onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-300 ease-out border ${listDropdownOpen ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-650 hover:bg-slate-50/60 hover:text-slate-900 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
-              title="Lists (Ctrl+Shift+8)"
-            >
-              <List size={14} strokeWidth={1.5} className={isListActive ? 'text-violet-600' : 'text-slate-500'} />
-              <span>Lists</span>
-              <ChevronDown size={14} strokeWidth={1.5} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {listDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setListDropdownOpen(false); }} />
-                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-52 flex flex-col gap-0.5">
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">List Styles</div>
-                  {[
-                    { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Choose bullet style', action: () => { setListGalleryOpen('bullet'); setListDropdownOpen(false); } },
-                    { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Choose numbering style', action: () => { setListGalleryOpen('numbered'); setListDropdownOpen(false); } },
-                    { id: 'multilevel', icon: <ListTree size={14} />, label: 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
-                    { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
-                  ].map(item => (
-                    <button key={item.id} onPointerDown={(e) => { e.preventDefault(); item.action(); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                      <div className="text-slate-500 w-5 flex items-center justify-center">{item.icon}</div>
-                      <div>
-                        <div className="text-[13px] font-medium text-slate-800 leading-tight">{item.label}</div>
-                        <div className="text-[11px] text-slate-400 leading-tight">{item.desc}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          
-{/* Consolidated Insert Dropdown */}
-          <div className="relative">
-            <button
-              id="compose-insert-btn"
-              onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-300 ease-out border ${insertDropdownOpen ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-655 hover:bg-slate-50/60 hover:text-slate-900 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
-              title="Insert Elements (Ctrl+/ or type /)"
-            >
-              <Plus size={14} strokeWidth={1.5} className="text-slate-500" />
-              <span>Insert</span>
-              <ChevronDown size={14} strokeWidth={1.5} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {insertDropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
-                <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto thin-scrollbar" style={{ maxHeight: 'min(480px, calc(100vh - 120px))' }}>
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
-                  <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <ImageIcon size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Images / Videos / Files</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Upload, AI, Stock, URL</div>
-                    </div>
-                  </button>
-                  <div className="h-px bg-slate-100 my-1" />
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Special Characters</div>
-                  <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('emoji'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <SmilePlus size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Emoji</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Browse emoji categories</div>
-                    </div>
-                  </button>
-                  <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('symbol'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <Pi size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Symbols</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Math, currency, arrows…</div>
-                    </div>
-                  </button>
-                  <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('equation'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <SigmaIcon size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Equations</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Common math formulas</div>
-                    </div>
-                  </button>
-                  <div className="h-px bg-slate-100 my-1" />
-                  <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
-                  <TableGridPicker setInsertDropdownOpen={setInsertDropdownOpen} />
-                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('callout'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <span className="text-slate-500 text-base leading-none font-bold">❝</span>
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
-                    </div>
-                  </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('code_block'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <FileText size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Code Block</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Monospaced code area</div>
-                    </div>
-                  </button>
-                  <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('divider'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
-                    <Minus size={14} className="text-slate-500" />
-                    <div>
-                      <div className="text-[13px] font-medium text-slate-800 leading-tight">Divider</div>
-                      <div className="text-[11px] text-slate-400 leading-tight">Horizontal rule</div>
-                    </div>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Document Utilities: Export, Immersive Mode & Search */}
-          {productMode === 'compose' && (
-            <>
-              <div className="w-px h-4 bg-gray-200"></div>
-              <div className="relative export-menu-container">
+          {/* Island 1: Typography, Formatting & Insertion Toolbar */}
+          <div className="flex items-center h-[42px] px-3.5 gap-3 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)] max-w-[760px]">
+            {/* Group 1: Typography Structure */}
+            <div className="flex items-center gap-1.5">
+              <div
+                className="relative"
+                onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+                onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+              >
                 <button
                   onClick={() => {
                     closeTransientMenus();
-                    setComposeExportMenuOpen(!composeExportMenuOpen);
+                    setOpenDropdown((prev) => (prev === 'heading' ? null : 'heading'));
                   }}
-                  className={`text-[13px] font-medium px-2 py-1 rounded flex items-center gap-1 transition-all border ${composeExportMenuOpen ? 'border-slate-200 bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 shadow-[0_1px_2px_rgba(0,0,0,0.02)]' : 'text-slate-600 hover:text-slate-900 hover:bg-white/50 border-transparent'}`}
-                  title="Export Compose options"
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap shrink-0 transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'heading' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
                 >
-                  Export {composeExportMenuOpen ? <ChevronUp size={14} strokeWidth={1.5} className="text-slate-400" /> : <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />}
+                  {editorHeading} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
                 </button>
-                {composeExportMenuOpen && (
-                  <div className="absolute top-9 right-0 z-[230] w-56 bg-white border border-slate-200/80 rounded-xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.1)] p-3.5 flex flex-col gap-3 font-sans">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Export as File</span>
-                      {[
-                        { format: 'Compose', label: 'Compose', desc: 'Original' },
-                        { format: 'Word', label: 'Word', desc: '.docx' },
-                        { format: 'Docs', label: 'Docs', desc: 'Cloud' },
-                        { format: 'PDF', label: 'PDF', desc: '.pdf' },
-                        { format: 'Markdown', label: 'Markdown', desc: '.md' }
-                      ].map(f => (
-                        <button 
-                          key={f.format}
-                          disabled={isExporting}
-                          onClick={async () => {
-                            setIsExporting(true);
-                            try {
-                              await exportCompose(f.format, blankBodyRef.current?.innerHTML || '', activeDoc?.content || {}, 'Compose_Document');
-                              showToast('Exported as ' + f.format);
-                            } catch (e) {
-                              showToast('Export failed: ' + e.message);
-                            } finally {
-                              setIsExporting(false);
-                              setComposeExportMenuOpen(false);
-                            }
-                          }}
-                          className="w-full flex items-center justify-between text-xs py-1 rounded-lg text-slate-700 hover:text-violet-700 transition-colors text-left font-medium"
-                        >
-                          <span>{f.label}</span>
-                          <span className="text-[10px] text-slate-400 font-normal">{f.desc}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <div className="h-px bg-slate-100 w-full"></div>
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Convert to</span>
-                      {[
-                        { target: 'Deck', icon: LayoutGrid, color: 'text-indigo-600 bg-indigo-50' },
-                        { target: 'Sheets', icon: FileSpreadsheet, color: 'text-emerald-500 bg-emerald-50' },
-                        { target: 'Whiteboard', icon: PenTool, color: 'text-orange-500 bg-orange-50' }
-                      ].map(t => (
-                        <button 
-                          key={t.target}
-                          disabled={isExporting}
-                          onClick={() => {
-                            setIsExporting(true);
-                            setTimeout(() => { 
-                              setIsExporting(false); 
-                              setComposeExportMenuOpen(false); 
-                              setProductMode(t.target.toLowerCase());
-                              showToast('Converted to ' + t.target); 
-                            }, 1500);
-                          }}
-                          className="w-full flex items-center gap-2.5 p-1 text-xs rounded-lg hover:bg-slate-50 transition-colors font-semibold text-slate-700"
-                        >
-                          <div className={`p-1.5 rounded ${t.color}`}>
-                            <t.icon size={13} />
-                          </div>
-                          {t.target}
-                        </button>
-                      ))}
+                {openDropdown === 'heading' && (
+                  <div className="absolute top-full left-0 mt-2 z-[230] w-44 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
+                    <input
+                      value={headingSearch}
+                      onChange={(e) => setHeadingSearch(e.target.value)}
+                      placeholder="Search heading"
+                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
+                    />
+                    <div className="max-h-40 overflow-y-auto thin-scrollbar">
+                      {headingOptions
+                        .filter((option) => option.toLowerCase().includes(headingSearch.toLowerCase()))
+                        .map((option) => (
+                          <button
+                            key={option}
+                            onClick={() => {
+                              const nextHeading = headingMeta[option] || headingMeta.Paragraph;
+                              setEditorHeading(option);
+                              
+                              const range = getEditorSelectionRange();
+                              const ancestor = range?.commonAncestorContainer;
+                              const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+                              setActiveFontSize(nextHeading.size);
+                              
+                              const blockEl = findNearestBlockElement(targetNode);
+                              if (blockEl) {
+                                const newTag = nextHeading.tag;
+                                const doc = blockEl.ownerDocument;
+                                const newEl = doc.createElement(newTag);
+                                for (let i = 0; i < blockEl.attributes.length; i++) {
+                                  const attr = blockEl.attributes[i];
+                                  newEl.setAttribute(attr.name, attr.value);
+                                }
+                                newEl.innerHTML = blockEl.innerHTML;
+                                newEl.style.fontSize = `${nextHeading.size}px`;
+                                
+                                if (newTag === 'H1') {
+                                  const titleCaseTextNodes = (element) => {
+                                    const walker = element.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+                                    let textNode;
+                                    const nodesToConvert = [];
+                                    while (textNode = walker.nextNode()) {
+                                      nodesToConvert.push(textNode);
+                                    }
+                                    nodesToConvert.forEach(nd => {
+                                      nd.nodeValue = toAcademicTitleCase(nd.nodeValue);
+                                    });
+                                  };
+                                  titleCaseTextNodes(newEl);
+                                }
+                                
+                                // Clear internal child font sizes so they inherit correctly
+                                const children = newEl.querySelectorAll('*');
+                                children.forEach(child => {
+                                  if (child.style) {
+                                    child.style.fontSize = '';
+                                  }
+                                });
+                                
+                                blockEl.parentNode.replaceChild(newEl, blockEl);
+                                if (blankBodyRef.current) {
+                                  setDocBodyHtml(blankBodyRef.current.innerHTML);
+                                }
+                                
+                                // Restore selection
+                                const newRange = doc.createRange();
+                                newRange.selectNodeContents(newEl);
+                                const sel = window.getSelection();
+                                sel.removeAllRanges();
+                                sel.addRange(newRange);
+                                savedSelectionRef.current = newRange.cloneRange();
+                              } else {
+                                applyFormatCommand('formatBlock', nextHeading.tag);
+                                applyFormatCommand('fontSize', String(nextHeading.size));
+                              }
+                              setOpenDropdown(null);
+                            }}
+                            className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
+                          >
+                            <span className={headingMeta[option]?.previewClass || 'text-xs'}>{option}</span>
+                          </button>
+                        ))}
                     </div>
                   </div>
                 )}
               </div>
-            </>
-          )}
-          
-          <button
-            type="button"
-            onClick={toggleDocumentImmersiveMode}
-            className={`p-1.5 rounded-md transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200' : 'text-slate-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
-            title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
-          >
-            {isDocumentImmersive ? <Minimize2 size={14} /> : <Maximize size={14} />}
-          </button>
 
-          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
+              <div
+                className="relative"
+                onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+                onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeTransientMenus();
+                    setOpenDropdown((prev) => (prev === 'page-number' ? null : 'page-number'));
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'page-number' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
+                  title="Page numbering"
+                >
+                  Page # <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
+                </button>
+                {openDropdown === 'page-number' && (
+                  <div className="absolute top-full left-0 mt-2 z-[230] w-52 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPageNumbers((prev) => !prev)}
+                      className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                    >
+                      {showPageNumbers ? 'Hide page numbers' : 'Show page numbers'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPageNumberOnFirstPage((prev) => !prev)}
+                      className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-violet-50"
+                    >
+                      {showPageNumberOnFirstPage ? 'Hide on first page' : 'Show on first page'}
+                    </button>
+                    <div className="border-t border-gray-100 pt-1">
+                      <div className="px-2 py-1 text-[10px] uppercase tracking-wide text-gray-400">Position</div>
+                      <div className="grid grid-cols-3 gap-1 px-1 pb-1">
+                        {['left', 'center', 'right'].map((position) => (
+                          <button
+                            key={position}
+                            type="button"
+                            onClick={() => setPageNumberPosition(position)}
+                            className={`text-[11px] rounded px-2 py-1 border ${pageNumberPosition === position ? 'bg-violet-50 border-violet-200 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                          >
+                            {position}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
-          <div className="relative flex items-center gap-3" ref={docSearchPanelRef}>
-            <button
-              type="button"
-              onClick={() => {
-                closeTransientMenus();
-                setDocSearchPanelOpen((prev) => !prev);
-                setDocSearchAutoPlay(false);
-              }}
-              className={`w-7.5 h-7.5 p-1.5 rounded-md transition-all border ${docSearchPanelOpen ? 'text-violet-700 bg-violet-50 border-violet-200' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'}`}
-              title="Find & Replace (Ctrl+F)"
-            >
-              <Search size={15} />
-            </button>
-            {docSearchPanelOpen && (
-              <div className="absolute right-0 top-9 z-[280] w-[360px] rounded-xl border border-gray-200 bg-white p-3 shadow-2xl ring-1 ring-black/5">
+            <div className="w-px h-4 bg-slate-200/60 mx-0.5 shrink-0"></div>
+
+            {/* Group 2: Font Styling */}
+            <div className="flex items-center gap-1.5">
+              <div
+                className="relative"
+                onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+                onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+              >
+                <button
+                  onClick={() => {
+                    closeTransientMenus();
+                    setOpenDropdown((prev) => (prev === 'font' ? null : 'font'));
+                  }}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl whitespace-nowrap transition-all duration-300 ease-out border text-[13px] font-medium ${openDropdown === 'font' ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
+                >
+                  {editorFont} <ChevronDown size={14} strokeWidth={1.5} className="text-slate-400" />
+                </button>
+                {openDropdown === 'font' && (
+                  <div className="absolute top-full left-0 mt-2 z-[230] w-48 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
+                    <input
+                      value={fontSearch}
+                      onChange={(e) => setFontSearch(e.target.value)}
+                      placeholder="Search font"
+                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
+                    />
+                    <div className="max-h-40 overflow-y-auto thin-scrollbar">
+                      {fontOptions
+                        .filter((option) => option.toLowerCase().includes(fontSearch.toLowerCase()))
+                        .sort((a, b) => a.localeCompare(b))
+                        .map((option) => (
+                          <button
+                            key={option}
+                            onClick={() => {
+                              setEditorFont(option);
+                              applyFormatCommand('fontName', option);
+                              setOpenDropdown(null);
+                            }}
+                            className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
+                            style={{ fontFamily: resolveFontFamily(option) }}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div
+                className={`relative flex items-center gap-0.5 px-1 py-1 rounded-xl transition-all duration-300 ease-out border ${openDropdown === 'size' ? 'bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'border-transparent hover:border-slate-200/40 hover:bg-slate-50/60 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
+                onMouseEnter={() => setIsFormattingDropdownHovered(true)}
+                onMouseLeave={() => setIsFormattingDropdownHovered(false)}
+              >
+                <input
+                  type="number"
+                  min={10}
+                  max={72}
+                  value={activeFontSize}
+                  onChange={(e) => {
+                    const nextSize = Number(e.target.value) || 14;
+                    setActiveFontSize(nextSize);
+                    
+                    const range = getEditorSelectionRange();
+                    const ancestor = range?.commonAncestorContainer;
+                    const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+                    const isTitle = false;
+                    const isSubtitle = false;
+                    
+                    if (isTitle) {
+                      setEditorSize(nextSize);
+                    } else if (isSubtitle) {
+                      setSubtitleSize(nextSize);
+                    }
+                    
+                    applyFormatCommand('fontSize', String(nextSize));
+                  }}
+                  className="w-10 bg-transparent border-none text-[13px] font-medium text-slate-600 focus:text-slate-900 text-center focus:outline-none"
+                />
+                <button
+                  onClick={() => {
+                    closeTransientMenus();
+                    setOpenDropdown((prev) => (prev === 'size' ? null : 'size'));
+                  }}
+                  className="px-1 hover:text-slate-900"
+                >
+                  <ChevronDown size={14} className="text-gray-400 hover:text-slate-700 transition-colors" />
+                </button>
+                {openDropdown === 'size' && (
+                  <div className="absolute top-full left-0 mt-2 z-[230] w-32 bg-white/95 backdrop-blur-xl border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-2">
+                    <input
+                      value={sizeSearch}
+                      onChange={(e) => setSizeSearch(e.target.value)}
+                      placeholder="Search"
+                      className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-2 outline-none focus:border-slate-400"
+                    />
+                    <div className="max-h-40 overflow-y-auto thin-scrollbar">
+                      {sizeOptions
+                        .filter((option) => String(option).includes(sizeSearch.trim()))
+                        .map((option) => (
+                          <button
+                            key={option}
+                            onClick={() => {
+                              setActiveFontSize(option);
+                              
+                              const range = getEditorSelectionRange();
+                              const ancestor = range?.commonAncestorContainer;
+                              const targetNode = ancestor?.nodeType === Node.TEXT_NODE ? ancestor.parentNode : ancestor;
+                              const isTitle = false;
+                               const isSubtitle = false;
+                              
+                              if (isTitle) {
+                                setEditorSize(option);
+                              } else if (isSubtitle) {
+                                setSubtitleSize(option);
+                              }
+                              
+                              applyFormatCommand('fontSize', String(option));
+                              setOpenDropdown(null);
+                            }}
+                            className="w-full text-left px-2 py-1 rounded text-xs hover:bg-slate-50"
+                          >
+                            {option}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="w-px h-4 bg-slate-200/60 mx-0.5 shrink-0"></div>
+
+            {/* Group 3: Paragraph Alignment */}
+            <div className="flex items-center gap-1">
+              <AlignLeft onClick={() => { setAlignMode('left'); applyFormatCommand('justifyLeft'); }} size={16} strokeWidth={1.5} className={`w-8 h-8 p-1.5 rounded-xl transition-all duration-300 ease-out border cursor-pointer ${alignMode === 'left' ? 'text-slate-900 bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-500 hover:bg-slate-50/60 hover:text-slate-900 hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] border-transparent'}`}
+              title="Align Left (Ctrl+Shift+L)" />
+              <AlignCenter onClick={() => { setAlignMode('center'); applyFormatCommand('justifyCenter'); }} size={16} strokeWidth={1.5} className={`w-8 h-8 p-1.5 rounded-xl transition-all duration-300 ease-out border cursor-pointer ${alignMode === 'center' ? 'text-slate-900 bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-500 hover:bg-slate-50/60 hover:text-slate-900 hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] border-transparent'}`}
+              title="Align Center (Ctrl+Shift+E)" />
+              <AlignRight onClick={() => { setAlignMode('right'); applyFormatCommand('justifyRight'); }} size={16} strokeWidth={1.5} className={`w-8 h-8 p-1.5 rounded-xl transition-all duration-300 ease-out border cursor-pointer ${alignMode === 'right' ? 'text-slate-900 bg-white border-slate-200/80 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-500 hover:bg-slate-50/60 hover:text-slate-900 hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] border-transparent'}`}
+              title="Align Right (Ctrl+Shift+R)" />
+            </div>
+
+            <div className="w-px h-4 bg-slate-200/60 mx-0.5 shrink-0"></div>
+
+            {/* Group 4: Paragraph & Insertion Controls */}
+            <div className="flex items-center gap-1.5">
+              {/* Consolidated Lists Dropdown */}
+              <div className="relative">
+                <button
+                  id="compose-list-btn"
+                  onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setListDropdownOpen(v => !v); setInsertDropdownOpen(false); }}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-300 ease-out border ${listDropdownOpen || isListActive ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:bg-slate-50/60 hover:text-slate-900 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
+                  title="Lists (Ctrl+Shift+8)"
+                >
+                  <List size={14} strokeWidth={1.5} className={isListActive ? 'text-violet-600' : 'text-slate-500'} />
+                  <span>Lists</span>
+                  <ChevronDown size={14} strokeWidth={1.5} className={`text-slate-400 transition-transform duration-200 ${listDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {listDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setListDropdownOpen(false); }} />
+                    <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-52 flex flex-col gap-0.5">
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">List Styles</div>
+                      {[
+                        { id: 'bullet', icon: <List size={14} />, label: 'Bullet List', desc: 'Choose bullet style', action: () => { setListGalleryOpen('bullet'); setListDropdownOpen(false); } },
+                        { id: 'numbered', icon: <ListOrdered size={14} />, label: 'Numbered List', desc: 'Choose numbering style', action: () => { setListGalleryOpen('numbered'); setListDropdownOpen(false); } },
+                        { id: 'multilevel', icon: <ListTree size={14} />, label: 'Multilevel List', desc: 'Nested hierarchy', action: () => { setListGalleryOpen('multilevel'); setListDropdownOpen(false); } },
+                        { id: 'checklist', icon: <span className="text-[13px]">☑</span>, label: 'Checklist', desc: 'Interactive checkboxes', action: () => { const checkHtml = '<ul style="list-style:none;padding-left:0"><li style="display:flex;align-items:center;gap:8px;margin:4px 0"><input type="checkbox" style="width:15px;height:15px;cursor:pointer" /><span>&nbsp;</span></li></ul><p><br></p>'; const html = checkHtml; if (window.__composeInsertHTML) window.__composeInsertHTML(html); else document.execCommand('insertHTML', false, html); setListDropdownOpen(false); } },
+                      ].map(item => (
+                        <button key={item.id} onPointerDown={(e) => { e.preventDefault(); item.action(); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                          <div className="text-slate-500 w-5 flex items-center justify-center">{item.icon}</div>
+                          <div>
+                            <div className="text-[13px] font-medium text-slate-800 leading-tight">{item.label}</div>
+                            <div className="text-[11px] text-slate-400 leading-tight">{item.desc}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Consolidated Insert Dropdown */}
+              <div className="relative">
+                <button
+                  id="compose-insert-btn"
+                  onPointerDown={(e) => { e.preventDefault(); const sel = window.getSelection(); if (sel && sel.rangeCount) { try { const r = sel.getRangeAt(0); if (blankBodyRef.current?.contains(r.commonAncestorContainer)) savedSelectionRef.current = r.cloneRange(); } catch(x){} } setInsertDropdownOpen(v => !v); setListDropdownOpen(false); }}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[13px] font-medium transition-all duration-300 ease-out border ${insertDropdownOpen ? 'bg-white border-slate-200/80 text-slate-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.08)]' : 'text-slate-600 hover:bg-slate-50/60 hover:text-slate-900 border-transparent hover:border-slate-200/40 hover:shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'}`}
+                  title="Insert Elements (Ctrl+/ or type /)"
+                >
+                  <Plus size={14} strokeWidth={1.5} className="text-slate-500" />
+                  <span>Insert</span>
+                  <ChevronDown size={14} strokeWidth={1.5} className={`text-slate-400 transition-transform duration-200 ${insertDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {insertDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-[99997]" onPointerDown={(e) => { e.preventDefault(); setInsertDropdownOpen(false); }} />
+                    <div className="absolute top-full left-0 mt-1.5 z-[99998] bg-white border border-slate-200/70 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.10)] p-1.5 w-64 flex flex-col gap-0.5 overflow-y-auto thin-scrollbar" style={{ maxHeight: 'min(480px, calc(100vh - 120px))' }}>
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Media</div>
+                      <button id="compose-media-btn" onPointerDown={(e) => { e.preventDefault(); setMediaPickerOpen(true); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                        <ImageIcon size={14} className="text-slate-500" />
+                        <div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Images / Videos / Files</div>
+                          <div className="text-[11px] text-slate-400 leading-tight">Upload, AI, Stock, URL</div>
+                        </div>
+                      </button>
+                      <div className="h-px bg-slate-100 my-1" />
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Special Characters</div>
+                      <button id="compose-emoji-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('emoji'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                        <SmilePlus size={14} className="text-slate-500" />
+                        <div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Emoji</div>
+                          <div className="text-[11px] text-slate-400 leading-tight">Browse emoji categories</div>
+                        </div>
+                      </button>
+                      <button id="compose-symbols-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('symbol'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                        <Pi size={14} className="text-slate-500" />
+                        <div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Symbols</div>
+                          <div className="text-[11px] text-slate-400 leading-tight">Math, currency, arrows…</div>
+                        </div>
+                      </button>
+                      <button id="compose-equations-btn" onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('equation'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                        <SigmaIcon size={14} className="text-slate-500" />
+                        <div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Equations</div>
+                          <div className="text-[11px] text-slate-400 leading-tight">Common math formulas</div>
+                        </div>
+                      </button>
+                      <div className="h-px bg-slate-100 my-1" />
+                      <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">Blocks</div>
+                      <TableGridPicker setInsertDropdownOpen={setInsertDropdownOpen} />
+                      <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('callout'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                        <span className="text-slate-500 text-base leading-none font-bold">❝</span>
+                        <div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Callout / Quote</div>
+                          <div className="text-[11px] text-slate-400 leading-tight">Styled block quote</div>
+                        </div>
+                      </button>
+                      <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('code_block'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                        <FileText size={14} className="text-slate-500" />
+                        <div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Code Block</div>
+                          <div className="text-[11px] text-slate-400 leading-tight">Monospaced code area</div>
+                        </div>
+                      </button>
+                      <button onPointerDown={(e) => { e.preventDefault(); executeSlashCommand('divider'); setInsertDropdownOpen(false); }} className="w-full flex items-center gap-3 px-2.5 py-2 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                        <Minus size={14} className="text-slate-500" />
+                        <div>
+                          <div className="text-[13px] font-medium text-slate-800 leading-tight">Divider</div>
+                          <div className="text-[11px] text-slate-400 leading-tight">Horizontal rule</div>
+                        </div>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="w-px h-4 bg-slate-200/60 mx-0.5 shrink-0"></div>
+
+            {/* Group 5: Refined Ending - Circular Search & View Modes */}
+            <div className="flex items-center gap-1.5 relative" ref={docSearchPanelRef}>
+              <button
+                type="button"
+                onClick={toggleDocumentImmersiveMode}
+                className={`w-8 h-8 flex items-center justify-center rounded-full transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200 shadow-sm' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/60 border-transparent'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
+                title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
+              >
+                {isDocumentImmersive ? <Minimize2 size={14} strokeWidth={1.5} /> : <Maximize size={14} strokeWidth={1.5} />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  closeTransientMenus();
+                  setDocSearchPanelOpen((prev) => !prev);
+                  setDocSearchAutoPlay(false);
+                }}
+                className={`w-8 h-8 flex items-center justify-center rounded-full transition-all border ${docSearchPanelOpen ? 'bg-slate-100 text-slate-900 border-slate-200/80 shadow-sm' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/60 border-transparent'}`}
+                title="Find & Replace (Ctrl+F)"
+              >
+                <Search size={14} strokeWidth={1.5} />
+              </button>
+              {docSearchPanelOpen && (
+                <div className="absolute right-0 top-10 z-[280] w-[360px] rounded-xl border border-gray-200 bg-white p-3 shadow-2xl ring-1 ring-black/5 animate-in fade-in slide-in-from-top-2 duration-150">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 text-[11px]">
                     {[
