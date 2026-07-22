@@ -40461,7 +40461,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
           </button>
         </div>
 
-        {/* Formatting Ribbon - permanently visible, fixed position */}
+        {/* Formatting Ribbon - dual floating island capsules */}
         <div
           ref={formattingMenuRef}
           onMouseDown={(event) => {
@@ -40469,12 +40469,14 @@ if (productMode === 'deck' || productMode === 'sheets') {
               event.preventDefault();
             }
           }}
-          className={`absolute top-[106px] left-[50%] -translate-x-[50%] flex justify-center items-center h-[42px] px-3 gap-2 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] bg-white/85 backdrop-blur-2xl border border-white/60 shadow-[0_12px_36px_-8px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] rounded-2xl hover:bg-white/95 hover:shadow-[0_16px_44px_-8px_rgba(0,0,0,0.16)] transition-shadow duration-200 ${
+          className={`absolute top-[106px] left-[50%] -translate-x-[50%] flex items-center gap-4 text-sm text-gray-650 shrink-0 overflow-visible no-scrollbar select-none z-[250] ${
             activeRightTab === 'whiteboard' && isWhiteboardImmersive ? 'hidden' : ''
           } ${(currentAccessLevel === 'viewer' || currentAccessLevel === 'commenter') ? 'pointer-events-none opacity-40' : ''}`}
         >
-          <div
-            className="relative"
+          {/* Island 1: Typography & Insertion Controls */}
+          <div className="flex items-center h-[42px] px-3.5 gap-1.5 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)]">
+            <div
+              className="relative"
             onMouseEnter={() => setIsFormattingDropdownHovered(true)}
             onMouseLeave={() => setIsFormattingDropdownHovered(false)}
           >
@@ -40878,10 +40880,11 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </>
             )}
           </div>
-          
-          <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
+          </div>
 
-          <div className="flex items-center gap-1">
+          {/* Island 2: Inline Formatting, Export & Search */}
+          <div className="flex items-center h-[42px] px-3.5 gap-1.5 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)]">
+            <div className="flex items-center gap-1">
             <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`w-7 h-7 flex items-center justify-center font-bold text-[13px] rounded transition-all border ${isBoldActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Bold (Ctrl+B)">B</button>
             <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`w-7 h-7 flex items-center justify-center italic font-serif text-[13px] rounded transition-all border ${isItalicActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Italic (Ctrl+I)">I</button>
             <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`w-7 h-7 flex items-center justify-center underline text-[13px] rounded transition-all border ${isUnderlineActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Underline (Ctrl+U)">U</button>
@@ -41229,9 +41232,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             )}
           </div>
+        </div>
+      </div>
         
-</div>
-
         {/* Document Editor Content (Beautifully separated page area) */}
         <div className="flex-1 relative w-full h-full overflow-hidden bg-[#F7F7F9]">
           
