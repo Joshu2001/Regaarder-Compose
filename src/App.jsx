@@ -12300,6 +12300,30 @@ export default function App() {
     return () => window.removeEventListener('pointerdown', trackPointerOrigin, true);
   }, []);
 
+  const documentOutlineDrawerRef = useRef(null);
+
+  useEffect(() => {
+    if (!showDocumentOutlineView || !leftSidebarOpen) return;
+
+    const handleTapOutside = (event) => {
+      if (documentOutlineDrawerRef.current && !documentOutlineDrawerRef.current.contains(event.target)) {
+        // Tap / click outside dismisses the document outline panel
+        setActiveDocView('default');
+        setIsFocusMode(false);
+        setLeftSidebarOpen(false);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      document.addEventListener('pointerdown', handleTapOutside);
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('pointerdown', handleTapOutside);
+    };
+  }, [showDocumentOutlineView, leftSidebarOpen]);
+
   useEffect(() => {
     const handleScrollResize = () => {
       if (imageToolbar.open && imageToolbar.node) {
@@ -39383,6 +39407,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Document Outline — full-height floating edge drawer overlay at z-[260] */}
       {showDocumentOutlineView && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
         <div
+          ref={documentOutlineDrawerRef}
           className="fixed top-0 left-0 bottom-0 z-[260] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border-r border-slate-200/90 dark:border-zinc-800 shadow-[12px_0_35px_-10px_rgba(15,23,42,0.12)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
           style={{ width: `${Math.max(300, leftSidebarWidth)}px` }}
         >
@@ -39394,13 +39419,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
               <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight">Document Outline</span>
             </div>
-            <button
-              onClick={() => { setActiveDocView('default'); setIsFocusMode(false); setLeftSidebarOpen(false); }}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              aria-label="Close outline"
-            >
-              <X size={14} />
-            </button>
           </div>
 
           {/* Outline Content */}
