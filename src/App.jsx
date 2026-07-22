@@ -39238,10 +39238,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
         />
       )}
 
-      {/* 1. Left Navigation Sidebar */}
+      {/* 1. Left Navigation Sidebar — collapses to 0px when floating Document Outline is active to avoid squeezing canvas */}
       <div
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-white border-r border-gray-100"
-        style={{ width: activeRightTab === 'whiteboard' ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        style={{ width: (activeRightTab === 'whiteboard' || showDocumentOutlineView) ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
         {/* Show document outline header only in sidebar when NOT in outline view */}
         {!showDocumentOutlineView && (
@@ -39417,10 +39417,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
       {/* Document Outline — floating island panel, floats gracefully above canvas at z-[280] */}
       {showDocumentOutlineView && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
         <>
-          {/* Invisible backdrop — tapping outside dismisses the overlay */}
+          {/* Invisible backdrop — tapping outside dismisses the overlay and closes left sidebar */}
           <div
             className="fixed inset-0 z-[279]"
-            onClick={() => { setActiveDocView('default'); setIsFocusMode(false); }}
+            onClick={() => { setActiveDocView('default'); setIsFocusMode(false); setLeftSidebarOpen(false); }}
             aria-label="Close Document Outline"
           />
           <div
@@ -39435,7 +39435,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 </div>
                 <span className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight">Document Outline</span>
                 <button
-                  onClick={() => { setActiveDocView('default'); setIsFocusMode(false); }}
+                  onClick={() => { setActiveDocView('default'); setIsFocusMode(false); setLeftSidebarOpen(false); }}
                   className="ml-auto w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors"
                   aria-label="Close outline"
                 >
