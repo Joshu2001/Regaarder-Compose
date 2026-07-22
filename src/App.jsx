@@ -12442,42 +12442,34 @@ export default function App() {
   useEffect(() => {
     const handleSelectionChange = () => {
       const range = getEditorSelectionRange();
-      if (!range) {
-        if (selectionMenuInputRef.current && document.activeElement === selectionMenuInputRef.current) {
+      if (range && !range.collapsed) {
+        const text = range.toString().trim();
+        if (text) {
+          setSelectedEditorText(truncateText(text, 180));
+          selectedEditorTextRef.current = text;
+          savedSelectionRef.current = range.cloneRange();
+          wholeDocSelectionRef.current = isWholeDocumentSelection(range);
+          try {
+            setIsBoldActive(Boolean(document.queryCommandState('bold')));
+            setIsItalicActive(Boolean(document.queryCommandState('italic')));
+            setIsUnderlineActive(Boolean(document.queryCommandState('underline')));
+            setIsStrikeActive(Boolean(document.queryCommandState('strikeThrough')));
+          } catch(x){}
           return;
         }
-        if (selectionActionMenuRef.current && selectionActionMenuRef.current.contains(document.activeElement)) {
-          return;
-        }
-        if (pointerDownInPromptRef.current) {
-          pointerDownInDocumentRef.current = false;
-          return;
-        }
-        if (pointerDownInSelectionMenuRef.current) {
-          return;
-        }
-        if (!pointerDownInDocumentRef.current) {
-          return;
-        }
-        setSelectedEditorText('');
-        selectedEditorTextRef.current = '';
-        setIsBoldActive(false);
-        setIsItalicActive(false);
-        setIsUnderlineActive(false);
-        setIsStrikeActive(false);
-        setIsListActive(false);
-        wholeDocSelectionRef.current = false;
-        setSelectionActionMenu({ open: false, left: 0, top: 0 });
-        pointerDownInDocumentRef.current = false;
+      }
+
+      if (formattingMenuRef.current && formattingMenuRef.current.contains(document.activeElement)) {
         return;
       }
 
-      if (pointerDownInDocumentRef.current) {
-        return;
-      }
-
-      syncEditorSelection();
-      pointerDownInDocumentRef.current = false;
+      setSelectedEditorText('');
+      selectedEditorTextRef.current = '';
+      setIsBoldActive(false);
+      setIsItalicActive(false);
+      setIsUnderlineActive(false);
+      setIsStrikeActive(false);
+      wholeDocSelectionRef.current = false;
     };
 
     document.addEventListener('selectionchange', handleSelectionChange);
@@ -40880,86 +40872,8 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </>
             )}
           </div>
-          </div>
 
-          {/* Island 2: Inline Formatting, Export & Search */}
-          <div className="flex items-center h-[42px] px-3.5 gap-1.5 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-200 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)]">
-            <div className="flex items-center gap-1">
-            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`w-7 h-7 flex items-center justify-center font-bold text-[13px] rounded transition-all border ${isBoldActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Bold (Ctrl+B)">B</button>
-            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`w-7 h-7 flex items-center justify-center italic font-serif text-[13px] rounded transition-all border ${isItalicActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Italic (Ctrl+I)">I</button>
-            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`w-7 h-7 flex items-center justify-center underline text-[13px] rounded transition-all border ${isUnderlineActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Underline (Ctrl+U)">U</button>
-            <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`w-7 h-7 flex items-center justify-center line-through text-[13px] rounded transition-all border ${isStrikeActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Strikethrough (Ctrl+Shift+X)">S</button>
-            <button onPointerDown={(e) => { e.preventDefault(); handleOpenLinkPopover(); }} className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors" title="Insert Link (Ctrl+K)">
-              <LinkIcon size={13} strokeWidth={1.5} />
-            </button>
-
-            <div
-              className="relative text-style-menu-container"
-              onMouseEnter={() => setIsTextStyleMenuHovered(true)}
-              onMouseLeave={() => setIsTextStyleMenuHovered(false)}
-            >
-              <button
-                onPointerDown={(e) => { e.preventDefault(); setTextStyleMenuOpen((prev) => !prev); }}
-                className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors"
-                title="Format options (Style & Colors)"
-              >
-                <Type size={13} strokeWidth={1.5} />
-              </button>
-              {textStyleMenuOpen && (
-                <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
-                  <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1">Block Style</span>
-                    <button onClick={() => { applyFormatCommand('formatBlock', 'P'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-slate-50 hover:text-slate-900">Body Text</button>
-                    <button onClick={() => { applyFormatCommand('formatBlock', 'BLOCKQUOTE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-slate-50 hover:text-slate-900">Quote Block</button>
-                    <button onClick={() => { applyFormatCommand('formatBlock', 'PRE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-slate-50 hover:text-slate-900">Code Block</button>
-                  </div>
-                  
-                  <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
-                    <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                      {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
-                        <button key={c} onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('foreColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
-                    <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
-                      <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('hiliteColor', 'transparent'); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
-                      {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
-                        <button key={c} onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('hiliteColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-1 border-t border-gray-100 pt-2 mt-1">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1">Collaboration Security</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        protectSelectedRange('text');
-                        setTextStyleMenuOpen(false);
-                      }}
-                      className="w-full text-left px-2 py-1 text-xs rounded hover:bg-red-50 hover:text-red-650 flex items-center gap-1.5 font-medium"
-                    >
-                      <span>⬛</span> Redact Selection
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        protectCurrentElement('block');
-                        setTextStyleMenuOpen(false);
-                      }}
-                      className="w-full text-left px-2 py-1 text-xs rounded hover:bg-red-50 hover:text-red-650 flex items-center gap-1.5 font-medium"
-                    >
-                      <span>⬛</span> Redact Element (Table/Image/etc)
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Document Utilities: Export, Immersive Mode & Search */}
           {productMode === 'compose' && (
             <>
               <div className="w-px h-4 bg-gray-200"></div>
@@ -41042,7 +40956,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
             </>
           )}
           
-<button
+          <button
             type="button"
             onClick={toggleDocumentImmersiveMode}
             className={`p-1.5 rounded-md transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200' : 'text-slate-500 hover:text-gray-900 hover:bg-gray-100 border-transparent'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
@@ -41051,7 +40965,6 @@ if (productMode === 'deck' || productMode === 'sheets') {
             {isDocumentImmersive ? <Minimize2 size={14} /> : <Maximize size={14} />}
           </button>
 
-          
           <div className="w-px h-5 bg-slate-200/80 mx-1 shrink-0"></div>
 
           <div className="relative flex items-center gap-3" ref={docSearchPanelRef}>
@@ -41232,7 +41145,89 @@ if (productMode === 'deck' || productMode === 'sheets') {
               </div>
             )}
           </div>
-        </div>
+          </div>
+
+          {/* Island 2: Inline Formatting Capsule (Shown ONLY when text is highlighted/selected) */}
+          {Boolean(selectedEditorText && selectedEditorText.trim().length > 0) && (
+            <div className="flex items-center h-[42px] px-3.5 gap-1.5 bg-white/95 backdrop-blur-2xl border border-slate-200/80 shadow-[0_12px_36px_-12px_rgba(15,23,42,0.15),0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl transition-all duration-300 animate-in fade-in zoom-in-95 slide-in-from-left-2 hover:bg-white hover:shadow-[0_16px_44px_-12px_rgba(15,23,42,0.2)]">
+              <div className="flex items-center gap-1">
+                <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('bold'); }} className={`w-7 h-7 flex items-center justify-center font-bold text-[13px] rounded transition-all border ${isBoldActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Bold (Ctrl+B)">B</button>
+                <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('italic'); }} className={`w-7 h-7 flex items-center justify-center italic font-serif text-[13px] rounded transition-all border ${isItalicActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Italic (Ctrl+I)">I</button>
+                <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('underline'); }} className={`w-7 h-7 flex items-center justify-center underline text-[13px] rounded transition-all border ${isUnderlineActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Underline (Ctrl+U)">U</button>
+                <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('strikeThrough'); }} className={`w-7 h-7 flex items-center justify-center line-through text-[13px] rounded transition-all border ${isStrikeActive ? 'text-slate-900 bg-slate-100 border-slate-200 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border-transparent'}`} title="Strikethrough (Ctrl+Shift+X)">S</button>
+                <button onPointerDown={(e) => { e.preventDefault(); handleOpenLinkPopover(); }} className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors" title="Insert Link (Ctrl+K)">
+                  <LinkIcon size={13} strokeWidth={1.5} />
+                </button>
+
+                <div
+                  className="relative text-style-menu-container"
+                  onMouseEnter={() => setIsTextStyleMenuHovered(true)}
+                  onMouseLeave={() => setIsTextStyleMenuHovered(false)}
+                >
+                  <button
+                    onPointerDown={(e) => { e.preventDefault(); setTextStyleMenuOpen((prev) => !prev); }}
+                    className="w-7 h-7 flex items-center justify-center rounded hover:bg-slate-50 text-slate-500 hover:text-slate-900 transition-colors"
+                    title="Format options (Style & Colors)"
+                  >
+                    <Type size={13} strokeWidth={1.5} />
+                  </button>
+                  {textStyleMenuOpen && (
+                    <div className="absolute top-8 left-0 z-[230] w-48 bg-white border border-gray-200 rounded-xl shadow-2xl p-3 flex flex-col gap-3">
+                      <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1">Block Style</span>
+                        <button onClick={() => { applyFormatCommand('formatBlock', 'P'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-slate-50 hover:text-slate-900">Body Text</button>
+                        <button onClick={() => { applyFormatCommand('formatBlock', 'BLOCKQUOTE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-slate-50 hover:text-slate-900">Quote Block</button>
+                        <button onClick={() => { applyFormatCommand('formatBlock', 'PRE'); setTextStyleMenuOpen(false); }} className="w-full text-left px-2 py-1 text-xs rounded hover:bg-slate-50 hover:text-slate-900">Code Block</button>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1 border-b border-gray-100 pb-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Text Color</span>
+                        <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                          {['#000000', '#475569', '#ef4444', '#f97316', '#f59e0b', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'].map(c => (
+                            <button key={c} onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('foreColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">Highlight</span>
+                        <div className="grid grid-cols-5 gap-1.5 mt-1 px-1">
+                          <button onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('hiliteColor', 'transparent'); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 bg-white hover:scale-115 transition-transform flex items-center justify-center" title="No Highlight"><X size={12} className="text-slate-400"/></button>
+                          {['#f1f5f9', '#fee2e2', '#ffedd5', '#fef3c7', '#dcfce7', '#cffafe', '#dbeafe', '#ede9fe', '#fae8ff'].map(c => (
+                            <button key={c} onPointerDown={(e) => { e.preventDefault(); applyFormatCommand('hiliteColor', c); setTextStyleMenuOpen(false); }} className="w-6 h-6 rounded-full border border-slate-200 hover:scale-115 transition-transform" style={{ backgroundColor: c }}></button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1 border-t border-gray-100 pt-2 mt-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1">Collaboration Security</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            protectSelectedRange('text');
+                            setTextStyleMenuOpen(false);
+                          }}
+                          className="w-full text-left px-2 py-1 text-xs rounded hover:bg-red-50 hover:text-red-650 flex items-center gap-1.5 font-medium"
+                        >
+                          <span>⬛</span> Redact Selection
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            protectCurrentElement('block');
+                            setTextStyleMenuOpen(false);
+                          }}
+                          className="w-full text-left px-2 py-1 text-xs rounded hover:bg-red-50 hover:text-red-650 flex items-center gap-1.5 font-medium"
+                        >
+                          <span>⬛</span> Redact Element (Table/Image/etc)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
       </div>
         
         {/* Document Editor Content (Beautifully separated page area) */}
