@@ -38214,9 +38214,9 @@ if (productMode === 'deck' || productMode === 'sheets') {
               const wordsCount = documentStats?.words || 0;
               const minRead = Math.max(1, Math.ceil(wordsCount / 200));
               return (
-                <div className="flex-1 overflow-y-auto no-scrollbar px-3 py-3 animate-fade-in-slide-right" style={{ fontFamily: editorFont }}>
-                    <div className="rounded-2xl border border-violet-100 bg-white/90 p-3 shadow-[0_18px_40px_-28px_rgba(109,40,217,0.25)] space-y-3">
-                      <div className="space-y-1">
+                <div className="flex-1 flex flex-col min-h-0 px-3 py-3 animate-fade-in-slide-right" style={{ fontFamily: editorFont }}>
+                    <div className="flex-1 flex flex-col min-h-0 space-y-3">
+                      <div className="space-y-1 shrink-0 px-1">
                         <div className="flex items-center justify-between">
                           <span className="text-[10px] font-semibold tracking-[0.12em] text-slate-400 dark:text-zinc-500 uppercase">Structure</span>
                           <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/40 border border-violet-100 dark:border-violet-800/60 rounded-full px-2 py-0.5" style={{ color: brandColor, borderColor: brandColor ? `${brandColor}33` : undefined }}>
@@ -38230,7 +38230,7 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
 
                       {outlineTreeData.length > 0 ? (
-                        <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
+                        <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-1.5 thin-scrollbar">
                           {outlineTreeData.map((section) => {
                             let badgeColorClass = "bg-slate-50 text-slate-655 border border-slate-150";
                             if (section.completed || section.progress >= 80) {
@@ -39380,72 +39380,44 @@ if (productMode === 'deck' || productMode === 'sheets') {
         </div>
       </div>
 
-      {/* Document Outline — floating island panel, floats gracefully above canvas at z-[280] */}
+      {/* Document Outline — full-height floating edge drawer overlay at z-[260] */}
       {showDocumentOutlineView && leftSidebarOpen && activeRightTab !== 'whiteboard' && (
-        <>
-          {/* Invisible backdrop — tapping outside dismisses the overlay and closes left sidebar */}
-          <div
-            className="fixed inset-0 z-[279]"
-            onClick={() => { setActiveDocView('default'); setIsFocusMode(false); setLeftSidebarOpen(false); }}
-            aria-label="Close Document Outline"
-          />
-          <div
-            className="fixed top-[106px] left-5 bottom-4 z-[280] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-[0_24px_50px_-12px_rgba(15,23,42,0.18),0_0_1px_rgba(0,0,0,0.08)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
-            style={{ width: `${Math.max(280, leftSidebarWidth)}px` }}
-          >
-            {/* Panel Header */}
-            <div className="px-5 pt-5 pb-3.5 border-b border-slate-100 dark:border-zinc-800/80 shrink-0 bg-slate-50/40 dark:bg-zinc-900/40">
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-7 h-7 rounded-xl bg-violet-100/70 dark:bg-violet-950/50 border border-violet-200/50 dark:border-violet-800/50 flex items-center justify-center shrink-0 shadow-sm">
-                  <FileText size={13} className="text-violet-600 dark:text-violet-400" />
-                </div>
-                <span className="text-[13px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight">Document Outline</span>
-                <button
-                  onClick={() => { setActiveDocView('default'); setIsFocusMode(false); setLeftSidebarOpen(false); }}
-                  className="ml-auto w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors"
-                  aria-label="Close outline"
-                >
-                  <X size={13} />
-                </button>
+        <div
+          className="fixed top-0 left-0 bottom-0 z-[260] flex flex-col bg-white/95 dark:bg-[#18181b]/95 backdrop-blur-2xl border-r border-slate-200/90 dark:border-zinc-800 shadow-[12px_0_35px_-10px_rgba(15,23,42,0.12)] select-none overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-left-4"
+          style={{ width: `${Math.max(300, leftSidebarWidth)}px` }}
+        >
+          {/* Panel Header */}
+          <div className="h-14 px-5 border-b border-slate-100 dark:border-zinc-800/80 shrink-0 bg-slate-50/50 dark:bg-zinc-900/50 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-violet-100/70 dark:bg-violet-950/50 border border-violet-200/50 dark:border-violet-800/50 flex items-center justify-center shrink-0 shadow-sm">
+                <FileText size={14} className="text-violet-600 dark:text-violet-400" />
               </div>
-              <div
-                className={`text-[11px] truncate outline-none cursor-text w-full hover:bg-white/80 dark:hover:bg-zinc-800 rounded-lg px-2 -mx-1 py-1 transition-all border border-transparent focus:border-violet-200 focus:bg-white dark:focus:bg-zinc-800 focus:outline-none shadow-none focus:shadow-sm ${
-                  docTitle ? 'text-slate-600 dark:text-zinc-300 font-medium' : 'text-slate-400 italic'
-                }`}
-                title={docTitle || 'Untitled Document'}
-                contentEditable
-                suppressContentEditableWarning
-                onBlur={(e) => {
-                  const nextTitle = e.target.textContent.trim() || 'Untitled Document';
-                  setDocTitle(nextTitle);
-                  if (activeDocId) {
-                    setDocuments((prev) => prev.map((doc) => (doc.id === activeDocId ? { ...doc, title: nextTitle } : doc)));
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
-                }}
-              >
-                {docTitle || 'Untitled Document'}
-              </div>
+              <span className="text-[13.5px] font-semibold text-slate-800 dark:text-zinc-100 tracking-tight">Document Outline</span>
             </div>
-
-            {/* Outline Content */}
-            <div className="flex-1 min-h-0 overflow-y-auto px-1 py-2 thin-scrollbar">
-              {renderDocumentOutlineContent()}
-            </div>
-
-            {/* Footer */}
-            <div className="p-3.5 border-t border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/40 shrink-0">
-              <button
-                onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
-                className="flex items-center gap-2.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 w-full px-2 py-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors"
-              >
-                <Settings size={14} /> Settings
-              </button>
-            </div>
+            <button
+              onClick={() => { setActiveDocView('default'); setIsFocusMode(false); setLeftSidebarOpen(false); }}
+              className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              aria-label="Close outline"
+            >
+              <X size={14} />
+            </button>
           </div>
-        </>
+
+          {/* Outline Content */}
+          <div className="flex-1 min-h-0 overflow-y-auto px-2 py-3 thin-scrollbar">
+            {renderDocumentOutlineContent()}
+          </div>
+
+          {/* Footer */}
+          <div className="p-3.5 border-t border-slate-100 dark:border-zinc-800/80 bg-slate-50/50 dark:bg-zinc-900/40 shrink-0">
+            <button
+              onClick={() => { setSettingsModalOpen(true); setSettingsTab('personalization'); }}
+              className="flex items-center gap-2.5 text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 w-full px-2 py-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <Settings size={14} /> Settings
+            </button>
+          </div>
+        </div>
       )}
 
 
