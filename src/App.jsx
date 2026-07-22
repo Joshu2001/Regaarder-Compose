@@ -39671,6 +39671,185 @@ if (productMode === 'deck' || productMode === 'sheets') {
                 <Save size={16} strokeWidth={1.5} />
               </button>
 
+              <div className="relative" ref={docSearchPanelRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeTransientMenus();
+                    setDocSearchPanelOpen((prev) => !prev);
+                    setDocSearchAutoPlay(false);
+                  }}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${docSearchPanelOpen ? 'text-violet-600 bg-violet-50 dark:bg-violet-950/45 dark:text-violet-400 font-semibold shadow-sm' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-white/10'}`}
+                  title="Find & Replace (Ctrl+F)"
+                >
+                  <Search size={16} strokeWidth={1.5} />
+                </button>
+                {docSearchPanelOpen && (
+                  <div className="absolute left-0 top-10 z-[370] w-[360px] rounded-xl border border-gray-200 bg-white p-3 shadow-2xl ring-1 ring-black/5 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 text-[11px]">
+                        {[
+                          { key: 'find', label: 'Find' },
+                          { key: 'replace', label: 'Replace' },
+                          { key: 'goTo', label: 'Go To' },
+                          { key: 'redact', label: 'Redact' },
+                        ].map((item) => (
+                          <button
+                            key={item.key}
+                            type="button"
+                            onClick={() => setDocSearchMode(item.key)}
+                            className={`px-2 py-1 rounded-md transition-colors ${docSearchMode === item.key ? 'bg-violet-100 text-violet-700 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                          >
+                            {item.label}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setDocSearchAiEnabled((prev) => !prev)}
+                        className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${docSearchAiEnabled ? 'border-violet-300 bg-violet-50 text-violet-700 font-medium' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                        title="Enable AI-assisted search"
+                      >
+                        AI {docSearchAiEnabled ? 'On' : 'Off'}
+                      </button>
+                    </div>
+
+                    {(docSearchMode === 'find' || docSearchMode === 'replace') && (
+                      <>
+                        <input
+                          value={docSearchQuery}
+                          onChange={(event) => setDocSearchQuery(event.target.value)}
+                          placeholder={docSearchAiEnabled ? 'Try: find all companies mentioned in the docs' : 'Search text'}
+                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
+                        />
+                        {docSearchMode === 'replace' && (
+                          <input
+                            value={docReplaceValue}
+                            onChange={(event) => setDocReplaceValue(event.target.value)}
+                            placeholder="Replace with (leave empty to remove)"
+                            className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
+                          />
+                        )}
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => highlightDocumentSearchTerms(docSearchQuery, docSearchAiEnabled)}
+                            className="px-2.5 py-1.5 text-[11px] font-medium rounded-md bg-violet-600 text-white hover:bg-violet-700"
+                          >
+                            {docSearchMode === 'replace' ? 'Find Matches' : 'Find'}
+                          </button>
+                          {docSearchMode === 'replace' && (
+                            <button
+                              type="button"
+                              onClick={replaceHighlightedSearchMatches}
+                              className="px-2.5 py-1.5 text-[11px] font-medium rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50"
+                            >
+                              Replace
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDocSearchAutoPlay((prev) => !prev);
+                              if (docSearchMatchCount <= 1) {
+                                setDocSearchAutoPlay(false);
+                              }
+                            }}
+                            className={`px-2.5 py-1.5 text-[11px] font-medium rounded-md border transition-colors ${docSearchAutoPlay ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                          >
+                            {docSearchAutoPlay ? 'Pause' : 'Auto'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex - 1)}
+                            disabled={!docSearchMatchCount}
+                            className="px-2 py-1.5 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                          >
+                            Prev
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex + 1)}
+                            disabled={!docSearchMatchCount}
+                            className="px-2 py-1.5 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                          >
+                            Next
+                          </button>
+                        </div>
+                        <div className="mt-2 text-[11px] text-gray-500">
+                          {docSearchMatchCount ? `${docSearchActiveIndex + 1}/${docSearchMatchCount} selected` : '0 matches'}
+                          {docSearchSummary ? ` - ${docSearchSummary}` : ''}
+                        </div>
+                      </>
+                    )}
+
+                    {docSearchMode === 'goTo' && (
+                      <>
+                        <input
+                          value={docGoToValue}
+                          onChange={(event) => setDocGoToValue(event.target.value)}
+                          placeholder="Page number"
+                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
+                        />
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { goToDocumentPage(); setDocSearchPanelOpen(false); }}
+                            className="px-2.5 py-1.5 text-[11px] font-medium rounded-md bg-violet-600 text-white hover:bg-violet-700"
+                          >
+                            Go To Page
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {docSearchMode === 'redact' && (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Type a word or sentence to redact..."
+                          value={semanticRedactQuery}
+                          onChange={(e) => {
+                            setSemanticRedactQuery(e.target.value);
+                            clearSemanticRedactPreview();
+                          }}
+                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400 bg-white"
+                        />
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={performSemanticRedactPreview}
+                            className="px-2.5 py-1.5 text-[11px] font-medium rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50"
+                          >
+                            Preview Matches
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { applySemanticRedaction(); setDocSearchPanelOpen(false); }}
+                            disabled={semanticRedactMatches.length === 0}
+                            className="px-2.5 py-1.5 text-[11px] font-medium rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                          >
+                            Redact All
+                          </button>
+                          {semanticRedactUndoStack && (
+                            <button
+                              type="button"
+                              onClick={undoSemanticRedaction}
+                              className="px-2.5 py-1.5 text-[11px] font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 ml-auto"
+                            >
+                              Undo
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-2 text-[11px] text-gray-500">
+                          {semanticRedactMatches.length} items found
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
             </div>
             {/* Export Dropdown Button in Top Header */}
             {productMode === 'compose' && (
@@ -40936,194 +41115,17 @@ if (productMode === 'deck' || productMode === 'sheets') {
 
             <div className="w-px h-4 bg-slate-200/60 mx-0.5 shrink-0"></div>
 
-            {/* Group 5: Refined Ending - Circular Search & View Modes */}
-            <div className="flex items-center gap-1.5 relative" ref={docSearchPanelRef}>
+            {/* Group 5: View Modes */}
+            <div className="flex items-center">
               <button
                 type="button"
                 onClick={toggleDocumentImmersiveMode}
-                className={`w-8 h-8 flex items-center justify-center rounded-full transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200 shadow-sm' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/60 border-transparent'} ${isButtonPulsing ? 'fullscreen-pulse' : ''}`}
+                className={`w-7.5 h-7.5 flex items-center justify-center rounded-xl transition-all border ${isDocumentImmersive ? 'bg-violet-100 text-violet-700 border-violet-200 shadow-sm' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50/60 border-transparent hover:border-slate-200/40'}`}
                 title={isDocumentImmersive ? 'Exit immersive mode' : 'Enter immersive mode'}
               >
                 {isDocumentImmersive ? <Minimize2 size={14} strokeWidth={1.5} /> : <Maximize size={14} strokeWidth={1.5} />}
               </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  closeTransientMenus();
-                  setDocSearchPanelOpen((prev) => !prev);
-                  setDocSearchAutoPlay(false);
-                }}
-                className={`w-8 h-8 flex items-center justify-center rounded-full transition-all border ${docSearchPanelOpen ? 'bg-slate-100 text-slate-900 border-slate-200/80 shadow-sm' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/60 border-transparent'}`}
-                title="Find & Replace (Ctrl+F)"
-              >
-                <Search size={14} strokeWidth={1.5} />
-              </button>
-              {docSearchPanelOpen && (
-                <div className="absolute right-0 top-10 z-[280] w-[360px] rounded-xl border border-gray-200 bg-white p-3 shadow-2xl ring-1 ring-black/5 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-1 rounded-lg border border-gray-200 p-1 text-[11px]">
-                    {[
-                      { key: 'find', label: 'Find' },
-                      { key: 'replace', label: 'Replace' },
-                      { key: 'goTo', label: 'Go To' },
-                      { key: 'redact', label: 'Redact' },
-                    ].map((item) => (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => setDocSearchMode(item.key)}
-                        className={`px-2 py-1 rounded-md transition-colors ${docSearchMode === item.key ? 'bg-violet-100 text-violet-700' : 'text-gray-600 hover:bg-gray-100'}`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setDocSearchAiEnabled((prev) => !prev)}
-                    className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${docSearchAiEnabled ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
-                    title="Enable AI-assisted search"
-                  >
-                    AI {docSearchAiEnabled ? 'On' : 'Off'}
-                  </button>
-                </div>
-
-                {(docSearchMode === 'find' || docSearchMode === 'replace') && (
-                  <>
-                    <input
-                      value={docSearchQuery}
-                      onChange={(event) => setDocSearchQuery(event.target.value)}
-                      placeholder={docSearchAiEnabled ? 'Try: find all companies mentioned in the docs' : 'Search text'}
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
-                    />
-                    {docSearchMode === 'replace' && (
-                      <input
-                        value={docReplaceValue}
-                        onChange={(event) => setDocReplaceValue(event.target.value)}
-                        placeholder="Replace with (leave empty to remove)"
-                        className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
-                      />
-                    )}
-                    <div className="mt-2 flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => highlightDocumentSearchTerms(docSearchQuery, docSearchAiEnabled)}
-                        className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700"
-                      >
-                        {docSearchMode === 'replace' ? 'Find Matches' : 'Find'}
-                      </button>
-                      {docSearchMode === 'replace' && (
-                        <button
-                          type="button"
-                          onClick={replaceHighlightedSearchMatches}
-                          className="px-2.5 py-1.5 text-[11px] rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50"
-                        >
-                          Replace
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDocSearchAutoPlay((prev) => !prev);
-                          if (docSearchMatchCount <= 1) {
-                            setDocSearchAutoPlay(false);
-                          }
-                        }}
-                        className={`px-2.5 py-1.5 text-[11px] rounded-md border transition-colors ${docSearchAutoPlay ? 'border-violet-300 bg-violet-50 text-violet-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                      >
-                        {docSearchAutoPlay ? 'Pause' : 'Auto'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex - 1)}
-                        disabled={!docSearchMatchCount}
-                        className="px-2 py-1.5 text-[11px] rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-                      >
-                        Prev
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => focusSearchMatchAtIndex(docSearchActiveIndex + 1)}
-                        disabled={!docSearchMatchCount}
-                        className="px-2 py-1.5 text-[11px] rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-                      >
-                        Next
-                      </button>
-                    </div>
-                    <div className="mt-2 text-[11px] text-gray-500">
-                      {docSearchMatchCount ? `${docSearchActiveIndex + 1}/${docSearchMatchCount} selected` : '0 matches'}
-                      {docSearchSummary ? ` - ${docSearchSummary}` : ''}
-                    </div>
-                  </>
-                )}
-
-                {docSearchMode === 'goTo' && (
-                  <>
-                    <input
-                      value={docGoToValue}
-                      onChange={(event) => setDocGoToValue(event.target.value)}
-                      placeholder="Page number"
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400"
-                    />
-                    <div className="mt-2 flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => { goToDocumentPage(); setDocSearchPanelOpen(false); }}
-                        className="px-2.5 py-1.5 text-[11px] rounded-md bg-violet-600 text-white hover:bg-violet-700"
-                      >
-                        Go To Page
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {docSearchMode === 'redact' && (
-                  <>
-                    <input
-                      type="text"
-                      placeholder="Type a word or sentence to redact..."
-                      value={semanticRedactQuery}
-                      onChange={(e) => {
-                        setSemanticRedactQuery(e.target.value);
-                        clearSemanticRedactPreview();
-                      }}
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-xs outline-none focus:border-violet-400 bg-white"
-                    />
-                    <div className="mt-2 flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={performSemanticRedactPreview}
-                        className="px-2.5 py-1.5 text-[11px] rounded-md border border-violet-200 text-violet-700 hover:bg-violet-50"
-                      >
-                        Preview Matches
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { applySemanticRedaction(); setDocSearchPanelOpen(false); }}
-                        disabled={semanticRedactMatches.length === 0}
-                        className="px-2.5 py-1.5 text-[11px] rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-                      >
-                        Redact All
-                      </button>
-                      {semanticRedactUndoStack && (
-                        <button
-                          type="button"
-                          onClick={undoSemanticRedaction}
-                          className="px-2.5 py-1.5 text-[11px] rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 ml-auto"
-                        >
-                          Undo
-                        </button>
-                      )}
-                    </div>
-                    <div className="mt-2 text-[11px] text-gray-500">
-                      {semanticRedactMatches.length} items found
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
+            </div>
           </div>
 
           {/* Island 2: Inline Formatting Capsule (Shown ONLY when text is highlighted/selected) */}
