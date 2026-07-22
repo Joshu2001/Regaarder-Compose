@@ -39238,10 +39238,10 @@ if (productMode === 'deck' || productMode === 'sheets') {
         />
       )}
 
-      {/* 1. Left Navigation Sidebar — collapses to 0 when Document Outline is overlaying */}
+      {/* 1. Left Navigation Sidebar */}
       <div
         className="flex flex-col shrink-0 select-none overflow-hidden transition-[width] duration-200 bg-white border-r border-gray-100"
-        style={{ width: (activeRightTab === 'whiteboard' || showDocumentOutlineView) ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
+        style={{ width: activeRightTab === 'whiteboard' ? '0px' : (leftSidebarOpen ? `${leftSidebarWidth}px` : '0px') }}
       >
         {/* Show document outline header only in sidebar when NOT in outline view */}
         {!showDocumentOutlineView && (
