@@ -23037,8 +23037,9 @@ Respond with a JSON array of slide objects matching the schema.`;
     }
   };
 
-  const addTaskFromInput = () => {
-    const trimmed = newTaskInput.trim();
+  const addTaskFromInput = (overrideText) => {
+    const textToUse = typeof overrideText === 'string' ? overrideText : newTaskInput;
+    const trimmed = (textToUse || '').trim();
     if (!trimmed) {
       return;
     }
@@ -26728,7 +26729,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    addTaskFromInput();
+                    addTaskFromInput(newTaskInput);
                   }}
                   className="flex items-center gap-2"
                 >
@@ -26742,7 +26743,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         if (e.key === 'Enter' || e.keyCode === 13 || e.code === 'Enter') {
                           e.preventDefault();
                           e.stopPropagation();
-                          addTaskFromInput();
+                          addTaskFromInput(e.currentTarget.value);
                         }
                       }}
                       placeholder="Add a new task..."
@@ -26752,15 +26753,10 @@ Respond with a JSON array of slide objects matching the schema.`;
                   {newTaskInput.trim().length > 0 && (
                     <button
                       type="submit"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        addTaskFromInput();
-                      }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        addTaskFromInput();
+                        addTaskFromInput(newTaskInput);
                       }}
                       className="h-[42px] px-3.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white shadow-xs transition-all shrink-0 cursor-pointer animate-in fade-in zoom-in-95 duration-150"
                     >

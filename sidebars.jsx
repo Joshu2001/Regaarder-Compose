@@ -656,7 +656,7 @@
                   onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    addTaskFromInput();
+                    addTaskFromInput(newTaskInput);
                   }}
                   className="flex items-center gap-2"
                 >
@@ -670,7 +670,7 @@
                         if (e.key === 'Enter' || e.keyCode === 13 || e.code === 'Enter') {
                           e.preventDefault();
                           e.stopPropagation();
-                          addTaskFromInput();
+                          addTaskFromInput(e.currentTarget.value);
                         }
                       }}
                       placeholder="Add a new task..."
@@ -680,15 +680,10 @@
                   {newTaskInput.trim().length > 0 && (
                     <button
                       type="submit"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        addTaskFromInput();
-                      }}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        addTaskFromInput();
+                        addTaskFromInput(newTaskInput);
                       }}
                       className="h-[42px] px-3.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white shadow-xs transition-all shrink-0 cursor-pointer animate-in fade-in zoom-in-95 duration-150"
                     >
