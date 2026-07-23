@@ -651,8 +651,15 @@
                   </button>
                 </div>
 
-                {/* Refined 42px Input Surface with Leading '+' Icon */}
-                <div className="flex items-center gap-2">
+                {/* Refined 42px Input Surface with Leading '+' Icon & Form Submit */}
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addTaskFromInput();
+                  }}
+                  className="flex items-center gap-2"
+                >
                   <div className="relative flex-1 flex items-center">
                     <Plus size={14} className="absolute left-3 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                     <input
@@ -660,24 +667,27 @@
                       value={newTaskInput}
                       onChange={(e) => setNewTaskInput(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' || e.keyCode === 13 || e.code === 'Enter') {
                           e.preventDefault();
                           e.stopPropagation();
                           addTaskFromInput();
                         }
                       }}
-                      placeholder=""
-                      className="w-full bg-slate-50/60 dark:bg-zinc-800/30 border border-slate-200/60 dark:border-zinc-700/60 rounded-lg pl-8 pr-3 h-[42px] text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-violet-500/80 focus:bg-white dark:focus:bg-zinc-900 transition-all shadow-2xs"
+                      placeholder="Add a new task..."
+                      className="w-full bg-slate-50/60 dark:bg-zinc-800/30 border border-slate-200/60 dark:border-zinc-700/60 rounded-lg pl-8 pr-3 h-[42px] text-xs text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-violet-500/80 focus:bg-white dark:focus:bg-zinc-900 transition-all shadow-2xs"
                     />
                   </div>
                   <button
-                    type="button"
-                    onClick={addTaskFromInput}
+                    type="submit"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      addTaskFromInput();
+                    }}
                     className="h-[42px] px-3.5 rounded-lg text-xs font-medium bg-violet-600/90 hover:bg-violet-700 active:bg-violet-800 text-white shadow-2xs transition-colors shrink-0 cursor-pointer"
                   >
                     Save
                   </button>
-                </div>
+                </form>
               </div>
 
               {/* Task Items List - Quiet Density & Faint Separators */}
