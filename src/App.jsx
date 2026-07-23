@@ -25703,7 +25703,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       {isMentionMenuOpen && (
                         <div
                           ref={mentionMenuRef}
-                          className="absolute bottom-full left-0 mb-2 w-full max-h-56 overflow-y-auto bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1.5"
+                          className="absolute top-full left-0 right-0 mt-2 max-h-56 overflow-y-auto bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 p-1.5"
                         >
                           <div className="px-2 py-1 text-[10.5px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
                             Mention Document
