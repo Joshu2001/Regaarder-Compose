@@ -12887,8 +12887,24 @@ export default function App() {
   ]);
   const [taskOwnerFilter, setTaskOwnerFilter] = useState('all');
   const [assigneePickerTaskId, setAssigneePickerTaskId] = useState(null);
+  const [assigneeSearchQuery, setAssigneeSearchQuery] = useState('');
+  const [dueDatePickerTaskId, setDueDatePickerTaskId] = useState(null);
+  const [priorityPickerTaskId, setPriorityPickerTaskId] = useState(null);
+  const [justCreatedTaskId, setJustCreatedTaskId] = useState(null);
   const [taskDragOverCategory, setTaskDragOverCategory] = useState(null);
   const [draggingTaskId, setDraggingTaskId] = useState(null);
+
+  const setTaskDueDate = (taskId, dueDateStr) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, dueDate: dueDateStr } : t));
+    setDueDatePickerTaskId(null);
+    showToast(dueDateStr ? `Due date set to ${dueDateStr}` : 'Due date cleared');
+  };
+
+  const setTaskPriority = (taskId, priorityStr) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, priority: priorityStr } : t));
+    setPriorityPickerTaskId(null);
+    showToast(priorityStr ? `Priority set to ${priorityStr}` : 'Priority cleared');
+  };
 
   const toggleAssignee = (taskId, teammate) => {
     setTasks(prev => prev.map(t => {
@@ -23032,8 +23048,9 @@ Respond with a JSON array of slide objects matching the schema.`;
       ? [{ id: 'ai-1', name: 'Antigravity AI', avatar: null, type: 'agent' }]
       : [{ id: 'u-1', name: 'You', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80', type: 'user' }];
 
+    const newId = Date.now();
     const newTaskObj = {
-      id: Date.now(),
+      id: newId,
       text: trimmed,
       completed: false,
       owner: defaultOwner,
@@ -23047,10 +23064,11 @@ Respond with a JSON array of slide objects matching the schema.`;
 
     setTasks((prev) => [newTaskObj, ...prev]);
     setNewTaskInput('');
+    setJustCreatedTaskId(newId);
     trackMemoryAction('task', 'Added task', {
       textLength: trimmed.length,
     });
-    showToast('Task added');
+    showToast('Task created');
   };
 
   const removeTask = (taskId) => {
@@ -26715,6 +26733,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
+                          e.stopPropagation();
                           addTaskFromInput();
                         }
                       }}
@@ -26812,19 +26831,131 @@ Respond with a JSON array of slide objects matching the schema.`;
 
                           {/* Muted Metadata Row (Due Date • Priority • Assignees) */}
                           <div className="mt-1 flex flex-wrap items-center gap-2 text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">
-                            {task.dueDate && (
-                              <span className="inline-flex items-center gap-1">
+                            {/* Floating Due Date Popover Anchor */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDueDatePickerTaskId(dueDatePickerTaskId === task.id ? null : task.id);
+                                  setPriorityPickerTaskId(null);
+                                  setAssigneePickerTaskId(null);
+                                }}
+                                className="inline-flex items-center gap-1 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                              >
                                 <Clock size={10} className="text-slate-400" />
-                                <span>{task.dueDate}</span>
-                              </span>
-                            )}
-                            {task.priority && (
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-slate-100/70 text-slate-500 dark:bg-zinc-800/80 dark:text-zinc-400 border border-slate-200/40 dark:border-zinc-700/40">
-                                {task.priority}
-                              </span>
-                            )}
+                                <span>{task.dueDate || 'No Date'}</span>
+                              </button>
 
-                            {/* Assignee / Stacked Avatars */}
+                              {/* Floating Mini Calendar Popover */}
+                              {dueDatePickerTaskId === task.id && (
+                                <div 
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl shadow-lg p-2 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                >
+                                  <div className="flex items-center gap-1 mb-2 pb-1.5 border-b border-slate-100 dark:border-zinc-800 overflow-x-auto thin-scrollbar">
+                                    {['Today', 'Tomorrow', 'Next Week', 'No Date'].map(shortcut => (
+                                      <button
+                                        key={shortcut}
+                                        type="button"
+                                        onClick={() => setTaskDueDate(task.id, shortcut === 'No Date' ? null : shortcut)}
+                                        className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors whitespace-nowrap cursor-pointer ${
+                                          task.dueDate === shortcut 
+                                            ? 'bg-violet-600/90 text-white font-semibold' 
+                                            : 'bg-slate-100/80 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-200/80'
+                                        }`}
+                                      >
+                                        {shortcut}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <div className="flex items-center justify-between px-1 mb-1.5">
+                                    <span className="text-[11px] font-semibold text-slate-700 dark:text-zinc-200">July 2026</span>
+                                    <div className="flex items-center gap-0.5">
+                                      <button type="button" className="p-0.5 rounded text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200">
+                                        <ChevronLeft size={12} />
+                                      </button>
+                                      <button type="button" className="p-0.5 rounded text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200">
+                                        <ChevronRight size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-7 gap-1 text-center text-[9.5px] font-medium text-slate-400 dark:text-zinc-500 mb-1">
+                                    <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                                  </div>
+                                  <div className="grid grid-cols-7 gap-1 text-center">
+                                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                                      <button
+                                        key={day}
+                                        type="button"
+                                        onClick={() => setTaskDueDate(task.id, `Jul ${day}`)}
+                                        className={`h-5 w-full rounded text-[10px] font-medium flex items-center justify-center cursor-pointer transition-colors ${
+                                          task.dueDate === `Jul ${day}`
+                                            ? 'bg-violet-600 text-white font-semibold'
+                                            : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                                        }`}
+                                      >
+                                        {day}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Floating Priority Dropdown Anchor */}
+                            <div className="relative">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPriorityPickerTaskId(priorityPickerTaskId === task.id ? null : task.id);
+                                  setDueDatePickerTaskId(null);
+                                  setAssigneePickerTaskId(null);
+                                }}
+                                className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-slate-100/70 text-slate-500 dark:bg-zinc-800/80 dark:text-zinc-400 border border-slate-200/40 dark:border-zinc-700/40 hover:bg-slate-200/70 cursor-pointer"
+                              >
+                                {task.priority || 'Priority'}
+                              </button>
+
+                              {/* Compact Priority Dropdown */}
+                              {priorityPickerTaskId === task.id && (
+                                <div 
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="absolute left-0 top-full mt-1.5 w-36 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl shadow-lg p-1 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                >
+                                  {[
+                                    { label: 'Urgent', color: 'bg-rose-500' },
+                                    { label: 'High', color: 'bg-amber-500' },
+                                    { label: 'Medium', color: 'bg-blue-500' },
+                                    { label: 'Low', color: 'bg-slate-400' },
+                                    { label: 'No Priority', color: 'bg-transparent border border-slate-300' }
+                                  ].map(p => (
+                                    <button
+                                      key={p.label}
+                                      type="button"
+                                      onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        setTaskPriority(task.id, p.label === 'No Priority' ? null : p.label);
+                                      }}
+                                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[10.5px] font-medium transition-colors cursor-pointer ${
+                                        task.priority === p.label || (p.label === 'No Priority' && !task.priority)
+                                          ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300'
+                                          : 'hover:bg-slate-100/70 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                                      }`}
+                                    >
+                                      <span className={`w-2 h-2 rounded-full ${p.color}`} />
+                                      <span className="flex-1 text-left">{p.label}</span>
+                                      {(task.priority === p.label || (p.label === 'No Priority' && !task.priority)) && (
+                                        <Check size={11} className="text-violet-600 dark:text-violet-400" />
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Assignee / Stacked Avatars with Searchable Assign Popover */}
                             <div className="inline-flex items-center gap-1 relative">
                               {task.assignees && task.assignees.length > 0 ? (
                                 task.owner === 'team' || task.assignees.length > 1 ? (
@@ -26833,6 +26964,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
+                                      setDueDatePickerTaskId(null);
+                                      setPriorityPickerTaskId(null);
                                     }}
                                     className="flex items-center -space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
                                     title="Click to assign teammates"
@@ -26862,6 +26995,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
+                                      setDueDatePickerTaskId(null);
+                                      setPriorityPickerTaskId(null);
                                     }}
                                     className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-slate-100/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 text-[10px] font-normal hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                                   >
@@ -26880,6 +27015,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
+                                    setDueDatePickerTaskId(null);
+                                    setPriorityPickerTaskId(null);
                                   }}
                                   className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded border border-dashed border-slate-300 dark:border-zinc-700 text-[9.5px] font-normal text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
                                 >
@@ -26888,46 +27025,93 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 </button>
                               )}
 
-                              {/* Lightweight People Picker Dropover */}
+                              {/* Refined Assign To Popover with Search & AI Grouping */}
                               {assigneePickerTaskId === task.id && (
                                 <div 
                                   onClick={(e) => e.stopPropagation()}
-                                  className="absolute left-0 top-full mt-1.5 w-48 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl shadow-lg p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
+                                  className="absolute left-0 top-full mt-1.5 w-56 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl shadow-lg p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
                                 >
-                                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-                                    Assign to
+                                  {/* Pinned Search Input */}
+                                  <div className="p-1 mb-1 border-b border-slate-100 dark:border-zinc-800">
+                                    <div className="relative flex items-center">
+                                      <Search size={11} className="absolute left-2 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                                      <input 
+                                        type="text"
+                                        value={assigneeSearchQuery}
+                                        onChange={(e) => setAssigneeSearchQuery(e.target.value)}
+                                        placeholder="Search teammates..."
+                                        className="w-full bg-slate-50/80 dark:bg-zinc-800/50 border border-slate-200/60 dark:border-zinc-700/60 rounded-md pl-6 pr-2 py-1 text-[10.5px] text-slate-800 dark:text-zinc-100 placeholder-slate-400 focus:outline-none focus:border-violet-500/80"
+                                      />
+                                    </div>
                                   </div>
-                                  <div className="space-y-0.5 max-h-44 overflow-y-auto thin-scrollbar">
-                                    {WORKSPACE_TEAMMATES.map((person) => {
-                                      const isSelected = (task.assignees || []).some(a => a.id === person.id);
-                                      return (
-                                        <button
-                                          key={person.id}
-                                          type="button"
-                                          onPointerDown={(e) => {
-                                            e.preventDefault();
-                                            toggleAssignee(task.id, person);
-                                          }}
-                                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
-                                            isSelected 
-                                              ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' 
-                                              : 'hover:bg-slate-100/70 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
-                                          }`}
-                                        >
-                                          {person.avatar ? (
+
+                                  <div className="space-y-0.5 max-h-52 overflow-y-auto thin-scrollbar">
+                                    {/* Human Collaborators */}
+                                    {WORKSPACE_TEAMMATES
+                                      .filter(p => p.type !== 'agent')
+                                      .filter(p => !assigneeSearchQuery || p.name.toLowerCase().includes(assigneeSearchQuery.toLowerCase()))
+                                      .map((person) => {
+                                        const isSelected = (task.assignees || []).some(a => a.id === person.id);
+                                        return (
+                                          <button
+                                            key={person.id}
+                                            type="button"
+                                            onPointerDown={(e) => {
+                                              e.preventDefault();
+                                              toggleAssignee(task.id, person);
+                                            }}
+                                            className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
+                                              isSelected 
+                                                ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' 
+                                                : 'hover:bg-slate-100/70 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                                            }`}
+                                          >
                                             <img src={person.avatar} alt={person.name} className="w-4 h-4 rounded-full object-cover shrink-0" />
-                                          ) : (
-                                            <div className="w-4 h-4 rounded-full bg-violet-600 text-[8px] font-bold text-white flex items-center justify-center shrink-0">
-                                              AI
+                                            <div className="flex-1 min-w-0 flex items-center justify-between">
+                                              <span className="truncate text-[11px] font-medium">{person.name}</span>
+                                              {person.role && <span className="text-[9.5px] text-slate-400 dark:text-zinc-500 ml-1 font-normal">{person.role}</span>}
                                             </div>
-                                          )}
-                                          <div className="flex-1 min-w-0">
-                                            <div className="truncate text-[11px] font-medium">{person.name}</div>
-                                          </div>
-                                          {isSelected && <Check size={11} className="text-violet-600 dark:text-violet-400 shrink-0" />}
-                                        </button>
-                                      );
-                                    })}
+                                            {isSelected && <Check size={11} className="text-violet-600 dark:text-violet-400 shrink-0" />}
+                                          </button>
+                                        );
+                                      })}
+
+                                    {/* AI Collaborators Grouped Separately */}
+                                    <div className="pt-1.5 mt-1 border-t border-slate-100 dark:border-zinc-800">
+                                      <div className="px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+                                        AI Collaborators
+                                      </div>
+                                      {WORKSPACE_TEAMMATES
+                                        .filter(p => p.type === 'agent')
+                                        .filter(p => !assigneeSearchQuery || p.name.toLowerCase().includes(assigneeSearchQuery.toLowerCase()))
+                                        .map((person) => {
+                                          const isSelected = (task.assignees || []).some(a => a.id === person.id);
+                                          return (
+                                            <button
+                                              key={person.id}
+                                              type="button"
+                                              onPointerDown={(e) => {
+                                                e.preventDefault();
+                                                toggleAssignee(task.id, person);
+                                              }}
+                                              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors text-left cursor-pointer ${
+                                                isSelected 
+                                                  ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' 
+                                                  : 'hover:bg-slate-100/70 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                                              }`}
+                                            >
+                                              <div className="w-4 h-4 rounded-full bg-violet-600/90 text-[8px] font-bold text-white flex items-center justify-center shrink-0">
+                                                AI
+                                              </div>
+                                              <div className="flex-1 min-w-0 flex items-center justify-between">
+                                                <span className="truncate text-[11px] font-medium">{person.name}</span>
+                                                <span className="text-[9.5px] text-violet-600 dark:text-violet-400 ml-1 font-medium">AI Agent</span>
+                                              </div>
+                                              {isSelected && <Check size={11} className="text-violet-600 dark:text-violet-400 shrink-0" />}
+                                            </button>
+                                          );
+                                        })}
+                                    </div>
                                   </div>
                                 </div>
                               )}
@@ -26962,7 +27146,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                         </div>
                       </div>
 
-                      {/* Subtle Action Row: Schedule • Delegate • Open */}
+                      {/* Progressive Disclosure Inline Metadata & Actions Row */}
                       <div className="mt-2 flex items-center gap-3 pt-1 border-t border-slate-100/40 dark:border-zinc-800/30 text-[11px] text-slate-400/80 dark:text-zinc-500">
                         <button
                           type="button"
@@ -26980,6 +27164,8 @@ Respond with a JSON array of slide objects matching the schema.`;
                           onClick={(event) => {
                             event.stopPropagation();
                             setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
+                            setDueDatePickerTaskId(null);
+                            setPriorityPickerTaskId(null);
                           }}
                           className="inline-flex items-center gap-1 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors font-medium cursor-pointer"
                         >
