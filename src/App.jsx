@@ -26629,11 +26629,11 @@ Respond with a JSON array of slide objects matching the schema.`;
 
           {/* D. ACTIVE TAB: TASKS WORKLIST */}
           {activeRightTab === 'tasks' && (
-            <div className="flex-1 overflow-y-auto thin-scrollbar p-5 flex flex-col space-y-5 bg-white dark:bg-[#18181b]">
+            <div className="flex-1 overflow-y-auto thin-scrollbar p-5 flex flex-col space-y-4 bg-white dark:bg-[#18181b]">
               {/* Filter Tabs & Clean Surface */}
-              <div className="space-y-3">
+              <div className="space-y-3.5">
                 {/* Segmented Filter Track (Your Tasks, Agent Tasks, Team Tasks, All) */}
-                <div className="flex items-center gap-0.5 p-0.5 bg-slate-100/70 dark:bg-zinc-800/50 rounded-xl self-start overflow-x-auto no-scrollbar w-full">
+                <div className="flex items-center gap-1 p-0.5 bg-slate-100/70 dark:bg-zinc-800/50 rounded-lg self-start overflow-x-auto no-scrollbar w-full">
                   <button
                     type="button"
                     onClick={() => {
@@ -26643,9 +26643,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                     onDragOver={(e) => { e.preventDefault(); setTaskDragOverCategory('user'); }}
                     onDragLeave={() => setTaskDragOverCategory(null)}
                     onDrop={(e) => handleTaskDropOnCategory(e, 'user')}
-                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'user'
-                        ? 'bg-violet-600 text-white shadow-2xs font-semibold'
+                        ? 'bg-violet-600/90 text-white shadow-2xs font-medium'
                         : taskDragOverCategory === 'user'
                         ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/40'
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -26662,9 +26662,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                     onDragOver={(e) => { e.preventDefault(); setTaskDragOverCategory('agent'); }}
                     onDragLeave={() => setTaskDragOverCategory(null)}
                     onDrop={(e) => handleTaskDropOnCategory(e, 'agent')}
-                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'agent'
-                        ? 'bg-violet-600 text-white shadow-2xs font-semibold'
+                        ? 'bg-violet-600/90 text-white shadow-2xs font-medium'
                         : taskDragOverCategory === 'agent'
                         ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/40'
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -26681,9 +26681,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                     onDragOver={(e) => { e.preventDefault(); setTaskDragOverCategory('team'); }}
                     onDragLeave={() => setTaskDragOverCategory(null)}
                     onDrop={(e) => handleTaskDropOnCategory(e, 'team')}
-                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'team'
-                        ? 'bg-violet-600 text-white shadow-2xs font-semibold'
+                        ? 'bg-violet-600/90 text-white shadow-2xs font-medium'
                         : taskDragOverCategory === 'team'
                         ? 'bg-violet-100 text-violet-700 dark:bg-violet-950/40'
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
@@ -26694,9 +26694,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                   <button
                     type="button"
                     onClick={() => setTaskOwnerFilter('all')}
-                    className={`px-2.5 py-1 rounded-lg text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-2.5 py-1 rounded-md text-[10.5px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                       taskOwnerFilter === 'all'
-                        ? 'bg-violet-600 text-white shadow-2xs font-semibold'
+                        ? 'bg-violet-600/90 text-white shadow-2xs font-medium'
                         : 'text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200'
                     }`}
                   >
@@ -26704,32 +26704,35 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </button>
                 </div>
 
-                {/* Spacious Input Surface without noisy placeholder text */}
+                {/* Refined 42px Input Surface with Leading '+' Icon */}
                 <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newTaskInput}
-                    onChange={(e) => setNewTaskInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addTaskFromInput();
-                      }
-                    }}
-                    placeholder=""
-                    className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-700/80 rounded-xl px-4 py-2 text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-violet-500 dark:focus:border-violet-500 transition-colors shadow-2xs min-h-[38px]"
-                  />
+                  <div className="relative flex-1 flex items-center">
+                    <Plus size={14} className="absolute left-3 text-slate-400 dark:text-zinc-500 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={newTaskInput}
+                      onChange={(e) => setNewTaskInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTaskFromInput();
+                        }
+                      }}
+                      placeholder=""
+                      className="w-full bg-slate-50/60 dark:bg-zinc-800/30 border border-slate-200/60 dark:border-zinc-700/60 rounded-lg pl-8 pr-3 h-[42px] text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-violet-500/80 focus:bg-white dark:focus:bg-zinc-900 transition-all shadow-2xs"
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={addTaskFromInput}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white shadow-2xs transition-colors shrink-0 cursor-pointer"
+                    className="h-[42px] px-3.5 rounded-lg text-xs font-medium bg-violet-600/90 hover:bg-violet-700 active:bg-violet-800 text-white shadow-2xs transition-colors shrink-0 cursor-pointer"
                   >
                     Save
                   </button>
                 </div>
               </div>
 
-              {/* Task Items List */}
+              {/* Task Items List - Quiet Density & Faint Separators */}
               <div className="divide-y divide-slate-100/60 dark:divide-zinc-800/40">
                 {visibleTasks.map(task => (
                   <div 
@@ -26740,33 +26743,33 @@ Respond with a JSON array of slide objects matching the schema.`;
                       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
                       showToast(task.completed ? "Task uncompleted" : "Task marked completed");
                     }}
-                    className={`group flex items-start gap-2.5 py-4 px-2.5 rounded-xl transition-all cursor-pointer relative ${
+                    className={`group flex items-start gap-2.5 py-2.5 px-2 rounded-lg transition-all cursor-pointer relative ${
                       task.completed 
                         ? 'opacity-30 text-slate-400 dark:text-zinc-500' 
                         : 'hover:bg-slate-50/70 dark:hover:bg-zinc-800/30 text-slate-800 dark:text-zinc-200 opacity-100'
                     }`}
                   >
-                    {/* Checkbox */}
-                    <div className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center transition-all shrink-0 ${
+                    {/* Compact Checkbox */}
+                    <div className={`mt-0.5 w-3.5 h-3.5 rounded border flex items-center justify-center transition-all shrink-0 ${
                       task.completed 
                         ? 'bg-violet-600 border-violet-600 text-white' 
                         : 'border-slate-300 dark:border-zinc-600 bg-white dark:bg-zinc-900 group-hover:border-violet-400'
                     }`}>
-                      {task.completed && <Check size={10} strokeWidth={3} />}
+                      {task.completed && <Check size={9} strokeWidth={3} />}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           {/* Top Badges (AI / Project Tag) */}
-                          <div className="flex items-center gap-1.5 mb-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
                             {(task.isAiCreated || task.owner === 'agent') && (
-                              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-400 border border-violet-200/50 dark:border-violet-800/40">
+                              <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[8.5px] font-semibold bg-slate-100/80 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400 border border-slate-200/50 dark:border-zinc-700/50">
                                 AI
                               </span>
                             )}
                             {task.project && (
-                              <span className="inline-flex items-center text-[10px] font-medium text-slate-400 dark:text-zinc-500">
+                              <span className="inline-flex items-center text-[10px] font-normal text-slate-400 dark:text-zinc-500">
                                 {task.project}
                               </span>
                             )}
@@ -26791,7 +26794,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                   setEditingTaskText('');
                                 }
                               }}
-                              className="w-full bg-white dark:bg-zinc-900 border border-violet-400 dark:border-violet-500 rounded-xl px-3 py-2 text-[13px] font-medium leading-relaxed text-slate-900 dark:text-zinc-100 focus:outline-none shadow-xs resize-none min-h-[56px]"
+                              className="w-full bg-white dark:bg-zinc-900 border border-violet-400 dark:border-violet-500 rounded-lg px-3 py-1.5 text-[13px] font-normal leading-relaxed text-slate-900 dark:text-zinc-100 focus:outline-none shadow-xs resize-none min-h-[52px]"
                             />
                           ) : (
                             <p
@@ -26799,7 +26802,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                                 event.stopPropagation();
                                 beginTaskEdit(task);
                               }}
-                              className={`text-[13px] font-medium leading-snug break-words ${
+                              className={`text-[13px] font-normal leading-snug break-words ${
                                 task.completed ? 'line-through text-slate-400/60 dark:text-zinc-500/60' : 'text-slate-800 dark:text-zinc-100'
                               }`}
                             >
@@ -26808,21 +26811,15 @@ Respond with a JSON array of slide objects matching the schema.`;
                           )}
 
                           {/* Muted Metadata Row (Due Date • Priority • Assignees) */}
-                          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-400 dark:text-zinc-500">
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[10.5px] text-slate-400 dark:text-zinc-500 font-normal">
                             {task.dueDate && (
                               <span className="inline-flex items-center gap-1">
-                                <Clock size={11} className="text-slate-400" />
+                                <Clock size={10} className="text-slate-400" />
                                 <span>{task.dueDate}</span>
                               </span>
                             )}
                             {task.priority && (
-                              <span className={`px-1.5 py-0.2 rounded text-[9.5px] font-semibold ${
-                                task.priority === 'High' 
-                                  ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400'
-                                  : task.priority === 'Medium'
-                                  ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
-                                  : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400'
-                              }`}>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-medium bg-slate-100/70 text-slate-500 dark:bg-zinc-800/80 dark:text-zinc-400 border border-slate-200/40 dark:border-zinc-700/40">
                                 {task.priority}
                               </span>
                             )}
@@ -26831,13 +26828,13 @@ Respond with a JSON array of slide objects matching the schema.`;
                             <div className="inline-flex items-center gap-1 relative">
                               {task.assignees && task.assignees.length > 0 ? (
                                 task.owner === 'team' || task.assignees.length > 1 ? (
-                                  /* Stacked Avatars */
+                                  /* Natural Stacked Avatars */
                                   <div 
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
                                     }}
-                                    className="flex items-center -space-x-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+                                    className="flex items-center -space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
                                     title="Click to assign teammates"
                                   >
                                     {task.assignees.slice(0, 3).map((person, idx) => (
@@ -26846,16 +26843,16 @@ Respond with a JSON array of slide objects matching the schema.`;
                                           key={person.id || idx} 
                                           src={person.avatar} 
                                           alt={person.name} 
-                                          className="w-4.5 h-4.5 rounded-full border border-white dark:border-zinc-900 object-cover" 
+                                          className="w-4 h-4 rounded-full border border-white dark:border-zinc-900 object-cover" 
                                         />
                                       ) : (
-                                        <div key={person.id || idx} className="w-4.5 h-4.5 rounded-full border border-white dark:border-zinc-900 bg-violet-600 text-[9px] font-bold text-white flex items-center justify-center">
+                                        <div key={person.id || idx} className="w-4 h-4 rounded-full border border-white dark:border-zinc-900 bg-violet-600/90 text-[8px] font-bold text-white flex items-center justify-center">
                                           AI
                                         </div>
                                       )
                                     ))}
                                     {task.assignees.length > 3 && (
-                                      <span className="text-[9.5px] text-slate-400 pl-1 font-semibold">+{task.assignees.length - 3}</span>
+                                      <span className="text-[9px] text-slate-400 pl-1 font-medium">+{task.assignees.length - 3}</span>
                                     )}
                                   </div>
                                 ) : (
@@ -26866,12 +26863,12 @@ Respond with a JSON array of slide objects matching the schema.`;
                                       e.stopPropagation();
                                       setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
                                     }}
-                                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100/70 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 text-[10.5px] font-medium hover:bg-slate-200/70 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-slate-100/60 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 text-[10px] font-normal hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                                   >
                                     {task.assignees[0].avatar ? (
                                       <img src={task.assignees[0].avatar} alt={task.assignees[0].name} className="w-3.5 h-3.5 rounded-full object-cover" />
                                     ) : (
-                                      <span className="w-3.5 h-3.5 rounded-full bg-violet-600 text-[8px] font-bold text-white flex items-center justify-center">AI</span>
+                                      <span className="w-3.5 h-3.5 rounded-full bg-violet-600/90 text-[8px] font-bold text-white flex items-center justify-center">AI</span>
                                     )}
                                     <span>{task.assignees[0].name}</span>
                                   </button>
@@ -26884,9 +26881,9 @@ Respond with a JSON array of slide objects matching the schema.`;
                                     e.stopPropagation();
                                     setAssigneePickerTaskId(assigneePickerTaskId === task.id ? null : task.id);
                                   }}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border border-dashed border-slate-300 dark:border-zinc-700 text-[10px] font-medium text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded border border-dashed border-slate-300 dark:border-zinc-700 text-[9.5px] font-normal text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
                                 >
-                                  <UserPlus size={10} />
+                                  <UserPlus size={9} />
                                   <span>Assign</span>
                                 </button>
                               )}
