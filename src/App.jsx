@@ -26725,14 +26725,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                 </div>
 
                 {/* Refined 42px Input Surface with Leading '+' Icon & Dynamic Save Button */}
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    addTaskFromInput(newTaskInput);
-                  }}
-                  className="flex items-center gap-2"
-                >
+                <div className="flex items-center gap-2">
                   <div className="relative flex-1 flex items-center">
                     <Plus size={14} className="absolute left-3 text-slate-400 dark:text-zinc-500 pointer-events-none" />
                     <input
@@ -26752,7 +26745,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                   </div>
                   {newTaskInput.trim().length > 0 && (
                     <button
-                      type="submit"
+                      type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -26763,7 +26756,7 @@ Respond with a JSON array of slide objects matching the schema.`;
                       Save
                     </button>
                   )}
-                </form>
+                </div>
               </div>
 
               {/* Task Items List - Quiet Density & Faint Separators */}
